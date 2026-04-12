@@ -151,7 +151,6 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
           position: "fixed",
           inset: 0,
           background: "rgba(0, 0, 0, 0.6)",
-          backdropFilter: "blur(8px)",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",

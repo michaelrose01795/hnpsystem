@@ -23,6 +23,7 @@ import ReportsTab from "@/components/HR/tabs/ReportsTab";
 import SettingsTab from "@/components/HR/tabs/SettingsTab";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, PageShell } from "@/components/ui/layout-system";
+import TabRow from "@/components/ui/layout-system/TabRow";
 
 // Tab configuration - each tab represents a major HR function
 const HR_TABS = [
@@ -156,10 +157,9 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
     <Layout>
       <PageShell sectionKey="hr-manager-shell" className="hr-manager-shell">
         <ContentWidth sectionKey="hr-manager-content" parentKey="hr-manager-shell" widthMode="full">
-          <DevLayoutSection
+          <TabRow
             sectionKey="hr-manager-tabs"
             parentKey="hr-manager-content"
-            sectionType="tab-row"
             className="tab-api tab-scroll-row is-overflowing hr-manager-tabs-row"
           >
             {HR_TABS.map((tab) => {
@@ -177,16 +177,17 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
                 </button>
               );
             })}
-          </DevLayoutSection>
+          </TabRow>
 
           <DevLayoutSection
             sectionKey={`hr-manager-tab-${activeTab}`}
             parentKey="hr-manager-content"
-            sectionType="content-card"
-            backgroundToken="surface"
-            className="app-section-card hr-manager-tab-panel"
+            sectionType="section-shell"
+            className="hr-manager-tab-panel"
           >
-            <ActiveTabComponent />
+            <div className="hr-manager-tab-content">
+              <ActiveTabComponent />
+            </div>
           </DevLayoutSection>
         </ContentWidth>
       </PageShell>

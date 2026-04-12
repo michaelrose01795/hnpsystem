@@ -47,7 +47,6 @@ const LoginCard = ({
         background: "var(--surface)",
         boxShadow: "var(--shadow-xl)",
         padding: "2.25rem",
-        backdropFilter: "blur(18px)",
         width: "100%",
         maxWidth: contentMaxWidth + 72,
       }}

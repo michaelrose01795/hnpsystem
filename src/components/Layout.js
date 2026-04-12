@@ -924,7 +924,6 @@ export default function Layout({
                     position: "absolute",
                     inset: 0,
                     background: "rgba(var(--text-primary-rgb), 0.65)",
-                    backdropFilter: "blur(2px)",
                   }}
                 />
                 <div
@@ -977,7 +976,6 @@ export default function Layout({
               display: "flex",
               flexDirection: "column",
               gap: isMobile ? "8px" : "12px",
-              backdropFilter: "blur(10px)",
               minHeight: isMobile ? "auto" : "75px",
               justifyContent: "center",
             }}

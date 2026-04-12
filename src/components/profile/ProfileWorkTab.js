@@ -6,7 +6,7 @@ import useIsMobile from "@/hooks/useIsMobile"; // viewport detection for phone l
 import { useRouter } from "next/router"; // Next.js router for query params
 import { useSession } from "next-auth/react"; // NextAuth session for authentication
 import Layout from "@/components/Layout"; // shared layout wrapper
-import { useUser } from "@/context/UserContext"; // Keycloak user context
+import { useUser } from "@/context/UserContext"; // shared authenticated user context
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { StatusTag } from "@/components/HR/MetricCard"; // HR UI components
 import { CalendarField } from "@/components/calendarAPI";
@@ -1548,7 +1548,7 @@ export function ProfileWorkTab({
   onHeaderActionsChange = null,
 } = {}) {
   const router = useRouter(); // access query params
-  const { user, dbUserId } = useUser(); // Keycloak session details + Supabase id for dev mode
+  const { user, dbUserId } = useUser(); // session details + Supabase id for dev mode
   const { data: session } = useSession(); // NextAuth session for role checking
   const isMobile = useIsMobile(); // collapse grids / swap table for cards on phone vertical
   // State for user's own profile data (non-admin users)
@@ -1704,11 +1704,10 @@ export function ProfileWorkTab({
     return (
       employeeDirectory.find(
         (employee) =>
-          employee.keycloakId?.toLowerCase() === username ||
           employee.email?.toLowerCase() === username ||
           employee.name?.toLowerCase() === username
       ) ?? null
-    ); // locate HR profile by keycloak/email/name
+    ); // locate HR profile by email/name
   }, [activeUserName, employeeDirectory]);
 
   // Use appropriate data source based on user role and context

@@ -20,6 +20,7 @@ import { DevLayoutOverlayProvider } from "@/context/DevLayoutOverlayContext";
 import { DevLayoutRegistryProvider } from "@/context/DevLayoutRegistryContext";
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
 import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
+import GlobalTableShells from "@/components/App/GlobalTableShells";
 import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverlayRoot";
 import { LoadingStateProvider } from "@/context/LoadingStateContext";
 import { SWRConfig } from "swr"; // global SWR cache and revalidation config
@@ -200,6 +201,7 @@ function AppWrapper({ Component, pageProps }) {
   return (
     <LoadingStateProvider value={{ isLoading: isGlobalLoading }}>
       <GlobalDraftPersistence />
+      <GlobalTableShells />
       <Component {...pageProps} />
       {!hideNotesWidget && <GlobalNotesWidget />}
       <DevLayoutOverlayRoot />

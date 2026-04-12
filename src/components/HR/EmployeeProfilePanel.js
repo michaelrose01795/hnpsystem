@@ -77,10 +77,9 @@ export default function EmployeeProfilePanel({ employee }) {
     employee.status,
   ].filter(Boolean);
 
-  const keycloakLabel = employee.keycloakId ? `Keycloak: ${employee.keycloakId}` : "Keycloak ID not set";
-
+  const profileParentKey = "hr-employee-profile-panel";
   const handleCopy = async (value) => {
-    if (!value) return;
+    if (!value || typeof navigator === "undefined" || !navigator.clipboard?.writeText) return;
     try {
       await navigator.clipboard.writeText(value);
     } catch (err) {
@@ -88,15 +87,22 @@ export default function EmployeeProfilePanel({ employee }) {
     }
   };
 
-  const profileParentKey = "hr-employees-detail-panel";
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <DevLayoutSection
+      sectionKey="hr-employee-profile-panel"
+      parentKey="hr-employees-detail-panel"
+      sectionType="section-shell"
+      shell
+      disableFallback
+      className="hr-employee-profile-panel"
+      style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+    >
       <DevLayoutSection
         sectionKey="hr-employee-profile-header"
         parentKey={profileParentKey}
         sectionType="content-card"
         backgroundToken="surface"
+        className="hr-employee-profile-header-card"
         style={{ ...panelCardStyle, padding: "20px", position: "relative" }}
       >
         <button
@@ -152,28 +158,6 @@ export default function EmployeeProfilePanel({ employee }) {
               ))
             )}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{keycloakLabel}</span>
-            {employee.keycloakId && (
-              <button
-                type="button"
-                onClick={() => handleCopy(employee.keycloakId)}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "var(--radius-pill)",
-                  border: "none",
-                  background: "transparent",
-                  color: "var(--primary)",
-                  fontSize: "0.7rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-                aria-label="Copy Keycloak ID"
-              >
-                Copy
-              </button>
-            )}
-          </div>
         </div>
       </DevLayoutSection>
 
@@ -182,12 +166,12 @@ export default function EmployeeProfilePanel({ employee }) {
         sectionKey="hr-employee-profile-sections"
         parentKey={profileParentKey}
         sectionType="section-shell"
+        className="hr-employee-profile-sections"
         style={{ display: "grid", gap: "16px" }}
       >
-        <CardBlock title="Role & Access" icon="RA" sectionKey="hr-employee-role-access" parentKey="hr-employee-profile-sections">
+        <CardBlock title="Role & Access" sectionKey="hr-employee-role-access" parentKey="hr-employee-profile-sections">
           <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
             <KeyValue label="Role (Permissions)" value={employee.role} sectionKey="hr-employee-role" parentKey="hr-employee-role-access" />
-            <KeyValue label="Keycloak ID" value={employee.keycloakId} sectionKey="hr-employee-keycloak" parentKey="hr-employee-role-access" />
             <KeyValue label="Job Title" value={employee.jobTitle} sectionKey="hr-employee-job-title" parentKey="hr-employee-role-access" />
             <KeyValue label="Department" value={employee.department} sectionKey="hr-employee-department" parentKey="hr-employee-role-access" />
             <KeyValue
@@ -203,7 +187,7 @@ export default function EmployeeProfilePanel({ employee }) {
           </div>
         </CardBlock>
 
-        <CardBlock title="Tenure & Probation" icon="TP" sectionKey="hr-employee-tenure-probation" parentKey="hr-employee-profile-sections">
+        <CardBlock title="Tenure & Probation" sectionKey="hr-employee-tenure-probation" parentKey="hr-employee-profile-sections">
           <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             <KeyValue
               label="Start Date"
@@ -222,12 +206,13 @@ export default function EmployeeProfilePanel({ employee }) {
           </div>
         </CardBlock>
 
-        <CardBlock title="Compensation & Hours" icon="CH" sectionKey="hr-employee-compensation-hours" parentKey="hr-employee-profile-sections">
+        <CardBlock title="Compensation & Hours" sectionKey="hr-employee-compensation-hours" parentKey="hr-employee-profile-sections">
           <div style={{ display: "grid", gap: "12px" }}>
             <DevLayoutSection
               sectionKey="hr-employee-basic-salary"
               parentKey="hr-employee-compensation-hours"
               sectionType="stat-card"
+              className="hr-employee-basic-salary-card"
               style={{
                 borderRadius: "var(--radius-md)",
                 border: "none",
@@ -247,7 +232,7 @@ export default function EmployeeProfilePanel({ employee }) {
           </div>
         </CardBlock>
 
-        <CardBlock title="Contact Information" icon="CI" sectionKey="hr-employee-contact-information" parentKey="hr-employee-profile-sections">
+        <CardBlock title="Contact Information" sectionKey="hr-employee-contact-information" parentKey="hr-employee-profile-sections">
           <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             <KeyValue
               label="Email"
@@ -306,7 +291,7 @@ export default function EmployeeProfilePanel({ employee }) {
           </div>
         </CardBlock>
 
-        <CardBlock title="Documents" icon="DOC" action={null} sectionKey="hr-employee-documents" parentKey="hr-employee-profile-sections">
+        <CardBlock title="Documents" action={null} sectionKey="hr-employee-documents" parentKey="hr-employee-profile-sections">
           <DevLayoutSection
             as="button"
             sectionKey="hr-employee-upload-document"
@@ -403,11 +388,11 @@ export default function EmployeeProfilePanel({ employee }) {
         jobId={null}
         userId={employee?.userId || null}
       />
-    </div>
+    </DevLayoutSection>
   );
 }
 
-function CardBlock({ title, icon, action = null, children, sectionKey, parentKey }) {
+function CardBlock({ title, action = null, children, sectionKey, parentKey }) {
   return (
     <DevLayoutSection
       as="section"
@@ -415,28 +400,11 @@ function CardBlock({ title, icon, action = null, children, sectionKey, parentKey
       parentKey={parentKey}
       sectionType="content-card"
       backgroundToken="surface"
+      className="hr-employee-card-block"
       style={sectionCardStyle}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "var(--radius-xs)",
-              display: "grid",
-              placeItems: "center",
-              background: "rgba(var(--primary-rgb), 0.15)",
-              color: "var(--primary)",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-            }}
-          >
-            {icon}
-          </span>
-          <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)" }}>{title}</div>
-        </div>
+        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)" }}>{title}</div>
         {action}
       </div>
       {children}
@@ -452,6 +420,7 @@ function KeyValue({ label, value, helper, actions, sectionKey, parentKey }) {
       parentKey={parentKey}
       sectionType="content-card"
       backgroundToken="surface"
+      className="hr-employee-key-value"
       style={{ display: "flex", flexDirection: "column", gap: "6px" }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}>

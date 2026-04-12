@@ -3,10 +3,10 @@
 // Shows HR overview metrics, upcoming absences, training renewals, and active warnings
 
 import React, { useMemo } from "react";
-import Link from "next/link";
 import { useHrDashboardData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { MetricCard, StatusTag } from "@/components/HR/MetricCard"; // metric display and status badge components
+import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
 export default function HRDashboardTab() {
   const { data, isLoading, error } = useHrDashboardData();
@@ -42,13 +42,7 @@ export default function HRDashboardTab() {
   }, [hrDashboardMetrics]);
 
   if (isLoading) {
-    return (
-      <SectionCard title="Loading dashboard…" subtitle="Fetching HR overview data.">
-        <span style={{ color: "var(--info)" }}>
-          Please wait while we pull the latest HR metrics from Supabase…
-        </span>
-      </SectionCard>
-    );
+    return <HrTabLoadingSkeleton variant="dashboard" />;
   }
 
   if (error) {

@@ -291,7 +291,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
             throw new Error(`Profile preference load failed (${response.status})`);
           }
           const payload = await response.json().catch(() => null);
-          data = payload?.profile || null;
+          data = payload?.data?.profile || payload?.profile || null;
         }
 
         if (!cancelled && data) {

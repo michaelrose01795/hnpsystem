@@ -4,6 +4,7 @@ import React from "react";
 import { useHrAttendanceData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
+import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
 const buttonStyleSecondary = {
   padding: "var(--control-padding)",
@@ -23,11 +24,7 @@ export default function AttendanceTab() {
   const absenceRecords = data?.absenceRecords ?? [];
 
   if (isLoading) {
-    return (
-      <SectionCard title="Loading attendance" subtitle="Fetching clocking data.">
-        <span style={{ color: "var(--info)" }}>Pulling attendance data from Supabase.</span>
-      </SectionCard>
-    );
+    return <HrTabLoadingSkeleton />;
   }
 
   if (error) {

@@ -563,7 +563,6 @@ export default function StatusSidebar({
                     backgroundColor: 'rgba(var(--surface-rgb), 0.14)',
                     border: '1px solid rgba(var(--surface-rgb), 0.24)',
                     overflow: 'hidden',
-                    backdropFilter: 'blur(8px)',
                   }}
                 >
                   {isSearchLoading ? (

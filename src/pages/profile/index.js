@@ -34,17 +34,14 @@ function AccentOptionContent({ label, light, dark }) {
           height: "12px",
           borderRadius: "var(--radius-pill)",
           border: "1px solid rgba(var(--text-primary-rgb), 0.2)",
-          background: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)`,
+          background: light,
           flexShrink: 0,
         }}
       />
       <span
         style={{
           fontWeight: 700,
-          background: `linear-gradient(90deg, ${light} 0 50%, ${dark} 50% 100%)`,
-          WebkitBackgroundClip: "text",
-          backgroundClip: "text",
-          color: "transparent",
+          color: dark,
           lineHeight: 1.1,
         }}
       >

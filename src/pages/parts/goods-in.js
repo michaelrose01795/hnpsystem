@@ -792,7 +792,6 @@ function GoodsInPage() {
           border: 1px solid var(--surface-light);
           background: rgba(var(--surface-rgb), 0.98);
           box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
-          backdrop-filter: blur(12px);
         }
         .bin-suggestion-button:hover,
         .bin-suggestion-button:focus-visible {

@@ -299,7 +299,6 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.48);
-  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -499,7 +498,7 @@
 
 .skeletonRow { /* // skeleton shimmer row */
   height: 16px; /* // row height */
-  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.4), rgba(255,255,255,0)); /* // shimmer gradient */
+  background: rgba(255,255,255,0.24); /* // static fill replaces gradient */
   animation: shimmer 1.4s infinite; /* // animate shimmer */
   border-radius: var(--radius-pill); /* // pill shape */
 } /* // end skeletonRow */

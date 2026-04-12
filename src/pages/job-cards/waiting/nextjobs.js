@@ -2079,7 +2079,6 @@ export default function NextJobsPage() {
               border: "1px solid rgba(var(--primary-rgb), 0.28)",
               background: "rgba(255, 255, 255, 0.96)",
               boxShadow: "0 12px 28px rgba(0, 0, 0, 0.16)",
-              backdropFilter: "blur(8px)",
             }}
           >
             <div

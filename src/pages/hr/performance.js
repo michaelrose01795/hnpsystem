@@ -5,6 +5,7 @@ import Layout from "@/components/Layout"; // shared layout shell with navigation
 import { useHrOperationsData } from "@/hooks/useHrData"; // aggregated HR hook backed by Supabase
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
+import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
@@ -14,13 +15,7 @@ function PerformanceContent() {
   const performanceReviews = data?.performanceReviews ?? [];
 
   if (isLoading) {
-    return (
-      <div style={{ padding: "8px 8px 32px" }}>
-        <SectionCard title="Loading performance data" subtitle="Fetching placeholder employee list.">
-          <span style={{ color: "var(--info)" }}>Gathering live performance records from Supabase.</span>
-        </SectionCard>
-      </div>
-    );
+    return <HrTabLoadingSkeleton />;
   }
 
   if (error) {

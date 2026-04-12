@@ -18,10 +18,8 @@ export function SkeletonBlock({ width = "100%", height = "20px", borderRadius = 
         width,
         height,
         borderRadius,
-        background:
-          "linear-gradient(90deg, var(--surface-light, #e0e0e0) 25%, var(--surface, #f0f0f0) 50%, var(--surface-light, #e0e0e0) 75%)",
-        backgroundSize: "200% 100%",
-        animation: "shimmer 1.5s ease-in-out infinite",
+        background: "var(--surface-light, #e0e0e0)",
+        animation: "skeleton-pulse 1.5s ease-in-out infinite",
       }}
     />
   );
@@ -67,12 +65,604 @@ export function SkeletonTableRow({ cols = 5 }) {
 // Shimmer keyframes injected once per mount — safe to render multiple copies, browsers dedupe.
 export function SkeletonKeyframes() {
   return (
-    <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+    <style>{`@keyframes skeleton-pulse { 0% { opacity: 0.72; } 50% { opacity: 1; } 100% { opacity: 0.72; } }`}</style>
   );
 }
 
-const SHIMMER_BG =
-  "linear-gradient(90deg, var(--surface-light, #e0e0e0) 25%, var(--surface, #f0f0f0) 50%, var(--surface-light, #e0e0e0) 75%)";
+const SHIMMER_BG = "var(--surface-light, #e0e0e0)";
+
+function DashboardSectionCardSkeleton({
+  titleWidth = "180px",
+  subtitleWidth = "240px",
+  cardCount = 4,
+  minCardWidth = "180px",
+  sectionHeight = "auto",
+}) {
+  return (
+    <div
+      style={{
+        background: "var(--surface)",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid var(--accent-base)",
+        padding: "20px",
+        minHeight: sectionHeight,
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "18px" }}>
+        <SkeletonBlock width={titleWidth} height="18px" borderRadius="6px" />
+        <SkeletonBlock width={subtitleWidth} height="12px" borderRadius="6px" />
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gap: "16px",
+          gridTemplateColumns: `repeat(auto-fit, minmax(${minCardWidth}, 1fr))`,
+        }}
+      >
+        {Array.from({ length: cardCount }).map((_, index) => (
+          <div
+            key={index}
+            style={{
+              background: "var(--danger-surface, rgba(var(--primary-rgb), 0.08))",
+              borderRadius: "var(--radius-md)",
+              padding: "16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            <SkeletonBlock width="48%" height="12px" borderRadius="6px" />
+            <SkeletonBlock width="64%" height="28px" borderRadius="8px" />
+            <SkeletonBlock width="72%" height="12px" borderRadius="6px" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DashboardFallbackSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px", minHeight: 640 }}>
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--accent-base)",
+          padding: "20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+        }}
+      >
+        <SkeletonBlock width="170px" height="12px" borderRadius="999px" />
+        <SkeletonBlock width="260px" height="28px" borderRadius="8px" />
+        <SkeletonBlock width="220px" height="14px" borderRadius="6px" />
+      </div>
+
+      <DashboardSectionCardSkeleton
+        titleWidth="210px"
+        subtitleWidth="320px"
+        cardCount={8}
+        minCardWidth="180px"
+      />
+
+      <DashboardSectionCardSkeleton
+        titleWidth="190px"
+        subtitleWidth="300px"
+        cardCount={4}
+        minCardWidth="240px"
+      />
+
+      <div
+        style={{
+          display: "grid",
+          gap: "20px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+        }}
+      >
+        <DashboardSectionCardSkeleton
+          titleWidth="180px"
+          subtitleWidth="220px"
+          cardCount={3}
+          minCardWidth="100%"
+          sectionHeight="100%"
+        />
+        <DashboardSectionCardSkeleton
+          titleWidth="170px"
+          subtitleWidth="240px"
+          cardCount={3}
+          minCardWidth="100%"
+          sectionHeight="100%"
+        />
+      </div>
+    </div>
+  );
+}
+
+// Default fallback: assume the page's first main section is card-based (stat
+// cards, tiles, or content cards). We render a header strip, a row of metric
+// cards, and a responsive grid of 6 content-card skeletons — so each card
+// inside the first section appears as its own skeleton item instead of one
+// generic block + table.
+function DefaultFallbackSkeleton({ fallbackMinHeight, cardCount = 6, metricCount = 4 }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px", minHeight: fallbackMinHeight }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "16px",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <SkeletonBlock width="180px" height="20px" borderRadius="8px" />
+          <SkeletonBlock width="260px" height="12px" borderRadius="6px" />
+        </div>
+        <SkeletonBlock width="140px" height="36px" borderRadius="999px" />
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gap: "12px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+        }}
+      >
+        {Array.from({ length: metricCount }).map((_, i) => (
+          <SkeletonMetricCard key={i} />
+        ))}
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gap: "16px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+        }}
+      >
+        {Array.from({ length: cardCount }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--accent-base)",
+              borderRadius: "var(--radius-md)",
+              padding: "18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              minHeight: "140px",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+              <SkeletonBlock width="55%" height="14px" borderRadius="6px" />
+              <SkeletonBlock width="36px" height="36px" borderRadius="10px" />
+            </div>
+            <SkeletonBlock width="72%" height="22px" borderRadius="8px" />
+            <SkeletonBlock width="90%" height="12px" borderRadius="6px" />
+            <SkeletonBlock width="64%" height="12px" borderRadius="6px" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AuthFallbackSkeleton({ fallbackMinHeight }) {
+  return (
+    <div
+      style={{
+        minHeight: Math.max(fallbackMinHeight, 620),
+        display: "grid",
+        placeItems: "center",
+        padding: "24px 0",
+      }}
+    >
+      <div
+        style={{
+          width: "min(460px, 100%)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px",
+          alignItems: "center",
+        }}
+      >
+        <SkeletonBlock width="180px" height="56px" borderRadius="18px" />
+        <div
+          style={{
+            width: "100%",
+            background: "var(--surface)",
+            borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--accent-base)",
+            padding: "24px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "18px",
+          }}
+        >
+          <SkeletonBlock width="90px" height="24px" borderRadius="8px" />
+          <SkeletonBlock width="100%" height="52px" borderRadius="14px" />
+          <SkeletonBlock width="100%" height="52px" borderRadius="14px" />
+          <SkeletonBlock width="100%" height="46px" borderRadius="999px" />
+          <SkeletonBlock width="58%" height="12px" borderRadius="6px" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SplitPaneFallbackSkeleton({ fallbackMinHeight }) {
+  return (
+    <div
+      style={{
+        minHeight: Math.max(fallbackMinHeight, 620),
+        display: "grid",
+        gap: "20px",
+        gridTemplateColumns: "minmax(260px, 360px) minmax(0, 1fr)",
+      }}
+    >
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--accent-base)",
+          padding: "18px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+        }}
+      >
+        <SkeletonBlock width="100%" height="42px" borderRadius="12px" />
+        {Array.from({ length: 7 }).map((_, index) => (
+          <div
+            key={index}
+            style={{
+              borderRadius: "var(--radius-md)",
+              background: "rgba(var(--primary-rgb), 0.08)",
+              padding: "14px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+            }}
+          >
+            <SkeletonBlock width="42%" height="12px" borderRadius="6px" />
+            <SkeletonBlock width="68%" height="16px" borderRadius="6px" />
+            <SkeletonBlock width="56%" height="10px" borderRadius="6px" />
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--accent-base)",
+          padding: "18px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+          <SkeletonBlock width="160px" height="18px" borderRadius="8px" />
+          <SkeletonBlock width="110px" height="34px" borderRadius="999px" />
+        </div>
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div
+            key={index}
+            style={{
+              alignSelf: index % 2 === 0 ? "flex-start" : "flex-end",
+              width: index % 2 === 0 ? "72%" : "64%",
+              borderRadius: "18px",
+              background: "rgba(var(--primary-rgb), 0.08)",
+              padding: "14px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+            }}
+          >
+            <SkeletonBlock width="74%" height="12px" borderRadius="6px" />
+            <SkeletonBlock width="92%" height="12px" borderRadius="6px" />
+            <SkeletonBlock width="36%" height="10px" borderRadius="6px" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ToolbarTableFallbackSkeleton({ fallbackMinHeight, filterCount = 3, rowCount = 8 }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px", minHeight: Math.max(fallbackMinHeight, 560) }}>
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--accent-base)",
+          padding: "16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <SkeletonBlock width="180px" height="38px" borderRadius="999px" />
+          <SkeletonBlock width="min(420px, 100%)" height="38px" borderRadius="12px" />
+          {Array.from({ length: filterCount }).map((_, index) => (
+            <SkeletonBlock key={index} width="150px" height="38px" borderRadius="12px" />
+          ))}
+        </div>
+      </div>
+
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--accent-base)",
+          padding: "16px",
+        }}
+      >
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <tbody>
+            {Array.from({ length: rowCount }).map((_, i) => (
+              <SkeletonTableRow key={i} cols={5} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function DetailPageFallbackSkeleton({ fallbackMinHeight }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px", minHeight: Math.max(fallbackMinHeight, 620) }}>
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--accent-base)",
+          padding: "20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+        }}
+      >
+        <SkeletonBlock width="120px" height="12px" borderRadius="999px" />
+        <SkeletonBlock width="260px" height="28px" borderRadius="8px" />
+        <SkeletonBlock width="180px" height="14px" borderRadius="6px" />
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gap: "18px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+        }}
+      >
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            style={{
+              background: "var(--surface)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--accent-base)",
+              padding: "18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            <SkeletonBlock width="48%" height="14px" borderRadius="6px" />
+            <SkeletonBlock width="84%" height="18px" borderRadius="8px" />
+            <SkeletonBlock width="76%" height="12px" borderRadius="6px" />
+            <SkeletonBlock width="62%" height="12px" borderRadius="6px" />
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--accent-base)",
+          padding: "18px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+        }}
+      >
+        <SkeletonBlock width="190px" height="18px" borderRadius="8px" />
+        {Array.from({ length: 6 }).map((_, index) => (
+          <SkeletonBlock key={index} width={index % 2 === 0 ? "100%" : "92%"} height="14px" borderRadius="6px" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StatsGridFallbackSkeleton({ fallbackMinHeight }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px", minHeight: Math.max(fallbackMinHeight, 620) }}>
+      <div
+        style={{
+          display: "grid",
+          gap: "16px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+        }}
+      >
+        {Array.from({ length: 6 }).map((_, index) => (
+          <SkeletonMetricCard key={index} />
+        ))}
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gap: "20px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+        }}
+      >
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            style={{
+              background: "var(--surface)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--accent-base)",
+              padding: "18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            <SkeletonBlock width="52%" height="16px" borderRadius="8px" />
+            <SkeletonBlock width="100%" height="140px" borderRadius="14px" />
+            <SkeletonBlock width="68%" height="12px" borderRadius="6px" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CustomerPortalFallbackSkeleton({ fallbackMinHeight }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px", minHeight: Math.max(fallbackMinHeight, 560) }}>
+      <div
+        style={{
+          display: "grid",
+          gap: "16px",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+        }}
+      >
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={index}
+            style={{
+              background: "var(--surface)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--accent-base)",
+              padding: "18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            <SkeletonBlock width="44%" height="10px" borderRadius="999px" />
+            <SkeletonBlock width="72%" height="18px" borderRadius="8px" />
+            <SkeletonBlock width="56%" height="12px" borderRadius="6px" />
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid var(--accent-base)",
+          padding: "20px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+        }}
+      >
+        <SkeletonBlock width="180px" height="20px" borderRadius="8px" />
+        <div
+          style={{
+            display: "grid",
+            gap: "14px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          }}
+        >
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              style={{
+                background: "rgba(var(--primary-rgb), 0.08)",
+                borderRadius: "var(--radius-md)",
+                padding: "16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              <SkeletonBlock width="48%" height="12px" borderRadius="6px" />
+              <SkeletonBlock width="80%" height="16px" borderRadius="8px" />
+              <SkeletonBlock width="62%" height="12px" borderRadius="6px" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function resolveFallbackVariant(route = "") {
+  const normalizedRoute = String(route || "").toLowerCase();
+
+  if (normalizedRoute.startsWith("/login")) return "auth";
+  if (normalizedRoute.startsWith("/customer")) return "customer";
+  if (normalizedRoute.startsWith("/messages")) return "split-pane";
+  if (normalizedRoute.startsWith("/dashboard")) return "dashboard";
+  if (normalizedRoute.startsWith("/clocking")) return "stats-grid";
+  if (normalizedRoute.startsWith("/tracking")) return "stats-grid";
+  if (normalizedRoute.startsWith("/hr")) return "dashboard";
+  if (normalizedRoute.startsWith("/admin")) return "dashboard";
+  if (normalizedRoute.startsWith("/appointments")) return "stats-grid";
+  if (normalizedRoute.startsWith("/workshop")) return "stats-grid";
+  if (normalizedRoute.startsWith("/tech")) return "stats-grid";
+  if (normalizedRoute.startsWith("/profile")) return "detail";
+  if (normalizedRoute.startsWith("/job-cards/view")) return "toolbar-table";
+  if (normalizedRoute.startsWith("/job-cards/archive")) return "toolbar-table";
+  if (normalizedRoute.startsWith("/accounts")) {
+    if (/\[(accountid|invoiceid)\]/.test(normalizedRoute) || /\/(view|transactions|invoices)\//.test(normalizedRoute)) {
+      return "detail";
+    }
+    return "toolbar-table";
+  }
+  if (normalizedRoute.startsWith("/parts")) {
+    if (/\/\[[^/]+\]/.test(normalizedRoute) || /\/(deliveries|goods-in|create-order)\//.test(normalizedRoute)) {
+      return "detail";
+    }
+    return "toolbar-table";
+  }
+  if (normalizedRoute.startsWith("/job-cards/")) {
+    if (normalizedRoute.includes("/create")) return "detail";
+    if (normalizedRoute.includes("/myjobs")) return "detail";
+    if (/\/job-cards\/[^/]+$/.test(normalizedRoute) || /\/\[[^/]+\]/.test(normalizedRoute)) {
+      return "detail";
+    }
+  }
+
+  return "default";
+}
+
+function RouteFallbackSkeleton({ route, fallbackMinHeight }) {
+  const variant = resolveFallbackVariant(route);
+
+  switch (variant) {
+    case "auth":
+      return <AuthFallbackSkeleton fallbackMinHeight={fallbackMinHeight} />;
+    case "customer":
+      return <CustomerPortalFallbackSkeleton fallbackMinHeight={fallbackMinHeight} />;
+    case "split-pane":
+      return <SplitPaneFallbackSkeleton fallbackMinHeight={fallbackMinHeight} />;
+    case "dashboard":
+      return <DashboardFallbackSkeleton />;
+    case "toolbar-table":
+      return <ToolbarTableFallbackSkeleton fallbackMinHeight={fallbackMinHeight} />;
+    case "detail":
+      return <DetailPageFallbackSkeleton fallbackMinHeight={fallbackMinHeight} />;
+    case "stats-grid":
+      return <StatsGridFallbackSkeleton fallbackMinHeight={fallbackMinHeight} />;
+    default:
+      return <DefaultFallbackSkeleton fallbackMinHeight={fallbackMinHeight} />;
+  }
+}
 
 // Render shimmer placeholders at the exact rectangles captured for the given route.
 // Used by Layout.js / CustomerLayout.js as an inline replacement for {children}
@@ -82,8 +672,9 @@ export function PageContentSkeleton({ route, fallbackMinHeight = 480 }) {
   const fingerprint = route ? getLayoutFingerprint(route) : null;
 
   if (!fingerprint || !fingerprint.blocks?.length) {
-    // No cached fingerprint yet — first visit to this route. Render the generic
-    // metric/table skeleton inline so the user still sees the global loading style.
+    // No cached fingerprint yet — first visit to this route. Use a route-aware
+    // fallback so high-value pages like the dashboard still load with card-level
+    // placeholders instead of a single generic page block.
     return (
       <div
         className="page-content-skeleton page-content-skeleton--fallback"
@@ -93,31 +684,7 @@ export function PageContentSkeleton({ route, fallbackMinHeight = 480 }) {
         style={{ padding: "8px 0", minHeight: fallbackMinHeight }}
       >
         <SkeletonKeyframes />
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-            <SkeletonMetricCard />
-            <SkeletonMetricCard />
-            <SkeletonMetricCard />
-            <SkeletonMetricCard />
-          </div>
-          <SkeletonBlock width="100%" height="48px" borderRadius="10px" />
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--accent-base)",
-              padding: "16px",
-            }}
-          >
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <tbody>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <SkeletonTableRow key={i} cols={5} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <RouteFallbackSkeleton route={route} fallbackMinHeight={fallbackMinHeight} />
       </div>
     );
   }

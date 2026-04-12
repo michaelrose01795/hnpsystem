@@ -10,6 +10,18 @@ const fingerprintCache = new Map();
 const MIN_BLOCK_WIDTH = 24;
 const MIN_BLOCK_HEIGHT = 18;
 
+// Wrapper types that typically contain smaller cards/tiles. We want the skeleton
+// to show the inner cards, not the wrapper itself — otherwise the first section
+// renders as one big shimmer block instead of a card grid.
+const WRAPPER_SECTION_TYPES = new Set([
+  "page-shell",
+  "section-shell",
+  "section-stack",
+  "content-stack",
+  "tab-panel",
+  "data-table-shell",
+]);
+
 // Capture the layout of every meaningful section inside the given container.
 // Prefers DevLayoutSection-annotated nodes (every page-shell wraps content in them);
 // falls back to direct children of common content stacks for pages that don't.
@@ -23,11 +35,12 @@ export function captureLayoutFingerprint(container) {
   // (page shells, section shells, content cards, stat cards) that pages register.
   let candidates = Array.from(container.querySelectorAll("[data-dev-section]"));
 
-  // Strip outer shells so we don't draw a giant skeleton block over the whole page.
+  // Strip wrapper shells so we don't draw a giant skeleton block over the whole
+  // section — we want the inner cards/tiles/rows to render as individual
+  // skeleton placeholders.
   candidates = candidates.filter((el) => {
     const type = el.getAttribute("data-dev-section-type") || "";
-    if (type === "page-shell") return false;
-    return true;
+    return !WRAPPER_SECTION_TYPES.has(type);
   });
 
   // Fallback: walk the immediate children of any .app-page-stack inside the container.
@@ -68,20 +81,22 @@ export function captureLayoutFingerprint(container) {
     });
   });
 
-  // Drop blocks that are fully covered by another (parent) block — keeps only the
-  // visible leaves so we don't double-render shimmer over the same area.
-  const pruned = blocks.filter((block, i) => {
-    return !blocks.some((other, j) => {
-      if (i === j) return false;
-      if (other.width * other.height <= block.width * block.height) return false;
-      return (
-        other.left <= block.left + 1 &&
-        other.top <= block.top + 1 &&
-        other.left + other.width >= block.left + block.width - 1 &&
-        other.top + other.height >= block.top + block.height - 1
-      );
-    });
+  // Keep only leaf blocks — drop any block that fully contains a smaller block.
+  // This gives us the innermost cards/tiles so the skeleton mirrors a card grid
+  // rather than one giant section placeholder.
+  const contains = (outer, inner) =>
+    outer.left <= inner.left + 1 &&
+    outer.top <= inner.top + 1 &&
+    outer.left + outer.width >= inner.left + inner.width - 1 &&
+    outer.top + outer.height >= inner.top + inner.height - 1 &&
+    outer.width * outer.height > inner.width * inner.height;
+
+  let pruned = blocks.filter((block, i) => {
+    return !blocks.some((other, j) => i !== j && contains(block, other));
   });
+
+  // Safety net: if pruning removed everything, fall back to the raw blocks.
+  if (!pruned.length) pruned = blocks;
 
   if (!pruned.length) return null;
 

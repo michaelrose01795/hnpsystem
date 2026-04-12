@@ -13,7 +13,6 @@ export const popupStyleApi = {
     height: "100dvh",
     maxHeight: "100dvh",
     backgroundColor: "var(--overlay)",
-    backdropFilter: "blur(8px)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",

@@ -4,6 +4,7 @@ import React from "react"; // React runtime for the payroll workspace
 import Layout from "@/components/Layout"; // shared layout wrapper
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
 import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
+import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
 function PayrollContent() {
   const { data, isLoading, error } = useHrOperationsData();
@@ -13,15 +14,7 @@ function PayrollContent() {
   const payRateHistory = data?.payRateHistory ?? [];
 
   if (isLoading) {
-    return (
-      <div style={{ padding: "8px 8px 32px" }}>
-        <SectionCard title="Loading payroll data" subtitle="Fetching pay records and overtime.">
-          <span style={{ color: "var(--info)" }}>
-            Please wait while we retrieve placeholder payroll information for testing purposes.
-          </span>
-        </SectionCard>
-      </div>
-    );
+    return <HrTabLoadingSkeleton />;
   }
 
   if (error) {
@@ -190,4 +183,3 @@ const buttonStyleSecondary = {
   fontWeight: 600,
   cursor: "pointer",
 };
-

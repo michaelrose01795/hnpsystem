@@ -6,6 +6,7 @@ import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR a
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
+import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
 function TrainingContent() {
   const { data, isLoading, error } = useHrOperationsData();
@@ -13,15 +14,7 @@ function TrainingContent() {
   const employeeDirectory = data?.employeeDirectory ?? [];
 
   if (isLoading) {
-    return (
-      <div style={{ padding: "8px 8px 32px" }}>
-        <SectionCard title="Loading training data" subtitle="Fetching renewals and directory.">
-          <span style={{ color: "var(--info)" }}>
-            Retrieving placeholder training records to validate the UI flow.
-          </span>
-        </SectionCard>
-      </div>
-    );
+    return <HrTabLoadingSkeleton />;
   }
 
   if (error) {

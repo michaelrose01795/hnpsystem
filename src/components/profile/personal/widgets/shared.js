@@ -64,7 +64,6 @@ export const widgetModalBackdropStyle = {
   position: "fixed",
   inset: 0,
   background: "var(--overlay)",
-  backdropFilter: "blur(6px)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",

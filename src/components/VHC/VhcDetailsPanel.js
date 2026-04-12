@@ -8860,7 +8860,6 @@ export default function VhcDetailsPanel({
         height="720px"
         overlayStyle={{
           background: "rgba(0, 0, 0, 0.6)",
-          backdropFilter: "blur(8px)",
           zIndex: 9999,
           padding: "20px",
         }}

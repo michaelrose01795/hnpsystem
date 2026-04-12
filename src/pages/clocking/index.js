@@ -1067,7 +1067,6 @@ function ClockingOverviewTab({ onSummaryChange }) {
               justifyContent: "center",
               padding: "20px",
               zIndex: 9999,
-              backdropFilter: "blur(8px)",
             }}
             role="dialog"
             aria-modal="true"

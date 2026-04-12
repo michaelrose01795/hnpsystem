@@ -10,6 +10,7 @@ const DevLayoutSection = React.forwardRef(function DevLayoutSection({
   backgroundToken = "",
   widthMode = "",
   shell = false,
+  disableFallback = false,
   className,
   style,
   children,
@@ -47,6 +48,7 @@ const DevLayoutSection = React.forwardRef(function DevLayoutSection({
       data-dev-background-token={backgroundToken}
       data-dev-width-mode={widthMode}
       data-dev-shell={shell ? "1" : "0"}
+      data-dev-disable-fallback={disableFallback ? "1" : undefined}
       className={className}
       style={style}
       {...rest}

@@ -73,8 +73,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
     height: "auto",
     maxWidth: "360px",
     borderRadius: "var(--radius-lg)",
-    backgroundImage:
-      "linear-gradient(180deg, rgba(var(--accent-purple-rgb), 0.12), rgba(var(--accent-purple-rgb), 0.04)), var(--vhc-vehicle-diagram-image)",
+    backgroundImage: "var(--vhc-vehicle-diagram-image)",
     backgroundPosition: "50% 50%",
     backgroundRepeat: "no-repeat",
     backgroundSize: "118% auto",

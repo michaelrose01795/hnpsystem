@@ -101,8 +101,7 @@ export default function TyreDiagram({
     padding: 0,
     borderRadius: "var(--radius-md)",
     backgroundColor: "rgba(var(--accent-purple-rgb), 0.03)",
-    backgroundImage:
-      "linear-gradient(180deg, rgba(var(--accent-purple-rgb), 0.12), rgba(var(--accent-purple-rgb), 0.04)), var(--vhc-vehicle-diagram-image)",
+    backgroundImage: "var(--vhc-vehicle-diagram-image)",
     backgroundPosition: "50% 50%",
     backgroundRepeat: "no-repeat",
     backgroundSize: "118% auto",

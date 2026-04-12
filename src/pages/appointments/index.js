@@ -1464,7 +1464,7 @@ export default function Appointments() {
             borderRadius: "var(--radius-md)",
             border: "var(--control-border)",
             boxShadow: "none",
-            background: "linear-gradient(180deg, var(--page-card-bg-alt) 0%, var(--section-card-bg) 100%)",
+            background: "var(--page-card-bg-alt)",
           }}
         >
           <table
@@ -2008,7 +2008,7 @@ export default function Appointments() {
                   overflowX: "auto",
                   border: "var(--control-border)",
                   borderRadius: "var(--radius-md)",
-                  background: "linear-gradient(180deg, var(--page-card-bg-alt) 0%, var(--section-card-bg) 100%)",
+                  background: "var(--page-card-bg-alt)",
                 }}
               >
                 <table

@@ -6,6 +6,7 @@ import { canUseDevLayoutOverlay } from "@/lib/dev-layout/access";
 const STORAGE_ENABLED_KEY = "hnp-dev-layout-overlay-enabled";
 const STORAGE_MODE_KEY = "hnp-dev-layout-overlay-mode";
 const STORAGE_FULL_SCREEN_KEY = "hnp-dev-layout-overlay-full-screen";
+const STORAGE_LEGACY_MARKERS_KEY = "hnp-dev-layout-overlay-legacy-markers";
 
 const MODES = ["labels", "details", "inspect"];
 
@@ -14,6 +15,7 @@ const DevLayoutOverlayContext = createContext({
   enabled: false,
   mode: "labels",
   fullScreen: false,
+  legacyMarkers: true,
   hydrated: false,
   setEnabled: () => {},
   toggleEnabled: () => {},
@@ -21,6 +23,8 @@ const DevLayoutOverlayContext = createContext({
   cycleMode: () => {},
   setFullScreen: () => {},
   toggleFullScreen: () => {},
+  setLegacyMarkers: () => {},
+  toggleLegacyMarkers: () => {},
 });
 
 const isTextInputTarget = (target) => {
@@ -37,6 +41,7 @@ export function DevLayoutOverlayProvider({ children }) {
   const [enabled, setEnabled] = useState(false);
   const [mode, setModeState] = useState("labels");
   const [fullScreen, setFullScreen] = useState(false);
+  const [legacyMarkers, setLegacyMarkers] = useState(true);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -46,6 +51,7 @@ export function DevLayoutOverlayProvider({ children }) {
       setEnabled(false);
       setModeState("labels");
       setFullScreen(false);
+      setLegacyMarkers(true);
       setHydrated(true);
       return;
     }
@@ -53,12 +59,14 @@ export function DevLayoutOverlayProvider({ children }) {
     const storedEnabled = window.localStorage.getItem(STORAGE_ENABLED_KEY) === "1";
     const storedMode = window.localStorage.getItem(STORAGE_MODE_KEY);
     const storedFullScreen = window.localStorage.getItem(STORAGE_FULL_SCREEN_KEY) === "1";
+    const storedLegacyMarkers = window.localStorage.getItem(STORAGE_LEGACY_MARKERS_KEY);
 
     setEnabled(storedEnabled);
     if (MODES.includes(storedMode)) {
       setModeState(storedMode);
     }
     setFullScreen(storedFullScreen);
+    setLegacyMarkers(storedLegacyMarkers !== "0");
     setHydrated(true);
   }, [canAccess]);
 
@@ -78,6 +86,11 @@ export function DevLayoutOverlayProvider({ children }) {
   }, [fullScreen, canAccess, hydrated]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !canAccess || !hydrated) return;
+    window.localStorage.setItem(STORAGE_LEGACY_MARKERS_KEY, legacyMarkers ? "1" : "0");
+  }, [legacyMarkers, canAccess, hydrated]);
+
+  useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
 
@@ -85,19 +98,22 @@ export function DevLayoutOverlayProvider({ children }) {
       root.removeAttribute("data-dev-overlay-enabled");
       root.removeAttribute("data-dev-overlay-mode");
       root.removeAttribute("data-dev-overlay-scope");
+      root.removeAttribute("data-dev-overlay-legacy-markers");
       return;
     }
 
     root.setAttribute("data-dev-overlay-enabled", "true");
     root.setAttribute("data-dev-overlay-mode", mode);
     root.setAttribute("data-dev-overlay-scope", fullScreen ? "full-screen" : "page-shell");
+    root.setAttribute("data-dev-overlay-legacy-markers", legacyMarkers ? "true" : "false");
 
     return () => {
       root.removeAttribute("data-dev-overlay-enabled");
       root.removeAttribute("data-dev-overlay-mode");
       root.removeAttribute("data-dev-overlay-scope");
+      root.removeAttribute("data-dev-overlay-legacy-markers");
     };
-  }, [canAccess, enabled, mode, fullScreen]);
+  }, [canAccess, enabled, mode, fullScreen, legacyMarkers]);
 
   const setMode = useCallback((nextMode) => {
     if (!MODES.includes(nextMode)) return;
@@ -117,6 +133,10 @@ export function DevLayoutOverlayProvider({ children }) {
 
   const toggleFullScreen = useCallback(() => {
     setFullScreen((current) => !current);
+  }, []);
+
+  const toggleLegacyMarkers = useCallback(() => {
+    setLegacyMarkers((current) => !current);
   }, []);
 
   useEffect(() => {
@@ -147,6 +167,7 @@ export function DevLayoutOverlayProvider({ children }) {
       enabled: canAccess ? enabled : false,
       mode,
       fullScreen: canAccess ? fullScreen : false,
+      legacyMarkers: canAccess ? legacyMarkers : true,
       hydrated,
       setEnabled,
       toggleEnabled,
@@ -154,8 +175,10 @@ export function DevLayoutOverlayProvider({ children }) {
       cycleMode,
       setFullScreen,
       toggleFullScreen,
+      setLegacyMarkers,
+      toggleLegacyMarkers,
     }),
-    [canAccess, enabled, mode, fullScreen, hydrated, toggleEnabled, setMode, cycleMode, toggleFullScreen]
+    [canAccess, enabled, mode, fullScreen, legacyMarkers, hydrated, toggleEnabled, setMode, cycleMode, toggleFullScreen, toggleLegacyMarkers]
   );
 
   return <DevLayoutOverlayContext.Provider value={value}>{children}</DevLayoutOverlayContext.Provider>;

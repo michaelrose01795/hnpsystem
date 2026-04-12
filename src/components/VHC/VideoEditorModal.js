@@ -423,10 +423,7 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
                 borderRadius: "var(--radius-xs)",
                 outline: "none",
                 appearance: "none",
-                background: `linear-gradient(to right,
-                  var(--accent-purple-surface) 0%,
-                  var(--primary) ${(currentTime / duration) * 100}%,
-                  var(--accent-purple-surface) ${(currentTime / duration) * 100}%)`,
+                background: "var(--accent-purple-surface)",
               }}
             />
           </div>

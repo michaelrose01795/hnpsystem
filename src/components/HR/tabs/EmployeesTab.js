@@ -12,6 +12,7 @@ import { roleCategories } from "@/config/users";
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
 import { DropdownField } from "@/components/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
 
@@ -81,7 +82,6 @@ const SAMPLE_PAYLOAD_FIELD_MAP = {
   "annual salary (£)": "annualSalary",
   "payroll reference": "payrollNumber",
   "national insurance no.": "nationalInsurance",
-  "keycloak user id": "keycloakId",
   "home address": "address",
   "emergency contact": "emergencyContact",
 };
@@ -104,7 +104,6 @@ const DB_COLUMN_TO_FORM_FIELD = {
   annual_salary: "annualSalary",
   payroll_reference: "payrollNumber",
   national_insurance_number: "nationalInsurance",
-  keycloak_user_id: "keycloakId",
   home_address: "address",
   emergency_contact: "emergencyContact",
 };
@@ -128,7 +127,6 @@ const FIELD_SECTION_MAP = {
   annualSalary: "compensation",
   payrollNumber: "compensation",
   nationalInsurance: "compensation",
-  keycloakId: "system",
   address: "address",
   emergencyContact: "emergency",
 };
@@ -137,12 +135,11 @@ const SECTION_LABELS = {
   personal: "Personal details",
   employment: "Employment details",
   compensation: "Pay & compensation",
-  system: "System",
   address: "Home address",
   emergency: "Emergency contact",
 };
 
-const SECTION_ORDER = ["personal", "employment", "compensation", "system", "address", "emergency"];
+const SECTION_ORDER = ["personal", "employment", "compensation", "address", "emergency"];
 
 function calculateBasicSalary(contractedHours, hourlyRate) {
   const hours = Number(contractedHours);
@@ -688,25 +685,32 @@ export default function EmployeesTab() {
   );
 
   const directorySection = (
-    <section
+    <DevLayoutSection
+      as="section"
       ref={directorySectionRef}
+      sectionKey="hr-employees-workspace"
+      parentKey="hr-manager-tab-employees"
+      sectionType="section-shell"
+      shell
       className="hr-employees-layout"
     >
-      <SectionCard
-        sectionKey="hr-employees-directory-card"
-        parentKey="hr-employees-directory"
-        sectionType="content-card"
-        backgroundToken="surface"
-        className="hr-employees-directory-card"
-        title=""
-        subtitle={null}
-        action={
-          <DevLayoutSection
-            sectionKey="hr-employees-directory-toolbar"
-            parentKey="hr-employees-directory-card"
-            sectionType="filter-row"
-            className="hr-employees-directory-toolbar"
-          >
+      <DevLayoutSection
+        sectionKey="hr-employees-directory"
+        parentKey="hr-employees-workspace"
+        sectionType="section-shell"
+        shell
+        className="hr-employees-directory-shell"
+      >
+        <SectionCard
+          sectionKey="hr-employees-directory-card"
+          parentKey="hr-employees-directory"
+          sectionType="content-card"
+          backgroundToken="surface"
+          className="hr-employees-directory-card"
+          title=""
+          subtitle={null}
+        >
+          <div className="hr-employees-directory-toolbar">
             <div className="hr-employees-search">
               <input
                 type="text"
@@ -715,21 +719,29 @@ export default function EmployeesTab() {
                 placeholder="Search by employee name..."
                 className="hr-employees-search-input"
               />
-              <span
-                className="hr-employees-search-meta"
-              >
+              <span className="hr-employees-search-meta">
                 {filteredEmployees.length} of {employees.length} employees
               </span>
             </div>
-            <DirectoryFilters
-              filters={filters}
-              setFilters={setFilters}
-              departments={uniqueDepartments}
-              employmentTypes={uniqueEmploymentTypes}
-            />
-          </DevLayoutSection>
-        }
-      >
+            <div className="hr-employees-directory-actions">
+              <DirectoryFilters
+                filters={filters}
+                setFilters={setFilters}
+                departments={uniqueDepartments}
+                employmentTypes={uniqueEmploymentTypes}
+              />
+              <button
+                type="button"
+                onClick={handleShowAddEmployee}
+                style={{ ...surfaceButtonStyle, border: "1px solid rgba(var(--accent-base-rgb), 0.12)", background: "var(--accent-surface)" }}
+                className="hr-employees-add-button"
+                aria-label="Add employee"
+              >
+                <span className="hr-employees-add-button-icon">+</span>
+                <span className="hr-employees-add-button-label">Add Employee</span>
+              </button>
+            </div>
+          </div>
           <div className="hr-employees-summary-row">
             <div className="hr-employees-summary-card">
               <span className="hr-employees-summary-label">Visible employees</span>
@@ -786,10 +798,6 @@ export default function EmployeesTab() {
                   }}
                 aria-pressed={isSelected}
                 className={`hr-employees-row${isSelected ? " is-selected" : ""}`}
-                style={{
-                  border: isSelected ? "1px solid rgba(var(--primary-rgb), 0.55)" : "1px solid rgba(var(--primary-rgb), 0.2)",
-                  background: isSelected ? "rgba(var(--primary-rgb), 0.12)" : "rgba(var(--primary-rgb), 0.08)",
-                }}
               >
                   <div className="hr-employees-row-avatar">
                     {getInitials(employee.name)}
@@ -837,14 +845,18 @@ export default function EmployeesTab() {
               );
             })}
           </DevLayoutSection>
-      </SectionCard>
+        </SectionCard>
+      </DevLayoutSection>
 
       <DevLayoutSection
         ref={detailPanelRef}
         sectionKey="hr-employees-detail-panel"
-        parentKey="hr-manager-tab-employees"
-        sectionType="content-card"
+        parentKey="hr-employees-workspace"
+        sectionType="section-shell"
+        shell
+        disableFallback
         className="hr-employees-detail-panel"
+        backgroundToken="accent-surface"
       >
         {selectedEmployee ? (
           <>
@@ -857,18 +869,9 @@ export default function EmployeesTab() {
               Edit employee details
             </button>
           </>
-        ) : (
-          <SectionCard
-            title="Select an employee"
-            subtitle="Choose a row from the directory to review profile and employment details."
-          >
-            <span style={{ color: "var(--text-secondary)" }}>
-              The detail panel stays here so HR managers can compare records without losing their place in the list.
-            </span>
-          </SectionCard>
-        )}
+        ) : null}
       </DevLayoutSection>
-    </section>
+    </DevLayoutSection>
   );
 
   const addFormSection = (
@@ -909,43 +912,7 @@ export default function EmployeesTab() {
     ) : null;
 
   if (isLoading) {
-    return (
-      <SectionCard title="Employee Directory" subtitle="Loading employees...">
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div
-              key={index}
-              style={{
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--surface)",
-                padding: "14px",
-                display: "grid",
-                gridTemplateColumns: "46px 1fr 24px",
-                gap: "12px",
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{
-                  width: "46px",
-                  height: "46px",
-                  borderRadius: "var(--radius-full)",
-                  background: "var(--surface-light)",
-                  border: "none",
-                }}
-              />
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <div style={{ height: "12px", width: "60%", background: "var(--surface-light)", borderRadius: "var(--radius-xs)" }} />
-                <div style={{ height: "10px", width: "40%", background: "var(--surface-light)", borderRadius: "var(--radius-xs)" }} />
-                <div style={{ height: "10px", width: "50%", background: "var(--surface-light)", borderRadius: "var(--radius-xs)" }} />
-              </div>
-              <div style={{ height: "12px", width: "12px", background: "var(--surface-light)", borderRadius: "var(--radius-xs)" }} />
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-    );
+    return <HrTabLoadingSkeleton variant="employees" />;
   }
 
   if (error) {
@@ -965,30 +932,11 @@ export default function EmployeesTab() {
         className="hr-employees-topbar"
       >
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={handleShowAddEmployee}
-            style={surfaceButtonStyle}
-          >
-            + Add Employee
-          </button>
-          <button
-            type="button"
-            style={primaryButtonStyle}
-          >
-            Manage Keycloak Access
-          </button>
         </div>
       </DevLayoutSection>
 
       {editFormSection ? editFormSection : isAddingEmployee ? addFormSection : (
-        <DevLayoutSection
-          sectionKey="hr-employees-directory"
-          parentKey="hr-manager-tab-employees"
-          sectionType="content-card"
-        >
-          {directorySection}
-        </DevLayoutSection>
+        directorySection
       )}
     </>
   );
@@ -1611,20 +1559,6 @@ function EmployeeDetailsFields({
         </div>
       </div>
 
-      {/* ── System / Auth ── */}
-      <div style={getSectionShellStyle("system")}>
-        <SectionHeading
-          title="System"
-          hasError={Boolean(sectionErrors.system?.length)}
-          errorCount={sectionErrors.system?.length || 0}
-        />
-        <div style={gridStyle}>
-          <FormField label="Keycloak User ID" errorMessage={fieldErrors.keycloakId}>
-            <input type="text" value={values.keycloakId} onChange={update("keycloakId")} style={applyFieldErrorStyle("keycloakId")} placeholder="kc-jreyes" />
-          </FormField>
-        </div>
-      </div>
-
       {/* ── Address ── */}
       <div style={getSectionShellStyle("address")}>
         <SectionHeading
@@ -2033,7 +1967,6 @@ function humanizeFieldLabel(field) {
     annualSalary: "Basic salary",
     payrollNumber: "Payroll reference",
     nationalInsurance: "National Insurance number",
-    keycloakId: "Keycloak User ID",
     address: "Address",
     emergencyContact: "Emergency contact",
   };

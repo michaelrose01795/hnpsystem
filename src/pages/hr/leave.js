@@ -5,6 +5,7 @@ import Layout from "@/components/Layout"; // global layout container
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
+import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
 // TODO: Wire leave requests, balances, and upcoming absences to live HR leave data.
 function LeaveContent() {
@@ -15,13 +16,7 @@ function LeaveContent() {
   const upcomingAbsences = data?.upcomingAbsences ?? [];
 
   if (isLoading) {
-    return (
-      <div style={{ padding: "8px 8px 32px" }}>
-        <SectionCard title="Loading leave data" subtitle="Fetching requests and balances.">
-          <span style={{ color: "var(--info)" }}>Retrieving placeholder leave details for testing.</span>
-        </SectionCard>
-      </div>
-    );
+    return <HrTabLoadingSkeleton />;
   }
 
   if (error) {

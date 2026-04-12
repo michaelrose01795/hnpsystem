@@ -351,9 +351,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         border: isHighlighted
           ? "1px solid rgba(var(--danger-rgb), 0.3)"
           : "1px solid rgba(var(--accent-base-rgb), 0.18)",
-        background: isHighlighted
-          ? "linear-gradient(180deg, rgba(var(--danger-rgb), 0.08), var(--accent-surface))"
-          : "var(--accent-surface)",
+        background: isHighlighted ? "rgba(var(--danger-rgb), 0.08)" : "var(--accent-surface)",
         boxShadow: "none",
         display: "flex",
         flexDirection: "column",

@@ -1960,7 +1960,6 @@ export default function EfficiencyTab({
               justifyContent: "center",
               padding: "20px",
               zIndex: 9999,
-              backdropFilter: "blur(8px)",
             }}
             onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
             role="dialog"

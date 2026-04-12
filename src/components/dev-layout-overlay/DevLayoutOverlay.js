@@ -103,13 +103,46 @@ const toLocalRect = (rect, bounds) => ({
   bottom: rect.bottom - bounds.top,
 });
 
+const getSectionTextPreview = (node) => {
+  if (!node) return "";
+
+  const rootKey = sanitizeKey(node.getAttribute?.("data-dev-section-key") || "");
+  const parts = [];
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, {
+    acceptNode(textNode) {
+      const rawText = String(textNode?.textContent || "").replace(/\s+/g, " ").trim();
+      if (!rawText) return NodeFilter.FILTER_REJECT;
+
+      const parentElement = textNode.parentElement;
+      if (!parentElement) return NodeFilter.FILTER_REJECT;
+      if (parentElement.closest("script, style, noscript, template, [hidden], [aria-hidden='true']")) {
+        return NodeFilter.FILTER_REJECT;
+      }
+
+      const owningSection = parentElement.closest("[data-dev-section-key]");
+      const owningKey = sanitizeKey(owningSection?.getAttribute?.("data-dev-section-key") || "");
+      if (owningKey && rootKey && owningKey !== rootKey) {
+        return NodeFilter.FILTER_REJECT;
+      }
+
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+
+  while (walker.nextNode()) {
+    const text = String(walker.currentNode?.textContent || "").replace(/\s+/g, " ").trim();
+    if (!text) continue;
+    parts.push(text);
+    if (parts.join(" ").length >= 180) break;
+  }
+
+  return parts.join(" ").trim().slice(0, 180);
+};
+
 const buildEntry = ({ key, node, route, order, type, parentKey = "", widthMode = "", isShell = false, backgroundToken = "", source = "explicit" }) => {
   const computed = window.getComputedStyle(node);
   const rect = node.getBoundingClientRect();
-  const textPreview = String(node.textContent || "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 180);
+  const textPreview = getSectionTextPreview(node);
 
   return {
     key,
@@ -423,6 +456,7 @@ const scanSections = ({ route, registry }) => {
   FALLBACK_SELECTORS.forEach(({ selector, type }) => {
     Array.from(document.querySelectorAll(selector)).forEach((node) => {
       if (!node || node.getAttribute("data-dev-section-key")) return;
+      if (node.closest("[data-dev-disable-fallback='1']")) return;
       const explicitParent = node.closest("[data-dev-section-key]");
       if (explicitParent === node) return;
       const rect = node.getBoundingClientRect();
@@ -595,7 +629,17 @@ const getViewportBounds = () => {
 export default function DevLayoutOverlay() {
   const router = useRouter();
   const { registeredSections, syncComputedSections } = useDevLayoutRegistry();
-  const { canAccess, enabled, mode, fullScreen, setMode, toggleFullScreen, cycleMode } = useDevLayoutOverlay();
+  const {
+    canAccess,
+    enabled,
+    mode,
+    fullScreen,
+    legacyMarkers,
+    setMode,
+    toggleFullScreen,
+    toggleLegacyMarkers,
+    cycleMode,
+  } = useDevLayoutOverlay();
   const [sections, setSections] = useState([]);
   const [selectedKey, setSelectedKey] = useState("");
   const [copiedAction, setCopiedAction] = useState("");
@@ -878,6 +922,16 @@ export default function DevLayoutOverlay() {
                 </button>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={legacyMarkers}
+                  aria-label="Toggle extra dotted dev markers"
+                  className={`app-btn ${legacyMarkers ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
+                  onClick={toggleLegacyMarkers}
+                >
+                  Dotted Lines {legacyMarkers ? "On" : "Off"}
+                </button>
+                <button
+                  type="button"
                   className={`app-btn ${mode === "labels" ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
                   aria-pressed={mode === "labels"}
                   onClick={() => setMode("labels")}
@@ -937,7 +991,7 @@ export default function DevLayoutOverlay() {
                     <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("claude", prompts.claude)}>Copy Claude prompt</button>
                   </div>
                   <p className={styles.copyStatus}>{copiedAction ? `Copied ${copiedAction}` : "Select any copy action to export context."}</p>
-                  <p className={styles.copyStatus}>{copiedAction === "reference" ? copiedText : "Shortcuts: Ctrl+Shift+D toggles overlay, Ctrl+Shift+M cycles modes."}</p>
+                  <p className={styles.copyStatus}>{copiedAction === "reference" ? copiedText : "Shortcuts: Ctrl+Shift+D toggles overlay, Ctrl+Shift+M cycles modes. Dotted Lines controls the extra dashed fallback markers across pages."}</p>
                 </div>
               );
             })()}

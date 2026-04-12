@@ -1,10 +1,8 @@
 // file location: src/pages/api/auth/[...nextauth].js
-// NextAuth API route — supports Keycloak OIDC and email/password credentials login.
+// NextAuth API route — supports email/password credentials login.
 
 import NextAuth from "next-auth";
-import KeycloakProvider from "next-auth/providers/keycloak";
 import CredentialsProvider from "next-auth/providers/credentials";
-import jwtDecode from "jwt-decode";
 import { supabase } from "@/lib/supabaseClient";
 
 // Auto-correct NEXTAUTH_URL for Vercel deployments
@@ -16,13 +14,6 @@ if (process.env.VERCEL_URL && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH
 
 export const authOptions = {
   providers: [
-    // Keycloak OIDC provider (used when Keycloak is configured)
-    KeycloakProvider({
-      clientId: process.env.KEYCLOAK_CLIENT_ID || "unused",
-      clientSecret: process.env.KEYCLOAK_CLIENT_SECRET || "unused",
-      issuer: process.env.KEYCLOAK_ISSUER || "https://placeholder",
-    }),
-
     // Credentials provider — validates email/password against Supabase users table
     CredentialsProvider({
       id: "credentials",
@@ -96,35 +87,7 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, account, user }) {
       if (account) {
-        if (account.provider === "keycloak") {
-          // Keycloak login — extract roles from OIDC tokens
-          token.accessToken = account.access_token;
-          token.idToken = account.id_token;
-
-          try {
-            const raw = account.id_token || account.access_token || null;
-            if (raw) {
-              const decoded = jwtDecode(raw);
-              token.roles =
-                decoded?.realm_access?.roles ||
-                decoded?.resource_access?.[process.env.KEYCLOAK_CLIENT_ID]?.roles ||
-                [];
-              token.userId =
-                decoded?.sub ||
-                decoded?.user_id ||
-                account.providerAccountId ||
-                token.userId ||
-                null;
-            } else {
-              token.roles = [];
-              token.userId = null;
-            }
-          } catch (err) {
-            console.error("NextAuth: failed to decode Keycloak token for roles", err);
-            token.roles = [];
-            token.userId = token.userId || null;
-          }
-        } else if (account.provider === "credentials" && user) {
+        if (account.provider === "credentials" && user) {
           // Credentials login — user object comes from authorize()
           token.userId = user.id;
           token.roles = user.role ? [user.role] : [];

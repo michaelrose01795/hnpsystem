@@ -196,6 +196,9 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   flex-direction: column;
   gap: var(--layout-card-gap);
   box-shadow: none;
+  background-image: none;
+  backdrop-filter: none;
+  filter: none;
 }
 
 .app-layout-page-shell {
@@ -225,6 +228,9 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   background: var(--page-card-bg-alt);
   border: var(--section-card-border);
   box-shadow: none;
+  background-image: none;
+  backdrop-filter: none;
+  filter: none;
 }
 
 .app-layout-card {
@@ -236,6 +242,9 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   background: var(--section-card-bg);
   border: var(--section-card-border);
   box-shadow: none;
+  background-image: none;
+  backdrop-filter: none;
+  filter: none;
 }
 
 .app-layout-surface-subtle {
@@ -247,6 +256,9 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   background: var(--accent-surface);
   border: 1px solid rgba(var(--accent-base-rgb), 0.16);
   box-shadow: none;
+  background-image: none;
+  backdrop-filter: none;
+  filter: none;
 }
 
 .app-layout-surface-accent {
@@ -258,8 +270,11 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   padding: var(--space-4);
   border-radius: var(--radius-sm);
   background: var(--profile-card-bg);
+  background-image: none;
   border: var(--profile-card-border);
   box-shadow: none;
+  backdrop-filter: none;
+  filter: none;
 }
 
 .app-profile-accent-card {
@@ -358,7 +373,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   outline-color: #facc15;
 }
 
-:root[data-dev-overlay-enabled="true"]
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"]
   :where(
     .app-page-card,
     .app-section-card,
@@ -2887,18 +2902,67 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .hr-manager-tabs-row {
-  justify-content: flex-start;
+  justify-content: stretch;
   padding: 0 2px 6px;
+  overflow: visible;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.hr-manager-tabs-row.is-overflowing {
+  justify-content: stretch;
+  padding-bottom: 6px;
+  cursor: default;
+}
+
+.hr-manager-tabs-row .tab-api__item {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 8px;
+  font-size: 0.78rem;
+  line-height: 1.15;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .hr-manager-tab-panel {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  background: var(--page-card-bg);
-  border: none;
+  gap: 20px;
+  background: transparent;
+  border: 0;
   box-shadow: none;
+}
+
+.hr-manager-tab-content {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hr-manager-tab-content > .app-page-stack {
+  width: 100%;
+  max-width: 100%;
+  padding: 8px 0;
+}
+
+.hr-manager-tab-content .app-section-card {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hr-manager-tab-content .app-page-stack > .app-section-card,
+.hr-manager-tab-content .app-page-stack > section > .app-section-card,
+.hr-manager-tab-content .app-page-stack > div > .app-section-card {
+  width: 100%;
+  max-width: 100%;
 }
 
 .hr-employees-topbar {
@@ -2944,9 +3008,18 @@ input[type="search"]::-webkit-search-results-decoration {
   align-items: start;
 }
 
+.hr-employees-directory-shell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
 .hr-employees-directory-card {
   gap: 16px;
   min-width: 0;
+  background: var(--accent-surface);
+  border: 1px solid rgba(var(--accent-base-rgb), 0.14);
 }
 
 .hr-employees-directory-toolbar {
@@ -2955,6 +3028,47 @@ input[type="search"]::-webkit-search-results-decoration {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+}
+
+.hr-employees-directory-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.hr-employees-add-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: var(--dropdown-trigger-height);
+  padding: var(--dropdown-trigger-padding) !important;
+  white-space: nowrap;
+  border-radius: var(--dropdown-trigger-radius) !important;
+  border: none !important;
+  background: var(--control-bg) !important;
+  color: var(--text-primary) !important;
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  box-shadow: none;
+}
+
+.hr-employees-add-button:hover,
+.hr-employees-add-button:focus-visible {
+  background: var(--control-bg-hover) !important;
+}
+
+.hr-employees-add-button-icon {
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.hr-employees-add-button-label {
+  display: inline;
 }
 
 .hr-employees-search {
@@ -3021,7 +3135,7 @@ input[type="search"]::-webkit-search-results-decoration {
 .hr-employees-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   padding-right: 4px;
 }
 
@@ -3029,21 +3143,23 @@ input[type="search"]::-webkit-search-results-decoration {
   cursor: pointer;
   text-align: left;
   width: 100%;
-  padding: 16px;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: var(--accent-base);
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--accent-base-rgb), 0.18);
+  background: rgba(var(--surface-rgb), 0.88);
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr) auto;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .hr-employees-row:hover,
 .hr-employees-row:focus-visible {
-  border-color: rgba(var(--accent-base-rgb), 0.38);
-  background: var(--accent-base-hover);
+  border-color: rgba(var(--accent-base-rgb), 0.34);
+  background: rgba(var(--surface-rgb), 0.95);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
 }
 
 .hr-employees-row:focus-visible {
@@ -3052,22 +3168,22 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .hr-employees-row.is-selected {
-  border-color: rgba(var(--accent-base-rgb), 0.42);
-  background: var(--accent-base-hover);
-  box-shadow: none;
+  border-color: rgba(var(--primary-rgb), 0.42);
+  background: rgba(var(--primary-rgb), 0.14);
+  box-shadow: 0 16px 30px rgba(var(--primary-rgb), 0.12);
 }
 
 .hr-employees-row-avatar {
   width: 52px;
   height: 52px;
   border-radius: var(--radius-full);
-  background: var(--accent-surface);
-  color: var(--accent-strong);
+  background: rgba(var(--primary-rgb), 0.2);
+  color: var(--primary);
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(var(--accent-base-rgb), 0.24);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
   font-size: 0.9rem;
   letter-spacing: 0.08em;
 }
@@ -3081,7 +3197,7 @@ input[type="search"]::-webkit-search-results-decoration {
 
 .hr-employees-row-header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
@@ -3090,7 +3206,8 @@ input[type="search"]::-webkit-search-results-decoration {
 .hr-employees-row-name {
   font-weight: 700;
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 1.02rem;
+  line-height: 1.2;
 }
 
 .hr-employees-row-email,
@@ -3104,14 +3221,22 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .hr-employees-row-role {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .hr-employees-row-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 12px;
+  gap: 8px 10px;
   font-size: 0.78rem;
+}
+
+.hr-employees-row-meta span {
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--grey-accent-rgb), 0.12);
 }
 
 .hr-employees-row-badges {
@@ -3121,11 +3246,11 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .hr-employees-row-pill {
-  padding: 4px 8px;
+  padding: 5px 9px;
   border-radius: var(--radius-pill);
-  background: rgba(var(--grey-accent-rgb), 0.15);
+  background: rgba(var(--grey-accent-rgb), 0.18);
   color: var(--text-primary);
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
 }
 
@@ -3137,24 +3262,80 @@ input[type="search"]::-webkit-search-results-decoration {
 
 .hr-employees-row-end {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   justify-content: flex-end;
 }
 
 .hr-employees-row-chevron {
   color: var(--text-secondary);
-  font-size: 1.1rem;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .hr-employees-detail-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   position: sticky;
   top: 0;
   overflow: visible;
   align-self: start;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.hr-employees-detail-panel .app-section-card,
+.hr-employees-detail-panel [data-dev-section-type="content-card"] {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.hr-employee-profile-header-card {
+  border-bottom: 1px solid rgba(var(--accent-base-rgb), 0.12);
+  padding: 0 0 20px 0 !important;
+}
+
+.hr-employee-profile-sections {
+  gap: 14px !important;
+}
+
+.hr-employee-card-block {
+  border-radius: 16px;
+  background: var(--surface) !important;
+  border: 1px solid rgba(var(--accent-base-rgb), 0.12) !important;
+  padding: 16px !important;
+}
+
+.hr-employee-basic-salary-card {
+  background: var(--surface) !important;
+  border: 1px solid rgba(var(--accent-base-rgb), 0.12) !important;
+}
+
+.hr-employee-key-value {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(var(--accent-base-rgb), 0.08);
+}
+
+.hr-employee-key-value:last-child {
+  border-bottom: none;
+}
+
+@media (max-width: 1400px) {
+  .hr-employees-add-button-label {
+    display: none;
+  }
+
+  .hr-employees-add-button {
+    gap: 0;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
 }
 
 @media (max-width: 1100px) {
@@ -3168,6 +3349,12 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 @media (max-width: 720px) {
+  .hr-employees-directory-actions {
+    width: auto;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
   .hr-employees-summary-row {
     grid-template-columns: 1fr;
   }
@@ -3178,6 +3365,7 @@ input[type="search"]::-webkit-search-results-decoration {
 
   .hr-employees-row-end {
     grid-column: 1 / -1;
+    flex-direction: row;
     justify-content: space-between;
     padding-top: 4px;
   }
@@ -3349,6 +3537,166 @@ input[type="search"]::-webkit-search-results-decoration {
 
 [data-theme="dark"] .table-api tbody tr:hover td {
   background: var(--accent-surface-hover);
+}
+
+/* ========================================================= */
+/* === Global Table Shells                                 === */
+/* ========================================================= */
+
+/* Unified table look — sourced from the profile work-attendance-history table.
+   Tables receive `.app-table-shell--with-headings` (thead present) or
+   `.app-table-shell--rows-only` (no thead) automatically via GlobalTableShells.
+   Rules are intentionally strong so individual pages inherit the shared look
+   without every table needing to be rewritten. */
+
+.app-table-shell-wrap {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.app-table-shell-scroll {
+  border: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12);
+  background: var(--profile-table-surface, var(--surface));
+}
+
+.app-table-shell {
+  width: 100%;
+  color: var(--text-primary);
+  background: var(--profile-table-surface, var(--surface)) !important;
+  background-image: none !important;
+  border: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.app-table-shell th,
+.app-table-shell td {
+  box-sizing: border-box;
+  background-clip: padding-box;
+  box-shadow: none !important;
+  vertical-align: middle !important;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Enforced paddings so every table shares the same rhythm. */
+.app-table-shell thead th {
+  padding: 12px 10px !important;
+}
+
+.app-table-shell tbody td {
+  padding: 12px 10px !important;
+}
+
+.app-table-shell thead th:first-child,
+.app-table-shell tbody td:first-child {
+  padding-left: 14px !important;
+}
+
+.app-table-shell thead th:last-child,
+.app-table-shell tbody td:last-child {
+  padding-right: 14px !important;
+}
+
+/* ---------- With headings ---------- */
+.app-table-shell--with-headings {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.app-table-shell--with-headings thead th {
+  background: var(--accent-dark, var(--accent-purple)) !important;
+  background-image: none !important;
+  color: var(--text-inverse, #ffffff) !important;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: none !important;
+  line-height: 1.2;
+}
+
+.app-table-shell--with-headings thead th > * {
+  vertical-align: middle;
+}
+
+.app-table-shell--with-headings thead th:first-child {
+  padding-left: 14px;
+}
+
+.app-table-shell--with-headings thead th:last-child {
+  padding-right: 14px;
+}
+
+.app-table-shell--with-headings tbody tr {
+  background: var(--profile-table-surface, var(--surface)) !important;
+  background-image: none !important;
+}
+
+.app-table-shell--with-headings tbody tr:nth-child(even) {
+  background: var(--profile-table-alt-surface, var(--surface-light)) !important;
+}
+
+.app-table-shell--with-headings tbody td {
+  border-top: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12) !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  background-image: none !important;
+}
+
+.app-table-shell--with-headings tbody td:first-child {
+  padding-left: 14px;
+}
+
+.app-table-shell--with-headings tbody td:last-child {
+  padding-right: 14px;
+}
+
+/* ---------- Rows only (no thead) — same body look as attendance history ---------- */
+.app-table-shell--rows-only {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.app-table-shell--rows-only tbody tr {
+  background: var(--profile-table-surface, var(--surface)) !important;
+  background-image: none !important;
+}
+
+.app-table-shell--rows-only tbody tr:nth-child(even) {
+  background: var(--profile-table-alt-surface, var(--surface-light)) !important;
+}
+
+.app-table-shell--rows-only tbody td {
+  border-top: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12) !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  background-image: none !important;
+}
+
+.app-table-shell--rows-only tbody tr:first-child td {
+  border-top: none !important;
+}
+
+.app-table-shell--rows-only tbody td:first-child {
+  padding-left: 14px;
+}
+
+.app-table-shell--rows-only tbody td:last-child {
+  padding-right: 14px;
+}
+
+/* ---------- Dark theme ---------- */
+[data-theme="dark"] .app-table-shell,
+[data-theme="dark"] .app-table-shell-scroll {
+  border-color: rgba(var(--accent-purple-rgb, 122, 92, 250), 0.2);
+}
+
+[data-theme="dark"] .app-table-shell--with-headings tbody tr:nth-child(even),
+[data-theme="dark"] .app-table-shell--rows-only tbody tr:nth-child(even) {
+  background: var(--layer-section-level-1, var(--surface-light)) !important;
 }
 
 /* ========================================================= */
@@ -3615,7 +3963,7 @@ input[type="search"]::-webkit-search-results-decoration {
   height: 100dvh;
   max-height: 100dvh;
   background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  backdrop-filter: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3623,6 +3971,18 @@ input[type="search"]::-webkit-search-results-decoration {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--popup-viewport-gap);
+}
+
+.app-section-card,
+.app-layout-section-shell,
+.app-layout-card,
+.app-layout-surface-subtle,
+.app-layout-surface-accent,
+[data-dev-section-type="section-shell"],
+[data-dev-section-type="content-card"] {
+  background-image: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
 }
 
 .popup-card {

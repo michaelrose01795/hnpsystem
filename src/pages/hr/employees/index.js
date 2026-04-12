@@ -71,19 +71,6 @@ export default function EmployeeManagement() {
             >
               + Add Employee
             </button>
-            <button
-              type="button"
-              style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--input-radius)",
-                border: "none",
-                background: "var(--accent-purple)",
-                fontWeight: 600,
-                color: "white",
-              }}
-            >
-              Manage Keycloak Access
-            </button>
           </div>
         </header>
 
