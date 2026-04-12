@@ -14,7 +14,7 @@ export function canUseDevToolsInCurrentEnv() {
 }
 
 export function canShowDevLogin() {
-  return canUseDevToolsInCurrentEnv() && devToolsConfig.showLogin;
+  return devToolsConfig.showLogin;
 }
 
 export function canShowDevOverlay(user) {
