@@ -1,7 +1,6 @@
 // ✅ Connected to Supabase (server-side)
 // file location: src/pages/api/users/roster.js
 import { getAllUsers, getUsersGroupedByRole } from "@/lib/database/users";
-import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const mapUsersToNameList = (grouped = {}) =>
   Object.fromEntries(
@@ -11,7 +10,25 @@ const mapUsersToNameList = (grouped = {}) =>
     ])
   );
 
-async function handler(req, res, session) {
+const sanitizeUser = (user = {}) => ({
+  id: user.id ?? null,
+  name: user.name || "Unknown user",
+  firstName: user.firstName || "",
+  lastName: user.lastName || "",
+  email: user.email || "",
+  role: user.role || "",
+  department: user.department || "",
+});
+
+const sanitizeGroupedUsers = (grouped = {}) =>
+  Object.fromEntries(
+    Object.entries(grouped).map(([role, users]) => [
+      role,
+      (users || []).map((user) => sanitizeUser(user)),
+    ])
+  );
+
+async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -23,14 +40,16 @@ async function handler(req, res, session) {
       getAllUsers(),
     ]);
 
-    const usersByRole = mapUsersToNameList(grouped);
+    const sanitizedGrouped = sanitizeGroupedUsers(grouped);
+    const sanitizedAllUsers = (allUsers || []).map((user) => sanitizeUser(user));
+    const usersByRole = mapUsersToNameList(sanitizedGrouped);
 
     return res.status(200).json({
       success: true,
       data: {
         usersByRole,
-        usersByRoleDetailed: grouped,
-        allUsers,
+        usersByRoleDetailed: sanitizedGrouped,
+        allUsers: sanitizedAllUsers,
       },
     });
   } catch (error) {
@@ -43,4 +62,4 @@ async function handler(req, res, session) {
   }
 }
 
-export default withRoleGuard(handler);
+export default handler;
