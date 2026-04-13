@@ -443,6 +443,43 @@
   color: var(--text-primary);
 }
 
+/* AI button in the Title row — positioned to the left of Share */
+.aiButton {
+  border: none;
+  /* Accent surface so it's visually distinct from Share but not louder */
+  background: rgba(var(--primary-rgb), 0.14);
+  color: var(--primary);
+  border-radius: var(--control-radius);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.aiButton:hover {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+/* AI tab in the header tab bar — always present */
+.tabAi {
+  /* Slightly differentiated from note tabs: softer background until active */
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+  min-width: 44px;
+}
+
+.tabAi:hover {
+  background: rgba(var(--primary-rgb), 0.18);
+}
+
+/* When the AI tab is active it inherits .tabActive — no extra rule needed */
+
 .shareButton {
   border: none;
   background: rgba(var(--primary-rgb), 0.14);

@@ -1,0 +1,436 @@
+/* file location: src/features/appGuide/components/AiGuidePanel.module.css */
+/* Styles for the App Guide AI chat panel embedded in the Floating Notes widget. */
+/* Uses the project's global CSS token system throughout — no hardcoded colours. */
+
+/* ─── Outer shell ─────────────────────────────────────────────────────────── */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  /* fills the .body area provided by GlobalNotesWidget */
+}
+
+/* ─── Session sidebar ─────────────────────────────────────────────────────── */
+
+.sessionBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 8px;
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.1);
+  flex-shrink: 0;
+}
+
+.sessionSelect {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  border-radius: var(--control-radius);
+  background: var(--control-bg);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sessionSelect:focus {
+  box-shadow: var(--control-ring);
+}
+
+.newChatButton {
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--control-radius);
+  background: rgba(var(--primary-rgb), 0.14);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+  transition: background 0.14s ease;
+}
+
+.newChatButton:hover {
+  background: rgba(var(--primary-rgb), 0.22);
+}
+
+.deleteSessionButton {
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--control-radius);
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.deleteSessionButton:hover {
+  color: var(--danger);
+}
+
+.deleteSessionButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Message list ────────────────────────────────────────────────────────── */
+
+.messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+  /* smooth scroll on interaction */
+  scroll-behavior: smooth;
+}
+
+/* Empty / placeholder state */
+.emptyChat {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.emptyChat h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.emptyChat p {
+  font-size: 12px;
+  margin: 0;
+  max-width: 260px;
+  line-height: 1.45;
+}
+
+/* Suggestion chips shown when the chat is empty */
+.emptySuggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.suggestionChip {
+  border: none;
+  border-radius: var(--control-radius);
+  background: var(--control-bg);
+  color: var(--text-primary);
+  padding: 7px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: background 0.12s ease;
+}
+
+.suggestionChip:hover {
+  background: var(--control-bg-hover);
+}
+
+/* ─── Individual message bubbles ─────────────────────────────────────────── */
+
+.messageBubble {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 100%;
+}
+
+.messageUser {
+  align-items: flex-end;
+}
+
+.messageAssistant {
+  align-items: flex-start;
+}
+
+.bubbleContent {
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 92%;
+  word-break: break-word;
+}
+
+/* User message styling */
+.messageUser .bubbleContent {
+  background: var(--primary);
+  color: var(--text-inverse);
+  border-bottom-right-radius: 4px;
+}
+
+/* Assistant message styling */
+.messageAssistant .bubbleContent {
+  background: var(--control-bg);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+}
+
+/* Markdown rendering inside assistant bubbles */
+.bubbleContent strong {
+  font-weight: 600;
+}
+
+.bubbleContent em {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.bubbleContent code {
+  font-family: monospace;
+  font-size: 12px;
+  background: rgba(var(--primary-rgb), 0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* Horizontal rule (separator used in compare answers) */
+.bubbleContent hr {
+  border: none;
+  border-top: 1px solid rgba(var(--primary-rgb), 0.15);
+  margin: 8px 0;
+}
+
+/* Timestamps */
+.messageTime {
+  font-size: 10px;
+  color: var(--text-secondary);
+  padding: 0 4px;
+}
+
+/* Loading indicator — dots pulse */
+.typingIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--control-bg);
+  border-bottom-left-radius: 4px;
+}
+
+.typingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.typingDot:nth-child(2) { animation-delay: 0.2s; }
+.typingDot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+  40%           { transform: scale(1);   opacity: 1; }
+}
+
+/* ─── Sources citations ──────────────────────────────────────────────────── */
+
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 2px 0;
+}
+
+.sourceTag {
+  font-size: 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.sourceTagLink {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.1s ease, color 0.1s ease;
+}
+
+.sourceTagLink:hover {
+  color: var(--primary);
+  text-decoration-color: var(--primary);
+}
+
+/* ─── Follow-up suggestions after assistant reply ────────────────────────── */
+
+.followUpRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 4px 2px 0;
+}
+
+.followUpChip {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--text-primary);
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.followUpChip:hover {
+  background: rgba(var(--primary-rgb), 0.2);
+}
+
+/* ─── Input row ───────────────────────────────────────────────────────────── */
+
+.inputRow {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid rgba(var(--primary-rgb), 0.1);
+}
+
+.inputWrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  border: none;
+  border-radius: var(--control-radius);
+  background: var(--control-bg);
+  color: var(--text-primary);
+  padding: 8px 11px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  min-height: 38px;
+  max-height: 110px;
+  outline: none;
+  line-height: 1.45;
+  overflow-y: auto;
+}
+
+.input:focus {
+  background: var(--control-bg-hover);
+  box-shadow: var(--control-ring);
+}
+
+.input::placeholder {
+  color: var(--grey-accent);
+}
+
+.sendButton {
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--control-radius);
+  background: var(--primary);
+  color: var(--text-inverse);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: opacity 0.12s ease;
+  align-self: flex-end;
+}
+
+.sendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sendButton:not(:disabled):hover {
+  opacity: 0.88;
+}
+
+/* ─── Error state ─────────────────────────────────────────────────────────── */
+
+.errorBanner {
+  font-size: 11px;
+  color: var(--danger);
+  padding: 4px 2px;
+}
+
+/* ─── DB not ready / setup notice ────────────────────────────────────────── */
+
+.setupNotice {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  background: rgba(var(--warning-rgb, 245, 158, 11), 0.1);
+  border-radius: var(--radius-xs);
+  padding: 7px 10px;
+  margin-bottom: 4px;
+}
+
+.setupNotice strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.setupNotice code {
+  font-size: 10px;
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* ─── Loading state in session bar ─────────────────────────────────────────── */
+
+.loadingText {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+/* ─── Responsive adjustments ─────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .bubbleContent {
+    max-width: 100%;
+    font-size: 12px;
+  }
+
+  .sessionBar {
+    flex-wrap: wrap;
+  }
+
+  .sessionSelect {
+    font-size: 11px;
+  }
+}

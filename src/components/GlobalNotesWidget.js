@@ -9,6 +9,7 @@ import {
   setNoteSharedUsers,
   updateFloatingNote,
 } from "@/lib/database/floatingNotes";
+import AiGuidePanel from "@/features/appGuide/components/AiGuidePanel";
 import styles from "@/components/GlobalNotesWidget.module.css";
 
 const BUBBLE_SIZE = 56;
@@ -164,6 +165,8 @@ export default function GlobalNotesWidget() {
   const [selectedShareUserIds, setSelectedShareUserIds] = useState([]);
   const [isShareLoading, setIsShareLoading] = useState(false);
   const [isShareSaving, setIsShareSaving] = useState(false);
+  // "notes" shows the regular note editor; "ai" shows the App Guide AI panel
+  const [activeView, setActiveView] = useState("notes");
 
   const notesRef = useRef([]);
   const panelRectRef = useRef(panelRect);
@@ -903,6 +906,15 @@ export default function GlobalNotesWidget() {
     setSaveStatus("saved");
   };
 
+  // Switch the panel body to the AI Guide view
+  const openAiTab = () => setActiveView("ai");
+
+  // Switch back to a note view; if a note was already active keep it selected
+  const openNoteTab = (noteId) => {
+    setActiveView("notes");
+    if (noteId) setActiveNoteId(noteId);
+  };
+
   const openShareModal = async () => {
     if (!activeNote || !activeNoteOwnedByUser) return;
     setIsShareModalOpen(true);
@@ -982,14 +994,25 @@ export default function GlobalNotesWidget() {
             <div className={styles.headerRow}>
               <div className={styles.tabBarScroller} onPointerDown={(event) => event.stopPropagation()}>
                 <div className={styles.tabBar}>
+                  {/* AI Guide tab — always present, positioned before note tabs */}
+                  <button
+                    type="button"
+                    className={`${styles.tab} ${styles.tabAi} ${activeView === "ai" ? styles.tabActive : ""}`}
+                    onClick={openAiTab}
+                    title="App Guide — ask questions about the system"
+                    aria-label="Open AI App Guide"
+                  >
+                    <span className={styles.tabTitle}>AI</span>
+                  </button>
+
                   {notes.map((note) => {
                     const editable = Number(note.userId) === Number(dbUserId);
                     return (
                       <button
                         key={note.noteId}
                         type="button"
-                        className={`${styles.tab} ${note.noteId === activeNoteId ? styles.tabActive : ""}`}
-                        onClick={() => setActiveNoteId(note.noteId)}
+                        className={`${styles.tab} ${note.noteId === activeNoteId && activeView === "notes" ? styles.tabActive : ""}`}
+                        onClick={() => openNoteTab(note.noteId)}
                         title={note.title || "Untitled"}
                       >
                         <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
@@ -1032,9 +1055,18 @@ export default function GlobalNotesWidget() {
           </header>
 
           <div className={styles.body}>
-            {isLoading && <div className={styles.empty}>Loading your notes...</div>}
+            {/* AI Guide panel — shown when the AI tab is active */}
+            {activeView === "ai" && (
+              <AiGuidePanel
+                userId={dbUserId}
+                userRoles={user?.roles || []}
+              />
+            )}
 
-            {!isLoading && notes.length === 0 && (
+            {/* Notes view — shown when the notes tab is active */}
+            {activeView === "notes" && isLoading && <div className={styles.empty}>Loading your notes...</div>}
+
+            {activeView === "notes" && !isLoading && notes.length === 0 && (
               <div className={styles.emptyState}>
                 <h4>No notes yet</h4>
                 <p>Create your first note to track tasks, reminders, or test instructions.</p>
@@ -1044,7 +1076,7 @@ export default function GlobalNotesWidget() {
               </div>
             )}
 
-            {!isLoading && activeNote && (
+            {activeView === "notes" && !isLoading && activeNote && (
               <>
                 <div className={styles.field}>
                   <div className={styles.titleRow}>
@@ -1052,6 +1084,16 @@ export default function GlobalNotesWidget() {
                       Title
                     </label>
                     <div className={styles.titleActions}>
+                      {/* AI button — opens the App Guide panel */}
+                      <button
+                        type="button"
+                        className={styles.aiButton}
+                        onClick={openAiTab}
+                        title="Open App Guide — ask questions about the system"
+                        aria-label="Open AI App Guide"
+                      >
+                        AI
+                      </button>
                       <button
                         type="button"
                         className={styles.shareButton}
@@ -1141,7 +1183,8 @@ export default function GlobalNotesWidget() {
               </>
             )}
 
-            {error && <div className={styles.error}>{error}</div>}
+            {/* Note-level errors (only show in notes view) */}
+            {activeView === "notes" && error && <div className={styles.error}>{error}</div>}
           </div>
 
           <div className={styles.resizeHandle} onPointerDown={startResize} />
