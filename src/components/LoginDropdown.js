@@ -316,19 +316,14 @@ export default function LoginDropdown({
         value={selectedUserId}
         disabled={!selectedDepartment}
         onChange={(raw, option) => {
-          const nextId =
-            (typeof raw === "object" && String(raw.id ?? raw.user_id ?? raw.value ?? "")) ||
-            option?.value ||
-            option?.key ||
-            "";
+          const candidateId = String(option?.value ?? option?.key ?? "");
           const nextUser =
-            (typeof raw === "object" && raw) ||
             userOptions.find(
               (user) =>
                 String(user.id ?? user.user_id ?? user.email ?? user.name ?? "") ===
-                String(nextId)
+                candidateId
             ) ||
-            null;
+            (raw && typeof raw === "object" ? raw : null);
           setSelectedUser(nextUser);
         }}
         className="login-dropdown__control"

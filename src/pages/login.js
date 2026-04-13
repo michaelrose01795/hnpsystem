@@ -201,8 +201,9 @@ export default function LoginPage() {
     return normalizedCategory;
   }, [usersByRole, usersByRoleDetailed]);
 
-  // Developer login uses the local dev-auth path so it stays stable on hosted
-  // github.dev previews even when NextAuth callback URLs are misconfigured.
+  // Developer login routes through NextAuth's credentials provider with the
+  // picked user's database id. Server-side Supabase access is reliable, so the
+  // session reflects exactly the user that was chosen in the dropdown.
   const handleDevLogin = async () => {
     if (!allowDevUserSelection) {
       setErrorMessage("Developer login is disabled in this environment.");
@@ -216,9 +217,39 @@ export default function LoginPage() {
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
     }
-    const target = getPostLoginRoute(router, selectedUser);
-    const result = await devLogin?.(selectedUser, selectedDepartment || selectedCategory || "WORKSHOP");
 
+    const userId =
+      selectedUser?.id ?? selectedUser?.user_id ?? selectedUser?.identifier ?? null;
+    const numericId = Number(userId);
+    const target = getPostLoginRoute(router, selectedUser);
+
+    // Wipe any stale dev-session artefacts so the new signIn starts cleanly.
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("devUser");
+      document.cookie = "hnp-dev-roles=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
+
+    if (Number.isFinite(numericId) && numericId > 0) {
+      const result = await signIn("credentials", {
+        userId: String(numericId),
+        callbackUrl: target,
+        redirect: false,
+      });
+
+      if (result?.error || !result?.ok) {
+        setErrorMessage("Developer login failed. Session was not created.");
+        return;
+      }
+
+      setIsRedirecting(true);
+      // Hard navigation forces NextAuth to read the freshly-issued JWT cookie
+      // and rebuilds the user/role context from the new session.
+      window.location.assign(target);
+      return;
+    }
+
+    // Fallback for users without a numeric DB id (e.g. roster strings).
+    const result = await devLogin?.(selectedUser, selectedDepartment || selectedCategory || "WORKSHOP");
     if (!result?.success) {
       setErrorMessage("Developer login failed. Session was not created.");
       return;

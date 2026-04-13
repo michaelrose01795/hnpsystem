@@ -3560,13 +3560,13 @@ input[type="search"]::-webkit-search-results-decoration {
 
 .app-table-shell-scroll {
   border: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12);
-  background: var(--profile-table-surface, var(--surface));
+  background: var(--surface);
 }
 
 .app-table-shell {
   width: 100%;
   color: var(--text-primary);
-  background: var(--profile-table-surface, var(--surface)) !important;
+  background: var(--surface) !important;
   background-image: none !important;
   border: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12);
   border-radius: var(--radius-md);
@@ -3635,12 +3635,12 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .app-table-shell--with-headings tbody tr {
-  background: var(--profile-table-surface, var(--surface)) !important;
+  background: var(--surface) !important;
   background-image: none !important;
 }
 
 .app-table-shell--with-headings tbody tr:nth-child(even) {
-  background: var(--profile-table-alt-surface, var(--surface-light)) !important;
+  background: var(--surface-light, var(--surface)) !important;
 }
 
 .app-table-shell--with-headings tbody td {
@@ -3665,12 +3665,12 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .app-table-shell--rows-only tbody tr {
-  background: var(--profile-table-surface, var(--surface)) !important;
+  background: var(--surface) !important;
   background-image: none !important;
 }
 
 .app-table-shell--rows-only tbody tr:nth-child(even) {
-  background: var(--profile-table-alt-surface, var(--surface-light)) !important;
+  background: var(--surface-light, var(--surface)) !important;
 }
 
 .app-table-shell--rows-only tbody td {

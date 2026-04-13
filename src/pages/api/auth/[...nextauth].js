@@ -4,7 +4,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { supabase } from "@/lib/supabaseClient";
-import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
 
 const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
 
@@ -49,7 +48,7 @@ export const authOptions = {
               name: [data.first_name, data.last_name].filter(Boolean).join(" ") || "User",
               email: data.email,
               role: data.role,
-              roles: DEV_FULL_ACCESS_ROLES,
+              roles: data.role ? [data.role] : [],
               isDevLogin: true,
             };
           }

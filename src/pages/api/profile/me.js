@@ -123,6 +123,7 @@ async function getUserAttendanceLogs(userId, limit = 500) {
       totalHours: hours,
       status, // Legacy field
       type,   // New field: "Weekday", "Weekend", or "Overtime"
+      origin: isRecurringOvertime ? "auto" : isBulkOvertime ? "bulk" : "manual", // Source: "auto" = cron-created from a recurring rule; "manual" = user-logged (or inherent clocking)
       bulk: isBulkOvertime || false, // Bulk overtime — year-level, not per-month
     };
   });

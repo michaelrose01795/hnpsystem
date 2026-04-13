@@ -3,8 +3,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
-import { getUserById } from "@/lib/database/users";
-import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
 
 const DEV_ROLE_COOKIE = "hnp-dev-roles";
 const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -235,45 +233,32 @@ export function UserProvider({ children }) {
     }
 
     try {
-      let resolved = null;
-      const candidateId =
-        userChoice?.id ?? userChoice?.user_id ?? userChoice?.identifier;
-      if (
-        candidateId !== undefined &&
-        candidateId !== null &&
-        Number.isInteger(Number(candidateId))
-      ) {
-        resolved = await getUserById(Number(candidateId));
-      }
+      const choice = typeof userChoice === "string" ? { name: userChoice } : (userChoice || {});
+      const candidateId = choice.id ?? choice.user_id ?? choice.identifier;
+      const numericId = Number(candidateId);
+      const resolvedId = Number.isFinite(numericId) && numericId > 0 ? numericId : Date.now();
 
-      const fallbackName =
-        typeof userChoice === "string"
-          ? userChoice
-          : userChoice?.name ||
-            userChoice?.displayName ||
-            userChoice?.fullName ||
-            userChoice?.email ||
-            "Dev User";
+      const resolvedName =
+        choice.name ||
+        choice.displayName ||
+        choice.fullName ||
+        [choice.first_name || choice.firstName, choice.last_name || choice.lastName]
+          .filter(Boolean)
+          .join(" ").trim() ||
+        choice.email ||
+        "Dev User";
 
-      const finalUser = resolved
-        ? {
-            id: resolved.id,
-            username: resolved.name,
-            email: resolved.email,
-            roles: DEV_FULL_ACCESS_ROLES.map((entry) => entry.toUpperCase()),
-            impersonatedRole: resolved.role || role,
-            authUuid: null,
-            isDevLogin: true,
-          }
-        : {
-            id: Date.now(),
-            username: fallbackName,
-            email: userChoice?.email || "",
-            roles: DEV_FULL_ACCESS_ROLES.map((entry) => entry.toUpperCase()),
-            impersonatedRole: role,
-            authUuid: null,
-            isDevLogin: true,
-          };
+      const resolvedRole = choice.role || role || "";
+      const finalUser = {
+        id: resolvedId,
+        username: resolvedName,
+        email: choice.email || "",
+        roles: resolvedRole ? [String(resolvedRole).toUpperCase()] : [],
+        impersonatedRole: resolvedRole,
+        department: choice.department || "",
+        authUuid: null,
+        isDevLogin: true,
+      };
 
       setUser(finalUser);
       if (CAN_USE_DEV_AUTH) {

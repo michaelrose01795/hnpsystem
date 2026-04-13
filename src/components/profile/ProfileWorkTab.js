@@ -1812,6 +1812,7 @@ export function ProfileWorkTab({
   // Leave request modal state
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [recurringModalOpen, setRecurringModalOpen] = useState(false); // recurring overtime rules modal
+  const overtimeHistoryRef = useRef(null); // target for "Recurring Rules" deep-link from Attendance History
   const [manualOvertimeModalOpen, setManualOvertimeModalOpen] = useState(false);
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveRemoving, setLeaveRemoving] = useState(false);
@@ -1998,6 +1999,20 @@ export function ProfileWorkTab({
     border: "var(--section-card-border)",
   };
 
+  // Overtime rows distinguish between recurring-rule-generated ("Auto Log") and user-entered ("Logged") so the user can tell them apart in-table
+  const getTypeLabel = (entry) => {
+    const base = entry.type || entry.status;
+    if (base === "Overtime") return entry.origin === "auto" ? "Auto Log" : "Logged";
+    return base;
+  };
+  const getTypeTone = (entry) => {
+    const base = entry.type || entry.status;
+    if (base === "Overtime") return entry.origin === "auto" ? "info" : "warning";
+    if (base === "Weekend") return "info";
+    if (base === "Weekday") return "success";
+    return "default";
+  };
+
   const renderAttendanceBody = ({ records, shouldScroll, keyPrefix, parentKey, emptyLabel }) => (
     isMobile ? (
       <DevLayoutSection
@@ -2021,15 +2036,8 @@ export function ProfileWorkTab({
       >
         {records.map((entry) => {
           const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
-          const entryType = entry.type || entry.status;
-          const tone =
-            entryType === "Overtime"
-              ? "warning"
-              : entryType === "Weekend"
-              ? "info"
-              : entryType === "Weekday"
-              ? "success"
-              : "default";
+          const entryType = getTypeLabel(entry);
+          const tone = getTypeTone(entry);
           return (
             <div
               key={entry.id}
@@ -2183,18 +2191,7 @@ export function ProfileWorkTab({
                     )}
                   </td>
                   <td style={{ textAlign: "center", padding: "14px 14px 14px 8px", verticalAlign: "middle" }}>
-                    <StatusTag
-                      label={entry.type || entry.status}
-                      tone={
-                        (entry.type || entry.status) === "Overtime"
-                          ? "warning"
-                          : (entry.type || entry.status) === "Weekend"
-                          ? "info"
-                          : (entry.type || entry.status) === "Weekday"
-                          ? "success"
-                          : "default"
-                      }
-                    />
+                    <StatusTag label={getTypeLabel(entry)} tone={getTypeTone(entry)} />
                   </td>
                 </tr>
               );
@@ -2780,7 +2777,11 @@ export function ProfileWorkTab({
                 action={
                   <Button
                     type="button"
-                    onClick={() => setRecurringModalOpen(true)}
+                    onClick={() => {
+                      // Deep-link into the Overtime History section where recurring-rule logs render as rows, then open the manager
+                      overtimeHistoryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      setRecurringModalOpen(true);
+                    }}
                     variant="secondary"
                     size="sm"
                     className="app-btn--control"
@@ -2798,6 +2799,7 @@ export function ProfileWorkTab({
                 })}
               </ProfileCard>
 
+              <div ref={overtimeHistoryRef} style={{ scrollMarginTop: "80px" }}>
               <ProfileCard
                 sectionKey="profile-work-attendance-overtime-history"
                 parentKey="profile-work-attendance-history-group"
@@ -2828,6 +2830,7 @@ export function ProfileWorkTab({
                   emptyLabel: "No overtime records found.",
                 })}
               </ProfileCard>
+              </div>
             </DevLayoutSection>
 
             {profile && (
