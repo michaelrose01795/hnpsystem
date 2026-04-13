@@ -322,12 +322,9 @@ export default function EmployeesTab() {
 
   useEffect(() => {
     if (isLoading || error) return;
-    if (filteredEmployees.length === 0) {
-      setSelectedEmployeeId(null);
-      return;
-    }
+    if (selectedEmployeeId == null) return;
     if (!filteredEmployees.some((employee) => employee.id === selectedEmployeeId)) {
-      setSelectedEmployeeId(filteredEmployees[0].id);
+      setSelectedEmployeeId(null);
     }
   }, [isLoading, error, filteredEmployees, selectedEmployeeId]);
 
@@ -858,18 +855,10 @@ export default function EmployeesTab() {
         className="hr-employees-detail-panel"
         backgroundToken="accent-surface"
       >
-        {selectedEmployee ? (
-          <>
-            <EmployeeProfilePanel employee={selectedEmployee} />
-            <button
-              type="button"
-              onClick={handleStartEditEmployee}
-              style={surfaceButtonStyle}
-            >
-              Edit employee details
-            </button>
-          </>
-        ) : null}
+        <EmployeeProfilePanel
+          employee={selectedEmployee}
+          onEdit={selectedEmployee ? handleStartEditEmployee : null}
+        />
       </DevLayoutSection>
     </DevLayoutSection>
   );

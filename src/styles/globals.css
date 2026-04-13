@@ -322,18 +322,22 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 /* === Dev Overlay Section Outlines === */
 /* ========================================================= */
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"] {
+/* Shell outlines (solid) always render when the overlay is on — these are the
+   main page sections the simplified view is meant to highlight. */
+:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-shell="1"] {
   outline: 2px solid rgba(var(--accent-base-rgb), 0.92);
   outline-offset: 3px;
+  outline-style: solid;
   box-shadow: inset 0 0 0 1px rgba(var(--surface-rgb), 0.62);
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-shell="0"] {
-  outline-style: dashed;
-}
-
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-shell="1"] {
-  outline-style: solid;
+/* Dashed outlines on nested/non-shell registered sections are tied to the
+   "Dotted Lines" toggle. With the toggle off, you see only top-level shells —
+   a clean overlay of the main page section cards. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-shell="0"] {
+  outline: 2px dashed rgba(var(--accent-base-rgb), 0.92);
+  outline-offset: 3px;
+  box-shadow: inset 0 0 0 1px rgba(var(--surface-rgb), 0.62);
 }
 
 :root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="page-shell"] {
@@ -344,32 +348,32 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   outline-color: rgba(var(--accent-base-rgb), 0.96);
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="content-card"] {
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="content-card"] {
   outline-color: #ffd54a;
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="toolbar"],
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="filter-row"] {
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="toolbar"],
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="filter-row"] {
   outline-color: #4ade80;
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="tab-row"] {
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="tab-row"] {
   outline-color: #ff6b6b;
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="data-table"] {
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="data-table"] {
   outline-color: #c084fc;
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="table-headings"] {
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="table-headings"] {
   outline-color: #60a5fa;
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="table-rows"] {
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="table-rows"] {
   outline-color: #f97316;
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="stat-card"] {
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="stat-card"] {
   outline-color: #facc15;
 }
 
@@ -3697,6 +3701,88 @@ input[type="search"]::-webkit-search-results-decoration {
 [data-theme="dark"] .app-table-shell--with-headings tbody tr:nth-child(even),
 [data-theme="dark"] .app-table-shell--rows-only tbody tr:nth-child(even) {
   background: var(--layer-section-level-1, var(--surface-light)) !important;
+}
+
+/* ---------- Mobile / vertical phone view ----------
+   Tables stay tabular but become horizontally scrollable inside their wrapper
+   and use tighter spacing + smaller type so columns don't squash or clip. */
+@media (max-width: 640px) {
+  .app-table-shell-wrap,
+  .app-table-shell-scroll {
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+
+  .app-table-shell {
+    /* Keep cells at a legible min-size and let the wrapper scroll horizontally. */
+    min-width: max-content;
+    border-radius: var(--radius-sm, 10px);
+  }
+
+  .app-table-shell th,
+  .app-table-shell td {
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+
+  .app-table-shell thead th {
+    padding: 10px 8px !important;
+    font-size: 0.66rem;
+    letter-spacing: 0.03em;
+  }
+
+  .app-table-shell tbody td {
+    padding: 10px 8px !important;
+  }
+
+  .app-table-shell thead th:first-child,
+  .app-table-shell tbody td:first-child {
+    padding-left: 12px !important;
+  }
+
+  .app-table-shell thead th:last-child,
+  .app-table-shell tbody td:last-child {
+    padding-right: 12px !important;
+  }
+
+  /* Pills, status tags, and action buttons inside cells often force fixed
+     widths — clamp them so a single row still fits neatly on narrow screens. */
+  .app-table-shell td .app-btn,
+  .app-table-shell td button {
+    font-size: 0.72rem;
+    padding: 6px 10px;
+  }
+
+  /* Subtle scroll hint on the wrapper so the user knows more content exists. */
+  .app-table-shell-scroll {
+    scrollbar-width: thin;
+  }
+
+  .app-table-shell-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .app-table-shell-scroll::-webkit-scrollbar-thumb {
+    background: rgba(var(--accent-purple-rgb, 122, 92, 250), 0.25);
+    border-radius: 999px;
+  }
+}
+
+/* Slightly tighter rhythm on small tablets / large phones in landscape. */
+@media (min-width: 641px) and (max-width: 860px) {
+  .app-table-shell th,
+  .app-table-shell td {
+    font-size: 0.8rem;
+  }
+
+  .app-table-shell thead th {
+    padding: 10px 9px !important;
+  }
+
+  .app-table-shell tbody td {
+    padding: 10px 9px !important;
+  }
 }
 
 /* ========================================================= */

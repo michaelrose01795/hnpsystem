@@ -1966,7 +1966,11 @@ export function ProfileWorkTab({
   const isLoading = shouldUseHrData ? hrLoading : userProfileLoading;
   const error = shouldUseHrData ? hrError : userProfileError;
   const attendanceRecords = aggregatedStats?.attendanceRecords ?? [];
-  const shouldScrollAttendanceHistory = attendanceRecords.length >= 5;
+  const isOvertimeEntry = (entry) => (entry.type || entry.status) === "Overtime";
+  const overtimeRecords = attendanceRecords.filter(isOvertimeEntry);
+  const normalRecords = attendanceRecords.filter((entry) => !isOvertimeEntry(entry));
+  const shouldScrollOvertimeHistory = overtimeRecords.length >= 5;
+  const shouldScrollNormalHistory = normalRecords.length >= 5;
 
   useEffect(() => {
     onHeaderActionsChange?.(null);
@@ -1993,6 +1997,220 @@ export function ProfileWorkTab({
     background: "var(--surface)",
     border: "var(--section-card-border)",
   };
+
+  const renderAttendanceBody = ({ records, shouldScroll, keyPrefix, parentKey, emptyLabel }) => (
+    isMobile ? (
+      <DevLayoutSection
+        as="div"
+        sectionKey={`${keyPrefix}-shell`}
+        parentKey={parentKey}
+        sectionType="data-table-shell"
+        backgroundToken="surface"
+        style={{
+          maxHeight: shouldScroll ? "420px" : "none",
+          overflowY: shouldScroll ? "auto" : "visible",
+          marginTop: "10px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          padding: "4px",
+          borderRadius: "var(--radius-md)",
+          border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+          background: "var(--profile-table-surface)",
+        }}
+      >
+        {records.map((entry) => {
+          const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
+          const entryType = entry.type || entry.status;
+          const tone =
+            entryType === "Overtime"
+              ? "warning"
+              : entryType === "Weekend"
+              ? "info"
+              : entryType === "Weekday"
+              ? "success"
+              : "default";
+          return (
+            <div
+              key={entry.id}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                padding: "12px 14px",
+                borderRadius: "var(--radius-md)",
+                background: "var(--surface)",
+                border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-primary)" }}>
+                  {formatDate(entry.date)}
+                </span>
+                <StatusTag label={entryType} tone={tone} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Login</span>
+                  <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-primary)" }}>{formatTime(entry.clockIn)}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Logout</span>
+                  <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                    {entry.clockOut ? (
+                      <>
+                        {formatTime(entry.clockOut)}
+                        {nextDay && (
+                          <span style={{ fontSize: "0.68rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
+                        )}
+                      </>
+                    ) : (
+                      <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "var(--radius-pill)" }}>Active</span>
+                    )}
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-end" }}>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Hours</span>
+                  <span style={{ fontSize: "0.86rem", fontWeight: 700, color: nextDay ? "var(--warning)" : "var(--text-primary)" }}>
+                    {nextDay ? "Next Day" : `${Number(entry.totalHours ?? 0).toFixed(2)}h`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {records.length === 0 && (
+          <div style={{ padding: "18px 14px", color: "var(--text-secondary)", textAlign: "center" }}>
+            {emptyLabel}
+          </div>
+        )}
+      </DevLayoutSection>
+    ) : (
+      <DevLayoutSection
+        as="div"
+        sectionKey={`${keyPrefix}-shell`}
+        parentKey={parentKey}
+        sectionType="data-table-shell"
+        backgroundToken="surface"
+        style={{
+          maxHeight: shouldScroll ? "290px" : "none",
+          overflowY: shouldScroll ? "auto" : "visible",
+          marginTop: "10px",
+          borderRadius: "var(--radius-md)",
+          overflow: "hidden",
+          border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+          background: "var(--profile-table-surface)",
+        }}
+      >
+        <DevLayoutSection
+          as="table"
+          sectionKey={keyPrefix}
+          parentKey={parentKey}
+          sectionType="data-table"
+          backgroundToken="surface"
+          style={{ width: "100%", borderCollapse: "collapse", background: "var(--profile-table-surface)", tableLayout: "fixed" }}
+        >
+          <colgroup>
+            <col style={{ width: "112px" }} />
+            <col style={{ width: "92px" }} />
+            <col style={{ width: "104px" }} />
+            <col style={{ width: "120px" }} />
+            <col />
+          </colgroup>
+          <DevLayoutSection
+            as="thead"
+            sectionKey={`${keyPrefix}-headings`}
+            parentKey={keyPrefix}
+            sectionType="table-headings"
+            backgroundToken="accent-dark"
+          >
+            <tr
+              style={{
+                color: "var(--text-inverse, #ffffff)",
+                fontSize: "0.72rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                position: "sticky",
+                top: 0,
+                background: "var(--accent-dark, var(--accent-purple))",
+                zIndex: 1,
+              }}
+            >
+              <th style={{ textAlign: "left", padding: "12px 10px 12px 14px", whiteSpace: "nowrap" }}>Date</th>
+              <th style={{ textAlign: "center", padding: "12px 8px" }}>Login</th>
+              <th style={{ textAlign: "center", padding: "12px 8px" }}>Logout</th>
+              <th style={{ textAlign: "center", padding: "12px 8px" }}>Total Hours</th>
+              <th style={{ textAlign: "center", padding: "12px 14px 12px 8px" }}>Type</th>
+            </tr>
+          </DevLayoutSection>
+          <DevLayoutSection
+            as="tbody"
+            sectionKey={`${keyPrefix}-rows`}
+            parentKey={keyPrefix}
+            sectionType="table-rows"
+            backgroundToken="accent-surface"
+            style={{
+              background: "var(--profile-table-surface)",
+            }}
+          >
+            {records.map((entry, index) => {
+              const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
+              return (
+                <tr
+                  key={entry.id}
+                  style={{
+                    borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
+                    background: index % 2 === 0
+                      ? "var(--profile-table-surface)"
+                      : "var(--profile-table-alt-surface)",
+                  }}
+                >
+                  <td style={{ padding: "14px 10px 14px 14px", fontWeight: 600, whiteSpace: "nowrap", verticalAlign: "middle" }}>{formatDate(entry.date)}</td>
+                  <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>{formatTime(entry.clockIn)}</td>
+                  <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>
+                    {entry.clockOut ? formatTime(entry.clockOut) : (
+                      <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "var(--radius-pill)" }}>Active</span>
+                    )}
+                    {nextDay && (
+                      <span style={{ fontSize: "0.7rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
+                    )}
+                  </td>
+                  <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>
+                    {nextDay ? (
+                      <span style={{ color: "var(--warning)", fontWeight: 600 }}>Next Day</span>
+                    ) : (
+                      `${Number(entry.totalHours ?? 0).toFixed(2)}h`
+                    )}
+                  </td>
+                  <td style={{ textAlign: "center", padding: "14px 14px 14px 8px", verticalAlign: "middle" }}>
+                    <StatusTag
+                      label={entry.type || entry.status}
+                      tone={
+                        (entry.type || entry.status) === "Overtime"
+                          ? "warning"
+                          : (entry.type || entry.status) === "Weekend"
+                          ? "info"
+                          : (entry.type || entry.status) === "Weekday"
+                          ? "success"
+                          : "default"
+                      }
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+            {records.length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ padding: "18px 14px", color: "var(--text-secondary)", textAlign: "center" }}>
+                  {emptyLabel}
+                </td>
+              </tr>
+            )}
+          </DevLayoutSection>
+        </DevLayoutSection>
+      </DevLayoutSection>
+    )
+  );
 
   const content = (
     <div
@@ -2560,241 +2778,55 @@ export function ProfileWorkTab({
                 }}
                 title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Attendance History</span>}
                 action={
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    {!shouldUseHrData && (
-                      <Button
-                        type="button"
-                        onClick={() => setManualOvertimeModalOpen(true)}
-                        variant="primary"
-                        size="sm"
-                      >
-                        Add overtime
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      onClick={() => setRecurringModalOpen(true)}
-                      variant="secondary"
-                      size="sm"
-                      className="app-btn--control"
-                    >
-                      Recurring Rules
-                    </Button>
-                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => setRecurringModalOpen(true)}
+                    variant="secondary"
+                    size="sm"
+                    className="app-btn--control"
+                  >
+                    Recurring Rules
+                  </Button>
                 }
               >
+                {renderAttendanceBody({
+                  records: normalRecords,
+                  shouldScroll: shouldScrollNormalHistory,
+                  keyPrefix: "profile-auto-data-table-2",
+                  parentKey: "profile-work-attendance-history",
+                  emptyLabel: "No records found.",
+                })}
+              </ProfileCard>
 
-                {isMobile ? (
-                  <DevLayoutSection
-                    as="div"
-                    sectionKey="profile-auto-data-table-2-shell"
-                    parentKey="profile-work-attendance-history"
-                    sectionType="data-table-shell"
-                    backgroundToken="surface"
-                    style={{
-                      maxHeight: shouldScrollAttendanceHistory ? "420px" : "none",
-                      overflowY: shouldScrollAttendanceHistory ? "auto" : "visible",
-                      marginTop: "10px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                      padding: "4px",
-                      borderRadius: "var(--radius-md)",
-                      border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
-                      background: "var(--profile-table-surface)",
-                    }}
-                  >
-                    {attendanceRecords.map((entry) => {
-                      const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
-                      const entryType = entry.type || entry.status;
-                      const tone =
-                        entryType === "Overtime"
-                          ? "warning"
-                          : entryType === "Weekend"
-                          ? "info"
-                          : entryType === "Weekday"
-                          ? "success"
-                          : "default";
-                      return (
-                        <div
-                          key={entry.id}
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "8px",
-                            padding: "12px 14px",
-                            borderRadius: "var(--radius-md)",
-                            background: "var(--surface)",
-                            border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-primary)" }}>
-                              {formatDate(entry.date)}
-                            </span>
-                            <StatusTag label={entryType} tone={tone} />
-                          </div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                              <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Login</span>
-                              <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-primary)" }}>{formatTime(entry.clockIn)}</span>
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                              <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Logout</span>
-                              <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-primary)" }}>
-                                {entry.clockOut ? (
-                                  <>
-                                    {formatTime(entry.clockOut)}
-                                    {nextDay && (
-                                      <span style={{ fontSize: "0.68rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
-                                    )}
-                                  </>
-                                ) : (
-                                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "var(--radius-pill)" }}>Active</span>
-                                )}
-                              </span>
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-end" }}>
-                              <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Hours</span>
-                              <span style={{ fontSize: "0.86rem", fontWeight: 700, color: nextDay ? "var(--warning)" : "var(--text-primary)" }}>
-                                {nextDay ? "Next Day" : `${Number(entry.totalHours ?? 0).toFixed(2)}h`}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {attendanceRecords.length === 0 && (
-                      <div style={{ padding: "18px 14px", color: "var(--text-secondary)", textAlign: "center" }}>
-                        No records found.
-                      </div>
-                    )}
-                  </DevLayoutSection>
-                ) : (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="profile-auto-data-table-2-shell"
-                  parentKey="profile-work-attendance-history"
-                  sectionType="data-table-shell"
-                  backgroundToken="surface"
-                  style={{
-                    maxHeight: shouldScrollAttendanceHistory ? "290px" : "none",
-                    overflowY: shouldScrollAttendanceHistory ? "auto" : "visible",
-                    marginTop: "10px",
-                    borderRadius: "var(--radius-md)",
-                    overflow: "hidden",
-                    border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
-                    background: "var(--profile-table-surface)",
-                  }}
-                >
-                  <DevLayoutSection
-                    as="table"
-                    sectionKey="profile-auto-data-table-2"
-                    parentKey="profile-work-attendance-history"
-                    sectionType="data-table"
-                    backgroundToken="surface"
-                    style={{ width: "100%", borderCollapse: "collapse", background: "var(--profile-table-surface)", tableLayout: "fixed" }}
-                  >
-                    <colgroup>
-                      <col style={{ width: "112px" }} />
-                      <col style={{ width: "92px" }} />
-                      <col style={{ width: "104px" }} />
-                      <col style={{ width: "120px" }} />
-                      <col />
-                    </colgroup>
-                    <DevLayoutSection
-                      as="thead"
-                      sectionKey="profile-auto-data-table-2-headings"
-                      parentKey="profile-auto-data-table-2"
-                      sectionType="table-headings"
-                      backgroundToken="accent-dark"
+              <ProfileCard
+                sectionKey="profile-work-attendance-overtime-history"
+                parentKey="profile-work-attendance-history-group"
+                backgroundToken="accent-surface"
+                style={{
+                  background: "var(--surface)",
+                  border: "var(--section-card-border)",
+                }}
+                title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Overtime History</span>}
+                action={
+                  !shouldUseHrData && (
+                    <Button
+                      type="button"
+                      onClick={() => setManualOvertimeModalOpen(true)}
+                      variant="primary"
+                      size="sm"
                     >
-                      <tr
-                        style={{
-                          color: "var(--text-inverse, #ffffff)",
-                          fontSize: "0.72rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.04em",
-                          position: "sticky",
-                          top: 0,
-                          background: "var(--accent-dark, var(--accent-purple))",
-                          zIndex: 1,
-                        }}
-                      >
-                        <th style={{ textAlign: "left", padding: "12px 10px 12px 14px", whiteSpace: "nowrap" }}>Date</th>
-                        <th style={{ textAlign: "center", padding: "12px 8px" }}>Login</th>
-                        <th style={{ textAlign: "center", padding: "12px 8px" }}>Logout</th>
-                        <th style={{ textAlign: "center", padding: "12px 8px" }}>Total Hours</th>
-                        <th style={{ textAlign: "center", padding: "12px 14px 12px 8px" }}>Type</th>
-                      </tr>
-                    </DevLayoutSection>
-                    <DevLayoutSection
-                      as="tbody"
-                      sectionKey="profile-auto-data-table-2-rows"
-                      parentKey="profile-auto-data-table-2"
-                      sectionType="table-rows"
-                      backgroundToken="accent-surface"
-                      style={{
-                        background: "var(--profile-table-surface)",
-                      }}
-                    >
-                      {attendanceRecords.map((entry, index) => {
-                        const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
-                        return (
-                          <tr
-                            key={entry.id}
-                            style={{
-                              borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
-                              background: index % 2 === 0
-                                ? "var(--profile-table-surface)"
-                                : "var(--profile-table-alt-surface)",
-                            }}
-                          >
-                            <td style={{ padding: "14px 10px 14px 14px", fontWeight: 600, whiteSpace: "nowrap", verticalAlign: "middle" }}>{formatDate(entry.date)}</td>
-                          <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>{formatTime(entry.clockIn)}</td>
-                          <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>
-                            {entry.clockOut ? formatTime(entry.clockOut) : (
-                              <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "var(--radius-pill)" }}>Active</span>
-                            )}
-                            {nextDay && (
-                              <span style={{ fontSize: "0.7rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>
-                            {nextDay ? (
-                              <span style={{ color: "var(--warning)", fontWeight: 600 }}>Next Day</span>
-                            ) : (
-                              `${Number(entry.totalHours ?? 0).toFixed(2)}h`
-                            )}
-                          </td>
-                          <td style={{ textAlign: "center", padding: "14px 14px 14px 8px", verticalAlign: "middle" }}>
-                            <StatusTag
-                              label={entry.type || entry.status}
-                              tone={
-                                (entry.type || entry.status) === "Overtime"
-                                  ? "warning"
-                                  : (entry.type || entry.status) === "Weekend"
-                                  ? "info"
-                                  : (entry.type || entry.status) === "Weekday"
-                                  ? "success"
-                                  : "default"
-                              }
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {attendanceRecords.length === 0 && (
-                      <tr>
-                        <td colSpan={5} style={{ padding: "18px 14px", color: "var(--text-secondary)", textAlign: "center" }}>
-                          No records found.
-                        </td>
-                      </tr>
-                    )}
-                  </DevLayoutSection>
-                </DevLayoutSection>
-              </DevLayoutSection>
-                )}
+                      Add overtime
+                    </Button>
+                  )
+                }
+              >
+                {renderAttendanceBody({
+                  records: overtimeRecords,
+                  shouldScroll: shouldScrollOvertimeHistory,
+                  keyPrefix: "profile-auto-data-table-overtime",
+                  parentKey: "profile-work-attendance-overtime-history",
+                  emptyLabel: "No overtime records found.",
+                })}
               </ProfileCard>
             </DevLayoutSection>
 

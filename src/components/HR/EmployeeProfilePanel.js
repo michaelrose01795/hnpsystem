@@ -1,24 +1,24 @@
-﻿// ✅ Imports converted to use absolute alias "@/"
-// file location: src/components/HR/EmployeeProfilePanel.js
-import React, { useEffect, useRef, useState } from "react";
+﻿// file location: src/components/HR/EmployeeProfilePanel.js
+import React, { useState } from "react";
 import { StatusTag } from "@/components/HR/MetricCard";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
-const panelCardStyle = {
+// Outer "main" card uses the accent-surface theme colour; all inner blocks sit on --surface.
+const mainCardStyle = {
   borderRadius: "var(--radius-md)",
-  border: "none",
-  background: "var(--section-card-bg)",
-  padding: "var(--section-card-padding)",
+  border: "1px solid rgba(var(--accent-base-rgb), 0.22)",
+  background: "var(--accent-surface)",
+  padding: "20px",
   display: "flex",
   flexDirection: "column",
-  gap: "14px",
+  gap: "16px",
 };
 
-const sectionCardStyle = {
+const subCardStyle = {
   borderRadius: "var(--radius-md)",
   border: "none",
-  background: "var(--section-card-bg)",
+  background: "var(--surface)",
   padding: "16px",
   display: "flex",
   flexDirection: "column",
@@ -33,34 +33,34 @@ const labelStyle = {
   fontWeight: 600,
 };
 
-export default function EmployeeProfilePanel({ employee }) {
-  const editButtonRef = useRef(null);
-  const editButtonDisplayRef = useRef("");
+export default function EmployeeProfilePanel({ employee, onEdit }) {
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return undefined;
-    const button = Array.from(document.querySelectorAll("button")).find(
-      (node) => node?.textContent?.trim() === "Edit employee details"
-    );
-    if (!button) return undefined;
-    editButtonRef.current = button;
-    editButtonDisplayRef.current = button.style.display;
-    button.style.display = "none";
-    return () => {
-      button.style.display = editButtonDisplayRef.current || "";
-    };
-  }, [employee?.id]);
 
   if (!employee) {
     return (
-      <div className="text-center py-8">
-        <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)] mb-2">Employee Profile</p>
-        <p className="text-sm text-slate-500">Select an employee to view their profile.</p>
-        <p className="text-xs text-slate-400 mt-2">
-          Employee details, documents, and employment information will appear here.
+      <DevLayoutSection
+        sectionKey="hr-employee-profile-panel"
+        parentKey="hr-employees-detail-panel"
+        sectionType="section-shell"
+        shell
+        disableFallback
+        className="hr-employee-profile-panel hr-employee-profile-panel--empty"
+        style={{
+          ...mainCardStyle,
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "240px",
+          textAlign: "center",
+        }}
+      >
+        <p style={{ ...labelStyle, color: "var(--text-primary)", margin: 0 }}>Employee Profile</p>
+        <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+          Select an employee from the list to view their profile.
         </p>
-      </div>
+        <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+          Details, documents, and employment information will appear here.
+        </p>
+      </DevLayoutSection>
     );
   }
 
@@ -95,35 +95,43 @@ export default function EmployeeProfilePanel({ employee }) {
       shell
       disableFallback
       className="hr-employee-profile-panel"
-      style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+      backgroundToken="accent-surface"
+      style={mainCardStyle}
     >
+      <DevLayoutSection
+        sectionKey="hr-employee-profile-edit-row"
+        parentKey={profileParentKey}
+        sectionType="toolbar"
+        className="hr-employee-profile-edit-row"
+        style={{ display: "flex", justifyContent: "flex-end" }}
+      >
+        <button
+          type="button"
+          onClick={onEdit}
+          disabled={!onEdit}
+          style={{
+            padding: "10px 18px",
+            borderRadius: "var(--radius-sm)",
+            border: "1px solid rgba(var(--accent-base-rgb), 0.32)",
+            background: "var(--surface)",
+            color: "var(--text-primary)",
+            fontWeight: 700,
+            cursor: onEdit ? "pointer" : "not-allowed",
+          }}
+        >
+          Edit employee details
+        </button>
+      </DevLayoutSection>
+
       <DevLayoutSection
         sectionKey="hr-employee-profile-header"
         parentKey={profileParentKey}
         sectionType="content-card"
         backgroundToken="surface"
         className="hr-employee-profile-header-card"
-        style={{ ...panelCardStyle, padding: "20px", position: "relative" }}
+        style={subCardStyle}
       >
-        <button
-          type="button"
-          onClick={() => editButtonRef.current?.click()}
-          style={{
-            position: "absolute",
-            top: "18px",
-            right: "18px",
-            padding: "10px 16px",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            background: "rgba(var(--primary-rgb), 0.18)",
-            fontWeight: 700,
-            color: "var(--text-primary)",
-            cursor: "pointer",
-          }}
-        >
-          Edit employee details
-        </button>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingRight: "160px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <StatusTag label={employee.status} tone={employee.status === "Active" ? "success" : "default"} />
             <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.9rem" }}>
@@ -146,7 +154,7 @@ export default function EmployeeProfilePanel({ employee }) {
                     padding: "6px 12px",
                     borderRadius: "var(--radius-pill)",
                     border: "none",
-                    background: "rgba(var(--primary-rgb), 0.08)",
+                    background: "rgba(var(--accent-base-rgb), 0.12)",
                     color: "var(--text-primary)",
                     fontSize: "0.75rem",
                     fontWeight: 600,
@@ -401,7 +409,7 @@ function CardBlock({ title, action = null, children, sectionKey, parentKey }) {
       sectionType="content-card"
       backgroundToken="surface"
       className="hr-employee-card-block"
-      style={sectionCardStyle}
+      style={subCardStyle}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
         <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)" }}>{title}</div>

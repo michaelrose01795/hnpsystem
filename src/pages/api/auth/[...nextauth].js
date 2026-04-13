@@ -4,13 +4,22 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { supabase } from "@/lib/supabaseClient";
+import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
 
-// Auto-correct NEXTAUTH_URL for Vercel deployments
-// NextAuth uses NEXTAUTH_URL to determine cookie naming (secure vs non-secure prefix)
-// If set to localhost on a production Vercel deployment, session cookies break
-if (process.env.VERCEL_URL && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))) {
-  process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
-}
+const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
+
+const applyRuntimeNextAuthUrl = (req) => {
+  const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
+  const proto =
+    req?.headers?.["x-forwarded-proto"] ||
+    (host && !isLocalhostUrl(host) ? "https" : "http");
+
+  if (!host) return;
+
+  if (!isLocalhostUrl(host) && (!process.env.NEXTAUTH_URL || isLocalhostUrl(process.env.NEXTAUTH_URL))) {
+    process.env.NEXTAUTH_URL = `${proto}://${host}`;
+  }
+};
 
 export const authOptions = {
   providers: [
@@ -40,6 +49,7 @@ export const authOptions = {
               name: [data.first_name, data.last_name].filter(Boolean).join(" ") || "User",
               email: data.email,
               role: data.role,
+              roles: DEV_FULL_ACCESS_ROLES,
               isDevLogin: true,
             };
           }
@@ -74,6 +84,7 @@ export const authOptions = {
   // Use custom login page instead of NextAuth default
   pages: {
     signIn: "/login",
+    error: "/login",
   },
 
   // Use JWT strategy for session management
@@ -90,7 +101,11 @@ export const authOptions = {
         if (account.provider === "credentials" && user) {
           // Credentials login — user object comes from authorize()
           token.userId = user.id;
-          token.roles = user.role ? [user.role] : [];
+          token.roles = Array.isArray(user.roles)
+            ? user.roles
+            : user.role
+            ? [user.role]
+            : [];
           token.isDevLogin = Boolean(user.isDevLogin);
           token.accessToken = null;
           token.idToken = null;
@@ -114,4 +129,7 @@ export const authOptions = {
   },
 };
 
-export default NextAuth(authOptions);
+export default async function auth(req, res) {
+  applyRuntimeNextAuthUrl(req);
+  return await NextAuth(req, res, authOptions);
+}

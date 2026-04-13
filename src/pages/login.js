@@ -17,6 +17,8 @@ import { canShowDevLogin } from "@/lib/dev-tools/config";
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
+const DEFAULT_STAFF_POST_LOGIN_ROUTE = "/newsfeed";
+const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/customer";
 const hasActiveLogoutBarrier = () => {
   if (typeof window === "undefined") return false;
   const raw = window.sessionStorage.getItem(LOGOUT_BARRIER_STORAGE_KEY);
@@ -27,6 +29,29 @@ const hasActiveLogoutBarrier = () => {
     return false;
   }
   return true;
+};
+
+const isSafeLocalRoute = (value) =>
+  typeof value === "string" &&
+  value.startsWith("/") &&
+  !value.startsWith("//") &&
+  !value.startsWith("/api/");
+
+const getDefaultPostLoginRoute = (activeUser) => {
+  const roles = []
+    .concat(activeUser?.roles || [])
+    .concat(activeUser?.role ? [activeUser.role] : [])
+    .map((role) => String(role).toLowerCase());
+  const isCustomer = roles.some((role) => role.includes("customer"));
+  return isCustomer ? DEFAULT_CUSTOMER_POST_LOGIN_ROUTE : DEFAULT_STAFF_POST_LOGIN_ROUTE;
+};
+
+const getPostLoginRoute = (router, activeUser) => {
+  const redirectedFrom = router?.query?.redirectedFrom;
+  if (isSafeLocalRoute(redirectedFrom)) {
+    return redirectedFrom;
+  }
+  return getDefaultPostLoginRoute(activeUser);
 };
 
 const LoginCard = ({
@@ -99,6 +124,7 @@ export default function LoginPage() {
   const userContext = useUser();
   const user = userContext?.user;
   const dbUserId = userContext?.dbUserId;
+  const devLogin = userContext?.devLogin;
   const logout = userContext?.logout;
   const logoutInProgress = userContext?.logoutInProgress;
   const {
@@ -175,7 +201,8 @@ export default function LoginPage() {
     return normalizedCategory;
   }, [usersByRole, usersByRoleDetailed]);
 
-  // Developer login handler — routes through NextAuth CredentialsProvider
+  // Developer login uses the local dev-auth path so it stays stable on hosted
+  // github.dev previews even when NextAuth callback URLs are misconfigured.
   const handleDevLogin = async () => {
     if (!allowDevUserSelection) {
       setErrorMessage("Developer login is disabled in this environment.");
@@ -189,15 +216,16 @@ export default function LoginPage() {
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
     }
-    const userId = selectedUser?.user_id || selectedUser?.id || selectedUser?.identifier;
-    const result = await signIn("credentials", {
-      userId: String(userId),
-      redirect: false,
-    });
+    const target = getPostLoginRoute(router, selectedUser);
+    const result = await devLogin?.(selectedUser, selectedDepartment || selectedCategory || "WORKSHOP");
 
-    if (result?.error) {
+    if (!result?.success) {
       setErrorMessage("Developer login failed. Session was not created.");
+      return;
     }
+
+    setIsRedirecting(true);
+    await router.replace(target);
   };
 
   // Email/password login — routes through NextAuth CredentialsProvider
@@ -208,15 +236,22 @@ export default function LoginPage() {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
     }
     try {
+      const target = getPostLoginRoute(router, null);
       const result = await signIn("credentials", {
         email,
         password,
+        callbackUrl: target,
         redirect: false,
       });
 
       if (result?.error) {
         setErrorMessage("User not found or incorrect password.");
         return;
+      }
+
+      if (result?.ok) {
+        setIsRedirecting(true);
+        await router.replace(target);
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -379,8 +414,8 @@ export default function LoginPage() {
       clockIn();
     }
 
-    const target = isCustomer ? "/customer" : "/newsfeed";
-    router.push(target);
+    const target = getPostLoginRoute(router, activeUser);
+    router.replace(target);
   }, [user, session, sessionStatus, router, dbUserId, logoutInProgress]);
 
   useEffect(() => {

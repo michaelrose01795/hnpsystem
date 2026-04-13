@@ -4,6 +4,7 @@ import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { getUserById } from "@/lib/database/users";
+import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
 
 const DEV_ROLE_COOKIE = "hnp-dev-roles";
 const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -259,7 +260,8 @@ export function UserProvider({ children }) {
             id: resolved.id,
             username: resolved.name,
             email: resolved.email,
-            roles: [resolved.role?.toUpperCase() || role.toUpperCase()],
+            roles: DEV_FULL_ACCESS_ROLES.map((entry) => entry.toUpperCase()),
+            impersonatedRole: resolved.role || role,
             authUuid: null,
             isDevLogin: true,
           }
@@ -267,7 +269,8 @@ export function UserProvider({ children }) {
             id: Date.now(),
             username: fallbackName,
             email: userChoice?.email || "",
-            roles: [role.toUpperCase()],
+            roles: DEV_FULL_ACCESS_ROLES.map((entry) => entry.toUpperCase()),
+            impersonatedRole: role,
             authUuid: null,
             isDevLogin: true,
           };
@@ -301,7 +304,7 @@ export function UserProvider({ children }) {
     // Clear NextAuth session cookie (no-op if no session exists)
     try {
       await nextAuthSignOut({ redirect: false });
-    } catch (_) {
+    } catch {
       // Ignore errors — session might not exist
     } finally {
       setIsLoggingOut(false);

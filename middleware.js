@@ -8,12 +8,19 @@ import {
   normalizeRoles,
 } from "./src/lib/auth/roles";
 
-// Auto-correct NEXTAUTH_URL for Vercel deployments
-// getToken uses NEXTAUTH_URL to determine cookie naming (secure vs non-secure prefix)
-// If set to localhost on a production Vercel deployment, JWT token verification breaks
-if (process.env.VERCEL_URL && (!process.env.NEXTAUTH_URL || process.env.NEXTAUTH_URL.includes("localhost"))) {
-  process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_URL}`;
-}
+const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
+const applyRuntimeNextAuthUrl = (req) => {
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
+  const proto =
+    req.headers.get("x-forwarded-proto") ||
+    (host && !isLocalhostUrl(host) ? "https" : req.nextUrl.protocol.replace(":", ""));
+
+  if (!host) return;
+
+  if (!isLocalhostUrl(host) && (!process.env.NEXTAUTH_URL || isLocalhostUrl(process.env.NEXTAUTH_URL))) {
+    process.env.NEXTAUTH_URL = `${proto}://${host}`;
+  }
+};
 
 const HR_ALLOWED_PATHS_FOR_MANAGERS = ["/hr/employees", "/hr/leave"];
 const RELAX_HR_ACCESS = process.env.NEXT_PUBLIC_RELAX_HR_ACCESS === "true";
@@ -23,6 +30,7 @@ const logMiddlewareCheck = (message, details = {}) => {
   console.info(`[middleware] ${message}`, details);
 };
 export async function middleware(req) {
+  applyRuntimeNextAuthUrl(req);
   const { pathname } = req.nextUrl;
   const isHrRoute = pathname.startsWith("/hr");
   const isAdminRoute = pathname.startsWith("/admin");
