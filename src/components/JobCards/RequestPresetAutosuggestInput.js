@@ -23,7 +23,33 @@ export default function RequestPresetAutosuggestInput({
   const inputRef = useRef(null);
   const menuRef = useRef(null);
 
-  const query = useMemo(() => String(value || ""), [value]);
+  // Local state keeps the input responsive — parent is notified via debounced onChange
+  const [localValue, setLocalValue] = useState(value);
+  const debounceRef = useRef(null);
+  const prevExternalValueRef = useRef(value);
+
+  // Sync local state when the external value changes (e.g. preset selection or clear)
+  useEffect(() => {
+    if (value !== prevExternalValueRef.current) {
+      prevExternalValueRef.current = value;
+      setLocalValue(value);
+    }
+  }, [value]);
+
+  const handleLocalChange = (newValue) => {
+    setLocalValue(newValue);
+    prevExternalValueRef.current = newValue; // prevent sync loop
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      onChange(newValue);
+    }, 250);
+  };
+
+  useEffect(() => {
+    return () => clearTimeout(debounceRef.current);
+  }, []);
+
+  const query = useMemo(() => String(localValue || ""), [localValue]);
   const { suggestions, loading } = useJobRequestPresetSuggestions({
     query,
     enabled: isFocused && !disabled,
@@ -125,8 +151,8 @@ export default function RequestPresetAutosuggestInput({
       <input
         ref={inputRef}
         type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
+        value={localValue}
+        onChange={(event) => handleLocalChange(event.target.value)}
         onFocus={() => {
           setIsFocused(true);
         }}

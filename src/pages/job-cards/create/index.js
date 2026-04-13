@@ -455,10 +455,7 @@ export default function CreateJobCardPage() {
     if (isDiagnosticRequestText(value)) {
       updated[index].time = "1.00";
     }
-    const detections = detectJobTypesForRequests(updated);
-    setRequests(updated); // store updated list
-    setJobDetections(detections);
-    setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
+    setRequests(updated); // store updated list — detection handled by useEffect
   };
 
   // handle changes to estimated time for a request
@@ -572,19 +569,22 @@ export default function CreateJobCardPage() {
   const getJobInfoOptionStyle = (isSelected) => ({
     width: "100%",
     maxWidth: "320px",
-    minHeight: "44px",
+    minHeight: "var(--control-height)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: "8px",
     cursor: "pointer",
-    padding: "12px 16px",
-    borderRadius: "var(--radius-xs)",
-    border: isSelected ? "1px solid var(--primary)" : "1px solid var(--accent-border)",
-    backgroundColor: "var(--surface)",
-    color: isSelected ? "var(--primary)" : "var(--text-primary)",
-    transition: "all 0.2s",
-    fontWeight: isSelected ? 600 : 500,
+    padding: "var(--control-padding)",
+    borderRadius: "var(--control-radius)",
+    border: "none",
+    backgroundColor: isSelected ? "var(--accentMain)" : "var(--control-bg)",
+    color: isSelected ? "var(--onAccentText)" : "var(--accentText)",
+    transition: "var(--control-transition)",
+    fontWeight: 600,
+    fontSize: "var(--control-font-size)",
+    lineHeight: 1,
+    boxSizing: "border-box",
   });
 
   const customerFieldDefinitions = [
@@ -1372,18 +1372,19 @@ export default function CreateJobCardPage() {
                     </button>
                   );
                 })}
+                {!isSubJobMode && (
+                  <button
+                    type="button"
+                    onClick={addNewJobTab}
+                    data-tone="default"
+                    className="tab-api__item job-cards-create-add-linked-button"
+                    title="Add another linked job"
+                    style={{ fontWeight: 700, fontSize: "1.1rem", lineHeight: 1, padding: "0 10px" }}
+                  >
+                    +
+                  </button>
+                )}
               </div>
-
-              {!isSubJobMode && (
-                <button
-                  type="button"
-                  onClick={addNewJobTab}
-                  className="app-btn app-btn--secondary app-btn--sm app-btn--pill job-cards-create-add-linked-button"
-                  title="Add another linked job"
-                >
-                  + Link job card
-                </button>
-              )}
 
               {!isSubJobMode && hasLinkedJobCards && (
                 <button
@@ -1405,27 +1406,21 @@ export default function CreateJobCardPage() {
             }}
           >
             <div
+              className="tab-api"
               style={{
                 width: "100%",
                 maxWidth: "520px",
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
-                padding: "6px",
-                borderRadius: "var(--radius-pill)",
-                background: "var(--accent-surface)",
-                border: "1px solid var(--accent-border)",
               }}
             >
               {populatedRequests.length === 0 ? (
                 <span
+                  data-tone="default"
+                  className="tab-api__item"
                   style={{
-                    padding: "6px 12px",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    color: "var(--text-secondary)",
+                    opacity: 0.55,
+                    pointerEvents: "none",
+                    cursor: "default",
                   }}
                 >
                   No detected requests yet
@@ -1483,13 +1478,17 @@ export default function CreateJobCardPage() {
             {/* Job Source Badge */}
             <span
               style={{
-                padding: "8px 16px",
-                borderRadius: "var(--control-radius-xs)",
+                minHeight: "var(--control-height)",
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxSizing: "border-box",
                 backgroundColor: jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
-                color: jobSource === "Warranty" ? "var(--danger)" : "var(--success-dark)",
-                fontSize: "13px",
+                color: jobSource === "Warranty" ? "var(--warning-dark)" : "var(--success-dark)",
+                fontSize: "var(--control-font-size)",
                 fontWeight: 600,
-                border: "1px solid currentColor",
                 letterSpacing: "0.3px",
               }}
             >
@@ -1500,7 +1499,7 @@ export default function CreateJobCardPage() {
               onClick={handleSaveJob}
               className="app-btn app-btn--primary"
             >
-              {asPrimeJob && jobTabs.length > 1 ? `Save ${jobTabs.length} Jobs` : "Save Job Card"}
+              {jobTabs.length > 1 ? `Save ${jobTabs.length} Jobs` : "Save Job Card"}
             </button>
           </div>
         </DevLayoutSection>
@@ -1567,15 +1566,15 @@ export default function CreateJobCardPage() {
             sectionType="section-shell"
             parentKey="job-cards-create-content"
             shell
-            style={{ display: "flex", gap: "16px", width: "100%" }}
+            style={{ display: "flex", flexWrap: "wrap", gap: "16px", width: "100%" }}
           >
-            {/* Job Information Section - 33% width */}
+            {/* Job Information Section - responsive, min 260px */}
             <DevLayoutSection
               sectionKey="job-cards-create-job-information"
               sectionType="content-card"
               parentKey="job-cards-create-top-row"
               style={{
-                flex: 1,
+                flex: "1 1 260px",
                 minWidth: 0,
                 padding: "var(--section-card-padding)",
                 borderRadius: "var(--radius-md)",
@@ -1583,7 +1582,6 @@ export default function CreateJobCardPage() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
-                height: topRowHeight ? `${topRowHeight}px` : "auto",
                 minHeight: "420px",
                 boxSizing: "border-box",
                 overflowY: "auto",
@@ -1674,13 +1672,13 @@ export default function CreateJobCardPage() {
               </div>
             </DevLayoutSection>
 
-            {/* Vehicle Details Section - 33% width */}
+            {/* Vehicle Details Section - responsive, min 260px */}
             <DevLayoutSection
               sectionKey="job-cards-create-vehicle-details"
               sectionType="content-card"
               parentKey="job-cards-create-top-row"
               style={{
-                flex: 1,
+                flex: "1 1 260px",
                 minWidth: 0,
                 padding: "var(--section-card-padding)",
                 borderRadius: "var(--radius-md)",
@@ -1688,7 +1686,6 @@ export default function CreateJobCardPage() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
-                height: topRowHeight ? `${topRowHeight}px` : "auto",
                 minHeight: "420px",
                 boxSizing: "border-box",
                 overflowY: "auto",
@@ -1907,13 +1904,13 @@ export default function CreateJobCardPage() {
               </div>
             </DevLayoutSection>
 
-            {/* Customer Details Section - 33% width */}
+            {/* Customer Details Section - responsive, min 260px */}
             <DevLayoutSection
               sectionKey="job-cards-create-customer-details"
               sectionType="content-card"
               parentKey="job-cards-create-top-row"
               style={{
-                flex: 1,
+                flex: "1 1 260px",
                 minWidth: 0,
                 padding: "var(--section-card-padding)",
                 borderRadius: "var(--radius-md)",
@@ -1921,7 +1918,6 @@ export default function CreateJobCardPage() {
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px",
-                height: topRowHeight ? `${topRowHeight}px` : "auto",
                 minHeight: "420px",
                 boxSizing: "border-box",
                 overflowY: "auto",
@@ -1993,7 +1989,7 @@ export default function CreateJobCardPage() {
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
                         gap: "12px",
                       }}
                     >
@@ -2126,7 +2122,7 @@ export default function CreateJobCardPage() {
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                         gap: "8px",
                       }}
                     >

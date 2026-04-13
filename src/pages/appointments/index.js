@@ -211,8 +211,8 @@ const SATURDAY_SEVERITY_STYLES = {
 
 const getBookingSeverity = (percent) => {
   if (Number.isNaN(percent)) return "green";
-  if (percent >= 86) return "red";
-  if (percent >= 65) return "amber";
+  if (percent >= 90) return "red";
+  if (percent >= 50) return "amber";
   return "green";
 };
 
@@ -1405,6 +1405,8 @@ export default function Appointments() {
               style={{
                 width: "100%",
                 minHeight: "var(--control-height-sm)",
+                padding: "var(--control-padding-sm)",
+                borderRadius: "var(--control-radius-sm)",
               }}
             />
             <DropdownField
@@ -1458,86 +1460,115 @@ export default function Appointments() {
           data-dev-section-type="section-shell"
           style={{
             flex: "0 0 auto",
-            maxHeight: "calc(8 * 42px + 60px)",
-            overflowY: "auto",
             marginBottom: "12px",
             borderRadius: "var(--radius-md)",
             border: "var(--control-border)",
-            boxShadow: "none",
+            overflow: "hidden",
             background: "var(--page-card-bg-alt)",
           }}
         >
-          <table
-            id="appointments-auto-data-table-2"
-            data-dev-section-key="appointments-auto-data-table-2"
-            data-dev-section-type="data-table"
-            style={{
-              width: "100%",
-              borderCollapse: "separate",
-              borderSpacing: 0,
-              backgroundColor: "transparent",
-            }}
-          >
-            <thead
-              data-dev-section-key="appointments-auto-data-table-2-headings"
-              data-dev-section-type="table-headings"
-              data-dev-section-parent="appointments-auto-data-table-2"
+          {/* Heading — structurally outside scroll, always visible at top */}
+          {/* scrollbarGutter: stable reserves the same gutter as the body scroll div so columns stay aligned */}
+          <div style={{ overflowY: "auto", scrollbarGutter: "stable" }}>
+            <table
+              id="appointments-auto-data-table-2"
+              data-dev-section-key="appointments-auto-data-table-2"
+              data-dev-section-type="data-table"
               style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 5,
-                background: "var(--primary)",
-                boxShadow: "0 1px 0 rgba(var(--shadow-rgb), 0.12)",
-                isolation: "isolate",
+                width: "100%",
+                borderCollapse: "separate",
+                borderSpacing: 0,
+                backgroundColor: "transparent",
+                tableLayout: "fixed",
               }}
             >
-              <tr
-                style={{
-                  background: "var(--primary)",
-                  borderBottom: "1px solid rgba(var(--surface-rgb), 0.18)",
-                }}
+              <colgroup>
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "19%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "8%" }} />
+              </colgroup>
+              <thead
+                data-dev-section-key="appointments-auto-data-table-2-headings"
+                data-dev-section-type="table-headings"
+                data-dev-section-parent="appointments-auto-data-table-2"
               >
-                {[
-                  { label: "Day/Date", align: "left", width: "auto" },
-                  { label: "Availability", align: "left", width: "auto" },
-                  { label: "Hours", align: "center", width: "64px" },
-                  { label: "Jobs", align: "center", width: "56px" },
-                  { label: "Finish", align: "center", width: "72px" },
-                  { label: "Services", align: "center", width: "72px" },
-                  { label: "MOT", align: "center", width: "56px" },
-                  { label: "Diagnosis", align: "center", width: "80px" },
-                  { label: "Other", align: "center", width: "64px" },
-                  { label: "Staff Off", align: "center", width: "72px" },
-                ].map(({ label, align, width }) => (
-                  <th
-                    key={label}
-                    style={{
-                      textAlign: align,
-                      width,
-                      padding: "10px 10px",
-                      fontWeight: "700",
-                      fontSize: "11px",
-                      letterSpacing: "0.05em",
-                      textTransform: "uppercase",
-                      color: "var(--text-inverse)",
-                      borderBottom: "1px solid rgba(var(--surface-rgb), 0.18)",
-                      background: "var(--primary)",
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 6,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody
-              data-dev-section-key="appointments-auto-data-table-2-rows"
-              data-dev-section-type="table-rows"
-              data-dev-section-parent="appointments-auto-data-table-2"
+                <tr>
+                  {[
+                    { label: "Date", align: "left" },
+                    { label: "Availability", align: "left" },
+                    { label: "Hours", align: "center" },
+                    { label: "Jobs", align: "center" },
+                    { label: "Finish", align: "center" },
+                    { label: "Services", align: "center" },
+                    { label: "MOT", align: "center" },
+                    { label: "Diagnosis", align: "center" },
+                    { label: "Other", align: "center" },
+                    { label: "Staff Off", align: "center" },
+                  ].map(({ label, align }) => (
+                    <th
+                      key={label}
+                      style={{
+                        textAlign: align,
+                        padding: "10px 10px",
+                        fontWeight: "700",
+                        fontSize: "11px",
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase",
+                        color: "var(--text-inverse)",
+                        background: "var(--primary)",
+                        whiteSpace: "nowrap",
+                        borderBottom: "2px solid rgba(var(--shadow-rgb), 0.2)",
+                      }}
+                    >
+                      {label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+            </table>
+          </div>
+
+          {/* Scrollable body — scrollbarGutter matches header div so columns align */}
+          <div
+            style={{
+              maxHeight: "calc(8 * 42px)",
+              overflowY: "auto",
+              scrollbarGutter: "stable",
+            }}
+          >
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "separate",
+                borderSpacing: 0,
+                backgroundColor: "transparent",
+                tableLayout: "fixed",
+              }}
             >
+              <colgroup>
+                <col style={{ width: "15%" }} />
+                <col style={{ width: "19%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "8%" }} />
+              </colgroup>
+              <tbody
+                data-dev-section-key="appointments-auto-data-table-2-rows"
+                data-dev-section-type="table-rows"
+                data-dev-section-parent="appointments-auto-data-table-2"
+              >
                 {dates.map((date, index) => {
                 const dateKey = date.toDateString();
                 const counts = getJobCounts(date);
@@ -1554,12 +1585,9 @@ export default function Appointments() {
                 const severityStyle = severityStyleSource[severity];
                 const isCalmDay = severity === "green" || !severityStyle;
                 const isToday = isSameDate(date, new Date());
-                const zebraRowBackground = index % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
                 const defaultRowBackground = isCalmDay
-                  ? isWeekendSaturday
-                    ? "var(--warning-surface)"
-                    : zebraRowBackground
-                  : severityStyle.backgroundColor || (isWeekendSaturday ? "var(--warning-surface)" : zebraRowBackground);
+                  ? "var(--success-surface)"
+                  : severityStyle.backgroundColor || "var(--section-card-bg)";
                 let rowBackground = defaultRowBackground;
 
                 // Selected date (theme primary fill — red light / purple dark)
@@ -1579,99 +1607,55 @@ export default function Appointments() {
                 const severityBorderLeft =
                   !isCalmDay && severityStyle?.borderColor
                     ? `4px solid ${severityStyle.borderColor}`
-                    : "4px solid transparent";
+                    : "4px solid var(--success)";
                 const bookingPercentDisplay = Number.isFinite(bookingPercent)
                   ? bookingPercent.toFixed(0)
                   : "0";
                 const availabilityLabelColor = isCalmDay
-                  ? "var(--text-secondary)"
+                  ? "var(--success-dark)"
                   : severityStyle?.textColor || "var(--text-primary)";
-                const baseOutline = isToday ? "2px solid rgba(var(--primary-rgb), 0.28)" : "none";
-                const hoverOutline = "2px solid rgba(var(--accent-base-rgb), 0.32)";
                 const cellBorder = "1px solid rgba(var(--accent-base-rgb), 0.12)";
                 
                 return (
                   <tr
                     key={dateKey}
+                    className={isWeekendSaturday ? "appt-sat-row" : undefined}
                     onClick={() => setSelectedDay(date)}
                     style={{
                       cursor: "pointer",
                       backgroundColor: rowBackground,
-                      transition: "background-color 0.2s ease, outline-color 0.2s ease",
-                      borderLeft: severityBorderLeft,
-                      outline: baseOutline,
-                      outlineOffset: "-2px",
-                      position: "relative",
-                      zIndex: isToday ? 2 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.zIndex = "5";
-                      e.currentTarget.style.outline = hoverOutline;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.zIndex = isToday ? "2" : "1";
-                      e.currentTarget.style.outline = baseOutline;
                     }}
                   >
-                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, fontWeight: isSelected ? "700" : "600", verticalAlign: "top" }}>
-                      <div style={{ display: "grid", gap: "2px" }}>
-                        <span style={{ color: "var(--accent-strong)", fontSize: "13px" }}>{formatDate(date)}</span>
-                        <span style={{ fontSize: "10px", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                          {isToday ? "Today" : date.toLocaleDateString("en-GB", { weekday: "long" })}
-                        </span>
-                      </div>
+                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, borderLeft: severityBorderLeft, fontWeight: isSelected ? "700" : "600", verticalAlign: "middle" }}>
+                      <span style={{ color: "var(--accent-strong)", fontSize: "13px", whiteSpace: "nowrap" }}>{formatDate(date)}</span>
                     </td>
                     <td
                       style={{
                         padding: "10px 10px",
                         borderBottom: cellBorder,
-                        verticalAlign: "top",
+                        verticalAlign: "middle",
                       }}
                     >
-                      <div style={{ display: "grid", gap: "4px" }}>
-                        <div
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
+                        <span style={{ fontSize: "12px", fontWeight: "700", color: availabilityLabelColor }}>
+                          {dayTechSummary.availableTechs} tech{dayTechSummary.availableTechs !== 1 ? "s" : ""}
+                        </span>
+                        <span
                           style={{
-                            fontSize: "12px",
-                            fontWeight: "700",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "2px 6px",
+                            borderRadius: "var(--radius-pill)",
+                            background: isCalmDay
+                              ? "rgba(var(--success-rgb), 0.15)"
+                              : severityStyle.backgroundColor,
                             color: availabilityLabelColor,
-                            whiteSpace: "nowrap",
+                            fontSize: "11px",
+                            fontWeight: "700",
                           }}
                         >
-                          {dayTechSummary.availableTechs} tech
-                          {dayTechSummary.availableTechs !== 1 ? "s" : ""} available
-                        </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              padding: "3px 7px",
-                              borderRadius: "var(--radius-pill)",
-                              background: "var(--accent-surface)",
-                              color: "var(--text-primary)",
-                              fontSize: "10px",
-                              fontWeight: "700",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {totalAvailableHours.toFixed(1)}h
-                          </span>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              padding: "3px 7px",
-                              borderRadius: "var(--radius-pill)",
-                              background: isCalmDay ? "var(--accent-surface)" : severityStyle.backgroundColor,
-                              color: isCalmDay ? "var(--text-secondary)" : availabilityLabelColor,
-                              fontSize: "10px",
-                              fontWeight: "700",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {bookingPercentDisplay}%
-                          </span>
-                        </div>
+                          {bookingPercentDisplay}%
+                        </span>
                       </div>
                     </td>
                     <td style={{
@@ -1722,14 +1706,20 @@ export default function Appointments() {
                       textAlign: "center",
                     }}>
                       {staffEntries.length > 0 ? (
-                        <button
-                          type="button"
+                        <span
+                          role="button"
+                          tabIndex={0}
                           onClick={(event) => handleShowStaffOff(event, date, staffEntries)}
-                          className="app-btn app-btn--secondary app-btn--xs app-btn--pill"
-                          style={{ minWidth: "32px" }}
+                          onKeyDown={(e) => e.key === "Enter" && handleShowStaffOff(e, date, staffEntries)}
+                          style={{
+                            cursor: "pointer",
+                            fontWeight: "700",
+                            fontSize: "13px",
+                            color: "var(--danger)",
+                          }}
                         >
                           {staffEntries.length}
-                        </button>
+                        </span>
                       ) : (
                         "-"
                       )}
@@ -1737,21 +1727,22 @@ export default function Appointments() {
                   </tr>
                 );
               })}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Jobs for Selected Day Section */}
-        <div style={{ 
-          flex: "0 0 40%", 
-          marginBottom: "8px", 
-          border: "none", 
-          borderRadius: "var(--radius-sm)", 
-          padding: "16px", 
-          backgroundColor: "var(--surface)", 
-          boxShadow: "none", 
-          overflowY: "auto" 
-        }}>
+        <div
+          className="app-page-card"
+          style={{
+            flex: "0 0 40%",
+            marginBottom: "8px",
+            padding: "16px",
+            overflowY: "auto",
+            background: "var(--page-card-bg-alt)",
+          }}
+        >
           <div style={{ 
             display: "flex", 
             justifyContent: "space-between", 
@@ -2322,53 +2313,113 @@ export default function Appointments() {
         </Popup>
         {/* Staff Off Popup */}
         <Popup isOpen={showStaffOffPopup} onClose={() => setShowStaffOffPopup(false)}>
-          <h3 style={{ marginTop: 0, marginBottom: "12px", fontSize: "20px", fontWeight: "600" }}>
-            Staff Off · {formatDate(staffOffPopupDate || selectedDay)}
-          </h3>
-          <p style={{ marginTop: 0, marginBottom: "16px", color: "var(--grey-accent)", fontSize: "14px" }}>
-            Showing approved holiday/absence data for the selected roles.
-          </p>
+          <div style={{ width: "260px" }}>
+          {/* Header */}
+          <div style={{ marginBottom: "18px", paddingBottom: "14px", borderBottom: "var(--control-border)" }}>
+            <h3 style={{ margin: "0 0 8px", fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>
+              Staff Off
+            </h3>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "3px 10px",
+              borderRadius: "var(--radius-pill)",
+              background: "var(--accent-surface)",
+              color: "var(--accent-strong)",
+              fontSize: "12px",
+              fontWeight: "600",
+            }}>
+              {formatDate(staffOffPopupDate || selectedDay)}
+            </span>
+          </div>
+
+          {/* Entry list */}
           {staffOffPopupDetails.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "16px" }}>
-              {staffOffPopupDetails.map((entry, index) => (
-                <div
-                  key={`${entry.id}-${index}`}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "var(--radius-sm)",
-                    backgroundColor: "var(--surface)",
-                    border: "none",
-                    boxShadow: "none"
-                  }}
-                >
-                  <div style={{ fontWeight: "600", color: "var(--text-secondary)" }}>{entry.name}</div>
-                  <div style={{ fontSize: "13px", color: "var(--grey-accent-dark)", marginTop: "4px" }}>
-                    {entry.role} · {entry.type}
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "calc(5 * 58px)", overflowY: "auto" }}>
+              {staffOffPopupDetails.map((entry, index) => {
+                const typeLower = (entry.type || "").toLowerCase();
+                const typeColor = typeLower.includes("sick")
+                  ? { bg: "var(--warning-surface)", text: "var(--warning)" }
+                  : typeLower.includes("holiday") || typeLower.includes("annual")
+                  ? { bg: "var(--success-surface)", text: "var(--success-dark)" }
+                  : { bg: "var(--accent-surface)", text: "var(--text-secondary)" };
+                const initial = (entry.name || "?").charAt(0).toUpperCase();
+                return (
+                  <div
+                    key={`${entry.id}-${index}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "10px 12px",
+                      borderRadius: "var(--radius-sm)",
+                      background: "var(--section-card-bg)",
+                      border: "var(--control-border)",
+                    }}
+                  >
+                    {/* Avatar initial */}
+                    <div style={{
+                      flexShrink: 0,
+                      width: "36px",
+                      height: "36px",
+                      borderRadius: "50%",
+                      background: "var(--accent-surface)",
+                      color: "var(--accent-strong)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: "700",
+                      fontSize: "14px",
+                    }}>
+                      {initial}
+                    </div>
+
+                    {/* Name + role */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: "600", fontSize: "14px", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {entry.name}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "2px" }}>
+                        {entry.role}
+                      </div>
+                    </div>
+
+                    {/* Type badge + hours */}
+                    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "2px 8px",
+                        borderRadius: "var(--radius-pill)",
+                        background: typeColor.bg,
+                        color: typeColor.text,
+                        fontSize: "11px",
+                        fontWeight: "700",
+                        whiteSpace: "nowrap",
+                      }}>
+                        {entry.type || "Holiday"}
+                      </span>
+                      {entry.unavailableHours != null && (
+                        <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                          {entry.unavailableHours}h off
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <div style={{ color: "var(--grey-accent)", marginBottom: "16px" }}>No recorded absences for the selected roles today.</div>
+            <div style={{
+              padding: "32px 16px",
+              textAlign: "center",
+              color: "var(--text-secondary)",
+              fontSize: "13px",
+            }}>
+              <div style={{ fontSize: "20px", marginBottom: "8px", color: "var(--grey-accent-light)", fontWeight: "300" }}>—</div>
+              No approved absences for this day
+            </div>
           )}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button
-              onClick={() => setShowStaffOffPopup(false)}
-              style={{
-                padding: "10px 20px",
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                backgroundColor: "var(--primary)",
-                color: "var(--surface)",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "background-color 0.2s"
-              }}
-              onMouseEnter={(event) => (event.currentTarget.style.backgroundColor = "var(--danger)")}
-              onMouseLeave={(event) => (event.currentTarget.style.backgroundColor = "var(--primary)")}
-            >
-              Close
-            </button>
           </div>
         </Popup>
       </div>

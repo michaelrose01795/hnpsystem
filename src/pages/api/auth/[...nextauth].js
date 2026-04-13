@@ -33,6 +33,23 @@ export const authOptions = {
       },
       async authorize(credentials) {
         try {
+          // CI / Playwright test bypass — skip the DB query and return a hardcoded
+          // test user. Only active when PLAYWRIGHT_TEST_AUTH=1 is explicitly set
+          // (injected by the GitHub Actions workflow, never present in production).
+          if (process.env.PLAYWRIGHT_TEST_AUTH === '1' && credentials?.userId) {
+            const numericId = parseInt(credentials.userId, 10);
+            if (Number.isFinite(numericId) && numericId > 0) {
+              return {
+                id: String(numericId),
+                name: 'CI Test User',
+                email: 'ci-test@example.com',
+                role: 'Admin',
+                roles: ['Admin'],
+                isDevLogin: true,
+              };
+            }
+          }
+
           // Dev login by user ID (only in non-production)
           if (credentials?.userId) {
             const { data, error } = await supabase

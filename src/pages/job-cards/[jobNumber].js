@@ -1937,6 +1937,37 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           }
         }
 
+        // ✅ When prime job (job 1) saves an appointment, sync to all sub-jobs
+        if (jobData.isPrimeJob && Array.isArray(jobData.subJobs) && jobData.subJobs.length > 0) {
+          for (const subJob of jobData.subJobs) {
+            if (!subJob?.id) continue;
+            try {
+              const { data: existingAppt } = await supabase
+                .from("appointments")
+                .select("appointment_id")
+                .eq("job_id", subJob.id)
+                .maybeSingle();
+
+              if (existingAppt?.appointment_id) {
+                await supabase
+                  .from("appointments")
+                  .update(payload)
+                  .eq("appointment_id", existingAppt.appointment_id);
+              } else {
+                await supabase
+                  .from("appointments")
+                  .insert([{
+                    ...payload,
+                    job_id: subJob.id,
+                    customer_id: jobData.customerId || null
+                  }]);
+              }
+            } catch (subErr) {
+              console.warn(`⚠️ Failed to sync appointment to sub-job ${subJob.id}:`, subErr);
+            }
+          }
+        }
+
         await fetchJobData({ silent: true, force: true });
         revalidateAllJobs(); // sync appointment changes to other pages
         return { success: true };
@@ -3258,6 +3289,16 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       : "";
   const jobDivisionLower = jobDivisionLabel.toLowerCase();
 
+  // ✅ Job group position (X/Y Job Cards badge)
+  const isInPrimeGroup = jobData.isPrimeJob || Boolean(jobData.primeJobId);
+  const jobGroupPosition = jobData.isPrimeJob
+    ? 1
+    : (jobData.subJobSequence ?? 0) + 1;
+  const jobGroupTotal = jobData.isPrimeJob
+    ? 1 + (jobData.subJobs?.length || 0)
+    : relatedJobs.length + 1;
+  const showJobGroupBadge = isInPrimeGroup && jobGroupTotal > 1;
+
   // ✅ Tab Configuration (from shared permission model)
   const tabs = (permissions?.tabs || []).map((tab) => {
     if (tab.id === "notes") {
@@ -3457,6 +3498,24 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                   title={`Go to prime job ${jobData.primeJobNumber}`}
                 >
                   Sub-job of #{jobData.primeJobNumber}
+                </span>
+              )}
+              {/* ✅ Job group X/Y badge */}
+              {showJobGroupBadge && (
+                <span
+                  style={{
+                    padding: "6px 16px",
+                    backgroundColor: "var(--accent-surface)",
+                    color: "var(--accent-strong)",
+                    borderRadius: "var(--control-radius-xs)",
+                    fontWeight: "600",
+                    fontSize: "13px",
+                    border: "1px solid currentColor",
+                    letterSpacing: "0.3px",
+                  }}
+                  title={`Job ${jobGroupPosition} of ${jobGroupTotal} linked job cards`}
+                >
+                  {jobGroupPosition}/{jobGroupTotal} Job Cards
                 </span>
               )}
             </div>
@@ -7181,6 +7240,36 @@ function SchedulingTab({
             </button>
           </div>
 
+          {/* ✅ Linked job cards appointment note */}
+          {jobData.isPrimeJob && Array.isArray(jobData.subJobs) && jobData.subJobs.length > 0 && (
+            <div style={{
+              marginBottom: "12px",
+              padding: "8px 12px",
+              backgroundColor: "var(--accent-surface)",
+              borderRadius: "var(--radius-sm)",
+              border: "none",
+              fontSize: "12px",
+              color: "var(--accent-strong)",
+              fontWeight: "500",
+            }}>
+              Saving this appointment will also apply to {jobData.subJobs.length} linked job card{jobData.subJobs.length > 1 ? "s" : ""} ({jobData.subJobs.map(s => `#${s.jobNumber}`).join(", ")}).
+            </div>
+          )}
+          {jobData.primeJobId && !jobData.isPrimeJob && (
+            <div style={{
+              marginBottom: "12px",
+              padding: "8px 12px",
+              backgroundColor: "var(--accent-surface)",
+              borderRadius: "var(--radius-sm)",
+              border: "none",
+              fontSize: "12px",
+              color: "var(--accent-strong)",
+              fontWeight: "500",
+            }}>
+              Appointment synced from Host Job #{jobData.primeJobNumber}. Update the appointment on the host job to apply to all linked cards.
+            </div>
+          )}
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
             <div>
               <CalendarField
@@ -10065,8 +10154,14 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
   const [linking, setLinking] = useState(false);
   const [linkError, setLinkError] = useState("");
   const linkedJob = jobData?.linkedWarrantyJob || null;
+  // Prime job is the VHC host for sub-jobs; fall back to warranty master or own job number
   const sharedVhcJobNumber =
-    jobData?.warrantyVhcMasterJobNumber || jobData?.jobNumber;
+    jobData?.warrantyVhcMasterJobNumber ||
+    jobData?.primeJobNumber ||
+    jobData?.jobNumber;
+  const isHostJob =
+    !jobData?.primeJobNumber ||
+    sharedVhcJobNumber === jobData?.jobNumber;
   const isLinked = Boolean(jobData?.linkedWarrantyJobId);
 
   const loadWarrantyJobs = useCallback(async () => {
@@ -10369,15 +10464,34 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
           backgroundColor: "var(--surface)"
         }}
       >
-        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "var(--accent-purple)" }}>
-          Shared VHC Source
-        </h3>
-        <p style={{ margin: "0 0 6px 0", color: "var(--accent-purple)", fontSize: "14px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+          <h3 style={{ margin: 0, fontSize: "16px", color: "var(--accent-base)" }}>
+            Shared VHC Source
+          </h3>
+          {!isHostJob && (
+            <span style={{
+              padding: "3px 10px",
+              backgroundColor: "var(--accent-surface)",
+              color: "var(--accent-strong)",
+              borderRadius: "var(--control-radius-xs)",
+              fontSize: "11px",
+              fontWeight: "600",
+            }}>
+              Inherited from Host
+            </span>
+          )}
+        </div>
+        <p style={{ margin: "0 0 6px 0", color: "var(--accent-base)", fontSize: "14px" }}>
           VHC checklist hosted on Job #{sharedVhcJobNumber}
+          {!isHostJob && (
+            <span style={{ marginLeft: "6px", fontSize: "12px", color: "var(--text-secondary)", fontWeight: "400" }}>
+              (Host Job)
+            </span>
+          )}
         </p>
-        <p style={{ margin: 0, color: "var(--info-dark)", fontSize: "13px" }}>
-          Any VHC updates, approvals, or parts raised on the master job instantly
-          reflect on both job cards. Clocking, labour, and invoicing remain
+        <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "13px" }}>
+          Any VHC updates, approvals, or parts raised on the host job instantly
+          reflect on all linked job cards. Clocking, labour, and invoicing remain
           separate per job.
         </p>
       </DevLayoutSection>

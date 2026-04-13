@@ -1,13 +1,5 @@
-todo
-fix playwright test fail when push commits to codex and when the playwright is run. 
+fix alerts so text colour can be read/seen which popup in the top right corner 
 
-
-/job-cards/create :: 1.2.2.1.1.1 (job-cards-create-header) to follow the tab style global etc and the bubbles to match button stlye and design. like "No detected requests yet" and "+ Link job card" section, add "+ Link job card" into the same tab background section as tab buttons and change the name to "+" as well. make sure "Retail" or "Warranty" section is the same height as the buttons deep dive to make sure this follwos. have it so "No detected requests yet" section follows the button style and design as well. 
-
-
-imporve the /appointments?jobNumber=00074 :: 1.2.1.1.2 (appointments-auto-data-table-2-shell) content of the table layout so it all fits bettwe within the table and the table links to everywhere it should etc
-
-fix /job-cards/00074 :: 1.2.1.1.1.4.1.1.2 (jobcard-tab-warranty-shared-vhc) section so when a join job card with same details are made it used the host jobcard which is one and then shows 1/2 jobcard within the rows inside the jobcard page, appointment rows, inside the job-card/[jobnuber] page within /job-cards/00074 :: 1.2.2.1.1.1 (jobcard-header) section. always have it so job 1 wihtin /create page is the main job card. have it so when appoinment is booked for job 1 that job 2,3 etc use the smae appoinment booking etc. 
 
 PAGE ACCESS
 

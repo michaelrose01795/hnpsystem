@@ -2079,6 +2079,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
 select,
 textarea {
   min-height: var(--control-height);
+  padding: var(--control-padding);
   border-radius: var(--control-radius);
   border: none;
   background: var(--control-bg);
@@ -4482,4 +4483,22 @@ input[type="search"]::-webkit-search-results-decoration {
     color: #000 !important;
     text-decoration: none !important;
   }
+}
+
+/* ── Appointments calendar table — Saturday row highlight ─────────────── */
+/* Applied via className="appt-sat-row" on the <tr>.                       */
+/* !important overrides row-level backgroundColor and any td inline styles */
+#appointments-auto-data-table-2 tr.appt-sat-row,
+#appointments-auto-data-table-2 tr.appt-sat-row td {
+  background: rgba(var(--accent-base-rgb), 0.22) !important;
+}
+
+
+/* ── Appointments calendar table — row hover ─────────────────────────── */
+/* Uses inset box-shadow instead of filter — filter creates a stacking     */
+/* context on tbody rows which can paint over the sticky thead.            */
+/* box-shadow never creates a stacking context, so sticky stays on top.    */
+#appointments-auto-data-table-2 tbody tr:hover td {
+  box-shadow: inset 0 0 0 9999px rgba(var(--shadow-rgb), 0.07);
+  transition: box-shadow 0.15s ease;
 }

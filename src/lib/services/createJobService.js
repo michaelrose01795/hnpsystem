@@ -424,7 +424,8 @@ export const createFullJobBatch = async ({ customer, vehicle, tabs, sharedOption
         primeJobId: isSubJobMode && primeJobData // prime job linking
           ? primeJobData.id
           : (!isFirstTab && primeJobId ? primeJobId : null),
-        asPrimeJob: !isSubJobMode && asPrimeJob && isFirstTab, // only first tab can be prime
+        // Job 1 is always the prime/host when creating multiple jobs together
+        asPrimeJob: !isSubJobMode && (asPrimeJob || tabs.length > 1) && isFirstTab,
         isFirstJob: isFirstTab, // cosmetic/VHC only on first
       },
     });
@@ -432,7 +433,8 @@ export const createFullJobBatch = async ({ customer, vehicle, tabs, sharedOption
     createdJobs.push(result.data); // accumulate result
 
     // Store the prime job ID for linking subsequent tabs
-    if (isFirstTab && asPrimeJob && !isSubJobMode) { // first tab created as prime
+    // Always prime the first tab when multiple tabs are being created
+    if (isFirstTab && (asPrimeJob || tabs.length > 1) && !isSubJobMode) {
       const job = result.data.job; // get job record
       primeJobId = job.id || job.jobId || job.job_id; // store id for linking
     }
