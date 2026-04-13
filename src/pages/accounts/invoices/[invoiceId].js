@@ -1,7 +1,6 @@
 // file location: src/pages/accounts/invoices/[invoiceId].js // header comment referencing file path
 import React, { useEffect, useState } from "react"; // import React along with hooks for state/effects
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Button from "@/components/ui/Button";
 const DETAIL_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "SALES", "WORKSHOP", "WORKSHOP MANAGER", "PARTS", "PARTS MANAGER"];
@@ -97,7 +96,7 @@ export default function InvoiceDetailPage() {
   );
   return (
     <ProtectedRoute allowedRoles={DETAIL_ROLES}>
-      <Layout>
+      <>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <section className="app-section-card" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "12px", alignItems: "start", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
             <div style={{ minWidth: 0 }}>
@@ -169,7 +168,7 @@ export default function InvoiceDetailPage() {
           )}
           {!loading && !invoice && <p style={{ color: "var(--danger)" }}>Invoice not found.</p>}
         </div>
-      </Layout>
+      </>
     </ProtectedRoute>
   );
 }

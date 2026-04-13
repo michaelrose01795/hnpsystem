@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/calendarAPI";
@@ -805,7 +804,7 @@ export default function PartsDeliveryPlannerPage() {
   }));
 
   return (
-    <Layout>
+    <>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "22px" }}>
         <header className="app-section-card" style={sectionStyle}>
           <div
@@ -1412,7 +1411,7 @@ export default function PartsDeliveryPlannerPage() {
           saving={jobModalSaving}
         />
       )}
-    </Layout>
+    </>
   );
 }
 

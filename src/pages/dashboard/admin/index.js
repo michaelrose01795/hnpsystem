@@ -4,7 +4,6 @@
 
 import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
-import Layout from "@/components/Layout";
 import { getAdminDashboardData } from "@/lib/database/dashboard/admin";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
 
@@ -116,7 +115,7 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <Layout>
+    <>
       <div>
         <header
           className="app-section-card"
@@ -171,6 +170,6 @@ export default function AdminDashboard() {
           )}
         </Section>
       </div>
-    </Layout>
+    </>
   );
 }

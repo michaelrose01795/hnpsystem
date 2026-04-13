@@ -2303,19 +2303,19 @@ export default function TechJobDetailPage() {
   // Access check - only technicians can view this page
   if (!isTech) {
     return (
-      <Layout jobNumber={jobNumber} requiresLandscape>
+      <>
         <div style={{ padding: "40px", textAlign: "center" }}>
           <h2 style={{ color: "var(--primary)" }}>Access Denied</h2>
           <p>This page is only for Technicians.</p>
         </div>
-      </Layout>
+      </>
     );
   }
 
   // Loading state
   if (loading) {
     return (
-      <Layout jobNumber={jobNumber} requiresLandscape>
+      <>
         <div
           role="status"
           aria-live="polite"
@@ -2359,14 +2359,14 @@ export default function TechJobDetailPage() {
             }
           }
         `}</style>
-      </Layout>
+      </>
     );
   }
 
   // Handle case where job is not found
   if (!jobData?.jobCard) {
     return (
-      <Layout jobNumber={jobNumber} requiresLandscape>
+      <>
         <div style={{ padding: "40px", textAlign: "center" }}>
           <h2 style={{ color: "var(--primary)" }}>Job Not Found</h2>
           <button
@@ -2384,7 +2384,7 @@ export default function TechJobDetailPage() {
             Back to My Jobs
           </button>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -2645,14 +2645,14 @@ export default function TechJobDetailPage() {
 
   if (rosterLoading) {
     return (
-      <Layout jobNumber={jobNumber} requiresLandscape>
+      <>
         <div style={{ padding: "24px", color: "var(--info)" }}>Loading roster…</div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout jobNumber={jobNumber} requiresLandscape>
+    <>
       <DevLayoutSection
         as="div"
         sectionKey="myjob-page-shell"
@@ -4774,7 +4774,7 @@ export default function TechJobDetailPage() {
           </div>
         </ModalPortal>
       )}
-    </Layout>
+    </>
   );
 }
 
@@ -4975,3 +4975,5 @@ function DocumentsTab({
     </DevLayoutSection>
   );
 }
+
+TechJobDetailPage.getLayout = (page) => <Layout requiresLandscape>{page}</Layout>;

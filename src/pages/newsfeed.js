@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import Layout from "@/components/Layout";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/context/UserContext";
@@ -268,7 +267,7 @@ export default function NewsFeed() {
   };
 
   return (
-    <Layout>
+    <>
       <div
         style={{
           width: "100%",
@@ -624,6 +623,6 @@ export default function NewsFeed() {
           </div>
         </ModalPortal>
       )}
-    </Layout>
+    </>
   );
 }

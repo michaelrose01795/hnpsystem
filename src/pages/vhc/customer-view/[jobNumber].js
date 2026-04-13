@@ -36,7 +36,7 @@ export default function VhcCustomerViewPage() {
   };
 
   return (
-    <Layout requiresLandscape>
+    <>
       <div
         style={{
           padding: "24px",
@@ -75,6 +75,8 @@ export default function VhcCustomerViewPage() {
 
         <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} viewMode="customer" />
       </div>
-    </Layout>
+    </>
   );
 }
+
+VhcCustomerViewPage.getLayout = (page) => <Layout requiresLandscape>{page}</Layout>;

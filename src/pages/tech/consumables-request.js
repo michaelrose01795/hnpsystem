@@ -4,7 +4,6 @@
 "use client"; // Enable client-side interactivity for the form experience
 
 import React, { useCallback, useEffect, useMemo, useState } from "react"; // Import React hooks for stateful UI
-import Layout from "@/components/Layout"; // Import global layout wrapper
 import { useUser } from "@/context/UserContext"; // Import user context for role-based permissions
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Link from "next/link"; // Import Next.js Link for navigation buttons
@@ -365,7 +364,7 @@ const TechConsumableRequestPage = () => {
 
   if (!isTechRole && !isWorkshopManager) {
     return (
-      <Layout>
+      <>
         <DevLayoutSection
           sectionKey="tech-consumables-access-shell"
           sectionType="page-shell"
@@ -413,12 +412,12 @@ const TechConsumableRequestPage = () => {
             </DevLayoutSection>
           </DevLayoutSection>
         </DevLayoutSection>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <div style={pageWrapperStyle}>
         <DevLayoutSection
           as="section"
@@ -899,7 +898,7 @@ const TechConsumableRequestPage = () => {
           onRequestsSubmitted={fetchRequests}
         />
       )}
-    </Layout>
+    </>
   );
 }
 

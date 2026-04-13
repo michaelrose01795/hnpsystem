@@ -4,7 +4,6 @@
 // It provides tabbed access to all HR functions from a single interface
 
 import React, { useState } from "react";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
 import { canAccessHrManagerDashboard, normalizeRoles } from "@/lib/auth/roles";
@@ -63,7 +62,7 @@ export default function HRManagerDashboard() {
 
   if (authIsLoading) {
     return (
-      <Layout>
+      <>
         <div
           style={{
             display: "flex",
@@ -75,7 +74,7 @@ export default function HRManagerDashboard() {
         >
           Checking access…
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -83,7 +82,7 @@ export default function HRManagerDashboard() {
   if (!hasHRAccess) {
     console.log("❌ HR Manager Dashboard - Access DENIED");
     return (
-      <Layout>
+      <>
         <div
           style={{
             display: "flex",
@@ -102,13 +101,13 @@ export default function HRManagerDashboard() {
             You don't have permission to access the HR Manager dashboard. This area is restricted to Owners and Admin Managers.
           </p>
         </div>
-      </Layout>
+      </>
     );
   }
 
   if (safeModeEnabled) {
     return (
-      <Layout>
+      <>
         <div
           style={{
             display: "flex",
@@ -146,7 +145,7 @@ export default function HRManagerDashboard() {
 NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
           </pre>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -154,7 +153,7 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
   const ActiveTabComponent = HR_TABS.find(tab => tab.id === activeTab)?.component || HRDashboardTab;
 
   return (
-    <Layout>
+    <>
       <PageShell sectionKey="hr-manager-shell" className="hr-manager-shell">
         <ContentWidth sectionKey="hr-manager-content" parentKey="hr-manager-shell" widthMode="full">
           <TabRow
@@ -191,6 +190,6 @@ NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
           </DevLayoutSection>
         </ContentWidth>
       </PageShell>
-    </Layout>
+    </>
   );
 }

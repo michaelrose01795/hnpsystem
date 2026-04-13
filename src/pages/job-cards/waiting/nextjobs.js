@@ -3,7 +3,6 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"; // Core React hooks
-import Layout from "@/components/Layout"; // Main layout wrapper
 import { useUser } from "@/context/UserContext"; // Logged-in user context
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
@@ -1627,32 +1626,32 @@ export default function NextJobsPage() {
   // ✅ Access check
   if (rosterLoading) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "40px", textAlign: "center", color: "var(--accent-purple)" }}>
           Loading roster…
         </div>
-      </Layout>
+      </>
     );
   }
 
   if (!hasAccess) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "40px", textAlign: "center" }}>
           <h2 style={{ color: "var(--primary)" }}>Access Denied</h2>
           <p>You do not have access to Next Jobs.</p>
         </div>
-      </Layout>
+      </>
     );
   }
 
   if (loading) {
-    return <Layout />;
+    return null;
   }
 
   // ✅ Page layout
   return (
-    <Layout>
+    <>
       <div
         data-dev-section-key="nextjobs-page-shell"
         data-dev-shell="1"
@@ -2354,6 +2353,6 @@ export default function NextJobsPage() {
           }
         `}</style>
       </div>
-    </Layout>
+    </>
   );
 }

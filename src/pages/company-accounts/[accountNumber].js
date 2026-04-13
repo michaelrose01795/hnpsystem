@@ -1,7 +1,6 @@
 // file location: src/pages/company-accounts/[accountNumber].js // detail view for company accounts
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CompanyAccountForm from "@/components/companyAccounts/CompanyAccountForm";
 import { useUser } from "@/context/UserContext";
@@ -365,7 +364,7 @@ export default function CompanyAccountDetailPage() {
 
   return (
     <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
-      <Layout>
+      <>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <button
             type="button"
@@ -562,7 +561,7 @@ export default function CompanyAccountDetailPage() {
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm}
       />
-      </Layout>
+      </>
     </ProtectedRoute>
   );
 }

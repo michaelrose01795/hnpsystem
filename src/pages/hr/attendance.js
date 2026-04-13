@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/attendance.js
 import React from "react";
-import Layout from "@/components/Layout";
 import { useHrAttendanceData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
@@ -14,7 +13,7 @@ export default function HrAttendance() {
   const absenceRecords = data?.absenceRecords ?? [];
 
   return (
-    <Layout>
+    <>
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <p style={{ color: "var(--info)" }}>
@@ -178,7 +177,7 @@ export default function HrAttendance() {
           </>
         )}
       </div>
-    </Layout>
+    </>
   );
 }
 

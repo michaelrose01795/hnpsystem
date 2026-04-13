@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
@@ -303,16 +302,16 @@ export default function PartsDeliveriesPage() {
 
   if (!hasAccess) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           You do not have access to delivery planning.
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <div style={pageStyles.container}>
         <section className="app-section-card" style={pageStyles.headerCard}>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -417,7 +416,7 @@ export default function PartsDeliveriesPage() {
         </section>
       </div>
       {viewJob && <DeliveryJobViewModal job={viewJob} onClose={() => setViewJob(null)} />}
-    </Layout>
+    </>
   );
 }
 

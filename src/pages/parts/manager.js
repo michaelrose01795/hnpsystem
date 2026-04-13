@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import PartsOpsDashboard from "@/components/dashboards/PartsOpsDashboard";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -379,16 +378,16 @@ export default function PartsManagerDashboard() {
 
   if (!isManager) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           Only the parts manager can view this dashboard.
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       {loading ? (
         <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           Loading parts manager dashboard…
@@ -674,6 +673,6 @@ export default function PartsManagerDashboard() {
         deliveries={deliveryRoutes}
         onScheduled={() => loadDashboard()}
       />
-  </Layout>
+  </>
 );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Layout from "@/components/Layout";
 import { getServiceDashboardData } from "@/lib/database/dashboard/service";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
 
@@ -168,7 +167,7 @@ export default function ServiceDashboard() {
   }, []);
 
   return (
-    <Layout>
+    <>
       <div>
         <header
           className="app-section-card"
@@ -284,6 +283,6 @@ export default function ServiceDashboard() {
           )}
         </Section>
       </div>
-    </Layout>
+    </>
   );
 }

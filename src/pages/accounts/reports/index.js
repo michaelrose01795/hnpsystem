@@ -1,6 +1,5 @@
 // file location: src/pages/accounts/reports/index.js
 import React, { useEffect, useState } from "react";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -89,7 +88,7 @@ export default function AccountsReportsPage() {
 
   return (
     <ProtectedRoute allowedRoles={REPORT_ROLES}>
-      <Layout>
+      <>
         <DevLayoutSection
           as="div"
           sectionKey="accounts-reports-page-shell"
@@ -191,7 +190,7 @@ export default function AccountsReportsPage() {
             </>
           )}
         </DevLayoutSection>
-      </Layout>
+      </>
     </ProtectedRoute>
   );
 }

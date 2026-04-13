@@ -1,7 +1,6 @@
 // file location: src/pages/accounts/transactions/[accountId].js // header comment with file path
 import React, { useCallback, useEffect, useMemo, useState } from "react"; // import React hooks for state and lifecycle
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import TransactionTable from "@/components/accounts/TransactionTable";
 import { Button, ControlGroup, PageSection } from "@/components/ui";
@@ -54,7 +53,7 @@ export default function AccountTransactionsPage() {
   };
   return (
     <ProtectedRoute allowedRoles={TRANSACTION_ROLES}>
-      <Layout>
+      <>
         <PageSection>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-3)" }}>
             <div className="app-page-intro">
@@ -69,7 +68,7 @@ export default function AccountTransactionsPage() {
           </div>
           <TransactionTable transactions={transactions} loading={loading} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} />
         </PageSection>
-      </Layout>
+      </>
     </ProtectedRoute>
   );
 }

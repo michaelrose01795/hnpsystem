@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import dynamic from "next/dynamic";
 const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
@@ -19,7 +18,7 @@ export default function TechEfficiencyPage() {
   const techUserId = dbUserId ? Number(dbUserId) : null;
 
   return (
-    <Layout>
+    <>
       <div className="tech-efficiency-page-shell">
         {!ready ? (
           <div
@@ -54,6 +53,6 @@ export default function TechEfficiencyPage() {
           }
         }
       `}</style>
-    </Layout>
+    </>
   );
 }

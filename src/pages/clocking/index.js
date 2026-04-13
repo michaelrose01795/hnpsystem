@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Layout from "@/components/Layout";
 import { supabase } from "@/lib/supabaseClient";
 import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
@@ -1247,7 +1246,7 @@ export default function ClockingPage() {
   const [pageTab, setPageTab] = useState("overview");
 
   return (
-    <Layout>
+    <>
       <PageShell sectionKey="clocking-page-shell" style={{ background: "transparent", minHeight: "100vh", padding: "24px 0" }}>
         <ContentWidth sectionKey="clocking-page-content" parentKey="clocking-page-shell" widthMode="content" className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
           <FilterToolbarRow sectionKey="clocking-toolbar-row" parentKey="clocking-page-content">
@@ -1276,6 +1275,6 @@ export default function ClockingPage() {
           )}
         </ContentWidth>
       </PageShell>
-    </Layout>
+    </>
   );
 }

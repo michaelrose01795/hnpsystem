@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SectionShell, StatCard } from "@/components/ui";
 import { useUser } from "@/context/UserContext";
@@ -233,7 +232,7 @@ export default function TechsDashboard() {
 
   if (rosterLoading) {
     return (
-      <Layout>
+      <>
         <SectionShell
           sectionKey="tech-dashboard-roster-loading"
           parentKey="app-layout-page-card"
@@ -241,13 +240,13 @@ export default function TechsDashboard() {
         >
           <p style={{ color: "var(--text-secondary)", margin: 0 }}>Loading roster...</p>
         </SectionShell>
-      </Layout>
+      </>
     );
   }
 
   if (!isTech) {
     return (
-      <Layout>
+      <>
         <SectionShell
           sectionKey="tech-dashboard-access-denied"
           parentKey="app-layout-page-card"
@@ -260,13 +259,13 @@ export default function TechsDashboard() {
             </p>
           </div>
         </SectionShell>
-      </Layout>
+      </>
     );
   }
 
   if (loading) {
     return (
-      <Layout>
+      <>
         <SectionShell
           sectionKey="tech-dashboard-loading"
           parentKey="app-layout-page-card"
@@ -301,12 +300,12 @@ export default function TechsDashboard() {
             }
           `}</style>
         </SectionShell>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <DevLayoutSection
         sectionKey="tech-dashboard-page"
         parentKey="app-layout-page-card"
@@ -680,7 +679,7 @@ export default function TechsDashboard() {
           z-index: var(--hover-surface-z, 80);
         }
       `}</style>
-    </Layout>
+    </>
   );
 }
 

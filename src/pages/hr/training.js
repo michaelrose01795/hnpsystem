@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/training.js
 import React from "react"; // React runtime for page rendering
-import Layout from "@/components/Layout"; // shared site layout
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
@@ -143,7 +142,7 @@ function TrainingContent() {
 
 export default function HrTrainingQualifications({ embedded = false } = {}) {
   const content = <TrainingContent />;
-  return embedded ? content : <Layout>{content}</Layout>;
+  return content;
 }
 
 const buttonStylePrimary = {

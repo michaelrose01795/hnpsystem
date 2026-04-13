@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/settings.js
 import React from "react";
-import Layout from "@/components/Layout";
 import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
 
 function SettingsContent() {
@@ -105,7 +104,7 @@ function SettingsContent() {
 
 export default function HrSettingsPolicies({ embedded = false } = {}) {
   const content = <SettingsContent />;
-  return embedded ? content : <Layout>{content}</Layout>;
+  return content;
 }
 
 

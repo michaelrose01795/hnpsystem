@@ -4,7 +4,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import { isInactiveJobStatus } from "@/lib/status/statusHelpers";
 import {
   getCustomerById,
@@ -806,7 +805,7 @@ export default function CustomerDetailWorkspace() {
   };
 
   return (
-    <Layout>
+    <>
       <main
         style={{
           padding: "24px",
@@ -935,6 +934,6 @@ export default function CustomerDetailWorkspace() {
           </>
         )}
       </main>
-    </Layout>
+    </>
   );
 }

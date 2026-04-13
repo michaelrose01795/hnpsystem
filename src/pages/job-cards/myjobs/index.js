@@ -4,7 +4,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
@@ -550,11 +549,11 @@ export default function MyJobsPage() {
 
   if (rosterLoading) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "40px", textAlign: "center", color: "var(--info)" }}>
           Loading roster…
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -568,7 +567,7 @@ export default function MyJobsPage() {
   // ✅ Access check
   if (!hasTechnicianAccess) {
     return (
-      <Layout>
+      <>
         <div style={{ 
           padding: "40px", 
           textAlign: "center",
@@ -586,16 +585,16 @@ export default function MyJobsPage() {
             This page is only accessible to Technicians and MOT Testers.
           </p>
         </div>
-      </Layout>
+      </>
     );
   }
 
   if (loading) {
-    return <Layout />;
+    return null;
   }
 
   return (
-    <Layout>
+    <>
       <DevLayoutSection
         sectionKey="myjobs-page-shell"
         sectionType="page-shell"
@@ -1104,6 +1103,6 @@ export default function MyJobsPage() {
           }
         }
       `}</style>
-    </Layout>
+    </>
   );
 }

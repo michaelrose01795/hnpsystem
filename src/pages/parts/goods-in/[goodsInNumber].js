@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { ScrollArea } from "@/components/scrollAPI";
 
@@ -125,12 +124,12 @@ function GoodsInDetailPage() {
 
   if (!hasGoodsInAccess) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "32px" }}>
           <h1 style={{ marginBottom: "12px" }}>Goods In</h1>
           <p>You do not have permission to access this workspace.</p>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -149,7 +148,7 @@ function GoodsInDetailPage() {
   const stockItems = items.filter((item) => !item.added_to_job);
 
   return (
-    <Layout>
+    <>
       <div style={{ display: "flex", flexDirection: "column", gap: "18px", padding: "12px" }}>
         <section className="app-section-card" style={sectionCardStyle}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
@@ -296,7 +295,7 @@ function GoodsInDetailPage() {
           </div>
         </section>
       </div>
-    </Layout>
+    </>
   );
 }
 

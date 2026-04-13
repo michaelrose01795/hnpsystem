@@ -3,7 +3,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useUser } from "@/context/UserContext";
 import { getAllJobs, updateJob } from "@/lib/database/jobs";
@@ -928,7 +927,7 @@ export default function ValetDashboard() {
 
   if (userLoading) {
     return (
-      <Layout>
+      <>
         <DevLayoutSection sectionKey="valet-loading-shell" sectionType="page-shell" shell>
           <DevLayoutSection
             sectionKey="valet-loading-panel"
@@ -946,13 +945,13 @@ export default function ValetDashboard() {
             Loading user…
           </DevLayoutSection>
         </DevLayoutSection>
-      </Layout>
+      </>
     );
   }
 
   if (!user) {
     return (
-      <Layout>
+      <>
         <DevLayoutSection sectionKey="valet-auth-shell" sectionType="page-shell" shell>
           <DevLayoutSection
             sectionKey="valet-auth-message"
@@ -965,13 +964,13 @@ export default function ValetDashboard() {
             </p>
           </DevLayoutSection>
         </DevLayoutSection>
-      </Layout>
+      </>
     );
   }
 
   if (!hasAccess) {
     return (
-      <Layout>
+      <>
         <DevLayoutSection sectionKey="valet-no-access-shell" sectionType="page-shell" shell>
           <DevLayoutSection
             sectionKey="valet-no-access-message"
@@ -984,12 +983,12 @@ export default function ValetDashboard() {
             </p>
           </DevLayoutSection>
         </DevLayoutSection>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <DevLayoutSection
         sectionKey="valet-shell"
         sectionType="page-shell"
@@ -1195,6 +1194,6 @@ export default function ValetDashboard() {
           </DevLayoutSection>
         )}
       </DevLayoutSection>
-    </Layout>
+    </>
   );
 }

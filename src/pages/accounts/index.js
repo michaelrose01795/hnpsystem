@@ -1,7 +1,6 @@
 // file location: src/pages/accounts/index.js // header comment required by user
 import React, { useCallback, useEffect, useMemo, useState } from "react"; // import React hooks for state and memoization
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useUser } from "@/context/UserContext";
 import AccountTable from "@/components/accounts/AccountTable";
@@ -397,7 +396,7 @@ export default function AccountsListPage() {
 
   return (
     <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
-      <Layout>
+      <>
         <DevLayoutSection sectionKey="accounts-page-shell" sectionType="page-shell" shell>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <ToolbarRow style={{ justifyContent: "flex-end" }}>
@@ -414,7 +413,7 @@ export default function AccountsListPage() {
         <AccountUpsertModal isOpen={isAccountModalOpen} mode={modalMode} accountId={modalAccountId} onClose={closeAccountModal} onSaved={fetchAccounts} />
         <AccountsSettingsModal isOpen={isSettingsModalOpen} onClose={closeSettingsModal} />
         </DevLayoutSection>
-      </Layout>
+      </>
     </ProtectedRoute>
   );
 }

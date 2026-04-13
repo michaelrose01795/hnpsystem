@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { getPartsDashboardData } from "@/lib/database/dashboard/parts";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
@@ -107,16 +106,16 @@ export default function PartsDashboard() {
 
   if (!hasAccess) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           You do not have access to the Parts dashboard.
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <div>
         <header
           className="app-section-card"
@@ -243,6 +242,6 @@ export default function PartsDashboard() {
           )}
         </Section>
       </div>
-    </Layout>
+    </>
   );
 }

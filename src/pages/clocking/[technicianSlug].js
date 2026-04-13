@@ -3,7 +3,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import { PageContainer, PageWrapper } from "@/components/ui";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
@@ -731,7 +730,7 @@ export default function UserClockingHistory() {
   };
 
   return (
-    <Layout>
+    <>
       <PageWrapper>
         <PageContainer>
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -1004,6 +1003,6 @@ export default function UserClockingHistory() {
           </div>
         </PageContainer>
       </PageWrapper>
-    </Layout>
+    </>
   );
 }

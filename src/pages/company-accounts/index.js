@@ -1,7 +1,6 @@
 // file location: src/pages/company-accounts/index.js // top-level list for company accounts
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CompanyAccountForm from "@/components/companyAccounts/CompanyAccountForm";
 import AccountTable from "@/components/accounts/AccountTable";
@@ -284,7 +283,7 @@ export default function CompanyAccountsIndexPage() {
 
   return (
     <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
-      <Layout>
+      <>
         <DevLayoutSection sectionKey="company-accounts-page-shell" sectionType="page-shell" shell>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <DevLayoutSection sectionKey="company-accounts-page-header" sectionType="content-card" parentKey="company-accounts-page-shell">
@@ -425,7 +424,7 @@ export default function CompanyAccountsIndexPage() {
             }
           }
         `}</style>
-      </Layout>
+      </>
     </ProtectedRoute>
   );
 }

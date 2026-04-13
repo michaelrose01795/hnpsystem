@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react"; // import React and hooks fo
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context for authentication data
 import { useJobs } from "@/context/JobsContext"; // import jobs context to share job data
-import Layout from "@/components/Layout"; // import shared layout wrapper
 import WorkshopManagerDashboard from "@/components/dashboards/WorkshopManagerDashboard"; // import workshop manager dashboard component
 import ServiceManagerDashboard from "@/components/dashboards/ServiceManagerDashboard"; // import service manager dashboard
 import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
@@ -90,9 +89,9 @@ export default function Dashboard() {
 
   if (!user || isRedirecting) {
     return (
-      <Layout>
+      <>
         <PageContentSkeleton route={router.asPath || "/dashboard"} />
-      </Layout>
+      </>
     );
   } // do not render until user data exists or when redirecting
 
@@ -125,33 +124,33 @@ export default function Dashboard() {
 
   if (isWorkshopManager) {
     return (
-      <Layout>
+      <>
         <WorkshopManagerDashboard />
-      </Layout>
+      </>
     );
   }
 
   if (isServiceManager) {
     return (
-      <Layout>
+      <>
         <ServiceManagerDashboard />
-      </Layout>
+      </>
     );
   }
 
   if (isAfterSalesManager) {
     return (
-      <Layout>
+      <>
         <AfterSalesManagerDashboard />
-      </Layout>
+      </>
     );
   }
 
   if (shouldShowRetailDashboard) { // render shared retail/service experience
     return (
-      <Layout>
+      <>
         <RetailManagersDashboard user={user} /> {/* show retail dashboard */}
-      </Layout>
+      </>
     );
   }
 
@@ -166,7 +165,7 @@ export default function Dashboard() {
   };
 
   return (
-    <Layout>
+    <>
       <PageShell sectionKey="dashboard-fallback-shell">
         <ContentWidth sectionKey="dashboard-fallback-content" parentKey="dashboard-fallback-shell" widthMode="content">
         <div> {/* outer container for dashboard */}
@@ -329,6 +328,6 @@ export default function Dashboard() {
           </SectionShell>
         </DevLayoutSection>
       )}
-    </Layout>
+    </>
   );
 }

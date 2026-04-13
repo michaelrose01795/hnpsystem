@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import Layout from "@/components/Layout";
 import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, PageShell, SectionShell, StatCard } from "@/components/ui";
@@ -174,7 +173,7 @@ export default function WorkshopDashboard() {
   );
 
   return (
-    <Layout>
+    <>
       <PageShell sectionKey="workshop-dashboard-shell">
         <ContentWidth sectionKey="workshop-dashboard-content" parentKey="workshop-dashboard-shell" widthMode="content">
         <Section sectionKey="workshop-dashboard-daily-checkpoints" parentKey="workshop-dashboard-content" title="Daily checkpoints">
@@ -347,6 +346,6 @@ export default function WorkshopDashboard() {
         </DevLayoutSection>
         </ContentWidth>
       </PageShell>
-    </Layout>
+    </>
   );
 }

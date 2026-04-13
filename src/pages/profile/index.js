@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import ProfileWorkTab from "@/components/profile/ProfileWorkTab";
 import ProfilePersonalTab from "@/components/profile/ProfilePersonalTab";
 import TabSwitcher from "@/components/profile/TabSwitcher";
@@ -183,7 +182,7 @@ export function ProfilePage({
     </div>
   );
 
-  return isEmbedded ? content : <Layout>{content}</Layout>;
+  return content;
 }
 
 export default function ProfilePageWrapper(props) {

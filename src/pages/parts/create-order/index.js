@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup";
@@ -557,17 +556,17 @@ export default function PartsJobCardPage() {
 
   if (!hasPartsAccess) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           You do not have permission to access parts orders.
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
     <>
-      <Layout>
+      <>
         <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
         <section className="app-section-card" style={cardStyle}>
           {errorMessage && (
@@ -1094,7 +1093,7 @@ export default function PartsJobCardPage() {
           </form>
         </section>
       </div>
-    </Layout>
+    </>
     {partSearchOpen && (
       <ModalPortal>
         <div style={partLookupOverlayStyle}>

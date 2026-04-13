@@ -4,7 +4,6 @@
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useState, useEffect, useMemo, useCallback } from "react"; // import React and hooks
-import Layout from "@/components/Layout"; // import layout wrapper
 import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
@@ -584,9 +583,9 @@ export default function ViewJobCards() {
   ================================ */
   if (loading) {
     return (
-      <Layout>
+      <>
         <PageContentSkeleton route={router.asPath || "/job-cards/view"} />
-      </Layout>
+      </>
     );
   }
 
@@ -594,7 +593,7 @@ export default function ViewJobCards() {
      Page Layout
   ================================ */
   return (
-    <Layout>
+    <>
       <style>{`
         .job-cards-filter.dropdown-api {
           width: 100%;
@@ -1295,7 +1294,7 @@ export default function ViewJobCards() {
       </div>
       </ContentWidth>
       </PageShell>
-    </Layout>
+    </>
   );
 }
 

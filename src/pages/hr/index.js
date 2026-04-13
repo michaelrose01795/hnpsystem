@@ -2,7 +2,6 @@
 // file location: src/pages/hr/index.js
 import React, { useMemo } from "react";
 import Link from "next/link";
-import Layout from "@/components/Layout";
 import { useHrDashboardData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { MetricCard, StatusTag } from "@/components/HR/MetricCard"; // metric display and status badge components
@@ -41,7 +40,7 @@ export default function HrDashboard() {
   }, [hrDashboardMetrics]);
 
   return (
-    <Layout>
+    <>
       <div
         className="app-page-stack"
         style={{
@@ -222,6 +221,6 @@ export default function HrDashboard() {
           </>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

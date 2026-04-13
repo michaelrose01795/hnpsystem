@@ -25,6 +25,14 @@ import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverl
 import { LoadingStateProvider } from "@/context/LoadingStateContext";
 import { SWRConfig } from "swr"; // global SWR cache and revalidation config
 import { swrConfig } from "@/lib/swr/config"; // HNP-tuned SWR defaults
+import Layout from "@/components/Layout"; // persistent app shell — mounted once via getLayout
+
+// Default page layout: every page is wrapped by the persistent <Layout>. Pages that
+// need custom layout props (jobNumber, requiresLandscape, disableContentCardHover,
+// contentBackground, disableContentCard) override Page.getLayout themselves. Returning
+// the same <Layout> element type across navigations lets React keep the shell mounted
+// — only the inner children swap.
+const defaultGetLayout = (page) => <Layout>{page}</Layout>;
 
 function AppWrapper({ Component, pageProps }) {
   const router = useRouter();
@@ -198,15 +206,72 @@ function AppWrapper({ Component, pageProps }) {
   // so the sidebar and topbar stay mounted and never blink.
   const isGlobalLoading = showGlobalLoader && !suppressGlobalLoader;
 
+  // getLayout pattern: each page may expose Component.getLayout to control its shell.
+  // Default is the persistent <Layout>. Returning the SAME element type across routes
+  // keeps the sidebar/topbar mounted and only swaps the inner children.
+  const getLayout = Component.getLayout || defaultGetLayout;
+  const pageElement = <Component {...pageProps} />;
+
   return (
     <LoadingStateProvider value={{ isLoading: isGlobalLoading }}>
+      <RouteProgressBar isRouteLoading={isRouteLoading} />
       <GlobalDraftPersistence />
       <GlobalTableShells />
-      <Component {...pageProps} />
+      {getLayout(pageElement)}
       {!hideNotesWidget && <GlobalNotesWidget />}
       <DevLayoutOverlayRoot />
     </LoadingStateProvider>
-  ); // render the requested page
+  ); // render the requested page inside its (persistent) layout shell
+}
+
+// Top-edge progress bar — drives off the same isRouteLoading flag as the global loader
+// so users get instant visual feedback that nav is happening even though the shell stays put.
+function RouteProgressBar({ isRouteLoading }) {
+  const [visible, setVisible] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    let trickle;
+    let hideTimer;
+    if (isRouteLoading) {
+      setVisible(true);
+      setProgress(20);
+      trickle = setInterval(() => {
+        setProgress((p) => (p < 85 ? p + (90 - p) * 0.1 : p));
+      }, 200);
+    } else if (visible) {
+      setProgress(100);
+      hideTimer = setTimeout(() => {
+        setVisible(false);
+        setProgress(0);
+      }, 220);
+    }
+    return () => {
+      if (trickle) clearInterval(trickle);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRouteLoading]);
+
+  if (!visible) return null;
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        height: "2px",
+        width: `${progress}%`,
+        background: "var(--accent-base, #3b82f6)",
+        boxShadow: "0 0 8px var(--accent-base, #3b82f6)",
+        transition: "width 200ms ease-out, opacity 220ms ease-out",
+        opacity: progress === 100 ? 0 : 1,
+        zIndex: 9999,
+        pointerEvents: "none",
+      }}
+    />
+  );
 }
 
 // Main app entry with all providers composed

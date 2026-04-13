@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react"; // React runtime + hooks
-import Layout from "@/components/Layout"; // shared app layout shell
 import { getValetingDashboardData } from "@/lib/database/dashboard/valeting"; // fetch valet dashboard metrics
 
 // MetricCard — surface-background stat card, equal-sized via parent CSS grid
@@ -169,7 +168,7 @@ export default function ValetingDashboard() {
   const totalTrendStarts = (data.trends || []).reduce((sum, point) => sum + (point.count || 0), 0); // sum of 7-day wash starts
 
   return (
-    <Layout>
+    <>
       <div>
         {/* Card 3 — accent background section containing equal-sized metric cards */}
         <section
@@ -239,6 +238,6 @@ export default function ValetingDashboard() {
           )}
         </section>
       </div>
-    </Layout>
+    </>
   );
 }

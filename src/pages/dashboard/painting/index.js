@@ -3,7 +3,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Layout from "@/components/Layout";
 import { getPaintingDashboardData } from "@/lib/database/dashboard/painting";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
 
@@ -110,7 +109,7 @@ export default function PaintingDashboard() {
   }, []);
 
   return (
-    <Layout>
+    <>
       <div>
         <header
           className="app-section-card"
@@ -152,6 +151,6 @@ export default function PaintingDashboard() {
           <TrendBlock data={data.trends} />
         </Section>
       </div>
-    </Layout>
+    </>
   );
 }

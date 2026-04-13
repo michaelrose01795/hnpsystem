@@ -4,7 +4,6 @@
 
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Layout from "@/components/Layout";
 import { supabase } from "@/lib/supabaseClient";
 import InvoiceDetailSection from "@/features/invoices/components/InvoiceDetailSection"; // shared invoice viewer
 
@@ -262,7 +261,7 @@ export default function PartsOrderDetail() {
   }, [order]);
 
   return (
-    <Layout>
+    <>
       <div style={containerStyle}>
         <div className="app-section-card" style={sectionCard}>
           <p
@@ -399,7 +398,7 @@ export default function PartsOrderDetail() {
           )}
         </div>
       </div>
-    </Layout>
+    </>
   );
 }
 

@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/performance.js
 import React from "react"; // React runtime for the page component
-import Layout from "@/components/Layout"; // shared layout shell with navigation
 import { useHrOperationsData } from "@/hooks/useHrData"; // aggregated HR hook backed by Supabase
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
@@ -179,7 +178,7 @@ function PerformanceContent() {
 
 export default function HrPerformanceAppraisals({ embedded = false } = {}) {
   const content = <PerformanceContent />;
-  return embedded ? content : <Layout>{content}</Layout>;
+  return content;
 }
 
 const buttonStylePrimary = {

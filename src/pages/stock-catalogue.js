@@ -1,7 +1,6 @@
 // file location: src/pages/stock-catalogue.js
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import {
   summarizePartsPipeline,
@@ -1778,7 +1777,7 @@ useEffect(() => {
   };
 
   return (
-    <Layout>
+    <>
       <div style={{ padding: "24px", maxWidth: "100%", margin: "0 auto" }}>
         <div style={{ ...cardStyle, marginBottom: "20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
@@ -3103,7 +3102,7 @@ useEffect(() => {
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm}
       />
-    </Layout>
+    </>
   );
 }
 

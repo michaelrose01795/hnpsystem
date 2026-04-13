@@ -2,7 +2,6 @@
 // file location: src/pages/workshop/consumables-tracker.js
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -1032,7 +1031,7 @@ function ConsumablesTrackerPage() {
 
   if (!isWorkshopManager) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "40px", maxWidth: "720px", margin: "0 auto" }}>
           <div style={{ ...cardStyle, textAlign: "center" }}>
             <h1 style={{ color: "var(--text-primary)", marginBottom: "16px" }}>
@@ -1059,12 +1058,12 @@ function ConsumablesTrackerPage() {
             </Link>
           </div>
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <div style={containerStyle}>
         <div style={workspaceShellStyle}>
           {!orderModalConsumable && showDuplicateModal && potentialDuplicates.length > 0 && (
@@ -2022,7 +2021,7 @@ function ConsumablesTrackerPage() {
           </div>
         </div>
       </div>
-    </Layout>
+    </>
   );
 }
 

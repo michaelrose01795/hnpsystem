@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/employees/index.js
 import React, { useEffect, useMemo, useState } from "react";
-import Layout from "@/components/Layout";
 import { useHrEmployeesData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
@@ -49,7 +48,7 @@ export default function EmployeeManagement() {
   }, [employees]);
 
   return (
-    <Layout>
+    <>
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
@@ -149,7 +148,7 @@ export default function EmployeeManagement() {
           </section>
         )}
       </div>
-    </Layout>
+    </>
   );
 }
 

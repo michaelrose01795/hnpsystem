@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/reports.js
 import React from "react";
-import Layout from "@/components/Layout";
 import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
 
 function ReportsContent() {
@@ -42,6 +41,6 @@ function ReportsContent() {
 
 export default function HrReportsExports({ embedded = false } = {}) {
   const content = <ReportsContent />;
-  return embedded ? content : <Layout>{content}</Layout>;
+  return content;
 }
 

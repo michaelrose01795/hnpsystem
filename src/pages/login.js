@@ -6,7 +6,6 @@ import { signIn, useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import LoginDropdown from "@/components/LoginDropdown";
 import BrandLogo from "@/components/BrandLogo";
 import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -496,14 +495,14 @@ export default function LoginPage() {
 
   if (isRedirecting) {
     return (
-      <Layout>
+      <>
         <PageContentSkeleton route={router.asPath || "/login"} />
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <div className="login-page-wrapper">
         <div className="login-center-stage">
           <div className="login-brand">
@@ -847,6 +846,6 @@ export default function LoginPage() {
           </div>
         </div>
       )}
-    </Layout>
+    </>
   );
 }

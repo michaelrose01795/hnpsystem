@@ -1,7 +1,10 @@
+check
 deep dive to make the main page to load the contents of the mian page section quicker, have it so when a page is laoded it almost doesnt ahve the whole app reload unless full refresh but only mainly the main page section relaods instead, deep dive to apply this to every page and the whole app 
 
-
+todo
 can the structure of this whole app be redesigened, not front end back within the code/file tree etc. 
+
+fix playwright test fail when push commits to codex and when the playwright is run. 
 
 
 PAGE ACCESS

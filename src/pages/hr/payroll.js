@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/payroll.js
 import React from "react"; // React runtime for the payroll workspace
-import Layout from "@/components/Layout"; // shared layout wrapper
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
 import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
@@ -161,7 +160,7 @@ function PayrollContent() {
 
 export default function HrPayroll({ embedded = false } = {}) {
   const content = <PayrollContent />;
-  return embedded ? content : <Layout>{content}</Layout>;
+  return content;
 }
 
 const buttonStylePrimary = {

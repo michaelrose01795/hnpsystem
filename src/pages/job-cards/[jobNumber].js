@@ -3053,7 +3053,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // ✅ Error State
   if (error || !jobData) {
     return (
-      <Layout requiresLandscape>
+      <>
         <div style={{ 
           padding: "40px", 
           textAlign: "center",
@@ -3092,7 +3092,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             </button>
           </div>
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -3295,7 +3295,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // ✅ Main Render
   return (
     <JobCardErrorBoundary>
-      <Layout requiresLandscape>
+      <>
       <div
         style={pageStackStyle}
         data-dev-section="1"
@@ -4364,13 +4364,13 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
       </div>
 
-      </Layout>
+      </>
     </JobCardErrorBoundary>
   );
   } catch (renderError) {
     console.error("Job card render error:", renderError);
     return (
-      <Layout requiresLandscape>
+      <>
         <div style={{
           padding: "40px",
           textAlign: "center",
@@ -4391,7 +4391,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             Check the console for the stack trace.
           </p>
         </div>
-      </Layout>
+      </>
     );
   }
 }
@@ -4418,7 +4418,7 @@ class JobCardErrorBoundary extends React.Component {
     const message = this.state.error?.message || String(this.state.error);
 
     return (
-      <Layout requiresLandscape>
+      <>
         <div style={{
           padding: "40px",
           textAlign: "center",
@@ -4439,7 +4439,7 @@ class JobCardErrorBoundary extends React.Component {
             Check the console for the stack trace.
           </p>
         </div>
-      </Layout>
+      </>
     );
   }
 }
@@ -10873,3 +10873,5 @@ function DocumentsTab({
     </div>
   );
 }
+
+JobCardDetailPage.getLayout = (page) => <Layout requiresLandscape>{page}</Layout>;

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/supabaseClient";
@@ -690,11 +689,11 @@ export default function DeliveryRoutePage() {
 
   if (!hasAccess) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
           You do not have access to delivery planning.
         </div>
-      </Layout>
+      </>
     );
   }
 
@@ -711,7 +710,7 @@ export default function DeliveryRoutePage() {
   );
 
   return (
-    <Layout>
+    <>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "22px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <Link href="/parts/deliveries" style={{ color: "var(--primary-dark)", fontWeight: 600 }}>
@@ -1312,6 +1311,6 @@ export default function DeliveryRoutePage() {
           </ol>
         )}
       </div>
-    </Layout>
+    </>
   );
 }

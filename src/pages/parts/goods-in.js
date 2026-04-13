@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
 import { sanitizeNumericId } from "@/lib/utils/ids";
@@ -776,17 +775,17 @@ function GoodsInPage() {
 
   if (!hasGoodsInAccess) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "32px" }}>
           <h1 style={{ marginBottom: "12px" }}>Goods In</h1>
           <p>You do not have permission to access this workspace.</p>
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <style jsx>{`
         .bin-suggestions {
           border: 1px solid var(--surface-light);
@@ -1664,7 +1663,7 @@ function GoodsInPage() {
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm}
       />
-    </Layout>
+    </>
   );
 }
 

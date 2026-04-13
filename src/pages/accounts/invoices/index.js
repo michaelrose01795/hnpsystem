@@ -1,7 +1,6 @@
 // file location: src/pages/accounts/invoices/index.js // header comment referencing file path
 import React, { useCallback, useEffect, useMemo, useState } from "react"; // import React hooks
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import InvoiceTable from "@/components/accounts/InvoiceTable";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -62,7 +61,7 @@ export default function InvoicesPage() {
   };
   return (
     <ProtectedRoute allowedRoles={INVOICE_ROLES}>
-      <Layout>
+      <>
         <DevLayoutSection sectionKey="accounts-invoices-page-shell" sectionType="page-shell" shell>
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             <DevLayoutSection
@@ -93,7 +92,7 @@ export default function InvoicesPage() {
             </DevLayoutSection>
           </div>
         </DevLayoutSection>
-      </Layout>
+      </>
     </ProtectedRoute>
   );
 }

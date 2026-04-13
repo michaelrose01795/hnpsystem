@@ -10,7 +10,6 @@ import React, {
   useState,
 } from "react";
 import { useRouter } from "next/router"; // Next.js router for reading query params
-import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/supabaseClient";
 import { appShellTheme } from "@/styles/appTheme";
@@ -2075,16 +2074,16 @@ function MessagesPage() {
 
   if (!user) {
     return (
-      <Layout>
+      <>
         <div style={{ padding: "40px", textAlign: "center" }}>
           <h2>Please log in to access internal messages.</h2>
         </div>
-      </Layout>
+      </>
     );
   }
 
   return (
-    <Layout>
+    <>
       <DevLayoutSection
         sectionKey="messages-page-shell"
         sectionType="page-shell"
@@ -3761,7 +3760,7 @@ function MessagesPage() {
           </div>
         </ModalPortal>
       )}
-    </Layout>
+    </>
   );
 }
 

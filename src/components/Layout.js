@@ -5,15 +5,20 @@
 //       - Sidebar toggle button shrunk and edge-aligned on mobile/tablet
 //       - All page sections optimized for vertical phone mode
 // ✅ Imports converted to use absolute alias "@/"
-import React, { useCallback, useEffect, useRef, useState } from "react"; // import React hooks
-import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"; // import React hooks
+import dynamic from "next/dynamic"; // code-split heavy Layout children out of the shell bundle
+import useSWR from "swr"; // SWR for deduped, cache-backed data fetching
+// usePolling removed — SWR + slot-keyed caching covers the welcome-quote refresh.
 import Link from "next/link"; // import Next.js link component
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context
 import GlobalSearch from "@/components/GlobalSearch"; // import global search component
-import JobCardModal from "@/components/JobCards/JobCardModal"; // import job modal
-import StatusSidebar from "@/components/StatusTracking/StatusSidebar"; // import status sidebar
-import JobTimeline from "@/components/Timeline/JobTimeline";
+// Heavy, conditionally-rendered Layout children — dynamically imported so the initial
+// shell JS bundle stays small. The Layout itself is persistent (mounted once by _app),
+// so these only load when their gate conditions fire (tech role, status role, etc.).
+const JobCardModal = dynamic(() => import("@/components/JobCards/JobCardModal"), { ssr: false });
+const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSidebar"), { ssr: false });
+const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/Sidebar";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import TopbarAlerts, { AlertBadge } from "@/components/TopbarAlerts";
@@ -57,7 +62,6 @@ const PARTS_ACTION_LINKS = [
 ];
 
 const MODE_STORAGE_KEY = "appModeSelection";
-const DEFAULT_WELCOME_QUOTE = "Progress grows when clear actions are completed with care.";
 const MODE_ROLE_MAP = {
   Retail: new Set((roleCategories.Retail || []).map((role) => role.toLowerCase())),
   Sales: new Set((roleCategories.Sales || []).map((role) => role.toLowerCase())),
@@ -105,8 +109,6 @@ export default function Layout({
   const timelineJobNumber = jobNumber || activeJobId || currentJob?.jobNumber || null;
   const [currentJobStatus, setCurrentJobStatus] = useState("booked");
   const [statusSidebarRefreshKey, setStatusSidebarRefreshKey] = useState(0);
-  const [, setWelcomeQuote] = useState(DEFAULT_WELCOME_QUOTE);
-  const welcomeQuoteSlotKeyRef = useRef(null);
 
   const statusSidebarRoles = [
     "admin manager",
@@ -232,61 +234,17 @@ export default function Layout({
     setIsStatusSidebarOpen(false);
   }, [isTablet]);
 
-  useEffect(() => {
-    if (!userIdForQuote) {
-      setWelcomeQuote(DEFAULT_WELCOME_QUOTE);
-      welcomeQuoteSlotKeyRef.current = getWelcomeQuoteSlotKey(new Date());
-      return;
-    }
-
-    let cancelled = false;
-
-    const maybeRefreshQuote = async () => {
-      const nextSlotKey = getWelcomeQuoteSlotKey(new Date());
-      if (welcomeQuoteSlotKeyRef.current === nextSlotKey) {
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `/api/welcome-quote?userId=${encodeURIComponent(String(userIdForQuote))}`
-        );
-        if (!response.ok) {
-          return;
-        }
-        const payload = await response.json();
-        if (cancelled) return;
-        if (typeof payload?.quote === "string" && payload.quote.trim()) {
-          setWelcomeQuote(payload.quote);
-        }
-        welcomeQuoteSlotKeyRef.current = payload?.slotKey || nextSlotKey;
-      } catch {
-        // Keep existing quote if fetch fails.
-      }
-    };
-
-    maybeRefreshQuote();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [userIdForQuote]);
-
-  usePolling(
-    () => {
-      const nextSlotKey = getWelcomeQuoteSlotKey(new Date());
-      if (welcomeQuoteSlotKeyRef.current !== nextSlotKey) {
-        fetch(`/api/welcome-quote?userId=${encodeURIComponent(String(userIdForQuote))}`)
-          .then((r) => r.ok ? r.json() : null)
-          .then((payload) => {
-            if (payload?.quote?.trim()) setWelcomeQuote(payload.quote);
-            if (payload?.slotKey) welcomeQuoteSlotKeyRef.current = payload.slotKey;
-          })
-          .catch(() => {});
-      }
-    },
-    30000,
-    !!userIdForQuote
+  // Welcome quote: keyed by (userId, slotKey) so SWR dedupes automatically across
+  // navigations and only refetches when the slot rolls over. Layout is persistent
+  // now, so this only runs once per slot change for the whole session.
+  const welcomeQuoteSlotKey = useMemo(() => getWelcomeQuoteSlotKey(new Date()), []);
+  const welcomeQuoteKey = userIdForQuote
+    ? `/api/welcome-quote?userId=${encodeURIComponent(String(userIdForQuote))}&slot=${welcomeQuoteSlotKey}`
+    : null;
+  useSWR(
+    welcomeQuoteKey,
+    (url) => fetch(url).then((r) => (r.ok ? r.json() : null)),
+    { revalidateOnFocus: false, dedupingInterval: 60 * 60 * 1000 }
   );
 
   useEffect(() => {

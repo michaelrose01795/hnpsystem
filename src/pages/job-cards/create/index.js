@@ -5,7 +5,6 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
 import { useRouter } from "next/router"; // for navigation
-import Layout from "@/components/Layout"; // import layout wrapper
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useJobs } from "@/context/JobsContext"; // import jobs context
 import { useUser } from "@/context/UserContext"; // import user context for signature + uploads
@@ -1237,7 +1236,7 @@ export default function CreateJobCardPage() {
   };
 
   return (
-    <Layout>
+    <>
       <DevLayoutSection
         sectionKey="job-cards-create-page-shell"
         sectionType="page-shell"
@@ -2958,6 +2957,6 @@ export default function CreateJobCardPage() {
           </div>
         )}
       </DevLayoutSection>
-    </Layout>
+    </>
   );
 }

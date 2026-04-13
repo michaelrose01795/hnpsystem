@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/leave.js
 import React from "react"; // React runtime for page rendering
-import Layout from "@/components/Layout"; // global layout container
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
@@ -178,7 +177,7 @@ function LeaveContent() {
 
 export default function HrLeaveManagement({ embedded = false } = {}) {
   const content = <LeaveContent />;
-  return embedded ? content : <Layout>{content}</Layout>;
+  return content;
 }
 
 const buttonStylePrimary = {

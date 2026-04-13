@@ -2772,7 +2772,7 @@ export default function TrackingDashboard() {
   };
 
   return (
-    <Layout disableContentCardHover>
+    <>
       <DevLayoutSection
         sectionKey="tracking-page"
         parentKey="app-layout-page-card"
@@ -2881,6 +2881,8 @@ export default function TrackingDashboard() {
           onDelete={handleDeleteOilStock}
         />
       )}
-    </Layout>
+    </>
   );
 }
+
+TrackingDashboard.getLayout = (page) => <Layout disableContentCardHover>{page}</Layout>;

@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/disciplinary.js
 import React from "react";
-import Layout from "@/components/Layout";
 import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
 import { CalendarField } from "@/components/calendarAPI"; // Date input component
 
@@ -90,7 +89,7 @@ function DisciplinaryContent() {
 
 export default function HrDisciplinaryIncidents({ embedded = false } = {}) {
   const content = <DisciplinaryContent />;
-  return embedded ? content : <Layout>{content}</Layout>;
+  return content;
 }
 
 const buttonStylePrimary = {

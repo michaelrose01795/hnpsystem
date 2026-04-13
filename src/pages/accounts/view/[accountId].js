@@ -1,7 +1,6 @@
 // file location: src/pages/accounts/view/[accountId].js // include path comment for reviewers
 import React, { useEffect, useMemo, useState } from "react"; // import React hooks for state/effects/memoization
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
@@ -88,7 +87,7 @@ export default function ViewAccountPage() {
 
   return (
     <ProtectedRoute allowedRoles={VIEW_ROLES}>
-      <Layout>
+      <>
         <DevLayoutSection sectionKey="account-view-page-shell" sectionType="page-shell" shell>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {loading && <p style={{ color: "var(--text-secondary)" }}>Loading account…</p>}
@@ -151,7 +150,7 @@ export default function ViewAccountPage() {
           {!loading && !account && <p style={{ color: "var(--danger)" }}>Account not found.</p>}
         </div>
         </DevLayoutSection>
-      </Layout>
+      </>
     </ProtectedRoute>
   );
 }

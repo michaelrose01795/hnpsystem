@@ -1362,7 +1362,7 @@ export default function Appointments() {
 
   // ---------------- Render ----------------
   return (
-    <Layout requiresLandscape>
+    <>
       <div className="app-page-stack" style={{ height: "100%" }}>
 
         {/* Top Bar */}
@@ -2371,6 +2371,8 @@ export default function Appointments() {
           </div>
         </Popup>
       </div>
-    </Layout>
+    </>
   );
 }
+
+Appointments.getLayout = (page) => <Layout requiresLandscape>{page}</Layout>;

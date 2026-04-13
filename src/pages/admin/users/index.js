@@ -1,7 +1,6 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/admin/users/index.js
 import React, { useEffect, useMemo, useState } from "react";
-import Layout from "@/components/Layout";
 import AdminUserForm from "@/components/Admin/AdminUserForm";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
@@ -210,7 +209,7 @@ export default function AdminUserManagement() {
   };
 
   return (
-    <Layout>
+    <>
       <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
         <header>
           <p style={{ color: "var(--info)", marginTop: "6px" }}>
@@ -539,7 +538,7 @@ export default function AdminUserManagement() {
           </div>
         )}
       </div>
-    </Layout>
+    </>
   );
 }
 

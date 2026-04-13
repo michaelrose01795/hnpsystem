@@ -1,7 +1,6 @@
 // file location: src/pages/job-cards/archive/index.js
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Layout from "@/components/Layout";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Button from "@/components/ui/Button";
 import DropdownField from "@/components/dropdownAPI/DropdownField";
@@ -91,7 +90,7 @@ export default function ArchivedJobsPage() {
   }, [regOnly, results, sortOrder, statusFilter]);
 
   return (
-    <Layout>
+    <>
       <DevLayoutSection
         sectionKey="job-cards-archive-page-shell"
         sectionType="page-shell"
@@ -360,6 +359,6 @@ export default function ArchivedJobsPage() {
           </DevLayoutSection>
         </DevLayoutSection>
       </DevLayoutSection>
-    </Layout>
+    </>
   );
 }
