@@ -8,19 +8,32 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(process.cwd(), '.env') });
 require('dotenv').config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Lazy-initialised so that importing this module does not throw when DB
+// credentials are absent (e.g. smoke tests running in CI without a real DB).
+let _client = null;
 
-if (!supabaseUrl || !serviceKey) {
-  throw new Error(
-    'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in env. ' +
-    'These are required for DB test helpers.'
-  );
+function getDb() {
+  if (!_client) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceKey) {
+      throw new Error(
+        'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in env. ' +
+        'These are required for DB test helpers.'
+      );
+    }
+    _client = createClient(supabaseUrl, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  }
+  return _client;
 }
 
 /** Service-role Supabase client — bypasses RLS for test assertions */
-const db = createClient(supabaseUrl, serviceKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
+const db = new Proxy({}, {
+  get(_target, prop) {
+    return getDb()[prop];
+  },
 });
 
 // ---------------------------------------------------------------------------
