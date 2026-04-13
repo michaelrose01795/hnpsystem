@@ -12,7 +12,9 @@
 //   - Follow-up question chips and cited sources
 //   - Role-aware — answers reflect the user's own access level
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Dropdown from "@/components/dropdownAPI/Dropdown";
+import { useConfirmation } from "@/context/ConfirmationContext";
 import styles from "./AiGuidePanel.module.css";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -217,6 +219,8 @@ export default function AiGuidePanel({ userId, userRoles }) {
   const [sessionsError, setSessionsError] = useState("");
   // false = tables not created yet; queries still work but history won't save
   const [dbReady, setDbReady] = useState(true);
+
+  const { confirm } = useConfirmation();
 
   // ── Message state ──────────────────────────────────────────────────────
   const [messages, setMessages] = useState([]);
@@ -440,7 +444,13 @@ export default function AiGuidePanel({ userId, userRoles }) {
 
   const handleDeleteSession = async () => {
     if (!currentSessionId) return;
-    if (!window.confirm("Delete this chat session? This cannot be undone.")) return;
+    const confirmed = await confirm({
+      title: "Delete chat session",
+      message: "Delete this chat session? This cannot be undone.",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
 
     try {
       await deleteSessionApi(currentSessionId);
@@ -458,18 +468,25 @@ export default function AiGuidePanel({ userId, userRoles }) {
   };
 
   // ─────────────────────────────────────────────────────────────────────
-  // Switch session
+  // Switch session — called by the Dropdown onChange
+  // raw is the original option object: { value: session.id, label: session.title }
   // ─────────────────────────────────────────────────────────────────────
 
-  const handleSessionChange = (event) => {
-    const selectedId = Number(event.target.value);
+  const handleSessionChange = useCallback((raw) => {
+    const selectedId = Number(raw?.value ?? raw?.id ?? null);
     if (Number.isInteger(selectedId) && selectedId > 0) {
       setCurrentSessionId(selectedId);
     } else {
       setCurrentSessionId(null);
       setMessages([]);
     }
-  };
+  }, []);
+
+  // Build the options list for the Dropdown from the current sessions array
+  const sessionOptions = useMemo(
+    () => sessions.map((s) => ({ value: s.id, label: s.title || "Untitled chat" })),
+    [sessions]
+  );
 
   // ─────────────────────────────────────────────────────────────────────
   // Suggestion chip click
@@ -506,23 +523,17 @@ export default function AiGuidePanel({ userId, userRoles }) {
           <span className={styles.loadingText}>Loading history…</span>
         ) : (
           <>
-            {/* Session dropdown — shows saved sessions */}
-            <select
-              className={styles.sessionSelect}
-              value={currentSessionId || ""}
+            {/* Session dropdown — global Dropdown component for consistent theme */}
+            <Dropdown
+              options={sessionOptions}
+              value={currentSessionId}
               onChange={handleSessionChange}
-              aria-label="Select chat session"
-            >
-              {/* Placeholder option for "new/unsaved" state */}
-              {!currentSessionId && (
-                <option value="">New conversation</option>
-              )}
-              {sessions.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title || "Untitled chat"}
-                </option>
-              ))}
-            </select>
+              placeholder="New conversation"
+              size="sm"
+              ariaLabel="Select chat session"
+              style={{ flex: "1 1 auto", minWidth: 0 }}
+              disabled={sessions.length === 0}
+            />
 
             {/* Delete current session */}
             <button

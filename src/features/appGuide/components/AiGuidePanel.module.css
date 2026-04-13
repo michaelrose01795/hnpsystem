@@ -23,26 +23,6 @@
   flex-shrink: 0;
 }
 
-.sessionSelect {
-  flex: 1 1 auto;
-  min-width: 0;
-  border: none;
-  border-radius: var(--control-radius);
-  background: var(--control-bg);
-  color: var(--text-primary);
-  padding: 6px 10px;
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  outline: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sessionSelect:focus {
-  box-shadow: var(--control-ring);
-}
 
 .newChatButton {
   flex-shrink: 0;
