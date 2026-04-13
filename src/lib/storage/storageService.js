@@ -17,6 +17,50 @@ function getClient() {
   return supabaseService || supabaseFallback;
 }
 
+// Cache the bucket-exists check for the lifetime of the Node process so we
+// don't hit Supabase for every upload once it's known to exist.
+let bucketReadyPromise = null;
+
+/**
+ * Ensure the "job-files" bucket exists.  Requires the service-role key — the
+ * anon key can't create buckets.  Safe to call on every upload; the real work
+ * only runs once per process.
+ * @returns {Promise<void>}
+ */
+export async function ensureBucket() {
+  if (bucketReadyPromise) return bucketReadyPromise;
+
+  bucketReadyPromise = (async () => {
+    const client = getClient();
+    try {
+      const { data: existing, error: getError } = await client.storage.getBucket(BUCKET);
+      if (existing && !getError) return;
+    } catch (_) {
+      // fall through to create
+    }
+
+    if (!supabaseService) {
+      throw new Error(
+        `Storage bucket "${BUCKET}" does not exist and SUPABASE_SERVICE_ROLE_KEY is not set — cannot auto-create. Add the service-role key to your environment or create the bucket manually in Supabase Storage.`
+      );
+    }
+
+    const { error: createError } = await supabaseService.storage.createBucket(BUCKET, {
+      public: true,
+      fileSizeLimit: 52428800, // 50 MB — matches the VHC video limit
+    });
+
+    if (createError && !/already exists/i.test(createError.message || "")) {
+      bucketReadyPromise = null; // allow a retry on the next call
+      throw new Error(`Failed to create storage bucket "${BUCKET}": ${createError.message}`);
+    }
+
+    console.log(`✅ Ensured Supabase Storage bucket "${BUCKET}" exists`);
+  })();
+
+  return bucketReadyPromise;
+}
+
 /**
  * Sanitise a user-supplied filename to prevent path-traversal and filesystem issues.
  * @param {string} name
@@ -49,6 +93,7 @@ export function buildStoragePath(folder, jobId, fileName) {
  * @returns {Promise<{ storagePath: string, publicUrl: string }>}
  */
 export async function uploadFile(file, folder, jobId) {
+  await ensureBucket();
   const client = getClient();
   const storagePath = buildStoragePath(folder, jobId, file.fileName);
 
@@ -58,7 +103,17 @@ export async function uploadFile(file, folder, jobId) {
   });
 
   if (error) {
-    throw new Error(`Supabase Storage upload failed: ${error.message}`);
+    console.error("❌ Supabase Storage upload failed:", {
+      bucket: BUCKET,
+      storagePath,
+      message: error.message,
+      statusCode: error.statusCode,
+      name: error.name,
+    });
+    const hint = /bucket/i.test(error.message || "")
+      ? ` (check that the "${BUCKET}" bucket exists in Supabase Storage)`
+      : "";
+    throw new Error(`Supabase Storage upload failed: ${error.message}${hint}`);
   }
 
   const publicUrl =
@@ -125,8 +180,17 @@ export async function saveFileRecord(meta) {
     .single();
 
   if (error) {
-    console.error("❌ saveFileRecord error:", error);
-    return { success: false, error: { message: error.message } };
+    console.error("❌ saveFileRecord error:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      row,
+    });
+    const combined = [error.message, error.details, error.hint]
+      .filter(Boolean)
+      .join(" — ");
+    return { success: false, error: { message: combined || "Database insert failed" } };
   }
 
   return { success: true, data };

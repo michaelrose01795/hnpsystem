@@ -121,8 +121,61 @@ export default function CreateJobCardPage() {
     uploadedFiles: [],
   });
 
+  const PENDING_UPLOADS_STORAGE_KEY = "hnp:jobCardCreate:pendingUploads";
+
   const [jobTabs, setJobTabs] = useState([createDefaultJobTab(1)]);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
+
+  // Rehydrate pending uploads once on mount.  Files were already uploaded to
+  // Supabase Storage under a temp-{id} path; we persist the metadata so a
+  // page refresh mid-flow still lets link-uploaded-files move them into
+  // place after the job is created.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(PENDING_UPLOADS_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed) || parsed.length === 0) return;
+      setJobTabs((prev) => {
+        const next = prev.map((tab) => {
+          const saved = parsed.find((entry) => entry.id === tab.id);
+          if (!saved || !Array.isArray(saved.uploadedFiles) || saved.uploadedFiles.length === 0) {
+            return tab;
+          }
+          return { ...tab, uploadedFiles: saved.uploadedFiles };
+        });
+        // Restore any extra tabs that existed when the refresh happened.
+        parsed.forEach((entry) => {
+          if (!next.some((tab) => tab.id === entry.id) && Array.isArray(entry.uploadedFiles)) {
+            next.push({ ...createDefaultJobTab(entry.id), uploadedFiles: entry.uploadedFiles });
+          }
+        });
+        return next;
+      });
+    } catch (err) {
+      console.warn("Failed to rehydrate pending uploads:", err);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist pending uploads whenever they change so a refresh or tab close
+  // doesn't orphan the temp storage objects.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const snapshot = jobTabs
+        .map((tab) => ({ id: tab.id, uploadedFiles: tab.uploadedFiles || [] }))
+        .filter((entry) => entry.uploadedFiles.length > 0);
+      if (snapshot.length === 0) {
+        window.localStorage.removeItem(PENDING_UPLOADS_STORAGE_KEY);
+      } else {
+        window.localStorage.setItem(PENDING_UPLOADS_STORAGE_KEY, JSON.stringify(snapshot));
+      }
+    } catch (err) {
+      console.warn("Failed to persist pending uploads:", err);
+    }
+  }, [jobTabs]);
   const [lastDetectionSignature, setLastDetectionSignature] = useState("");
 
   // Get current tab data
@@ -161,8 +214,8 @@ export default function CreateJobCardPage() {
   // Shared state (same across all tabs)
   const [cosmeticDamagePresent, setCosmeticDamagePresent] = useState(false); // track whether cosmetic damage observed
   const [cosmeticNotes, setCosmeticNotes] = useState(""); // notes about cosmetic damage
-  const [washRequired, setWashRequired] = useState(false); // whether the vehicle needs washing after workshop
-  const [vhcRequired, setVhcRequired] = useState(false); // whether VHC is required
+  const [washRequired, setWashRequired] = useState(true); // whether the vehicle needs washing after workshop (defaults to Yes)
+  const [vhcRequired, setVhcRequired] = useState(true); // whether VHC is required (defaults to Yes)
   const WAITING_STATUS_STORAGE_KEY = "jobCardCreateWaitingStatus"; // key used to persist waiting status background choice
   const WASH_REQUIRED_STORAGE_KEY = "jobCardCreateWashRequired"; // key used to persist wash choice when revisiting the create page
   const [showNewCustomer, setShowNewCustomer] = useState(false); // toggle new customer popup
@@ -1192,6 +1245,15 @@ export default function CreateJobCardPage() {
 
       console.log("✓ All jobs and related data saved successfully via service layer");
 
+      // Pending uploads were just linked to real jobs — clear the persisted queue.
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.removeItem(PENDING_UPLOADS_STORAGE_KEY);
+        } catch (err) {
+          console.warn("Failed to clear persisted uploads:", err);
+        }
+      }
+
       // Refresh jobs cache
       if (typeof fetchJobs === "function") {
         fetchJobs().catch((err) => console.error("❌ Error refreshing jobs:", err));
@@ -1289,70 +1351,34 @@ export default function CreateJobCardPage() {
               }}
             >
               <div
-                className="job-cards-create-selector"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  padding: "6px",
-                  backgroundColor: "var(--accent-purple-surface)",
-                  borderRadius: "var(--radius-pill)",
-                  border: "none",
-                  flexWrap: "wrap",
-                }}
+                className="tab-api job-cards-create-selector"
+                role="tablist"
+                aria-label="Linked job cards"
               >
-                {jobCardSelectorOptions.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => setActiveTabIndex(option.index)}
-                    aria-pressed={activeTabIndex === option.index}
-                    style={{
-                      minHeight: "36px",
-                      padding: "0 14px",
-                      borderRadius: "var(--radius-pill)",
-                      border: "none",
-                      backgroundColor: activeTabIndex === option.index ? "var(--primary)" : "var(--surface-light)",
-                      color: activeTabIndex === option.index ? "white" : "var(--text-primary)",
-                      cursor: "pointer",
-                      fontWeight: activeTabIndex === option.index ? "600" : "500",
-                      fontSize: "13px",
-                      transition: "all 0.2s",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+                {jobCardSelectorOptions.map((option) => {
+                  const isActive = activeTabIndex === option.index;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="tab"
+                      onClick={() => setActiveTabIndex(option.index)}
+                      aria-selected={isActive}
+                      aria-pressed={isActive}
+                      data-tone="default"
+                      className={`tab-api__item${isActive ? " is-active" : ""}`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {!isSubJobMode && (
                 <button
                   type="button"
                   onClick={addNewJobTab}
-                  className="job-cards-create-add-linked-button"
-                  style={{
-                    minHeight: "36px",
-                    padding: "0 14px",
-                    borderRadius: "var(--radius-pill)",
-                    border: "1px dashed var(--primary)",
-                    backgroundColor: "transparent",
-                    color: "var(--primary)",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s",
-                    whiteSpace: "nowrap",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--primary-surface)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "transparent";
-                  }}
+                  className="app-btn app-btn--secondary app-btn--sm app-btn--pill job-cards-create-add-linked-button"
                   title="Add another linked job"
                 >
                   + Link job card
@@ -1363,23 +1389,7 @@ export default function CreateJobCardPage() {
                 <button
                   type="button"
                   onClick={() => removeJobTab(activeTabIndex)}
-                  className="job-cards-create-remove-linked-button"
-                  style={{
-                    minHeight: "36px",
-                    padding: "0 14px",
-                    borderRadius: "var(--radius-pill)",
-                    border: "1px solid var(--border)",
-                    backgroundColor: "var(--surface-light)",
-                    color: "var(--text-secondary)",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s",
-                    whiteSpace: "nowrap",
-                  }}
+                  className="app-btn app-btn--ghost app-btn--sm app-btn--pill job-cards-create-remove-linked-button"
                 >
                   Remove selected
                 </button>
@@ -1424,20 +1434,8 @@ export default function CreateJobCardPage() {
                 <button
                   type="button"
                   onClick={() => setShowDetectedRequestsPopup(true)}
-                  style={{
-                    width: "100%",
-                    minHeight: "40px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    padding: "8px 14px",
-                    borderRadius: "999px",
-                    background: "var(--surface)",
-                    color: "var(--text-primary)",
-                    border: "1px solid var(--accent-border)",
-                    cursor: "pointer",
-                  }}
+                  className="app-btn app-btn--secondary app-btn--sm app-btn--pill"
+                  style={{ width: "100%", justifyContent: "center" }}
                 >
                   <span
                     style={{
@@ -1498,26 +1496,9 @@ export default function CreateJobCardPage() {
               {jobSource}
             </span>
             <button
+              type="button"
               onClick={handleSaveJob}
-              style={{
-                padding: "12px 28px",
-                backgroundColor: "var(--primary)",
-                color: "white",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                fontWeight: "600",
-                fontSize: "15px",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "var(--primary-dark)";
-                e.target.style.boxShadow = "0 6px 12px rgba(var(--primary-rgb), 0.3)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "var(--primary)";
-                e.target.style.boxShadow = "0 4px 8px rgba(var(--primary-rgb), 0.2)";
-              }}
+              className="app-btn app-btn--primary"
             >
               {asPrimeJob && jobTabs.length > 1 ? `Save ${jobTabs.length} Jobs` : "Save Job Card"}
             </button>

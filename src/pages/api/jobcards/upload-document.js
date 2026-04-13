@@ -27,18 +27,28 @@ async function handler(req, res, session) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const jobId = fields.jobId;
+    const rawJobId = fields.jobId;
+    if (!rawJobId) {
+      return res.status(400).json({ error: "Missing jobId" });
+    }
+    const isTempJob = typeof rawJobId === "string" && rawJobId.startsWith("temp-");
+    const jobId = isTempJob
+      ? rawJobId
+      : /^\d+$/.test(String(rawJobId))
+        ? Number(rawJobId)
+        : rawJobId;
     const userId = fields.userId || "system";
 
     console.log("📎 Document upload:", {
       jobId,
+      jobIdType: typeof jobId,
       fileName: file.fileName,
       size: file.size || file.buffer.length,
     });
 
     // Temp jobs — upload to Supabase Storage but skip DB row.
     // The link-uploaded-files route creates the row once the job is confirmed.
-    if (jobId.startsWith("temp-")) {
+    if (isTempJob) {
       const { storagePath, publicUrl } = await uploadFile(file, "documents", jobId);
 
       return res.status(200).json({
@@ -66,7 +76,10 @@ async function handler(req, res, session) {
 
     if (!result.success) {
       console.warn("Failed to upload document:", result.error);
-      return res.status(500).json({ error: result.error || "Upload failed" });
+      return res.status(500).json({
+        error: "Upload failed",
+        message: result.error || "Unknown storage/database failure",
+      });
     }
 
     console.log("✅ Document uploaded successfully");

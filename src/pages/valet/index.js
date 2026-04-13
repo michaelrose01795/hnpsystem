@@ -221,6 +221,7 @@ const jobHasWashFlag = (job) => {
   const requests = normalizeTextArray(job.requests);
 
   return (
+    Boolean(job.maintenanceInfo?.washRequired) ||
     containsKeyword(job.description) ||
     containsKeyword(job.status) ||
     containsKeyword(job.waitingStatus) ||

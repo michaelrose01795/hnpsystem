@@ -47,7 +47,16 @@ async function handler(req, res) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const jobId = fields.jobId;
+    const rawJobId = fields.jobId;
+    if (!rawJobId) {
+      return res.status(400).json({ error: "Missing jobId" });
+    }
+    const isTempJob = typeof rawJobId === "string" && rawJobId.startsWith("temp-");
+    const jobId = isTempJob
+      ? rawJobId
+      : /^\d+$/.test(String(rawJobId))
+        ? Number(rawJobId)
+        : rawJobId;
     const userId = fields.userId || "system";
     const visibleToCustomer = fields.visibleToCustomer === "true" || fields.visibleToCustomer === true;
     const description = fields.description || "";
@@ -68,7 +77,7 @@ async function handler(req, res) {
 
     // For temp jobs, store in Supabase Storage but skip the DB row.
     // The link-uploaded-files route will create the row when the job is finalised.
-    if (jobId.startsWith("temp-")) {
+    if (isTempJob) {
       const { uploadFile } = await import("@/lib/storage/storageService");
       const { storagePath, publicUrl } = await uploadFile(file, "vhc-media", jobId);
 
@@ -96,7 +105,10 @@ async function handler(req, res) {
 
     if (!result.success) {
       console.warn("Failed to upload VHC media:", result.error);
-      return res.status(500).json({ error: result.error || "Upload failed" });
+      return res.status(500).json({
+        error: "Upload failed",
+        message: result.error || "Unknown storage/database failure",
+      });
     }
 
     console.log("✅ VHC media uploaded successfully");

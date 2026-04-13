@@ -77,7 +77,8 @@
       "Bash(awk -F: '{print $1}')",
       "Bash(sed -i '/^import Layout from \"@\\\\/components\\\\/Layout\"; \\\\/\\\\/ import layout wrapper$/d' src/pages/job-cards/view/index.js)",
       "Bash(sed -i '/^import Layout from \"@\\\\/components\\\\/Layout\"; \\\\/\\\\/ Main layout wrapper$/d' src/pages/job-cards/waiting/nextjobs.js)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(gh run:*)"
     ],
     "deny": [],
     "ask": []

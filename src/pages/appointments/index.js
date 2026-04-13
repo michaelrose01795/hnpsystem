@@ -1497,12 +1497,24 @@ export default function Appointments() {
                   borderBottom: "1px solid rgba(var(--surface-rgb), 0.18)",
                 }}
               >
-                {["Day/Date","Availability","Total Hours","Total Jobs","Jobs Scheduled","Finish","Services","MOT","Diagnosis","Other","Staff Off"].map(header => (
-                  <th 
-                    key={header} 
-                    style={{ 
-                      textAlign: header === "Services" || header === "MOT" || header === "Diagnosis" || header === "Other" || header === "Staff Off" || header === "Total Jobs" || header === "Jobs Scheduled" ? "center" : "left",
-                      padding: "12px 14px",
+                {[
+                  { label: "Day/Date", align: "left", width: "auto" },
+                  { label: "Availability", align: "left", width: "auto" },
+                  { label: "Hours", align: "center", width: "64px" },
+                  { label: "Jobs", align: "center", width: "56px" },
+                  { label: "Finish", align: "center", width: "72px" },
+                  { label: "Services", align: "center", width: "72px" },
+                  { label: "MOT", align: "center", width: "56px" },
+                  { label: "Diagnosis", align: "center", width: "80px" },
+                  { label: "Other", align: "center", width: "64px" },
+                  { label: "Staff Off", align: "center", width: "72px" },
+                ].map(({ label, align, width }) => (
+                  <th
+                    key={label}
+                    style={{
+                      textAlign: align,
+                      width,
+                      padding: "10px 10px",
                       fontWeight: "700",
                       fontSize: "11px",
                       letterSpacing: "0.05em",
@@ -1510,13 +1522,13 @@ export default function Appointments() {
                       color: "var(--text-inverse)",
                       borderBottom: "1px solid rgba(var(--surface-rgb), 0.18)",
                       background: "var(--primary)",
-                      position: "sticky", 
+                      position: "sticky",
                       top: 0,
                       zIndex: 6,
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {header}
+                    {label}
                   </th>
                 ))}
               </tr>
@@ -1601,111 +1613,111 @@ export default function Appointments() {
                       e.currentTarget.style.outline = baseOutline;
                     }}
                   >
-                    <td style={{ padding: "14px", borderBottom: cellBorder, fontWeight: isSelected ? "700" : "600", verticalAlign: "top" }}>
-                      <div style={{ display: "grid", gap: "4px" }}>
-                        <span>{formatDate(date)}</span>
-                        <span style={{ fontSize: "11px", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, fontWeight: isSelected ? "700" : "600", verticalAlign: "top" }}>
+                      <div style={{ display: "grid", gap: "2px" }}>
+                        <span style={{ color: "var(--accent-strong)", fontSize: "13px" }}>{formatDate(date)}</span>
+                        <span style={{ fontSize: "10px", color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
                           {isToday ? "Today" : date.toLocaleDateString("en-GB", { weekday: "long" })}
                         </span>
                       </div>
                     </td>
                     <td
                       style={{
-                        padding: "14px",
+                        padding: "10px 10px",
                         borderBottom: cellBorder,
                         verticalAlign: "top",
                       }}
                     >
-                      <div style={{ display: "grid", gap: "6px" }}>
+                      <div style={{ display: "grid", gap: "4px" }}>
                         <div
                           style={{
-                            fontSize: "13px",
+                            fontSize: "12px",
                             fontWeight: "700",
                             color: availabilityLabelColor,
+                            whiteSpace: "nowrap",
                           }}
                         >
                           {dayTechSummary.availableTechs} tech
                           {dayTechSummary.availableTechs !== 1 ? "s" : ""} available
                         </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                           <span
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
-                              padding: "4px 8px",
+                              padding: "3px 7px",
                               borderRadius: "var(--radius-pill)",
                               background: "var(--accent-surface)",
                               color: "var(--text-primary)",
-                              fontSize: "11px",
+                              fontSize: "10px",
                               fontWeight: "700",
+                              whiteSpace: "nowrap",
                             }}
                           >
-                            {totalAvailableHours.toFixed(1)}h available
+                            {totalAvailableHours.toFixed(1)}h
                           </span>
                           <span
                             style={{
                               display: "inline-flex",
                               alignItems: "center",
-                              padding: "4px 8px",
+                              padding: "3px 7px",
                               borderRadius: "var(--radius-pill)",
                               background: isCalmDay ? "var(--accent-surface)" : severityStyle.backgroundColor,
                               color: isCalmDay ? "var(--text-secondary)" : availabilityLabelColor,
-                              fontSize: "11px",
+                              fontSize: "10px",
                               fontWeight: "700",
+                              whiteSpace: "nowrap",
                             }}
                           >
-                            {bookingPercentDisplay}% booked
+                            {bookingPercentDisplay}%
                           </span>
                         </div>
                       </div>
                     </td>
-                    <td style={{ 
-                      padding: "14px",
+                    <td style={{
+                      padding: "10px 10px",
                       borderBottom: cellBorder,
                       color: counts.totalHours > 0 ? "var(--text-primary)" : "var(--grey-accent-light)",
                       fontWeight: counts.totalHours > 0 ? "700" : "500",
                       whiteSpace: "nowrap",
+                      textAlign: "center",
+                      fontSize: "13px",
                     }}>
                       {counts.totalHours}h
                     </td>
                     <td style={{
-                      padding: "14px",
+                      padding: "10px 10px",
                       borderBottom: cellBorder,
                       fontWeight: counts.totalJobs > 0 ? "700" : "500",
                       textAlign: "center",
+                      fontSize: "13px",
                     }}>
                       {counts.totalJobs}
                     </td>
                     <td style={{
-                      padding: "14px",
-                      borderBottom: cellBorder,
-                      fontWeight: counts.totalJobs > 0 ? "700" : "500",
-                      textAlign: "center",
-                    }}>
-                      {counts.totalJobs}
-                    </td>
-                    <td style={{
-                      padding: "14px",
+                      padding: "10px 10px",
                       borderBottom: cellBorder,
                       fontWeight: "600",
                       whiteSpace: "nowrap",
+                      textAlign: "center",
+                      fontSize: "13px",
                     }}>
                       {counts.finishTime || "-"}
                     </td>
-                    <td style={{ padding: "14px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.services > 0 ? "700" : "500" }}>
-                      {counts.services}
+                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.services > 0 ? "700" : "500", fontSize: "13px" }}>
+                      {counts.services || "-"}
                     </td>
-                    <td style={{ padding: "14px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.mot > 0 ? "700" : "500" }}>
-                      {counts.mot}
+                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.mot > 0 ? "700" : "500", fontSize: "13px" }}>
+                      {counts.mot || "-"}
                     </td>
-                    <td style={{ padding: "14px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.diagnosis > 0 ? "700" : "500" }}>
-                      {counts.diagnosis}
+                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.diagnosis > 0 ? "700" : "500", fontSize: "13px" }}>
+                      {counts.diagnosis || "-"}
                     </td>
-                    <td style={{ padding: "14px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.other > 0 ? "700" : "500" }}>
-                      {counts.other}
+                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.other > 0 ? "700" : "500", fontSize: "13px" }}>
+                      {counts.other || "-"}
                     </td>
-                    <td style={{ 
-                      padding: "14px",
+                    <td style={{
+                      padding: "10px 10px",
                       borderBottom: cellBorder,
                       textAlign: "center",
                     }}>
@@ -1713,19 +1725,8 @@ export default function Appointments() {
                         <button
                           type="button"
                           onClick={(event) => handleShowStaffOff(event, date, staffEntries)}
-                          style={{
-                            minWidth: "32px",
-                            padding: "6px 10px",
-                            borderRadius: "var(--radius-pill)",
-                            border: "1px solid rgba(var(--accent-base-rgb), 0.24)",
-                            backgroundColor: "var(--accent-surface)",
-                            color: "var(--text-primary)",
-                            fontWeight: "700",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                          }}
-                          onMouseEnter={(event) => event.currentTarget.style.backgroundColor = "var(--accent-surface-hover)"}
-                          onMouseLeave={(event) => event.currentTarget.style.backgroundColor = "var(--accent-surface)"}
+                          className="app-btn app-btn--secondary app-btn--xs app-btn--pill"
+                          style={{ minWidth: "32px" }}
                         >
                           {staffEntries.length}
                         </button>

@@ -134,7 +134,18 @@ export default function DocumentsUploadPopup({
                     resolve({});
                   }
                 } else {
-                  reject(new Error(`Upload failed with status ${xhr.status}`));
+                  let serverMessage = "";
+                  try {
+                    const parsed = JSON.parse(xhr.responseText);
+                    serverMessage = parsed?.message || parsed?.error || "";
+                  } catch (_) {
+                    serverMessage = xhr.responseText?.slice(0, 300) || "";
+                  }
+                  reject(
+                    new Error(
+                      `Upload failed (${xhr.status})${serverMessage ? `: ${serverMessage}` : ""}`
+                    )
+                  );
                 }
               });
 
@@ -155,6 +166,7 @@ export default function DocumentsUploadPopup({
             }));
 
             const uploadedPath = responseData?.file?.path || "";
+            const storagePath = responseData?.file?.storage_path || "";
 
             if (targetJobId.startsWith("temp-")) {
               tempMetadata.push({
@@ -162,7 +174,10 @@ export default function DocumentsUploadPopup({
                 contentType: file.type || "application/octet-stream",
                 jobId: targetJobId,
                 uploadedBy: userId || "system",
-                url: uploadedPath
+                url: uploadedPath,
+                storage_path: storagePath,
+                size: file.size,
+                mimetype: file.type || "application/octet-stream"
               });
             }
           } catch (uploadError) {
