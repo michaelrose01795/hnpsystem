@@ -11,6 +11,7 @@ import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start J
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/partsPipeline";
+import { compareJobsForBoard } from "@/lib/jobcards/utils";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -300,29 +301,8 @@ export default function MyJobsPage() {
         (job) => isAssignedToTechnician(job) || shouldShowMotHandoffJob(job, clockingMap)
       );
 
-      const statusRank = {
-        "in-progress": 0,
-        pending: 1,
-        complete: 2,
-      };
-      const sortedJobs = assignedJobs.sort((a, b) => {
-        const rankA =
-          statusRank[
-            getTechStatusCategory(resolveTechStatusLabel(a, { isClockedOn: activeJobIds.has(a.id) }))
-          ] ?? 1;
-        const rankB =
-          statusRank[
-            getTechStatusCategory(resolveTechStatusLabel(b, { isClockedOn: activeJobIds.has(b.id) }))
-          ] ?? 1;
-        if (rankA !== rankB) return rankA - rankB;
-
-        const aTimestamp = a.updatedAt || a.createdAt;
-        const bTimestamp = b.updatedAt || b.createdAt;
-        if (aTimestamp && bTimestamp) {
-          return new Date(bTimestamp) - new Date(aTimestamp);
-        }
-        return 0;
-      });
+      // Order matches the board panel on Next Jobs (position → checkedInAt → createdAt)
+      const sortedJobs = assignedJobs.sort(compareJobsForBoard);
 
       setMyJobs(sortedJobs);
       setFilteredJobs(sortedJobs);

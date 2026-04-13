@@ -2473,22 +2473,10 @@ export default function CreateJobCardPage() {
                         step="0.01"
                         value={req.time || ""}
                         onChange={(e) => handleTimeChange(i, e.target.value)}
-                        placeholder="Hours"
-                        style={{
-                          width: "90px",
-                          padding: "10px 12px",
-                          border: "none",
-                          borderRadius: "var(--radius-xs)",
-                          fontSize: "14px",
-                          outline: "none",
-                          transition: "border-color 0.2s",
-                          backgroundColor: "var(--accent-surface)",
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = "var(--primary)";
-                        }}
+                        placeholder="0.00"
+                        className="app-input"
+                        style={{ width: "90px" }}
                         onBlur={(e) => {
-                          e.target.style.borderColor = "var(--surface-light)";
                           const updated = [...requests];
                           updated[i].time = normalizeHoursToTwoDecimals(updated[i]?.time);
                           setRequests(updated);
@@ -2496,12 +2484,8 @@ export default function CreateJobCardPage() {
                         }}
                       />
                       <span
-                        style={{
-                          fontSize: "13px",
-                          color: "var(--text-secondary)",
-                          fontWeight: "500",
-                          minWidth: "30px",
-                        }}
+                        className="app-btn app-btn--secondary app-btn--sm"
+                        style={{ pointerEvents: "none", minWidth: 0, padding: "0 10px" }}
                       >
                         h
                       </span>
@@ -2512,25 +2496,21 @@ export default function CreateJobCardPage() {
                       options={PAYMENT_TYPE_OPTIONS}
                       className="job-request-payment-dropdown"
                     />
+                    {(() => {
+                      const det = visibleJobDetections.find(
+                        (d) => Number(d.requestIndex) === i
+                      );
+                      if (!det) return null;
+                      return (
+                        <span className="app-btn app-btn--secondary app-btn--sm app-btn--pill" style={{ pointerEvents: "none" }}>
+                          {det.jobType}
+                        </span>
+                      );
+                    })()}
                     <button
+                      type="button"
                       onClick={() => handleRemoveRequest(i)}
-                      style={{
-                        backgroundColor: "var(--danger)",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "var(--radius-xs)",
-                        padding: "10px 16px",
-                        cursor: "pointer",
-                        fontWeight: "600",
-                        fontSize: "13px",
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = "var(--danger)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = "var(--danger)";
-                      }}
+                      className="app-btn app-btn--danger app-btn--sm"
                     >
                       Remove
                     </button>
@@ -2539,24 +2519,9 @@ export default function CreateJobCardPage() {
               ))}
             </div>
             <button
+              type="button"
               onClick={handleAddRequest}
-              style={{
-                backgroundColor: "var(--primary)",
-                color: "white",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                padding: "12px 20px",
-                cursor: "pointer",
-                fontWeight: "600",
-                fontSize: "14px",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = "var(--primary-dark)";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = "var(--primary)";
-              }}
+              className="app-btn app-btn--primary"
             >
               + Add Request
             </button>
@@ -2897,17 +2862,8 @@ export default function CreateJobCardPage() {
                               {requestDetections.map((detection, index) => (
                                 <span
                                   key={`request-detection-${request.index}-${index}`}
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    minHeight: "24px",
-                                    padding: "0 8px",
-                                    borderRadius: "999px",
-                                    background: "var(--surface)",
-                                    color: "var(--accent-strong)",
-                                    fontSize: "11px",
-                                    fontWeight: "700",
-                                  }}
+                                  className="app-btn app-btn--secondary app-btn--xs app-btn--pill"
+                                  style={{ pointerEvents: "none" }}
                                 >
                                   {detection.jobType}
                                 </span>

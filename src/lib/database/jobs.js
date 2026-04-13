@@ -355,6 +355,10 @@ const _getAllJobsUncached = async () => {
         job_source,
         job_division
       ),
+      prime_job_id,
+      prime_job_number,
+      is_prime_job,
+      sub_job_sequence,
       created_at,
       updated_at,
       vehicle:vehicle_id(
@@ -838,6 +842,10 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
         job_source,
         job_division
       ),
+      prime_job_id,
+      prime_job_number,
+      is_prime_job,
+      sub_job_sequence,
       created_at,
       updated_at,
       vehicle:vehicle_id(
@@ -978,6 +986,19 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
     parts_job_items_count: jobData.parts_job_items?.length || 0,
     parts_job_items_ids: (jobData.parts_job_items || []).map(p => p.id).slice(0, 5),
   });
+
+  // ✅ Fetch sub-jobs for prime jobs (self-referential join not supported via PostgREST embed)
+  if (jobData.is_prime_job && jobData.job_number) {
+    const { data: subJobRows } = await supabase
+      .from("jobs")
+      .select("id, job_number, description, type, status, assigned_to, sub_job_sequence")
+      .eq("prime_job_number", jobData.job_number)
+      .neq("is_prime_job", true)
+      .order("sub_job_sequence", { ascending: true });
+    jobData.sub_jobs = subJobRows || [];
+  } else {
+    jobData.sub_jobs = jobData.sub_jobs || [];
+  }
 
   const messagingThread = await fetchJobMessagingThread(jobData.job_number);
   const formattedJob = formatJobData(jobData);
@@ -1179,6 +1200,10 @@ export const getJobByNumberOrReg = async (searchTerm) => {
       vhc_required,
       checked_in_at,
       maintenance_info,
+      prime_job_id,
+      prime_job_number,
+      is_prime_job,
+      sub_job_sequence,
       created_at,
       updated_at,
       vehicle:vehicle_id(
@@ -1303,6 +1328,10 @@ export const getJobByNumberOrReg = async (searchTerm) => {
         vhc_required,
         checked_in_at,
         maintenance_info,
+      prime_job_id,
+      prime_job_number,
+      is_prime_job,
+      sub_job_sequence,
         created_at,
         updated_at,
         vehicle:vehicle_id(
@@ -2728,6 +2757,10 @@ export const addJobToDatabase = async ({
         cosmetic_notes,
         vhc_required,
         maintenance_info,
+      prime_job_id,
+      prime_job_number,
+      is_prime_job,
+      sub_job_sequence,
         created_at,
         prime_job_number,
         prime_job_id,

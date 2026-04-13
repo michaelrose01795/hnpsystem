@@ -1019,6 +1019,14 @@ textarea::placeholder {
 .app-btn--ghost:hover {
   background: var(--control-bg);
 }
+.app-btn--danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+}
+.app-btn--danger:hover {
+  background: var(--danger-dark);
+}
 .app-btn--pill { border-radius: var(--radius-pill); }
 .app-btn--sm {
   min-height: var(--control-height-sm);

@@ -1360,6 +1360,22 @@ export default function Appointments() {
     return (a.subJobSequence || 0) - (b.subJobSequence || 0);
   });
 
+  // ✅ Compute group size for each prime job number so rows can show "X/Y Job Cards"
+  const jobGroupSizeMap = {};
+  for (const job of sortedJobs) {
+    const key = job.primeJobNumber || job.jobNumber;
+    if (key) {
+      jobGroupSizeMap[key] = (jobGroupSizeMap[key] || 0) + 1;
+    }
+  }
+  const getJobGroupBadge = (job) => {
+    const key = job.primeJobNumber || job.jobNumber;
+    const total = key ? (jobGroupSizeMap[key] || 1) : 1;
+    if (total <= 1) return null;
+    const position = job.isPrimeJob ? 1 : (job.subJobSequence ?? 0) + 1;
+    return `${position}/${total}`;
+  };
+
   // ---------------- Render ----------------
   return (
     <>
@@ -2120,21 +2136,26 @@ export default function Appointments() {
                             }}
                           >
                             <span>{job.jobNumber || job.id || "-"}</span>
-                            {job.primeJobNumber && (
-                              <span
-                                style={{
-                                  fontSize: "10px",
-                                  padding: "2px 6px",
-                                  borderRadius: "var(--radius-xs)",
-                                  backgroundColor: "rgba(var(--primary-rgb), 0.14)",
-                                  color: "var(--primary)",
-                                  fontWeight: "600",
-                                }}
-                                title={job.isPrimeJob ? "Prime Job" : `Sub-job of ${job.primeJobNumber}`}
-                              >
-                                {job.isPrimeJob ? "🔗" : `↳${job.primeJobNumber}`}
-                              </span>
-                            )}
+                            {(() => {
+                              const badge = getJobGroupBadge(job);
+                              if (!badge) return null;
+                              return (
+                                <span
+                                  style={{
+                                    fontSize: "10px",
+                                    padding: "2px 6px",
+                                    borderRadius: "var(--radius-xs)",
+                                    backgroundColor: "var(--accent-surface)",
+                                    color: "var(--accent-strong)",
+                                    fontWeight: "700",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                  title={job.isPrimeJob ? `Host job (${badge} job cards)` : `Job ${badge} — linked to host #${job.primeJobNumber}`}
+                                >
+                                  {badge} Job Cards
+                                </span>
+                              );
+                            })()}
                           </button>
                         </td>
                         <td style={{ padding: "12px 14px", borderBottom: cellBorder, fontWeight: "600", whiteSpace: "nowrap" }}>

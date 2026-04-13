@@ -17,7 +17,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { SearchBar } from "@/components/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
-import { normalizeRequests } from "@/lib/jobcards/utils";
+import { normalizeRequests, compareJobsForBoard } from "@/lib/jobcards/utils";
 import { getJobRequests, getJobRequestsCount as canonicalRequestsCount, getVehicleRegistration } from "@/lib/canonical/fields";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
@@ -294,34 +294,6 @@ const toUserIdKey = (value) => {
   if (value === null || value === undefined) return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) ? String(numeric) : null;
-};
-
-const getSortablePosition = (job) => {
-  const numeric = Number(job?.position);
-  return Number.isFinite(numeric) ? numeric : null;
-};
-
-const getComparableTimestamp = (value) => {
-  if (!value) return 0;
-  const timestamp = new Date(value).getTime();
-  return Number.isFinite(timestamp) ? timestamp : 0;
-};
-
-const compareJobsForBoard = (left, right) => {
-  const leftPosition = getSortablePosition(left);
-  const rightPosition = getSortablePosition(right);
-
-  if (leftPosition !== null && rightPosition !== null && leftPosition !== rightPosition) {
-    return leftPosition - rightPosition;
-  }
-  if (leftPosition !== null && rightPosition === null) return -1;
-  if (leftPosition === null && rightPosition !== null) return 1;
-
-  const checkedInDifference =
-    getComparableTimestamp(right?.checkedInAt) - getComparableTimestamp(left?.checkedInAt);
-  if (checkedInDifference !== 0) return checkedInDifference;
-
-  return getComparableTimestamp(right?.createdAt) - getComparableTimestamp(left?.createdAt);
 };
 
 const mapActiveClockingRow = (row = {}) => {

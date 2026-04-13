@@ -1,7 +1,6 @@
 fix alerts so text colour can be read/seen which popup in the top right corner 
 
-
-PAGE ACCESS
+have it so within the floating notes section, on the same row as "Title" to the left of the Share button add a "AI" button, this opens a new tab at the top but also opens a new chat section within in place of where the "Title Additional  Description PAGE ACCESS" goes, this seciton will now show a chat box where the user can ask a question about anything wihtin the app and then the "AI" will be able to give it a detialed gaiud on what a section does, how to find something, what something means all by looking at the code and understanding how that feature or whatever is that the suer is asking for, the user can have a back and forth conversation with the "AI" and this chat can be saved or removed. 
 
 Service Manager
 /dashboard/service

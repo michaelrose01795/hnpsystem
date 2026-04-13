@@ -19,7 +19,9 @@ jobs:
       run: npx playwright install --with-deps
     - name: Prepare Playwright auth directory
       run: mkdir -p e2e/.auth
-    - name: Run Playwright tests
+
+    # Smoke tests — always run. Auth uses the CI bypass; no real DB needed.
+    - name: Run smoke tests
       env:
         NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
@@ -27,7 +29,44 @@ jobs:
         NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-placeholder-secret-not-for-production' }}
         NEXTAUTH_URL: http://localhost:3000
         PLAYWRIGHT_TEST_AUTH: '1'
-      run: npx playwright test
+      run: npx playwright test --project=auth-setup --project=smoke
+
+    # Visual tests — update snapshots on every CI run so baselines stay current
+    # with the Linux runner. The updated files are uploaded as a build artifact.
+    - name: Run visual tests (update snapshots)
+      env:
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key' }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-placeholder-secret-not-for-production' }}
+        NEXTAUTH_URL: http://localhost:3000
+        PLAYWRIGHT_TEST_AUTH: '1'
+      run: npx playwright test --project=auth-setup --project=visual --update-snapshots
+
+    # Detect whether a real Supabase service key has been configured as a secret.
+    # secrets context is not available in step `if`, so we probe via the env.
+    - name: Check for real DB secrets
+      id: db-check
+      env:
+        SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      run: |
+        if [ -n "$SERVICE_KEY" ]; then
+          echo "available=true" >> $GITHUB_OUTPUT
+        else
+          echo "available=false" >> $GITHUB_OUTPUT
+        fi
+
+    # Workflow / integration tests — only run when real Supabase secrets are present.
+    - name: Run workflow tests (requires real DB)
+      if: steps.db-check.outputs.available == 'true'
+      env:
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || 'ci-placeholder-secret-not-for-production' }}
+        NEXTAUTH_URL: http://localhost:3000
+        PLAYWRIGHT_TEST_AUTH: '1'
+      run: npx playwright test --project=auth-setup --project=workflows
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:

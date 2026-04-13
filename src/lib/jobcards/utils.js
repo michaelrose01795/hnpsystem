@@ -113,9 +113,51 @@ const mapCustomerJobsToHistory = (jobs = [], vehicleReg = "") => {
     });
 };
 
-export { normalizeRequests, mapCustomerJobsToHistory };
+// ---------------------------------------------------------------------------
+// Board ordering — shared between nextjobs.js and myjobs/index.js so that
+// the row order a technician sees in their My Jobs list always matches the
+// order their cards appear in the board panel on Next Jobs.
+// ---------------------------------------------------------------------------
+
+const getSortablePosition = (job) => {
+  const numeric = Number(job?.position);
+  return Number.isFinite(numeric) ? numeric : null;
+};
+
+const getComparableTimestamp = (value) => {
+  if (!value) return 0;
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+/**
+ * Comparator for Array.prototype.sort that reproduces the ordering used on
+ * the Next Jobs board:
+ *   1. Explicit drag-drop position (ascending, nulls last)
+ *   2. checkedInAt timestamp (newest first)
+ *   3. createdAt timestamp (newest first)
+ */
+const compareJobsForBoard = (left, right) => {
+  const leftPosition = getSortablePosition(left);
+  const rightPosition = getSortablePosition(right);
+
+  if (leftPosition !== null && rightPosition !== null && leftPosition !== rightPosition) {
+    return leftPosition - rightPosition;
+  }
+  if (leftPosition !== null && rightPosition === null) return -1;
+  if (leftPosition === null && rightPosition !== null) return 1;
+
+  const checkedInDifference =
+    getComparableTimestamp(right?.checkedInAt) - getComparableTimestamp(left?.checkedInAt);
+  if (checkedInDifference !== 0) return checkedInDifference;
+
+  return getComparableTimestamp(right?.createdAt) - getComparableTimestamp(left?.createdAt);
+};
+
+export { normalizeRequests, mapCustomerJobsToHistory, compareJobsForBoard };
 
 export default {
   normalizeRequests,
-  mapCustomerJobsToHistory
+  mapCustomerJobsToHistory,
+  compareJobsForBoard,
 };
