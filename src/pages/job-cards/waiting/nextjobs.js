@@ -1334,7 +1334,7 @@ export default function NextJobsPage() {
 
   const renderAssigneePanel = (assignee) => {
     const panelKey = assignee.panelKey || assignee.id || assignee.name;
-    const shouldScroll = assignee.jobs.length > VISIBLE_JOBS_PER_PANEL;
+    const shouldScroll = assignee.jobs.length > VISIBLE_JOBS_PER_PANEL; // kept for reference
     const userIdKey = toUserIdKey(assignee.id);
     const currentClocking = userIdKey ? activeClockingsByUser[userIdKey] : null;
     const clockingSubtitleParts = [];
@@ -1365,6 +1365,7 @@ export default function NextJobsPage() {
           height: PANEL_HEIGHT_PX,
           minHeight: PANEL_HEIGHT_PX,
           maxHeight: PANEL_HEIGHT_PX,
+          overflow: "hidden",
           boxShadow:
             activeDropTarget === panelKey
               ? "0 4px 12px rgba(0, 0, 0, 0.2)"
@@ -1466,8 +1467,12 @@ export default function NextJobsPage() {
           flex: 1,
           minHeight: JOB_LIST_MAX_HEIGHT_PX,
           maxHeight: JOB_LIST_MAX_HEIGHT_PX,
-          overflowY: shouldScroll ? "auto" : "hidden",
-          paddingRight: shouldScroll ? "8px" : "4px"
+          overflowY: "auto",
+          // Extend into the panel's right padding so the scrollbar sits in
+          // that zone rather than shrinking the card content. Cards stay the
+          // same width as the clocking section above.
+          marginRight: "-16px",
+          paddingRight: "16px",
         }}>
             {assignee.jobs.length === 0 ? (
               <p style={{

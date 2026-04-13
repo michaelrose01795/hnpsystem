@@ -21,11 +21,14 @@ export default function DocumentsUploadPopup({
   userId,
   onAfterUpload,
   onTempFilesQueued,
+  onFileUploaded,
   existingDocuments = []
 }) {
   const [pendingDocuments, setPendingDocuments] = useState([]);
   const [uploadProgress, setUploadProgress] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [renamingIndex, setRenamingIndex] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const effectiveJobId = jobId ? String(jobId) : null;
 
@@ -48,7 +51,29 @@ export default function DocumentsUploadPopup({
 
   const removePendingDocument = useCallback((removeIndex) => {
     setPendingDocuments((prev) => prev.filter((_, index) => index !== removeIndex));
+    setRenamingIndex((prev) => (prev === removeIndex ? null : prev));
   }, []);
+
+  const startRename = useCallback((idx, currentName) => {
+    setRenamingIndex(idx);
+    setRenameValue(currentName);
+  }, []);
+
+  const commitRename = useCallback((idx) => {
+    const trimmed = renameValue.trim();
+    if (!trimmed) { setRenamingIndex(null); return; }
+    setPendingDocuments((prev) =>
+      prev.map((file, i) => {
+        if (i !== idx) return file;
+        // Preserve extension if user didn't include one
+        const origExt = file.name.includes(".") ? `.${file.name.split(".").pop()}` : "";
+        const newExt = trimmed.includes(".") ? "" : origExt;
+        const newName = `${trimmed}${newExt}`;
+        return new File([file], newName, { type: file.type, lastModified: file.lastModified });
+      })
+    );
+    setRenamingIndex(null);
+  }, [renameValue]);
 
   const updateProgressForFile = useCallback((fileName, updater) => {
     setUploadProgress((prev) =>
@@ -179,6 +204,8 @@ export default function DocumentsUploadPopup({
                 size: file.size,
                 mimetype: file.type || "application/octet-stream"
               });
+            } else if (typeof onFileUploaded === "function" && responseData?.file) {
+              onFileUploaded(responseData.file);
             }
           } catch (uploadError) {
             console.error("Document upload failed", uploadError);
@@ -206,6 +233,7 @@ export default function DocumentsUploadPopup({
     },
     [
       onAfterUpload,
+      onFileUploaded,
       onTempFilesQueued,
       updateProgressForFile,
       userId
@@ -347,31 +375,98 @@ export default function DocumentsUploadPopup({
                   <div
                     key={`${file.name}-${idx}`}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
                       padding: "8px",
                       borderBottom: "1px solid var(--surface-light)"
                     }}
                   >
-                    <div>
-                      <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
-                        {file.name}
+                    {renamingIndex === idx ? (
+                      /* Inline rename row */
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <input
+                          autoFocus
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitRename(idx);
+                            if (e.key === "Escape") setRenamingIndex(null);
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: "5px 8px",
+                            borderRadius: "var(--input-radius)",
+                            border: "1px solid var(--primary)",
+                            fontSize: "13px",
+                            color: "var(--text-primary)",
+                            backgroundColor: "var(--surface)",
+                            outline: "none",
+                          }}
+                        />
+                        <button
+                          onClick={() => commitRename(idx)}
+                          style={{
+                            padding: "5px 10px",
+                            border: "none",
+                            borderRadius: "var(--input-radius)",
+                            backgroundColor: "var(--primary)",
+                            color: "var(--text-inverse)",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setRenamingIndex(null)}
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            color: "var(--text-secondary)",
+                            fontSize: "13px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Cancel
+                        </button>
                       </div>
-                      <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{formatBytes(file.size)}</div>
-                    </div>
-                    <button
-                      onClick={() => removePendingDocument(idx)}
-                      style={{
-                        border: "none",
-                        background: "transparent",
-                        color: "var(--danger)",
-                        fontSize: "13px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      Remove
-                    </button>
+                    ) : (
+                      /* Normal row */
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div>
+                          <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
+                            {file.name}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{formatBytes(file.size)}</div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <button
+                            onClick={() => startRename(idx, file.name)}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              color: "var(--primary)",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Rename
+                          </button>
+                          <button
+                            onClick={() => removePendingDocument(idx)}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              color: "var(--danger)",
+                              fontSize: "13px",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

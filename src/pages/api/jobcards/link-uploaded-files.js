@@ -65,11 +65,7 @@ async function handler(req, res, session) {
               fileUrl: publicUrl,
               fileType: meta.contentType || meta.mimetype || "application/octet-stream",
               folder,
-              uploadedBy: meta.uploadedBy || "system",
-              visibleToCustomer: meta.visible_to_customer ?? true,
-              fileSize: meta.size || meta.file_size || buffer.length,
-              storageType: "supabase",
-              storagePath: newPath,
+              uploadedBy: meta.uploadedBy,
             });
 
             if (result.success) {
@@ -101,10 +97,7 @@ async function handler(req, res, session) {
             fileUrl: publicUrl,
             fileType: meta.contentType || "application/octet-stream",
             folder: "documents",
-            uploadedBy: meta.uploadedBy || "system",
-            fileSize: meta.size || null,
-            storageType: "local",
-            storagePath: null,
+            uploadedBy: meta.uploadedBy,
           });
 
           linkedFiles.push({ fileName: meta.fileName, path: publicUrl });

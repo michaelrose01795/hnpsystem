@@ -1,5 +1,6 @@
 import React from "react";
 import themeConfig from "@/styles/appTheme";
+import CarImage from "@/components/VHC/CarImage";
 
 const { palette } = themeConfig;
 
@@ -70,24 +71,41 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
 
   const stageStyle = {
     width: "100%",
-    height: "auto",
     maxWidth: "360px",
+    aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
+    position: "relative",
     borderRadius: "var(--radius-lg)",
-    backgroundImage: "var(--vhc-vehicle-diagram-image)",
-    backgroundPosition: "50% 50%",
-    backgroundRepeat: "no-repeat",
-    backgroundSize: "118% auto",
     backgroundColor: "rgba(var(--accent-purple-rgb), 0.03)",
     boxShadow: "inset 0 0 0 1px rgba(var(--accent-purple-rgb), 0.18)",
+    overflow: "hidden",
   };
 
   return (
     <div style={containerStyle}>
+      <div style={stageStyle}>
+        <CarImage
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "118%",
+            height: "auto",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        />
       <svg
         viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
         role="img"
         aria-label="Brake pad and disc overview diagram"
-        style={stageStyle}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+        }}
       >
         {isFrontActive ? (
           <rect
@@ -184,6 +202,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
           );
         })}
       </svg>
+      </div>
     </div>
   );
 }

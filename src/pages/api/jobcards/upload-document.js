@@ -37,7 +37,9 @@ async function handler(req, res, session) {
       : /^\d+$/.test(String(rawJobId))
         ? Number(rawJobId)
         : rawJobId;
-    const userId = fields.userId || "system";
+    // uploaded_by is an integer FK — coerce to number or null; never pass a string like "system"
+    const rawUserId = fields.userId;
+    const userId = rawUserId && /^\d+$/.test(String(rawUserId)) ? Number(rawUserId) : null;
 
     console.log("📎 Document upload:", {
       jobId,

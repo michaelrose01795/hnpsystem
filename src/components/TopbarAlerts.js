@@ -2,10 +2,10 @@ import React from "react";
 import { useAlerts } from "@/context/AlertContext";
 
 const toneStyles = {
-  success: { bg: "var(--success)", text: "var(--surface)" },
-  error: { bg: "var(--danger)", text: "var(--surface)" },
-  warning: { bg: "var(--danger)", text: "var(--surface)" },
-  info: { bg: "var(--info)", text: "var(--accent-purple)" },
+  success: { bg: "var(--success-surface)", text: "var(--success-strong)", border: "var(--success-border)" },
+  error:   { bg: "var(--danger-surface)",  text: "var(--danger-text)",   border: "var(--danger-border)" },
+  warning: { bg: "var(--warning-surface)", text: "var(--warning-text)",  border: "var(--warning-border)" },
+  info:    { bg: "var(--accent-surface)",  text: "var(--accent-strong)", border: "var(--accent-base)" },
 };
 
 const getTone = (type) => toneStyles[type] || toneStyles.info;
@@ -42,7 +42,6 @@ export function AlertBadge() {
 
 export default function TopbarAlerts() {
   const { alerts, dismissAlert } = useAlerts();
-  const closeButtonColor = "var(--accent-purple)";
   if (!alerts.length) return null;
 
   const latestAlerts = alerts.slice(-1);
@@ -51,7 +50,7 @@ export default function TopbarAlerts() {
     <div
       style={{
         position: "fixed",
-        top: "16px",
+        top: "calc(var(--page-gutter-y) + 75px + 12px)",
         right: "24px",
         zIndex: 1200,
         display: "flex",
@@ -70,7 +69,7 @@ export default function TopbarAlerts() {
               padding: "12px 14px",
               background: tone.bg,
               color: tone.text,
-      
+              border: `1px solid ${tone.border}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -84,7 +83,7 @@ export default function TopbarAlerts() {
               style={{
                 border: "none",
                 background: "transparent",
-                color: closeButtonColor,
+                color: "inherit",
                 borderRadius: "var(--radius-pill)",
                 padding: "4px 8px",
                 cursor: "pointer",

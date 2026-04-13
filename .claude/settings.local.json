@@ -80,7 +80,10 @@
       "Bash(git stash:*)",
       "Bash(gh run:*)",
       "Bash(npm test:*)",
-      "Bash(awk '/data-dev-section-key=/ {:*)"
+      "Bash(awk '/data-dev-section-key=/ {:*)",
+      "Bash(git -C c:/hnpsystem log --oneline -5)",
+      "Bash(git -C c:/hnpsystem show --stat HEAD)",
+      "Bash(git -C c:/hnpsystem diff HEAD~1 HEAD -- src/pages/job-cards/create/index.js)"
     ],
     "deny": [],
     "ask": []

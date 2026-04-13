@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
@@ -740,6 +741,10 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // ✅ Related Jobs (Prime/Sub-job) State
   const [relatedJobs, setRelatedJobs] = useState([]);
   const [relatedJobsLoading, setRelatedJobsLoading] = useState(false);
+  const [isLinkPopupOpen, setIsLinkPopupOpen] = useState(false);
+  const [linkJobInput, setLinkJobInput] = useState("");
+  const [isLinking, setIsLinking] = useState(false);
+  const [linkError, setLinkError] = useState(null);
 
   const applyWriteUpOptimisticState = useCallback(
     ({ completionStatus, tasks, requestStatuses } = {}) => {
@@ -1286,7 +1291,10 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         }
         const overlayToApply = writeUpOptimisticSyncRef.current;
         setJobData(overlayToApply ? applyWriteUpOptimisticOverlay(hydratedJobCard, overlayToApply) : hydratedJobCard);
-        setJobDocuments(mappedFiles);
+        // Do NOT set jobDocuments here — fetchDocuments() is the authoritative source
+        // and runs independently. Setting from the embedded join (which can silently
+        // return [] when the PostgREST schema cache is stale) would overwrite correctly
+        // fetched files and cause them to disappear from the gallery.
 
         if (isArchiveMode) {
           const archivedNotes = Array.isArray(jobCard.notes) ? jobCard.notes : [];
@@ -1341,6 +1349,62 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       tasks: Array.isArray(tasksSnapshot) ? tasksSnapshot : [],
     });
   }, [applyWriteUpOptimisticState]);
+
+  const handleRenameDocument = useCallback(async (fileId, newName) => {
+    if (!fileId || !newName) return;
+    try {
+      await fetch(`/api/jobcards/${encodeURIComponent(jobNumber)}/files`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId, fileName: newName }),
+      });
+      // Update local state immediately so the gallery reflects the change
+      setJobDocuments((prev) =>
+        prev.map((doc) =>
+          (doc.id || doc.file_id) === fileId ? { ...doc, name: newName, file_name: newName } : doc
+        )
+      );
+    } catch {
+      // silently ignore — the gallery will refresh on next fetchDocuments
+    }
+  }, [jobNumber]);
+
+  const handleDocumentFileUploaded = useCallback((fileData) => {
+    if (!fileData) return;
+    const newDoc = mapJobFileRecord({
+      file_id: fileData.fileId || null,
+      file_name: fileData.filename || fileData.originalName || "Document",
+      file_url: fileData.path || "",
+      file_type: fileData.mimetype || "",
+      folder: "documents",
+      uploaded_by: dbUserId || null,
+      uploaded_at: fileData.uploadedAt || new Date().toISOString(),
+    });
+    setJobDocuments((prev) => [...prev, newDoc]);
+  }, [dbUserId]);
+
+  // Fetch job files directly from job_files table (bypasses embedded-join cache issues)
+  const fetchDocuments = useCallback(async () => {
+    if (!jobNumber) return;
+    try {
+      const response = await fetch(`/api/jobcards/${encodeURIComponent(jobNumber)}/files`, {
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      const payload = await response.json();
+      const files = Array.isArray(payload.files) ? payload.files : [];
+      setJobDocuments(files.map(mapJobFileRecord));
+    } catch {
+      // silently ignore — the embedded-join fallback already ran
+    }
+  }, [jobNumber]);
+
+  // Always fetch documents directly on page load and job-number changes.
+  // This is the authoritative source: a direct query against job_files avoids
+  // any PostgREST embedded-join schema-cache misses.
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
 
   // Hydrate local state from SWR cache (prefetch or previous visit) for instant rendering
   useEffect(() => {
@@ -1465,6 +1529,56 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       isActive = false;
     };
   }, [jobData?.primeJobNumber, jobData?.jobNumber]);
+
+  const handleLinkJob = useCallback(async () => {
+    const trimmed = linkJobInput.trim();
+    if (!trimmed) { setLinkError("Please enter a job number."); return; }
+    setIsLinking(true);
+    setLinkError(null);
+    try {
+      const result = await getJobByNumber(trimmed, { noCache: true });
+      if (!result?.data?.jobCard) {
+        setLinkError("Job not found. Check the job number and try again.");
+        return;
+      }
+      const targetJob = result.data.jobCard;
+      if (targetJob.id === jobData.id) {
+        setLinkError("Cannot link a job to itself.");
+        return;
+      }
+      let primeJobId = jobData.isPrimeJob ? jobData.id : jobData.primeJobId;
+      let primeJobNumber = jobData.primeJobNumber || jobData.jobNumber;
+      if (!jobData.isPrimeJob && !jobData.primeJobId) {
+        const convertResult = await convertToPrimeJob(jobData.id);
+        if (!convertResult?.success) {
+          setLinkError(convertResult?.error?.message || "Failed to make current job a prime job.");
+          return;
+        }
+        primeJobId = jobData.id;
+        primeJobNumber = jobData.jobNumber;
+      }
+      const linkResult = await updateJob(targetJob.id, {
+        prime_job_id: primeJobId,
+        prime_job_number: primeJobNumber,
+        is_prime_job: false,
+      });
+      if (!linkResult?.success) {
+        setLinkError(linkResult?.error?.message || "Failed to link job.");
+        return;
+      }
+      const refreshResult = await getJobsByPrimeGroup(primeJobNumber);
+      if (refreshResult.success && refreshResult.data?.allJobs) {
+        setRelatedJobs(refreshResult.data.allJobs.filter((j) => j.jobNumber !== jobData.jobNumber));
+      }
+      setIsLinkPopupOpen(false);
+      setLinkJobInput("");
+    } catch (err) {
+      setLinkError("An unexpected error occurred.");
+      console.error("Link job error:", err);
+    } finally {
+      setIsLinking(false);
+    }
+  }, [linkJobInput, jobData, setRelatedJobs]);
 
   const loadTrackerEntry = useCallback(async () => {
     const targetJobNumber = jobData?.jobNumber || jobNumber;
@@ -1692,12 +1806,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     []
   );
 
-  useEffect(() => {
-    if (jobData?.files) {
-      const mapped = (jobData.files || []).map(mapJobFileRecord);
-      setJobDocuments(mapped);
-    }
-  }, [jobData?.files]);
+  // jobDocuments is driven solely by fetchDocuments() — not by jobData.files —
+  // so that the embedded-join result (which can be empty due to schema-cache issues)
+  // never overwrites the correct direct-query result.
 
   useEffect(() => {
     if (!jobData?.customerId) {
@@ -1781,7 +1892,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       { table: "job_clocking", filter: `job_id=eq.${jobData.id}` },
       { table: "job_writeups", filter: `job_id=eq.${jobData.id}` },
       { table: "job_requests", filter: `job_id=eq.${jobData.id}` },
-      { table: "job_files", filter: `job_id=eq.${jobData.id}` },
+      { table: "job_files", filter: `job_id=eq.${jobData.id}`, shouldRefresh: false, onPayload: () => fetchDocuments() },
       { table: "job_cosmetic_damage", filter: `job_id=eq.${jobData.id}` },
       { table: "job_customer_statuses", filter: `job_id=eq.${jobData.id}` },
       // job_progress can be extremely noisy (e.g. frequent heartbeat updates) and
@@ -1826,7 +1937,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [jobData?.id, refreshSharedNote, scheduleRealtimeRefresh, isArchiveMode]);
+  }, [jobData?.id, fetchDocuments, refreshSharedNote, scheduleRealtimeRefresh, isArchiveMode]);
 
   const handleCustomerDetailsSave = useCallback(
     async (updatedDetails) => {
@@ -3384,8 +3495,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         <section
           style={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            flexDirection: "column",
+            gap: "12px",
             padding: "20px",
             backgroundColor: sharedJobCardShellBackground,
             borderRadius: "var(--radius-sm)",
@@ -3397,8 +3508,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           data-dev-section-type="section-header-row"
           data-dev-section-parent="jobcard-page-shell"
         >
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+          {/* Row 1: Title + Action Buttons */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
               <h1 style={{ 
                 margin: 0, 
                 color: "var(--primary)", 
@@ -3463,91 +3575,45 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                   {jobDivisionLabel}
                 </span>
               )}
-              {/* ✅ Prime/Sub-job badge */}
-              {jobData.isPrimeJob && (
-                <span
-                  style={{
-                    padding: "6px 16px",
-                    backgroundColor: "var(--primary-surface)",
-                    color: "var(--primary)",
-                    borderRadius: "var(--control-radius-xs)",
-                    fontWeight: "600",
-                    fontSize: "13px",
-                    border: "1px solid currentColor",
-                    letterSpacing: "0.3px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                  }}
-                >
-                  🔗 Prime Job
-                </span>
-              )}
-              {jobData.primeJobId && !jobData.isPrimeJob && (
-                <span
-                  style={{
-                    padding: "6px 14px",
-                    backgroundColor: "var(--primary-surface)",
-                    color: "var(--primary)",
-                    borderRadius: "var(--radius-lg)",
-                    fontWeight: "600",
-                    fontSize: "13px",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => router.push(`/job-cards/${jobData.primeJobNumber}`)}
-                  title={`Go to prime job ${jobData.primeJobNumber}`}
-                >
-                  Sub-job of #{jobData.primeJobNumber}
-                </span>
-              )}
-              {/* ✅ Job group X/Y badge */}
-              {showJobGroupBadge && (
-                <span
-                  style={{
-                    padding: "6px 16px",
-                    backgroundColor: "var(--accent-surface)",
-                    color: "var(--accent-strong)",
-                    borderRadius: "var(--control-radius-xs)",
-                    fontWeight: "600",
-                    fontSize: "13px",
-                    border: "1px solid currentColor",
-                    letterSpacing: "0.3px",
-                  }}
-                  title={`Job ${jobGroupPosition} of ${jobGroupTotal} linked job cards`}
-                >
-                  {jobGroupPosition}/{jobGroupTotal} Job Cards
-                </span>
-              )}
             </div>
-            <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "14px" }}>
-              Created: {new Date(jobData.createdAt).toLocaleString()} |
-              Last Updated: {new Date(jobData.updatedAt).toLocaleString()}
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-            {/* ✅ Add Sub-Job button for prime jobs */}
-            {jobData.isPrimeJob && (
-              <button
-                onClick={() => router.push(`/job-cards/create?primeJob=${jobData.jobNumber}`)}
-                style={{
-                  padding: "var(--control-padding)",
-                  backgroundColor: "var(--primary)",
-                  color: "var(--text-inverse)",
-                  border: "none",
-                  borderRadius: "var(--control-radius)",
-                  fontWeight: "600",
-                  fontSize: "var(--control-font-size)",
-                  minHeight: "var(--control-height)",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                + Add Sub-Job
-              </button>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
+            {/* ✅ Job Nav Buttons */}
+            {isInPrimeGroup && (
+              <>
+                <button
+                  className="app-btn app-btn--sm app-btn--primary"
+                >
+                  #{jobData.jobNumber}
+                </button>
+                {relatedJobsLoading && (
+                  <span style={{ fontSize: "12px", color: "var(--grey-accent)" }}>…</span>
+                )}
+                {relatedJobs.map((rJob) => {
+                  const statusColor =
+                    rJob.status === "Open" || rJob.status === "Released" ? "var(--success-dark)" :
+                    rJob.status === "Complete" ? "var(--accent-strong)" :
+                    "var(--warning)";
+                  return (
+                    <button
+                      key={rJob.id}
+                      className="app-btn app-btn--sm app-btn--secondary"
+                      style={{ border: "1px solid var(--accent-base)" }}
+                      onClick={() => router.push(`/job-cards/${rJob.jobNumber}`)}
+                    >
+                      #{rJob.jobNumber}
+                      <span style={{ fontSize: "11px", fontWeight: 600, color: statusColor }}>{rJob.status}</span>
+                    </button>
+                  );
+                })}
+              </>
             )}
+            {/* ✅ Link Job Button */}
+            <button
+              className="app-btn app-btn--sm app-btn--primary"
+              onClick={() => setIsLinkPopupOpen(true)}
+            >
+              Link Job
+            </button>
             {isBookedStatus && !isCheckedIn && (
               <button
                 onClick={handleCheckIn}
@@ -3633,6 +3699,15 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                 Release
               </button>
             )}
+            </div>
+          </div>
+
+          {/* Row 2: Timestamps + Related Jobs */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+            <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "14px" }}>
+              Created: {new Date(jobData.createdAt).toLocaleString()} |
+              Last Updated: {new Date(jobData.updatedAt).toLocaleString()}
+            </p>
           </div>
         </section>
 
@@ -3640,107 +3715,6 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           guidance={assistantGuidance}
           workflowSummary={workflowSummary}
         />
-
-
-        {/* ✅ Related Jobs Panel */}
-        {(relatedJobs.length > 0 || jobData.isPrimeJob) && (
-          <section
-            data-dev-section="1"
-            data-dev-section-key="jobcard-related-jobs-shell"
-            data-dev-section-type="section-shell"
-            data-dev-section-parent="jobcard-page-shell"
-            data-dev-shell="1"
-            style={{
-              padding: "12px 20px",
-              backgroundColor: "var(--primary-surface)",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              marginBottom: "0",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--primary)" }}>
-                  🔗 {jobData.isPrimeJob ? "Linked Jobs" : "Related Jobs"} ({relatedJobs.length + 1} total)
-                </span>
-                {relatedJobsLoading && (
-                  <span style={{ fontSize: "12px", color: "var(--grey-accent)" }}>Loading...</span>
-                )}
-              </div>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                {/* Current job indicator */}
-                <span
-                  style={{
-                    padding: "4px 12px",
-                    backgroundColor: "var(--primary)",
-                    color: "var(--text-inverse)",
-                    borderRadius: "var(--radius-md)",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                  }}
-                >
-                  #{jobData.jobNumber} (current)
-                </span>
-                {/* Related jobs links */}
-                {relatedJobs.map((rJob) => (
-                  <button
-                    key={rJob.id}
-                    onClick={() => router.push(`/job-cards/${rJob.jobNumber}`)}
-                    style={{
-                      padding: "4px 12px",
-                      backgroundColor: "rgba(var(--primary-rgb), 0.06)",
-                      color: "var(--primary-dark)",
-                      borderRadius: "var(--control-radius)",
-                      fontSize: "12px",
-                      fontWeight: "500",
-                      border: "none",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                    }}
-                  >
-                    #{rJob.jobNumber}
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        padding: "2px 6px",
-                        borderRadius: "var(--control-radius)",
-                        backgroundColor:
-                          rJob.status === "Open" ? "var(--success-surface)" :
-                          rJob.status === "Complete" ? "var(--info-surface)" :
-                          "var(--warning-surface)",
-                        color:
-                          rJob.status === "Open" ? "var(--success-dark)" :
-                          rJob.status === "Complete" ? "var(--info)" :
-                          "var(--danger)",
-                      }}
-                    >
-                      {rJob.status}
-                    </span>
-                  </button>
-                ))}
-                {jobData.isPrimeJob && (
-                  <button
-                    onClick={() => router.push(`/job-cards/create?primeJob=${jobData.jobNumber}`)}
-                    style={{
-                      padding: "4px 12px",
-                      backgroundColor: "var(--primary)",
-                      color: "var(--text-inverse)",
-                      borderRadius: "var(--control-radius)",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    + Add
-                  </button>
-                )}
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* ✅ Vehicle & Customer Info Bar */}
         <section
@@ -4349,6 +4323,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
               clockingLocked={isClockingLockedByStatus}
               clockingLockDescription={clockingLockDescription}
               onValetUploadComplete={() => fetchJobData({ silent: true, force: true })}
+              onRenameDocument={handleRenameDocument}
             />
           </div>
 
@@ -4398,7 +4373,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           onClose={() => setShowDocumentsPopup(false)}
           jobId={jobData?.id ? String(jobData.id) : null}
           userId={user?.user_id || actingUserId || null}
-          onAfterUpload={() => fetchJobData({ silent: true, force: true })}
+          onAfterUpload={() => { fetchJobData({ silent: true, force: true }); fetchDocuments(); }}
+          onFileUploaded={handleDocumentFileUploaded}
           existingDocuments={jobDocuments}
         />
         {trackerQuickModalOpen && (
@@ -4422,6 +4398,56 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         )}
 
       </div>
+
+      {/* ✅ Link Job Popup */}
+      {isLinkPopupOpen && (
+        <div
+          style={{ ...popupOverlayStyles, zIndex: 1200 }}
+          onClick={() => { setIsLinkPopupOpen(false); setLinkJobInput(""); setLinkError(null); }}
+        >
+          <div
+            style={{
+              ...popupCardStyles,
+              maxWidth: "400px",
+              padding: "32px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+              border: "none",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>Link Job Card</h3>
+            <input
+              className="app-input"
+              type="text"
+              placeholder="e.g. 00099"
+              value={linkJobInput}
+              onChange={(e) => { setLinkJobInput(e.target.value); setLinkError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleLinkJob(); }}
+              autoFocus
+            />
+            {linkError && (
+              <p style={{ margin: 0, fontSize: "13px", color: "var(--danger)" }}>{linkError}</p>
+            )}
+            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+              <button
+                className="app-btn app-btn--secondary"
+                onClick={() => { setIsLinkPopupOpen(false); setLinkJobInput(""); setLinkError(null); }}
+              >
+                Cancel
+              </button>
+              <button
+                className="app-btn app-btn--primary"
+                onClick={handleLinkJob}
+                disabled={isLinking}
+              >
+                {isLinking ? "Linking…" : "Link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       </>
     </JobCardErrorBoundary>
@@ -10141,6 +10167,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -10704,6 +10731,29 @@ function ValetClockingPanel({ jobId, jobNumber, userId, clockingLocked = false, 
   );
 }
 
+const DOC_TYPE_META = {
+  pdf:  { label: "PDF",  bg: "var(--danger-surface)",  color: "var(--danger)"  },
+  png:  { label: "PNG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  jpg:  { label: "JPG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  jpeg: { label: "JPG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  gif:  { label: "GIF",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  webp: { label: "WEBP", bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  svg:  { label: "SVG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  doc:  { label: "DOC",  bg: "var(--warning-surface)", color: "var(--warning)"  },
+  docx: { label: "DOCX", bg: "var(--warning-surface)", color: "var(--warning)"  },
+  xls:  { label: "XLS",  bg: "var(--success-surface)", color: "var(--success)"  },
+  xlsx: { label: "XLSX", bg: "var(--success-surface)", color: "var(--success)"  },
+};
+
+function getDocTypeMeta(mimeOrExt = "") {
+  const ext = mimeOrExt.split("/").pop().split(".").pop().toLowerCase();
+  return DOC_TYPE_META[ext] || { label: ext.slice(0, 4).toUpperCase() || "FILE", bg: "var(--surface-light)", color: "var(--text-secondary)" };
+}
+
+function isImageMime(mime = "") {
+  return /^image\/(png|jpe?g|gif|webp|svg\+xml|bmp)$/i.test(mime);
+}
+
 function DocumentsTab({
   documents = [],
   canDelete,
@@ -10716,10 +10766,15 @@ function DocumentsTab({
   clockingLocked = false,
   clockingLockDescription = "",
   onValetUploadComplete = () => {},
+  onRenameDocument,
 }) {
   const [valetUploadFile, setValetUploadFile] = useState(null);
   const [valetUploading, setValetUploading] = useState(false);
   const [valetUploadError, setValetUploadError] = useState("");
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [isRenamingPreview, setIsRenamingPreview] = useState(false);
+  const [previewRenameValue, setPreviewRenameValue] = useState("");
+
   const sortedDocuments = useMemo(() => {
     return [...(documents || [])].sort((a, b) => {
       const aTime = new Date(a.uploadedAt || a.uploaded_at || 0).getTime();
@@ -10728,34 +10783,24 @@ function DocumentsTab({
     });
   }, [documents]);
 
-  const formatTimestamp = (value) => {
-    if (!value) return "Unknown";
+  const formatDate = (value) => {
+    if (!value) return "";
     const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return "Unknown";
-    }
-    return parsed.toLocaleString();
+    if (Number.isNaN(parsed.getTime())) return "";
+    return parsed.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   };
 
   const handlePreview = (doc) => {
-    if (!doc?.url) return;
-    const targetUrl = doc.url.startsWith("http")
-      ? doc.url
-      : `${window.location.origin}${doc.url}`;
-    window.open(targetUrl, "_blank", "noopener,noreferrer");
+    const url = doc.url || doc.file_url || "";
+    if (!url) return;
+    const target = url.startsWith("http") ? url : `${window.location.origin}${url}`;
+    window.open(target, "_blank", "noopener,noreferrer");
   };
 
   const handleValetPhotoUpload = useCallback(async () => {
     if (!valetMode) return;
-    if (!valetJobId) {
-      setValetUploadError("Job details unavailable for valet upload.");
-      return;
-    }
-    if (!valetUploadFile) {
-      setValetUploadError("Choose a photo to upload.");
-      return;
-    }
-
+    if (!valetJobId) { setValetUploadError("Job details unavailable for valet upload."); return; }
+    if (!valetUploadFile) { setValetUploadError("Choose a photo to upload."); return; }
     setValetUploading(true);
     setValetUploadError("");
     try {
@@ -10763,20 +10808,13 @@ function DocumentsTab({
       formData.append("file", valetUploadFile);
       formData.append("jobId", String(valetJobId));
       formData.append("userId", String(valetUserId || "system"));
-
-      const response = await fetch("/api/jobcards/upload-document", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch("/api/jobcards/upload-document", { method: "POST", body: formData });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
         throw new Error(payload?.error || "Photo upload failed.");
       }
-
       setValetUploadFile(null);
-      if (typeof onValetUploadComplete === "function") {
-        onValetUploadComplete();
-      }
+      if (typeof onValetUploadComplete === "function") onValetUploadComplete();
     } catch (error) {
       setValetUploadError(error?.message || "Photo upload failed.");
     } finally {
@@ -10786,19 +10824,186 @@ function DocumentsTab({
 
   return (
     <div>
+      {/* Document preview popup — portalled to document.body so position:fixed is
+          always relative to the viewport, not any transformed ancestor */}
+      {previewDoc && typeof document !== "undefined" && createPortal(
+        <div
+          onClick={() => setPreviewDoc(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1400,
+            backgroundColor: "rgba(0,0,0,0.75)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "24px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "var(--radius-xl)",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              maxWidth: "min(92vw, 1000px)",
+              maxHeight: "90vh",
+              width: "100%",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: "10px",
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--surface-light)",
+                flexShrink: 0,
+              }}
+            >
+              {isRenamingPreview ? (
+                <>
+                  <input
+                    autoFocus
+                    value={previewRenameValue}
+                    onChange={(e) => setPreviewRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const trimmed = previewRenameValue.trim();
+                        if (trimmed && typeof onRenameDocument === "function") {
+                          onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
+                          setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                        }
+                        setIsRenamingPreview(false);
+                      }
+                      if (e.key === "Escape") setIsRenamingPreview(false);
+                    }}
+                    style={{
+                      flex: 1, padding: "6px 10px",
+                      borderRadius: "var(--input-radius)",
+                      border: "1px solid var(--primary)",
+                      fontSize: "14px", fontWeight: 600,
+                      color: "var(--text-primary)",
+                      backgroundColor: "var(--surface)",
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = previewRenameValue.trim();
+                      if (trimmed && typeof onRenameDocument === "function") {
+                        onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
+                        setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                      }
+                      setIsRenamingPreview(false);
+                    }}
+                    style={{
+                      padding: "6px 14px", border: "none",
+                      borderRadius: "var(--input-radius)",
+                      backgroundColor: "var(--primary)", color: "var(--text-inverse)",
+                      fontSize: "13px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsRenamingPreview(false)}
+                    style={{
+                      padding: "6px 10px", border: "none",
+                      borderRadius: "var(--input-radius)",
+                      backgroundColor: "var(--surface-light)", color: "var(--text-secondary)",
+                      fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
+                    Document Preview
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentName = previewDoc.name || previewDoc.file_name || "";
+                      setPreviewRenameValue(currentName);
+                      setIsRenamingPreview(true);
+                    }}
+                    style={{
+                      padding: "6px 14px", border: "1px solid var(--surface-light)",
+                      borderRadius: "var(--input-radius)",
+                      backgroundColor: "var(--surface)", color: "var(--text-primary)",
+                      fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                    }}
+                  >
+                    Rename
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => { setPreviewDoc(null); setIsRenamingPreview(false); }}
+                style={{
+                  width: "32px", height: "32px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "none", borderRadius: "var(--radius-xs)",
+                  backgroundColor: "var(--surface-light)",
+                  color: "var(--text-primary)",
+                  fontSize: "18px", lineHeight: 1,
+                  cursor: "pointer", fontWeight: 400, flexShrink: 0,
+                }}
+                aria-label="Close preview"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Content */}
+            <div
+              style={{
+                flex: 1, overflow: "auto",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                backgroundColor: "var(--surface-dark, #0a0a0a)",
+                minHeight: "300px",
+              }}
+            >
+              {isImageMime(previewDoc.type || previewDoc.file_type || "") ? (
+                <img
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  alt="Document preview"
+                  style={{
+                    maxWidth: "100%", maxHeight: "80vh",
+                    objectFit: "contain", display: "block",
+                  }}
+                />
+              ) : (
+                <iframe
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  title="Document preview"
+                  style={{ width: "100%", height: "80vh", border: "none", display: "block" }}
+                />
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Valet upload strip */}
       {valetMode && (
         <div
           style={{
             padding: "14px",
             borderRadius: "var(--radius-sm)",
-            backgroundColor: "var(--accent-purple-surface)",
-            border: "1px solid var(--accent-purple-surface)",
-            marginBottom: "12px",
+            backgroundColor: "var(--accent-surface)",
+            border: "1px solid var(--accent-base)",
+            marginBottom: "16px",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: "15px", color: "var(--accent-purple)" }}>Valet Upload Picture</h3>
+              <h3 style={{ margin: 0, fontSize: "15px", color: "var(--accent-strong)" }}>Valet Upload Picture</h3>
               <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--text-secondary)" }}>
                 Upload wash/valet photos for Job #{valetJobNumber || "—"}.
               </p>
@@ -10812,64 +11017,38 @@ function DocumentsTab({
             />
           </div>
           <div style={{ display: "flex", gap: "10px", marginTop: "12px", alignItems: "center", flexWrap: "wrap" }}>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                const nextFile = event.target.files?.[0] || null;
-                setValetUploadFile(nextFile);
-              }}
-              style={{ fontSize: "13px" }}
-            />
+            <input type="file" accept="image/*" onChange={(e) => setValetUploadFile(e.target.files?.[0] || null)} style={{ fontSize: "13px" }} />
             <button
               type="button"
               onClick={handleValetPhotoUpload}
               disabled={valetUploading || !valetUploadFile}
               style={{
-                padding: "8px 14px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                backgroundColor: "var(--primary)",
-                color: "var(--text-inverse)",
-                fontWeight: 600,
+                padding: "8px 14px", borderRadius: "var(--radius-sm)", border: "none",
+                backgroundColor: "var(--primary)", color: "var(--text-inverse)", fontWeight: 600,
                 cursor: valetUploading || !valetUploadFile ? "not-allowed" : "pointer",
                 opacity: valetUploading || !valetUploadFile ? 0.7 : 1,
               }}
             >
-              {valetUploading ? "Uploading..." : "Upload Valet Photo"}
+              {valetUploading ? "Uploading…" : "Upload Valet Photo"}
             </button>
-            {valetUploadError && (
-              <span style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>
-                {valetUploadError}
-              </span>
-            )}
+            {valetUploadError && <span style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>{valetUploadError}</span>}
           </div>
         </div>
       )}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: "16px",
-          flexWrap: "wrap",
-          marginBottom: "12px"
-        }}
-      >
-        <div />
+
+      {/* Toolbar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "13px", color: "var(--text-secondary)", fontWeight: 500 }}>
+          {sortedDocuments.length > 0 ? `${sortedDocuments.length} file${sortedDocuments.length !== 1 ? "s" : ""}` : "No documents yet"}
+        </span>
         {typeof onManageDocuments === "function" && (
           <button
             type="button"
             onClick={onManageDocuments}
             style={{
-              padding: "10px 18px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              backgroundColor: "var(--primary)",
-              color: "var(--text-inverse)",
-              fontWeight: "600",
-              fontSize: "14px",
-              cursor: "pointer"
+              padding: "9px 18px", borderRadius: "var(--radius-sm)", border: "none",
+              backgroundColor: "var(--primary)", color: "var(--text-inverse)",
+              fontWeight: "600", fontSize: "14px", cursor: "pointer",
             }}
           >
             Upload Documents
@@ -10877,111 +11056,152 @@ function DocumentsTab({
         )}
       </div>
 
+      {/* Empty state */}
       {sortedDocuments.length === 0 ? (
         <div
           style={{
-            padding: "28px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px dashed var(--accent-purple-surface)",
+            padding: "48px 24px",
+            borderRadius: "var(--radius-md)",
+            border: "2px dashed var(--surface-light)",
             textAlign: "center",
-            color: "var(--info)",
-            fontSize: "14px"
+            color: "var(--text-secondary)",
+            fontSize: "14px",
+            lineHeight: 1.6,
           }}
         >
-          No stored documents yet. Upload check-sheets, signed paperwork, or customer photos to keep
-          everything in one place.
+          <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>📄</div>
+          <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-primary)" }}>No documents attached</div>
+          Upload check-sheets, signed paperwork, or photos to keep everything in one place.
         </div>
       ) : (
+        /* Gallery grid */
         <div
           style={{
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--accent-purple-surface)",
-            overflow: "hidden"
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+            gap: "14px",
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "2.5fr 1fr 1fr 0.8fr",
-              gap: "12px",
-              padding: "14px 18px",
-              backgroundColor: "var(--accent-purple-surface)",
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "var(--accent-purple)"
-            }}
-          >
-            <span>File</span>
-            <span>Folder</span>
-            <span>Uploaded</span>
-            <span style={{ textAlign: "right" }}>Actions</span>
-          </div>
-          {sortedDocuments.map((doc) => (
-            <div
-              key={doc.id || doc.file_id || doc.url}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "2.5fr 1fr 1fr 0.8fr",
-                gap: "12px",
-                padding: "16px 18px",
-                borderTop: "1px solid var(--accent-purple-surface)",
-                alignItems: "center"
-              }}
-            >
-              <div>
-                <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
-                  {doc.name || doc.file_name || "Document"}
-                </div>
-                <div style={{ fontSize: "12px", color: "var(--info)" }}>
-                  {(doc.type || doc.file_type || "unknown").split("/").pop()}
-                </div>
-                <div style={{ fontSize: "11px", color: "var(--info-dark)", marginTop: "4px" }}>
-                  Uploaded by {doc.uploadedBy || doc.uploaded_by || "system"}
-                </div>
-              </div>
-              <div style={{ fontSize: "13px", color: "var(--info)" }}>
-                {(doc.folder || "general").replace(/-/g, " ")}
-              </div>
-              <div style={{ fontSize: "13px", color: "var(--info)" }}>
-                {formatTimestamp(doc.uploadedAt || doc.uploaded_at)}
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+          {sortedDocuments.map((doc) => {
+            const docName  = doc.name  || doc.file_name  || "Document";
+            const docType  = doc.type  || doc.file_type  || "";
+            const docUrl   = doc.url   || doc.file_url   || "";
+            const isImage  = isImageMime(docType);
+            const typeMeta = getDocTypeMeta(docType || docName);
+            const dateStr  = formatDate(doc.uploadedAt || doc.uploaded_at);
+
+            return (
+              <div
+                key={doc.id || doc.file_id || docUrl}
+                style={{
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--surface-light)",
+                  overflow: "hidden",
+                  backgroundColor: "var(--surface)",
+                  display: "flex",
+                  flexDirection: "column",
+                  transition: "box-shadow 0.15s ease",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+              >
+                {/* Thumbnail / type icon */}
                 <button
                   type="button"
                   onClick={() => handlePreview(doc)}
+                  title={`Open ${docName}`}
                   style={{
-                    padding: "6px 10px",
-                    borderRadius: "var(--control-radius)",
-                    border: "1px solid var(--info)",
-                    backgroundColor: "var(--surface)",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    cursor: "pointer"
+                    display: "block",
+                    width: "100%",
+                    height: "130px",
+                    border: "none",
+                    padding: 0,
+                    cursor: docUrl ? "pointer" : "default",
+                    backgroundColor: isImage ? "var(--surface-dark, #111)" : typeMeta.bg,
+                    flexShrink: 0,
                   }}
                 >
-                  View
+                  {isImage && docUrl ? (
+                    <img
+                      src={docUrl}
+                      alt={docName}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%", height: "100%",
+                        display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "center", gap: "6px",
+                      }}
+                    >
+                      <span style={{ fontSize: "36px", lineHeight: 1, opacity: 0.7 }}>
+                        {docType.includes("pdf") ? "📕" : docType.includes("sheet") || docName.match(/\.xls/i) ? "📗" : docType.includes("word") || docName.match(/\.doc/i) ? "📘" : "📄"}
+                      </span>
+                      <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", color: typeMeta.color }}>
+                        {typeMeta.label}
+                      </span>
+                    </div>
+                  )}
                 </button>
-                {canDelete && (
-                  <button
-                    type="button"
-                    onClick={() => typeof onDelete === "function" && onDelete(doc)}
+
+                {/* Card body */}
+                <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <div
+                    title={docName}
                     style={{
-                      padding: "6px 10px",
-                      borderRadius: "var(--control-radius)",
-                      border: "1px solid var(--danger-surface)",
-                      backgroundColor: "var(--danger-surface)",
-                      color: "var(--danger)",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      cursor: "pointer"
+                      fontSize: "13px", fontWeight: 600, color: "var(--text-primary)",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}
                   >
-                    Delete
+                    {docName}
+                  </div>
+                  {dateStr && (
+                    <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{dateStr}</div>
+                  )}
+                </div>
+
+                {/* Action row */}
+                <div
+                  style={{
+                    display: "flex", gap: "6px", padding: "8px 12px",
+                    borderTop: "1px solid var(--surface-light)",
+                    backgroundColor: "var(--surface-light)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => docUrl && setPreviewDoc(doc)}
+                    disabled={!docUrl}
+                    style={{
+                      flex: 1, padding: "5px 0",
+                      borderRadius: "var(--radius-xs)", border: "none",
+                      backgroundColor: "var(--accent-surface)", color: "var(--accent-strong)",
+                      fontSize: "12px", fontWeight: 600, cursor: docUrl ? "pointer" : "not-allowed",
+                      opacity: docUrl ? 1 : 0.5,
+                    }}
+                  >
+                    View
                   </button>
-                )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => typeof onDelete === "function" && onDelete(doc)}
+                      style={{
+                        flex: 1, padding: "5px 0",
+                        borderRadius: "var(--radius-xs)", border: "none",
+                        backgroundColor: "var(--danger-surface)", color: "var(--danger)",
+                        fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

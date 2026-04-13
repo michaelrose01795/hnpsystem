@@ -132,7 +132,6 @@
   --search-text: var(--accentPressed);
   --overlay: rgba(15, 23, 42, 0.4);
   --overlay-muted: rgba(15, 23, 42, 0.24);
-  --vhc-vehicle-diagram-image: url('/profile/LightCar.png');
 
   /* Three-tier background system - Light Mode */
   /* Level 1 (Top layer - almost white): inner cards, stats blocks */
@@ -430,7 +429,6 @@
   --search-text: var(--accentPressed);
   --overlay: rgba(2, 6, 23, 0.72);
   --overlay-muted: rgba(2, 6, 23, 0.5);
-  --vhc-vehicle-diagram-image: url('/profile/DarkCar.png');
 
   /* Three-tier background system - Dark Mode */
   /* Level 1 (Top layer - softened charcoal): inner cards, stats blocks */

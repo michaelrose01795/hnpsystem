@@ -159,18 +159,20 @@ export async function deleteFile(storagePath) {
 export async function saveFileRecord(meta) {
   const client = getClient();
 
+  // Only include columns that exist in the job_files schema.
+  // (file_size, storage_type, storage_path, visible_to_customer are not in the table.)
+  // uploaded_by is an integer FK — coerce to number or null; never insert a string.
+  const rawUploadedBy = meta.uploadedBy;
+  const uploadedBy = rawUploadedBy && /^\d+$/.test(String(rawUploadedBy)) ? Number(rawUploadedBy) : null;
+
   const row = {
     job_id: meta.jobId,
     file_name: meta.fileName,
     file_url: meta.fileUrl,
     file_type: meta.fileType,
     folder: meta.folder || "general",
-    uploaded_by: meta.uploadedBy,
+    uploaded_by: uploadedBy,
     uploaded_at: new Date().toISOString(),
-    visible_to_customer: meta.visibleToCustomer ?? true,
-    file_size: meta.fileSize ?? null,
-    storage_type: meta.storageType || "supabase",
-    storage_path: meta.storagePath || null,
   };
 
   const { data, error } = await client

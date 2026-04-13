@@ -1,6 +1,7 @@
 // file location: src/components/VHC/TyreDiagram.js
 import React from "react";
 import themeConfig from "@/styles/appTheme";
+import CarImage from "@/components/VHC/CarImage";
 
 const { palette } = themeConfig;
 
@@ -101,18 +102,28 @@ export default function TyreDiagram({
     padding: 0,
     borderRadius: "var(--radius-md)",
     backgroundColor: "rgba(var(--accent-purple-rgb), 0.03)",
-    backgroundImage: "var(--vhc-vehicle-diagram-image)",
-    backgroundPosition: "50% 50%",
-    backgroundRepeat: "no-repeat",
-    backgroundSize: "118% auto",
     display: "grid",
     placeItems: "center",
     boxShadow: "inset 0 0 0 1px rgba(var(--accent-purple-rgb), 0.18)",
+    overflow: "hidden",
   };
 
   return (
     <div style={containerStyle}>
       <div style={stageStyle}>
+        <CarImage
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "118%",
+            height: "auto",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        />
         <svg
           viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
           role="img"
