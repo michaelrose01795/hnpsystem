@@ -82,6 +82,11 @@ export const sidebarSections = [
         href: "/parts/goods-in",
         roles: ["service"],
       },
+      {
+        label: "New Mobile Job",
+        href: "/mobile/create",
+        roles: ["service"],
+      },
     ],
   },
   {
@@ -101,6 +106,16 @@ export const sidebarSections = [
       {
         label: "Goods In",
         href: "/parts/goods-in",
+        roles: ["service manager"],
+      },
+      {
+        label: "Mobile Appointments",
+        href: "/mobile/appointments",
+        roles: ["service manager"],
+      },
+      {
+        label: "New Mobile Job",
+        href: "/mobile/create",
         roles: ["service manager"],
       },
     ],
@@ -200,6 +215,11 @@ export const sidebarSections = [
       {
         label: "Request Parts",
         href: "/tech/consumables-request",
+        roles: ["mobile technician"],
+      },
+      {
+        label: "New Mobile Job",
+        href: "/mobile/create",
         roles: ["mobile technician"],
       },
     ],
