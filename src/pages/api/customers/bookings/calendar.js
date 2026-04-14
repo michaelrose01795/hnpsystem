@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const DISPLAY_DAYS = 21;

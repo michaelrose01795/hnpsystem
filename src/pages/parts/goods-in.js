@@ -3,10 +3,10 @@ import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
 import { sanitizeNumericId } from "@/lib/utils/ids";
-import { DropdownField } from "@/components/dropdownAPI";
-import { CalendarField } from "@/components/calendarAPI";
-import { ScrollArea } from "@/components/scrollAPI";
-import { TabGroup } from "@/components/tabAPI/TabGroup";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { ScrollArea } from "@/components/ui/scrollAPI";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 

@@ -11,13 +11,13 @@ import React, {
 } from "react";
 import { useRouter } from "next/router"; // Next.js router for reading query params
 import { useUser } from "@/context/UserContext";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { appShellTheme } from "@/styles/appTheme";
 import useMessagesApi from "@/hooks/api/useMessagesApi";
 import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 
 const palette = appShellTheme.palette;
 const radii = appShellTheme.radii;

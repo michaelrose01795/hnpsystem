@@ -1,16 +1,16 @@
 // file location: src/pages/api/vhc/parts-search-suggestions.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import {
   buildNormalizedContextKey,
   buildVehicleContextText,
   normalizeText,
   tokenizeContext,
-} from "@/features/parts-search-suggestions/normalization";
-import { rankPartSuggestions } from "@/features/parts-search-suggestions/ranking";
-import { getSuggestionCache, setSuggestionCache } from "@/features/parts-search-suggestions/cache";
-import { isValidUuid } from "@/features/labour-times/normalization";
+} from "@/features/partsSearchSuggestions/normalization";
+import { rankPartSuggestions } from "@/features/partsSearchSuggestions/ranking";
+import { getSuggestionCache, setSuggestionCache } from "@/features/partsSearchSuggestions/cache";
+import { isValidUuid } from "@/features/labourTimes/normalization";
 
 const buildContextFilter = (tokens = []) => {
   const clean = (tokens || []).filter(Boolean).slice(0, 4);

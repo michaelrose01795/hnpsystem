@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
-import { ScrollArea } from "@/components/scrollAPI";
+import { ScrollArea } from "@/components/ui/scrollAPI";
 
 const GOODS_IN_ROLES = new Set([
   "parts",

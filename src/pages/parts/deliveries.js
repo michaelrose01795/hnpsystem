@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
-import { CalendarField } from "@/components/calendarAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
 
 const pageStyles = {

@@ -1,6 +1,6 @@
 // file location: /src/components/LoginDropdown.js
 import React, { useEffect, useMemo } from "react";
-import { Dropdown } from "@/components/dropdownAPI";
+import { Dropdown } from "@/components/ui/dropdownAPI";
 
 const ROLE_ALIASES = {
   "valet service": ["valet"],

@@ -2,7 +2,7 @@
 // API endpoint to allocate a part to a specific job request
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 
 const buildVhcRowDescription = async ({ jobId, vhcItemId }) => {

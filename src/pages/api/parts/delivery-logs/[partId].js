@@ -2,7 +2,7 @@
 // API endpoint to fetch delivery logs for a specific part
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 async function handler(req, res, session) {
   const { partId } = req.query;

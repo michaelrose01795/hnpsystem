@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import InvoiceDetail from "@/features/invoices/components/InvoiceDetail";
 import styles from "@/features/invoices/styles/invoice.module.css";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { getJobRequests } from "@/lib/canonical/fields";
 
 const InvoiceSkeleton = () => {

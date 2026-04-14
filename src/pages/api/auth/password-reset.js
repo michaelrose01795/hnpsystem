@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 import { isSmtpConfigured } from "@/lib/email/smtp";
 import { sendDmsEmail } from "@/lib/email/emailApi";
 import { getEmailBranding, renderEmailShell } from "@/lib/email/template";

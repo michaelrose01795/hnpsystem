@@ -5,8 +5,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react"; // Import React hooks
 import Layout from "@/components/Layout"; // Main layout wrapper
 import Popup from "@/components/popups/Popup"; // Reusable popup modal
-import { DropdownField } from "@/components/dropdownAPI";
-import { SearchBar } from "@/components/searchBarAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
@@ -16,7 +16,7 @@ import {
   getJobsByDate // ✅ NEW: Get appointments by date
 } from "@/lib/database/jobs"; // DB functions
 import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService"; // Shared status transition helper
-import supabase from "@/lib/supabaseClient"; // Supabase client for live tech availability
+import supabase from "@/lib/database/supabaseClient"; // Supabase client for live tech availability
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
 import { invalidateCache } from "@/lib/database/queryCache"; // clear stale cache after mutations

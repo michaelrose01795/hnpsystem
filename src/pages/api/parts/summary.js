@@ -1,7 +1,7 @@
 // file location: src/pages/api/parts/summary.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const fetchCount = async (query) => {
   const { count, error } = await query.select("id", { count: "exact", head: true });

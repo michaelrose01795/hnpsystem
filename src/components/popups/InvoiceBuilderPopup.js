@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Popup from "./Popup";
-import { normalizeRequests } from "@/lib/jobcards/utils";
+import { normalizeRequests } from "@/lib/jobCards/utils";
 
 const formatCurrency = (value) => {
   const amount = Number(value) || 0;

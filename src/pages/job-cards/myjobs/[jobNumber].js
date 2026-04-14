@@ -19,7 +19,7 @@ import {
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import WriteUpForm from "@/components/JobCards/WriteUpForm";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import ModalPortal from "@/components/popups/ModalPortal";
@@ -35,8 +35,8 @@ import {
 } from "@/lib/status/statusFlow";
 import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
-import { buildVhcAssistantState } from "@/features/vhc-assistant/buildVhcAssistantState";
-import VhcAssistantPanel from "@/features/vhc-assistant/components/VhcAssistantPanel";
+import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
+import VhcAssistantPanel from "@/features/vhcAssistant/components/VhcAssistantPanel";
 import { normaliseDecisionStatus } from "@/lib/vhc/summaryStatus";
 
 // VHC Section Modals

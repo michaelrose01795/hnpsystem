@@ -7,7 +7,7 @@
 import fs from "fs";
 import path from "path";
 import { saveFileRecord, sanitiseFileName } from "@/lib/storage/storageService";
-import { supabaseService, supabase as supabaseFallback } from "@/lib/supabaseClient";
+import { supabaseService, supabase as supabaseFallback } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const BUCKET = "job-files";

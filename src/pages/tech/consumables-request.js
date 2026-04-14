@@ -8,7 +8,7 @@ import { useUser } from "@/context/UserContext"; // Import user context for role
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Link from "next/link"; // Import Next.js Link for navigation buttons
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import useIsMobile from "@/hooks/useIsMobile";
 
 const pageWrapperStyle = {

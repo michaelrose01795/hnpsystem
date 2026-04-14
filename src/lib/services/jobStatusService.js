@@ -2,7 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/services/jobStatusService.js
 
-import { supabase } from "@/lib/supabaseClient"; // Supabase client for database operations
+import { supabase } from "@/lib/database/supabaseClient"; // Supabase client for database operations
 import { updateJob } from "@/lib/database/jobs"; // Function to update job in database
 import {
   getSubStatusMetadata,

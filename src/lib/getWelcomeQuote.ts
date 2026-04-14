@@ -1,6 +1,6 @@
 // file location: src/lib/getWelcomeQuote.ts
 import { createHash } from "crypto";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { resolveWelcomeQuoteSlot } from "@/lib/welcomeQuoteSlot";
 
 const TOTAL_WELCOME_QUOTES = 936;

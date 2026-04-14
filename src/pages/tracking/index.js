@@ -7,15 +7,15 @@ import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { buildApiUrl } from "@/utils/apiClient";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseClient } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import { CalendarField } from "@/components/calendarAPI";
-import { DropdownField } from "@/components/dropdownAPI";
-import { SearchBar } from "@/components/searchBarAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { addMonths } from "date-fns";
-import { TabGroup } from "@/components/tabAPI/TabGroup";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const CAR_LOCATIONS = [

@@ -1,5 +1,5 @@
 // Helper to keep VHC-linked parts, requests, and write-up data in sync.
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const REQUEST_SOURCE = "vhc_authorised";
 const APPROVAL_AUTHORIZED = "authorized";

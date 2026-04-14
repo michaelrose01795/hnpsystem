@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import PartsOpsDashboard from "@/components/dashboards/PartsOpsDashboard";
-import { supabaseClient } from "@/lib/supabaseClient";
-import { summarizePartsPipeline } from "@/lib/partsPipeline";
+import { supabaseClient } from "@/lib/database/supabaseClient";
+import { summarizePartsPipeline } from "@/lib/parts/pipeline";
 import DeliverySchedulerModal from "@/components/Parts/DeliverySchedulerModal";
 
 const containerStyle = {

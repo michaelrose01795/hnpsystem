@@ -1,7 +1,7 @@
 // file location: src/pages/api/parts/jobs/index.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 import {

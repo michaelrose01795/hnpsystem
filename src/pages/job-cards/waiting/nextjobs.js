@@ -13,11 +13,11 @@ import {
 } from "@/lib/database/jobs"; // ✅ Fetch and update jobs from Supabase
 import { getTechnicianUsers, getMotTesterUsers } from "@/lib/database/users";
 import { normalizeDisplayName } from "@/utils/nameUtils";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
-import { normalizeRequests, compareJobsForBoard } from "@/lib/jobcards/utils";
+import { normalizeRequests, compareJobsForBoard } from "@/lib/jobCards/utils";
 import { getJobRequests, getJobRequestsCount as canonicalRequestsCount, getVehicleRegistration } from "@/lib/canonical/fields";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation

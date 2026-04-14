@@ -2,7 +2,7 @@
 // file location: src/pages/api/parts/update-status.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 import { syncRequestStatus } from "@/lib/parts/partsRequestAdapter"; // Parts request status sync.
 

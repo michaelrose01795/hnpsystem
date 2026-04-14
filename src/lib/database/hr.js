@@ -2,7 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/hr.js
 import dayjs from "dayjs";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { getDatabaseClient } from "@/lib/database/client"; // Use the service client for privileged HR operations.
 import { getDisplayName } from "@/lib/users/displayName";
 import { parseEmployeeMeta } from "@/lib/hr/employeeMeta";

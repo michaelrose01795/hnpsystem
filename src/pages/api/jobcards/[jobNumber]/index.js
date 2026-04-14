@@ -2,8 +2,8 @@
 import { getJobByNumber } from "@/lib/database/jobs";
 import { getNotesByJob } from "@/lib/database/notes";
 import { getCustomerJobs } from "@/lib/database/customers";
-import { mapCustomerJobsToHistory, normalizeRequests } from "@/lib/jobcards/utils";
-import { supabaseService } from "@/lib/supabaseClient";
+import { mapCustomerJobsToHistory, normalizeRequests } from "@/lib/jobCards/utils";
+import { supabaseService } from "@/lib/database/supabaseClient";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 

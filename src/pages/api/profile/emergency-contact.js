@@ -3,7 +3,7 @@
 
 import { getServerSession } from "next-auth/next"; // NextAuth session helper
 import { authOptions } from "@/pages/api/auth/[...nextauth]"; // Auth config
-import { supabase } from "@/lib/supabaseClient"; // Supabase client for DB access
+import { supabase } from "@/lib/database/supabaseClient"; // Supabase client for DB access
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver"; // Resolve DB user_id from session
 
 export default async function handler(req, res) {

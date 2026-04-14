@@ -1,5 +1,5 @@
 // file location: src/lib/vhc/upsertVhcIssueRow.js
-import { supabase as sharedSupabase } from "@/lib/supabaseClient"; // Reuse the shared client used by existing VHC flows.
+import { supabase as sharedSupabase } from "@/lib/database/supabaseClient"; // Reuse the shared client used by existing VHC flows.
 import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity"; // Central slot and line identity helpers.
 import {
   DEFAULT_LABOUR_RATE_GBP,

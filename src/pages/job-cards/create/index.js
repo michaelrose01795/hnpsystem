@@ -18,13 +18,13 @@ import {
 import { getVehicleByReg } from "@/lib/database/vehicles";
 import { getJobByNumber } from "@/lib/database/jobs";
 import { createFullJobBatch } from "@/lib/services/createJobService"; // consolidated job creation service
-import { supabase } from "@/lib/supabaseClient"; // import supabase client for signature lookups
+import { supabase } from "@/lib/database/supabaseClient"; // import supabase client for signature lookups
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import new customer popup
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
-import { DropdownField } from "@/components/dropdownAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
 import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";

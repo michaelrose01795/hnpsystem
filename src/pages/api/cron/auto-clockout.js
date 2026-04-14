@@ -2,7 +2,7 @@
 // Finds all time_records where clock_out IS NULL and date < today
 // Sets clock_out to 23:59:59 of the record's date and calculates hours_worked
 // Can be called by Vercel Cron, external scheduler, or manually
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

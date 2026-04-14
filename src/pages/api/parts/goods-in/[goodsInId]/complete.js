@@ -1,7 +1,7 @@
 // file location: src/pages/api/parts/goods-in/[goodsInId]/complete.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { isValidUuid } from "@/lib/utils/ids";
 
 const GOODS_IN_ROLES = [

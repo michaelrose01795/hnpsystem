@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
-import { supabaseService, supabase } from "@/lib/supabaseClient";
+import { supabaseService, supabase } from "@/lib/database/supabaseClient";
 
 const VALID_MODES = new Set(["light", "dark", "system"]);
 const VALID_ACCENTS = new Set(["red", "beige", "grey", "blue", "green", "yellow", "pink", "orange", "purple"]);

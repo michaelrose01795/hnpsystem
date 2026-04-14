@@ -4,7 +4,7 @@ import path from "path";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
-import { supabase, supabaseService } from "@/lib/supabaseClient";
+import { supabase, supabaseService } from "@/lib/database/supabaseClient";
 import {
   buildDefaultWidgetData,
   buildDefaultWidgets,

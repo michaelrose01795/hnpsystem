@@ -1,6 +1,6 @@
 // file location: src/pages/api/parts/catalog/index.js
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 
 const PART_COLUMNS = [
   "id",

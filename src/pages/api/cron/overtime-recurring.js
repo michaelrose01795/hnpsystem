@@ -3,7 +3,7 @@
 // sums hours across all matching rules per user, creates one overtime entry per user
 // Can be called by Vercel Cron, external scheduler, or manually
 // file location: src/pages/api/cron/overtime-recurring.js
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { getOvertimePeriodBounds } from "@/lib/database/hr";
 import { doesRuleMatchDate } from "@/lib/overtime/recurringUtils";
 

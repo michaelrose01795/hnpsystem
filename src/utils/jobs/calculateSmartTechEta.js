@@ -1,4 +1,4 @@
-import { normalizeRequests } from "@/lib/jobcards/utils";
+import { normalizeRequests } from "@/lib/jobCards/utils";
 import { getJobRequests } from "@/lib/canonical/fields";
 import { resolveMainStatusId, resolveSubStatusId } from "@/lib/status/statusFlow";
 

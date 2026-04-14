@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const TABLE = "floating_notes";
 const SHARE_TABLE = "floating_note_shares";

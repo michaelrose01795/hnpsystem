@@ -1,15 +1,15 @@
 // file location: src/pages/api/vhc/parts-search-learning.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import getUserFromRequest from "@/lib/auth/getUserFromRequest";
 import {
   buildNormalizedContextKey,
   buildVehicleContextText,
   normalizeText,
-} from "@/features/parts-search-suggestions/normalization";
-import { clearSuggestionCache } from "@/features/parts-search-suggestions/cache";
-import { isValidUuid } from "@/features/labour-times/normalization";
+} from "@/features/partsSearchSuggestions/normalization";
+import { clearSuggestionCache } from "@/features/partsSearchSuggestions/cache";
+import { isValidUuid } from "@/features/labourTimes/normalization";
 
 const ADMIN_ROLES = new Set(["admin", "manager"]);
 

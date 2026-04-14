@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { buildSeverityWeeklySeries, buildSevenDaySeries, runQuery } from "@/lib/database/dashboard/utils";
 
 const isMatchingStatus = (status = "", keyword) => String(status).toLowerCase().includes(keyword);

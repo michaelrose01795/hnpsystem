@@ -83,7 +83,8 @@
       "Bash(awk '/data-dev-section-key=/ {:*)",
       "Bash(git -C c:/hnpsystem log --oneline -5)",
       "Bash(git -C c:/hnpsystem show --stat HEAD)",
-      "Bash(git -C c:/hnpsystem diff HEAD~1 HEAD -- src/pages/job-cards/create/index.js)"
+      "Bash(git -C c:/hnpsystem diff HEAD~1 HEAD -- src/pages/job-cards/create/index.js)",
+      "Bash(echo \"exit:$?\")"
     ],
     "deny": [],
     "ask": []

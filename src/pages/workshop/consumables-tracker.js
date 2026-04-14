@@ -4,13 +4,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { addConsumableOrder, listConsumablesForTracker } from "@/lib/database/consumables";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useTheme } from "@/styles/themeProvider";
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
-import { CalendarField } from "@/components/calendarAPI";
-import { SearchBar } from "@/components/searchBarAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 
 const containerStyle = {
   flex: 1,

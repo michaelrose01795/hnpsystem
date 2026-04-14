@@ -9,8 +9,8 @@ import Layout from "@/components/Layout"; // shared layout wrapper
 import { useUser } from "@/context/UserContext"; // shared authenticated user context
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { StatusTag } from "@/components/HR/MetricCard"; // HR UI components
-import { CalendarField } from "@/components/calendarAPI";
-import { DropdownField } from "@/components/dropdownAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import StaffVehiclesCard from "@/components/HR/StaffVehiclesCard";
 import { isHrCoreRole, isManagerScopedRole } from "@/lib/auth/roles"; // Role checking utilities
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";

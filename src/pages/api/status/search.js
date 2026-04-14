@@ -1,6 +1,6 @@
 // file location: src/pages/api/status/search.js
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const JOB_SELECT = `
   id,

@@ -1,7 +1,7 @@
 // file location: src/pages/api/parts/deliveries/[deliveryId].js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from '@/lib/supabaseClient' // Import Supabase client
+import { supabase } from '@/lib/database/supabaseClient' // Import Supabase client
 import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseDate = (value) => {

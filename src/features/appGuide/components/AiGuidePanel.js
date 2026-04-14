@@ -13,7 +13,7 @@
 //   - Role-aware — answers reflect the user's own access level
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Dropdown from "@/components/dropdownAPI/Dropdown";
+import Dropdown from "@/components/ui/dropdownAPI/Dropdown";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import styles from "./AiGuidePanel.module.css";
 

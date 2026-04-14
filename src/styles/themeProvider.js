@@ -2,7 +2,7 @@
 // React theme provider that maps the saved mode and accent preference into the shared semantic CSS token system.
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseClient } from "@/lib/database/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { themes } from "@/styles/theme";
 import {

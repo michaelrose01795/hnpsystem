@@ -2,7 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/services/vhcStatusService.js
 
-import { supabase } from "@/lib/supabaseClient"; // Supabase client for database operations
+import { supabase } from "@/lib/database/supabaseClient"; // Supabase client for database operations
 import { resolveVhcItemState } from "@/lib/vhc/vhcItemState"; // Canonical VHC state resolver.
 import { 
   autoSetVHCCompleteStatus,

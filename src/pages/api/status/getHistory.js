@@ -3,7 +3,7 @@
 // file location: src/pages/api/status/getHistory.js
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory for privileged server access
-import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import shared Supabase client as fallback
+import { supabase as browserSupabase } from "@/lib/database/supabaseClient"; // Import shared Supabase client as fallback
 import {
   getMainStatusMetadata,
   getSubStatusMetadata,

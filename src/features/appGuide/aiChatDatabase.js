@@ -25,7 +25,7 @@
 //   CREATE INDEX idx_ai_guide_sessions_user_id ON ai_guide_sessions(user_id);
 //   CREATE INDEX idx_ai_guide_messages_session_id ON ai_guide_messages(session_id);
 
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const SESSIONS_TABLE = "ai_guide_sessions";
 const MESSAGES_TABLE = "ai_guide_messages";

@@ -2,7 +2,7 @@
 // Adapter layer bridging parts_requests (tech request inbox) and parts_job_items (allocation table).
 // Ensures both tables stay linked and status-synced without breaking existing consumers.
 
-import { supabase } from "@/lib/supabaseClient"; // Shared Supabase client.
+import { supabase } from "@/lib/database/supabaseClient"; // Shared Supabase client.
 
 // ---------------------------------------------------------------------------
 // Status mapping: parts_requests status → parts_job_items status

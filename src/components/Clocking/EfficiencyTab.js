@@ -19,11 +19,11 @@ import {
 import ModalPortal from "@/components/popups/ModalPortal";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { CalendarField } from "@/components/calendarAPI";
-import { DropdownField } from "@/components/dropdownAPI";
-import { SearchBar } from "@/components/searchBarAPI";
-import { TabGroup } from "@/components/tabAPI/TabGroup";
-import { supabase } from "@/lib/supabaseClient";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+import { supabase } from "@/lib/database/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
 
 const MONTHS = [

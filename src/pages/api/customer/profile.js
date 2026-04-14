@@ -1,4 +1,4 @@
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 async function handler(req, res, session) {

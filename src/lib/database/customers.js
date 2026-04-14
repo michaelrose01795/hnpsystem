@@ -1,7 +1,7 @@
 // ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/customers.js
-import { supabase } from "@/lib/supabaseClient"; // import Supabase client
+import { supabase } from "@/lib/database/supabaseClient"; // import Supabase client
 import { normalizeCustomerSlug, splitCustomerSlugParts } from "@/lib/customers/slug";
 
 const CUSTOMER_SELECT_FIELDS = `

@@ -4,11 +4,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
 import SmartSummaryBlock from '@/components/StatusTracking/SmartSummaryBlock'; // Smart Summary panel
-import { SearchBar } from '@/components/searchBarAPI';
+import { SearchBar } from '@/components/ui/searchBarAPI';
 import { buildSmartSummary } from '@/lib/status/smartSummaryBuilder'; // Summary generation from snapshot
 import { enhanceTimeline } from '@/lib/status/timelineEnhancer'; // Timeline enhancement pipeline
 import { getAllTrackerFlags } from '@/config/trackerFlags'; // Feature flags for tracker enhancements
-import { supabase } from '@/lib/supabaseClient'; // Supabase client for real-time subscriptions
+import { supabase } from '@/lib/database/supabaseClient'; // Supabase client for real-time subscriptions
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 

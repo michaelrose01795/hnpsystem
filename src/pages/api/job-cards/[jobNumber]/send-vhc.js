@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 import { markVHCAsSent } from "@/lib/services/vhcStatusService";
 import { isSmtpConfigured } from "@/lib/email/smtp";
 import { sendDmsEmail } from "@/lib/email/emailApi";

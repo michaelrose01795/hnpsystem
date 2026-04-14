@@ -1,7 +1,7 @@
 // file location: src/pages/api/parts/job-items/index.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { linkRequestToJobItem } from "@/lib/parts/partsRequestAdapter"; // Parts request adapter.
 
 const WRITE_ROLE_KEYWORDS = ["tech", "parts", "manager", "admin"] // Role keywords permitted to create records

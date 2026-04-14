@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { runQuery } from "@/lib/database/dashboard/utils";
 
 const formatUserName = (user) => {

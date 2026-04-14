@@ -1,7 +1,7 @@
 // file location: src/pages/api/vhc/item-aliases.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const buildErrorResponse = (res, status, message) => {
   res.status(status).json({

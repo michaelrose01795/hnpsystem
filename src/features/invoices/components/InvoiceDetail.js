@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { getJobRequests } from "@/lib/canonical/fields";
 import styles from "@/features/invoices/styles/invoice.module.css";
 import ModalPortal from "@/components/popups/ModalPortal";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import InvoicePaymentModal from "@/features/invoices/components/InvoicePaymentModal";
 import { isAuthorisedDecision, isVhcAuthorisedSource, isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized status helpers.
 

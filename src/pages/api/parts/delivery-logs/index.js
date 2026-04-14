@@ -2,7 +2,7 @@
 // API endpoint to create and fetch part delivery logs
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { sanitizeNumericId } from "@/lib/utils/ids";
 
 async function handler(req, res, session) {

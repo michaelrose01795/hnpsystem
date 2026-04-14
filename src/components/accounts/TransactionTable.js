@@ -2,9 +2,9 @@
 import React from "react"; // import React to render JSX
 import PropTypes from "prop-types";
 import { TRANSACTION_TYPES, PAYMENT_METHODS } from "@/config/accounts";
-import { CalendarField } from "@/components/calendarAPI";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
-import { SearchBar } from "@/components/searchBarAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import Button from "@/components/ui/Button";
 

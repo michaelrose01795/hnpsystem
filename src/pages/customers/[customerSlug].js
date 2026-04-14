@@ -14,7 +14,7 @@ import {
 import { createCustomerDisplaySlug, normalizeCustomerSlug } from "@/lib/customers/slug";
 import { isValidUuid } from "@/lib/utils/ids";
 import { createOrUpdateVehicle } from "@/lib/database/vehicles";
-import { TabGroup } from "@/components/tabAPI/TabGroup";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { prefetchJob } from "@/lib/swr/prefetch";
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
 

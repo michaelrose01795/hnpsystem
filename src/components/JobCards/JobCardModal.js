@@ -14,8 +14,8 @@ import {
 } from "@/lib/database/jobClocking"; // DB: job clocking
 import { getAllJobs } from "@/lib/database/jobs"; // DB: fetch list of jobs
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
-import { DropdownField } from "@/components/dropdownAPI";
-import { supabase } from "@/lib/supabaseClient";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const buildRequestOptions = (jobNumberValue, requestRows) => {
   const trimmed = jobNumberValue.trim();

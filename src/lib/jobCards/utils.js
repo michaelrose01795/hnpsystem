@@ -1,4 +1,4 @@
-// file location: src/lib/jobcards/utils.js
+// file location: src/lib/jobCards/utils.js
 import {
   normalizeLegacyRequests,
   getJobRequests,

@@ -9,13 +9,13 @@ import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
 import JobCardModal from "@/components/JobCards/JobCardModal"; // Import Start Job modal
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
-import { supabase } from "@/lib/supabaseClient";
-import { summarizePartsPipeline } from "@/lib/partsPipeline";
-import { compareJobsForBoard } from "@/lib/jobcards/utils";
+import { supabase } from "@/lib/database/supabaseClient";
+import { summarizePartsPipeline } from "@/lib/parts/pipeline";
+import { compareJobsForBoard } from "@/lib/jobCards/utils";
 import { normalizeDisplayName } from "@/utils/nameUtils";
 import { deriveJobTypeDisplay } from "@/lib/jobType/display";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import { prefetchJob } from "@/lib/swr/prefetch";
 
 const STATUS_BADGE_STYLES = {

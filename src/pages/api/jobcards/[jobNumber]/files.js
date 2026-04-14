@@ -3,7 +3,7 @@
 // Uses a two-step query (jobs → job_files) to avoid relying on PostgREST
 // embedded-join schema detection, which can silently return empty arrays when
 // the FK relationship is not in the schema cache.
-import { supabaseService, supabase as supabaseFallback } from "@/lib/supabaseClient";
+import { supabaseService, supabase as supabaseFallback } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 function getClient() {

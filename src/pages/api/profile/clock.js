@@ -4,7 +4,7 @@
 // GET returns the active clock-in record (if any), auto-closing stale records from previous days
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 
 async function resolveUserId(req, res) {

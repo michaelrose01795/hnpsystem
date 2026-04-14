@@ -2,9 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseClient } from "@/lib/database/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
-import { CalendarField } from "@/components/calendarAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
 
 const sectionStyle = {

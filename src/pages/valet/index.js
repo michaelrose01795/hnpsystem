@@ -9,8 +9,8 @@ import { getAllJobs, updateJob } from "@/lib/database/jobs";
 import { getValetEtaSignals } from "@/lib/database/valetEtaSignals";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
-import { SearchBar } from "@/components/searchBarAPI";
-import { CalendarField } from "@/components/calendarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { calculateSmartTechEta } from "@/utils/jobs/calculateSmartTechEta";
 

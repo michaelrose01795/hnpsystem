@@ -8,7 +8,7 @@ import WorkshopManagerDashboard from "@/components/dashboards/WorkshopManagerDas
 import ServiceManagerDashboard from "@/components/dashboards/ServiceManagerDashboard"; // import service manager dashboard
 import AfterSalesManagerDashboard from "@/components/dashboards/AfterSalesManagerDashboard"; // import after sales manager dashboard
 import RetailManagersDashboard from "@/components/dashboards/RetailManagersDashboard"; // import retail managers dashboard component
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, PageShell, SectionShell } from "@/components/ui";
 import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";

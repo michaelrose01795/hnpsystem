@@ -1,7 +1,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
-import { CalendarField } from "@/components/calendarAPI";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import useIsMobile from "@/hooks/useIsMobile";
 import {

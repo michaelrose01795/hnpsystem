@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import VHCModalShell from "./VHCModalShell";
 import { buildModalButton } from "./VHCModalShell";
-import { DropdownField } from "@/components/dropdownAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 
 const PRE_PICK_LOCATIONS = [
   { value: "service_rack_1", label: "Service Rack 1" },

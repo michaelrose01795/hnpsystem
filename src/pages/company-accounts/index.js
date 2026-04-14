@@ -7,7 +7,7 @@ import AccountTable from "@/components/accounts/AccountTable";
 import Button from "@/components/ui/Button";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const ALLOWED_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];

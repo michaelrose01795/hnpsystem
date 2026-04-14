@@ -9,8 +9,8 @@ import { SectionCard } from "@/components/Section"; // section card layout — g
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 import { roleCategories } from "@/config/users";
-import { CalendarField } from "@/components/calendarAPI"; // Date input component
-import { DropdownField } from "@/components/dropdownAPI";
+import { CalendarField } from "@/components/ui/calendarAPI"; // Date input component
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 

@@ -1,7 +1,7 @@
 // file location: src/components/accounts/AccountsSettingsPanel.js
 import React, { useEffect, useState } from "react";
 import { Button, StatusMessage } from "@/components/ui";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 
 const initialSettings = {
   requireManagerApproval: true,

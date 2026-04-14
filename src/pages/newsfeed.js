@@ -2,9 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { useUser } from "@/context/UserContext";
-import { MultiSelectDropdown } from "@/components/dropdownAPI";
+import { MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import { roleCategories } from "@/config/users";
 
 const FALLBACK_UPDATES = [

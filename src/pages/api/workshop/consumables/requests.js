@@ -1,5 +1,5 @@
 // file location: src/pages/api/workshop/consumables/requests.js
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const TABLE = "workshop_consumable_requests";

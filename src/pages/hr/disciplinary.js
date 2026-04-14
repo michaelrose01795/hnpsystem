@@ -2,7 +2,7 @@
 // file location: src/pages/hr/disciplinary.js
 import React from "react";
 import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
-import { CalendarField } from "@/components/calendarAPI"; // Date input component
+import { CalendarField } from "@/components/ui/calendarAPI"; // Date input component
 
 function DisciplinaryContent() {
   return (

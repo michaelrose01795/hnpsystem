@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { searchCustomers } from "@/lib/database/customers"; // ✅ use shared function
 import PopupModal from "@/components/popups/popupStyleApi";
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 
 // ExistingCustomerPopup component
 export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }) {

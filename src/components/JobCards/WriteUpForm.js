@@ -13,14 +13,14 @@ import {
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { normalizeStatusId, resolveMainStatusId, resolveSubStatusId } from "@/lib/status/statusFlow";
 import { NORMALIZE_ITEM, ITEM_STATUSES } from "@/lib/status/catalog/parts"; // Centralized parts item normalizer.
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import CheckSheetPopup from "@/components/popups/CheckSheetPopup";
 import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
-import { TabGroup } from "@/components/tabAPI/TabGroup";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 
 // ✅ Helper ensures every paragraph is prefixed with a bullet dash
 const formatNoteValue = (value = "") => {

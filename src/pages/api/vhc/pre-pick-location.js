@@ -1,7 +1,7 @@
 // file location: src/pages/api/vhc/pre-pick-location.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { normalizePrePickLocation } from "@/lib/prePickLocations";
 import { resolveCanonicalVhcId, syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 

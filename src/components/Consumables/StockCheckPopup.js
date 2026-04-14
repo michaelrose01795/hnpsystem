@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 
 const consumableNameCollator = new Intl.Collator(undefined, {
   numeric: true,

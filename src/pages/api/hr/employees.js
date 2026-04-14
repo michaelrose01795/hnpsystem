@@ -1,7 +1,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/api/hr/employees.js
 import { getEmployeeDirectory } from "@/lib/database/hr";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { buildEmployeeMeta, normalizeLineManagerIds, parseEmployeeMeta } from "@/lib/hr/employeeMeta";
 

@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseClient } from "@/lib/database/supabaseClient";
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup";
 import NewCustomerPopup from "@/components/popups/NewCustomerPopup";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { useTheme } from "@/styles/themeProvider";
 import { updateCustomer } from "@/lib/database/customers";
-import { CalendarField } from "@/components/calendarAPI";
-import { TimePickerField } from "@/components/timePickerAPI";
-import { SearchBar } from "@/components/searchBarAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { TimePickerField } from "@/components/ui/timePickerAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
 
 const cardStyle = {

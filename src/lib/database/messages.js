@@ -2,7 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/messages.js
 import { createClient } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { getDisplayName } from "@/lib/users/displayName";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

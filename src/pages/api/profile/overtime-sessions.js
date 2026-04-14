@@ -2,7 +2,7 @@
 // file location: src/pages/api/profile/overtime-sessions.js
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import { getOvertimePeriodBounds } from "@/lib/database/hr";
 

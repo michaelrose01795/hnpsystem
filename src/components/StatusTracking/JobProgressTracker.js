@@ -3,7 +3,7 @@
 // Enhanced with display titles, visual grouping, highlight tagging, and cleaner layout.
 
 import React, { useMemo, useState, useCallback } from "react"; // React core + hooks
-import { DropdownField } from "@/components/dropdownAPI"; // Dropdown filter component
+import { DropdownField } from "@/components/ui/dropdownAPI"; // Dropdown filter component
 
 const COLORS = {
   current: "var(--danger)", // Current status node colour

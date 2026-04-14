@@ -10,9 +10,9 @@ import { useRouter } from "next/router"; // for navigation
 import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useUser } from "@/context/UserContext";
-import { DropdownField } from "@/components/dropdownAPI";
-import { SearchBar } from "@/components/searchBarAPI";
-import { TabGroup } from "@/components/tabAPI/TabGroup";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { deriveJobTypeDisplay, formatDetectedJobTypeLabel } from "@/lib/jobType/display";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation

@@ -1,7 +1,7 @@
 // file location: src/pages/api/accounts/[id].js // header comment referencing API path
 import { withRoleGuard } from "@/lib/auth/roleGuard"; // import role guard helper for RBAC enforcement
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
-import supabase from "@/lib/supabaseClient";
+import supabase from "@/lib/database/supabaseClient";
 const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager", "general manager", "service manager", "workshop manager", "sales"];
 async function handler(req, res, session) {
   const permissions = deriveAccountPermissions(session.user?.roles || []);

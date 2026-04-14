@@ -8,7 +8,7 @@ import themeConfig, {
   popupOverlayStyles,
   popupCardStyles,
 } from "@/styles/appTheme";
-import { DropdownField } from "@/components/dropdownAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 
 const palette = themeConfig.palette;

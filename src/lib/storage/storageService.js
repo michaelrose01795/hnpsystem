@@ -8,7 +8,7 @@
 //   documents/{jobId}/{timestamp}-{safeName}
 //   dealer-files/{jobId}/{timestamp}-{safeName}
 
-import { supabaseService, supabase as supabaseFallback } from "@/lib/supabaseClient";
+import { supabaseService, supabase as supabaseFallback } from "@/lib/database/supabaseClient";
 
 const BUCKET = "job-files"; // single bucket for all job-related uploads
 

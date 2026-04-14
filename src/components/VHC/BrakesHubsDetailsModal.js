@@ -9,7 +9,7 @@ import themeConfig, {
   popupCardStyles,
 } from "@/styles/appTheme";
 import BrakeDiagram from "@/components/VHC/BrakeDiagram";
-import { DropdownField } from "@/components/dropdownAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 
 const palette = themeConfig.palette;

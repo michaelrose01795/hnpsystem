@@ -1,5 +1,5 @@
 // file location: src/lib/vhc/saveVhcItem.js
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { upsertVhcIssueRow } from "@/lib/vhc/upsertVhcIssueRow";
 import { buildStableDisplayId } from "@/lib/vhc/displayId";

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { CalendarField } from "@/components/calendarAPI";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import useIsMobile from "@/hooks/useIsMobile";
 import PopupModal from "@/components/popups/popupStyleApi";
 import {

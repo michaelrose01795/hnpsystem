@@ -1,7 +1,7 @@
 // file location: src/pages/api/invoices/[invoiceId].js // header comment referencing API path
 import { withRoleGuard } from "@/lib/auth/roleGuard"; // import role guard to enforce RBAC
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
-import supabase from "@/lib/supabaseClient";
+import supabase from "@/lib/database/supabaseClient";
 const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager", "sales", "workshop", "workshop manager", "parts", "parts manager", "service manager"];
 async function handler(req, res, session) {
   if (req.method !== "GET") {

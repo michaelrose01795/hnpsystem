@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Button from "@/components/ui/Button";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
-import { SearchBar } from "@/components/searchBarAPI";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import { prefetchJob } from "@/lib/swr/prefetch";
 
 const STATUS_BADGES = {

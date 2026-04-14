@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { saveChecksheet } from "@/lib/database/jobs";
@@ -19,7 +19,7 @@ import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
 import PopupModal from "@/components/popups/popupStyleApi";
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity";
 import {
@@ -31,7 +31,7 @@ import {
   StockStatusBadge,
   PartRowCells,
 } from "@/components/VHC/VhcSharedComponents";
-import { isValidUuid } from "@/features/labour-times/normalization";
+import { isValidUuid } from "@/features/labourTimes/normalization";
 import { buildStableDisplayId, formatMeasurement, resolveLocationKey, normalizeText, hashString, LOCATION_TOKENS } from "@/lib/vhc/displayId";
 import { collectLinkedPartRows, resolveLinkedPrePickLocation } from "@/lib/prePickLocations";
 

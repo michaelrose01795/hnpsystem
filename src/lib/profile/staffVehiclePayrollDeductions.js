@@ -1,4 +1,4 @@
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 
 export const WORK_DEDUCTION_LABEL = "Work Deduction";
 

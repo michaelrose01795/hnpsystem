@@ -1,6 +1,6 @@
 // file location: src/components/HR/HrTabsBar.js
 import { useRouter } from "next/router";
-import { TabLinkGroup } from "@/components/tabAPI/TabGroup";
+import { TabLinkGroup } from "@/components/ui/tabAPI/TabGroup";
 
 const hrTabs = [
   { href: "/hr/employees", label: "Employee Records" },

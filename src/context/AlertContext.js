@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { showAlert, subscribeToAlerts } from "@/lib/alertBus";
+import { showAlert, subscribeToAlerts } from "@/lib/notifications/alertBus";
 
 const AlertContext = createContext({
   alerts: [],

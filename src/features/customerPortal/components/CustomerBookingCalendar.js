@@ -1,0 +1,217 @@
+// file location: src/features/customerPortal/components/CustomerBookingCalendar.js
+
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+
+const STATUS_BADGES = {
+  green: "Good availability",
+  amber: "Limited slots",
+  red: "Fully booked",
+};
+
+const STATUS_CLASSES = {
+  green: "border-[var(--success-border)] bg-[var(--success-surface)] text-[var(--success-text)]",
+  amber: "border-[var(--warning-border)] bg-[var(--warning-surface)] text-[var(--warning-text)]",
+  red: "border-[var(--danger-border)] bg-[var(--danger-surface)] text-[var(--danger-text)]",
+};
+
+const STATUS_NOTES = {
+  green: "Great news — our team can accommodate this day.",
+  amber: "Limited slots remain; we may need to confirm availability quickly.",
+  red: "This day is filled. Please pick another date or message us.",
+};
+
+export default function CustomerBookingCalendar() {
+  const [slots, setSlots] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSlots = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch("/api/customers/bookings/calendar");
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload?.error || "Could not load availability");
+        }
+
+        const days = Array.isArray(payload?.days) ? payload.days : [];
+
+        if (cancelled) return;
+
+        setSlots(days);
+        setSelectedSlot((prev) => {
+          if (!days.length) return null;
+          const match = prev ? days.find((day) => day.date === prev.date) : null;
+          return match || days[0];
+        });
+      } catch (err) {
+        if (cancelled) return;
+        setError(err.message || "Unable to load booking calendar");
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadSlots();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleRequestSlot = () => {
+    if (!selectedSlot || selectedSlot.status === "red") return;
+    router.push({
+      pathname: "/customer/messages",
+      query: {
+        subject: `Booking request • ${selectedSlot.friendlyDate}`,
+        requestedDate: selectedSlot.date,
+      },
+    });
+  };
+
+  const nextAvailable = slots.find((slot) => slot.status !== "red");
+
+  return (
+    <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
+      <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
+        <p className="text-xs uppercase tracking-[0.35em] text-white">Booking calendar</p>
+        <h3 className="text-xl font-semibold text-white">Pick a day that works for you</h3>
+        <p className="mt-1 text-sm text-white">
+          Green = plenty of slots, amber = limited slots, red = fully booked.
+        </p>
+      </header>
+
+      {error && (
+        <div className="mt-4 rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] p-4 text-sm text-[var(--danger-dark)]">
+          {error}
+        </div>
+      )}
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {loading
+          ? Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-24 animate-pulse rounded-2xl bg-[var(--surface-light)]"
+              />
+            ))
+          : slots.map((slot) => {
+              const isSelected = selectedSlot?.date === slot.date;
+              return (
+                <button
+                  key={slot.date}
+                  type="button"
+                  onClick={() => setSelectedSlot(slot)}
+                  className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    STATUS_CLASSES[slot.status] ?? STATUS_CLASSES.green
+                  } ${isSelected ? "ring-2 ring-[var(--primary)]" : ""}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">
+                      {slot.displayDate}
+                    </p>
+                    {slot.isToday && (
+                      <span className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--text-secondary)]">
+                        Today
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">
+                    {slot.count} job{slot.count !== 1 ? "s" : ""}
+                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em]">
+                    {STATUS_BADGES[slot.status] || STATUS_BADGES.green}
+                  </p>
+
+                  {slot.status === "amber" && (
+                    <p className="mt-2 text-sm font-medium text-[var(--warningMain)]">
+                      Limited slots — book soon
+                    </p>
+                  )}
+
+                  {slot.status === "red" && (
+                    <p className="mt-2 text-sm font-medium text-[var(--dangerMain)]">
+                      Fully booked — choose another day
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+      </div>
+
+      {!loading && !slots.length && !error && (
+        <p className="mt-4 rounded-2xl border border-dashed border-[var(--surface-light)] bg-[var(--surface-light)] p-4 text-sm text-[var(--text-secondary)]">
+          We are still collecting availability. Please check back shortly.
+        </p>
+      )}
+
+      {selectedSlot && (
+        <div className="mt-6 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] p-4">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <p className="text-sm text-[var(--text-secondary)]">Selected date</p>
+            <p className="text-lg font-semibold text-[var(--text-primary)]">
+              {selectedSlot.friendlyDate}
+            </p>
+          </div>
+          <p className="mt-1 text-lg text-[var(--text-primary)]">
+            {selectedSlot.count} booking
+            {selectedSlot.count !== 1 ? "s" : ""}
+          </p>
+          <p className="mt-2 text-sm font-medium text-[var(--text-secondary)]">
+            {STATUS_NOTES[selectedSlot.status] ?? STATUS_NOTES.green}
+          </p>
+
+          {selectedSlot.status === "red" && (
+            <p className="mt-2 text-sm text-[var(--dangerMain)]">
+              Red days prevent new bookings. Please pick a different date or
+              message us if it&apos;s urgent.
+            </p>
+          )}
+
+          {selectedSlot.status === "amber" && (
+            <p className="mt-2 text-sm text-[var(--warningMain)]">
+              Amber days show limited slots — we&apos;ll confirm availability
+              while they last.
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleRequestSlot}
+              disabled={selectedSlot.status === "red"}
+              className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition ${
+                selectedSlot.status === "red"
+                  ? "cursor-not-allowed border border-[var(--surface-light)] bg-[var(--surface-muted)] text-[var(--text-secondary)]"
+                  : "bg-[var(--primary)] text-white hover:bg-[var(--primary-dark)]"
+              }`}
+            >
+              {selectedSlot.status === "red"
+                ? "Not available"
+                : "Request this date"}
+            </button>
+
+            <p className="text-xs uppercase tracking-[0.3em] text-[var(--text-secondary)]">
+              {nextAvailable
+                ? `Next open slot: ${nextAvailable.displayDate}`
+                : "No open slots yet"}
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

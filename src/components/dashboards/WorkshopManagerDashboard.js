@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { getWorkshopDashboardData } from "@/lib/database/dashboard/workshop";
 import { listConsumablesForTracker } from "@/lib/database/consumables";
 import ModalPortal from "@/components/popups/ModalPortal";

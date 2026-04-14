@@ -1,6 +1,6 @@
 // file location: src/hooks/useMessagesBadge.js
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const buildQuery = (params = {}) => {
   const query = new URLSearchParams();

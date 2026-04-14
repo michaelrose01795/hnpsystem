@@ -1,7 +1,7 @@
 // file location: src/pages/api/parts/suppliers/search.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const GOODS_IN_ROLES = [
   "parts",

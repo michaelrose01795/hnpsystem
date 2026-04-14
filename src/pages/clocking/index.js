@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { clockInToJob, clockOutFromJob } from "@/lib/database/jobClocking";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
-import { TabGroup } from "@/components/tabAPI/TabGroup";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import dynamic from "next/dynamic";
 const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
 

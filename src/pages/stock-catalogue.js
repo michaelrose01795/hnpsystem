@@ -6,13 +6,13 @@ import {
   summarizePartsPipeline,
   mapPartStatusToPipelineId,
   getPipelineStageMeta,
-} from "@/lib/partsPipeline";
-import { supabase } from "@/lib/supabaseClient";
+} from "@/lib/parts/pipeline";
+import { supabase } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 
 const PRE_PICK_OPTIONS = [
   { value: "", label: "Not assigned" },

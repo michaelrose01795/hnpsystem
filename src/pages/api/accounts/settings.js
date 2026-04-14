@@ -1,6 +1,6 @@
 // file location: src/pages/api/accounts/settings.js
 import createHandler from "@/lib/api/createHandler";
-import supabase from "@/lib/supabaseClient";
+import supabase from "@/lib/database/supabaseClient";
 
 const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager"];
 const TABLE = "account_settings";

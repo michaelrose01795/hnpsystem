@@ -1,7 +1,7 @@
 // file location: src/pages/api/parts/deliveries/[deliveryId]/items.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
 
 const parseInteger = (value, fallback = 0) => {

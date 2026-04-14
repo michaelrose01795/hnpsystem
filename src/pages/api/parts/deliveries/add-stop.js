@@ -1,5 +1,5 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 import { sendSystemNotification } from "@/lib/notifications/system";
 
 const DEFAULT_STATUS = ["planned", "en_route"];

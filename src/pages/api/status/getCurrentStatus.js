@@ -3,7 +3,7 @@
 // file location: src/pages/api/status/getCurrentStatus.js
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { createClient } from "@supabase/supabase-js"; // Import Supabase factory for service role usage
-import { supabase as browserSupabase } from "@/lib/supabaseClient"; // Import shared Supabase client for fallback use
+import { supabase as browserSupabase } from "@/lib/database/supabaseClient"; // Import shared Supabase client for fallback use
 import {
   getMainStatusMetadata,
   resolveMainStatusId,

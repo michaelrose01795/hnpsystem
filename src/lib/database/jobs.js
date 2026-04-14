@@ -1,7 +1,7 @@
 // ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/jobs.js
-import { notifyJobStatusChange } from "@/codex/notify-status-change";
+import { notifyJobStatusChange } from "@/lib/notifications/notifyJobStatusChange";
 import { getDatabaseClient } from "@/lib/database/client";
 import { ensureUserIdForDisplayName } from "@/lib/users/devUsers";
 import {

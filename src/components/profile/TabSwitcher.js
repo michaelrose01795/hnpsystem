@@ -1,5 +1,5 @@
 import React from "react";
-import { TabGroup } from "@/components/tabAPI/TabGroup";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 
 export default function TabSwitcher({ activeTab, onChange, personalDisabled = false }) {
   return (

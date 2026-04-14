@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
-import { CalendarField } from "@/components/calendarAPI"; // Date input component
-import { TimePickerField } from "@/components/timePickerAPI";
+import { CalendarField } from "@/components/ui/calendarAPI"; // Date input component
+import { TimePickerField } from "@/components/ui/timePickerAPI";
 
 function formatTime(value) {
   if (!value) return "—";

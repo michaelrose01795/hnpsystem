@@ -4,9 +4,9 @@ import PropTypes from "prop-types";
 import { useRouter } from "next/router";
 import { INVOICE_STATUSES } from "@/config/accounts";
 import { isInvoiceSettled } from "@/lib/status/statusHelpers"; // Centralized invoice status check.
-import { CalendarField } from "@/components/calendarAPI";
-import { SearchBar } from "@/components/searchBarAPI";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";

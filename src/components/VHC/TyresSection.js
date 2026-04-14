@@ -1,6 +1,6 @@
 // file location: src/components/VHC/TyresSection.js
 import React, { useEffect, useMemo, useState } from "react"; // Import React hooks for component logic
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import themeConfig from "@/styles/appTheme"; // Import shared theme for consistent styling
 import { searchTyres } from "@/lib/tyre/tyreAPI"; // Import placeholder tyre search helper
 

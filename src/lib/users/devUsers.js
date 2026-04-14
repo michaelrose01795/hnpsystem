@@ -2,7 +2,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/users/devUsers.js
 
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { getDisplayName } from "@/lib/users/displayName";
 
 // Create a slug from display name for deterministic fake emails

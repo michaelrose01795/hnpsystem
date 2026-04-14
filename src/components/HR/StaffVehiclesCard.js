@@ -1,8 +1,8 @@
 // file location: src/components/HR/StaffVehiclesCard.js
 import React, { useEffect, useMemo, useState } from "react";
 import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
-import { DropdownField } from "@/components/dropdownAPI";
-import { SearchBar } from "@/components/searchBarAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const initialVehicleForm = {

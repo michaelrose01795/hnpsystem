@@ -5,12 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { PageContainer, PageWrapper } from "@/components/ui";
 import { useUser } from "@/context/UserContext";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
-import { DropdownField } from "@/components/dropdownAPI";
-import { CalendarField } from "@/components/calendarAPI";
-import { TimePickerField } from "@/components/timePickerAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { TimePickerField } from "@/components/ui/timePickerAPI";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
 

@@ -1,5 +1,5 @@
 // file location: src/pages/api/workshop/consumables/items.js
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 async function handler(req, res, session) {

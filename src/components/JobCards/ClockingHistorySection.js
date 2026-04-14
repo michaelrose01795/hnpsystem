@@ -1,6 +1,6 @@
 // file location: src/components/JobCards/ClockingHistorySection.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const formatDate = (value) => {
   if (!value) return "—";

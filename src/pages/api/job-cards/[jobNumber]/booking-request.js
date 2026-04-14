@@ -1,4 +1,4 @@
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 import { sendSystemNotification } from "@/lib/notifications/system";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 import { getVehicleRegistration } from "@/lib/canonical/fields";

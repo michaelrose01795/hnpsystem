@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { supabaseClient } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
-import { CalendarField } from "@/components/calendarAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 

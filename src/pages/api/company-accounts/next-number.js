@@ -1,7 +1,7 @@
 // file location: src/pages/api/company-accounts/next-number.js
 import createHandler, { denyUnless } from "@/lib/api/createHandler";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
-import supabase from "@/lib/supabaseClient";
+import supabase from "@/lib/database/supabaseClient";
 
 const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager"];
 const PREFIX = "CA";

@@ -4,7 +4,7 @@
 // file location: src/pages/api/profile/overtime-recurring-rules.js
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 
 const SELECT_FIELDS = "rule_id, day_of_week, hours, active, pattern_type, week_parity, label"; // fields returned to client

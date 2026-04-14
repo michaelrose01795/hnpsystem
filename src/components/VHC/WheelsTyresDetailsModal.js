@@ -9,7 +9,7 @@ import themeConfig, {
   popupCardStyles,
 } from "@/styles/appTheme";
 import TyreDiagram, { getReadingStatus } from "@/components/VHC/TyreDiagram";
-import { DropdownField } from "@/components/dropdownAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import IssueAutocomplete from "@/components/vhc/IssueAutocomplete";
 import { learnIssueSuggestion } from "@/lib/vhc/issueSuggestions";
 

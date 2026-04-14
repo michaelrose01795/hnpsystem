@@ -4,7 +4,7 @@
 
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { getDatabaseClient } from "@/lib/database/client";
 import { getDisplayName } from "@/lib/users/displayName";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";

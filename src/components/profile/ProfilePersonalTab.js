@@ -4,7 +4,7 @@ import usePersonalDashboard from "@/hooks/usePersonalDashboard";
 import usePersonalTabModel from "@/hooks/usePersonalTabModel";
 import usePersonalWidgets from "@/hooks/usePersonalWidgets";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import PopupModal from "@/components/popups/popupStyleApi";
 import WidgetSettingsModal from "@/components/profile/personal/WidgetSettingsModal";
 import PersonalSettingsPopup from "@/components/profile/personal/PersonalSettingsPopup";

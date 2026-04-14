@@ -1,6 +1,6 @@
 import { sendThreadMessage } from "@/lib/database/messages";
 import { ensureSystemMessagingConfig } from "@/lib/messages/systemConfig";
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 
 const assertServiceRoleAccess = () => {
   if (!supabaseService) {

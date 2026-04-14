@@ -9,7 +9,7 @@ import dynamic from "next/dynamic";
 import Layout from "@/components/Layout";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile, upsertJobRequestsForJob, getJobsByPrimeGroup, convertToPrimeJob } from "@/lib/database/jobs";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
@@ -25,13 +25,13 @@ import { createCustomerDisplaySlug } from "@/lib/customers/slug";
 import {
   normalizeRequests,
   mapCustomerJobsToHistory
-} from "@/lib/jobcards/utils";
+} from "@/lib/jobCards/utils";
 import {
   getJobRequests,
   getVehicleRegistration,
   pickMileageValue as canonicalPickMileageValue,
 } from "@/lib/canonical/fields";
-import { summarizePartsPipeline } from "@/lib/partsPipeline";
+import { summarizePartsPipeline } from "@/lib/parts/pipeline";
 import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
@@ -41,14 +41,14 @@ import { normaliseDecisionStatus, buildVhcRowStatusView } from "@/lib/vhc/summar
 import { resolveVhcItemState } from "@/lib/vhc/vhcItemState";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import { clockInToJob, getUserActiveJobs, switchJob } from "@/lib/database/jobClocking";
-import PartsTabNew from "@/components/PartsTab_New";
-import NotesTabNew from "@/components/NotesTab_New";
+import PartsTabNew from "@/components/PartsTab";
+import NotesTabNew from "@/components/NotesTab";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { SearchBar } from "@/components/searchBarAPI";
-import { DropdownField } from "@/components/dropdownAPI";
-import { CalendarField } from "@/components/calendarAPI";
-import { TimePickerField } from "@/components/timePickerAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { TimePickerField } from "@/components/ui/timePickerAPI";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
 import { buildApiUrl } from "@/utils/apiClient";
@@ -64,8 +64,8 @@ import { useJob } from "@/hooks/useJob"; // SWR-powered job card data with cachi
 import { resolveJobCardPermissions } from "@/features/jobCards/workflow/permissions";
 import { getWriteUpCompletionState, getInvoiceWorkflowState, getNextBestAction } from "@/features/jobCards/workflow/selectors";
 import JobWorkflowAssistantCard from "@/features/jobCards/components/JobWorkflowAssistantCard";
-import { buildVhcAssistantState } from "@/features/vhc-assistant/buildVhcAssistantState";
-import VhcAssistantPanel from "@/features/vhc-assistant/components/VhcAssistantPanel";
+import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
+import VhcAssistantPanel from "@/features/vhcAssistant/components/VhcAssistantPanel";
 
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), {
   ssr: false,

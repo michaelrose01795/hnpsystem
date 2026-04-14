@@ -1,6 +1,6 @@
 // file location: src/pages/api/settings/company-profile.js // identify API route
 import { withRoleGuard } from "@/lib/auth/roleGuard"; // import RBAC helper
-import supabase from "@/lib/supabaseClient"; // import Supabase client for DB access
+import supabase from "@/lib/database/supabaseClient"; // import Supabase client for DB access
 
 const allowedRoles = [ // roles allowed to read/write company profile
   "admin",

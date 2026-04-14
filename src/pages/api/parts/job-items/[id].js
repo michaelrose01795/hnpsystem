@@ -1,7 +1,7 @@
 // file location: src/pages/api/parts/job-items/[id].js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
 
 const MANAGER_ROLE_KEYWORDS = ["parts", "manager", "admin"]

@@ -1,7 +1,7 @@
 // file location: src/pages/api/messages/connect-customer.js
 
 import { createGroupThread, ensureUserForCustomer } from "@/lib/database/messages";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const CUSTOMER_SELECT_FIELDS =

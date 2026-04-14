@@ -1,7 +1,7 @@
 // file location: src/pages/api/company-accounts/index.js
 import createHandler, { denyUnless, sendError } from "@/lib/api/createHandler";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
-import supabase from "@/lib/supabaseClient";
+import supabase from "@/lib/database/supabaseClient";
 
 const allowedRoles = ["admin", "owner", "admin manager", "accounts", "accounts manager"];
 const COMPANY_ACCOUNTS_TABLE = "company_accounts";

@@ -1,6 +1,6 @@
 // file location: src/lib/consumables.js
 // Central Supabase helpers for consumable stock-check workflows
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import { getDisplayName } from "@/lib/users/displayName";
 
 const formatConsumable = (row) => ({

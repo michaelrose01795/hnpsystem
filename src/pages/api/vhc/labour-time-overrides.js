@@ -1,10 +1,10 @@
 // file location: src/pages/api/vhc/labour-time-overrides.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 import getUserFromRequest from "@/lib/auth/getUserFromRequest";
-import { buildNormalizedKey, isValidUuid } from "@/features/labour-times/normalization";
-import { clearCacheByPrefix } from "@/features/labour-times/cache";
+import { buildNormalizedKey, isValidUuid } from "@/features/labourTimes/normalization";
+import { clearCacheByPrefix } from "@/features/labourTimes/cache";
 
 const GLOBAL_WRITE_ROLES = new Set(["admin", "manager"]);
 const LABOUR_OVERRIDE_DEBUG = process.env.NODE_ENV !== "production" && process.env.DEBUG_LABOUR_SUGGESTIONS === "1";

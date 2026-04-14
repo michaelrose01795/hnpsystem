@@ -14,7 +14,7 @@ import {
 } from "@/lib/database/jobClocking"; // Import clocking functions
 import { getAllJobs } from "@/lib/database/jobs"; // Import jobs function
 import { useConfirmation } from "@/context/ConfirmationContext";
-import { SearchBar } from "@/components/searchBarAPI";
+import { SearchBar } from "@/components/ui/searchBarAPI";
 
 export default function JobClockingCard() {
   const { user, setStatus, refreshCurrentJob, setCurrentJob, dbUserId } = useUser(); // Get logged-in user and helpers

@@ -1,5 +1,5 @@
 // file location: src/lib/invoices/detailService.js // describe where this helper lives
-import supabase from "@/lib/supabaseClient"; // import shared Supabase client for DB access
+import supabase from "@/lib/database/supabaseClient"; // import shared Supabase client for DB access
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields"; // canonical field helpers
 import { createClient } from "@supabase/supabase-js";
 import { isAuthorisedDecision, isVhcAuthorisedSource } from "@/lib/status/statusHelpers"; // Centralized VHC decision helpers.

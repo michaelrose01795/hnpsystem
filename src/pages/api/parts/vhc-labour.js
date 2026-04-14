@@ -1,7 +1,7 @@
 // file location: src/pages/api/parts/vhc-labour.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/database/supabaseClient";
 
 const parseLabourHours = (value) => {
   const parsed = Number(value);

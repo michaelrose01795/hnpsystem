@@ -6,7 +6,7 @@ import TabSwitcher from "@/components/profile/TabSwitcher";
 import useIsMobile from "@/hooks/useIsMobile";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
-import DropdownField from "@/components/dropdownAPI/DropdownField";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import Button from "@/components/ui/Button";
 
 const SAFE_ACCENT_PALETTES =

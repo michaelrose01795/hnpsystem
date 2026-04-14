@@ -1,11 +1,11 @@
 // file location: src/pages/api/vhc/labour-time-suggestions.js
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { supabase } from "@/lib/supabaseClient";
-import { buildNormalizedKey, isValidUuid, tokenize } from "@/features/labour-times/normalization";
-import { rankSuggestions } from "@/features/labour-times/ranking";
-import { getCachedValue, setCachedValue } from "@/features/labour-times/cache";
-import { estimateLabourHours } from "@/features/labour-times/fallbackEstimator";
+import { supabase } from "@/lib/database/supabaseClient";
+import { buildNormalizedKey, isValidUuid, tokenize } from "@/features/labourTimes/normalization";
+import { rankSuggestions } from "@/features/labourTimes/ranking";
+import { getCachedValue, setCachedValue } from "@/features/labourTimes/cache";
+import { estimateLabourHours } from "@/features/labourTimes/fallbackEstimator";
 
 const LABOUR_SUGGEST_DEBUG = process.env.NODE_ENV !== "production" && process.env.DEBUG_LABOUR_SUGGESTIONS === "1";
 

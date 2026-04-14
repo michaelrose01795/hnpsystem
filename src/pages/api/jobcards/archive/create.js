@@ -1,5 +1,5 @@
 // file location: src/pages/api/jobcards/archive/create.js
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 import { getJobByNumber } from "@/lib/database/jobs";
 import { getNotesByJob } from "@/lib/database/notes";
 import { withRoleGuard } from "@/lib/auth/roleGuard";

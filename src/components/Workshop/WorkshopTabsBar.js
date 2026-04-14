@@ -1,6 +1,6 @@
 // file location: src/components/Workshop/WorkshopTabsBar.js
 import { useRouter } from "next/router";
-import { TabLinkGroup } from "@/components/tabAPI/TabGroup";
+import { TabLinkGroup } from "@/components/ui/tabAPI/TabGroup";
 
 export const workshopTabs = [
   { href: "/workshop", label: "Dashboard" },

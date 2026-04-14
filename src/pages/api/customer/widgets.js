@@ -1,4 +1,4 @@
-import { supabaseService } from "@/lib/supabaseClient";
+import { supabaseService } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 const DEFAULT_CUSTOMER_DASHBOARD_WIDGETS = [
