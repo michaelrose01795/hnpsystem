@@ -86,7 +86,8 @@
       "Bash(git -C c:/hnpsystem diff HEAD~1 HEAD -- src/pages/job-cards/create/index.js)",
       "Bash(echo \"exit:$?\")",
       "Bash(git mv:*)",
-      "Bash(./node_modules/.bin/vercel dev:*)"
+      "Bash(./node_modules/.bin/vercel dev:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
