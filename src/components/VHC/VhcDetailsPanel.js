@@ -541,7 +541,7 @@ const SEVERITY_THEME = {
   red: { background: "var(--danger-surface)", border: "var(--danger-surface)", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
   amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--warning-dark)", hover: "var(--warning-surface-hover)" },
   green: { background: "var(--success-surface)", border: "var(--success)", text: "var(--info-dark)", hover: "var(--success-surface-hover)" },
-  grey: { background: "var(--info-surface)", border: "var(--accent-purple-surface)", text: "var(--info-dark)", hover: "var(--accent-purple-surface)" },
+  grey: { background: "var(--info-surface)", border: "var(--accent-surface)", text: "var(--info-dark)", hover: "var(--accent-surface)" },
   authorized: { background: "var(--success-surface)", border: "var(--success)", text: "var(--success)", hover: "var(--success-surface-hover)" },
   declined: { background: "var(--danger-surface)", border: "var(--danger)", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
 };
@@ -1034,7 +1034,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
   return (
     <div
       style={{
-        border: "1px solid var(--accent-purple-surface)",
+        border: "1px solid var(--accent-surface)",
         borderRadius: "var(--radius-md)",
         background: "var(--surface)",
         padding: "20px",
@@ -1053,7 +1053,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
         }}
       >
         <div style={{ flex: 1, minWidth: "220px" }}>
-          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--accent-purple)" }}>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>
             {config.label}
           </h3>
         </div>
@@ -1173,7 +1173,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                   }}
                 >
                   <div style={{ minWidth: "220px" }}>
-                    <strong style={{ color: "var(--accent-purple)", fontSize: "15px" }}>
+                    <strong style={{ color: "var(--primary)", fontSize: "15px" }}>
                       {item.heading || item.label || `Item ${idx + 1}`}
                     </strong>
                     {item.notes ? (
@@ -1204,7 +1204,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                           ? wheelRowsTint.blockBorder
                           : isBrakeSummaryItem
                             ? brakeRowsTint.blockBorder
-                            : "var(--accent-purple-surface)"
+                            : "var(--accent-surface)"
                       }`,
                       background:
                         config.key === "wheelsTyres"
@@ -1229,7 +1229,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                             style={{
                               borderRadius: "var(--input-radius)",
                               background: config.key === "wheelsTyres" ? wheelRowsTint.tileBg : "var(--info-surface)",
-                              border: `1px solid ${config.key === "wheelsTyres" ? wheelRowsTint.tileBorder : "var(--accent-purple-surface)"}`,
+                              border: `1px solid ${config.key === "wheelsTyres" ? wheelRowsTint.tileBorder : "var(--accent-surface)"}`,
                               padding: "10px 12px",
                               display: "flex",
                               flexDirection: "column",
@@ -1275,7 +1275,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                                 ? wheelRowsTint.tileBorder
                                 : isBrakeSummaryItem
                                   ? brakeRowsTint.tileBorder
-                                  : "var(--accent-purple-surface)"
+                                  : "var(--accent-surface)"
                             }`,
                             padding: "10px 12px",
                             display: "flex",
@@ -1317,7 +1317,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                       flexDirection: "column",
                       gap: "8px",
                       borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "1px solid var(--accent-surface)",
                       background: "var(--surface)",
                       padding: "10px",
                     }}
@@ -1332,7 +1332,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                           fontSize: "13px",
                           color: "var(--info-dark)",
                           background: SEVERITY_THEME[normaliseColour(concern.status)]?.background || "var(--surface)",
-                          border: `1px solid ${SEVERITY_THEME[normaliseColour(concern.status)]?.border || "var(--accent-purple-surface)"}`,
+                          border: `1px solid ${SEVERITY_THEME[normaliseColour(concern.status)]?.border || "var(--accent-surface)"}`,
                           borderRadius: "var(--input-radius)",
                           padding: "8px 10px",
                         }}
@@ -1361,7 +1361,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
       ) : (
         <div
           style={{
-            border: "1px dashed var(--accent-purple)",
+            border: "1px dashed var(--primary)",
             borderRadius: "var(--radius-sm)",
             padding: "16px",
             background: "var(--info-surface)",
@@ -4539,11 +4539,11 @@ export default function VhcDetailsPanel({
                       transition: "background 0.2s ease",
                     }}
                   >
-                    <td style={{ padding: "12px 8px", color: "var(--accent-purple)", wordWrap: "break-word", overflow: "hidden" }}>
+                    <td style={{ padding: "12px 8px", color: "var(--primary)", wordWrap: "break-word", overflow: "hidden" }}>
                       <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                         {item.categoryLabel || "Recorded Section"}
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                      <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--primary)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         <span>{detailLabel}</span>
                       </div>
                       {detailRows.length > 0 ? (
@@ -4658,7 +4658,7 @@ export default function VhcDetailsPanel({
                                 }}
                               >
                                 {!entry.hideLabel ? (
-                                  <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{entry.label}</span>
+                                  <span style={{ fontWeight: 600, color: "var(--primary)" }}>{entry.label}</span>
                                 ) : null}
                                 {entry.measurement ? <span>{entry.measurement}</span> : null}
                                 {entryStatusLabel && badgeStyles ? (
@@ -4701,7 +4701,7 @@ export default function VhcDetailsPanel({
                           disabled={true}
                           title={effectiveEntry.partsComplete ? "Parts added or marked as not required" : "Add parts or mark as not required"}
                         />
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--primary)" }}>
                           {partsDisplayValue ? `£${partsDisplayValue}` : "—"}
                         </div>
                       </div>
@@ -4812,7 +4812,7 @@ export default function VhcDetailsPanel({
                             width: "50px",
                             padding: "4px 6px",
                             borderRadius: "var(--radius-xs)",
-                            border: "1px solid var(--accent-purple-surface)",
+                            border: "1px solid var(--accent-surface)",
                             fontSize: "13px",
                           }}
                           disabled={
@@ -4836,7 +4836,7 @@ export default function VhcDetailsPanel({
                               maxWidth: "calc(100vw - 48px)",
                               maxHeight: "240px",
                               overflowY: "auto",
-                              border: "1px solid var(--accent-purple-surface)",
+                              border: "1px solid var(--accent-surface)",
                               borderRadius: "var(--input-radius)",
                               background: "var(--surface)",
                               boxShadow: "0 12px 24px rgba(var(--text-primary-rgb), 0.14)",
@@ -4974,7 +4974,7 @@ export default function VhcDetailsPanel({
                             width: "70px",
                             padding: "4px 6px",
                             borderRadius: "var(--radius-xs)",
-                            border: "1px solid var(--accent-purple-surface)",
+                            border: "1px solid var(--accent-surface)",
                             fontSize: "13px",
                           }}
                           disabled={readOnly || severity === "authorized" || severity === "declined"}
@@ -5077,7 +5077,7 @@ export default function VhcDetailsPanel({
                               zIndex: 5,
                             }}
                           >
-                            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--accent-purple)" }}>
+                            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--primary)" }}>
                               {statusState.label}
                             </div>
                           </div>
@@ -5125,9 +5125,9 @@ export default function VhcDetailsPanel({
                     style={{
                       padding: "10px 16px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--accent-purple)",
-                      backgroundColor: selectedSet.size === 0 ? "var(--accent-purple-surface)" : "var(--surface)",
-                      color: "var(--accent-purple)",
+                      border: "1px solid var(--primary)",
+                      backgroundColor: selectedSet.size === 0 ? "var(--accent-surface)" : "var(--surface)",
+                      color: "var(--primary)",
                       fontWeight: 600,
                       cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
                     }}
@@ -5288,7 +5288,7 @@ export default function VhcDetailsPanel({
             <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
               {categoryLabel}
             </div>
-            <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--accent-purple)", marginTop: "4px" }}>
+            <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--primary)", marginTop: "4px" }}>
               {detailLabel}
             </div>
             {detailContent ? (
@@ -5457,7 +5457,7 @@ export default function VhcDetailsPanel({
           style={{
             padding: "14px 16px",
             fontWeight: 700,
-            color: theme.text || "var(--accent-purple)",
+            color: theme.text || "var(--primary)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             fontSize: "12px",
@@ -6895,7 +6895,7 @@ export default function VhcDetailsPanel({
     return (
       <div
         style={{
-          border: "1px solid var(--accent-purple-surface)",
+          border: "1px solid var(--accent-surface)",
           borderRadius: "var(--radius-md)",
           background: "var(--surface)",
           overflow: "hidden",
@@ -6973,11 +6973,11 @@ export default function VhcDetailsPanel({
                 // Determine background color from severity first so amber/red remain visually consistent
                 // across pending/authorized/declined states in both light and dark themes.
                 let rowBackground = "var(--surface)";
-                let rowHoverBackground = "var(--accent-purple-surface)";
+                let rowHoverBackground = "var(--accent-surface)";
 
                 if (vhcSeverity === "red" || vhcSeverity === "amber") {
                   rowBackground = SEVERITY_THEME[vhcSeverity]?.background || "var(--surface)";
-                  rowHoverBackground = SEVERITY_THEME[vhcSeverity]?.hover || "var(--accent-purple-surface)";
+                  rowHoverBackground = SEVERITY_THEME[vhcSeverity]?.hover || "var(--accent-surface)";
                 } else if (entryDecision === "declined") {
                   rowBackground = "var(--danger-surface)";
                   rowHoverBackground = "var(--danger-surface-hover)";
@@ -7008,7 +7008,7 @@ export default function VhcDetailsPanel({
                         <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                           {vhcCategory}
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                        <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--primary)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                           <span>{vhcLabel}</span>
                         </div>
                         {isServiceIndicatorRow && vhcRows.length > 0 ? (
@@ -7037,7 +7037,7 @@ export default function VhcDetailsPanel({
                         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                           {linkedParts.map((part) => (
                             <div key={part.id} style={{ fontSize: "12px", color: "var(--info-dark)" }}>
-                              <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+                              <div style={{ fontWeight: 600, color: "var(--primary)" }}>
                                 {part.part?.name || "Part"}
                               </div>
                               <div style={{ fontSize: "11px", color: "var(--info)" }}>
@@ -7057,7 +7057,7 @@ export default function VhcDetailsPanel({
                         style={{
                           fontSize: "16px",
                           fontWeight: 700,
-                          color: isPartsNotRequired ? "var(--info)" : "var(--accent-purple)",
+                          color: isPartsNotRequired ? "var(--info)" : "var(--primary)",
                           textDecoration: isPartsNotRequired ? "line-through" : "none",
                         }}
                       >
@@ -7106,7 +7106,7 @@ export default function VhcDetailsPanel({
                         style={{
                           padding: "8px 16px",
                           borderRadius: "var(--radius-xs)",
-                          border: isPartsNotRequired ? "1px solid var(--success)" : "1px solid var(--accent-purple-surface)",
+                          border: isPartsNotRequired ? "1px solid var(--success)" : "1px solid var(--accent-surface)",
                           background: isPartsNotRequired ? "var(--success)" : "var(--surface)",
                           color: isPartsNotRequired ? "var(--surface)" : "var(--info-dark)",
                           fontWeight: 600,
@@ -7166,7 +7166,7 @@ export default function VhcDetailsPanel({
                               padding: "24px",
                               borderRadius: "var(--radius-sm)",
                               background: "var(--info-surface)",
-                              border: "1px solid var(--accent-purple-surface)",
+                              border: "1px solid var(--accent-surface)",
                               textAlign: "center",
                               color: "var(--info)",
                               fontSize: "13px",
@@ -7175,7 +7175,7 @@ export default function VhcDetailsPanel({
                             </div>
                           ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                              <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
+                              <div style={{ border: "1px solid var(--accent-surface)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
                                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                                   <thead>
                                     <tr style={{ background: "var(--info-surface)", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "10px" }}>
@@ -7202,13 +7202,13 @@ export default function VhcDetailsPanel({
 
                                       return (
                                         <tr key={`${partKey}-summary`} style={{ borderBottom: "1px solid var(--info-surface)" }}>
-                                          <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                          <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--primary)" }}>
                                             {partName}
                                           </td>
                                           <td style={{ padding: "10px 12px", color: "var(--info-dark)" }}>
                                             {partDescription}
                                           </td>
-                                          <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "var(--accent-purple)" }}>
+                                          <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "var(--primary)" }}>
                                             £{Number(costToCustomer || 0).toFixed(2)}
                                           </td>
                                           <td style={{ padding: "10px 12px", color: "var(--info-dark)" }}>
@@ -7710,7 +7710,7 @@ export default function VhcDetailsPanel({
     return (
       <div
         style={{
-          border: "1px solid var(--accent-purple-surface)",
+          border: "1px solid var(--accent-surface)",
           borderRadius: "var(--radius-md)",
           background: "var(--surface)",
           overflow: "hidden",
@@ -7766,7 +7766,7 @@ export default function VhcDetailsPanel({
                       background: "var(--surface)",
                     }}
                   >
-                    <td style={{ padding: "12px 16px", color: "var(--accent-purple)", fontWeight: 600 }}>
+                    <td style={{ padding: "12px 16px", color: "var(--primary)", fontWeight: 600 }}>
                       {part.name || "—"}
                     </td>
                     <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
@@ -7965,7 +7965,7 @@ export default function VhcDetailsPanel({
           <div
             key={file.file_id}
             style={{
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--accent-surface)",
               borderRadius: "var(--radius-sm)",
               overflow: "hidden",
               background: "var(--surface)",
@@ -7993,7 +7993,7 @@ export default function VhcDetailsPanel({
             )}
             <div style={{ padding: "12px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "8px" }}>
-                <div style={{ fontSize: "12px", color: "var(--accent-purple)", fontWeight: 600, flex: 1 }}>
+                <div style={{ fontSize: "12px", color: "var(--primary)", fontWeight: 600, flex: 1 }}>
                   {file.file_name}
                 </div>
                 {file.visible_to_customer !== undefined && (
@@ -8067,7 +8067,7 @@ export default function VhcDetailsPanel({
           style={{
             padding: "6px 12px",
             borderRadius: "var(--radius-pill)",
-            background: "var(--accent-purple)",
+            background: "var(--primary)",
             color: "var(--surface)",
             fontWeight: 600,
             textTransform: "capitalize",
@@ -8095,7 +8095,7 @@ export default function VhcDetailsPanel({
                 type="button"
                 onClick={() => router.push("/job-cards/view")}
                 style={{
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--accent-surface)",
                 borderRadius: "var(--input-radius)",
                 padding: "8px 14px",
                 background: "var(--surface)",
@@ -8121,10 +8121,10 @@ export default function VhcDetailsPanel({
                   router.push(`/tracking?${params.toString()}`);
                 }}
                 style={{
-                  border: "1px solid var(--accent-purple)",
+                  border: "1px solid var(--primary)",
                   borderRadius: "var(--input-radius)",
                   padding: "8px 18px",
-                  background: "var(--accent-purple)",
+                  background: "var(--primary)",
                   color: "white",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -8400,7 +8400,7 @@ export default function VhcDetailsPanel({
                               >
                                 {item.category?.label || item.sectionName}
                               </span>
-                              <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "14px" }}>
+                              <div style={{ fontWeight: 700, color: "var(--primary)", fontSize: "14px" }}>
                                 {item.label}
                               </div>
                               {item.notes ? (
@@ -8443,11 +8443,11 @@ export default function VhcDetailsPanel({
                       {!hasHealthData ? (
                         <div
                           style={{
-                            border: "1px solid var(--accent-purple-surface)",
+                            border: "1px solid var(--accent-surface)",
                             borderRadius: "var(--radius-md)",
                             padding: "20px",
-                            background: "var(--accent-purple-surface)",
-                            color: "var(--accent-purple)",
+                            background: "var(--accent-surface)",
+                            color: "var(--primary)",
                             fontSize: "13px",
                             textAlign: "center",
                           }}
@@ -8697,7 +8697,7 @@ export default function VhcDetailsPanel({
                             >
                               {item.category?.label || item.sectionName}
                             </span>
-                            <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "14px" }}>
+                            <div style={{ fontWeight: 700, color: "var(--primary)", fontSize: "14px" }}>
                               {item.label}
                             </div>
                             {item.notes ? (
@@ -8737,11 +8737,11 @@ export default function VhcDetailsPanel({
                       {!hasHealthData ? (
                         <div
                           style={{
-                            border: "1px solid var(--accent-purple-surface)",
+                            border: "1px solid var(--accent-surface)",
                             borderRadius: "var(--radius-md)",
                             padding: "20px",
-                            background: "var(--accent-purple-surface)",
-                            color: "var(--accent-purple)",
+                            background: "var(--accent-surface)",
+                            color: "var(--primary)",
                             fontSize: "13px",
                             textAlign: "center",
                           }}
@@ -8875,7 +8875,7 @@ export default function VhcDetailsPanel({
                 style={{
                   padding: "10px 16px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--accent-surface)",
                   background: "var(--surface)",
                   color: "var(--info-dark)",
                   fontWeight: 600,
@@ -8926,7 +8926,7 @@ export default function VhcDetailsPanel({
                   minWidth: "220px",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--accent-surface)",
                   background: "var(--surface)",
                   fontSize: "14px",
                   color: "var(--text-primary)",
@@ -8954,7 +8954,7 @@ export default function VhcDetailsPanel({
                 style={{
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--accent-surface)",
                   background: "var(--surface)",
                   color: "var(--info-dark)",
                   fontWeight: 700,
@@ -8985,7 +8985,7 @@ export default function VhcDetailsPanel({
                       });
                     }}
                     style={{
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "1px solid var(--accent-surface)",
                       borderRadius: "var(--radius-pill)",
                       padding: "6px 10px",
                       background: "var(--surface)",
@@ -9023,7 +9023,7 @@ export default function VhcDetailsPanel({
           </div>
 
           {showNewPartForm && (
-            <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "var(--radius-sm)", padding: "16px", background: "var(--surface)" }}>
+            <div style={{ border: "1px solid var(--accent-surface)", borderRadius: "var(--radius-sm)", padding: "16px", background: "var(--surface)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                 <h2 style={{ margin: 0, fontSize: "16px", color: "var(--text-primary)" }}>Add part</h2>
               </div>
@@ -9053,7 +9053,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "1px solid var(--accent-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
                     }}
@@ -9073,7 +9073,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "1px solid var(--accent-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
                     }}
@@ -9090,7 +9090,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "1px solid var(--accent-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
                     }}
@@ -9106,7 +9106,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "1px solid var(--accent-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
                     }}
@@ -9122,7 +9122,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "1px solid var(--accent-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
                       resize: "vertical",
@@ -9142,7 +9142,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "1px solid var(--accent-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
                     }}
@@ -9161,7 +9161,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "1px solid var(--accent-surface)",
                       background: "var(--surface)",
                       color: "var(--text-primary)",
                     }}
@@ -9175,7 +9175,7 @@ export default function VhcDetailsPanel({
                   style={{
                     padding: "10px 16px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--accent-purple-surface)",
+                    border: "1px solid var(--accent-surface)",
                     background: "var(--surface)",
                     color: "var(--info-dark)",
                     fontWeight: 600,
@@ -9205,7 +9205,7 @@ export default function VhcDetailsPanel({
             </div>
           )}
 
-          <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
+          <div style={{ border: "1px solid var(--accent-surface)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
             <div style={{ padding: "10px 12px", background: "var(--info-surface)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
               Search results
             </div>
@@ -9234,13 +9234,13 @@ export default function VhcDetailsPanel({
                           borderBottom: "1px solid var(--info-surface)",
                         }}
                         onMouseEnter={(event) => {
-                          event.currentTarget.style.background = "var(--accent-purple-surface)";
+                          event.currentTarget.style.background = "var(--accent-surface)";
                         }}
                         onMouseLeave={(event) => {
                           event.currentTarget.style.background = "transparent";
                         }}
                       >
-                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--primary)" }}>
                           {part.name || "Part"}
                         </td>
                         <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
@@ -9260,7 +9260,7 @@ export default function VhcDetailsPanel({
             )}
           </div>
 
-          <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
+          <div style={{ border: "1px solid var(--accent-surface)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
             <div style={{ padding: "10px 12px", background: "var(--info-surface)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
               Selected parts
             </div>
@@ -9269,7 +9269,7 @@ export default function VhcDetailsPanel({
                 <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)", marginBottom: "8px" }}>
                   Already added to this VHC item
                 </div>
-                <div style={{ border: "1px solid var(--accent-purple-surface)", borderRadius: "var(--input-radius)", overflow: "hidden" }}>
+                <div style={{ border: "1px solid var(--accent-surface)", borderRadius: "var(--input-radius)", overflow: "hidden" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                     <thead>
                       <tr style={{ background: "var(--surface-light)", color: "var(--info)" }}>
@@ -9289,7 +9289,7 @@ export default function VhcDetailsPanel({
                         const details = partDetails[partKey] || {};
                         return (
                           <tr key={`existing-${part.id}`} style={{ borderBottom: "1px solid var(--info-surface)" }}>
-                            <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                            <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--primary)" }}>
                               {part.part?.name || "Part"}
                             </td>
                             <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
@@ -9369,7 +9369,7 @@ export default function VhcDetailsPanel({
                   <tbody>
                     {selectedParts.map((entry) => (
                       <tr key={entry.part?.id} style={{ borderBottom: "1px solid var(--info-surface)" }}>
-                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--accent-purple)" }}>
+                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--primary)" }}>
                           {entry.part?.name || "Part"}
                         </td>
                         <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
@@ -9461,7 +9461,7 @@ export default function VhcDetailsPanel({
                         marginBottom: "8px",
                         fontSize: "13px",
                         fontWeight: "600",
-                        color: "#666",
+                        color: "var(--text-secondary)",
                       }}
                     >
                       Labour Time (Hours)
@@ -9497,7 +9497,7 @@ export default function VhcDetailsPanel({
                         marginBottom: "8px",
                         fontSize: "13px",
                         fontWeight: "600",
-                        color: "#666",
+                        color: "var(--text-secondary)",
                       }}
                     >
                       Labour Net Cost / Hour (GBP)

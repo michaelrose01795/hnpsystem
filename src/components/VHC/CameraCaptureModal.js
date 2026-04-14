@@ -319,7 +319,7 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
         {/* Camera Selection */}
         {availableCameras.length > 1 && !error && (
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)" }}>
+            <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--primary)" }}>
               Camera:
             </label>
             <select
@@ -329,7 +329,7 @@ export default function CameraCaptureModal({ isOpen, onClose, onCapture, initial
               style={{
                 padding: "8px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-purple-surface)",
+                border: "1px solid var(--accent-surface)",
                 background: "var(--surface)",
                 color: "var(--text)",
                 fontSize: "14px",

@@ -219,7 +219,7 @@ export default function MediaUploadConfirmModal({
               justifyContent: "space-between",
               fontSize: "13px",
             }}>
-              <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>File Name:</span>
+              <span style={{ fontWeight: 600, color: "var(--primary)" }}>File Name:</span>
               <span style={{ color: "var(--text)" }}>{mediaFile.name}</span>
             </div>
             <div style={{
@@ -227,7 +227,7 @@ export default function MediaUploadConfirmModal({
               justifyContent: "space-between",
               fontSize: "13px",
             }}>
-              <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>File Size:</span>
+              <span style={{ fontWeight: 600, color: "var(--primary)" }}>File Size:</span>
               <span style={{ color: "var(--text)" }}>{formatFileSize(mediaFile.size)}</span>
             </div>
             <div style={{
@@ -235,7 +235,7 @@ export default function MediaUploadConfirmModal({
               justifyContent: "space-between",
               fontSize: "13px",
             }}>
-              <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>Type:</span>
+              <span style={{ fontWeight: 600, color: "var(--primary)" }}>Type:</span>
               <span style={{ color: "var(--text)" }}>{mediaFile.type}</span>
             </div>
           </div>
@@ -268,7 +268,7 @@ export default function MediaUploadConfirmModal({
               <div style={{
                 fontSize: "14px",
                 fontWeight: 600,
-                color: "var(--accent-purple)",
+                color: "var(--primary)",
                 marginBottom: "4px",
               }}>
                 {visibleToCustomer ? "👁️ Visible to Customer" : "🔒 Internal Only"}
@@ -287,7 +287,7 @@ export default function MediaUploadConfirmModal({
           <label style={{
             fontSize: "14px",
             fontWeight: 600,
-            color: "var(--accent-purple)",
+            color: "var(--primary)",
             marginBottom: "8px",
             display: "block",
           }}>
@@ -303,7 +303,7 @@ export default function MediaUploadConfirmModal({
               width: "100%",
               padding: "10px 12px",
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--accent-surface)",
               background: "var(--surface)",
               color: "var(--text)",
               fontSize: "13px",
@@ -316,7 +316,7 @@ export default function MediaUploadConfirmModal({
         {/* Upload Progress */}
         {uploading && (
           <div style={{
-            background: "var(--accent-purple-surface)",
+            background: "var(--accent-surface)",
             borderRadius: "var(--radius-sm)",
             padding: "16px",
           }}>
@@ -326,7 +326,7 @@ export default function MediaUploadConfirmModal({
               marginBottom: "8px",
               fontSize: "13px",
               fontWeight: 600,
-              color: "var(--accent-purple)",
+              color: "var(--primary)",
             }}>
               <span>Uploading...</span>
               <span>{uploadProgress}%</span>

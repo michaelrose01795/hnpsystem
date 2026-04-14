@@ -2202,9 +2202,13 @@ export default function Appointments() {
                           {isCheckedIn ? (
                             <span style={{
                               padding: isCompactMobile ? "8px 12px" : "8px 16px",
+                              minWidth: isCompactMobile ? "90px" : "110px",
+                              textAlign: "center",
                               borderRadius: "var(--radius-pill)",
                               fontSize: "13px",
                               fontWeight: "700",
+                              lineHeight: "1",
+                              display: "inline-block",
                               backgroundColor: "var(--success-surface)",
                               color: "var(--success-dark)"
                             }}>
@@ -2219,6 +2223,8 @@ export default function Appointments() {
                               disabled={isCurrentlyCheckingIn}
                               style={{
                                 padding: isCompactMobile ? "8px 12px" : "8px 16px",
+                                minWidth: isCompactMobile ? "90px" : "110px",
+                                minHeight: "unset",
                                 backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--primary)",
                                 color: "white",
                                 border: "none",
@@ -2226,6 +2232,7 @@ export default function Appointments() {
                                 cursor: isCurrentlyCheckingIn ? "not-allowed" : "pointer",
                                 fontSize: "13px",
                                 fontWeight: "700",
+                                lineHeight: "1",
                                 transition: "background-color 0.2s"
                               }}
                               onMouseEnter={(e) => {

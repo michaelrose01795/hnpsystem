@@ -40,24 +40,24 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
   const invalidSet = new Set((invalidPositions || []).map((key) => String(key).toLowerCase()));
   const isFrontActive = activeKey === "front" || activeKey === "nsf" || activeKey === "osf";
   const isRearActive = activeKey === "rear" || activeKey === "nsr" || activeKey === "osr";
-  const unknownFill = "var(--accent-purple)";
+  const unknownFill = "var(--primary)";
   const statusPalette = {
     critical: { fill: "var(--danger)", text: "var(--text-inverse)", label: "var(--danger)" },
     advisory: { fill: "var(--warning)", text: "var(--text-inverse)", label: "var(--warning)" },
     good: { fill: "var(--success)", text: "var(--text-inverse)", label: "var(--success)" },
     unknown: {
-      fill: "rgba(var(--accent-purple-rgb), 0.22)",
+      fill: "rgba(var(--primary-rgb), 0.22)",
       text: "var(--text-primary)",
       label: unknownFill,
     },
   };
-  const selectedAxleFill = "rgba(var(--accent-purple-rgb), 0.14)";
-  const selectedAxleStroke = "rgba(var(--accent-purple-rgb), 0.75)";
+  const selectedAxleFill = "rgba(var(--primary-rgb), 0.14)";
+  const selectedAxleStroke = "rgba(var(--primary-rgb), 0.75)";
 
   const containerStyle = {
     width: "100%",
-    background: palette.surface,
-    borderRadius: "var(--radius-xl)",
+    background: "var(--control-bg)",
+    borderRadius: "var(--section-card-radius)",
     padding: "24px",
     display: "flex",
     flexDirection: "column",
@@ -65,7 +65,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
     alignItems: "center",
     justifyContent: "center",
     color: palette.textPrimary,
-    border: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
+    border: "none",
     boxShadow: "none",
   };
 
@@ -75,14 +75,14 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
     aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
     position: "relative",
     borderRadius: "var(--radius-lg)",
-    backgroundColor: "rgba(var(--accent-purple-rgb), 0.03)",
-    boxShadow: "inset 0 0 0 1px rgba(var(--accent-purple-rgb), 0.18)",
+    backgroundColor: "rgba(var(--primary-rgb), 0.03)",
+    boxShadow: "inset 0 0 0 1px rgba(var(--primary-rgb), 0.18)",
     overflow: "hidden",
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={stageStyle}>
+    <div data-dev-section="1" data-dev-section-key="vhc-brakes-diagram-container" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-diagram" style={containerStyle}>
+      <div data-dev-section="1" data-dev-section-key="vhc-brakes-diagram-stage" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-diagram-container" style={stageStyle}>
         <CarImage
           aria-hidden="true"
           style={{
@@ -180,9 +180,9 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
                   isInvalid
                     ? "var(--danger)"
                     : isActive
-                    ? "var(--accent-purple)"
+                    ? "var(--primary)"
                     : status === "unknown"
-                    ? "rgba(var(--accent-purple-rgb), 0.45)"
+                    ? "rgba(var(--primary-rgb), 0.45)"
                     : colors.fill
                 }
                 strokeWidth={isInvalid ? 3 : isActive ? 3 : 1.5}

@@ -206,29 +206,29 @@ const tabGroupShellStyle = {
   display: "inline-flex",
   gap: "6px",
   padding: "6px",
-  borderRadius: "var(--radius-pill)",
+  borderRadius: "var(--control-radius)",
   border: "none",
-  background: "var(--surface)",
+  background: "var(--tab-container-bg)",
   alignItems: "center",
   flexWrap: "nowrap",
 };
 
 const buildTabPillStyle = (active = false) => ({
   flex: "0 0 auto",
-  borderRadius: "var(--radius-pill)",
-  border: "1px solid transparent",
-  padding: "10px 16px",
-  fontSize: "0.9rem",
+  borderRadius: "var(--control-radius-xs)",
+  border: "none",
+  minHeight: "var(--control-height-xs)",
+  padding: "var(--control-padding-xs)",
+  fontSize: "0.86rem",
   fontWeight: 600,
   cursor: "pointer",
   background: active ? "var(--primary)" : "transparent",
   color: active ? "var(--text-inverse)" : "var(--text-primary)",
-  transition: "all 0.15s ease",
+  transition: "background-color 0.18s ease, color 0.18s ease",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   whiteSpace: "nowrap",
-  minHeight: "38px",
 });
 
 const PadsSection = ({
@@ -244,7 +244,7 @@ const PadsSection = ({
   resetFocus,
   panelStyle,
 }) => (
-  <div style={{ ...sectionPanelBase, ...panelStyle }}>
+  <div data-dev-section="1" data-dev-section-key={`vhc-brakes-pads-${title.toLowerCase().replace(/\s+/g, "-")}`} data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
     <div style={{ display: "flex", alignItems: "center" }}>
       <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
         {title}
@@ -300,8 +300,8 @@ const DiscsSection = ({
 }) => {
   const activeTab = discData.tab || "measurements";
   return (
-    <div style={{ ...sectionPanelBase, ...panelStyle }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+    <div data-dev-section="1" data-dev-section-key={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}`} data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
+      <div data-dev-section="1" data-dev-section-key={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}-toolbar`} data-dev-section-type="toolbar" data-dev-section-parent={`vhc-brakes-discs-${title.toLowerCase().replace(/\s+/g, "-")}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
         <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
           {title}
         </h3>
@@ -384,10 +384,9 @@ const DiscsSection = ({
           onClick={onSwitchToDrum}
           style={{
             ...buildModalButton("ghost"),
-            border: `1px dashed ${palette.accent}`,
+            border: "none",
             color: palette.accent,
-            background: "transparent",
-            padding: "10px 16px",
+            background: "var(--control-bg)",
             marginTop: "8px",
           }}
         >
@@ -405,8 +404,8 @@ const DrumBrakesSection = ({
   sectionPanelBase,
   panelStyle,
 }) => (
-    <div style={{ ...sectionPanelBase, ...panelStyle }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+    <div data-dev-section="1" data-dev-section-key="vhc-brakes-drums" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, ...panelStyle }}>
+      <div data-dev-section="1" data-dev-section-key="vhc-brakes-drums-toolbar" data-dev-section-type="toolbar" data-dev-section-parent="vhc-brakes-drums" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
         <h3 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
           Drum Brakes
         </h3>
@@ -438,10 +437,9 @@ const DrumBrakesSection = ({
               onClick={() => onStatusChange?.(label)}
               style={{
                 ...createVhcButtonStyle(active ? "primary" : "ghost"),
-                padding: "10px 18px",
-                backgroundColor: active ? palette.accent : palette.surface,
-                color: active ? "var(--surface)" : palette.textPrimary,
-                border: active ? "none" : `1px solid ${palette.border}`,
+                backgroundColor: active ? palette.accent : "var(--control-bg)",
+                color: active ? "var(--text-inverse)" : "var(--text-primary)",
+                border: "none",
               }}
             >
               {label}
@@ -646,12 +644,12 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   };
 
   const selectBaseStyle = {
-    padding: "10px 12px",
-    borderRadius: "var(--radius-sm)",
-    border: `1px solid ${palette.border}`,
-    backgroundColor: palette.surface,
-    color: palette.textPrimary,
-    fontSize: "14px",
+    padding: "var(--control-padding)",
+    borderRadius: "var(--control-radius)",
+    border: "none",
+    backgroundColor: "var(--control-bg)",
+    color: "var(--text-primary)",
+    fontSize: "var(--control-font-size)",
     outline: "none",
   };
 
@@ -661,13 +659,15 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
 
   const inputStyle = {
     width: "100%",
-    padding: "10px 12px",
-    borderRadius: "var(--radius-sm)",
-    border: `1px solid ${palette.border}`,
-    backgroundColor: palette.surface,
-    color: palette.textPrimary,
-    fontSize: "14px",
+    minHeight: "var(--control-height)",
+    padding: "var(--control-padding)",
+    borderRadius: "var(--control-radius)",
+    border: "none",
+    backgroundColor: "var(--control-bg)",
+    color: "var(--text-primary)",
+    fontSize: "var(--control-font-size)",
     outline: "none",
+    transition: "background-color 0.18s ease, box-shadow 0.18s ease",
   };
 
   const popupOverlayStyle = {
@@ -690,11 +690,13 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
   };
 
   const enhanceFocus = (event) => {
-    event.target.style.borderColor = palette.accent;
+    event.target.style.backgroundColor = "var(--control-bg-hover)";
+    event.target.style.boxShadow = "var(--control-ring)";
   };
 
   const resetFocus = (event) => {
-    event.target.style.borderColor = palette.border;
+    event.target.style.backgroundColor = "var(--control-bg)";
+    event.target.style.boxShadow = "none";
   };
 
   const updatePadStatus = (category, value) => {
@@ -1000,6 +1002,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       width="1280px"
       hideCloseButton
       onClose={handleClose}
+      sectionKey="vhc-brakes"
       footer={
         <>
           <button type="button" onClick={handleClose} style={buildModalButton("secondary")}>
@@ -1016,9 +1019,13 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
         </>
       }
     >
-      <div style={contentWrapperStyle}>
+      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-brakes-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-body">
 
         <div
+          data-dev-section="1"
+          data-dev-section-key="vhc-brakes-layout"
+          data-dev-section-type="content-card"
+          data-dev-section-parent="vhc-brakes-content"
           style={{
             display: "flex",
             gap: "20px",
@@ -1027,6 +1034,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           }}
         >
           <div
+            data-dev-section="1"
+            data-dev-section-key="vhc-brakes-diagram"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="vhc-brakes-layout"
             style={{
               flex: "0 0 360px",
               display: "flex",
@@ -1050,6 +1061,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
           </div>
 
           <div
+            data-dev-section="1"
+            data-dev-section-key="vhc-brakes-details"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="vhc-brakes-layout"
             style={{
               flex: 1,
               display: "flex",
@@ -1059,7 +1074,7 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
               minHeight: 0,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div data-dev-section="1" data-dev-section-key="vhc-brakes-toolbar" data-dev-section-type="toolbar" data-dev-section-parent="vhc-brakes-details" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
               <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: palette.accent }}>
                 {activeSide === "front" ? "Front Axle Checks" : showDrum ? "Rear Drum Checks" : "Rear Axle Checks"}
               </h2>
@@ -1071,6 +1086,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
             </div>
 
             <div
+              data-dev-section="1"
+              data-dev-section-key="vhc-brakes-sections"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="vhc-brakes-body"
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -1178,8 +1197,12 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                 />
               )}
 
-              <div style={{ ...sectionPanelBase, flex: "1 1 auto", minHeight: 0 }}>
+              <div data-dev-section="1" data-dev-section-key="vhc-brakes-issues" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-sections" style={{ ...sectionPanelBase, flex: "1 1 auto", minHeight: 0 }}>
                 <div
+                  data-dev-section="1"
+                  data-dev-section-key="vhc-brakes-issues-toolbar"
+                  data-dev-section-type="toolbar"
+                  data-dev-section-parent="vhc-brakes-issues"
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -1206,10 +1229,10 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          borderRadius: "var(--radius-sm)",
-                          border: `1px solid ${palette.border}`,
-                          padding: "10px 12px",
-                          background: palette.surface,
+                          borderRadius: "var(--section-card-radius)",
+                          border: "none",
+                          padding: "var(--control-padding)",
+                          background: "var(--control-bg)",
                           cursor: "pointer",
                         }}
                         onClick={() =>

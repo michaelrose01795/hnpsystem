@@ -162,9 +162,14 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
       hideCloseButton
       width="1280px"
       footer={modalFooter}
+      sectionKey="vhc-underside"
     >
-      <div style={contentWrapperStyle}>
+      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-underside-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-underside-body">
         <div
+          data-dev-section="1"
+          data-dev-section-key="vhc-underside-layout"
+          data-dev-section-type="content-card"
+          data-dev-section-parent="vhc-underside-content"
           style={{
             flex: 1,
             display: "flex",
@@ -270,11 +275,11 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                   readOnly={locked}
                   style={inputStyle}
                   onFocus={(e) => {
-                    e.target.style.borderColor = palette.accent;
+                    e.target.style.backgroundColor = "var(--control-bg-hover)"; e.target.style.boxShadow = "var(--control-ring)";
                     e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = palette.border;
+                    e.target.style.backgroundColor = "var(--control-bg)"; e.target.style.boxShadow = "none";
                     e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
                   }}
                 />
@@ -342,7 +347,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                   style={{
                     padding: "16px",
                     borderRadius: "var(--radius-md)",
-                    border: `1px dashed ${palette.border}`,
+                    border: "none",
                     backgroundColor: palette.accentSurface,
                     color: palette.textMuted,
                     fontSize: "13px",
@@ -365,7 +370,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                         gap: "10px",
                         padding: "14px",
                         borderRadius: "var(--radius-md)",
-                        border: `1px solid ${palette.border}`,
+                        border: "none",
                         background: palette.surface,
                       }}
                     >
@@ -385,11 +390,11 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                           readOnly={rowLocked}
                           style={inputStyle}
                           onFocus={(e) => {
-                            e.target.style.borderColor = palette.accent;
+                            e.target.style.backgroundColor = "var(--control-bg-hover)"; e.target.style.boxShadow = "var(--control-ring)";
                             e.target.style.boxShadow = "0 0 0 3px rgba(var(--primary-rgb),0.12)";
                           }}
                           onBlur={(e) => {
-                            e.target.style.borderColor = palette.border;
+                            e.target.style.backgroundColor = "var(--control-bg)"; e.target.style.boxShadow = "none";
                             e.target.style.boxShadow = "inset 0 1px 3px rgba(var(--shadow-rgb),0.05)";
                           }}
                         />
@@ -427,7 +432,7 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
                           style={{
                             ...createVhcButtonStyle("ghost", { disabled: rowLocked }),
                             color: rowLocked ? palette.textMuted : palette.danger,
-                            borderColor: palette.border,
+                            backgroundColor: "var(--control-bg)", boxShadow: "none",
                           }}
                         >
                           Remove

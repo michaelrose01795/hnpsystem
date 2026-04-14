@@ -87,7 +87,8 @@
       "Bash(echo \"exit:$?\")",
       "Bash(git mv:*)",
       "Bash(./node_modules/.bin/vercel dev:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(powershell -Command \"Get-MpPreference | Select-Object -ExpandProperty ExclusionPath\")"
     ],
     "deny": [],
     "ask": []

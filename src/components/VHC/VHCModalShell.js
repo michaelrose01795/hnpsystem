@@ -20,10 +20,11 @@ export default function VHCModalShell({
   lockedMessage = "Authorised",
   lockedOverlay = true,
   overlayStyle = null,
+  sectionKey = "",
 }) {
   useBodyModalLock(isOpen && !inlineMode);
 
-  const closeButtonColor = "var(--accent-purple)";
+  const closeButtonColor = "var(--primary)";
   const isBlockingLocked = locked && lockedOverlay;
   if (!isOpen) return null;
 
@@ -40,6 +41,10 @@ export default function VHCModalShell({
       }
     >
       <div
+        data-dev-section="1"
+        data-dev-section-key={sectionKey ? `${sectionKey}-container` : undefined}
+        data-dev-section-type="content-card"
+        data-dev-section-parent={sectionKey ? sectionKey : undefined}
         style={
           inlineMode
             ? {
@@ -49,11 +54,18 @@ export default function VHCModalShell({
                 height: "auto",
                 maxHeight: "none",
                 minHeight: adaptiveHeight ? "auto" : "calc(100vh - 210px)",
+                border: "none",
               }
             : vhcModalStyles.container({ width, height })
         }
       >
-        <div style={{ ...vhcModalStyles.header, position: "relative", zIndex: 3 }}>
+        <div
+          data-dev-section="1"
+          data-dev-section-key={sectionKey ? `${sectionKey}-header` : undefined}
+          data-dev-section-type="toolbar"
+          data-dev-section-parent={sectionKey ? `${sectionKey}-container` : undefined}
+          style={{ ...vhcModalStyles.header, position: "relative", zIndex: 3, border: "none", ...(inlineMode ? { borderBottom: "none" } : {}) }}
+        >
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <h2 style={vhcModalStyles.headerTitle}>{title}</h2>
             {subtitle ? (
@@ -86,6 +98,10 @@ export default function VHCModalShell({
         </div>
 
         <div
+          data-dev-section="1"
+          data-dev-section-key={sectionKey ? `${sectionKey}-body` : undefined}
+          data-dev-section-type="content-card"
+          data-dev-section-parent={sectionKey ? `${sectionKey}-container` : undefined}
           style={{
             ...vhcModalStyles.body,
             pointerEvents: isBlockingLocked ? "none" : "auto",

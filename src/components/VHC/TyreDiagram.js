@@ -20,10 +20,10 @@ const TYRE_KEYS = [
 
 const statusPalette = {
   unknown: {
-    fill: "rgba(var(--accent-purple-rgb), 0.2)",
+    fill: "rgba(var(--primary-rgb), 0.2)",
     text: "var(--text-primary)",
-    label: "var(--accent-purple)",
-    border: "rgba(var(--accent-purple-rgb), 0.5)",
+    label: "var(--primary)",
+    border: "rgba(var(--primary-rgb), 0.5)",
   },
   danger: {
     fill: "var(--danger)",
@@ -75,15 +75,15 @@ export default function TyreDiagram({
 }) {
   const activeKey = activeTyre?.toLowerCase();
   const invalidTyreSet = new Set((invalidTyres || []).map((key) => String(key).toLowerCase()));
-  const selectedWheelFill = "rgba(var(--accent-purple-rgb), 0.14)";
-  const selectedWheelStroke = "rgba(var(--accent-purple-rgb), 0.75)";
+  const selectedWheelFill = "rgba(var(--primary-rgb), 0.14)";
+  const selectedWheelStroke = "rgba(var(--primary-rgb), 0.75)";
 
   const containerStyle = {
     width: "100%",
-    borderRadius: "var(--radius-xl)",
+    borderRadius: "var(--section-card-radius)",
     padding: "24px",
-    border: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
-    background: palette.surface,
+    border: "none",
+    background: "var(--control-bg)",
     display: "flex",
     flexDirection: "column",
     gap: "20px",
@@ -101,16 +101,16 @@ export default function TyreDiagram({
     margin: 0,
     padding: 0,
     borderRadius: "var(--radius-md)",
-    backgroundColor: "rgba(var(--accent-purple-rgb), 0.03)",
+    backgroundColor: "rgba(var(--primary-rgb), 0.03)",
     display: "grid",
     placeItems: "center",
-    boxShadow: "inset 0 0 0 1px rgba(var(--accent-purple-rgb), 0.18)",
+    boxShadow: "inset 0 0 0 1px rgba(var(--primary-rgb), 0.18)",
     overflow: "hidden",
   };
 
   return (
-    <div style={containerStyle}>
-      <div style={stageStyle}>
+    <div data-dev-section="1" data-dev-section-key="vhc-wheels-diagram-container" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-diagram" style={containerStyle}>
+      <div data-dev-section="1" data-dev-section-key="vhc-wheels-diagram-stage" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-diagram-container" style={stageStyle}>
         <CarImage
           aria-hidden="true"
           style={{
@@ -185,7 +185,7 @@ export default function TyreDiagram({
                   minWidth: `${TYRE_HIT_WIDTH}px`,
                   borderRadius: "var(--radius-pill)",
                   border: `${isInvalid ? 2 : isActive ? 2 : 1.5}px solid ${
-                    isInvalid ? "var(--danger)" : isActive ? "var(--accent-purple)" : colors.border
+                    isInvalid ? "var(--danger)" : isActive ? "var(--primary)" : colors.border
                   }`,
                   background: colors.fill,
                   boxSizing: "border-box",
@@ -230,20 +230,26 @@ export default function TyreDiagram({
       <button
         type="button"
         onClick={onSpareSelect}
+        data-dev-section="1"
+        data-dev-section-key="vhc-wheels-diagram-spare-btn"
+        data-dev-section-type="content-card"
+        data-dev-section-parent="vhc-wheels-diagram-container"
         style={{
-          borderRadius: "var(--radius-md)",
-          border: `1px solid ${invalidSpare ? "var(--danger)" : spareActive ? "var(--accent-purple)" : "rgba(var(--accent-purple-rgb), 0.22)"}`,
-          padding: "8px 18px",
+          borderRadius: "var(--control-radius)",
+          border: "none",
+          minHeight: "var(--control-height-sm)",
+          padding: "var(--control-padding-sm)",
           background: invalidSpare
             ? "var(--danger-surface)"
             : spareActive
-              ? "rgba(var(--accent-purple-rgb), 0.12)"
-              : "rgba(var(--accent-purple-rgb), 0.05)",
-          color: invalidSpare ? "var(--danger)" : spareActive ? "var(--accent-purple)" : palette.textPrimary,
+              ? "var(--primary)"
+              : "var(--control-bg-hover)",
+          color: invalidSpare ? "var(--danger)" : spareActive ? "var(--text-inverse)" : "var(--text-primary)",
           fontWeight: 600,
+          fontSize: "var(--control-font-size)",
           cursor: onSpareSelect ? "pointer" : "default",
           boxShadow: invalidSpare ? "0 0 0 2px var(--danger-surface)" : "none",
-          transition: "transform 0.2s ease",
+          transition: "background-color 0.18s ease, color 0.18s ease",
           zIndex: 4,
         }}
       >

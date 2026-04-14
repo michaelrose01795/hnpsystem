@@ -21,14 +21,17 @@ export const fieldLabelStyle = {
 
 export const inputStyle = {
   width: "100%",
-  padding: "var(--space-2) var(--space-3)",
-  borderRadius: "var(--radius-sm)",
-  border: `1px solid ${palette.border}`,
-  backgroundColor: palette.surface,
-  fontSize: "14px",
-  color: palette.textPrimary,
+  minHeight: "var(--control-height)",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--control-radius)",
+  border: "none",
+  backgroundColor: "var(--control-bg)",
+  fontSize: "var(--control-font-size)",
+  fontWeight: "var(--control-font-weight)",
+  color: "var(--text-primary)",
   outline: "none",
   boxShadow: "none",
+  transition: "background-color 0.18s ease, box-shadow 0.18s ease",
 };
 
 export const statusSelectStyle = {
@@ -58,7 +61,7 @@ export const lockedRowBadgeStyle = (isDeclined) => ({
   fontWeight: 600,
   backgroundColor: isDeclined ? "var(--danger-surface)" : "var(--success-surface)",
   color: isDeclined ? "var(--dangerMain)" : "var(--successMain)",
-  border: `1px solid ${isDeclined ? "var(--danger-border)" : "var(--success-border)"}`,
+  border: "none",
   textTransform: "uppercase",
   letterSpacing: "0.5px",
 });

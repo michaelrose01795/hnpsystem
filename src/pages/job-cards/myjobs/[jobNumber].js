@@ -289,21 +289,18 @@ const normalizeVhcStatus = (value) => {
   return "na";
 };
 
-const VHC_ACTION_BUTTON_BASE = {
-  padding: "10px 16px",
-  borderRadius: "var(--control-radius)",
-  border: "1px solid var(--accent-purple)",
-  fontWeight: 600,
-  fontSize: "13px",
-  transition: "all 0.2s ease",
-};
-
 const getVhcActionButtonStyle = ({ active = false, disabled = false } = {}) => ({
-  ...VHC_ACTION_BUTTON_BASE,
-  backgroundColor: active ? "var(--accent-purple)" : "transparent",
+  minHeight: "unset",
+  padding: "6px 12px",
+  borderRadius: "var(--radius-xs)",
+  border: "none",
+  fontWeight: 600,
+  fontSize: "12px",
+  backgroundColor: active ? "var(--accent-purple)" : "var(--accent-purple-surface)",
   color: active ? "var(--surface)" : "var(--accent-purple)",
   cursor: disabled ? "not-allowed" : "pointer",
   opacity: disabled ? 0.5 : 1,
+  transition: "all 0.18s ease",
 });
 
 const resolveTechStatusLabel = (jobCard, { hasActiveClocking = false } = {}) => {
@@ -2843,7 +2840,7 @@ export default function TechJobDetailPage() {
                       padding: "6px 12px",
                       backgroundColor: "var(--accent-purple-surface)",
                       color: "var(--accent-purple)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "none",
                       borderRadius: "var(--radius-xs)",
                       cursor: clockOutLoading || clockInLoading ? "not-allowed" : "pointer",
                       fontSize: "12px",
@@ -2868,7 +2865,7 @@ export default function TechJobDetailPage() {
                       padding: "6px 12px",
                       backgroundColor: "var(--accent-purple-surface)",
                       color: "var(--accent-purple)",
-                      border: "1px solid var(--accent-purple-surface)",
+                      border: "none",
                       borderRadius: "var(--radius-xs)",
                       cursor: clockInLoading || clockOutLoading ? "not-allowed" : "pointer",
                       fontSize: "12px",
@@ -3290,7 +3287,7 @@ export default function TechJobDetailPage() {
               parentKey="myjob-main-scroll"
               backgroundToken="none"
               shell
-              style={{ display: "flex", flexDirection: "column", gap: "20px", height: "100%" }}
+              className="vhc-section-shell"
             >
               {!activeSection && (showVhcReopenButton ? (
                 <DevLayoutSection
@@ -3298,23 +3295,13 @@ export default function TechJobDetailPage() {
                   sectionKey="myjob-vhc-reopen-banner"
                   sectionType="content-card"
                   parentKey="myjob-tab-vhc"
-                  backgroundToken="layer-section-level-2"
-                  style={{
-                  backgroundColor: "var(--layer-section-level-2)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  padding: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "16px",
-                }}
+                  backgroundToken="section-card-bg"
+                  className="vhc-content-card"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}
                 >
                   <div>
-                    <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
-                      VHC Completed
-                    </h2>
-                    <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: "var(--info)" }}>
+                    <h2 className="vhc-toolbar__title">VHC Completed</h2>
+                    <p className="vhc-toolbar__subtitle" style={{ marginTop: "6px" }}>
                       Vehicle Health Check completed.
                     </p>
                   </div>
@@ -3330,18 +3317,8 @@ export default function TechJobDetailPage() {
                     />
                     <button
                       type="button"
+                      className="vhc-btn"
                       onClick={handleCompleteVhcClick}
-                      style={{
-                        padding: "10px 18px",
-                        borderRadius: "var(--control-radius)",
-                        border: "1px solid var(--accent-purple)",
-                        backgroundColor: "transparent",
-                        color: "var(--accent-purple)",
-                        fontWeight: 600,
-                        fontSize: "13px",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
                     >
                       Reopen VHC
                     </button>
@@ -3355,28 +3332,18 @@ export default function TechJobDetailPage() {
                     sectionKey="myjob-vhc-header"
                     sectionType="toolbar"
                     parentKey="myjob-tab-vhc"
-                    backgroundToken="layer-section-level-3"
-                    style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "16px 20px",
-                    backgroundColor: "var(--layer-section-level-3)",
-                    borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--accent-purple)"
-                  }}
+                    backgroundToken="section-card-bg"
+                    className="vhc-toolbar"
                   >
                     <div>
-                      <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--accent-purple)" }}>
-                        Vehicle Health Check
-                      </h2>
-                      <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "var(--info)" }}>
+                      <h2 className="vhc-toolbar__title">Vehicle Health Check</h2>
+                      <p className="vhc-toolbar__subtitle">
                         Complete mandatory sections to finish VHC
                       </p>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       {saveStatus === "saving" && (
-                        <span style={{ fontSize: "13px", color: "var(--info)" }}>Saving...</span>
+                        <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Saving...</span>
                       )}
                       {saveStatus === "saved" && (
                         <span style={{ fontSize: "13px", color: "var(--success)" }}>Saved</span>
@@ -3386,8 +3353,8 @@ export default function TechJobDetailPage() {
                       )}
                       <button
                         type="button"
+                        className={`vhc-btn${showVhcSummary ? " vhc-btn--active" : ""}`}
                         onClick={() => setShowVhcSummary((prev) => !prev)}
-                        style={getVhcActionButtonStyle({ active: showVhcSummary })}
                       >
                         {showVhcSummary ? "Close VHC summary" : "Show Summary"}
                       </button>
@@ -3398,12 +3365,9 @@ export default function TechJobDetailPage() {
                         return (
                       <button
                         type="button"
+                        className={`vhc-btn${isCompleteActive ? " vhc-btn--active" : ""}`}
                         onClick={handleCompleteVhcClick}
                         disabled={!showVhcReopenButton && !canCompleteVhc}
-                        style={getVhcActionButtonStyle({
-                          active: isCompleteActive,
-                          disabled: isCompleteDisabled,
-                        })}
                         title={
                           showVhcReopenButton
                             ? "Reopen the Vehicle Health Check to make additional changes"
@@ -3422,7 +3386,17 @@ export default function TechJobDetailPage() {
                         <VhcCameraButton
                           jobNumber={jobNumber}
                           userId={dbUserId || user?.id}
-                          buttonStyle={getVhcActionButtonStyle()}
+                          buttonStyle={{
+                            minHeight: "unset",
+                            padding: "6px 12px",
+                            borderRadius: "var(--radius-xs)",
+                            border: "none",
+                            fontWeight: 600,
+                            fontSize: "12px",
+                            background: "var(--accent-purple-surface)",
+                            color: "var(--accent-purple)",
+                            transition: "all 0.18s ease",
+                          }}
                           onUploadComplete={() => {
                             console.log("VHC media uploaded, refreshing job data...");
                             loadJobData();
@@ -3453,142 +3427,68 @@ export default function TechJobDetailPage() {
                         sectionKey="myjob-vhc-mandatory"
                         sectionType="content-card"
                         parentKey="myjob-tab-vhc"
-                        backgroundToken="layer-section-level-1"
-                        style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "var(--radius-sm)", padding: "16px" }}
+                        backgroundToken="section-card-bg"
+                        className="vhc-content-card"
                       >
-                    <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--accent-purple)" }}>
-                      Mandatory Sections
-                    </h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+                    <h3 className="vhc-section-heading">Mandatory Sections</h3>
+                    <div className="vhc-card-grid">
 
                   {/* Wheels & Tyres */}
-                  <div style={{
-                    backgroundColor: "var(--layer-section-level-3)",
-                    border: `2px solid ${getBadgeState(sectionStatus.wheelsTyres).border}`,
-                    borderRadius: "var(--radius-sm)",
-                    padding: "20px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onClick={() => openSection("wheelsTyres")}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.position = "relative";
-                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.zIndex = "0";
-                  }}
+                  <DevLayoutSection
+                    as="div"
+                    sectionKey="myjob-vhc-card-wheels"
+                    sectionType="content-card"
+                    parentKey="myjob-vhc-mandatory"
+                    backgroundToken="control-bg"
+                    className="vhc-card vhc-card--mandatory"
+                    onClick={() => openSection("wheelsTyres")}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
-                        Wheels & Tyres
-                      </h4>
-                      <span style={{
-                        ...getBadgeState(sectionStatus.wheelsTyres),
-                        padding: "4px 12px",
-                        borderRadius: "var(--control-radius)",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>
+                    <div className="vhc-card__header">
+                      <h4 className="vhc-card__title">Wheels & Tyres</h4>
+                      <span className="vhc-badge" style={getBadgeState(sectionStatus.wheelsTyres)}>
                         {sectionStatus.wheelsTyres}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                      Check tread depth, pressure, and condition
-                    </p>
-                  </div>
+                    <p className="vhc-card__description">Check tread depth, pressure, and condition</p>
+                  </DevLayoutSection>
 
                   {/* Brakes & Hubs */}
-                  <div style={{
-                    backgroundColor: "var(--layer-section-level-3)",
-                    border: `2px solid ${getBadgeState(sectionStatus.brakesHubs).border}`,
-                    borderRadius: "var(--radius-sm)",
-                    padding: "20px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onClick={() => openSection("brakesHubs")}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.position = "relative";
-                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.zIndex = "0";
-                  }}
+                  <DevLayoutSection
+                    as="div"
+                    sectionKey="myjob-vhc-card-brakes"
+                    sectionType="content-card"
+                    parentKey="myjob-vhc-mandatory"
+                    backgroundToken="control-bg"
+                    className="vhc-card vhc-card--mandatory"
+                    onClick={() => openSection("brakesHubs")}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
-                        Brakes & Hubs
-                      </h4>
-                      <span style={{
-                        ...getBadgeState(sectionStatus.brakesHubs),
-                        padding: "4px 12px",
-                        borderRadius: "var(--control-radius)",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>
+                    <div className="vhc-card__header">
+                      <h4 className="vhc-card__title">Brakes & Hubs</h4>
+                      <span className="vhc-badge" style={getBadgeState(sectionStatus.brakesHubs)}>
                         {sectionStatus.brakesHubs}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                      Check pads, discs, and brake system
-                    </p>
-                  </div>
+                    <p className="vhc-card__description">Check pads, discs, and brake system</p>
+                  </DevLayoutSection>
 
                   {/* Service Indicator & Under Bonnet */}
-                  <div style={{
-                    backgroundColor: "var(--layer-section-level-3)",
-                    border: `2px solid ${getBadgeState(sectionStatus.serviceIndicator).border}`,
-                    borderRadius: "var(--radius-sm)",
-                    padding: "20px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onClick={() => openSection("serviceIndicator")}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.position = "relative";
-                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.zIndex = "0";
-                  }}
+                  <DevLayoutSection
+                    as="div"
+                    sectionKey="myjob-vhc-card-service"
+                    sectionType="content-card"
+                    parentKey="myjob-vhc-mandatory"
+                    backgroundToken="control-bg"
+                    className="vhc-card vhc-card--mandatory"
+                    onClick={() => openSection("serviceIndicator")}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--accent-purple)" }}>
-                        Service Indicator & Under Bonnet
-                      </h4>
-                      <span style={{
-                        ...getBadgeState(sectionStatus.serviceIndicator),
-                        padding: "4px 12px",
-                        borderRadius: "var(--control-radius)",
-                        fontSize: "11px",
-                        fontWeight: "600",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px"
-                      }}>
+                    <div className="vhc-card__header">
+                      <h4 className="vhc-card__title">Service Indicator & Under Bonnet</h4>
+                      <span className="vhc-badge" style={getBadgeState(sectionStatus.serviceIndicator)}>
                         {sectionStatus.serviceIndicator}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                      Service reminder, oil level, under bonnet items
-                    </p>
-                  </div>
+                    <p className="vhc-card__description">Service reminder, oil level, under bonnet items</p>
+                  </DevLayoutSection>
                 </div>
                       </DevLayoutSection>
 
@@ -3598,148 +3498,79 @@ export default function TechJobDetailPage() {
                 sectionKey="myjob-vhc-additional"
                 sectionType="content-card"
                 parentKey="myjob-tab-vhc"
-                backgroundToken="layer-section-level-1"
-                style={{ backgroundColor: "var(--layer-section-level-1)", borderRadius: "var(--radius-sm)", padding: "16px" }}
+                backgroundToken="section-card-bg"
+                className="vhc-content-card"
               >
-                <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "12px", color: "var(--info)" }}>
+                <h3 className="vhc-section-heading">
                   Additional Checks
-                  <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px", color: "var(--grey-accent)" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px", color: "var(--text-secondary)" }}>
                     (Optional)
                   </span>
                 </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+                <div className="vhc-card-grid">
 
                   {/* External */}
-                  <div style={{
-                    backgroundColor: "var(--layer-section-level-3)",
-                    border: "1px solid var(--accent-purple-surface)",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "20px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onClick={() => openSection("externalInspection")}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.position = "relative";
-                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.zIndex = "0";
-                  }}
+                  <DevLayoutSection
+                    as="div"
+                    sectionKey="myjob-vhc-card-external"
+                    sectionType="content-card"
+                    parentKey="myjob-vhc-additional"
+                    backgroundToken="control-bg"
+                    className="vhc-card"
+                    onClick={() => openSection("externalInspection")}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
-                        External
-                      </h4>
+                    <div className="vhc-card__header">
+                      <h4 className="vhc-card__title">External</h4>
                       {getOptionalCount("externalInspection") > 0 && (
-                        <span style={{
-                          backgroundColor: "var(--info-surface)",
-                          color: "var(--info)",
-                          padding: "4px 12px",
-                          borderRadius: "var(--control-radius)",
-                          fontSize: "11px",
-                          fontWeight: "600"
-                        }}>
+                        <span className="vhc-badge" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
                           {getOptionalCount("externalInspection")} items
                         </span>
                       )}
                     </div>
-                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                      Body, lights, glass, mirrors
-                    </p>
-                  </div>
+                    <p className="vhc-card__description">Body, lights, glass, mirrors</p>
+                  </DevLayoutSection>
 
                   {/* Internal & Electrics */}
-                  <div style={{
-                    backgroundColor: "var(--layer-section-level-3)",
-                    border: "1px solid var(--accent-purple-surface)",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "20px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onClick={() => openSection("internalElectrics")}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.position = "relative";
-                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.zIndex = "0";
-                  }}
+                  <DevLayoutSection
+                    as="div"
+                    sectionKey="myjob-vhc-card-internal"
+                    sectionType="content-card"
+                    parentKey="myjob-vhc-additional"
+                    backgroundToken="control-bg"
+                    className="vhc-card"
+                    onClick={() => openSection("internalElectrics")}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
-                        Internal & Electrics
-                      </h4>
+                    <div className="vhc-card__header">
+                      <h4 className="vhc-card__title">Internal & Electrics</h4>
                       {getOptionalCount("internalElectrics") > 0 && (
-                        <span style={{
-                          backgroundColor: "var(--info-surface)",
-                          color: "var(--info)",
-                          padding: "4px 12px",
-                          borderRadius: "var(--control-radius)",
-                          fontSize: "11px",
-                          fontWeight: "600"
-                        }}>
+                        <span className="vhc-badge" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
                           {getOptionalCount("internalElectrics")} items
                         </span>
                       )}
                     </div>
-                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                      Interior, lights, electrics, controls
-                    </p>
-                  </div>
+                    <p className="vhc-card__description">Interior, lights, electrics, controls</p>
+                  </DevLayoutSection>
 
                   {/* Underside */}
-                  <div style={{
-                    backgroundColor: "var(--layer-section-level-3)",
-                    border: "1px solid var(--accent-purple-surface)",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "20px",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                  onClick={() => openSection("underside")}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.position = "relative";
-                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.zIndex = "0";
-                  }}
+                  <DevLayoutSection
+                    as="div"
+                    sectionKey="myjob-vhc-card-underside"
+                    sectionType="content-card"
+                    parentKey="myjob-vhc-additional"
+                    backgroundToken="control-bg"
+                    className="vhc-card"
+                    onClick={() => openSection("underside")}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                      <h4 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
-                        Underside
-                      </h4>
+                    <div className="vhc-card__header">
+                      <h4 className="vhc-card__title">Underside</h4>
                       {getOptionalCount("underside") > 0 && (
-                        <span style={{
-                          backgroundColor: "var(--info-surface)",
-                          color: "var(--info)",
-                          padding: "4px 12px",
-                          borderRadius: "var(--control-radius)",
-                          fontSize: "11px",
-                          fontWeight: "600"
-                        }}>
+                        <span className="vhc-badge" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
                           {getOptionalCount("underside")} items
                         </span>
                       )}
                     </div>
-                    <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                      Exhaust, suspension, steering, driveshafts
-                    </p>
-                  </div>
+                    <p className="vhc-card__description">Exhaust, suspension, steering, driveshafts</p>
+                  </DevLayoutSection>
                 </div>
               </DevLayoutSection>
                 </>
@@ -3752,18 +3583,13 @@ export default function TechJobDetailPage() {
                   sectionKey="myjob-vhc-summary"
                   sectionType="content-card"
                   parentKey="myjob-tab-vhc"
-                  backgroundToken="layer-section-level-1"
-                  style={{
-                  backgroundColor: "var(--layer-section-level-1)",
-                  border: "1px solid var(--info)",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "20px"
-                }}
+                  backgroundToken="section-card-bg"
+                  className="vhc-content-card vhc-content-card--bordered"
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "600", color: "var(--info)" }}>
+                    <h3 className="vhc-section-heading" style={{ marginBottom: 0 }}>
                       VHC Summary
-                      <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px" }}>
+                      <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px", color: "var(--text-secondary)" }}>
                         Review all items reported across sections
                       </span>
                     </h3>
@@ -3773,33 +3599,17 @@ export default function TechJobDetailPage() {
                     {/* Red Items */}
                     {vhcSummaryItems.red.length > 0 && (
                       <div>
-                        <div style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          marginBottom: "8px",
-                          padding: "8px 12px",
-                          backgroundColor: "var(--danger-surface)",
-                          borderRadius: "var(--radius-xs)"
-                        }}>
-                          <strong style={{ fontSize: "14px", color: "var(--danger)" }}>
+                        <div className="vhc-summary-banner" style={{ backgroundColor: "var(--danger-surface)" }}>
+                          <strong style={{ color: "var(--danger)" }}>
                             Critical Issues ({vhcSummaryItems.red.length})
                           </strong>
                         </div>
                         {vhcSummaryItems.red.map((item, idx) => (
-                          <div key={idx} style={{
-                            padding: "12px 16px",
-                            backgroundColor: "var(--surface)",
-                            borderLeft: "4px solid var(--danger)",
-                            borderRadius: "var(--radius-xs)",
-                            marginBottom: "8px"
-                          }}>
-                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--danger)", marginBottom: "4px" }}>
+                          <div key={idx} className="vhc-summary-item" style={{ borderLeftColor: "var(--danger)" }}>
+                            <div className="vhc-summary-item__section" style={{ color: "var(--danger)" }}>
                               {item.section}
                             </div>
-                            <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
-                              {item.text}
-                            </div>
+                            <div className="vhc-summary-item__text">{item.text}</div>
                           </div>
                         ))}
                       </div>
@@ -3808,33 +3618,17 @@ export default function TechJobDetailPage() {
                     {/* Amber Items */}
                     {vhcSummaryItems.amber.length > 0 && (
                       <div>
-                        <div style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          marginBottom: "8px",
-                          padding: "8px 12px",
-                          backgroundColor: "var(--warning-surface)",
-                          borderRadius: "var(--radius-xs)"
-                        }}>
-                          <strong style={{ fontSize: "14px", color: "var(--warning)" }}>
+                        <div className="vhc-summary-banner" style={{ backgroundColor: "var(--warning-surface)" }}>
+                          <strong style={{ color: "var(--warning)" }}>
                             Advisory Items ({vhcSummaryItems.amber.length})
                           </strong>
                         </div>
                         {vhcSummaryItems.amber.map((item, idx) => (
-                          <div key={idx} style={{
-                            padding: "12px 16px",
-                            backgroundColor: "var(--surface)",
-                            borderLeft: "4px solid var(--warning)",
-                            borderRadius: "var(--radius-xs)",
-                            marginBottom: "8px"
-                          }}>
-                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--warning)", marginBottom: "4px" }}>
+                          <div key={idx} className="vhc-summary-item" style={{ borderLeftColor: "var(--warning)" }}>
+                            <div className="vhc-summary-item__section" style={{ color: "var(--warning)" }}>
                               {item.section}
                             </div>
-                            <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
-                              {item.text}
-                            </div>
+                            <div className="vhc-summary-item__text">{item.text}</div>
                           </div>
                         ))}
                       </div>
@@ -3843,46 +3637,31 @@ export default function TechJobDetailPage() {
                     {/* Green Items (Toggle) */}
                     {vhcSummaryItems.green.length > 0 && (
                       <div>
-                        <div style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          marginBottom: "8px",
-                          padding: "8px 12px",
-                          backgroundColor: "var(--success-surface)",
-                          borderRadius: "var(--radius-xs)",
-                          cursor: "pointer"
-                        }}
-                        onClick={() => setShowGreenItems(!showGreenItems)}
+                        <div
+                          className="vhc-summary-banner"
+                          style={{ backgroundColor: "var(--success-surface)", cursor: "pointer" }}
+                          onClick={() => setShowGreenItems(!showGreenItems)}
                         >
-                          <strong style={{ fontSize: "14px", color: "var(--success)" }}>
+                          <strong style={{ color: "var(--success)" }}>
                             OK Items ({vhcSummaryItems.green.length})
                           </strong>
-                          <span style={{ marginLeft: "auto", fontSize: "12px", color: "var(--info)" }}>
+                          <span style={{ marginLeft: "auto", fontSize: "12px", color: "var(--text-secondary)" }}>
                             {showGreenItems ? "Hide" : "Show"}
                           </span>
                         </div>
                         {showGreenItems && vhcSummaryItems.green.map((item, idx) => (
-                          <div key={idx} style={{
-                            padding: "12px 16px",
-                            backgroundColor: "var(--surface)",
-                            borderLeft: "4px solid var(--success)",
-                            borderRadius: "var(--radius-xs)",
-                            marginBottom: "8px"
-                          }}>
-                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--success)", marginBottom: "4px" }}>
+                          <div key={idx} className="vhc-summary-item" style={{ borderLeftColor: "var(--success)" }}>
+                            <div className="vhc-summary-item__section" style={{ color: "var(--success)" }}>
                               {item.section}
                             </div>
-                            <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
-                              {item.text}
-                            </div>
+                            <div className="vhc-summary-item__text">{item.text}</div>
                           </div>
                         ))}
                       </div>
                     )}
 
                     {vhcSummaryItems.red.length === 0 && vhcSummaryItems.amber.length === 0 && vhcSummaryItems.green.length === 0 && (
-                      <p style={{ margin: 0, fontSize: "14px", color: "var(--info)", textAlign: "center", padding: "20px" }}>
+                      <p style={{ margin: 0, fontSize: "14px", color: "var(--text-secondary)", textAlign: "center", padding: "20px" }}>
                         No items reported yet. Complete the VHC sections to add items.
                       </p>
                     )}
@@ -3894,69 +3673,117 @@ export default function TechJobDetailPage() {
 
               {/* VHC Modals */}
               {activeSection === "wheelsTyres" && (
-                <WheelsTyresDetailsModal
-                  isOpen={true}
-                  inlineMode
-                  onClose={(data) => handleSectionDismiss("wheelsTyres", data)}
-                  onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
-                  initialData={vhcData.wheelsTyres}
-                  isReopenMode={isReopenMode}
-                />
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-vhc-modal-wheels"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-vhc"
+                  backgroundToken="surface"
+                >
+                  <WheelsTyresDetailsModal
+                    isOpen={true}
+                    inlineMode
+                    onClose={(data) => handleSectionDismiss("wheelsTyres", data)}
+                    onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
+                    initialData={vhcData.wheelsTyres}
+                    isReopenMode={isReopenMode}
+                  />
+                </DevLayoutSection>
               )}
 
               {activeSection === "brakesHubs" && (
-                <BrakesHubsDetailsModal
-                  isOpen={true}
-                  inlineMode
-                  onClose={(data) => handleSectionDismiss("brakesHubs", data)}
-                  onComplete={(data) => handleSectionComplete("brakesHubs", data)}
-                  initialData={vhcData.brakesHubs}
-                  isReopenMode={isReopenMode}
-                />
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-vhc-modal-brakes"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-vhc"
+                  backgroundToken="surface"
+                >
+                  <BrakesHubsDetailsModal
+                    isOpen={true}
+                    inlineMode
+                    onClose={(data) => handleSectionDismiss("brakesHubs", data)}
+                    onComplete={(data) => handleSectionComplete("brakesHubs", data)}
+                    initialData={vhcData.brakesHubs}
+                    isReopenMode={isReopenMode}
+                  />
+                </DevLayoutSection>
               )}
 
               {activeSection === "serviceIndicator" && (
-                <ServiceIndicatorDetailsModal
-                  isOpen={true}
-                  inlineMode
-                  onClose={(data) => handleSectionDismiss("serviceIndicator", data)}
-                  onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
-                  initialData={vhcData.serviceIndicator}
-                  isReopenMode={isReopenMode}
-                />
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-vhc-modal-service"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-vhc"
+                  backgroundToken="surface"
+                >
+                  <ServiceIndicatorDetailsModal
+                    isOpen={true}
+                    inlineMode
+                    onClose={(data) => handleSectionDismiss("serviceIndicator", data)}
+                    onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
+                    initialData={vhcData.serviceIndicator}
+                    isReopenMode={isReopenMode}
+                  />
+                </DevLayoutSection>
               )}
 
               {activeSection === "externalInspection" && (
-                <ExternalDetailsModal
-                  isOpen={true}
-                  inlineMode
-                  onClose={(data) => handleSectionDismiss("externalInspection", data)}
-                  onComplete={(data) => handleSectionComplete("externalInspection", data)}
-                  initialData={vhcData.externalInspection}
-                  isReopenMode={isReopenMode}
-                />
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-vhc-modal-external"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-vhc"
+                  backgroundToken="surface"
+                >
+                  <ExternalDetailsModal
+                    isOpen={true}
+                    inlineMode
+                    onClose={(data) => handleSectionDismiss("externalInspection", data)}
+                    onComplete={(data) => handleSectionComplete("externalInspection", data)}
+                    initialData={vhcData.externalInspection}
+                    isReopenMode={isReopenMode}
+                  />
+                </DevLayoutSection>
               )}
 
               {activeSection === "internalElectrics" && (
-                <InternalElectricsDetailsModal
-                  isOpen={true}
-                  inlineMode
-                  onClose={(data) => handleSectionDismiss("internalElectrics", data)}
-                  onComplete={(data) => handleSectionComplete("internalElectrics", data)}
-                  initialData={vhcData.internalElectrics}
-                  isReopenMode={isReopenMode}
-                />
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-vhc-modal-internal"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-vhc"
+                  backgroundToken="surface"
+                >
+                  <InternalElectricsDetailsModal
+                    isOpen={true}
+                    inlineMode
+                    onClose={(data) => handleSectionDismiss("internalElectrics", data)}
+                    onComplete={(data) => handleSectionComplete("internalElectrics", data)}
+                    initialData={vhcData.internalElectrics}
+                    isReopenMode={isReopenMode}
+                  />
+                </DevLayoutSection>
               )}
 
               {activeSection === "underside" && (
-                <UndersideDetailsModal
-                  isOpen={true}
-                  inlineMode
-                  onClose={(data) => handleSectionDismiss("underside", data)}
-                  onComplete={(data) => handleSectionComplete("underside", data)}
-                  initialData={vhcData.underside}
-                  isReopenMode={isReopenMode}
-                />
+                <DevLayoutSection
+                  as="div"
+                  sectionKey="myjob-vhc-modal-underside"
+                  sectionType="content-card"
+                  parentKey="myjob-tab-vhc"
+                  backgroundToken="surface"
+                >
+                  <UndersideDetailsModal
+                    isOpen={true}
+                    inlineMode
+                    onClose={(data) => handleSectionDismiss("underside", data)}
+                    onComplete={(data) => handleSectionComplete("underside", data)}
+                    initialData={vhcData.underside}
+                    isReopenMode={isReopenMode}
+                  />
+                </DevLayoutSection>
               )}
             </DevLayoutSection>
           )}

@@ -102,7 +102,7 @@ export const VhcItemCell = ({ vhcItem, locationLabel, showOnlyPartIndex = false,
           style={{
             fontWeight: 700,
             fontSize: "14px",
-            color: "var(--accent-purple)",
+            color: "var(--primary)",
             marginTop: "2px",
           }}
         >
@@ -267,7 +267,7 @@ export const PartRowCells = ({ part, showActions = false, onAction }) => {
 
   return (
     <>
-      <td style={{ padding: "12px 16px", color: "var(--accent-purple)", fontWeight: 600 }}>
+      <td style={{ padding: "12px 16px", color: "var(--primary)", fontWeight: 600 }}>
         {partData.name || "—"}
       </td>
       <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>

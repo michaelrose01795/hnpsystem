@@ -423,7 +423,7 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
                 borderRadius: "var(--radius-xs)",
                 outline: "none",
                 appearance: "none",
-                background: "var(--accent-purple-surface)",
+                background: "var(--accent-surface)",
               }}
             />
           </div>
@@ -435,7 +435,7 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
               <div style={{
                 fontSize: "13px",
                 fontWeight: 600,
-                color: "var(--accent-purple)",
+                color: "var(--primary)",
                 marginBottom: "8px",
                 display: "flex",
                 justifyContent: "space-between",
@@ -462,7 +462,7 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
               <div style={{
                 fontSize: "13px",
                 fontWeight: 600,
-                color: "var(--accent-purple)",
+                color: "var(--primary)",
                 marginBottom: "8px",
                 display: "flex",
                 justifyContent: "space-between",
@@ -490,16 +490,16 @@ export default function VideoEditorModal({ isOpen, videoFile, onSave, onCancel, 
             display: "flex",
             justifyContent: "space-between",
             padding: "12px",
-            background: "var(--accent-purple-surface)",
+            background: "var(--accent-surface)",
             borderRadius: "var(--radius-xs)",
             fontSize: "13px",
           }}>
             <div>
-              <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>Trimmed Duration: </span>
+              <span style={{ fontWeight: 600, color: "var(--primary)" }}>Trimmed Duration: </span>
               <span style={{ color: "var(--text)" }}>{formatTime(getTrimmedDuration())}</span>
             </div>
             <div>
-              <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>Audio: </span>
+              <span style={{ fontWeight: 600, color: "var(--primary)" }}>Audio: </span>
               <span style={{ color: isMuted ? "var(--danger)" : "var(--success)" }}>
                 {isMuted ? "Muted" : "Enabled"}
               </span>

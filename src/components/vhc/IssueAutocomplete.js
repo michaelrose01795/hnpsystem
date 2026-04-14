@@ -255,7 +255,7 @@ export default function IssueAutocomplete({
             results.map((suggestion, index) => {
               const isActive = index === activeIndex;
               const parts = buildHighlightParts(suggestion, query);
-              const highlightColor = "var(--accent-purple)";
+              const highlightColor = "var(--primary)";
 
               return (
                 <button
@@ -268,7 +268,7 @@ export default function IssueAutocomplete({
                   onMouseEnter={() => setActiveIndex(index)}
                   style={{
                     ...rowStyle,
-                    backgroundColor: isActive ? "var(--accent-purple-surface)" : "transparent",
+                    backgroundColor: isActive ? "var(--accent-surface)" : "transparent",
                   }}
                 >
                   {parts.map((part, partIndex) =>

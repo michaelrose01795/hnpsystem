@@ -97,7 +97,7 @@ export default function PrePickLocationModal({
               marginBottom: "8px",
               fontSize: "14px",
               fontWeight: 600,
-              color: "var(--accent-purple)",
+              color: "var(--primary)",
             }}
           >
             Pre-Pick Location
@@ -112,9 +112,9 @@ export default function PrePickLocationModal({
               width: "100%",
               padding: "12px",
               borderRadius: "var(--radius-xs)",
-              border: `1px solid ${error ? "var(--danger)" : "var(--accent-purple-surface)"}`,
+              border: `1px solid ${error ? "var(--danger)" : "var(--accent-surface)"}`,
               background: "var(--surface)",
-              color: "var(--accent-purple)",
+              color: "var(--primary)",
               fontWeight: 500,
               fontSize: "14px",
               cursor: "pointer",

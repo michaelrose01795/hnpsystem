@@ -214,7 +214,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 justifyContent: "space-between",
                 alignItems: "center",
                 borderRadius: "var(--radius-sm)",
-                border: `1px solid ${palette.border}`,
+                border: "none",
                 padding: "10px 12px",
                 background: palette.surface,
                 gap: "10px",
@@ -353,9 +353,14 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
       hideCloseButton
       width="1280px"
       footer={footer}
+      sectionKey="vhc-service"
     >
-      <div style={contentWrapperStyle}>
+      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-service-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-body">
         <div
+          data-dev-section="1"
+          data-dev-section-key="vhc-service-layout"
+          data-dev-section-type="content-card"
+          data-dev-section-parent="vhc-service-content"
           style={{
             flex: 1,
             display: "grid",
@@ -369,7 +374,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               Complete all highlighted sections to continue.
             </div>
           ) : null}
-          <div style={showValidation && missingServiceChoice ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
+          <div data-dev-section="1" data-dev-section-key="vhc-service-reminder" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={showValidation && missingServiceChoice ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Service Reminder
             </h3>
@@ -384,16 +389,16 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     type="button"
                     onClick={() => setServiceChoice(option.key)}
                     style={{
-                      borderRadius: "var(--radius-md)",
-                      padding: "14px 16px",
-                      border: `1px solid ${isActive ? toneColor : palette.border}`,
-                      background: isActive ? toneColor : palette.surface,
-                      color: isActive ? "var(--text-inverse)" : palette.textPrimary,
+                      borderRadius: "var(--control-radius)",
+                      padding: "var(--control-padding)",
+                      border: "none",
+                      background: isActive ? toneColor : "var(--control-bg)",
+                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
                       fontWeight: 600,
-                      fontSize: "14px",
+                      fontSize: "var(--control-font-size)",
                       textAlign: "left",
                       cursor: "pointer",
-                      transition: "all 0.2s ease",
+                      transition: "background-color 0.18s ease, color 0.18s ease",
                     }}
                   >
                     {option.label}
@@ -408,7 +413,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             />
           </div>
 
-          <div style={showValidation && missingOilStatus ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
+          <div data-dev-section="1" data-dev-section-key="vhc-service-oil" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={showValidation && missingOilStatus ? { ...cardShellStyle, ...requiredCardStyle } : cardShellStyle}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Oil Level
             </h3>
@@ -425,14 +430,14 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     type="button"
                     onClick={() => setOilStatus(option)}
                     style={{
-                      padding: "12px 20px",
-                      borderRadius: "var(--radius-pill)",
-                      border: `1px solid ${isActive ? optionBorder : palette.border}`,
-                      background: isActive ? optionBorder : palette.surface,
-                      color: isActive ? "var(--text-inverse)" : palette.textPrimary,
+                      padding: "var(--control-padding)",
+                      borderRadius: "var(--control-radius)",
+                      border: "none",
+                      background: isActive ? optionBorder : "var(--control-bg)",
+                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
                       fontWeight: 600,
                       cursor: "pointer",
-                      transition: "all 0.2s ease",
+                      transition: "background-color 0.18s ease, color 0.18s ease",
                     }}
                   >
                     {option}
@@ -447,11 +452,15 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             />
           </div>
 
-          <div style={{ ...cardShellStyle, gap: "16px" }}>
+          <div data-dev-section="1" data-dev-section-key="vhc-service-underbonnet" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-layout" style={{ ...cardShellStyle, gap: "16px" }}>
             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
               Under Bonnet Items
             </h3>
             <div
+              data-dev-section="1"
+              data-dev-section-key="vhc-service-underbonnet-grid"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="vhc-service-underbonnet"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
@@ -473,16 +482,17 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     type="button"
                     onClick={() => openConcernFor(item)}
                     style={{
-                      padding: "12px",
-                      borderRadius: "var(--radius-md)",
-                      border: `1px solid ${palette.border}`,
-                      background: palette.surface,
-                      color: palette.textPrimary,
+                      padding: "var(--control-padding)",
+                      borderRadius: "var(--section-card-radius)",
+                      border: "none",
+                      background: "var(--control-bg)",
+                      color: "var(--text-primary)",
                       fontWeight: 600,
-                      fontSize: "13px",
+                      fontSize: "var(--control-font-size)",
                       textAlign: "left",
                       position: "relative",
                       cursor: "pointer",
+                      transition: "background-color 0.18s ease",
                     }}
                   >
                     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -526,6 +536,10 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
           }}
         >
           <div
+            data-dev-section="1"
+            data-dev-section-key="vhc-service-concern-popup"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="vhc-service-layout"
             style={{
               ...popupCardStyles,
               width: "min(520px, 92vw)",
@@ -539,7 +553,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               overflow: "visible",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div data-dev-section="1" data-dev-section-key="vhc-service-concern-header" data-dev-section-type="toolbar" data-dev-section-parent="vhc-service-concern-popup" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
                 {activeConcernLabel}
               </h3>
@@ -557,7 +571,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div data-dev-section="1" data-dev-section-key="vhc-service-concern-form" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-concern-popup" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <label style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: palette.textMuted }}>
                 Issue
               </label>
@@ -572,7 +586,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                   style={{
                     width: "100%",
                     borderRadius: "var(--radius-md)",
-                    border: `1px solid ${palette.border}`,
+                    border: "none",
                     padding: "12px",
                     fontSize: "14px",
                     color: palette.textPrimary,
@@ -590,7 +604,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                   placeholder="Describe concern..."
                   inputStyle={{
                     borderRadius: "var(--radius-md)",
-                    border: `1px solid ${palette.border}`,
+                    border: "none",
                     padding: "12px",
                     fontSize: "14px",
                     color: palette.textPrimary,
@@ -608,7 +622,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                 className="vhc-concern-dropdown"
                 style={{
                   borderRadius: "var(--radius-md)",
-                  border: `1px solid ${palette.border}`,
+                  border: "none",
                   padding: "10px 12px",
                   background: palette.surface,
                   fontSize: "14px",
@@ -633,6 +647,10 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
             </div>
 
             <div
+              data-dev-section="1"
+              data-dev-section-key="vhc-service-concern-entries"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="vhc-service-concern-popup"
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -647,7 +665,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                   style={{
                     padding: "16px",
                     borderRadius: "var(--radius-md)",
-                    border: `1px dashed ${palette.border}`,
+                    border: "none",
                     backgroundColor: palette.accentSurface,
                     color: palette.textMuted,
                     fontSize: "13px",
@@ -665,7 +683,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                       gap: "12px",
                       padding: "16px",
                       borderRadius: "var(--radius-lg)",
-                      border: `1px solid ${palette.border}`,
+                      border: "none",
                       background: palette.surface,
                     }}
                   >
@@ -678,7 +696,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                         style={{
                           borderRadius: "var(--radius-pill)",
                           padding: "6px 12px",
-                          border: `1px solid ${palette.border}`,
+                          border: "none",
                           background: palette.surfaceAlt,
                           fontSize: "13px",
                           fontWeight: 600,
@@ -699,7 +717,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                         rows={3}
                         style={{
                           borderRadius: "var(--radius-md)",
-                          border: `1px solid ${palette.border}`,
+                          border: "none",
                           padding: "10px 12px",
                           fontSize: "14px",
                           color: palette.textPrimary,
@@ -716,7 +734,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                         placeholder="Describe concern..."
                         inputStyle={{
                           borderRadius: "var(--radius-md)",
-                          border: `1px solid ${palette.border}`,
+                          border: "none",
                           padding: "10px 12px",
                           fontSize: "14px",
                           color: palette.textPrimary,
@@ -727,7 +745,7 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
                     <button
                       type="button"
                       onClick={() => deleteConcern(concern._globalIndex)}
-                      style={{ ...createVhcButtonStyle("ghost"), color: palette.danger, borderColor: palette.border }}
+                      style={{ ...createVhcButtonStyle("ghost"), color: palette.danger, border: "none" }}
                     >
                       Remove
                     </button>

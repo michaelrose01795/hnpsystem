@@ -59,45 +59,44 @@ export const vhcCardStates = {
   pending: {
     label: "Not Started",
     background: "var(--surface-light)",
-    color: "var(--grey-accent-dark)",
+    color: "var(--text-secondary)",
     border: "var(--border)",
   },
 };
 
 export const createVhcButtonStyle = (variant = "primary", { disabled = false } = {}) => {
   const base = {
-    padding: "var(--space-3) var(--space-lg)",
-    borderRadius: radii.pill,
-    fontSize: "14px",
+    minHeight: "var(--control-height-sm)",
+    padding: "var(--control-padding-sm)",
+    borderRadius: "var(--control-radius)",
+    fontSize: "var(--control-font-size)",
     fontWeight: "600",
     border: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    transition: "transform 0.2s ease, background-color 0.2s ease",
+    transition: "background-color 0.18s ease, color 0.18s ease, opacity 0.18s ease",
     boxShadow: "none",
+    opacity: disabled ? 0.5 : 1,
   };
 
   if (variant === "secondary") {
     return {
       ...base,
-      backgroundColor: palette.surface,
+      backgroundColor: "var(--control-bg)",
       color: palette.accent,
-      border: `1px solid ${palette.accent}`,
     };
   }
 
   if (variant === "ghost") {
     return {
       ...base,
-      backgroundColor: "transparent",
+      backgroundColor: "var(--control-bg)",
       color: palette.accent,
-      border: `1px solid ${palette.border}`,
-      boxShadow: "none",
     };
   }
 
   return {
     ...base,
-    backgroundColor: disabled ? palette.surfaceAlt : palette.accent,
+    backgroundColor: disabled ? "var(--control-bg)" : palette.accent,
     color: disabled ? palette.textMuted : palette.onAccent,
   };
 };
@@ -137,7 +136,7 @@ export const vhcModalStyles = {
     maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
     background: palette.modalGradient,
     borderRadius: radii.xl,
-    border: `1px solid ${palette.border}`,
+    border: "none",
     boxShadow: "none",
     display: "flex",
     flexDirection: "column",
@@ -146,7 +145,7 @@ export const vhcModalStyles = {
   }),
   header: {
     padding: "var(--space-6) var(--space-lg) var(--space-3)",
-    borderBottom: `1px solid ${palette.border}`,
+    borderBottom: "none",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -155,7 +154,7 @@ export const vhcModalStyles = {
   headerTitle: {
     fontSize: "20px",
     fontWeight: "700",
-    color: palette.accent,
+    color: "var(--primary)",
     margin: 0,
   },
   headerSubtitle: {
@@ -174,11 +173,11 @@ export const vhcModalStyles = {
   },
   footer: {
     padding: "var(--space-md) var(--space-lg)",
-    borderTop: `1px solid ${palette.border}`,
+    borderTop: "none",
     display: "flex",
     justifyContent: "flex-end",
     gap: "var(--space-3)",
-    backgroundColor: palette.surface,
+    backgroundColor: "transparent",
   },
 };
 
@@ -194,9 +193,9 @@ export const vhcModalContentStyles = {
     justifyContent: "space-between",
     alignItems: "center",
     padding: "var(--space-md) var(--space-6)",
-    borderRadius: radii.lg,
-    border: `1px solid ${palette.border}`,
-    background: palette.accentSurface,
+    borderRadius: "var(--section-card-radius)",
+    border: "none",
+    background: "var(--control-bg)",
     boxShadow: "none",
   },
   summaryTextBlock: {
@@ -226,12 +225,12 @@ export const vhcModalContentStyles = {
     alignItems: "center",
     gap: "var(--space-1)",
     padding: "var(--space-1) var(--space-3)",
-    borderRadius: radii.pill,
+    borderRadius: "var(--radius-pill)",
     fontSize: "12px",
     fontWeight: 600,
-    backgroundColor: palette.accentSurface,
-    border: `1px solid ${palette.border}`,
-    color: palette.accent,
+    backgroundColor: "var(--accent-surface)",
+    border: "none",
+    color: "var(--primary)",
   },
   cardGrid: {
     display: "grid",
@@ -241,14 +240,13 @@ export const vhcModalContentStyles = {
   baseCard: {
     position: "relative",
     textAlign: "left",
-    border: `1px solid ${palette.border}`,
-    borderColor: palette.border,
-    backgroundColor: palette.surface,
-    borderRadius: radii.lg,
+    border: "none",
+    backgroundColor: "var(--control-bg)",
+    borderRadius: "var(--section-card-radius)",
     padding: "var(--space-6)",
     boxShadow: "none",
     cursor: "pointer",
-    transition: "transform 0.2s ease, border-color 0.2s ease",
+    transition: "transform 0.2s ease, background-color 0.2s ease",
     display: "flex",
     flexDirection: "column",
     gap: "var(--space-3)",
@@ -257,7 +255,7 @@ export const vhcModalContentStyles = {
   baseCardHover: {
     transform: "translateY(-3px)",
     boxShadow: "none",
-    borderColor: palette.accent,
+    backgroundColor: "var(--control-bg-hover)",
   },
 };
 

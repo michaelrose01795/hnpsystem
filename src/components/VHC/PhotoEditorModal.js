@@ -306,7 +306,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
         }}>
           {/* Tools */}
           <div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "8px" }}>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--primary)", marginBottom: "8px" }}>
               Tool
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -321,7 +321,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                   style={{
                     padding: "10px",
                     borderRadius: "var(--radius-xs)",
-                    border: `2px solid ${tool === t.id ? "var(--primary)" : "var(--accent-purple-surface)"}`,
+                    border: `2px solid ${tool === t.id ? "var(--primary)" : "var(--accent-surface)"}`,
                     background: tool === t.id ? "var(--primary-surface)" : "var(--surface)",
                     color: tool === t.id ? "var(--primary)" : "var(--text)",
                     fontSize: "13px",
@@ -342,7 +342,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
           {/* Color */}
           {tool !== "eraser" && (
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "8px" }}>
+              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--primary)", marginBottom: "8px" }}>
                 Color
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
@@ -355,7 +355,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                       height: "32px",
                       borderRadius: "var(--radius-xs)",
                       background: c,
-                      border: color === c ? "3px solid var(--primary)" : "1px solid var(--accent-purple-surface)",
+                      border: color === c ? "3px solid var(--primary)" : "1px solid var(--accent-surface)",
                       cursor: "pointer",
                     }}
                     title={c}
@@ -371,7 +371,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                   height: "36px",
                   marginTop: "8px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--accent-surface)",
                   cursor: "pointer",
                 }}
               />
@@ -380,7 +380,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
 
           {/* Line Width */}
           <div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "8px" }}>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--primary)", marginBottom: "8px" }}>
               {tool === "eraser" ? "Eraser Size" : "Line Width"}: {lineWidth}px
             </div>
             <input
@@ -404,7 +404,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 flex: 1,
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-purple-surface)",
+                border: "1px solid var(--accent-surface)",
                 background: "var(--surface)",
                 color: historyStep <= 0 ? "var(--info)" : "var(--text)",
                 fontSize: "13px",
@@ -421,7 +421,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 flex: 1,
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-purple-surface)",
+                border: "1px solid var(--accent-surface)",
                 background: "var(--surface)",
                 color: historyStep >= history.length - 1 ? "var(--info)" : "var(--text)",
                 fontSize: "13px",

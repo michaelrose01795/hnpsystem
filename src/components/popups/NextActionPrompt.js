@@ -114,7 +114,7 @@ export default function NextActionPrompt() {
           padding: "8px 16px",
           borderRadius: "var(--radius-md)",
           border: "none",
-          background: "var(--danger)",
+          background: "var(--primary)",
           color: "white",
           fontWeight: 700,
           fontSize: "0.85rem",
@@ -124,7 +124,6 @@ export default function NextActionPrompt() {
           cursor: "pointer",
         }}
       >
-        <span role="img" aria-label="Next action">🔔</span>
         {buttonLabel}
       </button>
 

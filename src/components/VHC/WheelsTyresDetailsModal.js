@@ -1,5 +1,5 @@
 // file location: src/components/VHC/WheelsTyresDetailsModal.js
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
 import themeConfig, {
@@ -179,13 +179,16 @@ const buildNormalizedTyres = (source = {}) => {
 
 const baseInputStyle = {
   width: "100%",
-  padding: "10px 12px",
-  borderRadius: "var(--radius-sm)",
-  border: `1px solid ${palette.border}`,
-  backgroundColor: palette.surface,
-  fontSize: "14px",
-  color: palette.textPrimary,
+  minHeight: "var(--control-height)",
+  padding: "var(--control-padding)",
+  borderRadius: "var(--control-radius)",
+  border: "none",
+  backgroundColor: "var(--control-bg)",
+  fontSize: "var(--control-font-size)",
+  fontWeight: "var(--control-font-weight)",
+  color: "var(--text-primary)",
   outline: "none",
+  transition: "background-color 0.18s ease, box-shadow 0.18s ease",
 };
 
 const dropdownFieldStyle = {
@@ -196,26 +199,32 @@ const dropdownFieldStyle = {
 };
 
 const pillButton = ({ active = false } = {}) => ({
-  padding: "10px 18px",
-  borderRadius: "var(--radius-pill)",
-  border: `1px solid ${active ? palette.accent : palette.border}`,
-  background: active ? palette.accent : palette.surface,
-  color: active ? "var(--surface)" : palette.textPrimary,
+  minHeight: "var(--control-height-sm)",
+  padding: "var(--control-padding-sm)",
+  borderRadius: "var(--control-radius)",
+  border: "none",
+  background: active ? "var(--primary)" : "var(--control-bg)",
+  color: active ? "var(--text-inverse)" : "var(--text-primary)",
+  fontSize: "var(--control-font-size)",
   fontWeight: 600,
   cursor: "pointer",
+  transition: "background-color 0.18s ease, color 0.18s ease",
 });
 
 const sectionCardStyle = {
   ...vhcModalContentStyles.baseCard,
   cursor: "default",
   gap: "16px",
+  border: "none",
+  backgroundColor: "var(--control-bg)",
+  borderRadius: "var(--section-card-radius)",
 };
 
 const concernBadge = (color) => ({
   ...vhcModalContentStyles.badge,
   backgroundColor: color.background,
   color: color.text,
-  border: `1px solid ${color.border}`,
+  border: "none",
 });
 
 const statusColors = {
@@ -241,45 +250,99 @@ const formatTreadDisplay = (tread = {}) => {
 };
 
 
-function AutoCompleteInput({ value, onChange, options, placeholder }) {
-  const dropdownOptions = useMemo(() => {
-    const normalized = Array.from(
-      new Set(
-        (options || [])
-          .map((option) => String(option || "").trim())
-          .filter(Boolean),
-      ),
-    ).map((option) => ({
-      label: option,
-      value: option,
-      description: "",
-    }));
+function AutoCompleteInput({ value, onChange, options, placeholder, onSelect }) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState(null);
+  const inputRef = useRef(null);
 
-    const safeValue = String(value || "").trim();
-    if (safeValue && !normalized.some((option) => option.value === safeValue)) {
-      normalized.unshift({
-        label: safeValue,
-        value: safeValue,
-        description: "Saved value",
-      });
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase().trim();
+    if (!q) return options || [];
+    return (options || []).filter((o) => String(o).toLowerCase().includes(q));
+  }, [query, options]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (inputRef.current && !inputRef.current.contains(e.target) && !e.target.closest("[data-tyre-menu]")) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const openMenu = useCallback(() => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 2, left: rect.left, width: rect.width });
     }
+    setQuery("");
+    setOpen(true);
+  }, []);
 
-    return normalized;
-  }, [options, value]);
+  const handleSelect = useCallback((opt) => {
+    onChange(opt);
+    setQuery("");
+    setOpen(false);
+    if (onSelect) onSelect(opt);
+  }, [onChange, onSelect]);
+
+  const menu = open && filtered.length > 0 && createPortal(
+    <div
+      data-tyre-menu=""
+      style={{
+        position: "fixed",
+        top: pos ? `${pos.top}px` : 0,
+        left: pos ? `${pos.left}px` : 0,
+        width: pos ? `${pos.width}px` : 200,
+        maxHeight: "240px",
+        overflowY: "auto",
+        backgroundColor: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--radius-sm)",
+        zIndex: 99999,
+        boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+      }}
+    >
+      {filtered.map((opt) => (
+        <div
+          key={opt}
+          onMouseDown={(e) => { e.preventDefault(); handleSelect(opt); }}
+          style={{
+            padding: "10px 12px",
+            fontSize: "14px",
+            cursor: "pointer",
+            color: "var(--text-primary)",
+            backgroundColor: opt === value ? "var(--surface-light)" : "transparent",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--surface-light)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = opt === value ? "var(--surface-light)" : "transparent"; }}
+        >
+          {opt}
+        </div>
+      ))}
+    </div>,
+    document.body
+  );
 
   return (
-    <DropdownField
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      options={dropdownOptions}
-      placeholder={placeholder}
-      searchable
-      searchPlaceholder={`Search ${placeholder?.toLowerCase() || "options"}`}
-      emptyState="No matches found"
-      style={{ width: "100%" }}
-      menuStyle={{ maxHeight: "240px" }}
-      helperText=""
-    />
+    <div style={{ width: "100%" }}>
+      <input
+        ref={inputRef}
+        value={open ? query : (value || "")}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          if (!open) openMenu();
+        }}
+        onFocus={openMenu}
+        placeholder={placeholder}
+        style={{ ...baseInputStyle, width: "100%" }}
+      />
+      {menu}
+    </div>
   );
 }
 
@@ -301,46 +364,126 @@ function TyreSpecInputRow({ children }) {
   );
 }
 
+/**
+ * Format a raw numeric tyre size string into standard format.
+ * e.g. "2255518" → "225/55R18", "1956515" → "195/65R15"
+ */
+function formatTyreSize(raw) {
+  const digits = (raw || "").replace(/\D/g, "");
+  if (digits.length < 7) return raw || "";
+  const width = digits.slice(0, 3);
+  const profile = digits.slice(3, 5);
+  const rim = digits.slice(5);
+  return `${width}/${profile}R${rim}`;
+}
+
 function TyreSpecFields({ tyre, onFieldChange }) {
+  const sizeRef = useRef(null);
+  const loadRef = useRef(null);
+  const speedRef = useRef(null);
+
+  // Raw size input state (digits only while typing)
+  const [rawSize, setRawSize] = useState("");
+  const sizeInitialised = useRef(false);
+
+  // Keep rawSize empty until user starts typing — show formatted value as placeholder context
+  useEffect(() => {
+    if (!sizeInitialised.current && tyre.size) {
+      sizeInitialised.current = true;
+    }
+  }, [tyre.size]);
+
+  const handleSizeInput = useCallback((e) => {
+    const digits = e.target.value.replace(/\D/g, "");
+    if (digits.length <= 7) {
+      setRawSize(digits);
+    }
+    // Once we have 7 digits, format and advance to load index
+    if (digits.length >= 7) {
+      const formatted = formatTyreSize(digits);
+      onFieldChange("size", formatted);
+      setRawSize("");
+      setTimeout(() => {
+        loadRef.current?.focus();
+      }, 50);
+    }
+  }, [onFieldChange]);
+
+  const handleSizeBlur = useCallback(() => {
+    // If user leaves with partial input, try to format what we have
+    if (rawSize.length > 0 && rawSize.length < 7) {
+      onFieldChange("size", rawSize);
+      setRawSize("");
+    }
+  }, [rawSize, onFieldChange]);
+
+  const handleLoadChange = useCallback((e) => {
+    const val = e.target.value;
+    onFieldChange("load", val);
+    // Auto-advance to speed rating after 2-3 digit load index
+    if (val.length >= 2 && /^\d{2,3}$/.test(val)) {
+      setTimeout(() => {
+        speedRef.current?.focus();
+      }, 50);
+    }
+  }, [onFieldChange]);
+
+  const handleSpeedChange = useCallback((e) => {
+    onFieldChange("speed", e.target.value.toUpperCase());
+  }, [onFieldChange]);
+
+  const labelStyle = { display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted };
+
   return (
     <TyreSpecInputRow>
       <div style={{ flex: "0 0 210px", minWidth: "210px" }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+        <label style={labelStyle}>
           <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
           <AutoCompleteInput
             value={tyre.manufacturer}
             onChange={(value) => onFieldChange("manufacturer", value)}
+            onSelect={() => {
+              setTimeout(() => { sizeRef.current?.focus(); }, 50);
+            }}
             options={tyreBrands}
-            placeholder="Search make"
+            placeholder="Type to search make"
           />
         </label>
       </div>
       <div style={{ flex: "0 0 220px", minWidth: "220px" }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
+        <label style={labelStyle}>
           <span style={{ fontWeight: 700, color: palette.textPrimary }}>Size</span>
-          <AutoCompleteInput
-            value={tyre.size}
-            onChange={(value) => onFieldChange("size", value)}
-            options={tyreSizes}
-            placeholder="Search size"
+          <input
+            ref={sizeRef}
+            value={rawSize || tyre.size || ""}
+            onChange={handleSizeInput}
+            onBlur={handleSizeBlur}
+            onFocus={() => { if (tyre.size && !rawSize) setRawSize(""); }}
+            placeholder={tyre.size || "e.g. 2255518"}
+            inputMode="numeric"
+            style={{ ...baseInputStyle, width: "100%" }}
           />
         </label>
       </div>
-      <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-        Load Index
+      <label style={labelStyle}>
+        <span style={{ fontWeight: 700, color: palette.textPrimary }}>Load Index</span>
         <input
+          ref={loadRef}
           value={tyre.load}
-          onChange={(event) => onFieldChange("load", event.target.value)}
+          onChange={handleLoadChange}
           placeholder="e.g. 91"
+          inputMode="numeric"
           style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
         />
       </label>
-      <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: palette.textMuted }}>
-        Speed Rating
+      <label style={labelStyle}>
+        <span style={{ fontWeight: 700, color: palette.textPrimary }}>Speed Rating</span>
         <input
+          ref={speedRef}
           value={tyre.speed}
-          onChange={(event) => onFieldChange("speed", event.target.value)}
+          onChange={handleSpeedChange}
           placeholder="e.g. V"
+          maxLength={2}
           style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
         />
       </label>
@@ -705,9 +848,14 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
       hideCloseButton
       width="1280px"
       footer={footer}
+      sectionKey="vhc-wheels"
     >
-      <div style={contentWrapperStyle}>
+      <div style={contentWrapperStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-content" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-body">
           <div
+            data-dev-section="1"
+            data-dev-section-key="vhc-wheels-layout"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="vhc-wheels-content"
             style={{
               display: "flex",
               gap: "20px",
@@ -716,6 +864,10 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
             }}
           >
             <div
+              data-dev-section="1"
+              data-dev-section-key="vhc-wheels-diagram"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="vhc-wheels-layout"
               style={{
                 flex: "0 0 360px",
                 display: "flex",
@@ -738,6 +890,10 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
             </div>
 
           <div
+            data-dev-section="1"
+            data-dev-section-key="vhc-wheels-details"
+            data-dev-section-type="content-card"
+            data-dev-section-parent="vhc-wheels-layout"
             style={{
               flex: 1,
               display: "flex",
@@ -747,6 +903,10 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
             }}
           >
             <div
+              data-dev-section="1"
+              data-dev-section-key="vhc-wheels-toolbar"
+              data-dev-section-type="toolbar"
+              data-dev-section-parent="vhc-wheels-details"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -789,9 +949,9 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
             {activeWheel === "Spare" && (
               <div
                 style={{
-                  borderRadius: "var(--radius-pill)",
-                  border: `1px solid ${palette.border}`,
-                  background: palette.surface,
+                  borderRadius: "var(--control-radius)",
+                  border: "none",
+                  background: "var(--tab-container-bg)",
                   padding: "6px",
                   width: "100%",
                   overflow: "hidden",
@@ -823,15 +983,16 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                         }
                         style={{
                           flex: "0 0 auto",
-                          borderRadius: "var(--radius-pill)",
-                          border: "1px solid transparent",
-                          padding: "10px 16px",
-                          fontSize: "0.85rem",
+                          borderRadius: "var(--control-radius-xs)",
+                          border: "none",
+                          minHeight: "var(--control-height-xs)",
+                          padding: "var(--control-padding-xs)",
+                          fontSize: "0.86rem",
                           fontWeight: 600,
                           cursor: "pointer",
                           background: isActive ? "var(--primary)" : "transparent",
-                          color: isActive ? "var(--text-inverse)" : palette.textPrimary,
-                          transition: "all 0.15s ease",
+                          color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                          transition: "background-color 0.18s ease, color 0.18s ease",
                           whiteSpace: "nowrap",
                         }}
                       >
@@ -844,6 +1005,10 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
             )}
 
             <div
+              data-dev-section="1"
+              data-dev-section-key="vhc-wheels-sections"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="vhc-wheels-details"
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -856,12 +1021,12 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
             >
               {activeWheel !== "Spare" ? (
                 <>
-                  <div style={sectionCardStyle}>
+                  <div style={sectionCardStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-tyre-details" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
                     <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tyre Details</span>
                     <TyreSpecFields tyre={currentTyre} onFieldChange={updateTyre} />
                   </div>
 
-                  <div style={sectionCardStyle}>
+                  <div style={sectionCardStyle} data-dev-section="1" data-dev-section-key="vhc-wheels-tread-depth" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
                     <span style={{ fontSize: "13px", color: palette.textMuted, fontWeight: 600 }}>Tread Depth (mm)</span>
                     <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                       {TREAD_SECTIONS.map((section) => (
@@ -1012,7 +1177,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
                 </>
               )}
 
-              <div style={{ ...sectionCardStyle, flex: "1 1 auto", minHeight: 0 }}>
+              <div style={{ ...sectionCardStyle, flex: "1 1 auto", minHeight: 0 }} data-dev-section="1" data-dev-section-key="vhc-wheels-concerns" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-sections">
                 <div
                   style={{
                     display: "flex",
