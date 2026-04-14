@@ -16,7 +16,7 @@ async function main() {
     isWindows ? "vercel.cmd" : "vercel"
   );
 
-  const child = spawn(vercelBin, ["dev"], {
+  const child = spawn(vercelBin, ["dev", "--non-interactive"], {
     stdio: "inherit",
   });
 

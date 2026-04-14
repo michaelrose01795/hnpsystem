@@ -17,11 +17,11 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "baseUrl": ".", // ✅ add this line
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "src/*"
-      ] // ✅ maps @/ to the src folder
+      ]
     },
     "plugins": [
       {

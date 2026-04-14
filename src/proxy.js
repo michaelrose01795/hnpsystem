@@ -25,11 +25,11 @@ const applyRuntimeNextAuthUrl = (req) => {
 const HR_ALLOWED_PATHS_FOR_MANAGERS = ["/hr/employees", "/hr/leave"];
 const RELAX_HR_ACCESS = process.env.NEXT_PUBLIC_RELAX_HR_ACCESS === "true";
 const isDevEnv = process.env.NODE_ENV !== "production";
-const logMiddlewareCheck = (message, details = {}) => {
+const logProxyCheck = (message, details = {}) => {
   if (!isDevEnv) return;
-  console.info(`[middleware] ${message}`, details);
+  console.info(`[proxy] ${message}`, details);
 };
-export async function middleware(req) {
+export async function proxy(req) {
   applyRuntimeNextAuthUrl(req);
   const { pathname } = req.nextUrl;
   const isHrRoute = pathname.startsWith("/hr");
@@ -43,7 +43,7 @@ export async function middleware(req) {
   }
 
   if (RELAX_HR_ACCESS && (isHrRoute || isAdminRoute)) {
-    logMiddlewareCheck("Relaxed HR/Admin access", { pathname });
+    logProxyCheck("Relaxed HR/Admin access", { pathname });
     return NextResponse.next();
   }
 
@@ -68,7 +68,7 @@ export async function middleware(req) {
     : hasDevCookieAuth
     ? normalizeRoles(devRolesCookie.split("|"))
     : [];
-  logMiddlewareCheck("HR/Admin role evaluation", {
+  logProxyCheck("HR/Admin role evaluation", {
     pathname,
     hasToken: Boolean(token),
     hasDevCookieAuth,
