@@ -10,6 +10,7 @@ export const roleCategories = {
     "Workshop Manager",
     "After Sales Director",
     "Techs",
+    "Mobile Technician",
     "Parts",
     "Parts Manager",
     "Parts Driver",

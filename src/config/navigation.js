@@ -179,6 +179,32 @@ export const sidebarSections = [
     ],
   },
   {
+    label: "Mobile Technician",
+    category: "departments",
+    items: [
+      {
+        label: "Mobile Dashboard",
+        href: "/mobile/dashboard",
+        roles: ["mobile technician"],
+      },
+      {
+        label: "My Mobile Jobs",
+        href: "/mobile/jobs",
+        roles: ["mobile technician"],
+      },
+      {
+        label: "Mobile Appointments",
+        href: "/mobile/appointments",
+        roles: ["mobile technician"],
+      },
+      {
+        label: "Request Parts",
+        href: "/tech/consumables-request",
+        roles: ["mobile technician"],
+      },
+    ],
+  },
+  {
     label: "MOT Tester",
     category: "departments",
     items: [

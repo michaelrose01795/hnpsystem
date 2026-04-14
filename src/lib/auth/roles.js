@@ -6,6 +6,8 @@ export const HR_CORE_ROLES = ["hr manager", "admin manager", "owner", "admin"];
 export const HR_MANAGER_ROLES = ["admin manager", "owner", "admin"];
 export const MANAGER_SCOPED_ROLES = ["manager", "service manager", "workshop manager", "general manager"];
 export const HR_MANAGER_DASHBOARD_ROLES = ["owner", "admin manager"];
+export const MOBILE_TECH_ROLES = ["mobile technician"];
+export const MOBILE_TECH_ALLOW_UPPER = ["MOBILE TECHNICIAN"];
 export const DEV_FULL_ACCESS_ROLES = Array.from(
   new Set(
     [
@@ -28,6 +30,7 @@ export const DEV_FULL_ACCESS_ROLES = Array.from(
       "Techs",
       "MOT Tester",
       "Valet Service",
+      "Mobile Technician",
     ]
       .map((role) => role?.toString().trim())
       .filter(Boolean)
@@ -57,4 +60,8 @@ export function isManagerScopedRole(userRoles) {
 
 export function canAccessHrManagerDashboard(userRoles) {
   return hasAnyRole(userRoles, HR_MANAGER_DASHBOARD_ROLES);
+}
+
+export function isMobileTechnician(userRoles) {
+  return hasAnyRole(userRoles, MOBILE_TECH_ROLES);
 }

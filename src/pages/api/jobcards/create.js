@@ -5,6 +5,7 @@
 import { ensureCustomer, ensureVehicle, createFullJob } from "@/lib/services/createJobService"; // shared service layer
 import { getDatabaseClient } from "@/lib/database/client"; // database client for history counts
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { attachMobileFieldsToJob } from "@/lib/mobile/mobileJobs"; // mobile service_mode extension
 
 const supabase = getDatabaseClient(); // server-side database client
 
@@ -105,6 +106,24 @@ async function handler(req, res, session) {
     const insertedJob = result.data.job; // the created job record
     const jobNumber = insertedJob.jobNumber || insertedJob.job_number || null; // job number
     console.log('✅ Job card created successfully:', jobNumber); // debug log
+
+    // Mobile service-mode extension: when serviceMode === 'mobile', persist on-site fields
+    // and assign to a mobile technician if one is provided. Keeps workshop path untouched.
+    if (jobCard.serviceMode === "mobile" && insertedJob.id) {
+      await attachMobileFieldsToJob({
+        jobId: insertedJob.id,
+        mobileDetails: {
+          address: jobCard.mobileDetails?.address || jobCard.customer.address || "",
+          postcode: jobCard.mobileDetails?.postcode || jobCard.customer.postcode || "",
+          contactName: jobCard.mobileDetails?.contactName || `${jobCard.customer.firstName} ${jobCard.customer.lastName}`.trim(),
+          contactPhone: jobCard.mobileDetails?.contactPhone || jobCard.customer.mobile || jobCard.customer.telephone || "",
+          windowStart: jobCard.mobileDetails?.windowStart || null,
+          windowEnd: jobCard.mobileDetails?.windowEnd || null,
+          accessNotes: jobCard.mobileDetails?.accessNotes || "",
+        },
+        userId: session?.user?.userId || null,
+      });
+    }
 
     // ✅ Get job history counts (same as original for response compatibility)
     const { count: customerJobCount } = await supabase // count customer jobs
