@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// file location: scripts/verify.js
+// file location: tools/scripts/verify.js
 // One-command verification script for HNP System.
 // Usage: npm run verify
 //

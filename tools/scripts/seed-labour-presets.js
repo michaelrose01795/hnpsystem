@@ -1,4 +1,4 @@
-// file location: scripts/seed-labour-presets.js
+// file location: tools/scripts/seed-labour-presets.js
 
 /* eslint-disable no-console */
 const { createClient } = require("@supabase/supabase-js");

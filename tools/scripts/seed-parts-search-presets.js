@@ -1,4 +1,4 @@
-// file location: scripts/seed-parts-search-presets.js
+// file location: tools/scripts/seed-parts-search-presets.js
 
 /* eslint-disable no-console */
 const { createClient } = require("@supabase/supabase-js");

@@ -1,4 +1,4 @@
-// file location: scripts/buildAppKnowledge.js
+// file location: tools/scripts/buildAppKnowledge.js
 //
 // Knowledge index refresh script for the HNP System App Guide.
 //

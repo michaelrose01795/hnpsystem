@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// file location: scripts/db-seed.js
+// file location: tools/scripts/db-seed.js
 // Seeds the database with test data for E2E tests.
 // Usage: npm run db:seed
 
