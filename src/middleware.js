@@ -6,7 +6,7 @@ import {
   HR_MANAGER_ROLES,
   MANAGER_SCOPED_ROLES,
   normalizeRoles,
-} from "./src/lib/auth/roles";
+} from "@/lib/auth/roles";
 
 const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
 const applyRuntimeNextAuthUrl = (req) => {
