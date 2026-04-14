@@ -361,10 +361,22 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         width: "100%",
         maxWidth: "100%",
         minWidth: 0,
+        height: "160px",
+        overflow: "hidden",
       }}
     >
-      <div>
-        <strong style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--text)" }}>
+      <div style={{ minWidth: 0 }}>
+        <strong
+          style={{
+            fontSize: "clamp(0.78rem, 1.4vw, var(--text-h3))",
+            fontWeight: 700,
+            color: "var(--text)",
+            display: "block",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
           {entry.jobNumber || "Unknown job"} • {entry.reg || "Unknown reg"} • {entry.customer || "Customer pending"}
         </strong>
         <div
@@ -374,12 +386,24 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
             justifyContent: "space-between",
             alignItems: "center",
             gap: "10px",
+            minWidth: 0,
           }}
         >
-          <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--info-dark)" }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "clamp(0.66rem, 1vw, 0.78rem)",
+              color: "var(--info-dark)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              minWidth: 0,
+              flex: 1,
+            }}
+          >
             {vehicleMeta || "Make/Model/Colour pending"}
           </p>
-          <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", whiteSpace: "nowrap" }}>
+          <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", whiteSpace: "nowrap", flexShrink: 0 }}>
             Last moved {formatRelativeTime(entry.updatedAt)}
           </p>
         </div>
@@ -391,17 +415,38 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
           gridTemplateColumns: isMobileView ? "1fr" : "1fr 1fr",
           gap: "8px",
           marginTop: "8px",
+          minWidth: 0,
         }}
       >
-        <div>
+        <div style={{ minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Key location</p>
-          <strong style={{ fontSize: "var(--text-body)", color: "var(--accent-purple)" }}>
+          <strong
+            style={{
+              fontSize: "clamp(0.72rem, 1.1vw, var(--text-body))",
+              color: "var(--accent-purple)",
+              display: "block",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
             {normalizeKeyLocationLabel(entry.keyLocation) || "Pending"}
           </strong>
         </div>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Car location</p>
-          <strong style={{ fontSize: "var(--text-body)", color: "var(--success-dark)" }}>{entry.vehicleLocation || "Unallocated"}</strong>
+          <strong
+            style={{
+              fontSize: "clamp(0.72rem, 1.1vw, var(--text-body))",
+              color: "var(--success-dark)",
+              display: "block",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {entry.vehicleLocation || "Unallocated"}
+          </strong>
         </div>
       </div>
     </div>
@@ -1572,6 +1617,10 @@ export default function TrackingDashboard() {
   const [trackerSearchTerm, setTrackerSearchTerm] = useState("");
   const [trackerStatusFilter, setTrackerStatusFilter] = useState(TRACKING_FILTER_ALL);
   const [trackerVehicleLocationFilter, setTrackerVehicleLocationFilter] = useState(TRACKING_FILTER_ALL);
+  const [equipmentSearchTerm, setEquipmentSearchTerm] = useState("");
+  const [equipmentDueFilter, setEquipmentDueFilter] = useState(TRACKING_FILTER_ALL);
+  const [oilSearchTerm, setOilSearchTerm] = useState("");
+  const [oilDueFilter, setOilDueFilter] = useState(TRACKING_FILTER_ALL);
 
   // Match the portrait-phone behaviour used across the app shell.
   useEffect(() => {
@@ -2207,42 +2256,6 @@ export default function TrackingDashboard() {
             minWidth: "190px",
           }}
         />
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
-          <button
-            type="button"
-            onClick={loadEntries}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              background: "var(--accent-purple)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-              boxShadow: "none",
-            }}
-          >
-            Refresh
-          </button>
-          {loading && (
-            <span style={{ color: "var(--accent-purple)", fontWeight: 600 }}>Refreshing…</span>
-          )}
-          <button
-            type="button"
-            onClick={() => openEntryModal("car")}
-            style={{
-              padding: "8px 12px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              background: "var(--primary)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Add location
-          </button>
-        </div>
       </DevLayoutSection>
       {entries.length === 0 && (
         <DevLayoutSection
@@ -2345,52 +2358,47 @@ export default function TrackingDashboard() {
   );
 
   const renderEquipmentContent = () => (
-    <DevLayoutSection
-      sectionKey="tracking-equipment-panel"
-      parentKey="tracking-page-body"
-      sectionType="section-shell"
-      backgroundToken="surface"
-      style={{ ...getSectionStyle(isMobileView), gap: "20px" }}
-    >
+    <>
       <DevLayoutSection
         sectionKey="tracking-equipment-header"
-        parentKey="tracking-equipment-panel"
+        parentKey="tracking-page-body"
         sectionType="toolbar"
         style={{
           display: "flex",
-          justifyContent: "space-between",
           flexWrap: "wrap",
           gap: "12px",
-          alignItems: "flex-start",
+          alignItems: "center",
         }}
       >
-        <div>
-          <h1 style={{ margin: "6px 0 0", fontSize: "var(--text-h1)", color: "var(--accent-purple)" }}>
-            Equipment &amp; tools
-          </h1>
-        </div>
-        <button
-          type="button"
-          onClick={() => setEquipmentModal({ open: true, item: null })}
+        <SearchBar
+          value={equipmentSearchTerm}
+          onChange={(event) => setEquipmentSearchTerm(event.target.value)}
+          onClear={() => setEquipmentSearchTerm("")}
+          placeholder="Search equipment"
+          ariaLabel="Search equipment"
           style={{
-            padding: "10px 18px",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            background: "var(--primary)",
-            color: "white",
-            fontWeight: 600,
-            cursor: "pointer",
+            flex: "1 1 320px",
+            minWidth: "240px",
           }}
-        >
-          Add Equipment/tools
-        </button>
-        {equipmentLoading && (
-          <span style={{ alignSelf: "center", color: "var(--info)", fontWeight: 600 }}>Loading…</span>
-        )}
+        />
+        <DropdownField
+          options={[
+            { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
+            { key: "due", value: "due", label: "Due now" },
+            { key: "ok", value: "ok", label: "Not due" },
+          ]}
+          value={equipmentDueFilter}
+          onValueChange={(value) => setEquipmentDueFilter(value || TRACKING_FILTER_ALL)}
+          size="md"
+          style={{
+            flex: "0 1 220px",
+            minWidth: "180px",
+          }}
+        />
       </DevLayoutSection>
       <DevLayoutSection
         sectionKey="tracking-equipment-grid"
-        parentKey="tracking-equipment-panel"
+        parentKey="tracking-page-body"
         sectionType="grid"
         style={{
           display: "grid",
@@ -2416,7 +2424,20 @@ export default function TrackingDashboard() {
             Equipment service list is empty.
           </DevLayoutSection>
         )}
-        {equipmentChecks.map((check, index) => {
+        {equipmentChecks
+          .filter((check) => {
+            const term = equipmentSearchTerm.trim().toLowerCase();
+            if (term && ![check.name, check.status].filter(Boolean).some((value) => value.toLowerCase().includes(term))) {
+              return false;
+            }
+            if (equipmentDueFilter !== TRACKING_FILTER_ALL) {
+              const isDue = getDueLabel(check.nextDue) === "Due now" || (check.status || "").toLowerCase().includes("due");
+              if (equipmentDueFilter === "due" && !isDue) return false;
+              if (equipmentDueFilter === "ok" && isDue) return false;
+            }
+            return true;
+          })
+          .map((check, index) => {
           const dueLabel = getDueLabel(check.nextDue);
           const isDue = dueLabel === "Due now";
           const statusLabel = (check.status || "").toLowerCase();
@@ -2438,14 +2459,21 @@ export default function TrackingDashboard() {
                 }
               }}
               style={{
-                padding: "18px",
-                borderRadius: "var(--radius-md)",
-                border: "none",
-                background: "var(--surface)",
+                padding: "20px 24px",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+                background: "var(--accent-surface)",
+                boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
                 cursor: "pointer",
+                transition: "all 0.2s ease",
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: 0,
+                height: "220px",
+                overflow: "hidden",
               }}
             >
               <div
@@ -2455,10 +2483,23 @@ export default function TrackingDashboard() {
                   alignItems: "flex-start",
                   gap: "10px",
                   minHeight: "28px",
+                  minWidth: 0,
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  <strong style={{ display: "block", fontSize: "1.05rem" }}>{check.name}</strong>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <strong
+                    style={{
+                      display: "block",
+                      fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
+                      fontWeight: 700,
+                      color: "var(--text)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {check.name}
+                  </strong>
                 </div>
                 <span style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
                   {check.status || dueLabel}
@@ -2523,56 +2564,51 @@ export default function TrackingDashboard() {
           );
         })}
       </DevLayoutSection>
-    </DevLayoutSection>
+    </>
   );
 
   const renderOilContent = () => (
-    <DevLayoutSection
-      sectionKey="tracking-oil-panel"
-      parentKey="tracking-page-body"
-      sectionType="section-shell"
-      backgroundToken="surface"
-      style={{ ...getSectionStyle(isMobileView), gap: "20px" }}
-    >
+    <>
       <DevLayoutSection
         sectionKey="tracking-oil-header"
-        parentKey="tracking-oil-panel"
+        parentKey="tracking-page-body"
         sectionType="toolbar"
         style={{
           display: "flex",
-          justifyContent: "space-between",
           flexWrap: "wrap",
           gap: "12px",
-          alignItems: "flex-start",
+          alignItems: "center",
         }}
       >
-        <div>
-          <h1 style={{ margin: "6px 0 0", fontSize: "var(--text-h1)", color: "var(--accent-purple)" }}>
-            Oil / Stock
-          </h1>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOilStockModal({ open: true, item: null })}
+        <SearchBar
+          value={oilSearchTerm}
+          onChange={(event) => setOilSearchTerm(event.target.value)}
+          onClear={() => setOilSearchTerm("")}
+          placeholder="Search oil / stock"
+          ariaLabel="Search oil / stock"
           style={{
-            padding: "10px 18px",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            background: "var(--primary)",
-            color: "white",
-            fontWeight: 600,
-            cursor: "pointer",
+            flex: "1 1 320px",
+            minWidth: "240px",
           }}
-        >
-          Add Oil / Stock
-        </button>
-        {oilLoading && (
-          <span style={{ alignSelf: "center", color: "var(--info)", fontWeight: 600 }}>Loading…</span>
-        )}
+        />
+        <DropdownField
+          options={[
+            { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
+            { key: "due", value: "due", label: "Due now" },
+            { key: "ok", value: "ok", label: "Not due" },
+          ]}
+          value={oilDueFilter}
+          onValueChange={(value) => setOilDueFilter(value || TRACKING_FILTER_ALL)}
+          size="md"
+          style={{
+            flex: "0 1 220px",
+            minWidth: "180px",
+          }}
+        />
       </DevLayoutSection>
       <DevLayoutSection
         sectionKey="tracking-oil-grid"
-        parentKey="tracking-oil-panel"
+        parentKey="tracking-page-body"
         sectionType="grid"
         style={{
           display: "grid",
@@ -2598,7 +2634,20 @@ export default function TrackingDashboard() {
             Oil stock checklist is empty.
           </DevLayoutSection>
         )}
-        {oilChecks.map((item, index) => {
+        {oilChecks
+          .filter((item) => {
+            const term = oilSearchTerm.trim().toLowerCase();
+            if (term && ![item.title, item.stock].filter(Boolean).some((value) => String(value).toLowerCase().includes(term))) {
+              return false;
+            }
+            if (oilDueFilter !== TRACKING_FILTER_ALL) {
+              const isDue = getDueLabel(item.nextCheck) === "Due now";
+              if (oilDueFilter === "due" && !isDue) return false;
+              if (oilDueFilter === "ok" && isDue) return false;
+            }
+            return true;
+          })
+          .map((item, index) => {
           const dueLabel = getDueLabel(item.nextCheck);
           const isDue = dueLabel === "Due now";
           const durationLabel = getDurationDisplay(item);
@@ -2620,14 +2669,21 @@ export default function TrackingDashboard() {
                 }
               }}
               style={{
-                padding: "18px",
-                borderRadius: "var(--radius-md)",
-                border: "none",
-                background: "var(--surface)",
+                padding: "20px 24px",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+                background: "var(--accent-surface)",
+                boxShadow: "none",
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
                 cursor: isTopUpActive ? "default" : "pointer",
+                transition: "all 0.2s ease",
+                width: "100%",
+                maxWidth: "100%",
+                minWidth: 0,
+                height: isTopUpActive ? "auto" : "260px",
+                overflow: "hidden",
               }}
             >
               <div
@@ -2637,10 +2693,23 @@ export default function TrackingDashboard() {
                   alignItems: "flex-start",
                   gap: "10px",
                   minHeight: "28px",
+                  minWidth: 0,
                 }}
               >
-                <div style={{ flex: 1 }}>
-                  <strong style={{ display: "block", fontSize: "1.05rem" }}>{item.title}</strong>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <strong
+                    style={{
+                      display: "block",
+                      fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
+                      fontWeight: 700,
+                      color: "var(--text)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {item.title}
+                  </strong>
                 </div>
                 <span style={{ fontSize: "var(--text-caption)", fontWeight: 600, color: badgeColor, flexShrink: 0 }}>
                   {dueLabel}
@@ -2758,7 +2827,7 @@ export default function TrackingDashboard() {
           );
         })}
       </DevLayoutSection>
-    </DevLayoutSection>
+    </>
   );
 
   const renderActiveTabContent = () => {
@@ -2803,18 +2872,113 @@ export default function TrackingDashboard() {
           }}
         >
           {tabs.length > 1 && (
-            <DevLayoutSection
-              sectionKey="tracking-page-tabs"
-              parentKey="tracking-page-body"
-              sectionType="toolbar"
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "12px",
+                flexWrap: "wrap",
+                width: "100%",
+              }}
             >
-              <TabGroup
-                items={tabs.map((tab) => ({ label: tab.label, value: tab.id }))}
-                value={activeTab}
-                onChange={setActiveTab}
-                ariaLabel="Tracker tabs"
-              />
-            </DevLayoutSection>
+              <DevLayoutSection
+                sectionKey="tracking-page-tabs"
+                parentKey="tracking-page-body"
+                sectionType="toolbar"
+                style={{ display: "inline-flex", width: "fit-content", maxWidth: "100%", background: "transparent", padding: 0 }}
+              >
+                <TabGroup
+                  items={tabs.map((tab) => ({ label: tab.label, value: tab.id }))}
+                  value={activeTab}
+                  onChange={setActiveTab}
+                  ariaLabel="Tracker tabs"
+                  className="tab-api--inline"
+                />
+              </DevLayoutSection>
+              {activeTab === "tracker" && (
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
+                  <button
+                    type="button"
+                    onClick={loadEntries}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      background: "var(--accent-purple)",
+                      color: "white",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      boxShadow: "none",
+                    }}
+                  >
+                    Refresh
+                  </button>
+                  {loading && (
+                    <span style={{ color: "var(--accent-purple)", fontWeight: 600 }}>Refreshing…</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => openEntryModal("car")}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      background: "var(--primary)",
+                      color: "white",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Add location
+                  </button>
+                </div>
+              )}
+              {activeTab === "equipment" && (
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
+                  {equipmentLoading && (
+                    <span style={{ color: "var(--info)", fontWeight: 600 }}>Loading…</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setEquipmentModal({ open: true, item: null })}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      background: "var(--primary)",
+                      color: "white",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Add Equipment/tools
+                  </button>
+                </div>
+              )}
+              {activeTab === "oil-stock" && (
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
+                  {oilLoading && (
+                    <span style={{ color: "var(--info)", fontWeight: 600 }}>Loading…</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setOilStockModal({ open: true, item: null })}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      background: "var(--primary)",
+                      color: "white",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Add Oil / Stock
+                  </button>
+                </div>
+              )}
+            </div>
           )}
           {error && (
             <DevLayoutSection

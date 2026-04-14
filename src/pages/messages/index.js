@@ -17,6 +17,7 @@ import useMessagesApi from "@/hooks/api/useMessagesApi";
 import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import Button from "@/components/ui/Button";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 
 const palette = appShellTheme.palette;
@@ -290,6 +291,8 @@ const renderMessageContent = (content, userRoles = []) => {
   return parts.length > 0 ? parts : content;
 };
 
+const REACTION_EMOJIS = ["👍", "👎", "❤️", "🔥", "😂", "😮"];
+
 const MessageBubble = ({
   message,
   isMine,
@@ -299,13 +302,16 @@ const MessageBubble = ({
   onApproveLeaveRequest,
   onDeclineLeaveRequest,
   decisionBusy = false,
+  isFirstInGroup = true,
+  isLastInGroup = true,
+  reactions = [],
+  onReact,
+  onReply,
 }) => {
   const senderName = message.sender?.name || "Unknown";
-  const timestamp = new Date(message.createdAt).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const [actionsOpen, setActionsOpen] = useState(false);
   const leaveRequestMeta = message?.metadata?.leaveRequest || null;
+  const replyToMeta = message?.metadata?.replyTo || null;
   const leaveStatus = String(leaveRequestMeta?.status || "").trim();
   const leaveStatusKey = leaveStatus.toLowerCase();
   const canDecideLeaveRequest =
@@ -314,17 +320,26 @@ const MessageBubble = ({
     leaveRequestMeta.managerIds.includes(currentUserId) &&
     leaveStatusKey === "pending";
 
+  const radiusValue = isMine
+    ? `${isFirstInGroup ? "18px" : "18px"} ${isFirstInGroup ? "18px" : "4px"} ${isLastInGroup ? "6px" : "4px"} 18px`
+    : `${isFirstInGroup ? "18px" : "4px"} 18px 18px ${isLastInGroup ? "6px" : "4px"}`;
+
   const bubbleStyles = {
-    padding: "12px 16px",
-    borderRadius: isMine
-      ? "18px 18px 6px 18px"
-      : "18px 18px 18px 6px",
+    padding: "10px 14px",
+    borderRadius: radiusValue,
     backgroundColor: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--search-surface)",
     color: palette.textPrimary,
-    maxWidth: "540px",
+    maxWidth: "100%",
     boxShadow: "var(--shadow-md)",
-    lineHeight: 1.5,
+    lineHeight: 1.45,
+    cursor: "pointer",
+    position: "relative",
   };
+
+  const aggregatedReactions = reactions.reduce((acc, r) => {
+    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <div
@@ -337,36 +352,127 @@ const MessageBubble = ({
         display: "flex",
         justifyContent: isMine ? "flex-end" : "flex-start",
         width: "100%",
+        marginTop: isFirstInGroup ? "6px" : "2px",
       }}
     >
       <div
         style={{
           display: "flex",
           flexDirection: isMine ? "row-reverse" : "row",
-          gap: "12px",
-          alignItems: "flex-start",
+          alignItems: "flex-end",
+          maxWidth: "75%",
         }}
       >
-        <AvatarBadge name={senderName} />
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             gap: "4px",
             alignItems: isMine ? "flex-end" : "flex-start",
+            position: "relative",
           }}
         >
-          <span
-            style={{
-              fontSize: "0.78rem",
-              fontWeight: 700,
-              color: nameColor,
-            }}
+          {replyToMeta && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: isMine ? "flex-end" : "flex-start",
+                marginBottom: "-6px",
+                opacity: 0.75,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "0.68rem",
+                  fontWeight: 600,
+                  color: palette.textMuted,
+                  padding: "0 10px 2px",
+                }}
+              >
+                Replying to {replyToMeta.senderName || "message"}
+              </div>
+              <div
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "14px",
+                  backgroundColor: "var(--search-surface)",
+                  color: palette.textMuted,
+                  fontSize: "0.78rem",
+                  maxWidth: "420px",
+                  transform: "scale(0.95)",
+                  transformOrigin: isMine ? "right bottom" : "left bottom",
+                  border: `1px solid ${palette.border}`,
+                }}
+              >
+                {String(replyToMeta.contentSnippet || "").slice(0, 160)}
+              </div>
+            </div>
+          )}
+          {actionsOpen && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 10px",
+                borderRadius: radii.pill,
+                backgroundColor: "var(--surface)",
+                border: `1px solid ${palette.border}`,
+                boxShadow: shadows.lg,
+                marginBottom: "2px",
+                zIndex: 2,
+              }}
+            >
+              {REACTION_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReact?.(emoji);
+                    setActionsOpen(false);
+                  }}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    fontSize: "1.1rem",
+                    cursor: "pointer",
+                    padding: "2px 4px",
+                  }}
+                  aria-label={`React with ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+              <div style={{ width: "1px", height: "18px", backgroundColor: palette.border }} />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReply?.();
+                  setActionsOpen(false);
+                }}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: palette.accent,
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  padding: "2px 6px",
+                }}
+              >
+                Reply
+              </button>
+            </div>
+          )}
+          <div
+            style={bubbleStyles}
+            onClick={() => setActionsOpen((v) => !v)}
+            role="button"
+            tabIndex={0}
           >
-            {senderName}
-          </span>
-          <span style={{ fontSize: "0.68rem", color: "rgba(71, 85, 105, 0.85)" }}>{timestamp}</span>
-          <div style={bubbleStyles}>
             {renderMessageContent(message.content, userRoles)}
             {leaveRequestMeta ? (
               <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -449,6 +555,42 @@ const MessageBubble = ({
               </div>
             ) : null}
           </div>
+          {Object.keys(aggregatedReactions).length > 0 && (
+            <div
+              style={{
+                display: "flex",
+                gap: "4px",
+                flexWrap: "wrap",
+                marginTop: "-6px",
+                padding: "0 6px",
+              }}
+            >
+              {Object.entries(aggregatedReactions).map(([emoji, count]) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReact?.(emoji);
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "2px 8px",
+                    borderRadius: radii.pill,
+                    border: `1px solid ${palette.border}`,
+                    backgroundColor: "var(--surface)",
+                    fontSize: "0.78rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>{emoji}</span>
+                  {count > 1 && <span style={{ color: palette.textMuted }}>{count}</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -797,6 +939,8 @@ function MessagesPage() {
   const [activeThreadId, setActiveThreadId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageDraft, setMessageDraft] = useState("");
+  const [replyTo, setReplyTo] = useState(null);
+  const [messageReactions, setMessageReactions] = useState({});
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
@@ -1476,17 +1620,28 @@ function MessagesPage() {
           throw new Error("Message is empty after processing commands.");
         }
 
+        const replyMetadata = replyTo
+          ? {
+              replyTo: {
+                id: replyTo.id,
+                senderName: replyTo.sender?.name || "Unknown",
+                contentSnippet: String(replyTo.content || "").slice(0, 200),
+              },
+            }
+          : null;
+        const mergedMetadata = {
+          ...(parsedMetadata || {}),
+          ...(replyMetadata || {}),
+        };
         const payload = await sendThreadMessage(targetThreadId, {
           senderId: dbUserId,
           content: finalContent,
-          metadata:
-            parsedMetadata && Object.keys(parsedMetadata).length
-              ? parsedMetadata
-              : null,
+          metadata: Object.keys(mergedMetadata).length ? mergedMetadata : null,
         });
         const newMessage = payload?.data || payload?.message;
         if (!newMessage) throw new Error("Message payload missing.");
         setMessageDraft("");
+        setReplyTo(null);
         if (targetThreadId === activeThreadId) {
           setMessages((prev) => [...prev, newMessage]);
         } else {
@@ -1509,6 +1664,7 @@ function MessagesPage() {
       fetchThreads,
       messageDraft,
       openThread,
+      replyTo,
       sendThreadMessage,
     ]
   );
@@ -2124,44 +2280,25 @@ function MessagesPage() {
                   action={
                     threadSelectionMode ? (
                       <div style={{ display: "flex", gap: "8px" }}>
-                      <button
+                      <Button
                         type="button"
+                        variant="danger"
+                        size="sm"
+                        pill
                         onClick={handleDeleteSelectedThreads}
                         disabled={threadDeleteBusy || !selectedThreadIds.length}
-                        style={{
-                          borderRadius: radii.pill,
-                          padding: "8px 14px",
-                          border: "none",
-                          backgroundColor:
-                            threadDeleteBusy || !selectedThreadIds.length
-                              ? "var(--search-surface)"
-                              : "var(--danger)",
-                          color:
-                            threadDeleteBusy || !selectedThreadIds.length
-                              ? palette.textMuted
-                              : "var(--surface)",
-                          fontWeight: 600,
-                          cursor:
-                            threadDeleteBusy || !selectedThreadIds.length ? "not-allowed" : "pointer",
-                        }}
                       >
                         {threadDeleteBusy ? "Deleting..." : "Delete"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
+                        pill
                         onClick={handleCloseSelectionMode}
-                        style={{
-                          borderRadius: radii.pill,
-                          padding: "8px 14px",
-                          border: `1px solid ${palette.border}`,
-                          backgroundColor: "var(--surface)",
-                          color: palette.accent,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
                       >
                         Close
-                      </button>
+                      </Button>
                       </div>
                     ) : (
                       <div
@@ -2176,45 +2313,12 @@ function MessagesPage() {
                           zIndex: 2,
                         }}
                       >
-                      <button
+                      <Button
                         type="button"
+                        variant={activeSystemView ? "primary" : "secondary"}
+                        size="sm"
+                        pill
                         onClick={openSystemNotificationsThread}
-                        style={{
-                          borderRadius: radii.pill,
-                          padding: "8px 14px",
-                          border: `1px solid ${activeSystemView ? "transparent" : palette.border}`,
-                          backgroundColor: activeSystemView ? palette.accentSurface : "var(--surface)",
-                          color: systemTitleColor,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          boxShadow: activeSystemView
-                            ? `inset 0 0 0 1px ${palette.accent}`
-                            : "none",
-                          transition: "background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease",
-                        }}
-                        onMouseEnter={(event) => {
-                          event.currentTarget.style.backgroundColor = activeSystemView
-                            ? "rgba(var(--accent-purple-rgb), 0.18)"
-                            : "rgba(var(--accent-purple-rgb), 0.08)";
-                          event.currentTarget.style.boxShadow = activeSystemView
-                            ? `inset 0 0 0 1px ${palette.accent}, 0 2px 8px rgba(30, 64, 175, 0.12)`
-                            : `inset 0 0 0 1px ${palette.border}, 0 2px 8px rgba(15, 23, 42, 0.08)`;
-                          event.currentTarget.style.transform = "translateY(-1px)";
-                          event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                        }}
-                        onMouseLeave={(event) => {
-                          event.currentTarget.style.backgroundColor = activeSystemView
-                            ? palette.accentSurface
-                            : "var(--surface)";
-                          event.currentTarget.style.boxShadow = activeSystemView
-                            ? `inset 0 0 0 1px ${palette.accent}`
-                            : "none";
-                          event.currentTarget.style.transform = "translateY(0)";
-                          event.currentTarget.style.zIndex = "0";
-                        }}
                       >
                         System
                         {hasSystemUnread && (
@@ -2228,44 +2332,25 @@ function MessagesPage() {
                             }}
                           />
                         )}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
+                        pill
                         onClick={() => {
                           if (!visibleThreads.length) return;
                           setThreadSelectionMode(true);
                           setSelectedThreadIds([]);
                         }}
                         disabled={!visibleThreads.length}
-                        style={{
-                          borderRadius: radii.pill,
-                          padding: "8px 14px",
-                          border: `1px solid ${palette.border}`,
-                          backgroundColor: "var(--surface)",
-                          color: palette.accent,
-                          fontWeight: 600,
-                          cursor: visibleThreads.length ? "pointer" : "not-allowed",
-                          transition: "background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease",
-                        }}
-                        onMouseEnter={(event) => {
-                          if (!visibleThreads.length) return;
-                          event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
-                          event.currentTarget.style.boxShadow = `inset 0 0 0 1px ${palette.border}, 0 2px 8px rgba(15, 23, 42, 0.08)`;
-                          event.currentTarget.style.transform = "translateY(-1px)";
-                          event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                        }}
-                        onMouseLeave={(event) => {
-                          if (!visibleThreads.length) return;
-                          event.currentTarget.style.backgroundColor = "var(--surface)";
-                          event.currentTarget.style.boxShadow = "none";
-                          event.currentTarget.style.transform = "translateY(0)";
-                          event.currentTarget.style.zIndex = "0";
-                        }}
                       >
                         Select
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
+                        variant="primary"
+                        pill
                         onClick={handleOpenNewChatModal}
                         aria-label="Start new chat"
                         style={{
@@ -2273,38 +2358,15 @@ function MessagesPage() {
                           height: 42,
                           minWidth: 42,
                           minHeight: 42,
-                          maxWidth: 42,
-                          maxHeight: 42,
                           padding: 0,
                           flex: "0 0 42px",
-                          borderRadius: "var(--radius-full)",
-                          border: `1px solid ${palette.border}`,
-                          backgroundColor: "var(--surface)",
-                          color: palette.accent,
                           fontSize: "var(--text-h2)",
                           fontWeight: 700,
                           lineHeight: 1,
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          transition: "background-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease",
-                        }}
-                        onMouseEnter={(event) => {
-                          event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
-                          event.currentTarget.style.boxShadow = `inset 0 0 0 1px ${palette.border}, 0 2px 8px rgba(15, 23, 42, 0.08)`;
-                          event.currentTarget.style.transform = "translateY(-1px)";
-                          event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                        }}
-                        onMouseLeave={(event) => {
-                          event.currentTarget.style.backgroundColor = "var(--surface)";
-                          event.currentTarget.style.boxShadow = "none";
-                          event.currentTarget.style.transform = "translateY(0)";
-                          event.currentTarget.style.zIndex = "0";
                         }}
                       >
                         +
-                      </button>
+                      </Button>
                       </div>
                     )
                   }
@@ -2405,9 +2467,7 @@ function MessagesPage() {
                               style={{
                                 flex: 1,
                                 borderRadius: "var(--radius-md)",
-                                border: activeThreadId === thread.id
-                                  ? `1px solid rgba(var(--accent-purple-rgb), 0.26)`
-                                  : `1px solid ${palette.border}`,
+                                border: "none",
                                 backgroundColor:
                                   activeThreadId === thread.id
                                     ? "rgba(var(--accent-purple-rgb), 0.12)"
@@ -2418,25 +2478,22 @@ function MessagesPage() {
                                 textAlign: "left",
                                 cursor: threadSelectionMode ? "default" : "pointer",
                                 boxShadow: activeThreadId === thread.id
-                                  ? `inset 4px 0 0 ${palette.accent}, 0 8px 20px rgba(30, 64, 175, 0.1)`
-                                  : "0 4px 12px rgba(15, 23, 42, 0.04)",
-                                transition: "transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease",
+                                  ? `inset 4px 0 0 ${palette.accent}`
+                                  : "none",
+                                backdropFilter: "none",
+                                WebkitBackdropFilter: "none",
+                                filter: "none",
+                                transition: "background-color 0.16s ease",
                               }}
                               onMouseEnter={(event) => {
                                 if (threadSelectionMode || activeThreadId === thread.id) return;
                                 event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
-                                event.currentTarget.style.transform = "translateY(-1px)";
-                                event.currentTarget.style.boxShadow = "0 8px 18px rgba(15, 23, 42, 0.08)";
-                                event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                               }}
                               onMouseLeave={(event) => {
                                 if (threadSelectionMode || activeThreadId === thread.id) return;
                                 event.currentTarget.style.backgroundColor = thread.hasUnread
                                   ? unreadBackgroundColor
                                   : "var(--surface)";
-                                event.currentTarget.style.transform = "translateY(0)";
-                                event.currentTarget.style.boxShadow = "0 4px 12px rgba(15, 23, 42, 0.04)";
-                                event.currentTarget.style.zIndex = "0";
                               }}
                             >
                               <strong
@@ -2733,37 +2790,103 @@ function MessagesPage() {
                   {!loadingMessages && messages.length === 0 && (
                     <p style={{ color: palette.textMuted }}>No messages yet.</p>
                   )}
-                  {messages.map((message, index) => (
-                    <React.Fragment key={message.id}>
-                      {showThreadUnreadMarker && activeThreadUnreadMarkerIndex === index && (
-                        <div
-                          ref={setThreadUnreadMarkerEl}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                            width: "100%",
-                          }}
-                        >
-                          <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
-                          <span style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: systemTitleColor }}>
-                            Unread
-                          </span>
-                          <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
-                        </div>
-                      )}
-                      <MessageBubble
-                        message={message}
-                        isMine={message.senderId === dbUserId}
-                        nameColor={userNameColor}
-                        userRoles={user?.roles || []}
-                        currentUserId={dbUserId}
-                        onApproveLeaveRequest={handleApproveLeaveRequest}
-                        onDeclineLeaveRequest={handleOpenDeclineLeaveRequest}
-                        decisionBusy={leaveDecisionBusy}
-                      />
-                    </React.Fragment>
-                  ))}
+                  {messages.map((message, index) => {
+                    const prev = index > 0 ? messages[index - 1] : null;
+                    const next = index < messages.length - 1 ? messages[index + 1] : null;
+                    const currentDate = new Date(message.createdAt);
+                    const prevDate = prev ? new Date(prev.createdAt) : null;
+                    const sameDayAsPrev =
+                      prevDate &&
+                      prevDate.toDateString() === currentDate.toDateString();
+                    const showDayDivider = !sameDayAsPrev;
+                    const GROUP_WINDOW_MS = 5 * 60 * 1000;
+                    const sameSenderAsPrev =
+                      prev &&
+                      sameDayAsPrev &&
+                      prev.senderId === message.senderId &&
+                      currentDate - prevDate < GROUP_WINDOW_MS;
+                    const nextDate = next ? new Date(next.createdAt) : null;
+                    const sameDayAsNext =
+                      nextDate &&
+                      nextDate.toDateString() === currentDate.toDateString();
+                    const sameSenderAsNext =
+                      next &&
+                      sameDayAsNext &&
+                      next.senderId === message.senderId &&
+                      nextDate - currentDate < GROUP_WINDOW_MS;
+                    const isFirstInGroup = !sameSenderAsPrev;
+                    const isLastInGroup = !sameSenderAsNext;
+                    const dayLabel = currentDate.toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    });
+                    return (
+                      <React.Fragment key={message.id}>
+                        {showDayDivider && (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              width: "100%",
+                            }}
+                          >
+                            <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
+                            <span style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: systemTitleColor }}>
+                              {dayLabel}
+                            </span>
+                            <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
+                          </div>
+                        )}
+                        {showThreadUnreadMarker && activeThreadUnreadMarkerIndex === index && (
+                          <div
+                            ref={setThreadUnreadMarkerEl}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              width: "100%",
+                            }}
+                          >
+                            <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
+                            <span style={{ fontSize: "var(--text-caption)", fontWeight: 700, color: systemTitleColor }}>
+                              Unread
+                            </span>
+                            <div style={{ flex: 1, height: "1px", backgroundColor: palette.border }} />
+                          </div>
+                        )}
+                        <MessageBubble
+                          message={message}
+                          isMine={message.senderId === dbUserId}
+                          nameColor={userNameColor}
+                          userRoles={user?.roles || []}
+                          currentUserId={dbUserId}
+                          onApproveLeaveRequest={handleApproveLeaveRequest}
+                          onDeclineLeaveRequest={handleOpenDeclineLeaveRequest}
+                          decisionBusy={leaveDecisionBusy}
+                          isFirstInGroup={isFirstInGroup}
+                          isLastInGroup={isLastInGroup}
+                          reactions={messageReactions[message.id] || []}
+                          onReact={(emoji) =>
+                            setMessageReactions((prev) => {
+                              const current = prev[message.id] || [];
+                              const existing = current.find(
+                                (r) => r.userId === dbUserId && r.emoji === emoji
+                              );
+                              const nextList = existing
+                                ? current.filter(
+                                    (r) => !(r.userId === dbUserId && r.emoji === emoji)
+                                  )
+                                : [...current, { userId: dbUserId, emoji }];
+                              return { ...prev, [message.id]: nextList };
+                            })
+                          }
+                          onReply={() => setReplyTo(message)}
+                        />
+                      </React.Fragment>
+                    );
+                  })}
                 </DevLayoutSection>
 
                 <DevLayoutSection
@@ -2774,7 +2897,6 @@ function MessagesPage() {
                   onSubmit={handleSendMessage}
                   style={{
                     marginTop: "16px",
-                    borderTop: `1px solid ${palette.border}`,
                     paddingTop: "12px",
                     display: "flex",
                     flexDirection: "column",
@@ -2840,6 +2962,58 @@ function MessagesPage() {
                     </div>
                   )}
 
+                  {replyTo && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "stretch",
+                        gap: "10px",
+                        padding: "8px 12px",
+                        borderRadius: radii.lg,
+                        backgroundColor: "var(--search-surface)",
+                        position: "relative",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "3px",
+                          borderRadius: "2px",
+                          backgroundColor: palette.accent,
+                        }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: "0.72rem", fontWeight: 700, color: palette.accent }}>
+                          Replying to {replyTo.sender?.name || "message"}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "0.78rem",
+                            color: palette.textMuted,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {String(replyTo.content || "").slice(0, 140)}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setReplyTo(null)}
+                        aria-label="Cancel reply"
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          color: palette.textMuted,
+                          cursor: "pointer",
+                          fontSize: "1rem",
+                          padding: "0 4px",
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
                   <textarea
                     id="message-textarea"
                     rows={3}
@@ -2849,49 +3023,41 @@ function MessagesPage() {
                     style={{
                       width: "100%",
                       borderRadius: radii.lg,
-                      border: `1px solid ${palette.border}`,
+                      border: "none",
+                      outline: "none",
                       padding: "12px 14px",
                       resize: "none",
                       backgroundColor: "var(--surface)",
                     }}
                   />
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
+                      pill
                       onClick={() => setCommandHelpOpen(true)}
+                      title="Slash command help"
+                      aria-label="Slash command help"
                       style={{
                         width: "32px",
                         height: "32px",
-                        borderRadius: "var(--radius-full)",
-                        border: `1px solid ${palette.border}`,
-                        backgroundColor: "var(--surface)",
-                        color: palette.accent,
+                        minWidth: "32px",
+                        minHeight: "32px",
+                        padding: 0,
                         fontWeight: 700,
                         fontSize: "var(--text-h4)",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
                       }}
-                      title="Slash command help"
                     >
                       ?
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
+                      variant="primary"
+                      pill
                       disabled={!canSend}
-                      style={{
-                        border: "none",
-                        borderRadius: radii.pill,
-                        padding: "12px 20px",
-                        backgroundColor: canSend ? palette.accent : "var(--info-surface)",
-                        color: canSend ? "var(--surface)" : "var(--info)",
-                        fontWeight: 600,
-                        cursor: canSend ? "pointer" : "not-allowed",
-                      }}
                     >
                       {sending ? "Sending…" : "Send"}
-                    </button>
+                    </Button>
                   </div>
                   {conversationError && (
                     <p style={{ color: "var(--danger)", margin: 0, fontSize: "var(--text-body-sm)" }}>

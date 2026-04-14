@@ -2879,6 +2879,13 @@ input[type="search"]::-webkit-search-results-decoration {
   width: 100%;
 }
 
+.tab-api--inline {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  flex: 0 0 auto;
+}
+
 .tab-api__item {
   min-height: var(--control-height-xs);
   padding: var(--control-padding-xs);
