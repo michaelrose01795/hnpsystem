@@ -3,8 +3,10 @@
 "use client";
 
 import React, { useCallback, useEffect, useState, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
+import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
@@ -1935,6 +1937,24 @@ export default function TechJobDetailPage() {
     [confirm]
   );
 
+  const handleRenameDocument = useCallback(async (fileId, newName) => {
+    if (!fileId || !newName) return;
+    try {
+      await fetch(`/api/jobcards/${encodeURIComponent(jobNumber)}/files`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId, fileName: newName }),
+      });
+      setJobDocuments((prev) =>
+        prev.map((doc) =>
+          (doc.id || doc.file_id) === fileId ? { ...doc, name: newName, file_name: newName } : doc
+        )
+      );
+    } catch {
+      // silently ignore — gallery refreshes on next fetch
+    }
+  }, [jobNumber]);
+
   // Handler: VHC button click - only navigate if VHC is required
   const handleVhcClick = () => {
     if (!jobData?.jobCard?.vhcRequired) {
@@ -2313,49 +2333,7 @@ export default function TechJobDetailPage() {
   if (loading) {
     return (
       <>
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            minHeight: "60vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "12px",
-              color: "var(--text-primary)",
-            }}
-          >
-            <div
-              aria-hidden="true"
-              style={{
-                width: "28px",
-                height: "28px",
-                borderRadius: "50%",
-                border: "3px solid rgba(var(--accent-base-rgb), 0.18)",
-                borderTopColor: "var(--primary)",
-                animation: "spin 0.8s linear infinite",
-              }}
-            />
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-secondary)" }}>
-              Loading job...
-            </div>
-          </div>
-        </div>
-        <style jsx>{`
-          @keyframes spin {
-            to {
-              transform: rotate(360deg);
-            }
-          }
-        `}</style>
+        <PageContentSkeleton route={router.asPath || "/job-cards/myjobs"} />
       </>
     );
   }
@@ -2710,90 +2688,10 @@ export default function TechJobDetailPage() {
               minWidth: 0,
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "flex-end",
               gap: "12px",
             }}
           >
-            <DevLayoutSection
-              as="div"
-              className="app-layout-tab-row"
-              sectionKey="myjob-tab-row"
-              sectionType="tab-row"
-              parentKey="myjob-header"
-              style={{
-                flex: 1,
-                minWidth: 0,
-                overflowX: "auto",
-                flexShrink: 1,
-                scrollbarWidth: "thin",
-                scrollbarColor: "var(--scrollbar-thumb) transparent",
-                scrollBehavior: "smooth",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-              {visibleTabs.map((tab) => {
-                const isActive = activeTab === tab;
-                const isVhcTab = tab === "vhc";
-                const isVhcGreen = isVhcTab && isVhcCompleted;
-                const isVhcAmber = isVhcTab && vhcTabAmberReady;
-                const isComplete =
-                  isVhcGreen ||
-                  (tab === "write-up" && writeUpTechComplete);
-                const labelMap = {
-                  overview: "Overview",
-                  vhc: "VHC",
-                  parts: "Parts",
-                  notes: "Notes",
-                  "write-up": "Write-Up",
-                  documents: "Documents",
-                };
-                const tabTone = isComplete ? "success" : isVhcAmber ? "warning" : "default";
-                const baseBackground = isActive ? "var(--primary)" : "transparent";
-                const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
-                const amberBackground = isActive ? "var(--warning)" : "var(--warning-surface, rgba(245, 158, 11, 0.1))";
-                const background = tabTone === "success"
-                  ? completeBackground
-                  : tabTone === "warning"
-                  ? amberBackground
-                  : baseBackground;
-                const color = tabTone === "success"
-                  ? isActive
-                    ? "var(--text-inverse)"
-                    : "var(--success-dark)"
-                  : tabTone === "warning"
-                  ? isActive
-                    ? "var(--text-inverse)"
-                    : "var(--warning-dark)"
-                  : isActive
-                  ? "var(--text-inverse)"
-                  : "var(--text-primary)";
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    style={{
-                      flex: "0 0 auto",
-                      borderRadius: "var(--control-radius)",
-                      border: "1px solid transparent",
-                      padding: "10px 20px",
-                      fontSize: "0.9rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      background,
-                      color,
-                      transition: "all 0.15s ease",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      textTransform: "capitalize",
-                      whiteSpace: "nowrap"
-                    }}
-                  >
-                    {labelMap[tab] || tab.replace("-", " ")}
-                  </button>
-                );
-              })}
-            </DevLayoutSection>
             <div style={{
             display: "flex",
             alignItems: "center",
@@ -3009,6 +2907,90 @@ export default function TechJobDetailPage() {
                   {stat.label}
                 </span>
               </CardTag>
+            );
+          })}
+        </DevLayoutSection>
+
+        {/* Tab Row */}
+        <DevLayoutSection
+          as="div"
+          className="app-layout-tab-row"
+          sectionKey="myjob-tab-row"
+          sectionType="tab-row"
+          parentKey="myjob-page-shell"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            marginBottom: "12px",
+            overflowX: "auto",
+            flexShrink: 0,
+            scrollbarWidth: "thin",
+            scrollbarColor: "var(--scrollbar-thumb) transparent",
+            scrollBehavior: "smooth",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {visibleTabs.map((tab) => {
+            const isActive = activeTab === tab;
+            const isVhcTab = tab === "vhc";
+            const isVhcGreen = isVhcTab && isVhcCompleted;
+            const isVhcAmber = isVhcTab && vhcTabAmberReady;
+            const isComplete =
+              isVhcGreen ||
+              (tab === "write-up" && writeUpTechComplete);
+            const labelMap = {
+              overview: "Overview",
+              vhc: "VHC",
+              parts: "Parts",
+              notes: "Notes",
+              "write-up": "Write-Up",
+              documents: "Documents",
+            };
+            const tabTone = isComplete ? "success" : isVhcAmber ? "warning" : "default";
+            const baseBackground = isActive ? "var(--primary)" : "transparent";
+            const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
+            const amberBackground = isActive ? "var(--warning)" : "var(--warning-surface, rgba(245, 158, 11, 0.1))";
+            const background = tabTone === "success"
+              ? completeBackground
+              : tabTone === "warning"
+              ? amberBackground
+              : baseBackground;
+            const color = tabTone === "success"
+              ? isActive
+                ? "var(--text-inverse)"
+                : "var(--success-dark)"
+              : tabTone === "warning"
+              ? isActive
+                ? "var(--text-inverse)"
+                : "var(--warning-dark)"
+              : isActive
+              ? "var(--text-inverse)"
+              : "var(--text-primary)";
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  flex: "0 0 auto",
+                  borderRadius: "var(--control-radius)",
+                  border: "1px solid transparent",
+                  padding: "10px 20px",
+                  fontSize: "0.9rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  background,
+                  color,
+                  transition: "all 0.15s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  textTransform: "capitalize",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {labelMap[tab] || tab.replace("-", " ")}
+              </button>
             );
           })}
         </DevLayoutSection>
@@ -4488,6 +4470,7 @@ export default function TechJobDetailPage() {
                   canDelete={canManageDocuments}
                   onDelete={handleDeleteDocument}
                   onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined}
+                  onRenameDocument={handleRenameDocument}
                 />
               </DevLayoutSection>
             </DevLayoutSection>
@@ -4611,12 +4594,40 @@ export async function getServerSideProps() {
   };
 }
 
+const DOC_TYPE_META = {
+  pdf:  { label: "PDF",  bg: "var(--danger-surface)",  color: "var(--danger)"  },
+  png:  { label: "PNG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  jpg:  { label: "JPG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  jpeg: { label: "JPG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  gif:  { label: "GIF",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  webp: { label: "WEBP", bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  svg:  { label: "SVG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
+  doc:  { label: "DOC",  bg: "var(--warning-surface)", color: "var(--warning)"  },
+  docx: { label: "DOCX", bg: "var(--warning-surface)", color: "var(--warning)"  },
+  xls:  { label: "XLS",  bg: "var(--success-surface)", color: "var(--success)"  },
+  xlsx: { label: "XLSX", bg: "var(--success-surface)", color: "var(--success)"  },
+};
+
+function getDocTypeMeta(mimeOrExt = "") {
+  const ext = mimeOrExt.split("/").pop().split(".").pop().toLowerCase();
+  return DOC_TYPE_META[ext] || { label: ext.slice(0, 4).toUpperCase() || "FILE", bg: "var(--surface-light)", color: "var(--text-secondary)" };
+}
+
+function isImageMime(mime = "") {
+  return /^image\/(png|jpe?g|gif|webp|svg\+xml|bmp)$/i.test(mime);
+}
+
 function DocumentsTab({
   documents = [],
   canDelete,
   onDelete,
-  onManageDocuments
+  onManageDocuments,
+  onRenameDocument,
 }) {
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [isRenamingPreview, setIsRenamingPreview] = useState(false);
+  const [previewRenameValue, setPreviewRenameValue] = useState("");
+
   const sortedDocuments = useMemo(() => {
     return [...(documents || [])].sort((a, b) => {
       const aTime = new Date(a.uploadedAt || a.uploaded_at || 0).getTime();
@@ -4625,21 +4636,11 @@ function DocumentsTab({
     });
   }, [documents]);
 
-  const formatTimestamp = (value) => {
-    if (!value) return "Unknown";
+  const formatDate = (value) => {
+    if (!value) return "";
     const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return "Unknown";
-    }
-    return parsed.toLocaleString();
-  };
-
-  const handlePreview = (doc) => {
-    if (!doc?.url) return;
-    const targetUrl = doc.url.startsWith("http")
-      ? doc.url
-      : `${window.location.origin}${doc.url}`;
-    window.open(targetUrl, "_blank", "noopener,noreferrer");
+    if (Number.isNaN(parsed.getTime())) return "";
+    return parsed.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   };
 
   return (
@@ -4648,7 +4649,173 @@ function DocumentsTab({
       sectionKey="myjob-documents-panel"
       sectionType="section-shell"
       parentKey="myjob-tab-documents"
+      backgroundToken="layer-section-level-1"
+      style={{ backgroundColor: "var(--layer-section-level-1)" }}
     >
+      {previewDoc && typeof document !== "undefined" && createPortal(
+        <div
+          onClick={() => setPreviewDoc(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1400,
+            backgroundColor: "rgba(0,0,0,0.75)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "24px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "var(--surface)",
+              borderRadius: "var(--radius-xl)",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              maxWidth: "min(92vw, 1000px)",
+              maxHeight: "90vh",
+              width: "100%",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: "10px",
+                padding: "16px 20px",
+                borderBottom: "1px solid var(--surface-light)",
+                flexShrink: 0,
+              }}
+            >
+              {isRenamingPreview ? (
+                <>
+                  <input
+                    autoFocus
+                    value={previewRenameValue}
+                    onChange={(e) => setPreviewRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const trimmed = previewRenameValue.trim();
+                        if (trimmed && typeof onRenameDocument === "function") {
+                          onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
+                          setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                        }
+                        setIsRenamingPreview(false);
+                      }
+                      if (e.key === "Escape") setIsRenamingPreview(false);
+                    }}
+                    style={{
+                      flex: 1, padding: "6px 10px",
+                      borderRadius: "var(--input-radius)",
+                      border: "1px solid var(--primary)",
+                      fontSize: "14px", fontWeight: 600,
+                      color: "var(--text-primary)",
+                      backgroundColor: "var(--surface)",
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = previewRenameValue.trim();
+                      if (trimmed && typeof onRenameDocument === "function") {
+                        onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
+                        setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                      }
+                      setIsRenamingPreview(false);
+                    }}
+                    style={{
+                      padding: "6px 14px", border: "none",
+                      borderRadius: "var(--input-radius)",
+                      backgroundColor: "var(--primary)", color: "var(--text-inverse)",
+                      fontSize: "13px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsRenamingPreview(false)}
+                    style={{
+                      padding: "6px 10px", border: "none",
+                      borderRadius: "var(--input-radius)",
+                      backgroundColor: "var(--surface-light)", color: "var(--text-secondary)",
+                      fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
+                    Document Preview
+                  </span>
+                  {typeof onRenameDocument === "function" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentName = previewDoc.name || previewDoc.file_name || "";
+                        setPreviewRenameValue(currentName);
+                        setIsRenamingPreview(true);
+                      }}
+                      style={{
+                        padding: "6px 14px", border: "1px solid var(--surface-light)",
+                        borderRadius: "var(--input-radius)",
+                        backgroundColor: "var(--surface)", color: "var(--text-primary)",
+                        fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      Rename
+                    </button>
+                  )}
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => { setPreviewDoc(null); setIsRenamingPreview(false); }}
+                style={{
+                  width: "32px", height: "32px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "none", borderRadius: "var(--radius-xs)",
+                  backgroundColor: "var(--surface-light)",
+                  color: "var(--text-primary)",
+                  fontSize: "18px", lineHeight: 1,
+                  cursor: "pointer", fontWeight: 400, flexShrink: 0,
+                }}
+                aria-label="Close preview"
+              >
+                ×
+              </button>
+            </div>
+
+            <div
+              style={{
+                flex: 1, overflow: "auto",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                backgroundColor: "var(--surface-dark, #0a0a0a)",
+                minHeight: "300px",
+              }}
+            >
+              {isImageMime(previewDoc.type || previewDoc.file_type || "") ? (
+                <img
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  alt="Document preview"
+                  style={{
+                    maxWidth: "100%", maxHeight: "80vh",
+                    objectFit: "contain", display: "block",
+                  }}
+                />
+              ) : (
+                <iframe
+                  src={previewDoc.url || previewDoc.file_url || ""}
+                  title="Document preview"
+                  style={{ width: "100%", height: "80vh", border: "none", display: "block" }}
+                />
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <DevLayoutSection
         as="div"
         sectionKey="myjob-documents-toolbar"
@@ -4658,25 +4825,22 @@ function DocumentsTab({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          gap: "16px",
+          gap: "12px",
+          marginBottom: "16px",
           flexWrap: "wrap",
-          marginBottom: "12px"
         }}
       >
-        <div />
+        <span style={{ fontSize: "13px", color: "var(--text-secondary)", fontWeight: 500 }}>
+          {sortedDocuments.length > 0 ? `${sortedDocuments.length} file${sortedDocuments.length !== 1 ? "s" : ""}` : "No documents yet"}
+        </span>
         {typeof onManageDocuments === "function" && (
           <button
             type="button"
             onClick={onManageDocuments}
             style={{
-              padding: "10px 18px",
-              borderRadius: "var(--control-radius-xs)",
-              border: "none",
-              backgroundColor: "var(--primary)",
-              color: "white",
-              fontWeight: "600",
-              fontSize: "14px",
-              cursor: "pointer"
+              padding: "9px 18px", borderRadius: "var(--radius-sm)", border: "none",
+              backgroundColor: "var(--primary)", color: "var(--text-inverse)",
+              fontWeight: "600", fontSize: "14px", cursor: "pointer",
             }}
           >
             Upload Documents
@@ -4691,113 +4855,145 @@ function DocumentsTab({
           sectionType="content-card"
           parentKey="myjob-documents-panel"
           style={{
-            padding: "28px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px dashed var(--accent-purple-surface)",
+            padding: "48px 24px",
+            borderRadius: "var(--radius-md)",
+            border: "2px dashed var(--surface-light)",
             textAlign: "center",
-            color: "var(--info)",
-            fontSize: "14px"
+            color: "var(--text-secondary)",
+            fontSize: "14px",
+            lineHeight: 1.6,
           }}
         >
-          No stored documents yet. Upload check-sheets, signed paperwork, or customer photos to keep
-          everything in one place.
+          <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>📄</div>
+          <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-primary)" }}>No documents attached</div>
+          Upload check-sheets, signed paperwork, or photos to keep everything in one place.
         </DevLayoutSection>
       ) : (
-        <DevLayoutSection
-          as="div"
-          sectionKey="myjob-documents-table"
-          sectionType="data-table"
-          parentKey="myjob-documents-panel"
+        <div
           style={{
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--accent-purple-surface)",
-            overflow: "hidden"
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+            gap: "14px",
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "2.5fr 1fr 1fr 0.8fr",
-              gap: "12px",
-              padding: "14px 18px",
-              backgroundColor: "var(--accent-purple-surface)",
-              fontSize: "12px",
-              fontWeight: "600",
-              color: "var(--accent-purple)"
-            }}
-          >
-            <span>File</span>
-            <span>Folder</span>
-            <span>Uploaded</span>
-            <span style={{ textAlign: "right" }}>Actions</span>
-          </div>
-          {sortedDocuments.map((doc) => (
-            <div
-              key={doc.id || doc.file_id || doc.url}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "2.5fr 1fr 1fr 0.8fr",
-                gap: "12px",
-                padding: "16px 18px",
-                borderTop: "1px solid var(--accent-purple-surface)",
-                alignItems: "center"
-              }}
-            >
-              <div>
-                <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
-                  {doc.name || doc.file_name || "Document"}
-                </div>
-                <div style={{ fontSize: "12px", color: "var(--info)" }}>
-                  {(doc.type || doc.file_type || "unknown").split("/").pop()}
-                </div>
-                <div style={{ fontSize: "11px", color: "var(--info-dark)", marginTop: "4px" }}>
-                  Uploaded by {doc.uploadedBy || doc.uploaded_by || "system"}
-                </div>
-              </div>
-              <div style={{ fontSize: "13px", color: "var(--info)" }}>
-                {(doc.folder || "general").replace(/-/g, " ")}
-              </div>
-              <div style={{ fontSize: "13px", color: "var(--info)" }}>
-                {formatTimestamp(doc.uploadedAt || doc.uploaded_at)}
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+          {sortedDocuments.map((doc) => {
+            const docName  = doc.name  || doc.file_name  || "Document";
+            const docType  = doc.type  || doc.file_type  || "";
+            const docUrl   = doc.url   || doc.file_url   || "";
+            const isImage  = isImageMime(docType);
+            const typeMeta = getDocTypeMeta(docType || docName);
+            const dateStr  = formatDate(doc.uploadedAt || doc.uploaded_at);
+
+            return (
+              <div
+                key={doc.id || doc.file_id || docUrl}
+                style={{
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--surface-light)",
+                  overflow: "hidden",
+                  backgroundColor: "var(--surface)",
+                  display: "flex",
+                  flexDirection: "column",
+                  transition: "box-shadow 0.15s ease",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
+              >
                 <button
                   type="button"
-                  onClick={() => handlePreview(doc)}
+                  onClick={() => docUrl && setPreviewDoc(doc)}
+                  title={`Open ${docName}`}
                   style={{
-                    padding: "6px 10px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--info)",
-                    backgroundColor: "var(--surface)",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    cursor: "pointer"
+                    display: "block",
+                    width: "100%",
+                    height: "130px",
+                    border: "none",
+                    padding: 0,
+                    cursor: docUrl ? "pointer" : "default",
+                    backgroundColor: isImage ? "var(--surface-dark, #111)" : typeMeta.bg,
+                    flexShrink: 0,
                   }}
                 >
-                  View
+                  {isImage && docUrl ? (
+                    <img
+                      src={docUrl}
+                      alt={docName}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%", height: "100%",
+                        display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "center", gap: "6px",
+                      }}
+                    >
+                      <span style={{ fontSize: "36px", lineHeight: 1, opacity: 0.7 }}>
+                        {docType.includes("pdf") ? "📕" : docType.includes("sheet") || docName.match(/\.xls/i) ? "📗" : docType.includes("word") || docName.match(/\.doc/i) ? "📘" : "📄"}
+                      </span>
+                      <span style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.05em", color: typeMeta.color }}>
+                        {typeMeta.label}
+                      </span>
+                    </div>
+                  )}
                 </button>
-                {canDelete && (
-                  <button
-                    type="button"
-                    onClick={() => typeof onDelete === "function" && onDelete(doc)}
+
+                <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <div
+                    title={docName}
                     style={{
-                      padding: "6px 10px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "1px solid var(--danger)",
-                      backgroundColor: "var(--danger-surface)",
-                      color: "var(--danger)",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      cursor: "pointer"
+                      fontSize: "13px", fontWeight: 600, color: "var(--text-primary)",
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}
                   >
-                    Delete
+                    {docName}
+                  </div>
+                  {dateStr && (
+                    <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{dateStr}</div>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex", gap: "6px", padding: "8px 12px",
+                    borderTop: "1px solid var(--surface-light)",
+                    backgroundColor: "var(--surface-light)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => docUrl && setPreviewDoc(doc)}
+                    disabled={!docUrl}
+                    style={{
+                      flex: 1, padding: "5px 0",
+                      borderRadius: "var(--radius-xs)", border: "none",
+                      backgroundColor: "var(--accent-surface)", color: "var(--accent-strong)",
+                      fontSize: "12px", fontWeight: 600, cursor: docUrl ? "pointer" : "not-allowed",
+                      opacity: docUrl ? 1 : 0.5,
+                    }}
+                  >
+                    View
                   </button>
-                )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => typeof onDelete === "function" && onDelete(doc)}
+                      style={{
+                        flex: 1, padding: "5px 0",
+                        borderRadius: "var(--radius-xs)", border: "none",
+                        backgroundColor: "var(--danger-surface)", color: "var(--danger)",
+                        fontSize: "12px", fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </DevLayoutSection>
+            );
+          })}
+        </div>
       )}
     </DevLayoutSection>
   );

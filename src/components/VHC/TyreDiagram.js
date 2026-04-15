@@ -80,13 +80,13 @@ export default function TyreDiagram({
 
   const containerStyle = {
     width: "100%",
+    padding: "8px",
+    border: "1px solid var(--accent-border)",
     borderRadius: "var(--section-card-radius)",
-    padding: "24px",
-    border: "none",
-    background: "var(--control-bg)",
+    background: "var(--accent-surface)",
     display: "flex",
     flexDirection: "column",
-    gap: "20px",
+    gap: "8px",
     alignItems: "center",
     justifyContent: "center",
     boxShadow: "none",
@@ -95,22 +95,20 @@ export default function TyreDiagram({
 
   const stageStyle = {
     width: "100%",
-    maxWidth: "360px",
+    maxWidth: "none",
     aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
     position: "relative",
     margin: 0,
     padding: 0,
-    borderRadius: "var(--radius-md)",
-    backgroundColor: "rgba(var(--primary-rgb), 0.03)",
+    background: "transparent",
     display: "grid",
     placeItems: "center",
-    boxShadow: "inset 0 0 0 1px rgba(var(--primary-rgb), 0.18)",
     overflow: "hidden",
   };
 
   return (
     <div data-dev-section="1" data-dev-section-key="vhc-wheels-diagram-container" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-diagram" style={containerStyle}>
-      <div data-dev-section="1" data-dev-section-key="vhc-wheels-diagram-stage" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-diagram-container" style={stageStyle}>
+      <div style={stageStyle}>
         <CarImage
           aria-hidden="true"
           style={{
@@ -118,7 +116,7 @@ export default function TyreDiagram({
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "118%",
+            width: "100%",
             height: "auto",
             pointerEvents: "none",
             userSelect: "none",

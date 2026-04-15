@@ -46,6 +46,7 @@ import NotesTabNew from "@/components/NotesTab";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
@@ -3189,7 +3190,11 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
   // ✅ Loading State
   if (loading) {
-    return null;
+    return (
+      <>
+        <PageContentSkeleton route={router.asPath || "/job-cards"} />
+      </>
+    );
   }
 
   // ✅ Error State

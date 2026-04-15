@@ -56,33 +56,31 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
 
   const containerStyle = {
     width: "100%",
-    background: "var(--control-bg)",
+    background: "var(--accent-surface)",
+    padding: "8px",
     borderRadius: "var(--section-card-radius)",
-    padding: "24px",
     display: "flex",
     flexDirection: "column",
-    gap: "20px",
+    gap: "8px",
     alignItems: "center",
     justifyContent: "center",
     color: palette.textPrimary,
-    border: "none",
+    border: "1px solid var(--accent-border)",
     boxShadow: "none",
   };
 
   const stageStyle = {
     width: "100%",
-    maxWidth: "360px",
+    maxWidth: "none",
     aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
     position: "relative",
-    borderRadius: "var(--radius-lg)",
-    backgroundColor: "rgba(var(--primary-rgb), 0.03)",
-    boxShadow: "inset 0 0 0 1px rgba(var(--primary-rgb), 0.18)",
+    background: "transparent",
     overflow: "hidden",
   };
 
   return (
     <div data-dev-section="1" data-dev-section-key="vhc-brakes-diagram-container" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-diagram" style={containerStyle}>
-      <div data-dev-section="1" data-dev-section-key="vhc-brakes-diagram-stage" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-diagram-container" style={stageStyle}>
+      <div style={stageStyle}>
         <CarImage
           aria-hidden="true"
           style={{
@@ -90,7 +88,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "118%",
+            width: "100%",
             height: "auto",
             pointerEvents: "none",
             userSelect: "none",

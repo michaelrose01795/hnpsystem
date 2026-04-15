@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SectionShell, StatCard } from "@/components/ui";
+import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
@@ -266,40 +267,7 @@ export default function TechsDashboard() {
   if (loading) {
     return (
       <>
-        <SectionShell
-          sectionKey="tech-dashboard-loading"
-          parentKey="app-layout-page-card"
-          style={{
-            ...centeredStateStyle,
-            minHeight: "70vh",
-            gap: "16px",
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              width: "60px",
-              height: "60px",
-              border: "4px solid var(--surface-light)",
-              borderTop: "4px solid var(--primary)",
-              borderRadius: "var(--radius-full)",
-              animation: "tech-dashboard-spin 1s linear infinite",
-            }}
-          />
-          <p style={{ color: "var(--text-secondary)", fontSize: "16px", margin: 0 }}>
-            Loading dashboard...
-          </p>
-          <style jsx>{`
-            @keyframes tech-dashboard-spin {
-              0% {
-                transform: rotate(0deg);
-              }
-              100% {
-                transform: rotate(360deg);
-              }
-            }
-          `}</style>
-        </SectionShell>
+        <PageContentSkeleton route={router.asPath || "/tech/dashboard"} />
       </>
     );
   }

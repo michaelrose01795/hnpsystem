@@ -708,11 +708,10 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   color: var(--accentText);
   border-radius: var(--control-radius-sm);
   font-weight: 600;
-  border: var(--nav-link-border);
+  border: none;
   text-decoration: none;
   transition:
     background-color 0.18s ease,
-    border-color 0.18s ease,
     color 0.18s ease;
 }
 
@@ -720,15 +719,19 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .app-sidebar__link:focus-visible {
   outline: none;
   background: var(--nav-link-bg-hover);
-  border-color: transparent;
   text-decoration: none;
 }
 
 .app-sidebar__link.is-active {
   background: var(--nav-link-bg-active);
   color: var(--onAccentText);
-  border: var(--nav-link-border-active);
+  border: none;
   text-decoration: none;
+}
+
+.app-sidebar .app-topbar-button,
+.app-sidebar .app-topbar-link {
+  border: none;
 }
 
 @media (max-width: 1024px) {

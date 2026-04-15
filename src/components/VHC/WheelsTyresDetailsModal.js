@@ -351,11 +351,10 @@ function TyreSpecInputRow({ children }) {
     <div
       style={{
         display: "flex",
-        flexWrap: "nowrap",
+        flexWrap: "wrap",
         gap: "12px",
         marginTop: "10px",
         alignItems: "flex-end",
-        overflowX: "auto",
         paddingBottom: "2px",
       }}
     >
@@ -506,6 +505,7 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
   const [concernInput, setConcernInput] = useState("");
   const [concernStatus, setConcernStatus] = useState("Amber");
   const [concernEditIndex, setConcernEditIndex] = useState(null);
+
 
   useEffect(() => {
     setShowValidation(false);

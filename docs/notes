@@ -1,11 +1,5 @@
-have it so the /job-cards/myjobs/[jobnumber] page uses the same loading style as the others eg skeliton etc
 
-
-haev it so the document tab section wihtin /job-cards/myjobs/00076 :: 1.2.2.1.1.3.1.1.2 (myjob-documents-panel) follows the job-cards/[jobnumber] document page there
-
-remove the borders from all of the buttons within the sidebar section
-
-
+change it so the whole seciton doesnt get smaller within "/job-cards/myjobs/00076 :: 1.2.1.1.1.3.1.1.1.1 (vhc-wheels-container)" section but "/job-cards/myjobs/00076 :: 1.2.1.1.1.3.1.1.1.1.2.1.1.2.2.1 (vhc-wheels-tyre-details)" the fields within these goes onto two rows neatly. 
 
 
 Service Manager
