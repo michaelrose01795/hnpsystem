@@ -135,7 +135,7 @@ export const vhcModalStyles = {
     height,
     maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
     background: palette.modalGradient,
-    borderRadius: radii.xl,
+    borderRadius: "var(--section-card-radius)",
     border: "none",
     boxShadow: "none",
     display: "flex",

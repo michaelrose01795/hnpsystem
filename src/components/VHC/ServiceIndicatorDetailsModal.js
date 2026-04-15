@@ -30,8 +30,8 @@ const UNDER_BONNET_ITEMS = [
   "Power Steering Fluid",
   "Fuel System",
   "Cam Belt",
-  "Miscellaneous",
   "Service reminder/Oil level",
+  "Miscellaneous",
 ];
 
 const STATUS_OPTIONS = ["Red", "Amber", "Green"];

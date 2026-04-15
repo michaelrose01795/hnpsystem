@@ -14,6 +14,7 @@ export default function VhcAssistantPanel({
   title = "VHC Assistant",
   compact = false,
   showWhy = true,
+  chromeless = false,
 }) {
   const messages = useMemo(() => buildVhcAssistantMessages(state), [state]);
   const tone = scoreTone(state?.readinessScore || 0);
@@ -23,10 +24,10 @@ export default function VhcAssistantPanel({
   return (
     <section
       style={{
-        borderRadius: "var(--radius-sm)",
+        borderRadius: chromeless ? 0 : "var(--radius-sm)",
         border: "none",
-        backgroundColor: "var(--surface)",
-        padding: compact ? "12px" : "16px 20px",
+        backgroundColor: chromeless ? "transparent" : "var(--surface)",
+        padding: chromeless ? 0 : compact ? "12px" : "16px 20px",
         display: "grid",
         gap: compact ? "8px" : "14px",
         width: "100%",

@@ -395,12 +395,13 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 }
 
 .vhc-btn {
-  min-height: unset;
+  min-height: var(--control-height);
   padding: 6px 12px;
   border-radius: var(--radius-xs);
   border: none;
   font-weight: 600;
   font-size: 12px;
+  line-height: 1;
   cursor: pointer;
   transition: background-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
   background: var(--accent-purple-surface);

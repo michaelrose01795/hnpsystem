@@ -5,10 +5,10 @@ import CarImage from "@/components/VHC/CarImage";
 
 const { palette } = themeConfig;
 
-const DIAGRAM_WIDTH = 310;
-const DIAGRAM_HEIGHT = 382.47;
-const TYRE_HIT_WIDTH = 30;
-const TYRE_HIT_HEIGHT = 70;
+const DIAGRAM_WIDTH = 308;
+const DIAGRAM_HEIGHT = 380;
+const TYRE_HIT_WIDTH = 48;
+const TYRE_HIT_HEIGHT = 110;
 const SHOW_ALIGNMENT_DEBUG = false;
 
 const TYRE_KEYS = [
@@ -80,17 +80,17 @@ export default function TyreDiagram({
 
   const containerStyle = {
     width: "100%",
-    padding: "8px",
-    border: "1px solid var(--accent-border)",
-    borderRadius: "var(--section-card-radius)",
     background: "var(--accent-surface)",
+    padding: "4px",
+    borderRadius: "var(--section-card-radius)",
     display: "flex",
     flexDirection: "column",
     gap: "8px",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "none",
     color: palette.textPrimary,
+    border: "1px solid var(--accent-border)",
+    boxShadow: "none",
   };
 
   const stageStyle = {
@@ -98,44 +98,49 @@ export default function TyreDiagram({
     maxWidth: "none",
     aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
     position: "relative",
-    margin: 0,
-    padding: 0,
     background: "transparent",
-    display: "grid",
-    placeItems: "center",
-    overflow: "hidden",
+    overflow: "visible",
+    flexShrink: 0,
   };
 
   return (
     <div data-dev-section="1" data-dev-section-key="vhc-wheels-diagram-container" data-dev-section-type="content-card" data-dev-section-parent="vhc-wheels-diagram" style={containerStyle}>
-      <div style={stageStyle}>
+      <div
+        data-dev-section="1"
+        data-dev-section-key="vhc-wheels-diagram-stage"
+        data-dev-section-type="content-card"
+        data-dev-section-parent="vhc-wheels-diagram-container"
+        style={stageStyle}
+      >
         <CarImage
           aria-hidden="true"
+          data-dev-section="1"
+          data-dev-section-key="vhc-wheels-diagram-image"
+          data-dev-section-type="content-card"
+          data-dev-section-parent="vhc-wheels-diagram-stage"
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "100%",
+            width: "140%",
             height: "auto",
             pointerEvents: "none",
             userSelect: "none",
           }}
         />
-        <svg
-          viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
-          role="img"
-          aria-label="Vehicle tyre overview diagram"
+        {/* Overlay matches the scaled-up car image so button percentages stay on the wheels */}
+        <div
           style={{
             position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            opacity: 0,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: "140%",
+            height: "140%",
             pointerEvents: "none",
           }}
-        />
-
+        >
         {TYRE_KEYS.map(({ key, label, position }) => {
           const entry = tyres?.[key];
           const { depth, overrideStatus, readingText: overrideText } = resolveTyreEntry(entry);
@@ -172,6 +177,10 @@ export default function TyreDiagram({
                 type="button"
                 onClick={() => onSelect?.(key)}
                 aria-label={`${label} tyre`}
+                data-dev-section="1"
+                data-dev-section-key={`vhc-wheels-diagram-tyre-${key}`}
+                data-dev-section-type="content-card"
+                data-dev-section-parent="vhc-wheels-diagram-stage"
                 style={{
                   position: "absolute",
                   left: `${position.left}%`,
@@ -189,7 +198,7 @@ export default function TyreDiagram({
                   boxSizing: "border-box",
                   padding: 0,
                   color: colors.text,
-                  fontSize: "14px",
+                  fontSize: "16px",
                   fontWeight: 800,
                   lineHeight: 1,
                   display: "flex",
@@ -199,6 +208,7 @@ export default function TyreDiagram({
                   cursor: onSelect ? "pointer" : "default",
                   boxShadow: isInvalid ? "0 0 0 2px var(--danger-surface)" : "none",
                   zIndex: 4,
+                  pointerEvents: "auto",
                 }}
               >
                 {displayText}
@@ -223,6 +233,7 @@ export default function TyreDiagram({
             </React.Fragment>
           );
         })}
+        </div>
 
       </div>
       <button
@@ -233,10 +244,11 @@ export default function TyreDiagram({
         data-dev-section-type="content-card"
         data-dev-section-parent="vhc-wheels-diagram-container"
         style={{
+          marginTop: "12px",
           borderRadius: "var(--control-radius)",
           border: "none",
-          minHeight: "var(--control-height-sm)",
-          padding: "var(--control-padding-sm)",
+          minHeight: "var(--control-height-md)",
+          padding: "10px 20px",
           background: invalidSpare
             ? "var(--danger-surface)"
             : spareActive
@@ -244,7 +256,7 @@ export default function TyreDiagram({
               : "var(--control-bg-hover)",
           color: invalidSpare ? "var(--danger)" : spareActive ? "var(--text-inverse)" : "var(--text-primary)",
           fontWeight: 600,
-          fontSize: "var(--control-font-size)",
+          fontSize: "15px",
           cursor: onSpareSelect ? "pointer" : "default",
           boxShadow: invalidSpare ? "0 0 0 2px var(--danger-surface)" : "none",
           transition: "background-color 0.18s ease, color 0.18s ease",

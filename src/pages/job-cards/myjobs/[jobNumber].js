@@ -3369,12 +3369,13 @@ export default function TechJobDetailPage() {
                           jobNumber={jobNumber}
                           userId={dbUserId || user?.id}
                           buttonStyle={{
-                            minHeight: "unset",
+                            minHeight: "var(--control-height)",
                             padding: "6px 12px",
                             borderRadius: "var(--radius-xs)",
                             border: "none",
                             fontWeight: 600,
                             fontSize: "12px",
+                            lineHeight: 1,
                             background: "var(--accent-purple-surface)",
                             color: "var(--accent-purple)",
                             transition: "all 0.18s ease",
@@ -3393,11 +3394,13 @@ export default function TechJobDetailPage() {
                     sectionKey="myjob-vhc-assistant"
                     sectionType="content-card"
                     parentKey="myjob-tab-vhc"
-                    backgroundToken="surface"
+                    backgroundToken="section-card-bg"
+                    className="vhc-content-card"
                   >
                     <VhcAssistantPanel
                       state={vhcAssistantState}
                       title="VHC Assistant (Technician)"
+                      chromeless
                     />
                   </DevLayoutSection>
 

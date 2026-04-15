@@ -1,8 +1,5 @@
 
-change it so the whole seciton doesnt get smaller within "/job-cards/myjobs/00076 :: 1.2.1.1.1.3.1.1.1.1 (vhc-wheels-container)" section but "/job-cards/myjobs/00076 :: 1.2.1.1.1.3.1.1.1.1.2.1.1.2.2.1 (vhc-wheels-tyre-details)" the fields within these goes onto two rows neatly. 
-
-
-Service Manager
+deep dive to make sure that there is nothing else which controls the style and design of the global design and style for dropdowns, canendar and time pickers, text fields, buttons, lables (/bubbles), hover text section (like when u over over a section and it gives a description for that section for example).Service Manager to test this within dev/user-diagnostic page add a column along the right side which shows a sample of all of the listed items which use the global setting so i can see it, also give a colour square of all the colours used within the app, etc. have it so the layout is neat and tidy etc
 /dashboard/service
 
 

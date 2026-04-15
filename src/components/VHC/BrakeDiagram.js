@@ -6,8 +6,8 @@ const { palette } = themeConfig;
 
 const DIAGRAM_WIDTH = 308;
 const DIAGRAM_HEIGHT = 380;
-const PAD_WIDTH = 30;
-const PAD_HEIGHT = 70;
+const PAD_WIDTH = 26;
+const PAD_HEIGHT = 60;
 
 const BRAKE_KEYS = [
   { key: "nsf", label: "NSF", position: { xPct: 27.2, yPct: 23.2 } },
@@ -57,7 +57,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
   const containerStyle = {
     width: "100%",
     background: "var(--accent-surface)",
-    padding: "8px",
+    padding: "4px",
     borderRadius: "var(--section-card-radius)",
     display: "flex",
     flexDirection: "column",
@@ -75,20 +75,30 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
     aspectRatio: `${DIAGRAM_WIDTH} / ${DIAGRAM_HEIGHT}`,
     position: "relative",
     background: "transparent",
-    overflow: "hidden",
+    overflow: "visible",
   };
 
   return (
     <div data-dev-section="1" data-dev-section-key="vhc-brakes-diagram-container" data-dev-section-type="content-card" data-dev-section-parent="vhc-brakes-diagram" style={containerStyle}>
-      <div style={stageStyle}>
+      <div
+        data-dev-section="1"
+        data-dev-section-key="vhc-brakes-diagram-stage"
+        data-dev-section-type="content-card"
+        data-dev-section-parent="vhc-brakes-diagram-container"
+        style={stageStyle}
+      >
         <CarImage
           aria-hidden="true"
+          data-dev-section="1"
+          data-dev-section-key="vhc-brakes-diagram-image"
+          data-dev-section-type="content-card"
+          data-dev-section-parent="vhc-brakes-diagram-stage"
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: "100%",
+            width: "140%",
             height: "auto",
             pointerEvents: "none",
             userSelect: "none",
@@ -98,11 +108,17 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
         viewBox={`0 0 ${DIAGRAM_WIDTH} ${DIAGRAM_HEIGHT}`}
         role="img"
         aria-label="Brake pad and disc overview diagram"
+        data-dev-section="1"
+        data-dev-section-key="vhc-brakes-diagram-svg"
+        data-dev-section-type="content-card"
+        data-dev-section-parent="vhc-brakes-diagram-stage"
         style={{
           position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "140%",
+          height: "140%",
         }}
       >
         {isFrontActive ? (
@@ -166,6 +182,10 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
               key={key}
               onClick={() => onSelect?.(isFrontWheel ? "front" : "rear")}
               style={{ cursor: onSelect ? "pointer" : "default" }}
+              data-dev-section="1"
+              data-dev-section-key={`vhc-brakes-diagram-pad-${key}`}
+              data-dev-section-type="content-card"
+              data-dev-section-parent="vhc-brakes-diagram-svg"
             >
               <rect
                 x={x}
@@ -191,7 +211,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
                 textAnchor="middle"
                 dominantBaseline="middle"
                 fill={colors.text}
-                fontSize={isDrum ? "10" : "12"}
+                fontSize={isDrum ? "9" : "11"}
                 fontWeight="700"
               >
                 {text}

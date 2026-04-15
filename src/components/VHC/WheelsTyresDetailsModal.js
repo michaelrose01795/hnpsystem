@@ -435,57 +435,63 @@ function TyreSpecFields({ tyre, onFieldChange }) {
 
   return (
     <TyreSpecInputRow>
-      <div style={{ flex: "0 0 210px", minWidth: "210px" }}>
-        <label style={labelStyle}>
-          <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
-          <AutoCompleteInput
-            value={tyre.manufacturer}
-            onChange={(value) => onFieldChange("manufacturer", value)}
-            onSelect={() => {
-              setTimeout(() => { sizeRef.current?.focus(); }, 50);
-            }}
-            options={tyreBrands}
-            placeholder="Type to search make"
-          />
-        </label>
+      {/* Make + Size group — stay together on narrow screens */}
+      <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flex: "1 1 360px", minWidth: 0 }}>
+        <div style={{ flex: "1 1 210px", minWidth: "160px" }}>
+          <label style={labelStyle}>
+            <span style={{ fontWeight: 700, color: palette.textPrimary }}>Make</span>
+            <AutoCompleteInput
+              value={tyre.manufacturer}
+              onChange={(value) => onFieldChange("manufacturer", value)}
+              onSelect={() => {
+                setTimeout(() => { sizeRef.current?.focus(); }, 50);
+              }}
+              options={tyreBrands}
+              placeholder="Type to search make"
+            />
+          </label>
+        </div>
+        <div style={{ flex: "0 0 140px", minWidth: "140px", maxWidth: "140px" }}>
+          <label style={labelStyle}>
+            <span style={{ fontWeight: 700, color: palette.textPrimary }}>Size</span>
+            <input
+              ref={sizeRef}
+              value={rawSize || tyre.size || ""}
+              onChange={handleSizeInput}
+              onBlur={handleSizeBlur}
+              onFocus={() => { if (tyre.size && !rawSize) setRawSize(""); }}
+              placeholder={tyre.size || "e.g. 2255518"}
+              inputMode="numeric"
+              style={{ ...baseInputStyle, width: "100%" }}
+            />
+          </label>
+        </div>
       </div>
-      <div style={{ flex: "0 0 220px", minWidth: "220px" }}>
+      {/* Load + Speed group — stay together on narrow screens */}
+      <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flex: "0 1 auto" }}>
         <label style={labelStyle}>
-          <span style={{ fontWeight: 700, color: palette.textPrimary }}>Size</span>
+          <span style={{ fontWeight: 700, color: palette.textPrimary }}>Load Index</span>
           <input
-            ref={sizeRef}
-            value={rawSize || tyre.size || ""}
-            onChange={handleSizeInput}
-            onBlur={handleSizeBlur}
-            onFocus={() => { if (tyre.size && !rawSize) setRawSize(""); }}
-            placeholder={tyre.size || "e.g. 2255518"}
+            ref={loadRef}
+            value={tyre.load}
+            onChange={handleLoadChange}
+            placeholder="e.g. 91"
             inputMode="numeric"
-            style={{ ...baseInputStyle, width: "100%" }}
+            style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
+          />
+        </label>
+        <label style={labelStyle}>
+          <span style={{ fontWeight: 700, color: palette.textPrimary }}>Speed Rating</span>
+          <input
+            ref={speedRef}
+            value={tyre.speed}
+            onChange={handleSpeedChange}
+            placeholder="e.g. V"
+            maxLength={2}
+            style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
           />
         </label>
       </div>
-      <label style={labelStyle}>
-        <span style={{ fontWeight: 700, color: palette.textPrimary }}>Load Index</span>
-        <input
-          ref={loadRef}
-          value={tyre.load}
-          onChange={handleLoadChange}
-          placeholder="e.g. 91"
-          inputMode="numeric"
-          style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
-        />
-      </label>
-      <label style={labelStyle}>
-        <span style={{ fontWeight: 700, color: palette.textPrimary }}>Speed Rating</span>
-        <input
-          ref={speedRef}
-          value={tyre.speed}
-          onChange={handleSpeedChange}
-          placeholder="e.g. V"
-          maxLength={2}
-          style={{ ...baseInputStyle, width: "110px", minWidth: "110px" }}
-        />
-      </label>
     </TyreSpecInputRow>
   );
 }
