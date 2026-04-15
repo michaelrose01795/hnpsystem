@@ -5514,6 +5514,10 @@ export default function VhcDetailsPanel({
     </div>
   );
   const photoFiles = useMemo(() => {
+    const isVhcMedia = (file = {}) => {
+      const folder = String(file.folder || "").trim().toLowerCase();
+      return folder === "vhc" || folder === "vhc-media";
+    };
     const isImage = (file = {}) => {
       const type = (file.file_type || "").toLowerCase();
       const name = (file.file_name || "").toLowerCase();
@@ -5522,9 +5526,13 @@ export default function VhcDetailsPanel({
         /\.(jpg|jpeg|png|gif|webp|heic)$/i.test(name)
       );
     };
-    return jobFiles.filter((file) => isImage(file));
+    return jobFiles.filter((file) => isVhcMedia(file) && isImage(file));
   }, [jobFiles]);
   const videoFiles = useMemo(() => {
+    const isVhcMedia = (file = {}) => {
+      const folder = String(file.folder || "").trim().toLowerCase();
+      return folder === "vhc" || folder === "vhc-media";
+    };
     const isVideo = (file = {}) => {
       const type = (file.file_type || "").toLowerCase();
       const name = (file.file_name || "").toLowerCase();
@@ -5532,7 +5540,7 @@ export default function VhcDetailsPanel({
         type.startsWith("video") || /\.(mp4|mov|avi|mkv|webm)$/i.test(name)
       );
     };
-    return jobFiles.filter((file) => isVideo(file));
+    return jobFiles.filter((file) => isVhcMedia(file) && isVideo(file));
   }, [jobFiles]);
 
   const customerName = useMemo(() => {

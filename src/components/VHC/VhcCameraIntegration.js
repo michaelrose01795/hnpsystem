@@ -1,208 +1,149 @@
 // file location: src/components/VHC/VhcCameraIntegration.js
+// Tab-aware VHC capture launcher that shares the full-screen camera flow.
+
 import React, { useState } from "react";
 import { createVhcButtonStyle } from "@/styles/appTheme";
 import CameraCaptureModal from "./CameraCaptureModal";
+import MediaUploadConfirmModal from "./MediaUploadConfirmModal";
 import PhotoEditorModal from "./PhotoEditorModal";
 import VideoEditorModal from "./VideoEditorModal";
-import MediaUploadConfirmModal from "./MediaUploadConfirmModal";
+import { uploadVhcMediaFile } from "@/lib/vhc/uploadMediaClient";
 
-/**
- * VHC Camera Integration Component
- *
- * Provides a camera button and handles the full flow:
- * 1. Camera Capture (photo or video)
- * 2. Editing (photo annotations or video trim/mute)
- * 3. Upload Confirmation (with customer visibility toggle)
- * 4. Upload to server
- *
- * Usage:
- * <VhcCameraIntegration
- *   jobNumber={job.job_number}
- *   userId={user.id}
- *   activeTab={activeTab}
- *   readOnly={readOnly}
- *   onUploadComplete={() => refreshJobData()}
- * />
- */
 export default function VhcCameraIntegration({
+  jobId,
   jobNumber,
   userId,
   activeTab,
   readOnly = false,
   onUploadComplete,
 }) {
-  // Modal states
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [showPhotoEditor, setShowPhotoEditor] = useState(false);
   const [showVideoEditor, setShowVideoEditor] = useState(false);
   const [showUploadConfirm, setShowUploadConfirm] = useState(false);
   const [launchMode, setLaunchMode] = useState(null);
+  const [isPersistingCapture, setIsPersistingCapture] = useState(false);
 
-  // Media states
   const [capturedMedia, setCapturedMedia] = useState(null);
-  const [mediaType, setMediaType] = useState(null);
   const [editedMedia, setEditedMedia] = useState(null);
+  const [mediaType, setMediaType] = useState(null);
+  const [uploadedMedia, setUploadedMedia] = useState(null);
 
-  // Determine initial mode based on active tab
-  const getInitialMode = () => {
-    if (launchMode) return launchMode;
-    if (activeTab === "photos") return "photo";
-    if (activeTab === "videos") return "video";
-    return "photo"; // default
+  const resetFlow = () => {
+    setShowCameraModal(false);
+    setShowPhotoEditor(false);
+    setShowVideoEditor(false);
+    setShowUploadConfirm(false);
+    setLaunchMode(null);
+    setCapturedMedia(null);
+    setEditedMedia(null);
+    setMediaType(null);
+    setUploadedMedia(null);
+    setIsPersistingCapture(false);
   };
 
-  // Handle camera button click
+  const getInitialMode = () => {
+    if (launchMode) return launchMode;
+    if (activeTab === "videos") return "video";
+    return "photo";
+  };
+
   const handleCameraClick = (mode = null) => {
     setLaunchMode(mode);
     setShowCameraModal(true);
   };
 
-  // Handle capture from camera
-  const handleCapture = (file, type) => {
-    setLaunchMode(null);
+  const handleCapture = async (file, type) => {
     setCapturedMedia(file);
+    setEditedMedia(file);
     setMediaType(type);
     setShowCameraModal(false);
+    setLaunchMode(null);
+    setIsPersistingCapture(true);
 
-    // Open appropriate editor
-    if (type === "photo") {
-      setShowPhotoEditor(true);
-    } else if (type === "video") {
-      setShowVideoEditor(true);
+    try {
+      const savedFile = await uploadVhcMediaFile({
+        file,
+        jobId,
+        jobNumber,
+        userId,
+        visibleToCustomer: true,
+      });
+
+      setUploadedMedia(savedFile);
+      onUploadComplete?.(savedFile);
+
+      if (type === "photo") {
+        setShowPhotoEditor(true);
+      } else {
+        setShowVideoEditor(true);
+      }
+    } catch (error) {
+      console.error("Failed to save captured VHC media:", error);
+      alert(error?.message || "Failed to save captured media");
+      resetFlow();
+    } finally {
+      setIsPersistingCapture(false);
     }
   };
 
-  // Handle photo editor save
-  const handlePhotoEditorSave = (editedFile) => {
-    setEditedMedia(editedFile);
-    setShowPhotoEditor(false);
-    setShowUploadConfirm(true);
-  };
-
-  // Handle photo editor cancel
-  const handlePhotoEditorCancel = () => {
-    setShowPhotoEditor(false);
-    setCapturedMedia(null);
-    setMediaType(null);
-  };
-
-  // Handle video editor save
-  const handleVideoEditorSave = (editedFile) => {
-    setEditedMedia(editedFile);
-    setShowVideoEditor(false);
-    setShowUploadConfirm(true);
-  };
-
-  // Handle video editor cancel
-  const handleVideoEditorCancel = () => {
-    setShowVideoEditor(false);
-    setCapturedMedia(null);
-    setMediaType(null);
-  };
-
-  // Handle upload complete
-  const handleUploadComplete = (uploadedFile) => {
-    console.log("✅ Upload complete:", uploadedFile);
-    setShowUploadConfirm(false);
-
-    // Reset all states
-    setCapturedMedia(null);
-    setEditedMedia(null);
-    setMediaType(null);
-    setLaunchMode(null);
-
-    // Notify parent to refresh
-    if (onUploadComplete) {
-      onUploadComplete(uploadedFile);
-    }
-  };
-
-  // Handle upload cancel
-  const handleUploadCancel = () => {
-    setShowUploadConfirm(false);
-    setCapturedMedia(null);
-    setEditedMedia(null);
-    setMediaType(null);
-    setLaunchMode(null);
-  };
-
-  // Handle camera modal close
-  const handleCameraClose = () => {
-    setShowCameraModal(false);
-    setCapturedMedia(null);
-    setMediaType(null);
-    setLaunchMode(null);
-  };
-
-  // Only show button on photos or videos tab and when not in read-only mode
   const shouldShowButton = (activeTab === "photos" || activeTab === "videos" || !activeTab) && !readOnly;
-
-  if (!shouldShowButton) {
-    return null;
-  }
+  if (!shouldShowButton) return null;
 
   const renderCaptureButtons = () => {
+    const commonButtonStyle = {
+      padding: "10px 16px",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "6px",
+      fontSize: "14px",
+      minWidth: "148px",
+    };
+
     if (activeTab === "photos") {
       return (
         <button
+          type="button"
           onClick={() => handleCameraClick("photo")}
-          style={{
-            ...createVhcButtonStyle("primary"),
-            padding: "8px 16px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "14px",
-          }}
+          disabled={isPersistingCapture}
+          style={{ ...createVhcButtonStyle("primary"), ...commonButtonStyle }}
         >
-          📷 Capture Photo
+          {isPersistingCapture ? "Saving..." : "Capture Photo"}
         </button>
       );
     }
+
     if (activeTab === "videos") {
       return (
         <button
+          type="button"
           onClick={() => handleCameraClick("video")}
-          style={{
-            ...createVhcButtonStyle("primary"),
-            padding: "8px 16px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "14px",
-          }}
+          disabled={isPersistingCapture}
+          style={{ ...createVhcButtonStyle("primary"), ...commonButtonStyle }}
         >
-          🎥 Capture Video
+          {isPersistingCapture ? "Saving..." : "Capture Video"}
         </button>
       );
     }
+
     return (
       <>
         <button
+          type="button"
           onClick={() => handleCameraClick("photo")}
-          style={{
-            ...createVhcButtonStyle("primary"),
-            padding: "8px 16px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "14px",
-          }}
+          disabled={isPersistingCapture}
+          style={{ ...createVhcButtonStyle("primary"), ...commonButtonStyle }}
         >
-          📷 Capture Photo
+          {isPersistingCapture ? "Saving..." : "Capture Photo"}
         </button>
         <button
+          type="button"
           onClick={() => handleCameraClick("video")}
-          style={{
-            ...createVhcButtonStyle("secondary"),
-            padding: "8px 16px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "14px",
-          }}
+          disabled={isPersistingCapture}
+          style={{ ...createVhcButtonStyle("secondary"), ...commonButtonStyle }}
         >
-          🎥 Capture Video
+          {isPersistingCapture ? "Saving..." : "Capture Video"}
         </button>
       </>
     );
@@ -212,39 +153,58 @@ export default function VhcCameraIntegration({
     <>
       {renderCaptureButtons()}
 
-      {/* Camera Capture Modal */}
       <CameraCaptureModal
         isOpen={showCameraModal}
-        onClose={handleCameraClose}
+        onClose={() => setShowCameraModal(false)}
         onCapture={handleCapture}
         initialMode={getInitialMode()}
       />
 
-      {/* Photo Editor Modal */}
       <PhotoEditorModal
         isOpen={showPhotoEditor}
         photoFile={capturedMedia}
-        onSave={handlePhotoEditorSave}
-        onCancel={handlePhotoEditorCancel}
+        onSave={(file) => {
+          setEditedMedia(file);
+          setShowPhotoEditor(false);
+          setShowUploadConfirm(true);
+        }}
+        onSkip={(file) => {
+          setEditedMedia(file);
+          setShowPhotoEditor(false);
+          setShowUploadConfirm(true);
+        }}
+        onCancel={resetFlow}
       />
 
-      {/* Video Editor Modal */}
       <VideoEditorModal
         isOpen={showVideoEditor}
-        videoFile={capturedMedia}
-        onSave={handleVideoEditorSave}
-        onCancel={handleVideoEditorCancel}
+        videoFile={uploadedMedia?.file_url || capturedMedia}
+        onSave={(file) => {
+          setEditedMedia(file);
+          setShowVideoEditor(false);
+          setShowUploadConfirm(true);
+        }}
+        onSkip={(file) => {
+          setEditedMedia(file);
+          setShowVideoEditor(false);
+          setShowUploadConfirm(true);
+        }}
+        onCancel={resetFlow}
       />
 
-      {/* Media Upload Confirm Modal */}
       <MediaUploadConfirmModal
         isOpen={showUploadConfirm}
         mediaFile={editedMedia}
         mediaType={mediaType}
+        existingFileId={uploadedMedia?.file_id || uploadedMedia?.id || null}
+        jobId={jobId}
         jobNumber={jobNumber}
         userId={userId}
-        onUploadComplete={handleUploadComplete}
-        onCancel={handleUploadCancel}
+        onUploadComplete={(fileRecord) => {
+          onUploadComplete?.(fileRecord);
+          resetFlow();
+        }}
+        onCancel={resetFlow}
       />
     </>
   );

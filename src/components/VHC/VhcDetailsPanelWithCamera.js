@@ -19,6 +19,7 @@ import VhcCameraIntegration from "./VhcCameraIntegration";
  * />
  */
 export default function VhcDetailsPanelWithCamera({
+  jobId,
   jobNumber,
   userId,
   showNavigation = true,
@@ -51,6 +52,7 @@ export default function VhcDetailsPanelWithCamera({
 
       {/* Camera integration - will auto-show on photos/videos tab */}
       <VhcCameraIntegration
+        jobId={jobId}
         jobNumber={jobNumber}
         userId={userId}
         activeTab={undefined} // VhcDetailsPanel will manage this internally

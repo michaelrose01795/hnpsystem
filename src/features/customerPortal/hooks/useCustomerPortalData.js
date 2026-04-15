@@ -192,7 +192,7 @@ export function useCustomerPortalData() {
             .from("job_files")
             .select("job_id, file_id, file_url, file_type, folder, uploaded_at, visible_to_customer")
             .in("job_id", jobIds)
-            .in("folder", ["vhc", "vhc_reports", "vhc-media", "vhc_photos"])
+            .in("folder", ["VHC", "vhc", "vhc_reports", "vhc-media", "vhc_photos"])
             .eq("visible_to_customer", true);
           if (mediaRows) {
             vhcMediaByJob = mediaRows.reduce((acc, file) => {

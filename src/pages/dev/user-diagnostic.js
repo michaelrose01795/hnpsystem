@@ -540,6 +540,7 @@ const USAGE_REGISTRY = {
   ],
   "input-app-input": [
     { label: "InputField primitive", file: "src/components/ui/InputField.js" },
+    { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
     { label: "Account form", file: "src/components/accounts/AccountForm.js" },
     { label: "Stock check popup", file: "src/components/Consumables/StockCheckPopup.js" },
     { label: "Personal settings popup", file: "src/components/profile/personal/PersonalSettingsPopup.js" },
@@ -547,17 +548,20 @@ const USAGE_REGISTRY = {
   ],
   "dropdown-api": [
     { label: "DropdownField primitive", file: "src/components/ui/dropdownAPI/DropdownField.js" },
+    { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
     { label: "Job card view", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" },
     { label: "HR manager", file: "src/pages/hr/manager/index.js", route: "/hr/manager" },
     { label: "Accounts settings", file: "src/components/accounts/AccountsSettingsPanel.js" },
   ],
   "calendar-api": [
     { label: "CalendarField primitive", file: "src/components/ui/calendarAPI/CalendarField.js" },
+    { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
     { label: "Job cards myjobs", file: "src/pages/job-cards/myjobs/index.js", route: "/job-cards/myjobs" },
     { label: "Tracking page", file: "src/pages/tracking/index.js", route: "/tracking" },
   ],
   "timepicker-api": [
     { label: "TimePickerField primitive", file: "src/components/ui/timePickerAPI/TimePickerField.js" },
+    { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
     { label: "Personal widgets", file: "src/components/profile/personal/widgets/PersonalWidgets.js" },
   ],
   "app-badge": [
@@ -577,17 +581,20 @@ const USAGE_REGISTRY = {
   ],
   "tab-api": [
     { label: "TabGroup primitive", file: "src/components/ui/tabAPI/TabGroup.js" },
+    { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
     { label: "Profile tab switcher", file: "src/components/profile/TabSwitcher.js", route: "/profile" },
     { label: "HR tabs bar", file: "src/components/HR/HrTabsBar.js" },
     { label: "Job card write-up form", file: "src/components/JobCards/WriteUpForm.js" },
   ],
   "searchbar-api": [
     { label: "SearchBar primitive", file: "src/components/ui/searchBarAPI/SearchBar.js" },
+    { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
     { label: "Global search", file: "src/components/GlobalSearch.js" },
     { label: "Messages page", file: "src/pages/messages/index.js", route: "/messages" },
   ],
   "multiselect-dropdown": [
     { label: "MultiSelectDropdown primitive", file: "src/components/ui/dropdownAPI/MultiSelectDropdown.js" },
+    { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
     { label: "HR manager filters", file: "src/pages/hr/manager/index.js", route: "/hr/manager" },
     { label: "Widget settings modal", file: "src/components/profile/personal/WidgetSettingsModal.js" },
   ],
@@ -981,20 +988,459 @@ function ColourSwatch({ token }) {
   );
 }
 
+const SHOWCASE_PRESET_OPTIONS = [
+  { value: "default", label: "Default" },
+  { value: "disabled", label: "Disabled" },
+  { value: "error", label: "Error" },
+  { value: "filled", label: "Filled" },
+  { value: "edge", label: "Edge Case" },
+];
+
+const SHOWCASE_COUNT_OPTIONS = [3, 5, 10].map((count) => ({ value: String(count), label: `${count}` }));
+const SHOWCASE_TIME_STEP_OPTIONS = [5, 15, 30].map((step) => ({ value: String(step), label: `${step} mins` }));
+const SHOWCASE_MAX_SELECTION_OPTIONS = [1, 2, 3, 5].map((count) => ({ value: String(count), label: `${count}` }));
+const SHOWCASE_TAB_LAYOUT_OPTIONS = [
+  { value: "wrap", label: "Wrap" },
+  { value: "stretch", label: "Stretch" },
+  { value: "grid", label: "Grid" },
+];
+const SHOWCASE_CALENDAR_TONE_OPTIONS = [
+  { value: "both", label: "Amber + Red" },
+  { value: "amber", label: "Amber" },
+  { value: "red", label: "Red" },
+];
+const SHOWCASE_MULTI_PRESET_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "first-2", label: "First 2" },
+  { value: "last-2", label: "Last 2" },
+  { value: "max", label: "Up to max" },
+];
+
+function ShowcaseControlRow({ label, children }) {
+  return (
+    <div className="showcase-control-row">
+      <div className="showcase-control-row__label">{label}</div>
+      <div className="showcase-control-row__control">{children}</div>
+    </div>
+  );
+}
+
+function ShowcaseToggleButton({ active = false, children, ...props }) {
+  return (
+    <Button type="button" size="xs" variant={active ? "primary" : "secondary"} {...props}>
+      {children}
+    </Button>
+  );
+}
+
+function buildShowcaseOptions(count, prefix = "Option") {
+  return Array.from({ length: count }, (_, index) => ({
+    value: `opt-${index + 1}`,
+    label: `${prefix} ${index + 1}`,
+  }));
+}
+
+function buildTabItems(count) {
+  return Array.from({ length: count }, (_, index) => ({
+    value: `tab-${index + 1}`,
+    label: `Tab ${index + 1}`,
+  }));
+}
+
+function buildDepartmentOptions(count) {
+  return Array.from({ length: count }, (_, index) => `Department ${index + 1}`);
+}
+
+function getMultiPresetValues(mode, options, maxSelections) {
+  if (mode === "none") return [];
+  if (mode === "last-2") return options.slice(Math.max(0, options.length - 2));
+  if (mode === "max") return options.slice(0, maxSelections);
+  return options.slice(0, Math.min(2, options.length));
+}
+
+function getDropdownShowcaseState(preset = "default") {
+  if (preset === "disabled") {
+    return {
+      preset,
+      optionCount: 5,
+      placeholder: "Dropdown disabled",
+      disabled: true,
+      error: false,
+      selectedValue: "",
+    };
+  }
+  if (preset === "error") {
+    return {
+      preset,
+      optionCount: 5,
+      placeholder: "Pick a required option",
+      disabled: false,
+      error: true,
+      selectedValue: "",
+    };
+  }
+  if (preset === "filled") {
+    return {
+      preset,
+      optionCount: 5,
+      placeholder: "Select one...",
+      disabled: false,
+      error: false,
+      selectedValue: "opt-3",
+    };
+  }
+  if (preset === "edge") {
+    return {
+      preset,
+      optionCount: 10,
+      placeholder: "A very long placeholder used to pressure-test truncation and menu spacing",
+      disabled: false,
+      error: false,
+      selectedValue: "opt-10",
+    };
+  }
+  return {
+    preset,
+    optionCount: 5,
+    placeholder: "Select one...",
+    disabled: false,
+    error: false,
+    selectedValue: "opt-2",
+  };
+}
+
+function getMultiSelectShowcaseState(preset = "default") {
+  if (preset === "disabled") {
+    return {
+      preset,
+      optionCount: 5,
+      preselectedMode: "first-2",
+      selectedValues: ["Department 1", "Department 2"],
+      maxSelections: 2,
+      disabled: true,
+    };
+  }
+  if (preset === "error") {
+    return {
+      preset,
+      optionCount: 5,
+      preselectedMode: "none",
+      selectedValues: [],
+      maxSelections: 1,
+      disabled: false,
+    };
+  }
+  if (preset === "filled") {
+    return {
+      preset,
+      optionCount: 5,
+      preselectedMode: "first-2",
+      selectedValues: ["Department 1", "Department 2"],
+      maxSelections: 3,
+      disabled: false,
+    };
+  }
+  if (preset === "edge") {
+    return {
+      preset,
+      optionCount: 10,
+      preselectedMode: "max",
+      selectedValues: ["Department 1", "Department 2", "Department 3", "Department 4", "Department 5"],
+      maxSelections: 5,
+      disabled: false,
+    };
+  }
+  return {
+    preset,
+    optionCount: 5,
+    preselectedMode: "first-2",
+    selectedValues: ["Department 1"],
+    maxSelections: 3,
+    disabled: false,
+  };
+}
+
+function getCalendarShowcaseState(preset = "default") {
+  if (preset === "disabled") {
+    return {
+      preset,
+      selectedDate: "",
+      rangeSelection: false,
+      highlightToday: false,
+      showDisabledDates: true,
+      disabled: true,
+      tonePreview: "both",
+    };
+  }
+  if (preset === "error") {
+    return {
+      preset,
+      selectedDate: "",
+      rangeSelection: false,
+      highlightToday: true,
+      showDisabledDates: true,
+      disabled: false,
+      tonePreview: "red",
+    };
+  }
+  if (preset === "filled") {
+    return {
+      preset,
+      selectedDate: new Date().toISOString().slice(0, 10),
+      rangeSelection: false,
+      highlightToday: true,
+      showDisabledDates: false,
+      disabled: false,
+      tonePreview: "amber",
+    };
+  }
+  if (preset === "edge") {
+    return {
+      preset,
+      selectedDate: "2026-12-31",
+      rangeSelection: true,
+      highlightToday: true,
+      showDisabledDates: true,
+      disabled: false,
+      tonePreview: "both",
+    };
+  }
+  return {
+    preset,
+    selectedDate: "",
+    rangeSelection: false,
+    highlightToday: true,
+    showDisabledDates: false,
+    disabled: false,
+    tonePreview: "both",
+  };
+}
+
+function getTimePickerShowcaseState(preset = "default") {
+  if (preset === "disabled") {
+    return {
+      preset,
+      selectedTime: "",
+      format: "24",
+      minuteStep: 15,
+      disabled: true,
+    };
+  }
+  if (preset === "error") {
+    return {
+      preset,
+      selectedTime: "",
+      format: "12",
+      minuteStep: 5,
+      disabled: false,
+    };
+  }
+  if (preset === "filled") {
+    return {
+      preset,
+      selectedTime: "14:30",
+      format: "24",
+      minuteStep: 15,
+      disabled: false,
+    };
+  }
+  if (preset === "edge") {
+    return {
+      preset,
+      selectedTime: "23:55",
+      format: "12",
+      minuteStep: 5,
+      disabled: false,
+    };
+  }
+  return {
+    preset,
+    selectedTime: "09:00",
+    format: "24",
+    minuteStep: 15,
+    disabled: false,
+  };
+}
+
+function getInputShowcaseState(preset = "default") {
+  if (preset === "disabled") {
+    return {
+      preset,
+      value: "",
+      placeholder: "Input disabled",
+      disabled: true,
+      error: false,
+      success: false,
+    };
+  }
+  if (preset === "error") {
+    return {
+      preset,
+      value: "bad@",
+      placeholder: "Enter your email",
+      disabled: false,
+      error: true,
+      success: false,
+    };
+  }
+  if (preset === "filled") {
+    return {
+      preset,
+      value: "Alice Johnson",
+      placeholder: "Type something...",
+      disabled: false,
+      error: false,
+      success: true,
+    };
+  }
+  if (preset === "edge") {
+    return {
+      preset,
+      value: "A deliberately long sample value to validate overflow and focus behaviour inside the global input shell.",
+      placeholder: "Long value test",
+      disabled: false,
+      error: false,
+      success: false,
+    };
+  }
+  return {
+    preset,
+    value: "",
+    placeholder: "Type something...",
+    disabled: false,
+    error: false,
+    success: false,
+  };
+}
+
+function getTabsShowcaseState(preset = "default") {
+  if (preset === "disabled") {
+    return {
+      preset,
+      tabCount: 3,
+      activeTab: "tab-1",
+      layout: "stretch",
+    };
+  }
+  if (preset === "error") {
+    return {
+      preset,
+      tabCount: 5,
+      activeTab: "tab-5",
+      layout: "grid",
+    };
+  }
+  if (preset === "filled") {
+    return {
+      preset,
+      tabCount: 5,
+      activeTab: "tab-3",
+      layout: "wrap",
+    };
+  }
+  if (preset === "edge") {
+    return {
+      preset,
+      tabCount: 10,
+      activeTab: "tab-10",
+      layout: "grid",
+    };
+  }
+  return {
+    preset,
+    tabCount: 3,
+    activeTab: "tab-1",
+    layout: "wrap",
+  };
+}
+
+function getSearchShowcaseState(preset = "default") {
+  if (preset === "disabled") {
+    return {
+      preset,
+      value: "",
+      placeholder: "Searching disabled",
+      loading: false,
+      showClear: true,
+      disabled: true,
+    };
+  }
+  if (preset === "error") {
+    return {
+      preset,
+      value: "broken query",
+      placeholder: "Search anything...",
+      loading: true,
+      showClear: false,
+      disabled: false,
+    };
+  }
+  if (preset === "filled") {
+    return {
+      preset,
+      value: "Brake pads",
+      placeholder: "Search anything...",
+      loading: false,
+      showClear: true,
+      disabled: false,
+    };
+  }
+  if (preset === "edge") {
+    return {
+      preset,
+      value: "Very long edge-case query to validate truncation and spacing in the global search bar",
+      placeholder: "Search by reg, customer, VIN, note, part, or keyword",
+      loading: true,
+      showClear: true,
+      disabled: false,
+    };
+  }
+  return {
+    preset,
+    value: "",
+    placeholder: "Search anything...",
+    loading: false,
+    showClear: true,
+    disabled: false,
+  };
+}
+
 function GlobalUiShowcase() {
-  const [showcaseDropdown, setShowcaseDropdown] = useState("opt-2");
-  const [showcaseDate, setShowcaseDate] = useState("");
-  const [showcaseTime, setShowcaseTime] = useState("");
-  const [showcaseInput, setShowcaseInput] = useState("");
-  const [showcaseTab, setShowcaseTab] = useState("overview");
-  const [showcaseSearch, setShowcaseSearch] = useState("");
-  const [showcaseMulti, setShowcaseMulti] = useState(["Sales"]);
+  const [dropdownState, setDropdownState] = useState(() => getDropdownShowcaseState());
+  const [multiSelectState, setMultiSelectState] = useState(() => getMultiSelectShowcaseState());
+  const [calendarState, setCalendarState] = useState(() => getCalendarShowcaseState());
+  const [timePickerState, setTimePickerState] = useState(() => getTimePickerShowcaseState());
+  const [inputState, setInputState] = useState(() => getInputShowcaseState());
+  const [tabsState, setTabsState] = useState(() => getTabsShowcaseState());
+  const [searchState, setSearchState] = useState(() => getSearchShowcaseState());
   const [showcaseTextarea, setShowcaseTextarea] = useState("");
   const [showcaseCheckbox, setShowcaseCheckbox] = useState(true);
   const [showcaseRadio, setShowcaseRadio] = useState("b");
   const [usagePopup, setUsagePopup] = useState(null);
   const openUsage = (itemKey, title) => setUsagePopup({ itemKey, title });
   const closeUsage = () => setUsagePopup(null);
+  const dropdownOptions = buildShowcaseOptions(dropdownState.optionCount);
+  const multiSelectOptions = buildDepartmentOptions(multiSelectState.optionCount);
+  const multiSelectValue = multiSelectState.selectedValues.filter((value) => multiSelectOptions.includes(value));
+  const tabItems = buildTabItems(tabsState.tabCount);
+  const tabIndexOptions = tabItems.map((item, index) => ({
+    value: item.value,
+    label: `${index + 1}`,
+  }));
+  const calendarDisabledDates = calendarState.showDisabledDates ? ["2026-04-18", "2026-04-21", "2026-04-26"] : [];
+  const calendarHighlightedDates = calendarState.highlightToday ? [new Date()] : [];
+  const dropdownSelectedValueIsValid = dropdownOptions.some((option) => option.value === dropdownState.selectedValue);
+  const dropdownSelectedValue = dropdownSelectedValueIsValid ? dropdownState.selectedValue : "";
+  const inputToneClass = inputState.error ? "showcase-input--error" : inputState.success ? "showcase-input--success" : "";
+  const dropdownToneClass = dropdownState.error ? "showcase-field--error" : "";
+  const calendarToneClass = calendarState.preset === "error" ? "showcase-field--error" : "";
+  const timePickerToneClass = timePickerState.preset === "error" ? "showcase-field--error" : "";
+  const searchBarClassName = [
+    !searchState.showClear && "showcase-searchbar--hide-clear",
+    searchState.loading && "showcase-searchbar--loading",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <aside
@@ -1006,6 +1452,110 @@ function GlobalUiShowcase() {
         paddingRight: "4px",
       }}
     >
+      <style jsx global>{`
+        .showcase-controls {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-sm);
+          margin-bottom: var(--space-md);
+          padding: var(--space-md);
+          border-radius: var(--radius-sm);
+          background: var(--surface-light);
+          border: 1px solid var(--accentBorder);
+        }
+        .showcase-control-row {
+          display: grid;
+          grid-template-columns: minmax(110px, 140px) minmax(0, 1fr);
+          gap: var(--space-sm);
+          align-items: center;
+        }
+        .showcase-control-row__label {
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--text-secondary);
+        }
+        .showcase-control-row__control {
+          min-width: 0;
+        }
+        .showcase-toggle-group {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--space-xs);
+        }
+        .showcase-preview-stack {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-sm);
+        }
+        .showcase-inline-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--space-xs);
+          align-items: center;
+        }
+        .showcase-state-chip {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 10px;
+          border-radius: var(--radius-pill);
+          border: 1px solid var(--accentBorder);
+          background: var(--accentSurface);
+          color: var(--text-primary);
+          font-size: 11px;
+          font-weight: 600;
+        }
+        .showcase-card-note {
+          margin: 0;
+          font-size: 11px;
+          color: var(--text-secondary);
+          line-height: 1.5;
+        }
+        .showcase-field--error .dropdown-api__control,
+        .showcase-field--error .calendar-api__control,
+        .showcase-field--error .timepicker-api__control,
+        .showcase-field--error .searchbar-api {
+          box-shadow: 0 0 0 3px rgba(var(--danger-rgb), 0.14);
+          border-color: var(--danger);
+        }
+        .showcase-input--error {
+          box-shadow: 0 0 0 3px rgba(var(--danger-rgb), 0.14);
+          border-color: var(--danger);
+        }
+        .showcase-input--success {
+          box-shadow: 0 0 0 3px rgba(var(--success-rgb), 0.14);
+          border-color: var(--success);
+        }
+        .showcase-searchbar--hide-clear .searchbar-api__clear {
+          opacity: 0;
+          pointer-events: none;
+        }
+        .showcase-status-tones {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: var(--space-sm);
+        }
+        .showcase-status-tone {
+          padding: var(--space-sm);
+          border-radius: var(--radius-sm);
+          border: 1px solid var(--accentBorder);
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text-primary);
+        }
+        .showcase-status-tone--amber {
+          background: var(--calendar-amber-selected-bg);
+        }
+        .showcase-status-tone--red {
+          background: var(--calendar-red-selected-bg);
+        }
+        @media (max-width: 640px) {
+          .showcase-control-row {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
       <ShowcaseSection title="Buttons (.app-btn)" itemKey="buttons-app-btn" onOpenUsage={openUsage}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
           <Button variant="primary">Primary</Button>
@@ -1022,42 +1572,220 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
 
       <ShowcaseSection title="Text Field (.app-input + InputField)" itemKey="input-app-input" onOpenUsage={openUsage}>
-        <InputField
-          label="Sample input"
-          placeholder="Type something..."
-          value={showcaseInput}
-          onChange={(e) => setShowcaseInput(e.target.value)}
-        />
+        <div className="showcase-controls">
+          <ShowcaseControlRow label="State preset">
+            <DropdownField
+              value={inputState.preset}
+              onValueChange={(value) => setInputState(getInputShowcaseState(value))}
+              options={SHOWCASE_PRESET_OPTIONS}
+              placeholder="Choose preset"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Value">
+            <InputField value={inputState.value} onChange={(event) => setInputState((current) => ({ ...current, value: event.target.value }))} placeholder="Field value" />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Placeholder">
+            <InputField value={inputState.placeholder} onChange={(event) => setInputState((current) => ({ ...current, placeholder: event.target.value }))} placeholder="Placeholder text" />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Field states">
+            <div className="showcase-toggle-group">
+              <ShowcaseToggleButton active={inputState.disabled} onClick={() => setInputState((current) => ({ ...current, disabled: !current.disabled }))}>Disabled</ShowcaseToggleButton>
+              <ShowcaseToggleButton active={inputState.error} onClick={() => setInputState((current) => ({ ...current, error: !current.error, success: current.error ? current.success : false }))}>Error</ShowcaseToggleButton>
+              <ShowcaseToggleButton active={inputState.success} onClick={() => setInputState((current) => ({ ...current, success: !current.success, error: current.success ? current.error : false }))}>Success</ShowcaseToggleButton>
+            </div>
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Reset">
+            <Button type="button" size="xs" variant="ghost" onClick={() => setInputState(getInputShowcaseState())}>Reset</Button>
+          </ShowcaseControlRow>
+        </div>
+        <div className="showcase-preview-stack">
+          <InputField
+            label="Sample input"
+            placeholder={inputState.placeholder}
+            value={inputState.value}
+            disabled={inputState.disabled}
+            className={inputToneClass}
+            onChange={(event) => setInputState((current) => ({ ...current, value: event.target.value }))}
+          />
+          {(inputState.error || inputState.success) && (
+            <p className="showcase-card-note" style={{ color: inputState.error ? "var(--danger-text)" : "var(--success-text)" }}>
+              {inputState.error ? "Error preview: field needs attention." : "Success preview: field looks valid."}
+            </p>
+          )}
+        </div>
       </ShowcaseSection>
 
       <ShowcaseSection title="Dropdown (.dropdown-api)" itemKey="dropdown-api" onOpenUsage={openUsage}>
-        <DropdownField
-          label="Sample dropdown"
-          value={showcaseDropdown}
-          onValueChange={(v) => setShowcaseDropdown(v)}
-          options={[
-            { value: "opt-1", label: "First option" },
-            { value: "opt-2", label: "Second option" },
-            { value: "opt-3", label: "Third option" },
-          ]}
-          placeholder="Select one..."
-        />
+        <div className="showcase-controls">
+          <ShowcaseControlRow label="State preset">
+            <DropdownField
+              value={dropdownState.preset}
+              onValueChange={(value) => setDropdownState(getDropdownShowcaseState(value))}
+              options={SHOWCASE_PRESET_OPTIONS}
+              placeholder="Choose preset"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Option count">
+            <DropdownField
+              value={String(dropdownState.optionCount)}
+              onValueChange={(value) =>
+                setDropdownState((current) => {
+                  const optionCount = Number(value);
+                  const nextOptions = buildShowcaseOptions(optionCount);
+                  const selectedValue = nextOptions.some((option) => option.value === current.selectedValue) ? current.selectedValue : "";
+                  return { ...current, optionCount, selectedValue };
+                })
+              }
+              options={SHOWCASE_COUNT_OPTIONS}
+              placeholder="Count"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Placeholder">
+            <InputField
+              value={dropdownState.placeholder}
+              onChange={(event) => setDropdownState((current) => ({ ...current, placeholder: event.target.value }))}
+              placeholder="Placeholder text"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Selected value">
+            <DropdownField
+              value={dropdownSelectedValue || "__none__"}
+              onValueChange={(value) => setDropdownState((current) => ({ ...current, selectedValue: value === "__none__" ? "" : value }))}
+              options={[{ value: "__none__", label: "No selection" }, ...dropdownOptions]}
+              placeholder="Select value"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Field states">
+            <div className="showcase-toggle-group">
+              <ShowcaseToggleButton active={dropdownState.disabled} onClick={() => setDropdownState((current) => ({ ...current, disabled: !current.disabled }))}>Disabled</ShowcaseToggleButton>
+              <ShowcaseToggleButton active={dropdownState.error} onClick={() => setDropdownState((current) => ({ ...current, error: !current.error }))}>Error</ShowcaseToggleButton>
+            </div>
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Reset">
+            <Button type="button" size="xs" variant="ghost" onClick={() => setDropdownState(getDropdownShowcaseState())}>Reset</Button>
+          </ShowcaseControlRow>
+        </div>
+        <div className={`showcase-preview-stack ${dropdownToneClass}`.trim()}>
+          <DropdownField
+            label="Sample dropdown"
+            value={dropdownSelectedValue}
+            onValueChange={(value) => setDropdownState((current) => ({ ...current, selectedValue: value }))}
+            options={dropdownOptions}
+            placeholder={dropdownState.placeholder}
+            disabled={dropdownState.disabled}
+            helperText={dropdownState.error ? "Error preview: selection is required." : `${dropdownState.optionCount} options loaded.`}
+          />
+        </div>
       </ShowcaseSection>
 
       <ShowcaseSection title="Calendar (.calendar-api)" itemKey="calendar-api" onOpenUsage={openUsage}>
-        <CalendarField
-          label="Sample date"
-          value={showcaseDate}
-          onValueChange={(v) => setShowcaseDate(v)}
-        />
+        <div className="showcase-controls">
+          <ShowcaseControlRow label="State preset">
+            <DropdownField
+              value={calendarState.preset}
+              onValueChange={(value) => setCalendarState(getCalendarShowcaseState(value))}
+              options={SHOWCASE_PRESET_OPTIONS}
+              placeholder="Choose preset"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Selected date">
+            <InputField
+              type="date"
+              value={calendarState.selectedDate}
+              onChange={(event) => setCalendarState((current) => ({ ...current, selectedDate: event.target.value }))}
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Range selection">
+            <div className="showcase-toggle-group">
+              <ShowcaseToggleButton active={calendarState.rangeSelection} onClick={() => setCalendarState((current) => ({ ...current, rangeSelection: !current.rangeSelection }))}>Toggle</ShowcaseToggleButton>
+            </div>
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Today / disabled">
+            <div className="showcase-toggle-group">
+              <ShowcaseToggleButton active={calendarState.highlightToday} onClick={() => setCalendarState((current) => ({ ...current, highlightToday: !current.highlightToday }))}>Highlight today</ShowcaseToggleButton>
+              <ShowcaseToggleButton active={calendarState.showDisabledDates} onClick={() => setCalendarState((current) => ({ ...current, showDisabledDates: !current.showDisabledDates }))}>Disabled dates</ShowcaseToggleButton>
+            </div>
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Status tones">
+            <DropdownField
+              value={calendarState.tonePreview}
+              onValueChange={(value) => setCalendarState((current) => ({ ...current, tonePreview: value }))}
+              options={SHOWCASE_CALENDAR_TONE_OPTIONS}
+              placeholder="Tone preview"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Reset">
+            <Button type="button" size="xs" variant="ghost" onClick={() => setCalendarState(getCalendarShowcaseState())}>Reset</Button>
+          </ShowcaseControlRow>
+        </div>
+        <div className={`showcase-preview-stack ${calendarToneClass}`.trim()}>
+          <CalendarField
+            label="Sample date"
+            value={calendarState.selectedDate}
+            onValueChange={(value) => setCalendarState((current) => ({ ...current, selectedDate: value }))}
+            disabled={calendarState.disabled}
+            helperText={calendarState.rangeSelection ? "Range mode is not supported by CalendarField yet. This toggle helps surface the gap." : "CalendarField is running in single-date mode."}
+            highlightedDates={calendarHighlightedDates}
+            disabledDates={calendarDisabledDates}
+          />
+          <div className="showcase-status-tones">
+            {(calendarState.tonePreview === "both" || calendarState.tonePreview === "amber") && (
+              <div className="showcase-status-tone showcase-status-tone--amber">Amber selection token</div>
+            )}
+            {(calendarState.tonePreview === "both" || calendarState.tonePreview === "red") && (
+              <div className="showcase-status-tone showcase-status-tone--red">Red selection token</div>
+            )}
+          </div>
+        </div>
       </ShowcaseSection>
 
       <ShowcaseSection title="Time Picker (.timepicker-api)" itemKey="timepicker-api" onOpenUsage={openUsage}>
-        <TimePickerField
-          label="Sample time"
-          value={showcaseTime}
-          onValueChange={(v) => setShowcaseTime(v)}
-        />
+        <div className="showcase-controls">
+          <ShowcaseControlRow label="State preset">
+            <DropdownField
+              value={timePickerState.preset}
+              onValueChange={(value) => setTimePickerState(getTimePickerShowcaseState(value))}
+              options={SHOWCASE_PRESET_OPTIONS}
+              placeholder="Choose preset"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Selected time">
+            <InputField
+              type="time"
+              step={timePickerState.minuteStep * 60}
+              value={timePickerState.selectedTime}
+              onChange={(event) => setTimePickerState((current) => ({ ...current, selectedTime: event.target.value }))}
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Clock format">
+            <div className="showcase-toggle-group">
+              <ShowcaseToggleButton active={timePickerState.format === "12"} onClick={() => setTimePickerState((current) => ({ ...current, format: "12" }))}>12h</ShowcaseToggleButton>
+              <ShowcaseToggleButton active={timePickerState.format === "24"} onClick={() => setTimePickerState((current) => ({ ...current, format: "24" }))}>24h</ShowcaseToggleButton>
+            </div>
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Step interval">
+            <DropdownField
+              value={String(timePickerState.minuteStep)}
+              onValueChange={(value) => setTimePickerState((current) => ({ ...current, minuteStep: Number(value) }))}
+              options={SHOWCASE_TIME_STEP_OPTIONS}
+              placeholder="Minute step"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Reset">
+            <Button type="button" size="xs" variant="ghost" onClick={() => setTimePickerState(getTimePickerShowcaseState())}>Reset</Button>
+          </ShowcaseControlRow>
+        </div>
+        <div className={`showcase-preview-stack ${timePickerToneClass}`.trim()}>
+          <TimePickerField
+            label="Sample time"
+            value={timePickerState.selectedTime}
+            onValueChange={(value) => setTimePickerState((current) => ({ ...current, selectedTime: value }))}
+            format={timePickerState.format}
+            minuteStep={timePickerState.minuteStep}
+            disabled={timePickerState.disabled}
+            helperText={`Format ${timePickerState.format}h · ${timePickerState.minuteStep}-minute interval`}
+          />
+        </div>
       </ShowcaseSection>
 
       <ShowcaseSection title="Labels & Bubbles (.app-badge)" itemKey="app-badge" onOpenUsage={openUsage}>
@@ -1138,35 +1866,195 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
 
       <ShowcaseSection title="Tabs (.tab-api / TabGroup)" itemKey="tab-api" onOpenUsage={openUsage}>
+        <div className="showcase-controls">
+          <ShowcaseControlRow label="State preset">
+            <DropdownField
+              value={tabsState.preset}
+              onValueChange={(value) => setTabsState(getTabsShowcaseState(value))}
+              options={SHOWCASE_PRESET_OPTIONS}
+              placeholder="Choose preset"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Tab count">
+            <DropdownField
+              value={String(tabsState.tabCount)}
+              onValueChange={(value) =>
+                setTabsState((current) => {
+                  const tabCount = Number(value);
+                  const nextItems = buildTabItems(tabCount);
+                  const activeTab = nextItems.some((item) => item.value === current.activeTab) ? current.activeTab : nextItems[0]?.value || "";
+                  return { ...current, tabCount, activeTab };
+                })
+              }
+              options={SHOWCASE_COUNT_OPTIONS}
+              placeholder="Tab count"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Active tab">
+            <DropdownField
+              value={tabsState.activeTab}
+              onValueChange={(value) => setTabsState((current) => ({ ...current, activeTab: value }))}
+              options={tabIndexOptions}
+              placeholder="Choose tab"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Layout">
+            <DropdownField
+              value={tabsState.layout}
+              onValueChange={(value) => setTabsState((current) => ({ ...current, layout: value }))}
+              options={SHOWCASE_TAB_LAYOUT_OPTIONS}
+              placeholder="Layout"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Reset">
+            <Button type="button" size="xs" variant="ghost" onClick={() => setTabsState(getTabsShowcaseState())}>Reset</Button>
+          </ShowcaseControlRow>
+        </div>
         <TabGroup
           ariaLabel="Showcase tabs"
-          value={showcaseTab}
-          onChange={(v) => setShowcaseTab(v)}
-          items={[
-            { value: "overview", label: "Overview" },
-            { value: "details", label: "Details" },
-            { value: "history", label: "History" },
-          ]}
+          value={tabsState.activeTab}
+          onChange={(value) => setTabsState((current) => ({ ...current, activeTab: value }))}
+          items={tabItems}
+          layout={tabsState.layout === "grid" ? "grid" : "wrap"}
+          stretch={tabsState.layout === "stretch"}
         />
       </ShowcaseSection>
 
       <ShowcaseSection title="Search Bar (.searchbar-api)" itemKey="searchbar-api" onOpenUsage={openUsage}>
-        <SearchBar
-          value={showcaseSearch}
-          onChange={(e) => setShowcaseSearch(e.target.value)}
-          placeholder="Search anything..."
-          onClear={() => setShowcaseSearch("")}
-        />
+        <div className="showcase-controls">
+          <ShowcaseControlRow label="State preset">
+            <DropdownField
+              value={searchState.preset}
+              onValueChange={(value) => setSearchState(getSearchShowcaseState(value))}
+              options={SHOWCASE_PRESET_OPTIONS}
+              placeholder="Choose preset"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Input value">
+            <InputField
+              value={searchState.value}
+              onChange={(event) => setSearchState((current) => ({ ...current, value: event.target.value }))}
+              placeholder="Search text"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Placeholder">
+            <InputField
+              value={searchState.placeholder}
+              onChange={(event) => setSearchState((current) => ({ ...current, placeholder: event.target.value }))}
+              placeholder="Placeholder text"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="UI states">
+            <div className="showcase-toggle-group">
+              <ShowcaseToggleButton active={searchState.loading} onClick={() => setSearchState((current) => ({ ...current, loading: !current.loading }))}>Loading</ShowcaseToggleButton>
+              <ShowcaseToggleButton active={searchState.showClear} onClick={() => setSearchState((current) => ({ ...current, showClear: !current.showClear }))}>Clear button</ShowcaseToggleButton>
+            </div>
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Reset">
+            <Button type="button" size="xs" variant="ghost" onClick={() => setSearchState(getSearchShowcaseState())}>Reset</Button>
+          </ShowcaseControlRow>
+        </div>
+        <div className="showcase-preview-stack">
+          <div className="showcase-inline-meta">
+            {searchState.loading && <span className="showcase-state-chip">Loading state</span>}
+            {!searchState.showClear && <span className="showcase-state-chip">Clear hidden</span>}
+          </div>
+          <SearchBar
+            className={searchBarClassName}
+            value={searchState.value}
+            onChange={(event) => setSearchState((current) => ({ ...current, value: event.target.value }))}
+            placeholder={searchState.placeholder}
+            onClear={searchState.showClear ? () => setSearchState((current) => ({ ...current, value: "" })) : undefined}
+            disabled={searchState.disabled}
+          />
+        </div>
       </ShowcaseSection>
 
       <ShowcaseSection title="Multi-Select Dropdown (.multiselect-dropdown-api)" itemKey="multiselect-dropdown" onOpenUsage={openUsage}>
-        <MultiSelectDropdown
-          label="Departments"
-          placeholder="Pick departments"
-          value={showcaseMulti}
-          onChange={(v) => setShowcaseMulti(v)}
-          options={["Sales", "Service", "Parts", "Admin", "HR"]}
-        />
+        <div className="showcase-controls">
+          <ShowcaseControlRow label="State preset">
+            <DropdownField
+              value={multiSelectState.preset}
+              onValueChange={(value) => setMultiSelectState(getMultiSelectShowcaseState(value))}
+              options={SHOWCASE_PRESET_OPTIONS}
+              placeholder="Choose preset"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Option count">
+            <DropdownField
+              value={String(multiSelectState.optionCount)}
+              onValueChange={(value) =>
+                setMultiSelectState((current) => {
+                  const optionCount = Number(value);
+                  const nextOptions = buildDepartmentOptions(optionCount);
+                  const selectedValues = current.selectedValues.filter((item) => nextOptions.includes(item)).slice(0, current.maxSelections);
+                  return { ...current, optionCount, selectedValues };
+                })
+              }
+              options={SHOWCASE_COUNT_OPTIONS}
+              placeholder="Count"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Pre-selected">
+            <DropdownField
+              value={multiSelectState.preselectedMode}
+              onValueChange={(value) =>
+                setMultiSelectState((current) => {
+                  const selectedValues = getMultiPresetValues(value, multiSelectOptions, current.maxSelections);
+                  return { ...current, preselectedMode: value, selectedValues };
+                })
+              }
+              options={SHOWCASE_MULTI_PRESET_OPTIONS}
+              placeholder="Choose set"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Max selections">
+            <DropdownField
+              value={String(multiSelectState.maxSelections)}
+              onValueChange={(value) =>
+                setMultiSelectState((current) => {
+                  const maxSelections = Number(value);
+                  return {
+                    ...current,
+                    maxSelections,
+                    selectedValues: current.selectedValues.slice(0, maxSelections),
+                  };
+                })
+              }
+              options={SHOWCASE_MAX_SELECTION_OPTIONS}
+              placeholder="Max"
+            />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Actions">
+            <div className="showcase-toggle-group">
+              <ShowcaseToggleButton active={multiSelectState.disabled} onClick={() => setMultiSelectState((current) => ({ ...current, disabled: !current.disabled }))}>Disabled</ShowcaseToggleButton>
+              <Button type="button" size="xs" variant="ghost" onClick={() => setMultiSelectState((current) => ({ ...current, selectedValues: [], preselectedMode: "none" }))}>Clear all</Button>
+            </div>
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Reset">
+            <Button type="button" size="xs" variant="ghost" onClick={() => setMultiSelectState(getMultiSelectShowcaseState())}>Reset</Button>
+          </ShowcaseControlRow>
+        </div>
+        <div className="showcase-preview-stack">
+          <MultiSelectDropdown
+            label="Departments"
+            placeholder="Pick departments"
+            value={multiSelectValue}
+            onChange={(values) =>
+              setMultiSelectState((current) => ({
+                ...current,
+                selectedValues: values.slice(0, current.maxSelections),
+              }))
+            }
+            options={multiSelectOptions}
+            disabled={multiSelectState.disabled}
+            helperText={
+              multiSelectValue.length >= multiSelectState.maxSelections
+                ? `Max of ${multiSelectState.maxSelections} selections reached.`
+                : `${multiSelectValue.length}/${multiSelectState.maxSelections} selected.`
+            }
+          />
+        </div>
       </ShowcaseSection>
 
       <ShowcaseSection title="Native Form Controls (globals.css)" itemKey="native-form-controls" onOpenUsage={openUsage}>
@@ -1904,9 +2792,211 @@ function GlobalUiShowcase() {
   );
 }
 
+// ── Deep Diagnostic: API coverage, performance, feature modules, runtime ──
+
+const DEEP_ENDPOINTS = [
+  { url: "/api/admin/users", name: "admin/users", section: "API Health" },
+  { url: "/api/hr/employees", name: "hr/employees", section: "API Health" },
+  { url: "/api/hr/dashboard", name: "hr/dashboard", section: "API Health" },
+  { url: "/api/hr/operations", name: "hr/operations", section: "API Health" },
+  { url: "/api/hr/attendance", name: "hr/attendance", section: "API Health" },
+  { url: "/api/users/roster", name: "users/roster", section: "API Health" },
+  { url: "/api/messages/users?q=&limit=10", name: "messages/users", section: "API Health" },
+  { url: "/api/messages/threads", name: "messages/threads", section: "API Health" },
+  { url: "/api/accounts", name: "accounts", section: "API Health" },
+  { url: "/api/invoices", name: "invoices", section: "API Health" },
+  { url: "/api/status/snapshot", name: "status/snapshot", section: "API Health" },
+  { url: "/api/search/global?q=test", name: "search/global", section: "API Health" },
+  { url: "/api/tracking/snapshot", name: "tracking/snapshot", section: "API Health" },
+  { url: "/api/settings/company", name: "settings/company", section: "API Health" },
+  { url: "/api/parts/summary", name: "parts/summary", section: "API Health" },
+  { url: "/api/parts/suppliers", name: "parts/suppliers", section: "API Health" },
+  { url: "/api/parts/on-order", name: "parts/on-order", section: "API Health" },
+  { url: "/api/company-accounts", name: "company-accounts", section: "API Health" },
+];
+
+async function pingDeepEndpoints() {
+  return Promise.all(
+    DEEP_ENDPOINTS.map(async (ep) => {
+      const start = (typeof performance !== "undefined" ? performance.now() : Date.now());
+      try {
+        const res = await fetch(ep.url);
+        const ms = Math.round((typeof performance !== "undefined" ? performance.now() : Date.now()) - start);
+        let body = null;
+        try { body = await res.json(); } catch {}
+        return { ...ep, status: res.status, ok: res.ok, ms, body };
+      } catch (e) {
+        return { ...ep, status: 0, ok: false, ms: 0, error: String(e) };
+      }
+    })
+  );
+}
+
+function testApiCoverage(results) {
+  const failures = results.filter((r) => !r.ok);
+  if (failures.length > 0) {
+    return { pass: false, label: "API Coverage", detail: `${failures.length}/${results.length} endpoints failed`, data: failures.map((f) => ({ name: f.name, status: f.status, error: f.error })), section: "API Health" };
+  }
+  return { pass: true, label: "API Coverage", detail: `All ${results.length} endpoints returned 2xx`, data: results.map((r) => ({ name: r.name, status: r.status, ms: r.ms })), section: "API Health" };
+}
+
+function testApiPerformance(results) {
+  const successful = results.filter((r) => r.ok);
+  if (successful.length === 0) {
+    return { pass: false, label: "API Performance", detail: "No successful endpoints to measure", data: null, section: "API Health" };
+  }
+  const slow = successful.filter((r) => r.ms > 2000);
+  const avg = Math.round(successful.reduce((a, r) => a + r.ms, 0) / successful.length);
+  const max = Math.max(...successful.map((r) => r.ms));
+  const maxEp = successful.find((r) => r.ms === max);
+  if (slow.length > 0) {
+    return { pass: false, label: "API Performance", detail: `${slow.length} endpoint(s) > 2s · avg ${avg}ms · max ${max}ms (${maxEp?.name})`, data: slow.map((s) => ({ name: s.name, ms: s.ms })), section: "API Health" };
+  }
+  return { pass: true, label: "API Performance", detail: `All endpoints < 2s · avg ${avg}ms · max ${max}ms (${maxEp?.name})`, data: successful.map((r) => ({ name: r.name, ms: r.ms })).sort((a, b) => b.ms - a.ms), section: "API Health" };
+}
+
+function testApiShape(results) {
+  const problems = [];
+  for (const r of results) {
+    if (!r.ok || !r.body) continue;
+    const b = r.body;
+    const isObject = typeof b === "object" && b !== null;
+    const hasSuccessOrData = isObject && ("success" in b || "data" in b || Array.isArray(b));
+    if (!hasSuccessOrData) {
+      problems.push({ name: r.name, keys: isObject ? Object.keys(b).slice(0, 5) : typeof b });
+    }
+  }
+  if (problems.length > 0) {
+    return { pass: false, label: "API Response Shape", detail: `${problems.length} endpoint(s) missing success/data envelope`, data: problems, section: "API Health" };
+  }
+  return { pass: true, label: "API Response Shape", detail: `All ${results.filter((r) => r.ok).length} successful responses follow { success, data } or array envelope`, data: null, section: "API Health" };
+}
+
+function testJobCardsModule(results) {
+  const jobCardsEp = results.find((r) => r.name === "status/snapshot");
+  if (!jobCardsEp?.ok) {
+    return { pass: false, label: "Job Cards Module", detail: "status/snapshot unavailable", data: jobCardsEp, section: "Feature Modules" };
+  }
+  return { pass: true, label: "Job Cards Module", detail: `Status snapshot reachable (${jobCardsEp.ms}ms)`, data: { status: jobCardsEp.status, hasData: !!jobCardsEp.body }, section: "Feature Modules" };
+}
+
+function testPartsModule(results) {
+  const summary = results.find((r) => r.name === "parts/summary");
+  const suppliers = results.find((r) => r.name === "parts/suppliers");
+  const onOrder = results.find((r) => r.name === "parts/on-order");
+  const endpoints = [summary, suppliers, onOrder].filter(Boolean);
+  const failed = endpoints.filter((e) => !e.ok);
+  if (failed.length > 0) {
+    return { pass: false, label: "Parts Module", detail: `${failed.length}/${endpoints.length} parts endpoints failed`, data: failed.map((f) => f.name), section: "Feature Modules" };
+  }
+  return { pass: true, label: "Parts Module", detail: `All ${endpoints.length} parts endpoints healthy (summary, suppliers, on-order)`, data: null, section: "Feature Modules" };
+}
+
+function testAccountsModule(results) {
+  const accounts = results.find((r) => r.name === "accounts");
+  const invoices = results.find((r) => r.name === "invoices");
+  const company = results.find((r) => r.name === "company-accounts");
+  const endpoints = [accounts, invoices, company].filter(Boolean);
+  const failed = endpoints.filter((e) => !e.ok);
+  if (failed.length > 0) {
+    return { pass: false, label: "Accounts Module", detail: `${failed.length}/${endpoints.length} accounts endpoints failed`, data: failed.map((f) => f.name), section: "Feature Modules" };
+  }
+  return { pass: true, label: "Accounts Module", detail: "Accounts, invoices, and company-accounts reachable", data: null, section: "Feature Modules" };
+}
+
+function testSearchModule(results) {
+  const search = results.find((r) => r.name === "search/global");
+  if (!search?.ok) {
+    return { pass: false, label: "Global Search", detail: "search/global unavailable", data: search, section: "Feature Modules" };
+  }
+  return { pass: true, label: "Global Search", detail: `Search reachable (${search.ms}ms)`, data: { status: search.status }, section: "Feature Modules" };
+}
+
+function testHrDeepModule(results) {
+  const ops = results.find((r) => r.name === "hr/operations");
+  const att = results.find((r) => r.name === "hr/attendance");
+  const failed = [ops, att].filter((e) => e && !e.ok);
+  if (failed.length > 0) {
+    return { pass: false, label: "HR Deep Endpoints", detail: `${failed.length} HR endpoints failing`, data: failed.map((f) => f.name), section: "Feature Modules" };
+  }
+  return { pass: true, label: "HR Deep Endpoints", detail: "hr/operations and hr/attendance healthy", data: null, section: "Feature Modules" };
+}
+
+function testMessagingDeepModule(results) {
+  const threads = results.find((r) => r.name === "messages/threads");
+  if (!threads?.ok) {
+    return { pass: false, label: "Messaging Threads", detail: "messages/threads unavailable", data: threads, section: "Feature Modules" };
+  }
+  return { pass: true, label: "Messaging Threads", detail: `Threads endpoint reachable (${threads.ms}ms)`, data: { status: threads.status }, section: "Feature Modules" };
+}
+
+function testClientRuntime() {
+  if (typeof window === "undefined") {
+    return { pass: false, label: "Client Runtime", detail: "Running server-side", data: null, section: "Client Runtime" };
+  }
+  const checks = {
+    fetch: typeof fetch === "function",
+    localStorage: (() => { try { window.localStorage.setItem("_hnp_t", "1"); window.localStorage.removeItem("_hnp_t"); return true; } catch { return false; } })(),
+    sessionStorage: (() => { try { window.sessionStorage.setItem("_hnp_t", "1"); window.sessionStorage.removeItem("_hnp_t"); return true; } catch { return false; } })(),
+    documentReady: document.readyState === "complete" || document.readyState === "interactive",
+    performance: typeof performance !== "undefined" && typeof performance.now === "function",
+    nextData: !!document.getElementById("__NEXT_DATA__"),
+  };
+  const failures = Object.entries(checks).filter(([, v]) => !v);
+  if (failures.length > 0) {
+    return { pass: false, label: "Client Runtime", detail: `${failures.length} runtime feature(s) missing: ${failures.map(([k]) => k).join(", ")}`, data: checks, section: "Client Runtime" };
+  }
+  return { pass: true, label: "Client Runtime", detail: "fetch, localStorage, sessionStorage, performance, Next data all available", data: checks, section: "Client Runtime" };
+}
+
+function testThemeTokens() {
+  if (typeof window === "undefined") {
+    return { pass: false, label: "Theme Tokens", detail: "Running server-side", data: null, section: "Client Runtime" };
+  }
+  const tokens = ["--primary", "--surface", "--text-primary", "--accentBorder", "--radius-md", "--space-md", "--control-ring", "--success", "--danger", "--warning"];
+  const styles = getComputedStyle(document.documentElement);
+  const values = Object.fromEntries(tokens.map((t) => [t, styles.getPropertyValue(t).trim()]));
+  const missing = Object.entries(values).filter(([, v]) => !v).map(([k]) => k);
+  if (missing.length > 0) {
+    return { pass: false, label: "Theme Tokens", detail: `${missing.length} token(s) unresolved: ${missing.join(", ")}`, data: values, section: "Client Runtime" };
+  }
+  return { pass: true, label: "Theme Tokens", detail: `All ${tokens.length} core theme tokens resolve correctly`, data: values, section: "Client Runtime" };
+}
+
+function testActiveTheme() {
+  if (typeof window === "undefined") {
+    return { pass: false, label: "Active Theme", detail: "Running server-side", data: null, section: "Client Runtime" };
+  }
+  const dataTheme = document.documentElement.getAttribute("data-theme") || "light";
+  const colorScheme = getComputedStyle(document.documentElement).colorScheme || "unknown";
+  return { pass: true, label: "Active Theme", detail: `data-theme="${dataTheme}" · color-scheme=${colorScheme}`, data: { dataTheme, colorScheme }, section: "Client Runtime" };
+}
+
+function testViewportBreakpoint() {
+  if (typeof window === "undefined") {
+    return { pass: false, label: "Viewport", detail: "Running server-side", data: null, section: "Client Runtime" };
+  }
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const bp = w < 640 ? "mobile" : w < 1024 ? "tablet" : w < 1440 ? "desktop" : "wide";
+  return { pass: true, label: "Viewport", detail: `${w}×${h}px · ${bp} breakpoint · dpr ${window.devicePixelRatio}`, data: { width: w, height: h, breakpoint: bp, dpr: window.devicePixelRatio }, section: "Client Runtime" };
+}
+
+function testTotalDiagnosticTime(startMs, endMs) {
+  const total = Math.round(endMs - startMs);
+  const pass = total < 10000;
+  return {
+    pass,
+    label: "Diagnostic Total Time",
+    detail: `Full deep diagnostic ran in ${total}ms${pass ? "" : " (> 10s, consider batching)"}`,
+    data: { totalMs: total, threshold: 10000 },
+    section: "Client Runtime",
+  };
+}
+
 // ── Page Component ──────────────────────────────────────────────
 
-const SECTION_ORDER = ["Core Data", "Profile & Employment", "Cross-System Integration"];
+const SECTION_ORDER = ["Core Data", "Profile & Employment", "Cross-System Integration", "Feature Modules", "API Health", "Client Runtime"];
 
 export default function UserDiagnosticDevPage() {
   const router = useRouter();
@@ -1920,23 +3010,30 @@ export default function UserDiagnosticDevPage() {
     setResults(null);
     setExpanded({});
 
-    const [adminRes, hrRes, rosterRes, profileRes, clockRes, messagesRes, dashboardRes] = await Promise.allSettled([
-      fetch("/api/admin/users").then((r) => r.json()),
-      fetch("/api/hr/employees").then((r) => r.json()),
-      fetch("/api/users/roster").then((r) => r.json()),
-      dbUserId ? fetch(`/api/profile/me?userId=${dbUserId}`).then((r) => r.json()) : Promise.resolve(null),
-      dbUserId ? fetch(`/api/profile/clock?userId=${dbUserId}`).then((r) => r.json()) : Promise.resolve(null),
-      fetch("/api/messages/users?q=&limit=50").then((r) => r.json()),
-      fetch("/api/hr/dashboard").then((r) => r.json()),
+    const startMs = typeof performance !== "undefined" ? performance.now() : Date.now();
+
+    const [
+      adminRes, hrRes, rosterRes, profileRes, clockRes, messagesRes, dashboardRes, deepResults,
+    ] = await Promise.all([
+      fetch("/api/admin/users").then((r) => r.json()).catch(() => null),
+      fetch("/api/hr/employees").then((r) => r.json()).catch(() => null),
+      fetch("/api/users/roster").then((r) => r.json()).catch(() => null),
+      dbUserId ? fetch(`/api/profile/me?userId=${dbUserId}`).then((r) => r.json()).catch(() => null) : Promise.resolve(null),
+      dbUserId ? fetch(`/api/profile/clock?userId=${dbUserId}`).then((r) => r.json()).catch(() => null) : Promise.resolve(null),
+      fetch("/api/messages/users?q=&limit=50").then((r) => r.json()).catch(() => null),
+      fetch("/api/hr/dashboard").then((r) => r.json()).catch(() => null),
+      pingDeepEndpoints(),
     ]);
 
-    const adminData = adminRes.status === "fulfilled" ? adminRes.value : null;
-    const hrData = hrRes.status === "fulfilled" ? hrRes.value : null;
-    const rosterData = rosterRes.status === "fulfilled" ? rosterRes.value : null;
-    const profileData = profileRes.status === "fulfilled" ? profileRes.value : null;
-    const clockData = clockRes.status === "fulfilled" ? clockRes.value : null;
-    const messagesData = messagesRes.status === "fulfilled" ? messagesRes.value : null;
-    const dashboardData = dashboardRes.status === "fulfilled" ? dashboardRes.value : null;
+    const adminData = adminRes;
+    const hrData = hrRes;
+    const rosterData = rosterRes;
+    const profileData = profileRes;
+    const clockData = clockRes;
+    const messagesData = messagesRes;
+    const dashboardData = dashboardRes;
+
+    const endMs = typeof performance !== "undefined" ? performance.now() : Date.now();
 
     setResults([
       // Core Data
@@ -1962,6 +3059,23 @@ export default function UserDiagnosticDevPage() {
       testClockStatus(clockData, dbUserId),
       testMessageUserSearch(messagesData),
       testHrDashboardMetrics(dashboardData),
+      // Feature Modules (from deep ping results)
+      testJobCardsModule(deepResults),
+      testPartsModule(deepResults),
+      testAccountsModule(deepResults),
+      testSearchModule(deepResults),
+      testHrDeepModule(deepResults),
+      testMessagingDeepModule(deepResults),
+      // API Health
+      testApiCoverage(deepResults),
+      testApiPerformance(deepResults),
+      testApiShape(deepResults),
+      // Client Runtime
+      testClientRuntime(),
+      testThemeTokens(),
+      testActiveTheme(),
+      testViewportBreakpoint(),
+      testTotalDiagnosticTime(startMs, endMs),
     ]);
 
     setRunning(false);
@@ -2028,7 +3142,7 @@ export default function UserDiagnosticDevPage() {
           fontSize: "14px",
         }}
       >
-        {userLoading ? "Waiting for user context..." : running ? "Running..." : "Run All Tests"}
+        {userLoading ? "Waiting for user context..." : running ? "Running deep diagnostic…" : "Run Deep Diagnostic"}
       </button>
 
       {groupedResults.map((group) => (

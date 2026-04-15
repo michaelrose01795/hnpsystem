@@ -3294,7 +3294,7 @@ export default function TechJobDetailPage() {
                       vhcContextLabel={activeSection || "vhc-summary"}
                       buttonStyle={getVhcActionButtonStyle({ active: false })}
                       onUploadComplete={() => {
-                        loadJobData();
+                        fetchJobData();
                       }}
                     />
                     <button
@@ -3366,6 +3366,7 @@ export default function TechJobDetailPage() {
                       {/* Camera Button - Always visible for technicians */}
                       {jobNumber && (
                         <VhcCameraButton
+                          jobId={jobData?.id}
                           jobNumber={jobNumber}
                           userId={dbUserId || user?.id}
                           buttonStyle={{
@@ -3382,7 +3383,7 @@ export default function TechJobDetailPage() {
                           }}
                           onUploadComplete={() => {
                             console.log("VHC media uploaded, refreshing job data...");
-                            loadJobData();
+                            fetchJobData();
                           }}
                         />
                       )}

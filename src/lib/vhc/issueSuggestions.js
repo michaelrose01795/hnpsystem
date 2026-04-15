@@ -145,6 +145,29 @@ const normaliseText = (value = "") =>
     .trim()
     .toLowerCase();
 
+const getMeaningfulQueryTokens = (value = "") =>
+  normalizeQuery(value)
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .filter((token) => token.length >= 3)
+    .filter((token) => !STOP_WORDS.has(token));
+
+const hasStrongSuggestionMatch = (suggestionText = "", query = "") => {
+  const normalizedSuggestion = normalizeQuery(suggestionText);
+  const normalizedQuery = normalizeQuery(query);
+
+  if (!normalizedSuggestion || !normalizedQuery) return false;
+  if (normalizedSuggestion.includes(normalizedQuery)) return true;
+
+  const queryTokens = getMeaningfulQueryTokens(normalizedQuery);
+  if (queryTokens.length <= 2) return true;
+
+  const matchedTokens = queryTokens.filter((token) => normalizedSuggestion.includes(token));
+  const minimumMatches = Math.max(2, Math.ceil(queryTokens.length * 0.6));
+  return matchedTokens.length >= minimumMatches;
+};
+
 const isBlockedSuggestion = (value = "") => BLOCKED_SUGGESTION_KEYS.has(normalizeQuery(value));
 
 const capitalize = (value = "") => value.charAt(0).toUpperCase() + value.slice(1);
@@ -333,6 +356,7 @@ export const getIssueSuggestions = (sectionKey = "", query = "", limit = DEFAULT
   const seen = new Set();
   [...learnedResult, ...taxonomyResult].forEach((text) => {
     if (isBlockedSuggestion(text)) return;
+    if (!hasStrongSuggestionMatch(text, normalizedQuery)) return;
     const key = normaliseText(text);
     if (!key || seen.has(key)) return;
     seen.add(key);

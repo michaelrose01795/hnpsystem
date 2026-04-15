@@ -174,7 +174,8 @@ export default function IssueAutocomplete({
     }
   }, [open]);
 
-  const isDropdownVisible = open && !disabled && query.trim().length >= 1;
+  const hasVisibleContent = loading || results.length > 0 || Boolean(crossSectionHint);
+  const isDropdownVisible = open && !disabled && query.trim().length >= 1 && hasVisibleContent;
 
   const handleSelect = (selection) => {
     if (typeof onChange === "function") {
@@ -249,8 +250,6 @@ export default function IssueAutocomplete({
         <div style={dropdownStyle}>
           {loading ? (
             <div style={mutedRowStyle}>Loading suggestions...</div>
-          ) : results.length === 0 ? (
-            <div style={mutedRowStyle}>No suggestions</div>
           ) : (
             results.map((suggestion, index) => {
               const isActive = index === activeIndex;

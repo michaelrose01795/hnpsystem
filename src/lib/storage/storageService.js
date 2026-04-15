@@ -4,17 +4,28 @@
 // persisted to the `job_files` table.
 //
 // Bucket layout inside "job-files":
-//   vhc-media/{jobId}/{timestamp}-{safeName}
+//   VHC/{jobId}/{timestamp}-{safeName}
 //   documents/{jobId}/{timestamp}-{safeName}
 //   dealer-files/{jobId}/{timestamp}-{safeName}
 
 import { supabaseService, supabase as supabaseFallback } from "@/lib/database/supabaseClient";
+import {
+  ensureJobFilesSchema,
+  getRepairableJobFilesColumnsFromError,
+} from "@/lib/storage/jobFilesSchemaRepair";
 
 const BUCKET = "job-files"; // single bucket for all job-related uploads
+const JOB_FILES_OPTIONAL_COLUMNS = ["visible_to_customer", "storage_path"];
 
 // Prefer the service-role client (server-side); fall back to anon client.
 function getClient() {
   return supabaseService || supabaseFallback;
+}
+
+function isMissingSchemaColumnError(error, columnName) {
+  const message = String(error?.message || "").toLowerCase();
+  const column = String(columnName || "").toLowerCase();
+  return Boolean(column) && message.includes(column) && message.includes("schema cache");
 }
 
 // Cache the bucket-exists check for the lifetime of the Node process so we
@@ -35,7 +46,7 @@ export async function ensureBucket() {
     try {
       const { data: existing, error: getError } = await client.storage.getBucket(BUCKET);
       if (existing && !getError) return;
-    } catch (_) {
+    } catch {
       // fall through to create
     }
 
@@ -74,7 +85,7 @@ export function sanitiseFileName(name) {
 
 /**
  * Build a deterministic object path inside the bucket.
- * @param {string} folder   e.g. "vhc-media", "documents", "dealer-files"
+ * @param {string} folder   e.g. "VHC", "documents", "dealer-files"
  * @param {string|number} jobId
  * @param {string} fileName original file name (will be sanitised)
  * @returns {string}
@@ -88,7 +99,7 @@ export function buildStoragePath(folder, jobId, fileName) {
  * Upload a Buffer to Supabase Storage.
  *
  * @param {{ buffer: Buffer, fileName: string, mimetype: string }} file
- * @param {string} folder      e.g. "vhc-media"
+ * @param {string} folder      e.g. "VHC"
  * @param {string|number} jobId
  * @returns {Promise<{ storagePath: string, publicUrl: string }>}
  */
@@ -124,7 +135,7 @@ export async function uploadFile(file, folder, jobId) {
 
 /**
  * Delete a file from Supabase Storage.
- * @param {string} storagePath  e.g. "vhc-media/42/17127…-photo.jpg"
+ * @param {string} storagePath  e.g. "VHC/42/17127…-photo.jpg"
  * @returns {Promise<void>}
  */
 export async function deleteFile(storagePath) {
@@ -159,8 +170,6 @@ export async function deleteFile(storagePath) {
 export async function saveFileRecord(meta) {
   const client = getClient();
 
-  // Only include columns that exist in the job_files schema.
-  // (file_size, storage_type, storage_path, visible_to_customer are not in the table.)
   // uploaded_by is an integer FK — coerce to number or null; never insert a string.
   const rawUploadedBy = meta.uploadedBy;
   const uploadedBy = rawUploadedBy && /^\d+$/.test(String(rawUploadedBy)) ? Number(rawUploadedBy) : null;
@@ -173,13 +182,50 @@ export async function saveFileRecord(meta) {
     folder: meta.folder || "general",
     uploaded_by: uploadedBy,
     uploaded_at: new Date().toISOString(),
+    visible_to_customer: meta.visibleToCustomer ?? true,
+    storage_path: meta.storagePath || null,
   };
 
-  const { data, error } = await client
-    .from("job_files")
-    .insert([row])
-    .select()
-    .single();
+  const insertRow = { ...row };
+  let data = null;
+  let error = null;
+  let hasAttemptedSchemaRepair = false;
+
+  while (true) {
+    const response = await client
+      .from("job_files")
+      .insert([insertRow])
+      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer")
+      .single();
+
+    data = response.data;
+    error = response.error;
+
+    if (!error) break;
+
+    const repairableColumns = getRepairableJobFilesColumnsFromError(
+      error,
+      Object.keys(insertRow)
+    );
+
+    if (repairableColumns.length && !hasAttemptedSchemaRepair) {
+      hasAttemptedSchemaRepair = true;
+      const repaired = await ensureJobFilesSchema(repairableColumns);
+      if (repaired) {
+        continue;
+      }
+    }
+
+    const missingColumn = JOB_FILES_OPTIONAL_COLUMNS.find(
+      (columnName) =>
+        Object.prototype.hasOwnProperty.call(insertRow, columnName) &&
+        isMissingSchemaColumnError(error, columnName)
+    );
+
+    if (!missingColumn) break;
+
+    delete insertRow[missingColumn];
+  }
 
   if (error) {
     console.error("❌ saveFileRecord error:", {
@@ -193,6 +239,82 @@ export async function saveFileRecord(meta) {
       .filter(Boolean)
       .join(" — ");
     return { success: false, error: { message: combined || "Database insert failed" } };
+  }
+
+  return { success: true, data };
+}
+
+export async function updateFileRecord(fileId, meta) {
+  const client = getClient();
+  const rawUploadedBy = meta.uploadedBy;
+  const uploadedBy = rawUploadedBy && /^\d+$/.test(String(rawUploadedBy)) ? Number(rawUploadedBy) : null;
+
+  const updates = {
+    file_name: meta.fileName,
+    file_url: meta.fileUrl,
+    file_type: meta.fileType,
+    folder: meta.folder || "general",
+    uploaded_by: uploadedBy,
+    uploaded_at: new Date().toISOString(),
+    visible_to_customer: meta.visibleToCustomer ?? true,
+    storage_path: meta.storagePath || null,
+  };
+
+  const updatePayload = { ...updates };
+  let data = null;
+  let error = null;
+  let hasAttemptedSchemaRepair = false;
+
+  while (true) {
+    const response = await client
+      .from("job_files")
+      .update(updatePayload)
+      .eq("file_id", fileId)
+      .select("file_id, job_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at, visible_to_customer")
+      .single();
+
+    data = response.data;
+    error = response.error;
+
+    if (!error) break;
+
+    const repairableColumns = getRepairableJobFilesColumnsFromError(
+      error,
+      Object.keys(updatePayload)
+    );
+
+    if (repairableColumns.length && !hasAttemptedSchemaRepair) {
+      hasAttemptedSchemaRepair = true;
+      const repaired = await ensureJobFilesSchema(repairableColumns);
+      if (repaired) {
+        continue;
+      }
+    }
+
+    const missingColumn = JOB_FILES_OPTIONAL_COLUMNS.find(
+      (columnName) =>
+        Object.prototype.hasOwnProperty.call(updatePayload, columnName) &&
+        isMissingSchemaColumnError(error, columnName)
+    );
+
+    if (!missingColumn) break;
+
+    delete updatePayload[missingColumn];
+  }
+
+  if (error) {
+    console.error("❌ updateFileRecord error:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      fileId,
+      updates,
+    });
+    const combined = [error.message, error.details, error.hint]
+      .filter(Boolean)
+      .join(" — ");
+    return { success: false, error: { message: combined || "Database update failed" } };
   }
 
   return { success: true, data };
