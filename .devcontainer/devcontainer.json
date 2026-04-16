@@ -1,16 +1,16 @@
 {
-    "name": "hnpsystem",
-    "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
-    "forwardPorts": [3000],
-    "portsAttributes": {
-        "3000": {
-            "label": "vercel dev",
-            "onAutoForward": "openBrowser",
-            "visibility": "public",
-            "requireLocalPort": true
-        }
-    },
-    "otherPortsAttributes": {
-        "visibility": "public"
+  "name": "hnpsystem",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "vercel dev",
+      "onAutoForward": "openBrowser",
+      "visibility": "public",
+      "requireLocalPort": true
     }
+  },
+  "otherPortsAttributes": {
+    "onAutoForward": "ignore"
+  }
 }
