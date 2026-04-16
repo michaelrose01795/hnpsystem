@@ -1,3 +1,23 @@
+TODO
+have it so within the "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-wheels-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-brakes-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-service-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-external-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-internal-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-underside-header)" sectiosn to the right of the "Close/Save & Complete" buttons add a camera button, only make it clickable if there has been a concern (red or amber) which has been reported in that section. for example within "Wipers/Washers/Horn" a report of wiper blades require repalcing and in red "Status" then make the camera button clickable, if the user then clicks the camera button, auto link it to the only report which is there, unless if there is more than one report within the seciton or inside the same catagory for example Wipers/Washers/Horn section then it opens a popup with the description of the items reported in a list view, when that reported item is click have it then link the video or photo captured to that section. 
+
+
+EXPAND
+have it so premition to use the audio and camera is onyl aksed once by the browser and for it to remember
+
+
+TODOOOOO
+Chatgpt prompt 2nd
+with edit popup prompt have it hide the pause and play button after 0.1 second when the curse has left the video section 
+
+
+
+TODO
+For "Run Deep Diagnostic" haev a copy button which create a prompt for codex or claude which give a descrption of all of the tests which have failed and leves claude/codex to fix them. within the showcase section add a side section onto each section where i can add a note about that showcase card, have this save to the database. also improve dev overlay within "/dev/user-diagnostic :: 1.2.2.1 (app-layout-page-card)". 
+
+TODO
+Fix the loading section, it creates a solid card which is offset to the mian card page and a differnent colour and it doesnt look correct, deep dive to fix this
+
 
 
 /dashboard/service

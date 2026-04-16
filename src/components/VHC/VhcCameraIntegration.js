@@ -92,12 +92,12 @@ export default function VhcCameraIntegration({
 
   const renderCaptureButtons = () => {
     const commonButtonStyle = {
-      padding: "10px 16px",
+      padding: "var(--space-2) var(--space-md)",
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      gap: "6px",
-      fontSize: "14px",
+      gap: "var(--space-1)",
+      fontSize: "var(--text-body-sm)",
       minWidth: "148px",
     };
 

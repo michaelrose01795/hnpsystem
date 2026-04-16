@@ -113,11 +113,11 @@ export default function VhcCameraButton({
         disabled={isPersistingCapture}
         style={{
           ...createVhcButtonStyle("primary"),
-          padding: "8px 16px",
+          padding: "var(--space-sm) var(--space-md)",
           display: "inline-flex",
           alignItems: "center",
-          gap: "6px",
-          fontSize: "13px",
+          gap: "var(--space-1)",
+          fontSize: "var(--text-body-sm)",
           ...(buttonStyle || {}),
         }}
         title="Capture VHC photo or video"

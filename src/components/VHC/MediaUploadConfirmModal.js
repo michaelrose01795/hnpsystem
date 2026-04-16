@@ -1,9 +1,28 @@
 // file location: src/components/VHC/MediaUploadConfirmModal.js
-// Final confirmation modal that replaces an existing VHC media record when edits are saved.
+// Final confirmation modal that replaces an existing VHC media record
+// when edits are saved. Rendered inside the shared VHCModalShell so
+// the header / footer / overlay behaviour matches every other VHC
+// modal. All colour / radius / spacing / typography values resolve
+// through the global design tokens in src/styles/theme.css.
 
 import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell, { buildModalButton } from "./VHCModalShell";
 import { uploadVhcMediaFile } from "@/lib/vhc/uploadMediaClient";
+
+const PANEL_STYLE = {
+  background: "var(--surfaceMain)",
+  border: "1px solid var(--accentBorder)",
+  borderRadius: "var(--radius-md)",
+  padding: "var(--space-4)",
+};
+
+const LABEL_STYLE = {
+  fontSize: "var(--text-label)",
+  color: "var(--text-secondary)",
+  textTransform: "uppercase",
+  letterSpacing: "var(--tracking-caps)",
+  fontWeight: 700,
+};
 
 export default function MediaUploadConfirmModal({
   isOpen,
@@ -65,13 +84,25 @@ export default function MediaUploadConfirmModal({
     }
   };
 
+  const fileSizeMb = Number.isFinite(mediaFile?.size)
+    ? `${(mediaFile.size / (1024 * 1024)).toFixed(2)} MB`
+    : "Unknown size";
+
   const footer = (
-    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", width: "100%" }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        gap: "var(--space-3)",
+        width: "100%",
+        flexWrap: "wrap",
+      }}
+    >
       <button
         type="button"
         onClick={onCancel}
         disabled={uploading}
-        style={{ ...buildModalButton("ghost"), padding: "12px 18px" }}
+        style={buildModalButton("ghost", { disabled: uploading })}
       >
         Cancel
       </button>
@@ -80,9 +111,9 @@ export default function MediaUploadConfirmModal({
         type="button"
         onClick={handleUpload}
         disabled={uploading || !mediaFile}
-        style={{ ...buildModalButton("primary"), padding: "12px 18px" }}
+        style={buildModalButton("primary", { disabled: uploading || !mediaFile })}
       >
-        {uploading ? "Saving..." : "Save to VHC"}
+        {uploading ? "Saving…" : "Save to VHC"}
       </button>
     </div>
   );
@@ -97,16 +128,25 @@ export default function MediaUploadConfirmModal({
       onClose={onCancel}
       footer={footer}
     >
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.2fr) minmax(260px, 0.8fr)", gap: "20px", height: "100%" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.2fr) minmax(260px, 0.8fr)",
+          gap: "var(--space-5)",
+          height: "100%",
+          minHeight: 0,
+        }}
+      >
         <div
           style={{
-            background: "var(--background)",
-            borderRadius: "var(--radius-sm)",
+            background: "var(--surfaceMutedToken)",
+            border: "1px solid var(--accentBorder)",
+            borderRadius: "var(--radius-md)",
             overflow: "hidden",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            minHeight: "320px",
+            minHeight: 320,
           }}
         >
           {previewUrl && mediaType === "photo" ? (
@@ -123,41 +163,49 @@ export default function MediaUploadConfirmModal({
               style={{ width: "100%", height: "100%", objectFit: "contain" }}
             />
           ) : (
-            <div style={{ color: "var(--info)" }}>Preview unavailable</div>
+            <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-body-sm)" }}>
+              Preview unavailable
+            </div>
           )}
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-md)",
+            minHeight: 0,
+            overflowY: "auto",
+          }}
+        >
           <div
             style={{
-              border: "1px solid var(--accent-surface)",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--surface)",
-              padding: "16px",
+              ...PANEL_STYLE,
               display: "grid",
-              gap: "10px",
+              gap: "var(--space-2)",
             }}
           >
-            <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>
-              File details
+            <div style={LABEL_STYLE}>File details</div>
+            <div style={{ fontSize: "var(--text-body)", color: "var(--text-primary)", fontWeight: 700 }}>
+              {mediaFile?.name || "Captured media"}
             </div>
-            <div style={{ fontSize: "14px", color: "var(--primary)", fontWeight: 700 }}>{mediaFile?.name || "Captured media"}</div>
-            <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{mediaFile?.type || "Unknown type"}</div>
-            <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
-              {Number.isFinite(mediaFile?.size) ? `${(mediaFile.size / (1024 * 1024)).toFixed(2)} MB` : "Unknown size"}
+            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>
+              {mediaFile?.type || "Unknown type"}
+            </div>
+            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>
+              {fileSizeMb}
             </div>
           </div>
 
           <label
             style={{
-              border: "1px solid var(--accent-surface)",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--surface)",
-              padding: "16px",
+              ...PANEL_STYLE,
               display: "flex",
               alignItems: "flex-start",
-              gap: "12px",
-              cursor: "pointer",
+              gap: "var(--space-3)",
+              cursor: uploading ? "not-allowed" : "pointer",
+              opacity: uploading ? 0.7 : 1,
+              transition: "var(--control-transition)",
             }}
           >
             <input
@@ -165,11 +213,19 @@ export default function MediaUploadConfirmModal({
               checked={visibleToCustomer}
               onChange={(event) => setVisibleToCustomer(event.target.checked)}
               disabled={uploading}
-              style={{ marginTop: "2px" }}
+              style={{
+                marginTop: 2,
+                width: 18,
+                height: 18,
+                accentColor: "var(--accentMain)",
+                cursor: "inherit",
+              }}
             />
-            <div style={{ display: "grid", gap: "4px" }}>
-              <div style={{ fontSize: "14px", color: "var(--primary)", fontWeight: 700 }}>Visible to customer</div>
-              <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+            <div style={{ display: "grid", gap: "var(--space-xs)" }}>
+              <div style={{ fontSize: "var(--text-body)", color: "var(--text-primary)", fontWeight: 700 }}>
+                Visible to customer
+              </div>
+              <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>
                 Turn this off to keep the media internal-only for workshop staff.
               </div>
             </div>
@@ -177,12 +233,14 @@ export default function MediaUploadConfirmModal({
 
           {error ? (
             <div
+              role="alert"
               style={{
                 borderRadius: "var(--radius-sm)",
                 background: "var(--danger-surface)",
-                color: "var(--danger)",
-                padding: "12px 14px",
-                fontSize: "13px",
+                color: "var(--danger-text)",
+                border: "1px solid var(--danger-border)",
+                padding: "var(--space-sm) var(--space-3)",
+                fontSize: "var(--text-body-sm)",
                 fontWeight: 600,
               }}
             >

@@ -59,69 +59,151 @@ function fillRoundedRect(ctx, x, y, w, h, r) {
   ctx.fill(); // Fill now
 }
 
-// Widget colour palette — tuned for readability on video backgrounds.
-// Kept in sync with FloatingWidget.ACCENTS / BADGES so the baked-in
-// rendering matches the live DOM preview pixel-for-pixel.
-const WIDGET_COLOURS = {
-  red: { accent: "#ef4444", badge: "RED" }, // Red concern
-  amber: { accent: "#f59e0b", badge: "AMBER" }, // Amber concern
-  green: { accent: "#10b981", badge: "GREEN" }, // Green / good status
-  default: { accent: "#38bdf8", badge: "INFO" }, // Fallback / informational
+// Widget colour palette — resolved live from the theme tokens so the
+// baked-in video widgets match the rest of the app (accent swaps,
+// danger / warning / success mapping, chrome surfaces, text colours).
+// Canvas can't consume CSS variables directly, so we read them from
+// :root at draw time via getComputedStyle and fall back to the raw
+// hex / rgba values used by the --hud-* token set if the variables
+// aren't defined for any reason.
+const WIDGET_FALLBACKS = {
+  red: "#ef4444",
+  amber: "#f59e0b",
+  green: "#10b981",
+  default: "#38bdf8",
+  surface: "rgba(15, 23, 42, 0.94)",
+  text: "#f8fafc",
+  textMuted: "rgba(226, 232, 240, 0.92)",
 };
 
+function resolveWidgetPalette() {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return { ...WIDGET_FALLBACKS };
+  }
+  const styles = window.getComputedStyle(document.documentElement);
+  const read = (name, defaultValue) => {
+    const value = styles.getPropertyValue(name).trim();
+    return value || defaultValue;
+  };
+  const textRgb = read("--hud-text-rgb", "248, 250, 252");
+  return {
+    red: read("--danger", WIDGET_FALLBACKS.red),
+    amber: read("--warning", WIDGET_FALLBACKS.amber),
+    green: read("--success", WIDGET_FALLBACKS.green),
+    default: read("--accentMain", WIDGET_FALLBACKS.default),
+    surface: read("--hud-surface-glass", WIDGET_FALLBACKS.surface),
+    text: read("--hud-text", WIDGET_FALLBACKS.text),
+    textMuted: `rgba(${textRgb}, 0.92)`,
+  };
+}
+
+// Wrap text to fit `maxWidth` at the current font, up to `maxLines`.
+// Returns up to `maxLines` strings; the last one gets an ellipsis if
+// the text overflows. This lets us cap the card height so every
+// baked widget occupies the same footprint regardless of issue length.
+function wrapText(ctx, text, maxWidth, maxLines) {
+  const words = String(text || "").split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [""];
+  const lines = [];
+  let current = "";
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (ctx.measureText(candidate).width <= maxWidth) {
+      current = candidate;
+    } else if (!current) {
+      lines.push(word);
+    } else {
+      lines.push(current);
+      current = word;
+    }
+    if (lines.length >= maxLines) break;
+  }
+  if (current && lines.length < maxLines) lines.push(current);
+  // If we ran out of room, truncate the last line with an ellipsis so
+  // the overflow is visually obvious in the recorded file.
+  if (lines.length === maxLines) {
+    let last = lines[maxLines - 1];
+    const remainingWords = words.slice(lines.slice(0, maxLines - 1).reduce((total, line) => total + line.split(/\s+/).length, 0) + last.split(/\s+/).length);
+    if (remainingWords.length > 0 || ctx.measureText(last).width > maxWidth) {
+      while (last.length > 1 && ctx.measureText(`${last}…`).width > maxWidth) {
+        last = last.slice(0, -1);
+      }
+      lines[maxLines - 1] = `${last}…`;
+    }
+  }
+  return lines;
+}
+
 // Paint one widget onto the canvas at its normalised [0..1] x/y position.
-function drawWidget(ctx, canvasWidth, canvasHeight, widget) {
-  const { title = "", value = "", status = "default", x = 0.5, y = 0.5 } = widget; // Unpack
-  const colours = WIDGET_COLOURS[status] || WIDGET_COLOURS.default; // Lookup colour
-  const fontScale = Math.max(14, Math.min(canvasWidth, canvasHeight) / 34); // Responsive font size
-  const padding = fontScale * 0.9; // Inner padding scales with font
+// Matches the DOM FloatingWidget pixel-for-pixel: fixed-size card, left
+// accent strip, optional small uppercase title, and a large value.
+// Badge pills are intentionally omitted — the accent strip already
+// conveys severity.
+function drawWidget(ctx, canvasWidth, canvasHeight, widget, palette) {
+  const { title = "", value = "", status = "default", x = 0.5, y = 0.5 } = widget;
+  const accent = palette[status] || palette.default;
+  const hasTitle = String(title || "").trim().length > 0;
 
-  ctx.save(); // Isolate transform/alpha changes
-  ctx.font = `700 ${fontScale}px system-ui, -apple-system, Segoe UI, sans-serif`; // Heavy font for title
-  const titleMetrics = ctx.measureText(title || " "); // Measure title text
-  ctx.font = `800 ${fontScale * 1.4}px system-ui, -apple-system, Segoe UI, sans-serif`; // Value is bigger
-  const valueMetrics = ctx.measureText(value || " "); // Measure value text
-  const boxWidth = Math.max(titleMetrics.width, valueMetrics.width) + padding * 2 + fontScale * 2.2; // Total width
-  const boxHeight = fontScale * 3.4; // Total height accommodates two lines
+  // Widget footprint scales with the smaller of canvas width / height
+  // so the card reads the same size on every aspect ratio.
+  const base = Math.max(240, Math.min(canvasWidth, canvasHeight) * 0.32);
+  const boxWidth = Math.round(base * 1.55);
+  const boxHeight = Math.round(base * 0.58);
+  const cornerRadius = Math.round(base * 0.06);
+  const stripWidth = Math.round(base * 0.04);
+  const stripInset = Math.round(base * 0.05);
+  const textLeft = stripInset + stripWidth + Math.round(base * 0.07);
+  const textRight = boxWidth - Math.round(base * 0.07);
+  const textMaxWidth = textRight - textLeft;
+  const titleFont = Math.round(base * 0.085);
+  const valueFont = Math.round(hasTitle ? base * 0.14 : base * 0.18);
 
-  const px = clampPosition(x, boxWidth, canvasWidth); // Clamp into canvas
-  const py = clampPosition(y, boxHeight, canvasHeight); // Clamp into canvas
+  const px = clampPosition(x, boxWidth, canvasWidth);
+  const py = clampPosition(y, boxHeight, canvasHeight);
 
-  // Card background.
-  ctx.globalAlpha = 0.92; // Slightly translucent for a modern floating look
-  ctx.fillStyle = "rgba(15, 23, 42, 0.94)"; // Deep slate base
-  fillRoundedRect(ctx, px, py, boxWidth, boxHeight, fontScale * 0.9); // Rounded corners
+  ctx.save();
 
-  // Accent strip.
-  ctx.globalAlpha = 1; // Fully opaque
-  ctx.fillStyle = colours.accent; // Coloured strip
-  fillRoundedRect(ctx, px, py, fontScale * 0.5, boxHeight, fontScale * 0.25); // Left-side strip
+  // Card background (dark glass that reads on any video frame).
+  // Resolved from --hud-surface-glass in the live theme.
+  ctx.globalAlpha = 0.94;
+  ctx.fillStyle = palette.surface;
+  fillRoundedRect(ctx, px, py, boxWidth, boxHeight, cornerRadius);
 
-  // Badge pill inside.
-  ctx.fillStyle = colours.accent; // Badge background
-  const badgeText = colours.badge; // RED/AMBER/INFO
-  ctx.font = `700 ${fontScale * 0.62}px system-ui, -apple-system, Segoe UI, sans-serif`; // Small caps font
-  const badgeMetrics = ctx.measureText(badgeText); // Measure badge
-  const badgeW = badgeMetrics.width + fontScale * 0.8; // Width with padding
-  const badgeH = fontScale * 1; // Badge height
-  const badgeX = px + fontScale * 1.2; // Badge x
-  const badgeY = py + padding * 0.7; // Badge y
-  fillRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, badgeH / 2); // Pill shape
-  ctx.fillStyle = "#0f172a"; // Dark text on coloured badge
-  ctx.textBaseline = "middle"; // Centre vertically
-  ctx.fillText(badgeText, badgeX + fontScale * 0.4, badgeY + badgeH / 2); // Paint badge text
+  // Left accent strip — the only severity cue on the card.
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = accent;
+  fillRoundedRect(
+    ctx,
+    px + stripInset,
+    py + stripInset,
+    stripWidth,
+    boxHeight - stripInset * 2,
+    Math.round(stripWidth / 2)
+  );
 
-  // Title text.
-  ctx.fillStyle = "rgba(226, 232, 240, 0.92)"; // Light grey-white
-  ctx.font = `700 ${fontScale}px system-ui, -apple-system, Segoe UI, sans-serif`; // Title font
-  ctx.textBaseline = "alphabetic"; // Standard baseline
-  ctx.fillText(title, px + fontScale * 1.2, py + padding + fontScale * 1.6); // Title line
+  // Text block. Title (if any) sits above a large value. The value
+  // wraps across up to 3 lines (or 2 when a title is present) so long
+  // external issue text still fits inside the fixed-size card.
+  ctx.textBaseline = "top";
+  ctx.fillStyle = palette.textMuted;
+  let textY = py + Math.round(boxHeight * 0.22);
 
-  // Value text (large).
-  ctx.fillStyle = "#f8fafc"; // White value
-  ctx.font = `800 ${fontScale * 1.4}px system-ui, -apple-system, Segoe UI, sans-serif`; // Big value font
-  ctx.fillText(value, px + fontScale * 1.2, py + padding + fontScale * 3); // Value line
-  ctx.restore(); // Pop the saved state
+  if (hasTitle) {
+    ctx.font = `700 ${titleFont}px system-ui, -apple-system, Segoe UI, sans-serif`;
+    const titleLines = wrapText(ctx, title, textMaxWidth, 1);
+    ctx.fillText(titleLines[0] || "", px + textLeft, textY);
+    textY += Math.round(titleFont * 1.35);
+  }
+
+  ctx.fillStyle = palette.text;
+  ctx.font = `800 ${valueFont}px system-ui, -apple-system, Segoe UI, sans-serif`;
+  const valueMaxLines = hasTitle ? 2 : 3;
+  const valueLines = wrapText(ctx, value, textMaxWidth, valueMaxLines);
+  valueLines.forEach((line, index) => {
+    ctx.fillText(line, px + textLeft, textY + index * Math.round(valueFont * 1.15));
+  });
+
+  ctx.restore();
 }
 
 // Clamp a 0..1 position into the visible drawing area so widgets never clip off-canvas.
@@ -192,8 +274,9 @@ export default function useWidgetRecorder({ stream, videoElement, widgets, isRec
     }
 
     const list = widgetsRef.current || []; // Current widget list
+    const palette = resolveWidgetPalette(); // Resolved once per frame from the live theme tokens
     for (let i = 0; i < list.length; i += 1) { // Iterate widgets
-      drawWidget(ctx, width, height, list[i]); // Paint each widget
+      drawWidget(ctx, width, height, list[i], palette); // Paint each widget with the themed palette
     }
 
     rafRef.current = requestAnimationFrame(drawFrame); // Schedule next frame

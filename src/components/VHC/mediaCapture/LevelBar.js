@@ -2,127 +2,203 @@
 // Compact horizontal level bar shown in the capture top bar. Uses the
 // device's `deviceorientation` event when available (after permission
 // prompting on iOS) and falls back to a static zero-tilt indicator
-// when the API isn't accessible. Designed for quick visual feedback;
-// it does not need millimetre accuracy.
+// when the API isn't accessible.
+//
+// Also doubles as the recording-status surface. When a `statusLabel`
+// is provided (e.g. "Rec 00:03" / "Paused 00:02") it replaces the
+// default "LEVEL" caption so there's one compact HUD pill in the top
+// bar instead of a second floating pill competing for space.
+//
+// All colour / radius / spacing / typography values resolve through
+// the --hud-*, --space, --radius, --duration, --tracking-* and status
+// tokens in theme.css so the pill follows the user's theme.
 
-import React, { useEffect, useRef, useState } from "react"; // React primitives
+import React, { useEffect, useRef, useState } from "react";
 
-// Convert a tilt reading into a 0..1 position along the bar.
-// Negative tilt → left of centre; positive → right of centre.
-// Values are clamped so the marker never leaves the track.
-// In landscape mode, we use beta (front/back tilt) instead of gamma (left/right tilt)
-// to properly detect horizontal level when device is rotated 90 degrees.
-function tiltToPosition(tiltDegrees) {
-  const clamped = Math.max(-30, Math.min(30, Number(tiltDegrees) || 0)); // Limit to +/-30°
-  return 0.5 + clamped / 60; // Map [-30..30] into [0..1]
+const TILT_RANGE_DEGREES = 12;
+const LEVEL_EPSILON_DEGREES = 0.5;
+const SMOOTHING = 0.35;
+
+function readScreenAngle() {
+  if (typeof window === "undefined") return 0;
+  const screenAngle = window.screen?.orientation?.angle;
+  if (typeof screenAngle === "number") return screenAngle;
+  if (typeof window.orientation === "number") return window.orientation;
+  return 0;
 }
 
-export default function LevelBar({ compact = false }) {
-  // In landscape mode, we use beta (front/back tilt) to detect horizontal level.
-  // beta represents rotation around the X-axis (device tilt forward/backward).
-  const [beta, setBeta] = useState(0); // Current beta reading (front/back tilt)
-  const [supported, setSupported] = useState(false); // True once we get readings
-  const handlerRef = useRef(null); // Hold the registered handler for cleanup
+function normaliseAngle(angle) {
+  let value = Number(angle) || 0;
+  while (value > 180) value -= 360;
+  while (value < -180) value += 360;
+  return value;
+}
+
+function computeScreenTilt(beta, gamma, screenAngle) {
+  const b = Number(beta) || 0;
+  const g = Number(gamma) || 0;
+  switch (((screenAngle % 360) + 360) % 360) {
+    case 90:  return normaliseAngle(-b);
+    case 180: return normaliseAngle(-g);
+    case 270: return normaliseAngle(b);
+    case 0:
+    default:  return normaliseAngle(g);
+  }
+}
+
+function tiltToPosition(tiltDegrees) {
+  const clamped = Math.max(-TILT_RANGE_DEGREES, Math.min(TILT_RANGE_DEGREES, Number(tiltDegrees) || 0));
+  return 0.5 + clamped / (2 * TILT_RANGE_DEGREES);
+}
+
+const STATUS_TONE_BG = {
+  recording: "rgba(var(--danger-rgb), 0.92)",
+  paused: "rgba(var(--warning-rgb), 0.92)",
+  default: "var(--hud-surface)",
+};
+
+export default function LevelBar({ compact = false, statusLabel = "", statusTone = "default" }) {
+  const [tilt, setTilt] = useState(0);
+  const [supported, setSupported] = useState(false);
+  const handlerRef = useRef(null);
+  const angleRef = useRef(0);
+  const smoothedRef = useRef(0);
 
   useEffect(() => {
-    // Feature detect first — not all browsers expose DeviceOrientationEvent.
-    if (typeof window === "undefined" || typeof window.DeviceOrientationEvent === "undefined") { // Not supported at all
-      return undefined; // Bail — level stays centred
+    if (typeof window === "undefined") return undefined;
+
+    const syncAngle = () => { angleRef.current = readScreenAngle(); };
+    syncAngle();
+
+    const orientationTarget = window.screen?.orientation;
+    if (orientationTarget && typeof orientationTarget.addEventListener === "function") {
+      orientationTarget.addEventListener("change", syncAngle);
+    }
+    window.addEventListener("orientationchange", syncAngle);
+
+    if (typeof window.DeviceOrientationEvent === "undefined") {
+      return () => {
+        if (orientationTarget && typeof orientationTarget.removeEventListener === "function") {
+          orientationTarget.removeEventListener("change", syncAngle);
+        }
+        window.removeEventListener("orientationchange", syncAngle);
+      };
     }
 
-    // iOS 13+ requires explicit permission; older browsers just work.
-    const maybeRequest = // Wrap permission call
-      typeof window.DeviceOrientationEvent.requestPermission === "function" // iOS path
-        ? window.DeviceOrientationEvent.requestPermission().catch(() => "denied") // Catch user rejection
-        : Promise.resolve("granted"); // Default permissive path
+    const maybeRequest =
+      typeof window.DeviceOrientationEvent.requestPermission === "function"
+        ? window.DeviceOrientationEvent.requestPermission().catch(() => "denied")
+        : Promise.resolve("granted");
 
-    let cancelled = false; // Guard for async teardown
+    let cancelled = false;
 
-    maybeRequest.then((state) => { // Promise resolved
-      if (cancelled || state !== "granted") return; // User denied or unmounted
-      const handler = (event) => { // Orientation handler
-        setSupported(true); // Mark as active once we receive any event
-        // Use beta for horizontal level detection in landscape mode
-        // beta = front/back tilt along X-axis (positive = device tilted back, negative = tilted forward)
-        setBeta(event.beta || 0); // Track front/back tilt
+    maybeRequest.then((state) => {
+      if (cancelled || state !== "granted") return;
+      const handler = (event) => {
+        const raw = computeScreenTilt(event.beta, event.gamma, angleRef.current);
+        const next = smoothedRef.current + (1 - SMOOTHING) * (raw - smoothedRef.current);
+        smoothedRef.current = next;
+        setSupported(true);
+        setTilt(next);
       };
-      handlerRef.current = handler; // Remember for removal
-      window.addEventListener("deviceorientation", handler, true); // Register
+      handlerRef.current = handler;
+      window.addEventListener("deviceorientation", handler, true);
     });
 
-    return () => { // Cleanup on unmount
-      cancelled = true; // Mark cancellation
-      if (handlerRef.current) { // Remove listener if registered
-        window.removeEventListener("deviceorientation", handlerRef.current, true); // Unregister
-        handlerRef.current = null; // Clear ref
+    return () => {
+      cancelled = true;
+      if (handlerRef.current) {
+        window.removeEventListener("deviceorientation", handlerRef.current, true);
+        handlerRef.current = null;
       }
+      if (orientationTarget && typeof orientationTarget.removeEventListener === "function") {
+        orientationTarget.removeEventListener("change", syncAngle);
+      }
+      window.removeEventListener("orientationchange", syncAngle);
     };
-  }, []); // Only run once on mount
+  }, []);
 
-  const position = tiltToPosition(beta); // 0..1 location along the track
-  const isLevel = Math.abs(beta) < 1.5; // Within ~1.5° is treated as level
+  const position = tiltToPosition(tilt);
+  const isLevel = Math.abs(tilt) < LEVEL_EPSILON_DEGREES;
+
+  const toneBackground = STATUS_TONE_BG[statusTone] || STATUS_TONE_BG.default;
+  const leadingText = statusLabel || "Level";
+  const trackWidth = compact ? 110 : 140;
 
   return (
     <div
-      aria-label="Device level"
+      data-dev-section-key="capture-level"
+      data-dev-section-type="status-pill"
+      aria-label={statusLabel ? `Recording status: ${statusLabel}` : "Device level"}
       style={{
-        display: "flex", // Horizontal layout
-        alignItems: "center", // Centre the track vertically
-        gap: compact ? 6 : 8, // Tight spacing inside the top bar
-        padding: compact ? "6px 10px" : "8px 12px", // Pill padding
-        borderRadius: 999, // Full pill rounding
-        background: "rgba(15, 23, 42, 0.55)", // Translucent dark surface
-        border: "1px solid rgba(255,255,255,0.08)", // Subtle border
-        backdropFilter: "blur(12px)", // Glassy look over the camera
-        color: "#fff", // White content
-        fontSize: 11, // Compact label
-        fontWeight: 700, // Bold label
-        letterSpacing: "0.08em", // Slightly spaced caps for the label
-        textTransform: "uppercase", // Caps for the word LEVEL
-        pointerEvents: "none", // Visual only — doesn't grab touch
+        display: "flex",
+        alignItems: "center",
+        gap: compact ? "var(--space-1)" : "var(--space-sm)",
+        padding: compact ? "var(--space-1) var(--space-2)" : "var(--space-sm) var(--space-3)",
+        borderRadius: "var(--radius-pill)",
+        background: toneBackground,
+        border: "1px solid var(--hud-divider)",
+        backdropFilter: "var(--hud-blur)",
+        WebkitBackdropFilter: "var(--hud-blur)",
+        color: "var(--hud-text)",
+        fontSize: "var(--text-caption)",
+        fontWeight: 800,
+        letterSpacing: "var(--tracking-caps)",
+        textTransform: "uppercase",
+        pointerEvents: "none",
+        fontFamily: "var(--font-family)",
+        transition: "background var(--duration-normal) var(--ease-default)",
       }}
     >
-      <span style={{ opacity: 0.8 }}>Level</span>
-      <div
+      <span
         style={{
-          position: "relative", // Host for the marker
-          width: compact ? 110 : 140, // Track width scales with context
-          height: 4, // Slim track
-          borderRadius: 999, // Rounded track
-          background: "rgba(255,255,255,0.14)", // Neutral track colour
-          overflow: "hidden", // Clip marker inside
+          opacity: statusLabel ? 1 : 0.85,
+          fontVariantNumeric: "tabular-nums",
+          whiteSpace: "nowrap",
         }}
       >
-        {/* Centre guide */}
+        {leadingText}
+      </span>
+      <div
+        style={{
+          position: "relative",
+          width: trackWidth,
+          height: 4,
+          borderRadius: "var(--radius-pill)",
+          background: "var(--hud-rail)",
+          overflow: "hidden",
+        }}
+      >
         <span
+          aria-hidden="true"
           style={{
-            position: "absolute", // Overlayed on the track
-            left: "50%", // Dead centre
-            top: -3, // Slightly taller than track
-            width: 2, // Thin vertical tick
-            height: 10, // Visible above/below the track
-            background: "rgba(255,255,255,0.4)", // Soft white
-            transform: "translateX(-50%)", // Centre the tick on 50%
+            position: "absolute",
+            left: "50%",
+            top: -3,
+            width: 2,
+            height: 10,
+            background: "rgba(var(--hud-text-rgb), 0.4)",
+            transform: "translateX(-50%)",
           }}
         />
-        {/* Current tilt marker */}
         <span
+          aria-hidden="true"
           style={{
-            position: "absolute", // Overlayed on the track
-            top: "50%", // Vertical centre
-            left: `${position * 100}%`, // Derived from tilt
-            width: 14, // Small dot
-            height: 14, // Square dot → round via radius
-            borderRadius: 999, // Circular marker
-            transform: "translate(-50%, -50%)", // Centre on (left, top)
-            background: isLevel ? "#34d399" : "#fbbf24", // Green when level, amber otherwise
-            boxShadow: "0 2px 8px rgba(0,0,0,0.3)", // Soft drop shadow
-            transition: "left 80ms linear, background-color 160ms ease", // Smooth movement + colour
+            position: "absolute",
+            top: "50%",
+            left: `${position * 100}%`,
+            width: 14,
+            height: 14,
+            borderRadius: "var(--radius-pill)",
+            transform: "translate(-50%, -50%)",
+            background: isLevel ? "var(--success)" : "var(--warning)",
+            boxShadow: "var(--hud-shadow-md)",
+            transition: "left 80ms linear, background-color var(--duration-normal) var(--ease-default)",
           }}
         />
       </div>
       <span style={{ minWidth: 34, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        {supported ? `${Math.round(beta)}°` : "—"}
+        {supported ? `${tilt.toFixed(1)}°` : "—"}
       </span>
     </div>
   );

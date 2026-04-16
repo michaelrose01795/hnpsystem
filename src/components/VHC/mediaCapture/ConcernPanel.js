@@ -4,31 +4,53 @@
 // the centre of the capture area or removes the existing one for that
 // row. The panel reflects this with an "on" visual state on any row
 // whose widget is currently showing.
+//
+// All colour / radius / spacing / typography values resolve via the
+// --hud-*, --space, --radius, --tracking-* and status RGB tokens in
+// theme.css so changing the global theme flows straight through the
+// panel.
 
-import React from "react"; // React primitive (no hooks needed here)
+import React, { useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 
-// Colour lookups for status pills on each row. Values are deliberately
-// translucent so the camera view remains discernible behind each row.
-// `bgActive` is used when the row's widget is currently on-screen — a
-// slightly stronger fill so the toggled state reads clearly at a glance.
-const STATUS_STYLES = { // Per-status visual style
-  red: { bg: "rgba(239, 68, 68, 0.22)", bgActive: "rgba(239, 68, 68, 0.34)", border: "rgba(239, 68, 68, 0.72)", label: "#fecaca", title: "Red" }, // Red concern
-  amber: { bg: "rgba(245, 158, 11, 0.20)", bgActive: "rgba(245, 158, 11, 0.34)", border: "rgba(245, 158, 11, 0.70)", label: "#fde68a", title: "Amber" }, // Amber concern
-  green: { bg: "rgba(16, 185, 129, 0.18)", bgActive: "rgba(16, 185, 129, 0.32)", border: "rgba(16, 185, 129, 0.60)", label: "#bbf7d0", title: "Green" }, // Green / good
-  default: { bg: "rgba(59, 130, 246, 0.18)", bgActive: "rgba(59, 130, 246, 0.32)", border: "rgba(59, 130, 246, 0.60)", label: "#bfdbfe", title: "Info" }, // Fallback
+const STATUS_STYLES = {
+  red: {
+    bg: "rgba(var(--danger-rgb), 0.22)",
+    bgActive: "rgba(var(--danger-rgb), 0.34)",
+    border: "rgba(var(--danger-rgb), 0.72)",
+    label: "rgba(var(--danger-rgb), 0.85)",
+    title: "Red",
+  },
+  amber: {
+    bg: "rgba(var(--warning-rgb), 0.20)",
+    bgActive: "rgba(var(--warning-rgb), 0.34)",
+    border: "rgba(var(--warning-rgb), 0.70)",
+    label: "rgba(var(--warning-rgb), 0.9)",
+    title: "Amber",
+  },
+  green: {
+    bg: "rgba(var(--success-rgb), 0.18)",
+    bgActive: "rgba(var(--success-rgb), 0.32)",
+    border: "rgba(var(--success-rgb), 0.60)",
+    label: "rgba(var(--success-rgb), 0.9)",
+    title: "Green",
+  },
+  default: {
+    bg: "rgba(var(--accentMainRgb), 0.18)",
+    bgActive: "rgba(var(--accentMainRgb), 0.32)",
+    border: "rgba(var(--accentMainRgb), 0.60)",
+    label: "rgba(var(--accentMainRgb), 0.9)",
+    title: "Info",
+  },
 };
 
-// Active border colour applied when a row's widget is currently visible.
-const ACTIVE_BORDER = "rgba(255, 255, 255, 0.82)"; // Bright white edge so toggled rows pop
+const ACTIVE_BORDER = "var(--hud-border-strong)";
 
-// Single row inside the panel.
-function ConcernRow({ row, onInsert, isLive, isActive }) {
-  const status = STATUS_STYLES[row.status] || STATUS_STYLES.default; // Resolve palette
-
-  // Secondary label text that explains the current tap behaviour.
-  const secondary = isActive // Currently on-screen?
-    ? "On • Tap to hide" // Tapping again will remove
-    : `${status.title}${isLive ? " • Tap to overlay" : ""}`; // Otherwise show status (+ live hint)
+function ConcernRow({ row, onInsert, isActive }) {
+  const status = STATUS_STYLES[row.status] || STATUS_STYLES.default;
+  const measurement = String(row.measurement || "").trim();
+  const showMeasurementPill = measurement.length > 0;
 
   return (
     <button
@@ -36,194 +58,378 @@ function ConcernRow({ row, onInsert, isLive, isActive }) {
       onClick={() => onInsert?.(row)}
       aria-pressed={isActive}
       style={{
-        width: "100%", // Full panel width
-        textAlign: "left", // Left-justified for readability
-        display: "grid", // Three cells: marker + label + value
-        gridTemplateColumns: "10px 1fr auto", // Marker dot, label, measurement pill
-        alignItems: "center", // Vertical centre
-        gap: 8, // Space between cells
-        padding: "11px 12px", // Generous tap target
-        border: `1px solid ${isActive ? ACTIVE_BORDER : status.border}`, // Active border is white
-        borderRadius: 12, // Rounded corners
-        background: isActive ? status.bgActive : status.bg, // Stronger fill when active
-        color: "#f8fafc", // Light text on dark base
-        cursor: "pointer", // Tappable feel
-        transition: "transform 120ms ease, background-color 120ms ease, border-color 120ms ease", // Smooth state change
-        backdropFilter: "blur(2px)", // Gentle extra blur so rows legibly sit on camera
-        boxShadow: isActive ? "0 0 0 1px rgba(255,255,255,0.18) inset" : "none", // Subtle inset glow when active
+        width: "100%",
+        textAlign: "left",
+        display: "grid",
+        // Grid columns adapt: the trailing measurement pill slot is
+        // removed entirely when there's no measurement to show, so the
+        // row reads cleanly (important for external issues which don't
+        // carry a numeric measurement and would otherwise show a "—").
+        gridTemplateColumns: showMeasurementPill ? "10px 1fr auto" : "10px 1fr",
+        alignItems: "center",
+        gap: "var(--space-sm)",
+        padding: "var(--space-2) var(--space-3)",
+        border: `1px solid ${isActive ? ACTIVE_BORDER : status.border}`,
+        borderRadius: "var(--radius-sm)",
+        background: isActive ? status.bgActive : status.bg,
+        color: "var(--hud-text)",
+        cursor: "pointer",
+        transition: "var(--control-transition), transform var(--duration-fast) var(--ease-default)",
+        backdropFilter: "blur(2px)",
+        WebkitBackdropFilter: "blur(2px)",
+        boxShadow: isActive ? "0 0 0 1px var(--hud-border) inset" : "none",
+        fontFamily: "var(--font-family)",
       }}
-      onMouseDown={(event) => { event.currentTarget.style.transform = "scale(0.97)"; }} // Press effect
-      onMouseUp={(event) => { event.currentTarget.style.transform = "scale(1)"; }} // Release
-      onMouseLeave={(event) => { event.currentTarget.style.transform = "scale(1)"; }} // Release if dragged off
+      onPointerDown={(event) => { event.currentTarget.style.transform = "scale(0.97)"; }}
+      onPointerUp={(event) => { event.currentTarget.style.transform = "scale(1)"; }}
+      onPointerLeave={(event) => { event.currentTarget.style.transform = "scale(1)"; }}
     >
-      {/* Left status marker dot (turns into a ring when active) */}
       <span
         aria-hidden="true"
         style={{
-          width: 10, // Marker diameter
-          height: 10, // Matches width
-          borderRadius: 999, // Circle
-          background: isActive ? "#ffffff" : status.border, // White when active, status colour otherwise
-          boxShadow: isActive ? `0 0 0 2px ${status.border}` : "none", // Status-coloured ring when active
+          width: 10,
+          height: 10,
+          borderRadius: "var(--radius-pill)",
+          background: isActive ? "var(--hud-text)" : status.border,
+          boxShadow: isActive ? `0 0 0 2px ${status.border}` : "none",
         }}
       />
 
-      {/* Label + secondary caption */}
-      <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.01em", lineHeight: 1.2 }}>
-          {row.label}
-        </span>
-        <span style={{ fontSize: 10, color: isActive ? "#f8fafc" : status.label, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          {secondary}
-        </span>
-      </div>
-
-      {/* Measurement pill */}
+      {/* Main label. The status colour is already carried by the row
+          background and the left marker dot, so we no longer show a
+          redundant "Red" / "Amber" / "Tap to overlay" caption beneath
+          — the colour IS the status. */}
       <span
         style={{
-          fontSize: 13, // Readable but not huge
-          fontWeight: 800, // Heavy emphasis on the measurement
-          padding: "6px 10px", // Pill padding
-          borderRadius: 999, // Pill
-          background: "rgba(15, 23, 42, 0.55)", // Dark pill for contrast
-          color: "#f8fafc", // White text
-          fontVariantNumeric: "tabular-nums", // Monospaced digits
-          whiteSpace: "nowrap", // Don't wrap "3 mm"
+          fontSize: "var(--text-body-sm)",
+          fontWeight: 700,
+          letterSpacing: "0.01em",
+          lineHeight: "var(--leading-tight)",
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
         }}
       >
-        {row.measurement || "—"}
+        {row.label}
       </span>
+
+      {showMeasurementPill ? (
+        <span
+          style={{
+            fontSize: "var(--text-caption)",
+            fontWeight: 800,
+            padding: "var(--space-1) var(--space-2)",
+            borderRadius: "var(--radius-pill)",
+            background: "var(--hud-surface)",
+            color: "var(--hud-text)",
+            fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {measurement}
+        </span>
+      ) : null}
     </button>
   );
 }
 
-export default function ConcernPanel({
-  tyres = [], // Tyre row list from buildInspectionConcerns
-  brakes = [], // Brake row list from buildInspectionConcerns
-  onInsertWidget, // (row) => void — toggles a widget for that row
-  isLive = false, // True while recording (changes the hint text)
-  collapsed = false, // True when the panel is collapsed to a rail
-  onToggle, // () => void — collapse/expand toggle
-  activeRowIds, // Set<string> of row IDs currently shown as widgets
-}) {
-  const total = (tyres?.length || 0) + (brakes?.length || 0); // Header counter
-  const activeCount = activeRowIds ? activeRowIds.size : 0; // Number of widgets currently shown
+function SectionHeader({ children }) {
+  return (
+    <header
+      style={{
+        fontSize: "var(--text-caption)",
+        fontWeight: 700,
+        color: "var(--hud-text-muted)",
+        letterSpacing: "var(--tracking-caps)",
+        textTransform: "uppercase",
+        paddingLeft: "var(--space-xs)",
+      }}
+    >
+      {children}
+    </header>
+  );
+}
 
-  // Safe helper so the panel still works when no active set is supplied.
-  const isRowActive = (rowId) => Boolean(activeRowIds && activeRowIds.has(rowId)); // Guarded lookup
+function EmptyRowHint({ children }) {
+  return (
+    <div
+      style={{
+        fontSize: "var(--text-caption)",
+        color: "var(--hud-text-dim)",
+        padding: "var(--space-xs) var(--space-sm)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export default function ConcernPanel({
+  tyres = [],
+  brakes = [],
+  external = [], // External concerns (amber + red only) — wipers, lights, etc.
+  onInsertWidget,
+  isLive = false,
+  activeRowIds,
+}) {
+  const total = (tyres?.length || 0) + (brakes?.length || 0) + (external?.length || 0);
+  const activeCount = activeRowIds ? activeRowIds.size : 0;
+  const isRowActive = (rowId) => Boolean(activeRowIds && activeRowIds.has(rowId));
+
+  // DEV overlay toggle. The button only renders for users who can
+  // access the global DevLayoutOverlay (same gate as Ctrl+Shift+D),
+  // and it drives that same context — so the Inspection header pill
+  // and the keyboard shortcut do exactly the same thing.
+  //
+  // The button is rendered twice:
+  //   1. An in-flow placeholder inside the Inspection header. This
+  //      reserves the slot's width in the flex layout so the header
+  //      text doesn't reflow when the button appears / disappears.
+  //   2. A live portal at document.body, positioned over the
+  //      placeholder via a measured bounding rect, with z-index above
+  //      the global DevLayoutOverlay root (2800). The overlay draws
+  //      an invisible inspectButton over every detected section and
+  //      swallows clicks in its stacking context; portalling with a
+  //      higher z-index is the only way to keep this button clickable.
+  const devOverlay = useDevLayoutOverlay();
+  const canShowDev = devOverlay?.canAccess && devOverlay?.hydrated;
+  const devOn = Boolean(devOverlay?.enabled);
+
+  const devAnchorRef = useRef(null);
+  const [devRect, setDevRect] = useState(null);
+
+  useLayoutEffect(() => {
+    if (!canShowDev) { setDevRect(null); return undefined; }
+    const node = devAnchorRef.current;
+    if (!node) return undefined;
+    const measure = () => {
+      const rect = node.getBoundingClientRect();
+      setDevRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height });
+    };
+    measure();
+    if (typeof window === "undefined") return undefined;
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [canShowDev]);
+
+  const devPortal = canShowDev && devRect && typeof document !== "undefined"
+    ? createPortal(
+      <button
+        type="button"
+        onClick={devOverlay.toggleEnabled}
+        aria-pressed={devOn}
+        aria-label={devOn ? "Hide developer layout overlay" : "Show developer layout overlay"}
+        title={devOn ? "Dev overlay on (Ctrl+Shift+D)" : "Dev overlay off (Ctrl+Shift+D)"}
+        data-dev-overlay-skip="1"
+        style={{
+          position: "fixed",
+          top: devRect.top,
+          left: devRect.left,
+          minWidth: devRect.width,
+          height: devRect.height,
+          // Above the global DevLayoutOverlay root (z-index 2800) so
+          // the overlay's inspectButton can't swallow clicks — this
+          // is what keeps the DEV button live in pass-through mode.
+          zIndex: 3000,
+          pointerEvents: "auto",
+          padding: "0 var(--space-2)",
+          borderRadius: "var(--radius-pill)",
+          border: devOn
+            ? "1px solid rgba(var(--accentMainRgb), 0.9)"
+            : "1px solid var(--hud-border)",
+          background: devOn ? "rgba(var(--accentMainRgb), 0.92)" : "var(--hud-surface)",
+          color: devOn ? "var(--onAccentText)" : "var(--hud-text)",
+          fontSize: "var(--text-caption)",
+          fontWeight: 800,
+          letterSpacing: "var(--tracking-caps)",
+          cursor: "pointer",
+          fontFamily: "var(--font-family)",
+          transition: "var(--control-transition)",
+          backdropFilter: "var(--hud-blur)",
+          WebkitBackdropFilter: "var(--hud-blur)",
+        }}
+      >
+        DEV
+      </button>,
+      document.body,
+    )
+    : null;
 
   return (
     <aside
       aria-label="Inspection concerns"
       style={{
-        pointerEvents: "auto", // Panel itself captures touches
-        width: collapsed ? 52 : 260, // Narrower when collapsed; compact when expanded
-        maxWidth: "72vw", // Never wider than most phones in landscape
-        height: "100%", // Fill the positioned overlay container
-        display: "flex", // Vertical stack
-        flexDirection: "column", // Header → list
-        gap: 0, // Tight inside
-        padding: collapsed ? "10px 6px" : "12px 10px", // More padding when expanded
-        background: "rgba(15, 23, 42, 0.38)", // Light glass — camera view shows through
-        borderRadius: 18, // Rounded overlay card
-        border: "1px solid rgba(255,255,255,0.10)", // Thin glassy edge
-        backdropFilter: "blur(18px) saturate(140%)", // Strong blur keeps text crisp
-        WebkitBackdropFilter: "blur(18px) saturate(140%)", // Safari prefix
-        boxShadow: "0 20px 40px rgba(0,0,0,0.35)", // Drop shadow for separation
-        transition: "width 180ms ease, padding 180ms ease", // Smooth collapse animation
-        overflow: "hidden", // Clip children while collapsed
+        // Pass-through mode: when the dev overlay is on, the whole
+        // panel stops taking pointer events so rows can't fire while
+        // the technician is inspecting layout. The DEV button below
+        // flips pointer-events back on just for itself so the overlay
+        // can still be toggled off from here.
+        pointerEvents: devOn ? "none" : "auto",
+        // Panel is always expanded — the previous "‹" collapse button
+        // was removed so technicians can never accidentally hide the
+        // Inspection list mid-capture.
+        width: 260,
+        maxWidth: "72vw",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: 0,
+        padding: "var(--space-3) var(--space-2)",
+        background: "var(--hud-surface-subtle)",
+        borderRadius: "var(--radius-lg)",
+        border: "1px solid var(--hud-divider)",
+        backdropFilter: "var(--hud-blur-strong)",
+        WebkitBackdropFilter: "var(--hud-blur-strong)",
+        boxShadow: "var(--hud-shadow-lg)",
+        overflow: "hidden",
+        fontFamily: "var(--font-family)",
+        color: "var(--hud-text)",
       }}
     >
-      {/* Header + toggle row */}
       <div
         style={{
-          display: "flex", // Horizontal
-          alignItems: "center", // Vertical centre
-          justifyContent: collapsed ? "center" : "space-between", // Toggle-only when collapsed
-          marginBottom: collapsed ? 6 : 10, // Space under header
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "var(--space-2)",
+          marginBottom: "var(--space-2)",
         }}
       >
-        {!collapsed ? (
-          <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
-            <span style={{ fontSize: 10, color: "#cbd5e1", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-              Inspection
-            </span>
-            <span style={{ fontSize: 12, color: "#f1f5f9", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {total > 0
-                ? `${total} item${total === 1 ? "" : "s"}${activeCount > 0 ? ` • ${activeCount} on-screen` : ""}`
-                : "No items to show"}
-            </span>
-          </div>
+        <div style={{ display: "grid", gap: 2, minWidth: 0, flex: 1 }}>
+          <span
+            style={{
+              fontSize: "var(--text-caption)",
+              color: "var(--hud-text-muted)",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "var(--tracking-caps)",
+            }}
+          >
+            Inspection
+          </span>
+          <span
+            style={{
+              fontSize: "var(--text-caption)",
+              color: "var(--hud-text)",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {total > 0
+              ? `${total} item${total === 1 ? "" : "s"}${activeCount > 0 ? ` • ${activeCount} on-screen` : ""}`
+              : "No items to show"}
+          </span>
+        </div>
+
+        {/* DEV overlay toggle — an in-flow placeholder reserves the
+            slot in the header flexbox so the text doesn't reflow; the
+            real clickable button is portalled to document.body below
+            with a z-index above the global DevLayoutOverlay root so
+            the overlay's inspectButton can't swallow its clicks. */}
+        {canShowDev ? (
+          <div
+            ref={devAnchorRef}
+            aria-hidden="true"
+            style={{
+              flexShrink: 0,
+              height: 28,
+              minWidth: 40,
+              // Keep the placeholder visually empty. The portalled
+              // button below paints the actual UI over this slot.
+              pointerEvents: "none",
+            }}
+          />
         ) : null}
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={collapsed ? "Expand inspection panel" : "Collapse inspection panel"}
-          style={{
-            width: 36, // Touch target size
-            height: 36, // Touch target size
-            borderRadius: 999, // Circle
-            border: "1px solid rgba(255,255,255,0.18)", // Thin border
-            background: "rgba(15, 23, 42, 0.5)", // Dark pill
-            color: "#f8fafc", // White icon colour
-            fontSize: 16, // Arrow size
-            fontWeight: 700, // Bold arrow
-            display: "inline-flex", // Centre content
-            alignItems: "center", // Centre
-            justifyContent: "center", // Centre
-            cursor: "pointer", // Tappable
-            flexShrink: 0, // Don't let the toggle shrink
-          }}
-        >
-          {collapsed ? "›" : "‹"}
-        </button>
       </div>
 
-      {/* List area — only when expanded */}
-      {!collapsed ? (
-        <div
-          style={{
-            flex: 1, // Take remaining space
-            minHeight: 0, // Allow shrink for overflow
-            overflowY: "auto", // Scroll list if many items
-            display: "grid", // Stack sections
-            gap: 12, // Space between tyres and brakes
-            paddingRight: 4, // Subtle breathing room for scrollbar
-          }}
-        >
-          {/* Tyres */}
-          <section style={{ display: "grid", gap: 6 }}>
-            <header style={{ fontSize: 10, fontWeight: 700, color: "#e2e8f0", letterSpacing: "0.08em", textTransform: "uppercase", paddingLeft: 4 }}>
-              Tyres
-            </header>
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          display: "grid",
+          // Tighter inter-section gap so Tyres / Brakes / External
+          // sit close together in the panel.
+          gap: "var(--space-1)",
+          paddingRight: "var(--space-xs)",
+        }}
+      >
+          <section
+            data-dev-section-key="capture-panel-tyres"
+            data-dev-section-type="section-shell"
+            style={{ display: "grid", gap: 2 }}
+          >
+            <SectionHeader>Tyres</SectionHeader>
             {tyres.length === 0 ? (
-              <div style={{ fontSize: 12, color: "#cbd5e1", padding: "4px 8px" }}>
-                No tyre data yet.
-              </div>
+              <EmptyRowHint>No tyre data yet.</EmptyRowHint>
             ) : (
               tyres.map((row) => (
-                <ConcernRow key={row.id} row={row} onInsert={onInsertWidget} isLive={isLive} isActive={isRowActive(row.id)} />
+                <ConcernRow
+                  key={row.id}
+                  row={row}
+                  onInsert={onInsertWidget}
+                  isLive={isLive}
+                  isActive={isRowActive(row.id)}
+                />
               ))
             )}
           </section>
 
-          {/* Brakes */}
-          <section style={{ display: "grid", gap: 6 }}>
-            <header style={{ fontSize: 10, fontWeight: 700, color: "#e2e8f0", letterSpacing: "0.08em", textTransform: "uppercase", paddingLeft: 4 }}>
-              Brakes
-            </header>
+          <section
+            data-dev-section-key="capture-panel-brakes"
+            data-dev-section-type="section-shell"
+            style={{ display: "grid", gap: 2 }}
+          >
+            <SectionHeader>Brakes</SectionHeader>
             {brakes.length === 0 ? (
-              <div style={{ fontSize: 12, color: "#cbd5e1", padding: "4px 8px" }}>
-                No brake data yet.
-              </div>
+              <EmptyRowHint>No brake data yet.</EmptyRowHint>
             ) : (
               brakes.map((row) => (
-                <ConcernRow key={row.id} row={row} onInsert={onInsertWidget} isLive={isLive} isActive={isRowActive(row.id)} />
+                <ConcernRow
+                  key={row.id}
+                  row={row}
+                  onInsert={onInsertWidget}
+                  isLive={isLive}
+                  isActive={isRowActive(row.id)}
+                />
               ))
             )}
           </section>
-        </div>
-      ) : null}
+
+          {/* External concerns — only rendered when there is at least
+              one amber/red external item, so Tyres/Brakes pages without
+              any wiper/light issues stay uncluttered. The row itself
+              displays only the issue text; the category is intentionally
+              omitted per the capture-section UX brief. */}
+          {external.length > 0 ? (
+            <section
+              data-dev-section-key="capture-panel-external"
+              data-dev-section-type="section-shell"
+              style={{ display: "grid", gap: 2 }}
+            >
+              <SectionHeader>External</SectionHeader>
+              {external.map((row) => (
+                <ConcernRow
+                  key={row.id}
+                  row={row}
+                  onInsert={onInsertWidget}
+                  isLive={isLive}
+                  isActive={isRowActive(row.id)}
+                />
+              ))}
+            </section>
+          ) : null}
+      </div>
+      {devPortal}
     </aside>
   );
 }

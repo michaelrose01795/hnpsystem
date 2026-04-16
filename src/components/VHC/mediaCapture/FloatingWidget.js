@@ -3,123 +3,167 @@
 // widget that `useWidgetRecorder` burns into the actual video frame —
 // keeping the DOM version means the technician sees exactly what the
 // customer will see on playback. A long-press removes the widget.
+//
+// UI philosophy (post-refinement):
+//   - Only ONE widget is on-screen at a time, so the card can be large
+//     and easy to read without crowding the frame.
+//   - The severity colour already tells the viewer whether the item is
+//     red / amber / green — we no longer duplicate that as a "RED" /
+//     "AMBER" badge pill inside the card.
+//   - For external concerns (wipers, lights, etc.) the caller sends an
+//     empty title so the card shows only the issue text, which is the
+//     meaningful information. For tyres / brakes we still show the
+//     short title above a large value.
+//   - Every widget is rendered at a fixed size so the frame looks
+//     consistent no matter which concern is active.
+//
+// All colour / radius / spacing / typography values resolve through
+// the --hud-*, --space, --radius and --tracking-* tokens in theme.css
+// so the widget follows the user's theme.
 
-import React, { useEffect, useRef } from "react"; // React primitives
+import React, { useEffect, useRef } from "react";
 
-// Convert a 0..1 fractional coordinate into a CSS percentage.
+// Fixed card dimensions so every widget occupies the same footprint.
+const WIDGET_WIDTH = 320;
+const WIDGET_HEIGHT = 120;
+
 function toPercent(fraction) {
-  const clamped = Math.max(0.06, Math.min(0.94, Number(fraction) || 0.5)); // Keep off the edges
-  return `${clamped * 100}%`; // Return "%" string
+  const clamped = Math.max(0.06, Math.min(0.94, Number(fraction) || 0.5));
+  return `${clamped * 100}%`;
 }
 
-// Status → accent colour used by the left strip and the badge.
-const ACCENTS = { // Keep in sync with useWidgetRecorder palette
-  red: "#ef4444", // Red concern accent
-  amber: "#f59e0b", // Amber concern accent
-  green: "#10b981", // Green / good status accent
-  default: "#38bdf8", // Info fallback accent
-};
-
-// Badge label text used inside the widget.
-const BADGES = { // Keep in sync with useWidgetRecorder
-  red: "RED", // Red badge
-  amber: "AMBER", // Amber badge
-  green: "GREEN", // Green / good badge
-  default: "INFO", // Info fallback
+const ACCENTS = {
+  red: "var(--danger)",
+  amber: "var(--warning)",
+  green: "var(--success)",
+  default: "var(--accentMain)",
 };
 
 export default function FloatingWidget({ widget, onRemove }) {
-  const timerRef = useRef(null); // Holds the long-press timer id
+  const timerRef = useRef(null);
 
-  // Clear any pending long-press on unmount to avoid leaks.
   useEffect(() => () => {
-    if (timerRef.current) clearTimeout(timerRef.current); // Always clean up
+    if (timerRef.current) clearTimeout(timerRef.current);
   }, []);
 
-  // On press-and-hold, call onRemove to drop the widget from the list.
   const startLongPress = () => {
-    if (timerRef.current) clearTimeout(timerRef.current); // Defensive reset
-    timerRef.current = setTimeout(() => { // 500ms is plenty for intent
-      onRemove?.(widget.id); // Remove this widget
-      timerRef.current = null; // Clear ref
-    }, 500); // Long-press threshold
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      onRemove?.(widget.id);
+      timerRef.current = null;
+    }, 500);
   };
 
-  // Cancel the long-press if the user releases early.
   const cancelLongPress = () => {
-    if (timerRef.current) { // Something pending?
-      clearTimeout(timerRef.current); // Cancel
-      timerRef.current = null; // Reset ref
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
     }
   };
 
-  const accent = ACCENTS[widget.status] || ACCENTS.default; // Lookup accent colour
-  const badge = BADGES[widget.status] || BADGES.default; // Lookup badge text
+  const accent = ACCENTS[widget.status] || ACCENTS.default;
+  const title = String(widget.title || "").trim();
+  const value = String(widget.value || "").trim();
+  const hasTitle = title.length > 0;
+  // If there's no title the value text can take the full card and scale
+  // up to the big heading size for easy reading from behind the camera.
+  const valueFontSize = hasTitle ? "var(--text-h3)" : "var(--text-h2)";
 
   return (
     <div
       role="button"
       tabIndex={0}
-      onMouseDown={startLongPress} // Desktop long-press
-      onMouseUp={cancelLongPress} // Release cancels
-      onMouseLeave={cancelLongPress} // Pointer leaving cancels
-      onTouchStart={startLongPress} // Mobile long-press
-      onTouchEnd={cancelLongPress} // Release cancels
-      onTouchCancel={cancelLongPress} // System cancel
+      aria-label={`Overlay widget: ${title || value}. Long-press to remove.`}
+      data-dev-section-key="capture-floating-widget"
+      data-dev-section-type="content-card"
+      onMouseDown={startLongPress}
+      onMouseUp={cancelLongPress}
+      onMouseLeave={cancelLongPress}
+      onTouchStart={startLongPress}
+      onTouchEnd={cancelLongPress}
+      onTouchCancel={cancelLongPress}
       style={{
-        position: "absolute", // Free-placed over camera
-        top: toPercent(widget.y ?? 0.5), // Vertical position
-        left: toPercent(widget.x ?? 0.5), // Horizontal position
-        transform: "translate(-50%, -50%)", // Centre on its point
-        display: "inline-grid", // Shrink-wrap auto width
-        gridTemplateColumns: "6px 1fr", // Thin accent strip + body
-        gap: 10, // Breathing room between strip and body
-        minWidth: 180, // Readable floor width
-        maxWidth: "min(320px, 48vw)", // Never too wide on phones
-        padding: "10px 14px 12px 12px", // Inner spacing
-        background: "rgba(15, 23, 42, 0.94)", // Deep slate, matches canvas version
-        color: "#f8fafc", // White content
-        borderRadius: 14, // Modern rounded corners
-        boxShadow: "0 14px 32px rgba(0,0,0,0.38)", // Elevated shadow
-        border: "1px solid rgba(255,255,255,0.08)", // Subtle edge
-        pointerEvents: "auto", // Interactive
-        userSelect: "none", // Prevent text-select on long-press
-        animation: "hnpWidgetIn 180ms ease-out", // Entry animation (keyframes defined in container)
+        position: "absolute",
+        top: toPercent(widget.y ?? 0.5),
+        left: toPercent(widget.x ?? 0.5),
+        transform: "translate(-50%, -50%)",
+        display: "grid",
+        gridTemplateColumns: "8px 1fr",
+        alignItems: "center",
+        gap: "var(--space-3)",
+        width: WIDGET_WIDTH,
+        height: WIDGET_HEIGHT,
+        padding: "var(--space-3) var(--space-4)",
+        background: "var(--hud-surface-glass)",
+        color: "var(--hud-text)",
+        borderRadius: "var(--radius-md)",
+        boxShadow: "var(--hud-shadow-md)",
+        border: "1px solid var(--hud-divider)",
+        pointerEvents: "auto",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        animation: "hnpWidgetIn 180ms var(--ease-default)",
+        fontFamily: "var(--font-family)",
+        boxSizing: "border-box",
       }}
     >
-      {/* Accent strip (left) */}
+      {/* Left accent strip — severity colour lives here; no badge pill. */}
       <span
+        aria-hidden="true"
         style={{
-          width: 6, // Strip width
-          borderRadius: 3, // Rounded ends
-          background: accent, // Status colour
-          alignSelf: "stretch", // Match body height
+          width: 8,
+          height: "100%",
+          borderRadius: "var(--radius-pill)",
+          background: accent,
+          alignSelf: "stretch",
         }}
       />
-      <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
-        {/* Badge pill */}
+
+      {/* Text stack. The title is optional — external concerns don't
+          carry one, so the value takes the whole card and scales up. */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          gap: hasTitle ? "var(--space-1)" : 0,
+          minWidth: 0,
+          height: "100%",
+        }}
+      >
+        {hasTitle ? (
+          <span
+            style={{
+              fontSize: "var(--text-body-sm)",
+              fontWeight: 700,
+              color: "var(--hud-text-muted)",
+              lineHeight: "var(--leading-tight)",
+              letterSpacing: "var(--tracking-wide)",
+              textTransform: "uppercase",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {title}
+          </span>
+        ) : null}
         <span
           style={{
-            justifySelf: "start", // Badge sits on the left
-            fontSize: 10, // Small caps badge
-            fontWeight: 800, // Heavy
-            letterSpacing: "0.12em", // Spaced caps
-            textTransform: "uppercase", // Caps
-            padding: "3px 8px", // Pill padding
-            borderRadius: 999, // Pill
-            background: accent, // Matches strip
-            color: "#0f172a", // Dark text on coloured pill
+            fontSize: valueFontSize,
+            fontWeight: 800,
+            color: "var(--hud-text)",
+            lineHeight: "var(--leading-tight)",
+            fontVariantNumeric: "tabular-nums",
+            // Clamp long issue text (external concerns) to the card
+            // height so every card keeps the same footprint.
+            display: "-webkit-box",
+            WebkitLineClamp: hasTitle ? 2 : 3,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
           }}
         >
-          {badge}
-        </span>
-        {/* Title */}
-        <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(226, 232, 240, 0.92)", lineHeight: 1.15 }}>
-          {widget.title}
-        </span>
-        {/* Value — the big number/text */}
-        <span style={{ fontSize: 22, fontWeight: 800, color: "#f8fafc", lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>
-          {widget.value}
+          {value}
         </span>
       </div>
     </div>

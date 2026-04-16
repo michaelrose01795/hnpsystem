@@ -1,12 +1,81 @@
 // file location: src/components/VHC/PhotoEditorModal.js
-import React, { useState, useRef, useEffect, useCallback } from "react";
+// Post-capture photo annotation editor. Opens in a VHCModalShell and
+// offers pen / highlighter / eraser tools with a preset colour palette,
+// a line-width slider and undo / redo / reset history.
+//
+// All colour / radius / spacing / typography values resolve through
+// the global design tokens in src/styles/theme.css so the editor
+// follows the user's chosen theme in both light and dark mode.
+
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import VHCModalShell, { buildModalButton } from "./VHCModalShell";
+
+const TOOLS = [
+  { id: "pen", label: "✏️ Pen", desc: "Draw lines" },
+  { id: "highlighter", label: "🖍️ Highlighter", desc: "Transparent marks" },
+  { id: "eraser", label: "🧹 Eraser", desc: "Remove marks" },
+];
+
+// Annotation palette. The first three swatches map to the global
+// danger / warning / success tokens so the editor's default marker
+// colours stay in lock-step with the rest of the app. They are
+// resolved lazily at runtime because Canvas 2D's strokeStyle cannot
+// consume CSS variables directly — the fallback hex matches the
+// token's light-mode value so a cold SSR render still looks right.
+const PRESET_PALETTE_TOKENS = [
+  { token: "--danger", fallback: "#ef4444" },
+  { token: "--warning", fallback: "#f59e0b" },
+  { token: "--success", fallback: "#22c55e" },
+  // Remaining slots are annotation-only primaries with no direct
+  // semantic equivalent in the design system.
+  { token: null, fallback: "#06b6d4" },
+  { token: null, fallback: "#3b82f6" },
+  { token: null, fallback: "#a855f7" },
+  { token: null, fallback: "#ffffff" },
+  { token: null, fallback: "#000000" },
+];
+
+function resolvePresetColors() {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return PRESET_PALETTE_TOKENS.map((entry) => entry.fallback);
+  }
+  const styles = window.getComputedStyle(document.documentElement);
+  return PRESET_PALETTE_TOKENS.map((entry) => {
+    if (!entry.token) return entry.fallback;
+    const resolved = styles.getPropertyValue(entry.token).trim();
+    return resolved || entry.fallback;
+  });
+}
+
+const PANEL_STYLE = {
+  background: "var(--surfaceMain)",
+  border: "1px solid var(--accentBorder)",
+  borderRadius: "var(--radius-md)",
+  padding: "var(--space-4)",
+};
+
+const SECTION_LABEL_STYLE = {
+  fontSize: "var(--text-label)",
+  fontWeight: 700,
+  color: "var(--text-primary)",
+  letterSpacing: "var(--tracking-wide)",
+  textTransform: "uppercase",
+  marginBottom: "var(--space-sm)",
+  display: "block",
+};
 
 export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, onSkip }) {
   const [tool, setTool] = useState("pen");
-  const [color, setColor] = useState("#FF0000");
+  // Swatches resolve to the live theme tokens — re-read whenever the
+  // modal opens so an accent/theme change between opens is reflected.
+  const presetColors = useMemo(() => {
+    // isOpen is a dependency so the palette is re-evaluated on each open.
+    void isOpen;
+    return resolvePresetColors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+  const [color, setColor] = useState(() => resolvePresetColors()[0]);
   const [lineWidth, setLineWidth] = useState(3);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [history, setHistory] = useState([]);
   const [historyStep, setHistoryStep] = useState(-1);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -15,19 +84,20 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
   const imageRef = useRef(null);
   const drawingRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
+  // Latest history needed inside callbacks that don't re-subscribe.
+  const historyRef = useRef({ list: [], step: -1 });
+  historyRef.current = { list: history, step: historyStep };
 
-  // Load image when modal opens
   useEffect(() => {
     if (isOpen && photoFile) {
-      // Set loaded immediately to show canvas
       setImageLoaded(true);
       loadImage();
     } else {
       setImageLoaded(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, photoFile]);
 
-  // Load image to canvas - optimized for instant loading
   const loadImage = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -35,26 +105,17 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     try {
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       const img = new Image();
-
-      // Create object URL
       const url = URL.createObjectURL(photoFile);
       img.src = url;
-
-      // Use decode() for faster rendering
       await img.decode();
 
-      // Set canvas size to match image
       canvas.width = img.width;
       canvas.height = img.height;
-
-      // Draw image immediately
       ctx.drawImage(img, 0, 0);
 
-      // Save initial state
       imageRef.current = img;
       saveHistory();
 
-      // Cleanup URL
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Error loading image:", err);
@@ -62,19 +123,18 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     }
   };
 
-  // Save canvas state to history
   const saveHistory = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const imageData = canvas.toDataURL();
-    const newHistory = history.slice(0, historyStep + 1);
+    const { list, step } = historyRef.current;
+    const newHistory = list.slice(0, step + 1);
     newHistory.push(imageData);
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
   };
 
-  // Undo
   const undo = () => {
     if (historyStep > 0) {
       const prevStep = historyStep - 1;
@@ -83,7 +143,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     }
   };
 
-  // Redo
   const redo = () => {
     if (historyStep < history.length - 1) {
       const nextStep = historyStep + 1;
@@ -92,23 +151,19 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     }
   };
 
-  // Restore canvas from history
   const restoreFromHistory = (step) => {
     const canvas = canvasRef.current;
     if (!canvas || !history[step]) return;
 
     const ctx = canvas.getContext("2d");
     const img = new Image();
-
     img.onload = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0);
     };
-
     img.src = history[step];
   };
 
-  // Reset to original
   const resetToOriginal = () => {
     if (history.length > 0) {
       restoreFromHistory(0);
@@ -116,17 +171,15 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     }
   };
 
-  // Get canvas coordinates from mouse/touch event
   const getCanvasCoordinates = (event) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
-
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    let clientX, clientY;
-
+    let clientX;
+    let clientY;
     if (event.touches && event.touches.length > 0) {
       clientX = event.touches[0].clientX;
       clientY = event.touches[0].clientY;
@@ -141,16 +194,13 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     };
   };
 
-  // Start drawing
   const startDrawing = (event) => {
     event.preventDefault();
     const pos = getCanvasCoordinates(event);
     lastPosRef.current = pos;
     drawingRef.current = true;
-    setIsDrawing(true);
   };
 
-  // Draw
   const draw = (event) => {
     if (!drawingRef.current) return;
     event.preventDefault();
@@ -188,20 +238,16 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
 
     ctx.stroke();
     ctx.globalAlpha = 1.0;
-
     lastPosRef.current = pos;
   };
 
-  // Stop drawing
   const stopDrawing = () => {
     if (drawingRef.current) {
       drawingRef.current = false;
-      setIsDrawing(false);
       saveHistory();
     }
   };
 
-  // Export canvas to blob
   const exportImage = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -219,39 +265,20 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     );
   };
 
-  // Preset colors
-  const presetColors = [
-    "#FF0000", // Red
-    "#FFFF00", // Yellow
-    "#00FF00", // Green
-    "#00FFFF", // Cyan
-    "#0000FF", // Blue
-    "#FF00FF", // Magenta
-    "#FFFFFF", // White
-    "#000000", // Black
-  ];
+  const canUndo = historyStep > 0;
+  const canRedo = historyStep < history.length - 1;
 
-  // Modal footer
   const footer = (
-    <div style={{ display: "flex", gap: "12px", justifyContent: "space-between", width: "100%" }}>
-      <button
-        onClick={onCancel}
-        style={{
-          ...buildModalButton("ghost"),
-          padding: "10px 20px",
-        }}
-      >
+    <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "space-between", width: "100%", flexWrap: "wrap" }}>
+      <button onClick={onCancel} style={buildModalButton("ghost")}>
         Cancel
       </button>
 
-      <div style={{ display: "flex", gap: "12px" }}>
+      <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "flex-end" }}>
         {onSkip && (
           <button
             onClick={() => onSkip(photoFile)}
-            style={{
-              ...buildModalButton("secondary"),
-              padding: "10px 20px",
-            }}
+            style={buildModalButton("secondary", { disabled: !imageLoaded })}
             disabled={!imageLoaded}
           >
             Skip Editing
@@ -260,10 +287,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
 
         <button
           onClick={resetToOriginal}
-          style={{
-            ...buildModalButton("secondary"),
-            padding: "10px 20px",
-          }}
+          style={buildModalButton("secondary", { disabled: historyStep === 0 })}
           disabled={historyStep === 0}
         >
           Reset
@@ -271,10 +295,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
 
         <button
           onClick={exportImage}
-          style={{
-            ...buildModalButton("primary"),
-            padding: "10px 20px",
-          }}
+          style={buildModalButton("primary", { disabled: !imageLoaded })}
           disabled={!imageLoaded}
         >
           Save Edits
@@ -293,96 +314,120 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
       onClose={onCancel}
       footer={footer}
     >
-      <div style={{ display: "flex", gap: "16px", height: "100%" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "220px 1fr",
+          gap: "var(--space-4)",
+          height: "100%",
+          minHeight: 0,
+        }}
+      >
         {/* Toolbar */}
-        <div style={{
-          width: "200px",
-          background: "var(--surface)",
-          borderRadius: "var(--radius-sm)",
-          padding: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px",
-        }}>
-          {/* Tools */}
+        <aside
+          style={{
+            ...PANEL_STYLE,
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-5)",
+            overflowY: "auto",
+          }}
+        >
           <div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--primary)", marginBottom: "8px" }}>
-              Tool
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {[
-                { id: "pen", label: "✏️ Pen", desc: "Draw lines" },
-                { id: "highlighter", label: "🖍️ Highlighter", desc: "Transparent marks" },
-                { id: "eraser", label: "🧹 Eraser", desc: "Remove marks" },
-              ].map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setTool(t.id)}
-                  style={{
-                    padding: "10px",
-                    borderRadius: "var(--radius-xs)",
-                    border: `2px solid ${tool === t.id ? "var(--primary)" : "var(--accent-surface)"}`,
-                    background: tool === t.id ? "var(--primary-surface)" : "var(--surface)",
-                    color: tool === t.id ? "var(--primary)" : "var(--text)",
-                    fontSize: "13px",
-                    fontWeight: tool === t.id ? 600 : 400,
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <div>{t.label}</div>
-                  <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "2px" }}>
-                    {t.desc}
-                  </div>
-                </button>
-              ))}
+            <span style={SECTION_LABEL_STYLE}>Tool</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
+              {TOOLS.map((t) => {
+                const active = tool === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTool(t.id)}
+                    aria-pressed={active}
+                    style={{
+                      padding: "var(--space-sm) var(--space-3)",
+                      borderRadius: "var(--radius-sm)",
+                      border: `1px solid ${active ? "var(--accentBorderStrong)" : "var(--accentBorder)"}`,
+                      background: active ? "var(--accentSurfaceHover)" : "var(--surfaceMain)",
+                      color: active ? "var(--accentMain)" : "var(--text-primary)",
+                      fontSize: "var(--text-body-sm)",
+                      fontWeight: active ? 700 : 500,
+                      fontFamily: "var(--font-family)",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      transition: "var(--control-transition)",
+                      display: "grid",
+                      gap: 2,
+                    }}
+                  >
+                    <span>{t.label}</span>
+                    <span style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)" }}>
+                      {t.desc}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Color */}
           {tool !== "eraser" && (
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--primary)", marginBottom: "8px" }}>
-                Color
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
-                {presetColors.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setColor(c)}
-                    style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "var(--radius-xs)",
-                      background: c,
-                      border: color === c ? "3px solid var(--primary)" : "1px solid var(--accent-surface)",
-                      cursor: "pointer",
-                    }}
-                    title={c}
-                  />
-                ))}
+              <span style={SECTION_LABEL_STYLE}>Colour</span>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: "var(--space-sm)",
+                }}
+              >
+                {presetColors.map((c) => {
+                  const active = color === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(c)}
+                      aria-label={`Choose colour ${c}`}
+                      aria-pressed={active}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "var(--radius-sm)",
+                        background: c,
+                        border: active
+                          ? "3px solid var(--accentMain)"
+                          : "1px solid var(--accentBorder)",
+                        cursor: "pointer",
+                        transition: "var(--control-transition)",
+                      }}
+                    />
+                  );
+                })}
               </div>
               <input
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
+                aria-label="Custom colour"
                 style={{
                   width: "100%",
-                  height: "36px",
-                  marginTop: "8px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-surface)",
+                  height: 36,
+                  marginTop: "var(--space-sm)",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--accentBorder)",
                   cursor: "pointer",
+                  background: "var(--surfaceMain)",
                 }}
               />
             </div>
           )}
 
-          {/* Line Width */}
           <div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--primary)", marginBottom: "8px" }}>
-              {tool === "eraser" ? "Eraser Size" : "Line Width"}: {lineWidth}px
-            </div>
+            <span style={SECTION_LABEL_STYLE}>
+              {tool === "eraser" ? "Eraser size" : "Line width"}
+              {" · "}
+              <span style={{ fontWeight: 800, color: "var(--accentMain)" }}>{lineWidth}px</span>
+            </span>
             <input
               type="range"
               min="1"
@@ -391,64 +436,76 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
               onChange={(e) => setLineWidth(Number(e.target.value))}
               style={{
                 width: "100%",
+                accentColor: "var(--accentMain)",
+                cursor: "pointer",
               }}
             />
           </div>
 
-          {/* Undo/Redo */}
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "var(--space-sm)" }}>
             <button
+              type="button"
               onClick={undo}
-              disabled={historyStep <= 0}
+              disabled={!canUndo}
               style={{
                 flex: 1,
-                padding: "10px",
-                borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-surface)",
-                background: "var(--surface)",
-                color: historyStep <= 0 ? "var(--info)" : "var(--text)",
-                fontSize: "13px",
+                padding: "var(--space-sm)",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--accentBorder)",
+                background: "var(--surfaceMain)",
+                color: canUndo ? "var(--text-primary)" : "var(--text-secondary)",
+                fontSize: "var(--text-body-sm)",
                 fontWeight: 600,
-                cursor: historyStep <= 0 ? "not-allowed" : "pointer",
+                cursor: canUndo ? "pointer" : "not-allowed",
+                opacity: canUndo ? 1 : 0.55,
+                fontFamily: "var(--font-family)",
+                transition: "var(--control-transition)",
               }}
             >
               ↶ Undo
             </button>
             <button
+              type="button"
               onClick={redo}
-              disabled={historyStep >= history.length - 1}
+              disabled={!canRedo}
               style={{
                 flex: 1,
-                padding: "10px",
-                borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-surface)",
-                background: "var(--surface)",
-                color: historyStep >= history.length - 1 ? "var(--info)" : "var(--text)",
-                fontSize: "13px",
+                padding: "var(--space-sm)",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--accentBorder)",
+                background: "var(--surfaceMain)",
+                color: canRedo ? "var(--text-primary)" : "var(--text-secondary)",
+                fontSize: "var(--text-body-sm)",
                 fontWeight: 600,
-                cursor: historyStep >= history.length - 1 ? "not-allowed" : "pointer",
+                cursor: canRedo ? "pointer" : "not-allowed",
+                opacity: canRedo ? 1 : 0.55,
+                fontFamily: "var(--font-family)",
+                transition: "var(--control-transition)",
               }}
             >
               ↷ Redo
             </button>
           </div>
-        </div>
+        </aside>
 
-        {/* Canvas */}
-        <div style={{
-          flex: 1,
-          background: "var(--background)",
-          borderRadius: "var(--radius-sm)",
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          position: "relative",
-        }}>
+        {/* Canvas stage */}
+        <div
+          style={{
+            background: "var(--surfaceMutedToken)",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--accentBorder)",
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            position: "relative",
+            minHeight: 0,
+          }}
+        >
           {!imageLoaded ? (
-            <div style={{ textAlign: "center", color: "var(--info)" }}>
-              <div style={{ fontSize: "48px", marginBottom: "8px" }}>📷</div>
-              <div style={{ fontSize: "14px" }}>Loading image...</div>
+            <div style={{ textAlign: "center", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "var(--text-h1)", marginBottom: "var(--space-sm)" }}>📷</div>
+              <div style={{ fontSize: "var(--text-body-sm)" }}>Loading image…</div>
             </div>
           ) : (
             <canvas
@@ -463,7 +520,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
               style={{
                 maxWidth: "100%",
                 maxHeight: "100%",
-                cursor: tool === "eraser" ? "crosshair" : "crosshair",
+                cursor: "crosshair",
                 touchAction: "none",
               }}
             />

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "predev": "node tools/scripts/use-local-next-cache.js",
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "vercel:dev": "node tools/scripts/vercel-dev.js",
     "lint": "eslint .",
     "uk:check": "node tools/scripts/enforce-uk-english.js",

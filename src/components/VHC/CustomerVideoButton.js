@@ -39,7 +39,8 @@ export default function CustomerVideoButton({
   userId, // Uploading user id
   vhcContextLabel = "", // Optional VHC section label for analytics
   vhcData = null, // Raw VHC state — used to build the left panel
-  buttonStyle, // Style override from the parent toolbar
+  buttonStyle, // Optional style override (kept for callers that need it, but the default look now comes from the global `.vhc-btn` class so this button matches "Reopen VHC" etc.)
+  buttonClassName = "vhc-btn", // Global VHC button class — override only when a caller has a good reason
   onUploadComplete, // Invoked after a successful upload
 }) {
   const [showCapture, setShowCapture] = useState(false); // Controls the full-screen overlay
@@ -51,8 +52,8 @@ export default function CustomerVideoButton({
   // vhcData changes so freshly-entered concerns appear on the panel.
   const panelData = useMemo(() => {
     if (!vhcData) return null; // No data → no panel (hook still works without it)
-    const { tyres, brakes } = buildInspectionConcerns(vhcData); // Extract concerns
-    return { tyres, brakes }; // Panel input shape
+    const { tyres, brakes, external } = buildInspectionConcerns(vhcData); // Extract concerns including external items (wipers, lights, etc.)
+    return { tyres, brakes, external }; // Panel input shape
   }, [vhcData]);
 
   // Capture hand-off — FullScreenCapture finishes and gives us the file + widgets snapshot.
@@ -121,6 +122,7 @@ export default function CustomerVideoButton({
       <button
         type="button"
         onClick={() => setShowCapture(true)}
+        className={buttonClassName}
         style={buttonStyle}
       >
         Customer Video

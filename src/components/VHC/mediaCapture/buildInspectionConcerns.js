@@ -331,14 +331,58 @@ function buildBrakeRows(vhcData = {}) {
   return rows; // Finished brake rows
 }
 
-// Main entry: returns { tyres: Row[], brakes: Row[] } given the job's vhcData.
+// Build external inspection rows from `vhcData.externalInspection`.
+// Per the rule in the file header, external items are amber + red only
+// (green items are noise for the capture panel). The raw shape is an
+// object keyed by category name, each with a `concerns: []` array where
+// entries look like `{ issue: string, status: "Red" | "Amber" | "Green" }`.
+function buildExternalRows(vhcData = {}) {
+  const source = vhcData?.externalInspection; // Raw container
+  if (!source || typeof source !== "object") return []; // Nothing to show
+
+  const rows = []; // Collected rows
+
+  // The source can legitimately be either the normalised object shape
+  // or the older array-of-concerns shape. Handle both defensively.
+  const entries = Array.isArray(source)
+    ? [["Miscellaneous", { concerns: source }]] // Flat list → bucket under Miscellaneous
+    : Object.entries(source); // Keyed by category
+
+  entries.forEach(([category, payload]) => {
+    const concerns = Array.isArray(payload?.concerns) ? payload.concerns : []; // Safely pull concerns
+    concerns.forEach((concern, index) => {
+      const status = normaliseStatus(concern?.status); // Normalise colour
+      if (status !== "red" && status !== "amber") return; // External = amber + red only
+      const issue = String(concern?.issue || "").trim(); // Issue text
+      if (!issue) return; // Skip empty rows
+      rows.push({
+        id: `external-${category}-${index}`, // Stable ID per category/index
+        kind: "external", // Row type — matched by the widget recorder fallback
+        section: category, // Keep the category for internal grouping
+        label: issue, // Issue text appears as the main label
+        measurement: "", // No category pill — the issue text is the whole row
+        status, // Colour
+        widget: {
+          title: "", // No category header on the floating widget
+          value: issue, // The issue text stands alone — the colour conveys severity
+          status, // Same colour
+        },
+      });
+    });
+  });
+
+  return rows; // External rows ready
+}
+
+// Main entry: returns { tyres, brakes, external } given the job's vhcData.
 // Tyres and brakes include green + amber + red rows. Discs/drums are
-// measurement-only. Any future "other section" consumer should filter
-// out green rows on its own.
+// measurement-only. External items are amber + red only — a green
+// external entry is rarely interesting during a customer video.
 export function buildInspectionConcerns(vhcData = {}) {
   return { // Composite result
     tyres: buildTyreRows(vhcData), // Tyre row list (green + amber + red)
     brakes: buildBrakeRows(vhcData), // Brake row list (green + amber + red, discs/drums measurement-only)
+    external: buildExternalRows(vhcData), // External concerns (amber + red only)
   };
 }
 

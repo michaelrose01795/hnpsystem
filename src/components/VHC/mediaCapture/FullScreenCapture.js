@@ -2,328 +2,322 @@
 // Main full-screen camera experience. The camera preview fills the whole
 // viewport and every piece of UI floats on top of it. A dedicated
 // "capture area" layer is inset from the right-controls column so that
-// the crosshair and any added widgets sit at the *visual* centre of the
+// the crosshair and any added widgets sit at the visual centre of the
 // capture (not under the controls stack).
 //
-// Key behaviours:
-//   - Tapping a left-panel row toggles a widget: first tap places it
-//     dead-centre of the capture area; second tap removes it.
-//   - A minimal crosshair guide marks the centre of the capture area.
-//   - Widgets are burned into the recorded video (via useWidgetRecorder).
+// Every colour, radius, spacing, and typography value resolves through
+// CSS variables defined in src/styles/theme.css. The dark glass chrome
+// that floats over video uses the --hud-* token set so light/dark
+// theme switching keeps the HUD readable over the live feed.
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"; // React primitives
-import { createPortal } from "react-dom"; // Portal into <body> for true fullscreen
-import useBodyModalLock from "@/hooks/useBodyModalLock"; // Lock scroll while open
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import useBodyModalLock from "@/hooks/useBodyModalLock";
+import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 
-import useDeviceCamera from "./useDeviceCamera"; // Camera lifecycle + zoom/flip
-import useWidgetRecorder from "./useWidgetRecorder"; // Canvas compositing + MediaRecorder
-import useOrientation from "./useOrientation"; // Orientation detection (landscape/portrait)
-import LevelBar from "./LevelBar"; // Top-bar level indicator
-import ConcernPanel from "./ConcernPanel"; // Left-side panel
-import CameraControls from "./CameraControls"; // Right-side controls
-import VerticalZoomSlider from "./VerticalZoomSlider"; // Vertical zoom control
-import FloatingWidget from "./FloatingWidget"; // DOM twin of the baked widget
-import DevOverlay from "./DevOverlay";
+import useDeviceCamera from "./useDeviceCamera";
+import useWidgetRecorder from "./useWidgetRecorder";
+import useOrientation from "./useOrientation";
+import LevelBar from "./LevelBar";
+import ConcernPanel from "./ConcernPanel";
+import CameraControls, { CaptureModeToggle } from "./CameraControls";
+import VerticalZoomSlider from "./VerticalZoomSlider";
+import FloatingWidget from "./FloatingWidget";
 
 // Right-side controls width varies by device size to maintain usability
 function getControlsWidth(screenWidth) {
-  if (screenWidth < 500) return 70; // Small phones: compact controls
-  if (screenWidth < 768) return 80; // Phones: standard controls
-  if (screenWidth < 1024) return 88; // Tablets: slightly larger
-  return 96; // Desktop: standard width
+  if (screenWidth < 500) return 70;
+  if (screenWidth < 768) return 80;
+  if (screenWidth < 1024) return 88;
+  return 96;
 }
 
-// Format seconds as MM:SS for the timer label.
 function formatDuration(seconds) {
-  const m = Math.floor(seconds / 60); // Minute component
-  const s = seconds % 60; // Seconds remainder
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`; // Zero-padded pair
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-// Generate a React-stable widget id.
-let widgetIdCounter = 0; // Module-level counter
+let widgetIdCounter = 0;
 function nextWidgetId(kind) {
-  widgetIdCounter += 1; // Bump on each call
-  return `${kind}-${Date.now()}-${widgetIdCounter}`; // Stable id
+  widgetIdCounter += 1;
+  return `${kind}-${Date.now()}-${widgetIdCounter}`;
 }
 
-// Minimal crosshair SVG rendered dead-centre of the capture area.
-// Purely visual (never baked into the video) — just a framing guide
-// so technicians know exactly where tapped widgets will appear.
+// Widget footprint used by FloatingWidget (kept in sync manually) so
+// the crosshair outline shows the exact rectangle that a tapped
+// concern widget will occupy once placed.
+const WIDGET_OUTLINE_WIDTH = 320;
+const WIDGET_OUTLINE_HEIGHT = 120;
+
+// Framing guide shown at the centre of the capture area. Instead of
+// a classic crosshair we render a dashed outline that matches the
+// widget card dimensions — so technicians see precisely where an
+// Inspection widget will land before they tap it.
 function Crosshair({ dimmed = false }) {
   return (
     <div
       aria-hidden="true"
       style={{
-        position: "absolute", // Overlay the capture area
-        left: "50%", // Dead centre horizontally
-        top: "50%", // Dead centre vertically
-        transform: "translate(-50%, -50%)", // Centre the SVG on the point
-        pointerEvents: "none", // Never steal pointer events
-        opacity: dimmed ? 0.35 : 0.72, // Dimmer when a widget sits on top
-        transition: "opacity 160ms ease", // Smooth dim when widgets appear
-        color: "#f8fafc", // Currentcolor for the strokes
-        mixBlendMode: "screen", // Keep the guide readable over any background
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        transform: "translate(-50%, -50%)",
+        width: WIDGET_OUTLINE_WIDTH,
+        height: WIDGET_OUTLINE_HEIGHT,
+        border: "1.5px dashed var(--hud-text)",
+        borderRadius: "var(--radius-md)",
+        pointerEvents: "none",
+        opacity: dimmed ? 0.25 : 0.55,
+        transition: "opacity var(--duration-normal) var(--ease-default)",
+        boxSizing: "border-box",
       }}
     >
-      <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-        <circle cx="28" cy="28" r="3" fill="currentColor" />{/* Centre dot */}
-        <circle cx="28" cy="28" r="13" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.55" />{/* Inner ring */}
-        <line x1="28" y1="4" x2="28" y2="16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />{/* Top tick */}
-        <line x1="28" y1="40" x2="28" y2="52" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />{/* Bottom tick */}
-        <line x1="4" y1="28" x2="16" y2="28" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />{/* Left tick */}
-        <line x1="40" y1="28" x2="52" y2="28" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />{/* Right tick */}
-      </svg>
+      {/* Small centre dot so there's still a single-pixel aim point */}
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          width: 6,
+          height: 6,
+          borderRadius: "var(--radius-pill)",
+          background: "var(--hud-text)",
+          transform: "translate(-50%, -50%)",
+          opacity: 0.9,
+        }}
+      />
     </div>
   );
 }
 
 export default function FullScreenCapture({
-  isOpen, // Controls portal rendering
-  initialMode = "photo", // "photo" | "video"
-  onClose, // () => void — user dismissed
-  onCapture, // (file, { type, widgets }) => void — capture succeeded
-  allowModeSwitch = true, // If false, hides the mode toggle (e.g. customer video = video-only)
-  panel = null, // { tyres: [], brakes: [] } or null — shows the left panel when provided
-  panelInitiallyOpen = true, // Start with panel expanded (false collapses to a thin rail)
-  title = "", // Optional subtle top-left label (e.g. "Customer Video")
-  busyLabel = "", // External busy label (e.g. "Uploading…")
+  isOpen,
+  initialMode = "photo",
+  onClose,
+  onCapture,
+  allowModeSwitch = true,
+  panel = null,
+  // panelInitiallyOpen is kept in the public API for backward
+  // compatibility but no longer has an effect — the Inspection panel
+  // cannot be collapsed/hidden from within the capture UI.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  panelInitiallyOpen = true,
+  title = "",
+  busyLabel = "",
 }) {
-  useBodyModalLock(isOpen); // Lock body scroll when overlay is visible
+  useBodyModalLock(isOpen);
 
-  // Orientation detection -----------------------------------------------
-  const orientation = useOrientation(); // Detect landscape vs portrait
-  const RIGHT_CONTROLS_WIDTH = getControlsWidth(orientation.screenWidth); // Dynamic width
+  // When the global DevLayoutOverlay is on the whole capture section
+  // enters "pass-through" mode: every control stops receiving pointer
+  // events so the technician can inspect layout boxes without firing
+  // the shutter, toggling widgets, etc. The DEV button in the
+  // Inspection header flips its own pointer-events back on so the
+  // overlay can always be turned off from inside the capture.
+  const devOverlay = useDevLayoutOverlay();
+  const passThroughActive = Boolean(devOverlay?.enabled);
 
-  // Capture mode toggle ----------------------------------------------
-  const [mode, setMode] = useState(initialMode); // Local mode
-  useEffect(() => { setMode(initialMode); }, [initialMode, isOpen]); // Reset when re-opened
+  const orientation = useOrientation();
+  const RIGHT_CONTROLS_WIDTH = getControlsWidth(orientation.screenWidth);
 
-  // Camera hook ------------------------------------------------------
-  const camera = useDeviceCamera({ isActive: isOpen, mode }); // Owns the MediaStream
+  const [mode, setMode] = useState(initialMode);
+  useEffect(() => { setMode(initialMode); }, [initialMode, isOpen]);
 
-  // Widgets state (live DOM overlay + baked into video) --------------
-  // Each widget carries `sourceRowId` so the panel can display a toggle
-  // state and the second tap on the same row can remove it.
-  const [widgets, setWidgets] = useState([]); // List of active widgets
-  const videoElementRef = useRef(null); // <video> node for canvas draw
-  const [devOverlayVisible, setDevOverlayVisible] = useState(false);
+  const camera = useDeviceCamera({ isActive: isOpen, mode });
 
-  // Widget recorder (owns canvas + MediaRecorder) --------------------
+  const [widgets, setWidgets] = useState([]);
+  const videoElementRef = useRef(null);
+
   const recorder = useWidgetRecorder({
-    stream: camera.stream, // Source camera MediaStream
-    videoElement: videoElementRef.current, // Draw target for canvas loop
-    widgets, // Current widget list (for compositing)
-    isRecordingMode: mode === "video", // Only animate canvas in video mode
+    stream: camera.stream,
+    videoElement: videoElementRef.current,
+    widgets,
+    isRecordingMode: mode === "video",
   });
 
-  // UI state ---------------------------------------------------------
-  const [panelCollapsed, setPanelCollapsed] = useState(!panelInitiallyOpen); // Panel collapse toggle
-  const [capturing, setCapturing] = useState(false); // True during photo save / video finalise
+  const [capturing, setCapturing] = useState(false);
 
-  // Reset widgets and capture-in-progress flag when the overlay opens.
   useEffect(() => {
-    if (!isOpen) return; // Only act when becoming visible
-    setWidgets([]); // Clear any stale widgets
-    setCapturing(false); // Clear busy flag
+    if (!isOpen) return;
+    setWidgets([]);
+    setCapturing(false);
   }, [isOpen]);
 
-  // Ensure the <video> element always shows the active stream.
   useEffect(() => {
-    const el = videoElementRef.current; // Current ref
-    if (!el) return; // Node not mounted yet
-    el.srcObject = camera.stream || null; // Bind stream (or clear)
+    const el = videoElementRef.current;
+    if (!el) return;
+    el.srcObject = camera.stream || null;
   }, [camera.stream]);
 
-  // --- Actions -------------------------------------------------------
-
-  // Toggle a widget from a panel row.
-  // First tap inserts a widget dead-centre of the capture area; a
-  // second tap on the same row removes it. This gives the technician a
-  // fast on/off for each concern without having to long-press.
+  // Single-widget mode: only ONE widget is ever on-screen. Tapping the
+  // row that's already active removes it; tapping any other row
+  // replaces the current widget with the new one. This keeps the frame
+  // uncluttered during a customer video and matches the UX brief.
   const insertWidgetFromRow = useCallback((row) => {
     setWidgets((current) => {
-      const existingIndex = current.findIndex((entry) => entry.sourceRowId === row.id); // Does this row already have a widget?
-      if (existingIndex !== -1) { // Yes → toggle off
-        return current.filter((_, index) => index !== existingIndex); // Drop the existing widget
-      }
-      // Otherwise → toggle on at dead-centre of the capture area.
-      const widget = { // Widget shape (matches FloatingWidget + canvas drawWidget)
-        id: nextWidgetId(row.kind || "info"), // Stable ID
-        sourceRowId: row.id, // Link back to the panel row for toggling
-        title: row.widget?.title || row.label, // Title string
-        value: row.widget?.value || row.measurement || "", // Value line
-        status: row.widget?.status || row.status || "default", // Colour key
-        x: 0.5, // Horizontal centre of the capture area
-        y: 0.5, // Vertical centre of the capture area
-      };
-      return [...current, widget]; // Append (render + next frame will bake it in)
+      const alreadyActive = current.some((entry) => entry.sourceRowId === row.id);
+      if (alreadyActive) return []; // Toggle off — no widget visible
+      return [{
+        id: nextWidgetId(row.kind || "info"),
+        sourceRowId: row.id,
+        // External concerns intentionally send title: "" from
+        // buildInspectionConcerns, which the widget renders as a
+        // single large line. Tyres / brakes pass a short title + a
+        // numeric value.
+        title: row.widget?.title ?? row.label ?? "",
+        value: row.widget?.value || row.measurement || row.label || "",
+        status: row.widget?.status || row.status || "default",
+        x: 0.5,
+        y: 0.5,
+      }];
     });
   }, []);
 
-  // Remove a widget by id (long-press gesture from the DOM widget).
   const removeWidget = useCallback((widgetId) => {
-    setWidgets((current) => current.filter((entry) => entry.id !== widgetId)); // Drop by id
+    setWidgets((current) => current.filter((entry) => entry.id !== widgetId));
   }, []);
 
-  // Derived: the set of row IDs currently represented by a widget. The
-  // panel uses this to render an "on" state for each active row.
   const activeRowIds = useMemo(() => {
-    const set = new Set(); // Start empty
-    for (const widget of widgets) { // Iterate current widgets
-      if (widget.sourceRowId) set.add(widget.sourceRowId); // Track origin row
+    const set = new Set();
+    for (const widget of widgets) {
+      if (widget.sourceRowId) set.add(widget.sourceRowId);
     }
-    return set; // Return the snapshot set
+    return set;
   }, [widgets]);
 
-  // Close: tear down everything and notify the parent.
   const handleClose = useCallback(() => {
-    recorder.cancel(); // Stop any in-flight recording (no file produced)
-    camera.stop(); // Release camera
-    setWidgets([]); // Reset widgets
-    onClose?.(); // Parent cleanup
+    recorder.cancel();
+    camera.stop();
+    setWidgets([]);
+    onClose?.();
   }, [camera, recorder, onClose]);
 
-  // Snap a still from the current video frame.
   const handlePhotoPress = useCallback(async () => {
-    // Only allow capture in landscape mode
     if (!orientation.isLandscape) {
       console.warn("Photo capture requires landscape orientation");
-      return; // Silently prevent capture in portrait
+      return;
     }
-    if (capturing || !camera.stream) return; // Guard rails
+    if (capturing || !camera.stream) return;
     try {
-      setCapturing(true); // Show busy state
-      const video = videoElementRef.current; // Current <video>
-      if (!video) throw new Error("Camera not ready"); // Shouldn't happen if stream is set
-      const width = video.videoWidth || 1920; // Fall back to sane dimensions
-      const height = video.videoHeight || 1080; // Fall back to sane dimensions
-      const canvas = document.createElement("canvas"); // Temporary snapshot canvas
-      canvas.width = width; canvas.height = height; // Size it to source
-      const ctx = canvas.getContext("2d"); // Drawing context
-      ctx.drawImage(video, 0, 0, width, height); // Capture the frame
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.94)); // JPEG encode
-      if (!blob) throw new Error("Failed to capture photo"); // Encode error
-      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" }); // Finalise as File
-      camera.stop(); // Release camera
-      await Promise.resolve(onCapture?.(file, { type: "photo", widgets: [] })); // Hand off to parent
-      onClose?.(); // Close the overlay
+      setCapturing(true);
+      const video = videoElementRef.current;
+      if (!video) throw new Error("Camera not ready");
+      const width = video.videoWidth || 1920;
+      const height = video.videoHeight || 1080;
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, width, height);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.94));
+      if (!blob) throw new Error("Failed to capture photo");
+      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
+      camera.stop();
+      await Promise.resolve(onCapture?.(file, { type: "photo", widgets: [] }));
+      onClose?.();
     } catch (err) {
-      console.error("Photo capture failed:", err); // Log
-      setCapturing(false); // Clear busy
+      console.error("Photo capture failed:", err);
+      setCapturing(false);
     }
   }, [camera, capturing, onCapture, onClose, orientation.isLandscape]);
 
-  // Start / stop video recording from the shutter.
   const handleVideoPress = useCallback(async () => {
-    // Only allow recording in landscape mode
     if (!orientation.isLandscape) {
       console.warn("Video recording requires landscape orientation");
-      return; // Silently prevent recording in portrait
+      return;
     }
-    if (capturing) return; // Ignore while busy
-    if (!recorder.isRecording) { // Idle → start
+    if (capturing) return;
+    if (!recorder.isRecording) {
       try {
-        await recorder.start(); // Fire up canvas+MediaRecorder
+        await recorder.start();
       } catch (err) {
-        console.error("Start recording failed:", err); // Log — UI surfaces recorderError
+        console.error("Start recording failed:", err);
       }
       return;
     }
-    // Recording → stop and deliver file.
     try {
-      setCapturing(true); // Show busy during finalisation
-      const file = await recorder.stop(); // Wait for blob
-      const frozenWidgets = widgets.map((widget) => ({ ...widget })); // Snapshot widgets at stop
-      camera.stop(); // Release camera now that we have the file
+      setCapturing(true);
+      const file = await recorder.stop();
+      const frozenWidgets = widgets.map((widget) => ({ ...widget }));
+      camera.stop();
       if (file) {
-        await Promise.resolve(onCapture?.(file, { type: "video", widgets: frozenWidgets })); // Hand off
+        await Promise.resolve(onCapture?.(file, { type: "video", widgets: frozenWidgets }));
       }
-      onClose?.(); // Close overlay
+      onClose?.();
     } catch (err) {
-      console.error("Stop recording failed:", err); // Log error
-      setCapturing(false); // Clear busy to re-allow attempts
+      console.error("Stop recording failed:", err);
+      setCapturing(false);
     }
   }, [camera, capturing, onCapture, onClose, recorder, widgets, orientation.isLandscape]);
 
-  // Toggle pause during a recording (no-op if not supported).
   const handlePauseToggle = useCallback(() => {
-    if (!recorder.canPause) return; // Browser lacks pause support
-    if (recorder.isPaused) recorder.resume(); else recorder.pause(); // Toggle
+    if (!recorder.canPause) return;
+    if (recorder.isPaused) recorder.resume(); else recorder.pause();
   }, [recorder]);
 
-  // Switch capture mode (only available when idle).
   const handleModeChange = useCallback((nextMode) => {
-    if (recorder.isRecording) return; // Refuse during recording
-    setMode(nextMode); // Apply
+    if (recorder.isRecording) return;
+    setMode(nextMode);
   }, [recorder.isRecording]);
 
-  // Handle slider-driven continuous zoom.
   const handleZoomChange = useCallback((value) => {
-    camera.applyZoom(value); // Apply via hardware zoom
+    camera.applyZoom(value);
   }, [camera]);
 
-  // Handle discrete lens switching (physical camera change).
-  const handleLensSelect = useCallback((deviceId) => {
-    camera.switchLens(deviceId); // Restart camera on that lens
-  }, [camera]);
+  const onShutterPress = mode === "photo" ? handlePhotoPress : handleVideoPress;
 
-  // Decide which shutter action to run based on mode.
-  const onShutterPress = mode === "photo" ? handlePhotoPress : handleVideoPress; // Contextual handler
-
-  // Keyboard: Escape closes when allowed. Space triggers the shutter.
   useEffect(() => {
-    if (!isOpen) return undefined; // Only bind while open
-    const onKey = (event) => { // Global key handler
-      if (event.key === "Escape" && !recorder.isRecording) handleClose(); // Esc closes unless recording
-      if (event.key === " " && document.activeElement?.tagName !== "INPUT") { // Space = shutter (outside inputs)
-        event.preventDefault(); // Avoid scroll
-        onShutterPress?.(); // Fire shutter
+    if (!isOpen) return undefined;
+    const onKey = (event) => {
+      if (event.key === "Escape" && !recorder.isRecording) handleClose();
+      if (event.key === " " && document.activeElement?.tagName !== "INPUT") {
+        event.preventDefault();
+        onShutterPress?.();
       }
     };
-    window.addEventListener("keydown", onKey); // Register
-    return () => window.removeEventListener("keydown", onKey); // Cleanup
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [handleClose, isOpen, onShutterPress, recorder.isRecording]);
 
-  // Live flag for the panel / widget overlay state.
-  const isLive = mode === "video" && recorder.isRecording; // "We are actively recording"
-  const showPanel = Boolean(panel); // Left-side panel on/off
+  const isLive = mode === "video" && recorder.isRecording;
+  const showPanel = Boolean(panel);
+  const crosshairDimmed = widgets.length > 0;
+  const topBarRightOffset = RIGHT_CONTROLS_WIDTH + 12;
 
-  // Dim the crosshair when a widget is sitting at the centre so the
-  // two visual elements don't clash.
-  const crosshairDimmed = widgets.length > 0; // Any active widget dims the guide
+  if (!isOpen || typeof document === "undefined") return null;
 
-  // Right padding used by the top bar so it never sits on top of the
-  // right-side control column (width + a little breathing room).
-  const topBarRightOffset = RIGHT_CONTROLS_WIDTH + 12; // Leave a 12px gap
+  let statusLabel = "";
+  let statusTone = "default";
+  if (recorder.isPaused) { statusLabel = `Paused ${formatDuration(recorder.elapsed)}`; statusTone = "paused"; }
+  else if (isLive) { statusLabel = `Rec ${formatDuration(recorder.elapsed)}`; statusTone = "recording"; }
 
-  // Portal target — render a full-screen overlay on <body>.
-  if (!isOpen || typeof document === "undefined") return null; // SSR/portal guard
-
-  // Only expose the developer overlay in development builds.
-  const isDev = typeof process !== "undefined" && process.env && process.env.NODE_ENV !== "production";
+  const recordingLock = recorder.isRecording && !recorder.isPaused;
 
   return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={title || "Camera"}
+      data-dev-section-key="capture-fullscreen"
+      data-dev-section-type="page-shell"
+      data-dev-background-token="camera-surface"
+      data-capture-passthrough={passThroughActive ? "1" : "0"}
       style={{
-        position: "fixed", // Cover the viewport
-        inset: 0, // All sides flush
-        zIndex: 1000, // Over application chrome
-        background: "#05070b", // Dark base behind camera (visible during loading)
-        overflow: "hidden", // Never scroll the overlay itself
+        position: "fixed",
+        inset: 0,
+        zIndex: "var(--z-modal)",
+        background: "var(--hud-scrim)",
+        overflow: "hidden",
+        fontFamily: "var(--font-family)",
+        // Pass-through mode: swallow pointer events on the whole
+        // capture portal. Children that need to stay live (just the
+        // DEV button in the Inspection header) opt back in by setting
+        // pointer-events: auto on themselves.
+        pointerEvents: passThroughActive ? "none" : undefined,
       }}
     >
-      {/* Tiny global keyframes for widget entry animation. Scoped by unique name. */}
       <style>{"@keyframes hnpWidgetIn { from { opacity: 0; transform: translate(-50%, -45%) scale(0.9); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }"}</style>
 
-      {/* ----------------------------------------------------------------
-          Layer 1: Full-screen camera preview.
-          The preview still covers the whole viewport so the UI feels
-          edge-to-edge — the capture-area layer (below) handles centring.
-      ---------------------------------------------------------------- */}
       {camera.stream ? (
         <video
           ref={videoElementRef}
@@ -331,169 +325,172 @@ export default function FullScreenCapture({
           playsInline
           muted
           style={{
-            position: "absolute", // Cover entire container
-            inset: 0, // All sides flush
-            width: "100%", // Full width
-            height: "100%", // Full height
-            objectFit: "cover", // Crop rather than letterbox (camera feel)
-            background: "#000", // Black while frames arrive
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            background: "var(--hud-scrim)",
           }}
         />
       ) : null}
 
-      {/* Subtle top/bottom vignette for readability of overlay chrome. */}
       <div
         aria-hidden="true"
         style={{
-          position: "absolute", // Overlay the feed
-          inset: 0, // All sides flush
+          position: "absolute",
+          inset: 0,
           background: camera.stream
-            ? "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.0) 18%, rgba(0,0,0,0.0) 78%, rgba(0,0,0,0.7) 100%)"
-            : "linear-gradient(180deg, #0f172a 0%, #030712 100%)",
-          pointerEvents: "none", // Visual only
+            ? "var(--hud-gradient-top-bottom)"
+            : "var(--hud-scrim)",
+          pointerEvents: "none",
         }}
       />
 
-      {/* ----------------------------------------------------------------
-          Layer 2: Capture-area layer.
-          This is inset from the right by RIGHT_CONTROLS_WIDTH so that
-          its 50%/50% is the *visual* centre of the camera preview the
-          technician actually sees. Both the crosshair guide and every
-          floating widget live inside it, so they all share the same
-          centred coordinate system.
-      ---------------------------------------------------------------- */}
       <div
         aria-hidden="false"
+        data-dev-section-key="capture-area"
+        data-dev-section-type="content-card"
         style={{
-          position: "absolute", // Positioned layer
-          top: 0, // Top of viewport
-          left: 0, // Left of viewport
-          right: RIGHT_CONTROLS_WIDTH, // Reserve the controls column
-          bottom: 0, // Bottom of viewport
-          pointerEvents: "none", // Pass-through; widgets re-enable their own events
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
         }}
       >
-        {/* Crosshair guide — centred in the capture area */}
         <Crosshair dimmed={crosshairDimmed} />
 
-        {/* Floating widgets — positioned within this same layer so
-            their (0.5, 0.5) coordinates land on the crosshair */}
         {widgets.map((widget) => (
           <FloatingWidget key={widget.id} widget={widget} onRemove={removeWidget} />
         ))}
 
-        {/* Dev overlay mounted in the capture area so it sits above
-            the preview but doesn't break interactions. Toggleable. */}
-        {isDev ? <DevOverlay visible={devOverlayVisible} /> : null}
+        {allowModeSwitch ? (
+          <div
+            data-dev-section-key="capture-mode-toggle-wrapper"
+            data-dev-section-type="toolbar"
+            style={{
+              position: "absolute",
+              left: "50%",
+              bottom: "calc(var(--space-4) + env(safe-area-inset-bottom))",
+              transform: "translateX(-50%)",
+              pointerEvents: "auto",
+              zIndex: 4,
+            }}
+          >
+            <CaptureModeToggle
+              mode={mode}
+              onChange={handleModeChange}
+              disabled={camera.loading || !!camera.error || !camera.permissionGranted || capturing || recorder.isRecording}
+              compact={orientation.screenWidth && orientation.screenWidth < 500}
+            />
+          </div>
+        ) : null}
       </div>
 
-      {/* ----------------------------------------------------------------
-          Layer 3: Top bar. Sits across the top, stops before the right
-          controls column. Level bar now centered at the top middle.
-      ---------------------------------------------------------------- */}
       <div
+        data-dev-section-key="capture-top-bar"
+        data-dev-section-type="toolbar"
         style={{
-          position: "absolute", // Overlay the top edge
-          top: "max(14px, env(safe-area-inset-top))", // Respect safe-area
-          left: 14, // Inner padding
-          right: topBarRightOffset, // Leave room for the right-side controls
-          display: "flex", // Horizontal layout
-          alignItems: "center", // Centre content vertically
-          justifyContent: "space-between", // Close/title on left, timer+busy on right
-          gap: 12, // Between groups
-          pointerEvents: "none", // Individual controls opt in
+          position: "absolute",
+          top: "max(var(--space-4), env(safe-area-inset-top))",
+          left: "var(--space-4)",
+          right: topBarRightOffset,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "var(--space-3)",
+          pointerEvents: "none",
         }}
       >
-        {/* Left cluster: close button + optional title */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, pointerEvents: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", pointerEvents: "auto" }}>
           <button
             type="button"
             onClick={handleClose}
             aria-label="Close camera"
-            disabled={recorder.isRecording && !recorder.isPaused}
+            disabled={recordingLock}
             style={{
-              width: 44, // Touch target
-              height: 44, // Touch target
-              borderRadius: 999, // Circle
-              border: "1px solid rgba(255,255,255,0.16)", // Thin edge
-              background: "rgba(15,23,42,0.6)", // Dark glass
-              color: "#fff", // White glyph
-              fontSize: 24, // Large ×
-              cursor: recorder.isRecording && !recorder.isPaused ? "not-allowed" : "pointer", // Block while recording (unless paused)
-              backdropFilter: "blur(10px)", // Glass
-              WebkitBackdropFilter: "blur(10px)", // Safari prefix
-              opacity: recorder.isRecording && !recorder.isPaused ? 0.4 : 1, // Faded when blocked
+              width: 44,
+              height: 44,
+              borderRadius: "var(--radius-pill)",
+              border: "1px solid var(--hud-border)",
+              background: "var(--hud-surface)",
+              color: "var(--hud-text)",
+              fontSize: "var(--text-h3)",
+              lineHeight: 1,
+              cursor: recordingLock ? "not-allowed" : "pointer",
+              backdropFilter: "var(--hud-blur)",
+              WebkitBackdropFilter: "var(--hud-blur)",
+              opacity: recordingLock ? 0.4 : 1,
+              fontFamily: "var(--font-family)",
+              transition: "var(--control-transition)",
             }}
           >
             ×
           </button>
           {title ? (
-            <span style={{ color: "#fff", fontWeight: 700, fontSize: 14, letterSpacing: "0.04em", opacity: 0.86, maxWidth: "22vw", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span
+              style={{
+                color: "var(--hud-text)",
+                fontWeight: 700,
+                fontSize: "var(--text-body-sm)",
+                letterSpacing: "var(--tracking-wide)",
+                opacity: 0.86,
+                maxWidth: "22vw",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {title}
             </span>
           ) : null}
         </div>
 
-        {/* Right cluster: timer + external busy label */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, pointerEvents: "auto" }}>
-          {isLive || recorder.isPaused ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", pointerEvents: "auto" }}>
+          {busyLabel ? (
             <div
-              aria-live="polite"
               style={{
-                padding: "8px 12px", // Pill padding
-                borderRadius: 999, // Pill
-                background: recorder.isPaused ? "rgba(245, 158, 11, 0.92)" : "rgba(220, 38, 38, 0.92)", // Amber when paused else red
-                color: "#fff", // White text
-                fontSize: 13, // Compact label
-                fontWeight: 800, // Bold
-                letterSpacing: "0.08em", // Slight spacing
-                textTransform: "uppercase", // Caps
-                fontVariantNumeric: "tabular-nums", // Fixed digit width
-                boxShadow: "0 10px 20px rgba(0,0,0,0.3)", // Elevate
+                padding: "var(--space-sm) var(--space-3)",
+                borderRadius: "var(--radius-pill)",
+                background: "var(--accentMain)",
+                color: "var(--onAccentText)",
+                fontSize: "var(--text-caption)",
+                fontWeight: 700,
+                letterSpacing: "var(--tracking-wide)",
+                textTransform: "uppercase",
               }}
             >
-              {recorder.isPaused ? `Paused ${formatDuration(recorder.elapsed)}` : `Rec ${formatDuration(recorder.elapsed)}`}
-            </div>
-          ) : null}
-          {busyLabel ? (
-            <div style={{ padding: "8px 12px", borderRadius: 999, background: "rgba(59, 130, 246, 0.88)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
               {busyLabel}
             </div>
           ) : null}
         </div>
       </div>
 
-      {/* ----------------------------------------------------------------
-          Layer 3b: Level bar at the top middle of the screen (centered)
-          Only shown in landscape mode.
-      ---------------------------------------------------------------- */}
       {orientation.isLandscape ? (
         <div
           style={{
-            position: "absolute", // Overlay at top
-            top: "max(14px, env(safe-area-inset-top))", // Respect safe-area
-            left: "50%", // Center horizontally
-            transform: "translateX(-50%)", // Exact center
-            pointerEvents: "auto", // Allow interaction
-            zIndex: 5, // Above most elements
+            position: "absolute",
+            top: "max(var(--space-4), env(safe-area-inset-top))",
+            left: "50%",
+            transform: "translateX(-50%)",
+            pointerEvents: "auto",
+            zIndex: 5,
           }}
         >
-          <LevelBar compact />
+          <LevelBar compact statusLabel={statusLabel} statusTone={statusTone} />
         </div>
       ) : null}
 
-      {/* ----------------------------------------------------------------
-          Layer 3c: Vertical zoom slider positioned above the capture button
-          Aligned to the right side between capture button and top right corner
-      ---------------------------------------------------------------- */}
       <div
         style={{
-          position: "absolute", // Floating overlay
-          bottom: `calc(${RIGHT_CONTROLS_WIDTH + 180}px + env(safe-area-inset-bottom))`, // Further above capture button
-          right: `calc(${RIGHT_CONTROLS_WIDTH / 2 - 40}px)`, // Centered within controls area
-          transform: "translateX(50%)", // Centre horizontally in the controls column
-          pointerEvents: "auto", // Allow interaction
-          zIndex: 4, // Above camera feed
+          position: "absolute",
+          top: "calc(env(safe-area-inset-top, 0px) + var(--space-6))",
+          right: `${(RIGHT_CONTROLS_WIDTH - 52) / 2}px`,
+          width: 52,
+          height: 340,
+          pointerEvents: "auto",
+          zIndex: 4,
+          display: "flex",
+          alignItems: "stretch",
         }}
       >
         <VerticalZoomSlider
@@ -504,131 +501,115 @@ export default function FullScreenCapture({
         />
       </div>
 
-      {/* ----------------------------------------------------------------
-          Layer 4: Left-side inspection panel overlay. Floats over the
-          preview as a HUD, never shrinks the camera.
-      ---------------------------------------------------------------- */}
       {showPanel ? (
         <div
+          data-dev-section-key="capture-panel-slot"
+          data-dev-section-type="sidebar"
           style={{
-            position: "absolute", // Floating overlay
-            left: 12, // Small inset from the left edge
-            top: "calc(env(safe-area-inset-top, 0px) + 76px)", // Sit below the top bar
-            bottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)", // Keep clear of bottom edge
-            display: "flex", // Allow the panel to stretch to full available height
-            alignItems: "stretch", // Fill vertical space
-            pointerEvents: "none", // Let taps pass through outside the panel itself
-            zIndex: 2, // Above widgets, below top bar
-            maxWidth: "calc(100% - 12px - 12px - " + RIGHT_CONTROLS_WIDTH + "px)", // Don't overrun right controls
+            position: "absolute",
+            left: "var(--space-3)",
+            top: "calc(env(safe-area-inset-top, 0px) + 76px)",
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + var(--space-4))",
+            display: "flex",
+            alignItems: "stretch",
+            pointerEvents: "none",
+            zIndex: 2,
+            maxWidth: `calc(100% - var(--space-3) - var(--space-3) - ${RIGHT_CONTROLS_WIDTH}px)`,
           }}
         >
           <ConcernPanel
             tyres={panel?.tyres || []}
             brakes={panel?.brakes || []}
+            external={panel?.external || []}
             activeRowIds={activeRowIds}
             onInsertWidget={insertWidgetFromRow}
             isLive={isLive}
-            collapsed={panelCollapsed}
-            onToggle={() => setPanelCollapsed((current) => !current)}
           />
         </div>
       ) : null}
 
-      {/* ----------------------------------------------------------------
-          Layer 5: Right-side control column. Anchored to the right edge
-          at full height, overlaying the camera preview. Responsive width.
-      ---------------------------------------------------------------- */}
       <div
+        data-dev-section-key="capture-right-rail"
+        data-dev-section-type="sidebar"
         style={{
-          position: "absolute", // Anchored overlay
-          top: 0, // Full height
-          right: 0, // Flush to right edge
-          bottom: 0, // Full height
-          width: RIGHT_CONTROLS_WIDTH, // Dynamic column width
-          display: "flex", // Flex host for CameraControls
-          alignItems: "stretch", // Fill vertically
-          pointerEvents: "none", // CameraControls re-enables inside
-          zIndex: 3, // Above the panel overlay
+          position: "absolute",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: RIGHT_CONTROLS_WIDTH,
+          display: "flex",
+          alignItems: "stretch",
+          pointerEvents: "none",
+          zIndex: 3,
         }}
       >
         <CameraControls
           mode={mode}
-          onModeChange={allowModeSwitch ? handleModeChange : undefined}
           isRecording={recorder.isRecording}
           isPaused={recorder.isPaused}
           canPause={recorder.canPause}
           onShutterPress={onShutterPress}
           onPausePress={handlePauseToggle}
           onFlip={camera.flip}
-          onZoomChange={handleZoomChange}
-          onLensSelect={handleLensSelect}
-          zoomRange={camera.zoomRange}
-          zoomValue={camera.zoomValue}
-          lenses={camera.discreteLensOptions}
-          selectedDeviceId={camera.selectedDeviceId}
           disabled={camera.loading || !!camera.error || !camera.permissionGranted || capturing}
           screenWidth={orientation.screenWidth}
         />
       </div>
 
-      {/* Dev overlay toggle (bottom-left). Visible in dev only. */}
-      {isDev ? (
-        <button
-          type="button"
-          aria-pressed={devOverlayVisible}
-          onClick={() => setDevOverlayVisible((c) => !c)}
-          style={{
-            position: "absolute",
-            left: 12,
-            bottom: "calc(12px + env(safe-area-inset-bottom))",
-            zIndex: 1200, // Above other capture chrome
-            pointerEvents: "auto",
-            padding: "8px 10px",
-            borderRadius: 999,
-            border: "1px solid rgba(255,255,255,0.12)",
-            background: devOverlayVisible ? "rgba(56,189,248,0.18)" : "rgba(15,23,42,0.6)",
-            color: "#fff",
-            fontSize: 13,
-            fontWeight: 800,
-          }}
-        >
-          DEV
-        </button>
-      ) : null}
-
-      {/* ----------------------------------------------------------------
-          Layer 6: Loading / error curtain. Shown only when the camera is
-          unavailable so it can carry an explanation and a retry button.
-      ---------------------------------------------------------------- */}
       {(camera.loading || camera.error || !camera.permissionGranted) && !camera.stream ? (
         <div
           style={{
-            position: "absolute", // Full-screen curtain
-            inset: 0, // Cover area
-            display: "flex", // Centre card
-            alignItems: "center", // Vertical centre
-            justifyContent: "center", // Horizontal centre
-            padding: 24, // Breathing room
-            zIndex: 4, // Above controls
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "var(--space-lg)",
+            zIndex: 4,
           }}
         >
+          {/* Camera-open / loading / error card. Sized to match the
+              WIDGET_OUTLINE footprint (320 × 120) so it sits inside
+              the crosshair outline and looks consistent with every
+              other card on the HUD. */}
           <div
             style={{
-              maxWidth: 380, // Readable width
-              padding: "20px 22px", // Card padding
-              borderRadius: 22, // Rounded card
-              background: "rgba(15, 23, 42, 0.78)", // Dark card
-              border: "1px solid rgba(255,255,255,0.08)", // Subtle edge
-              color: "#fff", // White text
-              textAlign: "center", // Centre text
-              backdropFilter: "blur(20px)", // Glass
-              WebkitBackdropFilter: "blur(20px)", // Safari prefix
+              width: WIDGET_OUTLINE_WIDTH,
+              height: WIDGET_OUTLINE_HEIGHT,
+              maxWidth: "calc(100vw - var(--space-6))",
+              padding: "var(--space-3) var(--space-4)",
+              borderRadius: "var(--radius-md)",
+              background: "var(--hud-surface-glass)",
+              border: "1px solid var(--hud-divider)",
+              boxShadow: "var(--hud-shadow-md)",
+              color: "var(--hud-text)",
+              textAlign: "center",
+              backdropFilter: "var(--hud-blur-strong)",
+              WebkitBackdropFilter: "var(--hud-blur-strong)",
+              fontFamily: "var(--font-family)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "var(--space-1)",
+              boxSizing: "border-box",
+              overflow: "hidden",
             }}
           >
-            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>
+            <div style={{ fontSize: "var(--text-body)", fontWeight: 800 }}>
               {camera.loading ? "Opening camera…" : camera.error ? "Camera unavailable" : "Preparing camera…"}
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.5, color: "rgba(255,255,255,0.8)" }}>
+            <div
+              style={{
+                fontSize: "var(--text-caption)",
+                lineHeight: "var(--leading-tight)",
+                color: "var(--hud-text-muted)",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
               {camera.error || "Please wait while the device camera is prepared."}
             </div>
             {camera.error ? (
@@ -636,14 +617,17 @@ export default function FullScreenCapture({
                 type="button"
                 onClick={() => camera.start({ facingMode: "environment" })}
                 style={{
-                  marginTop: 14, // Space under message
-                  padding: "10px 16px", // Tap target
-                  borderRadius: 999, // Pill
-                  border: "1px solid rgba(255,255,255,0.2)", // Edge
-                  background: "rgba(255,255,255,0.08)", // Subtle fill
-                  color: "#fff", // White text
-                  fontWeight: 700, // Bold
-                  cursor: "pointer", // Tappable
+                  marginTop: "var(--space-1)",
+                  padding: "var(--space-1) var(--space-3)",
+                  borderRadius: "var(--radius-pill)",
+                  border: "1px solid var(--hud-border-strong)",
+                  background: "var(--hud-surface)",
+                  color: "var(--hud-text)",
+                  fontWeight: 700,
+                  fontSize: "var(--text-caption)",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-family)",
+                  transition: "var(--control-transition)",
                 }}
               >
                 Try again
@@ -653,71 +637,77 @@ export default function FullScreenCapture({
         </div>
       ) : null}
 
-      {/* ----------------------------------------------------------------
-          Portrait Mode Warning Overlay
-          Shown when device is in portrait mode to inform user that
-          capture is only supported in landscape mode.
-      ---------------------------------------------------------------- */}
       {!orientation.isLandscape ? (
         <div
           style={{
-            position: "absolute", // Full-screen curtain
-            inset: 0, // Cover area
-            display: "flex", // Centre card
-            alignItems: "center", // Vertical centre
-            justifyContent: "center", // Horizontal centre
-            padding: 24, // Breathing room
-            zIndex: 999, // Above everything
-            background: "rgba(5, 7, 11, 0.85)", // Dark curtain
-            backdropFilter: "blur(8px)", // Slight blur
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "var(--space-lg)",
+            zIndex: 999,
+            background: "var(--overlay)",
+            backdropFilter: "var(--hud-blur)",
+            WebkitBackdropFilter: "var(--hud-blur)",
           }}
         >
+          {/* Portrait warning card — same 320 × 120 footprint as the
+              widget cards so every popup that sits in the crosshair
+              frame shares a visual footprint. */}
           <div
             style={{
-              maxWidth: 280, // Readable width for phones
-              padding: "24px 20px", // Card padding
-              borderRadius: 20, // Rounded card
-              background: "rgba(15, 23, 42, 0.95)", // Dark card
-              border: "1px solid rgba(255,255,255,0.12)", // Subtle edge
-              color: "#fff", // White text
-              textAlign: "center", // Centre text
-              backdropFilter: "blur(20px)", // Glass
-              WebkitBackdropFilter: "blur(20px)", // Safari prefix
+              width: WIDGET_OUTLINE_WIDTH,
+              height: WIDGET_OUTLINE_HEIGHT,
+              maxWidth: "calc(100vw - var(--space-6))",
+              padding: "var(--space-2) var(--space-4)",
+              borderRadius: "var(--radius-md)",
+              background: "var(--hud-surface-glass)",
+              border: "1px solid var(--hud-divider)",
+              boxShadow: "var(--hud-shadow-md)",
+              color: "var(--hud-text)",
+              textAlign: "center",
+              backdropFilter: "var(--hud-blur-strong)",
+              WebkitBackdropFilter: "var(--hud-blur-strong)",
+              fontFamily: "var(--font-family)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 2,
+              boxSizing: "border-box",
+              overflow: "hidden",
             }}
           >
-            <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.8 }}>
-              📱
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, color: "#fff" }}>
+            <div style={{ fontSize: "var(--text-h3)", opacity: 0.85, lineHeight: 1 }}>📱</div>
+            <div style={{ fontSize: "var(--text-body)", fontWeight: 800, color: "var(--hud-text)", lineHeight: "var(--leading-tight)" }}>
               Rotate Device
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.75)" }}>
-              Camera and recording require landscape orientation for optimal quality.
-            </div>
-            <div style={{ fontSize: 12, marginTop: 12, color: "rgba(255,255,255,0.55)" }}>
-              Turn your device sideways to continue
+            <div style={{ fontSize: "var(--text-caption)", lineHeight: "var(--leading-tight)", color: "var(--hud-text-muted)" }}>
+              Landscape orientation required
             </div>
           </div>
         </div>
       ) : null}
 
-      {/* Recorder error toast (bottom, clear of right controls) */}
       {recorder.recorderError ? (
         <div
+          role="alert"
           style={{
-            position: "absolute", // Floating toast
-            left: 16, // Padding from left
-            right: 16 + RIGHT_CONTROLS_WIDTH, // Padding from right, clear of controls
-            bottom: "calc(16px + env(safe-area-inset-bottom))", // Safe area aware
-            padding: "10px 14px", // Inner spacing
-            borderRadius: 12, // Rounded
-            background: "rgba(220, 38, 38, 0.92)", // Red alert colour
-            color: "#fff", // White text
-            fontSize: 13, // Compact
-            fontWeight: 700, // Bold
-            textAlign: "center", // Centre message
-            boxShadow: "0 10px 24px rgba(0,0,0,0.36)", // Elevate
-            zIndex: 4, // Above most layers
+            position: "absolute",
+            left: "var(--space-md)",
+            right: `calc(var(--space-md) + ${RIGHT_CONTROLS_WIDTH}px)`,
+            bottom: "calc(var(--space-md) + env(safe-area-inset-bottom))",
+            padding: "var(--space-2) var(--space-4)",
+            borderRadius: "var(--radius-sm)",
+            background: "var(--danger)",
+            color: "var(--onAccentText)",
+            fontSize: "var(--text-caption)",
+            fontWeight: 700,
+            textAlign: "center",
+            boxShadow: "var(--hud-shadow-md)",
+            zIndex: 4,
+            fontFamily: "var(--font-family)",
           }}
         >
           {recorder.recorderError}
