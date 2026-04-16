@@ -1,221 +1,153 @@
 // file location: src/components/VHC/CustomerVideoButton.js
+// Customer video entry point used from the VHC toolbar. This is the
+// launcher only — the actual capture UI now lives in
+// src/components/VHC/mediaCapture/FullScreenCapture.js. The old
+// "overlay suggestion" builder modal has been removed; overlays are
+// inserted live during recording from the left-side inspection panel
+// and are burned into the video frame as it records.
 
-import React, { useMemo, useState } from "react";
-import CameraCaptureModal from "@/components/VHC/CameraCaptureModal";
-import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import React, { useMemo, useState } from "react"; // React primitives
+import FullScreenCapture from "@/components/VHC/mediaCapture/FullScreenCapture"; // New full-screen camera
+import VideoEditorModal from "@/components/VHC/VideoEditorModal"; // Post-capture edit modal (trim/mute)
+import { buildInspectionConcerns } from "@/components/VHC/mediaCapture/buildInspectionConcerns"; // Panel data helper
 
-const OVERLAY_LIBRARY = [
-  { type: "tyre_depth", label: "Tyre depth", hint: "Add tread depth reading and unit (mm)." },
-  { type: "brake_measurement", label: "Brake measurement", hint: "Show pad/disc thickness and minimum spec." },
-  { type: "damage_marker", label: "Damage marker", hint: "Circle crack/leak/wear and add short explanation." },
-  { type: "service_note", label: "Service note", hint: "Add a plain-English note for the customer." },
-];
+// Upload the final customer video (after optional editing) with the
+// widget metadata preserved on the record. Widgets are already burned
+// into the video file itself, but we also persist the structured list
+// so the customer portal can tag playback in the future.
+async function uploadCustomerVideo({ file, jobNumber, userId, widgets, contextLabel }) {
+  const formData = new FormData(); // Build multipart body
+  formData.append("file", file); // The video file itself
+  formData.append("jobNumber", String(jobNumber)); // Job reference
+  formData.append("uploadedBy", String(userId || "system")); // User reference
+  formData.append("overlays", JSON.stringify(widgets || [])); // Persist widget metadata
+  formData.append("contextLabel", String(contextLabel || "")); // Optional section label
 
-const buildAssistantSuggestions = (context = "") => {
-  const text = String(context || "").toLowerCase();
-  if (text.includes("tyre") || text.includes("wheel")) {
-    return [OVERLAY_LIBRARY[0], OVERLAY_LIBRARY[2], OVERLAY_LIBRARY[3]];
+  const response = await fetch("/api/vhc/customer-video-upload", { // Existing endpoint — unchanged
+    method: "POST", // File upload
+    body: formData, // FormData body
+  });
+  const payload = await response.json().catch(() => ({})); // Read body defensively
+  if (!response.ok || !payload?.success) { // Surface upload errors
+    throw new Error(payload?.message || "Upload failed");
   }
-  if (text.includes("brake") || text.includes("hub")) {
-    return [OVERLAY_LIBRARY[1], OVERLAY_LIBRARY[2], OVERLAY_LIBRARY[3]];
-  }
-  return [OVERLAY_LIBRARY[2], OVERLAY_LIBRARY[3], OVERLAY_LIBRARY[0]];
-};
+  return payload.record; // Return the saved DB record
+}
 
-function CustomerVideoBuilderModal({
-  isOpen,
-  videoFile,
-  jobNumber,
-  userId,
-  vhcContextLabel,
-  onClose,
-  onUploaded,
+export default function CustomerVideoButton({
+  jobNumber, // Job we're attaching the video to
+  userId, // Uploading user id
+  vhcContextLabel = "", // Optional VHC section label for analytics
+  vhcData = null, // Raw VHC state — used to build the left panel
+  buttonStyle, // Style override from the parent toolbar
+  onUploadComplete, // Invoked after a successful upload
 }) {
-  const [overlayType, setOverlayType] = useState("service_note");
-  const [overlayText, setOverlayText] = useState("");
-  const [overlayTimestamp, setOverlayTimestamp] = useState(0);
-  const [overlays, setOverlays] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const [showCapture, setShowCapture] = useState(false); // Controls the full-screen overlay
+  const [pendingVideo, setPendingVideo] = useState(null); // Holds { file, widgets } awaiting edit
+  const [uploading, setUploading] = useState(false); // Upload in-flight flag
+  const [uploadError, setUploadError] = useState(""); // Surface errors from the upload call
 
-  const previewUrl = useMemo(() => {
-    if (!videoFile) return "";
-    return URL.createObjectURL(videoFile);
-  }, [videoFile]);
+  // Build the panel data from the current VHC state. Recomputed when
+  // vhcData changes so freshly-entered concerns appear on the panel.
+  const panelData = useMemo(() => {
+    if (!vhcData) return null; // No data → no panel (hook still works without it)
+    const { tyres, brakes } = buildInspectionConcerns(vhcData); // Extract concerns
+    return { tyres, brakes }; // Panel input shape
+  }, [vhcData]);
 
-  const assistantSuggestions = useMemo(() => buildAssistantSuggestions(vhcContextLabel), [vhcContextLabel]);
-
-  const addOverlay = () => {
-    if (!overlayText.trim()) return;
-    setOverlays((prev) => [
-      ...prev,
-      {
-        id: `${Date.now()}-${prev.length}`,
-        type: overlayType,
-        text: overlayText.trim(),
-        timestampSeconds: Number.isFinite(Number(overlayTimestamp)) ? Number(overlayTimestamp) : 0,
-      },
-    ]);
-    setOverlayText("");
+  // Capture hand-off — FullScreenCapture finishes and gives us the file + widgets snapshot.
+  const handleCapture = (file, meta) => {
+    if (!file) return; // Defensive (cancel path)
+    if (meta?.type === "video") { // We only care about videos here
+      setPendingVideo({ file, widgets: meta?.widgets || [] }); // Hand to the editor next
+    }
+    setShowCapture(false); // Close the capture overlay
   };
 
-  const removeOverlay = (id) => {
-    setOverlays((prev) => prev.filter((overlay) => overlay.id !== id));
-  };
-
-  const uploadCustomerVideo = async () => {
-    if (!videoFile || !jobNumber) return;
+  // After the editor returns a (possibly trimmed/muted) file, upload it.
+  const handleEditorSave = async (editedFile) => {
+    if (!pendingVideo) return; // Nothing to save
     try {
-      setIsUploading(true);
-      setUploadError("");
-      const formData = new FormData();
-      formData.append("file", videoFile);
-      formData.append("jobNumber", String(jobNumber));
-      formData.append("uploadedBy", String(userId || "system"));
-      formData.append("overlays", JSON.stringify(overlays));
-      formData.append("contextLabel", String(vhcContextLabel || ""));
-
-      const response = await fetch("/api/vhc/customer-video-upload", {
-        method: "POST",
-        body: formData,
+      setUploading(true); // Disable UI
+      setUploadError(""); // Reset error
+      const record = await uploadCustomerVideo({ // Upload with widget metadata
+        file: editedFile, // The file the editor gave us (edited or original)
+        jobNumber, // Job reference
+        userId, // User reference
+        widgets: pendingVideo.widgets, // Widget list captured during recording
+        contextLabel: vhcContextLabel, // Optional VHC context string
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.message || "Upload failed");
-      }
-      onUploaded?.(payload.record);
-      onClose?.();
-    } catch (error) {
-      setUploadError(error?.message || "Unable to upload customer video.");
+      setPendingVideo(null); // Clear pending state
+      onUploadComplete?.(record); // Let parent refresh its data
+    } catch (err) {
+      console.error("Customer video upload failed:", err); // Log
+      setUploadError(err?.message || "Upload failed"); // Surface to user
     } finally {
-      setIsUploading(false);
+      setUploading(false); // Re-enable UI
     }
   };
 
-  return (
-    <VHCModalShell
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Customer Video"
-      subtitle="Record a customer-facing walkthrough and add guided overlays"
-      width="1080px"
-      height="720px"
-      footer={(
-        <>
-          <button type="button" onClick={onClose} style={buildModalButton("ghost")}>
-            Cancel
-          </button>
-          <button type="button" onClick={uploadCustomerVideo} disabled={isUploading} style={buildModalButton("primary")}>
-            {isUploading ? "Uploading..." : "Save Customer Video"}
-          </button>
-        </>
-      )}
-    >
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 340px", gap: "16px", height: "100%" }}>
-        <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--surface-light)", padding: "10px" }}>
-          {previewUrl ? (
-            <video src={previewUrl} controls style={{ width: "100%", height: "100%", borderRadius: "var(--radius-sm)", objectFit: "contain" }} />
-          ) : (
-            <div style={{ color: "var(--text-secondary)" }}>No video captured yet.</div>
-          )}
-        </div>
+  // Editor cancelled without saving — discard the pending file.
+  const handleEditorCancel = () => {
+    setPendingVideo(null); // Drop file from memory
+    setUploadError(""); // Clear any prior errors
+  };
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", minHeight: 0 }}>
-          <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px", background: "var(--surface)" }}>
-            <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--primary)", marginBottom: "8px" }}>AI-like overlay suggestions</div>
-            <ul style={{ margin: 0, paddingLeft: "18px", display: "grid", gap: "6px" }}>
-              {assistantSuggestions.map((suggestion) => (
-                <li key={suggestion.type} style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{suggestion.label}: {suggestion.hint}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px", background: "var(--surface)" }}>
-            <label style={{ display: "grid", gap: "6px", fontSize: "12px", color: "var(--text-secondary)" }}>
-              Overlay type
-              <select value={overlayType} onChange={(event) => setOverlayType(event.target.value)} style={{ padding: "8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
-                {OVERLAY_LIBRARY.map((overlay) => <option key={overlay.type} value={overlay.type}>{overlay.label}</option>)}
-              </select>
-            </label>
-            <label style={{ display: "grid", gap: "6px", fontSize: "12px", color: "var(--text-secondary)", marginTop: "8px" }}>
-              Timestamp (seconds)
-              <input type="number" min="0" value={overlayTimestamp} onChange={(event) => setOverlayTimestamp(event.target.value)} style={{ padding: "8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }} />
-            </label>
-            <label style={{ display: "grid", gap: "6px", fontSize: "12px", color: "var(--text-secondary)", marginTop: "8px" }}>
-              Overlay text
-              <textarea rows={3} value={overlayText} onChange={(event) => setOverlayText(event.target.value)} style={{ padding: "8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", resize: "vertical" }} />
-            </label>
-            <button type="button" onClick={addOverlay} style={{ ...buildModalButton("secondary"), marginTop: "8px" }}>
-              Add overlay
-            </button>
-          </div>
-
-          <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "10px", background: "var(--surface)", flex: 1, minHeight: 0, overflowY: "auto" }}>
-            <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--primary)", marginBottom: "8px" }}>Overlay timeline</div>
-            {overlays.length === 0 ? (
-              <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)" }}>No overlays yet.</p>
-            ) : overlays.map((overlay) => (
-              <div key={overlay.id} style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", padding: "8px", marginBottom: "8px", background: "var(--surface-light)" }}>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-primary)" }}>{overlay.type} @ {overlay.timestampSeconds}s</div>
-                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>{overlay.text}</div>
-                <button type="button" onClick={() => removeOverlay(overlay.id)} style={{ ...buildModalButton("ghost"), marginTop: "6px", padding: "6px 10px", fontSize: "12px" }}>
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {uploadError ? <p style={{ margin: 0, color: "var(--danger)", fontSize: "12px" }}>{uploadError}</p> : null}
-        </div>
-      </div>
-    </VHCModalShell>
-  );
-}
-
-export default function CustomerVideoButton({ jobNumber, userId, vhcContextLabel = "", buttonStyle, onUploadComplete }) {
-  const [showCaptureModal, setShowCaptureModal] = useState(false);
-  const [showBuilder, setShowBuilder] = useState(false);
-  const [videoFile, setVideoFile] = useState(null);
-
-  const handleCapture = (file, type) => {
-    if (type !== "video") return;
-    setVideoFile(file);
-    setShowCaptureModal(false);
-    setShowBuilder(true);
+  // "Keep original" path: skip the trim/mute processing and upload as-is.
+  const handleEditorSkip = async (originalFile) => {
+    if (!pendingVideo) return; // Nothing to do
+    try {
+      setUploading(true); // Disable UI
+      setUploadError(""); // Reset error
+      const record = await uploadCustomerVideo({ // Upload raw file
+        file: originalFile || pendingVideo.file, // Prefer the provided file
+        jobNumber, // Job reference
+        userId, // User reference
+        widgets: pendingVideo.widgets, // Widget metadata
+        contextLabel: vhcContextLabel, // Optional label
+      });
+      setPendingVideo(null); // Clear
+      onUploadComplete?.(record); // Notify parent
+    } catch (err) {
+      console.error("Customer video upload failed:", err); // Log
+      setUploadError(err?.message || "Upload failed"); // Surface
+    } finally {
+      setUploading(false); // Re-enable
+    }
   };
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setShowCaptureModal(true)}
+        onClick={() => setShowCapture(true)}
         style={buttonStyle}
       >
         Customer Video
       </button>
 
-      <CameraCaptureModal
-        isOpen={showCaptureModal}
-        onClose={() => setShowCaptureModal(false)}
-        onCapture={handleCapture}
-        initialMode="video"
+      {/* Full-screen capture surface (photo/video; defaults to video-only here). */}
+      <FullScreenCapture
+        isOpen={showCapture}
+        initialMode="video" // Customer video flow defaults to video mode
+        allowModeSwitch={false} // Keep this flow focused on video only
+        panel={panelData} // Left-side inspection panel
+        panelInitiallyOpen // Default to expanded for discoverability
+        title="Customer Video" // Subtle top-left caption
+        onClose={() => setShowCapture(false)} // User dismissed
+        onCapture={handleCapture} // File + widgets handoff
       />
 
-      <CustomerVideoBuilderModal
-        isOpen={showBuilder}
-        videoFile={videoFile}
-        jobNumber={jobNumber}
-        userId={userId}
-        vhcContextLabel={vhcContextLabel}
-        onClose={() => {
-          setShowBuilder(false);
-          setVideoFile(null);
-        }}
-        onUploaded={(record) => {
-          onUploadComplete?.(record);
-          setShowBuilder(false);
-          setVideoFile(null);
-        }}
+      {/* Post-capture editor (trim / mute / keep original) */}
+      <VideoEditorModal
+        isOpen={Boolean(pendingVideo)} // Visible when a recording is waiting
+        videoFile={pendingVideo?.file || null} // Provide the captured file
+        busyLabel={uploading ? "Uploading…" : ""} // Bubble upload progress into the editor's header
+        errorLabel={uploadError} // Show upload errors in the editor
+        widgetCount={pendingVideo?.widgets?.length || 0} // Informational — count of burned-in widgets
+        onCancel={handleEditorCancel} // Discard without upload
+        onSkip={handleEditorSkip} // Keep original + upload
+        onSave={handleEditorSave} // Save edited + upload
       />
     </>
   );

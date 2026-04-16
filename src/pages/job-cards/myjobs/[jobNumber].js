@@ -3292,6 +3292,7 @@ export default function TechJobDetailPage() {
                       jobNumber={jobNumber}
                       userId={dbUserId || user?.id}
                       vhcContextLabel={activeSection || "vhc-summary"}
+                      vhcData={vhcData}
                       buttonStyle={getVhcActionButtonStyle({ active: false })}
                       onUploadComplete={() => {
                         fetchJobData();

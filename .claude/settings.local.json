@@ -89,7 +89,8 @@
       "Bash(./node_modules/.bin/vercel dev:*)",
       "Bash(git rm:*)",
       "Bash(powershell -Command \"Get-MpPreference | Select-Object -ExpandProperty ExclusionPath\")",
-      "Bash(awk '/useEffect.*loading/,/^  }/' /workspaces/hnpsystem/src/pages/job-cards/myjobs/[jobNumber].js)"
+      "Bash(awk '/useEffect.*loading/,/^  }/' /workspaces/hnpsystem/src/pages/job-cards/myjobs/[jobNumber].js)",
+      "Bash(echo \"exit=$?\")"
     ],
     "deny": [],
     "ask": []

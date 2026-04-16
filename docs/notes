@@ -1,5 +1,4 @@
-have it so Capture Photo popup and Capture Video dropdowns are the camera being used, have it so its actually works so theres a reverse symbol which is used to swap back to front camera facing, and then the zoom is used and changes camera deepednign on what zoom the camera swith at like the normal iso camera change uses. also have it so the popup isnt a popup anymore its a full screen page, so have it so the acutally views section is the whole screen with the buttons needed to change zoom, front or rear facing cameras, cancle button, switch to video or photo mode (changes the start reconding or end recording button, remove the title "Capture Photo" and "Capture Video" along wihtin remove the description) it needs to be minimlitic. impove the Edit Video section, have this in a larger popup nearly full screen size wiuth the buttons and sections improved for users. 
-
+fix customer video/ videos with "Bucket not found" haev it create the bucket within the database for video/photo if vhc or dcoument and add that to a main folder of the jobnumber, and the other folders will be either photo, video, customer video, document 
 /dashboard/service
 
 
