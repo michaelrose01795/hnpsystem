@@ -1,4 +1,5 @@
-fix customer video/ videos with "Bucket not found" haev it create the bucket within the database for video/photo if vhc or dcoument and add that to a main folder of the jobnumber, and the other folders will be either photo, video, customer video, document 
+
+
 /dashboard/service
 
 

@@ -17,16 +17,21 @@ import useBodyModalLock from "@/hooks/useBodyModalLock"; // Lock scroll while op
 
 import useDeviceCamera from "./useDeviceCamera"; // Camera lifecycle + zoom/flip
 import useWidgetRecorder from "./useWidgetRecorder"; // Canvas compositing + MediaRecorder
+import useOrientation from "./useOrientation"; // Orientation detection (landscape/portrait)
 import LevelBar from "./LevelBar"; // Top-bar level indicator
 import ConcernPanel from "./ConcernPanel"; // Left-side panel
 import CameraControls from "./CameraControls"; // Right-side controls
+import VerticalZoomSlider from "./VerticalZoomSlider"; // Vertical zoom control
 import FloatingWidget from "./FloatingWidget"; // DOM twin of the baked widget
+import DevOverlay from "./DevOverlay";
 
-// Right-side controls column width in px. Used to offset the capture
-// area, top bar, and recorder-error toast so they never sit under the
-// control stack and the true centre of the capture lines up with the
-// centre of the user-visible preview area.
-const RIGHT_CONTROLS_WIDTH = 96;
+// Right-side controls width varies by device size to maintain usability
+function getControlsWidth(screenWidth) {
+  if (screenWidth < 500) return 70; // Small phones: compact controls
+  if (screenWidth < 768) return 80; // Phones: standard controls
+  if (screenWidth < 1024) return 88; // Tablets: slightly larger
+  return 96; // Desktop: standard width
+}
 
 // Format seconds as MM:SS for the timer label.
 function formatDuration(seconds) {
@@ -86,6 +91,10 @@ export default function FullScreenCapture({
 }) {
   useBodyModalLock(isOpen); // Lock body scroll when overlay is visible
 
+  // Orientation detection -----------------------------------------------
+  const orientation = useOrientation(); // Detect landscape vs portrait
+  const RIGHT_CONTROLS_WIDTH = getControlsWidth(orientation.screenWidth); // Dynamic width
+
   // Capture mode toggle ----------------------------------------------
   const [mode, setMode] = useState(initialMode); // Local mode
   useEffect(() => { setMode(initialMode); }, [initialMode, isOpen]); // Reset when re-opened
@@ -98,6 +107,7 @@ export default function FullScreenCapture({
   // state and the second tap on the same row can remove it.
   const [widgets, setWidgets] = useState([]); // List of active widgets
   const videoElementRef = useRef(null); // <video> node for canvas draw
+  const [devOverlayVisible, setDevOverlayVisible] = useState(false);
 
   // Widget recorder (owns canvas + MediaRecorder) --------------------
   const recorder = useWidgetRecorder({
@@ -176,6 +186,11 @@ export default function FullScreenCapture({
 
   // Snap a still from the current video frame.
   const handlePhotoPress = useCallback(async () => {
+    // Only allow capture in landscape mode
+    if (!orientation.isLandscape) {
+      console.warn("Photo capture requires landscape orientation");
+      return; // Silently prevent capture in portrait
+    }
     if (capturing || !camera.stream) return; // Guard rails
     try {
       setCapturing(true); // Show busy state
@@ -197,10 +212,15 @@ export default function FullScreenCapture({
       console.error("Photo capture failed:", err); // Log
       setCapturing(false); // Clear busy
     }
-  }, [camera, capturing, onCapture, onClose]);
+  }, [camera, capturing, onCapture, onClose, orientation.isLandscape]);
 
   // Start / stop video recording from the shutter.
   const handleVideoPress = useCallback(async () => {
+    // Only allow recording in landscape mode
+    if (!orientation.isLandscape) {
+      console.warn("Video recording requires landscape orientation");
+      return; // Silently prevent recording in portrait
+    }
     if (capturing) return; // Ignore while busy
     if (!recorder.isRecording) { // Idle → start
       try {
@@ -224,7 +244,7 @@ export default function FullScreenCapture({
       console.error("Stop recording failed:", err); // Log error
       setCapturing(false); // Clear busy to re-allow attempts
     }
-  }, [camera, capturing, onCapture, onClose, recorder, widgets]);
+  }, [camera, capturing, onCapture, onClose, recorder, widgets, orientation.isLandscape]);
 
   // Toggle pause during a recording (no-op if not supported).
   const handlePauseToggle = useCallback(() => {
@@ -279,6 +299,9 @@ export default function FullScreenCapture({
 
   // Portal target — render a full-screen overlay on <body>.
   if (!isOpen || typeof document === "undefined") return null; // SSR/portal guard
+
+  // Only expose the developer overlay in development builds.
+  const isDev = typeof process !== "undefined" && process.env && process.env.NODE_ENV !== "production";
 
   return createPortal(
     <div
@@ -358,11 +381,15 @@ export default function FullScreenCapture({
         {widgets.map((widget) => (
           <FloatingWidget key={widget.id} widget={widget} onRemove={removeWidget} />
         ))}
+
+        {/* Dev overlay mounted in the capture area so it sits above
+            the preview but doesn't break interactions. Toggleable. */}
+        {isDev ? <DevOverlay visible={devOverlayVisible} /> : null}
       </div>
 
       {/* ----------------------------------------------------------------
           Layer 3: Top bar. Sits across the top, stops before the right
-          controls column so the two layers never collide.
+          controls column. Level bar now centered at the top middle.
       ---------------------------------------------------------------- */}
       <div
         style={{
@@ -372,7 +399,7 @@ export default function FullScreenCapture({
           right: topBarRightOffset, // Leave room for the right-side controls
           display: "flex", // Horizontal layout
           alignItems: "center", // Centre content vertically
-          justifyContent: "space-between", // Close/title on left, level+timer on right
+          justifyContent: "space-between", // Close/title on left, timer+busy on right
           gap: 12, // Between groups
           pointerEvents: "none", // Individual controls opt in
         }}
@@ -407,9 +434,8 @@ export default function FullScreenCapture({
           ) : null}
         </div>
 
-        {/* Right cluster: level bar + timer + external busy label */}
+        {/* Right cluster: timer + external busy label */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, pointerEvents: "auto" }}>
-          <LevelBar compact />
           {isLive || recorder.isPaused ? (
             <div
               aria-live="polite"
@@ -435,6 +461,47 @@ export default function FullScreenCapture({
             </div>
           ) : null}
         </div>
+      </div>
+
+      {/* ----------------------------------------------------------------
+          Layer 3b: Level bar at the top middle of the screen (centered)
+          Only shown in landscape mode.
+      ---------------------------------------------------------------- */}
+      {orientation.isLandscape ? (
+        <div
+          style={{
+            position: "absolute", // Overlay at top
+            top: "max(14px, env(safe-area-inset-top))", // Respect safe-area
+            left: "50%", // Center horizontally
+            transform: "translateX(-50%)", // Exact center
+            pointerEvents: "auto", // Allow interaction
+            zIndex: 5, // Above most elements
+          }}
+        >
+          <LevelBar compact />
+        </div>
+      ) : null}
+
+      {/* ----------------------------------------------------------------
+          Layer 3c: Vertical zoom slider positioned above the capture button
+          Aligned to the right side between capture button and top right corner
+      ---------------------------------------------------------------- */}
+      <div
+        style={{
+          position: "absolute", // Floating overlay
+          bottom: `calc(${RIGHT_CONTROLS_WIDTH + 180}px + env(safe-area-inset-bottom))`, // Further above capture button
+          right: `calc(${RIGHT_CONTROLS_WIDTH / 2 - 40}px)`, // Centered within controls area
+          transform: "translateX(50%)", // Centre horizontally in the controls column
+          pointerEvents: "auto", // Allow interaction
+          zIndex: 4, // Above camera feed
+        }}
+      >
+        <VerticalZoomSlider
+          zoomRange={camera.zoomRange}
+          zoomValue={camera.zoomValue}
+          onChange={handleZoomChange}
+          disabled={camera.loading || !camera.permissionGranted}
+        />
       </div>
 
       {/* ----------------------------------------------------------------
@@ -469,7 +536,7 @@ export default function FullScreenCapture({
 
       {/* ----------------------------------------------------------------
           Layer 5: Right-side control column. Anchored to the right edge
-          at full height, overlaying the camera preview.
+          at full height, overlaying the camera preview. Responsive width.
       ---------------------------------------------------------------- */}
       <div
         style={{
@@ -477,7 +544,7 @@ export default function FullScreenCapture({
           top: 0, // Full height
           right: 0, // Flush to right edge
           bottom: 0, // Full height
-          width: RIGHT_CONTROLS_WIDTH, // Fixed column width
+          width: RIGHT_CONTROLS_WIDTH, // Dynamic column width
           display: "flex", // Flex host for CameraControls
           alignItems: "stretch", // Fill vertically
           pointerEvents: "none", // CameraControls re-enables inside
@@ -500,8 +567,34 @@ export default function FullScreenCapture({
           lenses={camera.discreteLensOptions}
           selectedDeviceId={camera.selectedDeviceId}
           disabled={camera.loading || !!camera.error || !camera.permissionGranted || capturing}
+          screenWidth={orientation.screenWidth}
         />
       </div>
+
+      {/* Dev overlay toggle (bottom-left). Visible in dev only. */}
+      {isDev ? (
+        <button
+          type="button"
+          aria-pressed={devOverlayVisible}
+          onClick={() => setDevOverlayVisible((c) => !c)}
+          style={{
+            position: "absolute",
+            left: 12,
+            bottom: "calc(12px + env(safe-area-inset-bottom))",
+            zIndex: 1200, // Above other capture chrome
+            pointerEvents: "auto",
+            padding: "8px 10px",
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: devOverlayVisible ? "rgba(56,189,248,0.18)" : "rgba(15,23,42,0.6)",
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 800,
+          }}
+        >
+          DEV
+        </button>
+      ) : null}
 
       {/* ----------------------------------------------------------------
           Layer 6: Loading / error curtain. Shown only when the camera is
@@ -556,6 +649,54 @@ export default function FullScreenCapture({
                 Try again
               </button>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {/* ----------------------------------------------------------------
+          Portrait Mode Warning Overlay
+          Shown when device is in portrait mode to inform user that
+          capture is only supported in landscape mode.
+      ---------------------------------------------------------------- */}
+      {!orientation.isLandscape ? (
+        <div
+          style={{
+            position: "absolute", // Full-screen curtain
+            inset: 0, // Cover area
+            display: "flex", // Centre card
+            alignItems: "center", // Vertical centre
+            justifyContent: "center", // Horizontal centre
+            padding: 24, // Breathing room
+            zIndex: 999, // Above everything
+            background: "rgba(5, 7, 11, 0.85)", // Dark curtain
+            backdropFilter: "blur(8px)", // Slight blur
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 280, // Readable width for phones
+              padding: "24px 20px", // Card padding
+              borderRadius: 20, // Rounded card
+              background: "rgba(15, 23, 42, 0.95)", // Dark card
+              border: "1px solid rgba(255,255,255,0.12)", // Subtle edge
+              color: "#fff", // White text
+              textAlign: "center", // Centre text
+              backdropFilter: "blur(20px)", // Glass
+              WebkitBackdropFilter: "blur(20px)", // Safari prefix
+            }}
+          >
+            <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.8 }}>
+              📱
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, color: "#fff" }}>
+              Rotate Device
+            </div>
+            <div style={{ fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.75)" }}>
+              Camera and recording require landscape orientation for optimal quality.
+            </div>
+            <div style={{ fontSize: 12, marginTop: 12, color: "rgba(255,255,255,0.55)" }}>
+              Turn your device sideways to continue
+            </div>
           </div>
         </div>
       ) : null}

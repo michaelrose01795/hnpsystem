@@ -4,14 +4,19 @@ export const runtime = "nodejs";
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabaseService } from "@/lib/database/supabaseClient";
+import { 
+  ensureVhcMediaBucket, 
+  buildVhcMediaStoragePath, 
+  uploadVhcMediaFile,
+  BUCKET_NAME,
+  MEDIA_TYPES 
+} from "@/lib/storage/vhcMediaBucketService";
 
 export const config = {
   api: {
     bodyParser: false,
   },
 };
-
-const BUCKET_NAME = "vhc-customer-media";
 
 const parseMultipart = async (req) => {
   const contentType = req.headers["content-type"] || "";
@@ -66,6 +71,9 @@ async function handler(req, res) {
   }
 
   try {
+    // Ensure the bucket exists before upload
+    await ensureVhcMediaBucket();
+
     const { fields, file } = await parseMultipart(req);
     if (!file) {
       return res.status(400).json({ success: false, message: "Missing video file." });
@@ -83,21 +91,15 @@ async function handler(req, res) {
     const overlays = parseJson(fields.overlays, []);
     const contextLabel = String(fields.contextLabel || "").trim();
 
-    const safeName = String(file.fileName || "customer-video.webm").replace(/[^a-zA-Z0-9._-]/g, "_");
-    const path = `job-${jobNumber}/${Date.now()}-${safeName}`;
+    // Use the new storage structure with organized folders by media type
+    const uploadResult = await uploadVhcMediaFile(
+      file,
+      jobNumber,
+      MEDIA_TYPES.customerVideo
+    );
 
-    const { error: uploadError } = await supabaseService.storage
-      .from(BUCKET_NAME)
-      .upload(path, file.buffer, {
-        contentType: file.mimeType,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      return res.status(500).json({ success: false, message: uploadError.message || "Upload failed." });
-    }
-
-    const publicUrl = supabaseService.storage.from(BUCKET_NAME).getPublicUrl(path)?.data?.publicUrl || "";
+    const publicUrl = uploadResult.publicUrl;
+    const storagePath = uploadResult.storagePath;
 
     const { data: record, error: insertError } = await supabaseService
       .from("vhc_customer_media")
@@ -105,7 +107,7 @@ async function handler(req, res) {
         job_number: jobNumber,
         media_type: "video",
         storage_bucket: BUCKET_NAME,
-        storage_path: path,
+        storage_path: storagePath,
         public_url: publicUrl,
         mime_type: file.mimeType,
         file_size_bytes: file.size,
@@ -122,6 +124,10 @@ async function handler(req, res) {
 
     return res.status(200).json({ success: true, record });
   } catch (error) {
+    console.error("❌ Customer video upload error:", {
+      message: error?.message,
+      stack: error?.stack,
+    });
     return res.status(500).json({ success: false, message: error?.message || "Unexpected upload error." });
   }
 }

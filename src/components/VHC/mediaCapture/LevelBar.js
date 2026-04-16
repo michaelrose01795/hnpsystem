@@ -10,14 +10,17 @@ import React, { useEffect, useRef, useState } from "react"; // React primitives
 // Convert a tilt reading into a 0..1 position along the bar.
 // Negative tilt → left of centre; positive → right of centre.
 // Values are clamped so the marker never leaves the track.
+// In landscape mode, we use beta (front/back tilt) instead of gamma (left/right tilt)
+// to properly detect horizontal level when device is rotated 90 degrees.
 function tiltToPosition(tiltDegrees) {
   const clamped = Math.max(-30, Math.min(30, Number(tiltDegrees) || 0)); // Limit to +/-30°
   return 0.5 + clamped / 60; // Map [-30..30] into [0..1]
 }
 
 export default function LevelBar({ compact = false }) {
-  // gamma = left/right tilt in degrees; we use this as the primary axis.
-  const [gamma, setGamma] = useState(0); // Current gamma reading
+  // In landscape mode, we use beta (front/back tilt) to detect horizontal level.
+  // beta represents rotation around the X-axis (device tilt forward/backward).
+  const [beta, setBeta] = useState(0); // Current beta reading (front/back tilt)
   const [supported, setSupported] = useState(false); // True once we get readings
   const handlerRef = useRef(null); // Hold the registered handler for cleanup
 
@@ -39,7 +42,9 @@ export default function LevelBar({ compact = false }) {
       if (cancelled || state !== "granted") return; // User denied or unmounted
       const handler = (event) => { // Orientation handler
         setSupported(true); // Mark as active once we receive any event
-        setGamma(event.gamma || 0); // Track side tilt
+        // Use beta for horizontal level detection in landscape mode
+        // beta = front/back tilt along X-axis (positive = device tilted back, negative = tilted forward)
+        setBeta(event.beta || 0); // Track front/back tilt
       };
       handlerRef.current = handler; // Remember for removal
       window.addEventListener("deviceorientation", handler, true); // Register
@@ -54,8 +59,8 @@ export default function LevelBar({ compact = false }) {
     };
   }, []); // Only run once on mount
 
-  const position = tiltToPosition(gamma); // 0..1 location along the track
-  const isLevel = Math.abs(gamma) < 1.5; // Within ~1.5° is treated as level
+  const position = tiltToPosition(beta); // 0..1 location along the track
+  const isLevel = Math.abs(beta) < 1.5; // Within ~1.5° is treated as level
 
   return (
     <div
@@ -117,7 +122,7 @@ export default function LevelBar({ compact = false }) {
         />
       </div>
       <span style={{ minWidth: 34, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        {supported ? `${Math.round(gamma)}°` : "—"}
+        {supported ? `${Math.round(beta)}°` : "—"}
       </span>
     </div>
   );

@@ -222,12 +222,6 @@ export default function ConcernPanel({
               ))
             )}
           </section>
-
-          {/* Helpful footnote */}
-          <div style={{ fontSize: 11, color: "#e2e8f0", background: "rgba(15,23,42,0.32)", padding: "8px 10px", borderRadius: 10, lineHeight: 1.4, border: "1px solid rgba(255,255,255,0.08)" }}>
-            Tap a row to drop the widget at the crosshair. Tap again to hide it.
-            {isLive ? " Long-press a widget to remove it while recording." : ""}
-          </div>
         </div>
       ) : null}
     </aside>
