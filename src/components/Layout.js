@@ -414,6 +414,33 @@ export default function Layout({
   // stay mounted and only the content area shows the skeleton.
   const isContentLoading = !hideSidebar && (isGlobalLoading || userLoading || !user);
 
+  // Keep the skeleton overlay mounted for a brief exit fade after isContentLoading goes false.
+  // This ensures page content (which now renders behind the overlay) is ready before the
+  // skeleton disappears, preventing the solid-colour flash caused by pages that return null
+  // or empty content while their own data is still loading.
+  const [skeletonOverlayActive, setSkeletonOverlayActive] = useState(false);
+  const skeletonOverlayRouteRef = useRef(router.asPath || router.pathname);
+  const skeletonExitTimerRef = useRef(null);
+  useEffect(() => {
+    if (skeletonExitTimerRef.current) {
+      clearTimeout(skeletonExitTimerRef.current);
+      skeletonExitTimerRef.current = null;
+    }
+    if (isContentLoading) {
+      skeletonOverlayRouteRef.current = router.asPath || router.pathname;
+      setSkeletonOverlayActive(true);
+    } else {
+      // Keep overlay mounted long enough for the 0.2s CSS fade-out to complete.
+      skeletonExitTimerRef.current = setTimeout(() => {
+        setSkeletonOverlayActive(false);
+        skeletonExitTimerRef.current = null;
+      }, 250);
+    }
+    return () => {
+      if (skeletonExitTimerRef.current) clearTimeout(skeletonExitTimerRef.current);
+    };
+  }, [isContentLoading, router.asPath, router.pathname]);
+
   useEffect(() => {
     if (isTablet) {
       setIsSidebarOpen(false);
@@ -437,11 +464,11 @@ export default function Layout({
     setContentKey(router.asPath || `${router.pathname}-${Date.now()}`);
   }, [router.asPath, router.pathname]);
 
-  // Capture a layout fingerprint of the current page after it has finished
-  // rendering. The next visit to this route — or any in-place reload — uses the
-  // cached fingerprint so the loading skeleton mirrors this page's actual grid.
+  // Capture a layout fingerprint of the current page after the skeleton overlay has fully
+  // exited. Waiting until skeletonOverlayActive=false ensures the overlay div is unmounted
+  // so it cannot appear in the captured candidates.
   useEffect(() => {
-    if (isContentLoading) return undefined;
+    if (skeletonOverlayActive) return undefined;
     if (typeof window === "undefined") return undefined;
     const el = contentRef.current;
     if (!el) return undefined;
@@ -459,7 +486,7 @@ export default function Layout({
       window.cancelAnimationFrame(rafId);
       if (timeoutId !== null) window.clearTimeout(timeoutId);
     };
-  }, [isContentLoading, router.asPath, router.pathname, contentKey]);
+  }, [skeletonOverlayActive, router.asPath, router.pathname, contentKey]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
@@ -1210,7 +1237,6 @@ export default function Layout({
           <div
             className="app-page-content"
             key={contentKey}
-            ref={contentRef}
             style={{
               maxWidth: hideSidebar ? "100%" : undefined,
               minHeight: "100%",
@@ -1239,14 +1265,31 @@ export default function Layout({
                     : undefined
               }
             >
-              {isContentLoading ? (
-                <PageContentSkeleton route={router.asPath || router.pathname} />
-              ) : (
+              <div ref={contentRef} style={{ width: "100%", minHeight: "100%", position: "relative" }}>
+                {/* Content always renders so it mounts and fetches data during skeleton phase */}
                 <div className="app-page-stack">
                   {showHrTabs && <HrTabsBar />}
                   {children}
                 </div>
-              )}
+                {/* Skeleton overlays on top and fades out when loading ends */}
+                {skeletonOverlayActive && (
+                  <div
+                    data-loading-overlay="true"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 10,
+                      background: "var(--page-card-bg)",
+                      opacity: isContentLoading ? 1 : 0,
+                      transition: isContentLoading ? "none" : "opacity 0.2s ease-out",
+                      pointerEvents: isContentLoading ? "auto" : "none",
+                      borderRadius: "var(--page-card-radius)",
+                    }}
+                  >
+                    <PageContentSkeleton route={skeletonOverlayRouteRef.current} />
+                  </div>
+                )}
+              </div>
             </DevLayoutSection>
           </div>
         </DevLayoutSection>

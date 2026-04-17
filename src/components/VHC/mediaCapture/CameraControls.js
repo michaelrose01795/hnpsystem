@@ -141,28 +141,46 @@ export default function CameraControls({
       }}
     >
       <div style={{ display: "grid", gap: compactMode ? "var(--space-2)" : "var(--space-4)", justifyItems: "center" }}>
-        <ShutterButton
-          mode={mode}
-          isRecording={isRecording}
-          isPaused={isPaused}
-          onPress={onShutterPress}
-          disabled={disabled}
-          compactMode={compactMode}
-        />
+        {/* Shutter row — pause button floats to the left via absolute
+            positioning so the shutter never moves from its centred spot. */}
+        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {isVideo && isRecording ? (
+            <div
+              style={{
+                position: "absolute",
+                right: "100%",
+                top: "50%",
+                transform: "translateY(-50%)",
+                paddingRight: compactMode ? "var(--space-2)" : "var(--space-3)",
+                pointerEvents: "auto",
+                opacity: 1,
+                animation: "none",
+              }}
+            >
+              <Chip
+                ariaLabel={isPaused ? "Resume recording" : "Pause recording"}
+                onClick={onPausePress}
+                disabled={disabled || !canPause}
+                highlight={isPaused}
+                testId="capture-pause"
+                compactMode={compactMode}
+              >
+                {isPaused ? "▶" : "❚❚"}
+              </Chip>
+            </div>
+          ) : null}
 
-        {isVideo && isRecording ? (
-          <Chip
-            ariaLabel={isPaused ? "Resume recording" : "Pause recording"}
-            onClick={onPausePress}
-            disabled={disabled || !canPause}
-            highlight={isPaused}
-            testId="capture-pause"
+          <ShutterButton
+            mode={mode}
+            isRecording={isRecording}
+            isPaused={isPaused}
+            onPress={onShutterPress}
+            disabled={disabled}
             compactMode={compactMode}
-          >
-            {isPaused ? "▶" : "❚❚"}
-          </Chip>
-        ) : null}
+          />
+        </div>
 
+        {/* Flip always sits directly below the shutter at a fixed offset */}
         <Chip
           ariaLabel="Switch camera"
           onClick={onFlip}

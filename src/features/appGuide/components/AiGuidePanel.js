@@ -16,6 +16,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Dropdown from "@/components/ui/dropdownAPI/Dropdown";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import styles from "./AiGuidePanel.module.css";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -203,6 +204,37 @@ async function sendQuery(message, sessionId, conversationHistory) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
+
+function SessionBarSkeleton() {
+  return (
+    <>
+      <SkeletonKeyframes />
+      <SkeletonBlock width="100%" height="28px" borderRadius="6px" />
+      <SkeletonBlock width="28px" height="28px" borderRadius="6px" />
+      <SkeletonBlock width="54px" height="28px" borderRadius="6px" />
+    </>
+  );
+}
+
+function MessagesSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+      <SkeletonKeyframes />
+      <div style={{ alignSelf: "flex-start", width: "72%" }}>
+        <SkeletonBlock width="100%" height="44px" borderRadius="8px" />
+      </div>
+      <div style={{ alignSelf: "flex-end", width: "54%" }}>
+        <SkeletonBlock width="100%" height="28px" borderRadius="8px" />
+      </div>
+      <div style={{ alignSelf: "flex-start", width: "82%" }}>
+        <SkeletonBlock width="100%" height="56px" borderRadius="8px" />
+      </div>
+      <div style={{ alignSelf: "flex-end", width: "60%" }}>
+        <SkeletonBlock width="100%" height="28px" borderRadius="8px" />
+      </div>
+    </div>
+  );
+}
 
 /**
  * AiGuidePanel renders inside the Floating Notes body when the AI tab is active.
@@ -520,7 +552,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
       {/* Session selector bar — hidden when DB tables aren't ready */}
       <div className={styles.sessionBar} style={!dbReady ? { display: "none" } : undefined}>
         {sessionsLoading ? (
-          <span className={styles.loadingText}>Loading history…</span>
+          <SessionBarSkeleton />
         ) : (
           <>
             {/* Session dropdown — global Dropdown component for consistent theme */}
@@ -577,11 +609,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
       {/* Message list area */}
       <div className={styles.messages} role="log" aria-live="polite" aria-label="Chat messages">
         {/* Loading state */}
-        {messagesLoading && (
-          <div className={styles.emptyChat}>
-            <p>Loading messages…</p>
-          </div>
-        )}
+        {messagesLoading && <MessagesSkeleton />}
 
         {/* Empty state — show starter chips */}
         {!messagesLoading && !hasMessages && !isSending && (

@@ -390,13 +390,6 @@
   border-radius: 3px;
 }
 
-/* ─── Loading state in session bar ─────────────────────────────────────────── */
-
-.loadingText {
-  font-size: 12px;
-  color: var(--text-secondary);
-  padding: 4px 0;
-}
 
 /* ─── Responsive adjustments ─────────────────────────────────────────────── */
 

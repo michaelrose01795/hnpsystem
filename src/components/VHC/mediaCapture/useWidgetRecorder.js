@@ -214,7 +214,7 @@ function clampPosition(fraction, boxSize, canvasSize) {
 }
 
 // Hook entry.
-export default function useWidgetRecorder({ stream, videoElement, widgets, isRecordingMode }) {
+export default function useWidgetRecorder({ stream, videoElement, widgets, isRecordingMode, facingMode }) {
   // --- State --------------------------------------------------------
   const [isRecording, setIsRecording] = useState(false); // Whether a capture is live
   const [isPaused, setIsPaused] = useState(false); // Whether currently paused
@@ -236,8 +236,11 @@ export default function useWidgetRecorder({ stream, videoElement, widgets, isRec
   const accumulatedRef = useRef(0); // ms accumulated across pauses
   const pauseStartRef = useRef(0); // ms timestamp of the current pause
 
-  // Keep the latest widgets list in a ref so the animation loop doesn't close over a stale value.
-  useEffect(() => { widgetsRef.current = widgets || []; }, [widgets]); // Mirror prop into ref
+  const facingModeRef = useRef(facingMode); // Used by the RAF loop — avoids stale closure
+
+  // Keep the latest widgets and facingMode in refs so the animation loop never closes over stale values.
+  useEffect(() => { widgetsRef.current = widgets || []; }, [widgets]);
+  useEffect(() => { facingModeRef.current = facingMode; }, [facingMode]);
 
   // Detect whether MediaRecorder.pause is available on this browser.
   useEffect(() => {
@@ -268,7 +271,15 @@ export default function useWidgetRecorder({ stream, videoElement, widgets, isRec
     if (canvas.height !== height) canvas.height = height; // Resize lazily
 
     try {
-      ctx.drawImage(video, 0, 0, width, height); // Paint the live camera frame
+      ctx.save();
+      if (facingModeRef.current === "user") {
+        // Mirror the video frame horizontally for the front camera so the
+        // recorded output matches the mirrored live preview.
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(video, 0, 0, width, height);
+      ctx.restore(); // Widgets drawn after this point are NOT mirrored
     } catch {
       // Video not yet ready on first frame — ignore and try again.
     }

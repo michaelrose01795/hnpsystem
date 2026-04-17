@@ -50,6 +50,8 @@ import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDet
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import VhcCameraButton from "@/components/VHC/VhcCameraButton";
 import CustomerVideoButton from "@/components/VHC/CustomerVideoButton";
+import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
+import VideoEditorModal from "@/components/VHC/VideoEditorModal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import themeConfig, {
   createVhcButtonStyle, // VHC button style factory — still comes from appTheme
@@ -1936,6 +1938,40 @@ export default function TechJobDetailPage() {
     },
     [confirm]
   );
+
+  const handleReplaceDocument = useCallback(async (oldDoc, editedFile) => {
+    if (!oldDoc?.id || !editedFile) return;
+    const jobIdNum = jobData?.id;
+    if (!jobIdNum) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", editedFile);
+      formData.append("jobId", String(jobIdNum));
+      formData.append("userId", String(dbUserId || ""));
+      const res = await fetch("/api/jobcards/upload-document", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+
+      const storagePath = deriveStoragePathFromUrl(oldDoc.url);
+      if (storagePath) {
+        await supabase.storage.from(JOB_DOCUMENT_BUCKET).remove([storagePath]).catch(() => {});
+      }
+      await deleteJobFile(oldDoc.id).catch(() => {});
+
+      const newDoc = mapJobFileRecord({
+        file_id: data.file?.fileId || null,
+        file_name: data.file?.filename || data.file?.originalName || editedFile.name || "Document",
+        file_url: data.file?.path || "",
+        file_type: data.file?.mimetype || editedFile.type || "",
+        folder: "documents",
+        uploaded_by: dbUserId || null,
+        uploaded_at: data.file?.uploadedAt || new Date().toISOString(),
+      });
+      setJobDocuments((prev) => prev.map((d) => d.id === oldDoc.id ? newDoc : d));
+    } catch (err) {
+      alert(err?.message || "Failed to replace document");
+    }
+  }, [jobData?.id, dbUserId]);
 
   const handleRenameDocument = useCallback(async (fileId, newName) => {
     if (!fileId || !newName) return;
@@ -4499,6 +4535,7 @@ export default function TechJobDetailPage() {
                   onDelete={handleDeleteDocument}
                   onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined}
                   onRenameDocument={handleRenameDocument}
+                  onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined}
                 />
               </DevLayoutSection>
             </DevLayoutSection>
@@ -4645,16 +4682,22 @@ function isImageMime(mime = "") {
   return /^image\/(png|jpe?g|gif|webp|svg\+xml|bmp)$/i.test(mime);
 }
 
+function isVideoMime(mime = "") {
+  return /^video\//i.test(mime);
+}
+
 function DocumentsTab({
   documents = [],
   canDelete,
   onDelete,
   onManageDocuments,
   onRenameDocument,
+  onReplaceDocument,
 }) {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isRenamingPreview, setIsRenamingPreview] = useState(false);
   const [previewRenameValue, setPreviewRenameValue] = useState("");
+  const [editingDoc, setEditingDoc] = useState(null);
 
   const sortedDocuments = useMemo(() => {
     return [...(documents || [])].sort((a, b) => {
@@ -4685,7 +4728,7 @@ function DocumentsTab({
           onClick={() => setPreviewDoc(null)}
           style={{
             position: "fixed", inset: 0, zIndex: 1400,
-            backgroundColor: "rgba(0,0,0,0.75)",
+            backgroundColor: "var(--overlay)",
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: "24px",
           }}
@@ -4776,21 +4819,20 @@ function DocumentsTab({
                   <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
                     Document Preview
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const url = previewDoc.url || previewDoc.file_url || "";
-                      if (url) window.open(url, "_blank", "noopener,noreferrer");
-                    }}
-                    style={{
-                      padding: "6px 14px", border: "1px solid var(--surface-light)",
-                      borderRadius: "var(--input-radius)",
-                      backgroundColor: "var(--surface)", color: "var(--text-primary)",
-                      fontSize: "13px", fontWeight: 600, cursor: "pointer",
-                    }}
-                  >
-                    Edit
-                  </button>
+                  {typeof onReplaceDocument === "function" && (isImageMime(previewDoc.type || previewDoc.file_type || "") || isVideoMime(previewDoc.type || previewDoc.file_type || "")) && (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingDoc(previewDoc); setPreviewDoc(null); }}
+                      style={{
+                        padding: "6px 14px", border: "1px solid var(--surface-light)",
+                        borderRadius: "var(--input-radius)",
+                        backgroundColor: "var(--surface)", color: "var(--text-primary)",
+                        fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      Edit
+                    </button>
+                  )}
                   {typeof onRenameDocument === "function" && (
                     <button
                       type="button"
@@ -4833,7 +4875,7 @@ function DocumentsTab({
               style={{
                 flex: 1, overflow: "auto",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                backgroundColor: "var(--surface-dark, #0a0a0a)",
+                backgroundColor: "var(--surface)",
                 minHeight: "300px",
               }}
             >
@@ -5038,6 +5080,28 @@ function DocumentsTab({
           })}
         </div>
       )}
+
+      <PhotoEditorModal
+        isOpen={editingDoc !== null && isImageMime(editingDoc?.type || editingDoc?.file_type || "")}
+        photoFile={editingDoc?.url || editingDoc?.file_url || ""}
+        onSave={(editedFile) => {
+          if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
+          setEditingDoc(null);
+        }}
+        onCancel={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
+        onSkip={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
+      />
+
+      <VideoEditorModal
+        isOpen={editingDoc !== null && isVideoMime(editingDoc?.type || editingDoc?.file_type || "")}
+        videoFile={editingDoc?.url || editingDoc?.file_url || ""}
+        onSave={(editedFile) => {
+          if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
+          setEditingDoc(null);
+        }}
+        onCancel={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
+        onSkip={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
+      />
     </DevLayoutSection>
   );
 }

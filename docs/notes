@@ -1,12 +1,11 @@
 TODO
 improve the error handling frontend for the camera and uploading information, deep dive to have every error message popup in the top right coner as an alert type message with a user friendly description on what happened, within all error messsages add a copy button which copys the backend information everything which a dev will need of why that error has eccured so the dev knows exactly what has happendend and can put the infomraiton into claude or codex and that will fix whats happening. 
 
-device level but level sareadings showing -50 degreess fix this 
+Fix "Settings file failed to parse: /home/node/.claude/settings.json — Invalid or malformed JSON. Permission rules and other settings from this file are not in effect." 
 
-within "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.2 (myjob-documents-panel)" section add a edit button within the "Document Preview" popup
 
-EXPAND
-have it so premition to use the audio and camera is onyl aksed once by the browser and for it to remember
+TODO
+have it so premition to use the audio and camera is onyl aksed once by the browser and for that user and then rembers it forever. have it so the audio and camera request to use uses inapp design /theme style. 
 
 
 look into "Review Media" section after editing photo
@@ -18,9 +17,6 @@ with camera for concerns, hgave ir link rto vhc photo and vedio section  in cata
 
 TODO
 For "Run Deep Diagnostic" haev a copy button which create a prompt for codex or claude which give a descrption of all of the tests which have failed and leves claude/codex to fix them. within the showcase section add a side section onto each section where i can add a note about that showcase card, have this save to the database. also improve dev overlay within "/dev/user-diagnostic :: 1.2.2.1 (app-layout-page-card)". 
-
-TODO
-Fix the loading section, it creates a solid card which is offset to the mian card page and a differnent colour and it doesnt look correct, deep dive to fix this
 
 
 

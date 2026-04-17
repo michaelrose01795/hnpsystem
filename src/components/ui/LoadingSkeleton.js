@@ -14,12 +14,15 @@ import { getLayoutFingerprint } from "@/lib/loading/layoutFingerprint";
 export function SkeletonBlock({ width = "100%", height = "20px", borderRadius = "8px" }) {
   return (
     <div
+      className="skeleton-block"
       style={{
         width,
         height,
         borderRadius,
-        background: "var(--surface-light, #e0e0e0)",
-        animation: "skeleton-pulse 1.5s ease-in-out infinite",
+        background: "linear-gradient(90deg, var(--surface-light,#e8e8e8) 25%, var(--surface,#f4f4f4) 50%, var(--surface-light,#e8e8e8) 75%)",
+        backgroundSize: "200% 100%",
+        animation: "skeleton-scan 1.8s ease-in-out infinite",
+        flexShrink: 0,
       }}
     />
   );
@@ -65,7 +68,7 @@ export function SkeletonTableRow({ cols = 5 }) {
 // Shimmer keyframes injected once per mount — safe to render multiple copies, browsers dedupe.
 export function SkeletonKeyframes() {
   return (
-    <style>{`@keyframes skeleton-pulse { 0% { opacity: 0.72; } 50% { opacity: 1; } 100% { opacity: 0.72; } }`}</style>
+    <style>{`@keyframes skeleton-pulse{0%{opacity:.72}50%{opacity:1}100%{opacity:.72}}@keyframes skeleton-scan{0%{background-position:200% 0}100%{background-position:-200% 0}}@media(prefers-reduced-motion:reduce){.skeleton-block{animation:none!important;opacity:.65!important}}`}</style>
   );
 }
 
@@ -103,7 +106,7 @@ function DashboardSectionCardSkeleton({
           <div
             key={index}
             style={{
-              background: "var(--danger-surface, rgba(var(--primary-rgb), 0.08))",
+              background: "rgba(var(--primary-rgb), 0.08)",
               borderRadius: "var(--radius-md)",
               padding: "16px",
               display: "flex",
@@ -705,6 +708,7 @@ export function PageContentSkeleton({ route, fallbackMinHeight = 480 }) {
       {fingerprint.blocks.map((block, index) => (
         <div
           key={index}
+          className="skeleton-block"
           style={{
             position: "absolute",
             left: `${block.left}px`,
@@ -712,9 +716,9 @@ export function PageContentSkeleton({ route, fallbackMinHeight = 480 }) {
             width: `${block.width}px`,
             height: `${block.height}px`,
             borderRadius: `${block.radius}px`,
-            background: SHIMMER_BG,
+            background: "linear-gradient(90deg, var(--surface-light,#e8e8e8) 25%, var(--surface,#f4f4f4) 50%, var(--surface-light,#e8e8e8) 75%)",
             backgroundSize: "200% 100%",
-            animation: "shimmer 1.5s ease-in-out infinite",
+            animation: "skeleton-scan 1.8s ease-in-out infinite",
           }}
         />
       ))}

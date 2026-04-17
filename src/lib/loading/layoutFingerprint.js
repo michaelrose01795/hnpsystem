@@ -53,9 +53,11 @@ export function captureLayoutFingerprint(container) {
     if (fallback.length) candidates = fallback;
   }
 
-  // Final fallback: the container's direct children.
+  // Final fallback: the container's direct children, excluding the skeleton overlay.
   if (candidates.length < 2) {
-    candidates = Array.from(container.children);
+    candidates = Array.from(container.children).filter(
+      (el) => !el.hasAttribute("data-loading-overlay")
+    );
   }
 
   const blocks = [];

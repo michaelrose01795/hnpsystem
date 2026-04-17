@@ -557,12 +557,6 @@
   color: var(--danger-dark);
 }
 
-.empty {
-  padding: 14px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
 .emptyState {
   height: 100%;
   border: 1px dashed var(--border);

@@ -11,6 +11,7 @@ import {
 } from "@/lib/database/floatingNotes";
 import AiGuidePanel from "@/features/appGuide/components/AiGuidePanel";
 import styles from "@/components/GlobalNotesWidget.module.css";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const BUBBLE_SIZE = 56;
 const PANEL_DEFAULT = { x: 120, y: 90, width: 460, height: 360 };
@@ -141,6 +142,25 @@ const setDragSelectionLock = (isLocked) => {
   document.body.style.webkitUserSelect = isLocked ? "none" : "";
   document.body.style.cursor = isLocked ? "grabbing" : "";
 };
+
+function NotesLoadingSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <SkeletonKeyframes />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+        <SkeletonBlock width="50px" height="13px" borderRadius="5px" />
+        <div style={{ display: "flex", gap: "6px" }}>
+          <SkeletonBlock width="30px" height="26px" borderRadius="6px" />
+          <SkeletonBlock width="48px" height="26px" borderRadius="6px" />
+          <SkeletonBlock width="40px" height="26px" borderRadius="6px" />
+        </div>
+      </div>
+      <SkeletonBlock width="100%" height="34px" borderRadius="6px" />
+      <SkeletonBlock width="80px" height="13px" borderRadius="5px" />
+      <SkeletonBlock width="100%" height="120px" borderRadius="6px" />
+    </div>
+  );
+}
 
 export default function GlobalNotesWidget() {
   const { dbUserId, user } = useUser() || {};
@@ -1064,7 +1084,7 @@ export default function GlobalNotesWidget() {
             )}
 
             {/* Notes view — shown when the notes tab is active */}
-            {activeView === "notes" && isLoading && <div className={styles.empty}>Loading your notes...</div>}
+            {activeView === "notes" && isLoading && <NotesLoadingSkeleton />}
 
             {activeView === "notes" && !isLoading && notes.length === 0 && (
               <div className={styles.emptyState}>

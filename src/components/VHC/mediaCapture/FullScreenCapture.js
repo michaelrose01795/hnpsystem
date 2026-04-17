@@ -120,7 +120,7 @@ export default function FullScreenCapture({
 
   const orientation = useOrientation();
   const RIGHT_CONTROLS_WIDTH = getControlsWidth(orientation.screenWidth);
-  const ZOOM_SLIDER_WIDTH = Math.round(Math.min(RIGHT_CONTROLS_WIDTH - 8, Math.max(44, RIGHT_CONTROLS_WIDTH * 0.7)));
+  const ZOOM_SLIDER_WIDTH = Math.round(Math.min(RIGHT_CONTROLS_WIDTH - 12, Math.max(34, RIGHT_CONTROLS_WIDTH * 0.52)));
   const ZOOM_SLIDER_HEIGHT = Math.round(Math.min(Math.max(220, orientation.screenHeight * 0.38), 420));
 
   const [mode, setMode] = useState(initialMode);
@@ -136,6 +136,7 @@ export default function FullScreenCapture({
     videoElement: videoElementRef.current,
     widgets,
     isRecordingMode: mode === "video",
+    facingMode: camera.facingMode,
   });
 
   const [capturing, setCapturing] = useState(false);
@@ -210,6 +211,10 @@ export default function FullScreenCapture({
       const canvas = document.createElement("canvas");
       canvas.width = width; canvas.height = height;
       const ctx = canvas.getContext("2d");
+      if (camera.facingMode === "user") {
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
+      }
       ctx.drawImage(video, 0, 0, width, height);
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.94));
       if (!blob) throw new Error("Failed to capture photo");
@@ -333,6 +338,9 @@ export default function FullScreenCapture({
             height: "100%",
             objectFit: "cover",
             background: "var(--hud-scrim)",
+            // Mirror the preview for the front camera so the live view
+            // behaves like a mirror — moving right appears as moving right.
+            transform: camera.facingMode === "user" ? "scaleX(-1)" : "none",
           }}
         />
       ) : null}
@@ -485,7 +493,7 @@ export default function FullScreenCapture({
       <div
         style={{
           position: "absolute",
-          top: "calc(env(safe-area-inset-top, 0px) + var(--space-6))",
+          top: "calc(env(safe-area-inset-top, 0px) + var(--space-3))",
           right: `${(RIGHT_CONTROLS_WIDTH - ZOOM_SLIDER_WIDTH) / 2}px`,
           width: ZOOM_SLIDER_WIDTH,
           height: ZOOM_SLIDER_HEIGHT,

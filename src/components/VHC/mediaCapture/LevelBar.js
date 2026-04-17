@@ -1,71 +1,82 @@
-// file location: src/components/VHC/mediaCapture/LevelBar.js
-// Compact horizontal level bar shown in the capture top bar. Uses the
-// device's `deviceorientation` event when available (after permission
-// prompting on iOS) and falls back to a static zero-tilt indicator
-// when the API isn't accessible.
-//
-// Also doubles as the recording-status surface. When a `statusLabel`
-// is provided (e.g. "Rec 00:03" / "Paused 00:02") it replaces the
-// default "LEVEL" caption so there's one compact HUD pill in the top
-// bar instead of a second floating pill competing for space.
-//
-// All colour / radius / spacing / typography values resolve through
-// the --hud-*, --space, --radius, --duration, --tracking-* and status
-// tokens in theme.css so the pill follows the user's theme.
-
 import React, { useEffect, useRef, useState } from "react";
 
-const TILT_RANGE_DEGREES = 12;
-const LEVEL_EPSILON_DEGREES = 0.5;
-const SMOOTHING = 0.35;
+// ─── constants ────────────────────────────────────────────────────────────────
+const TILT_RANGE    = 15;    // degrees clamped on each side of centre
+const LEVEL_EPSILON = 0.5;   // ≤ this → green / "level"
+const NEAR_LEVEL    = 3;     // ≤ this → amber; above → red
+const SMOOTHING     = 0.35;  // exponential weight (0 = instant, 1 = frozen)
 
+// Tick marks: drawn symmetrically; major ticks are taller
+const TICKS = [
+  { deg:  3, major: false }, { deg:  -3, major: false },
+  { deg:  6, major: true  }, { deg:  -6, major: true  },
+  { deg:  9, major: false }, { deg:  -9, major: false },
+  { deg: 12, major: true  }, { deg: -12, major: true  },
+];
+
+// Visual level zone: ±1.5° of centre (3× epsilon) — wider than the actual
+// epsilon so the target is legible but the green state still feels earned.
+const ZONE_LEFT_PCT  = 45;
+const ZONE_WIDTH_PCT = 10;
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
 function readScreenAngle() {
   if (typeof window === "undefined") return 0;
-  const screenAngle = window.screen?.orientation?.angle;
-  if (typeof screenAngle === "number") return screenAngle;
+  const a = window.screen?.orientation?.angle;
+  if (typeof a === "number" && !isNaN(a)) return a;
   if (typeof window.orientation === "number") return window.orientation;
   return 0;
 }
 
-function normaliseAngle(angle) {
-  let value = Number(angle) || 0;
-  while (value > 180) value -= 360;
-  while (value < -180) value += 360;
-  return value;
+function normaliseAngle(a) {
+  let v = Number(a) || 0;
+  while (v >  180) v -= 360;
+  while (v < -180) v += 360;
+  return v;
 }
 
 function computeScreenTilt(beta, gamma, screenAngle) {
-  const b = Number(beta) || 0;
   const g = Number(gamma) || 0;
-  // In portrait (0°/180°), gamma directly measures camera roll.
-  // In landscape (90°/270°), the device is upright when beta≈90°, so roll
-  // is the deviation of beta from that baseline — not raw beta.
+  // gamma always equals 0 when the camera frame is level regardless of device
+  // pitch — it measures roll around the optical axis directly. Sign flips for
+  // the two "upside-down" orientations (180° and 270°).
   switch (((screenAngle % 360) + 360) % 360) {
-    case 90:  return normaliseAngle(90 - b);
+    case 90:  return normaliseAngle(g);
     case 180: return normaliseAngle(-g);
-    case 270: return normaliseAngle(b - 90);
-    case 0:
+    case 270: return normaliseAngle(-g);
     default:  return normaliseAngle(g);
   }
 }
 
-function tiltToPosition(tiltDegrees) {
-  const clamped = Math.max(-TILT_RANGE_DEGREES, Math.min(TILT_RANGE_DEGREES, Number(tiltDegrees) || 0));
-  return 0.5 + clamped / (2 * TILT_RANGE_DEGREES);
+function tiltToPos(deg) {
+  const c = Math.max(-TILT_RANGE, Math.min(TILT_RANGE, Number(deg) || 0));
+  return 0.5 + c / (2 * TILT_RANGE);
 }
 
-const STATUS_TONE_BG = {
-  recording: "rgba(var(--danger-rgb), 0.92)",
-  paused: "rgba(var(--warning-rgb), 0.92)",
-  default: "var(--hud-surface)",
+function tiltColor(tilt) {
+  const a = Math.abs(tilt);
+  if (a <= LEVEL_EPSILON) return "var(--success)";
+  if (a <= NEAR_LEVEL)    return "var(--warning)";
+  return "var(--danger)";
+}
+
+const STATUS_BG = {
+  recording: "rgba(var(--danger-rgb),  0.92)",
+  paused:    "rgba(var(--warning-rgb), 0.92)",
+  default:   "var(--hud-surface)",
 };
 
-export default function LevelBar({ compact = false, statusLabel = "", statusTone = "default" }) {
-  const [tilt, setTilt] = useState(0);
+// ─── component ───────────────────────────────────────────────────────────────
+export default function LevelBar({
+  compact     = false,
+  statusLabel = "",
+  statusTone  = "default",
+}) {
+  const [tilt, setTilt]           = useState(0);
   const [supported, setSupported] = useState(false);
-  const handlerRef = useRef(null);
-  const angleRef = useRef(0);
+  const angleRef    = useRef(0);
   const smoothedRef = useRef(0);
+  const handlerRef  = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -73,17 +84,13 @@ export default function LevelBar({ compact = false, statusLabel = "", statusTone
     const syncAngle = () => { angleRef.current = readScreenAngle(); };
     syncAngle();
 
-    const orientationTarget = window.screen?.orientation;
-    if (orientationTarget && typeof orientationTarget.addEventListener === "function") {
-      orientationTarget.addEventListener("change", syncAngle);
-    }
+    const oriTarget = window.screen?.orientation;
+    oriTarget?.addEventListener?.("change", syncAngle);
     window.addEventListener("orientationchange", syncAngle);
 
     if (typeof window.DeviceOrientationEvent === "undefined") {
       return () => {
-        if (orientationTarget && typeof orientationTarget.removeEventListener === "function") {
-          orientationTarget.removeEventListener("change", syncAngle);
-        }
+        oriTarget?.removeEventListener?.("change", syncAngle);
         window.removeEventListener("orientationchange", syncAngle);
       };
     }
@@ -94,11 +101,10 @@ export default function LevelBar({ compact = false, statusLabel = "", statusTone
         : Promise.resolve("granted");
 
     let cancelled = false;
-
     maybeRequest.then((state) => {
       if (cancelled || state !== "granted") return;
-      const handler = (event) => {
-        const raw = computeScreenTilt(event.beta, event.gamma, angleRef.current);
+      const handler = (e) => {
+        const raw  = computeScreenTilt(e.beta, e.gamma, angleRef.current);
         const next = smoothedRef.current + (1 - SMOOTHING) * (raw - smoothedRef.current);
         smoothedRef.current = next;
         setSupported(true);
@@ -114,19 +120,20 @@ export default function LevelBar({ compact = false, statusLabel = "", statusTone
         window.removeEventListener("deviceorientation", handlerRef.current, true);
         handlerRef.current = null;
       }
-      if (orientationTarget && typeof orientationTarget.removeEventListener === "function") {
-        orientationTarget.removeEventListener("change", syncAngle);
-      }
+      oriTarget?.removeEventListener?.("change", syncAngle);
       window.removeEventListener("orientationchange", syncAngle);
     };
   }, []);
 
-  const position = tiltToPosition(tilt);
-  const isLevel = Math.abs(tilt) < LEVEL_EPSILON_DEGREES;
-
-  const toneBackground = STATUS_TONE_BG[statusTone] || STATUS_TONE_BG.default;
-  const leadingText = statusLabel || "Level";
-  const trackWidth = compact ? 110 : 140;
+  // ── derived state ──────────────────────────────────────────────────────────
+  const pos      = tiltToPos(tilt);
+  const color    = tiltColor(tilt);
+  const isLevel  = Math.abs(tilt) <= LEVEL_EPSILON;
+  const isActive = statusTone !== "default"; // recording or paused
+  const bg       = STATUS_BG[statusTone] ?? STATUS_BG.default;
+  const trackW   = compact ? 120 : 150;
+  const pad      = compact ? "var(--space-1) var(--space-2)" : "var(--space-sm) var(--space-3)";
+  const gap      = compact ? "var(--space-1)" : "var(--space-sm)";
 
   return (
     <div
@@ -134,74 +141,133 @@ export default function LevelBar({ compact = false, statusLabel = "", statusTone
       data-dev-section-type="status-pill"
       aria-label={statusLabel ? `Recording status: ${statusLabel}` : "Device level"}
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: compact ? "var(--space-1)" : "var(--space-sm)",
-        padding: compact ? "var(--space-1) var(--space-2)" : "var(--space-sm) var(--space-3)",
-        borderRadius: "var(--radius-pill)",
-        background: toneBackground,
-        border: "1px solid var(--hud-divider)",
-        backdropFilter: "var(--hud-blur)",
+        display:              "flex",
+        alignItems:           "center",
+        gap,
+        padding:              pad,
+        borderRadius:         "var(--radius-pill)",
+        background:           bg,
+        border:               `1px solid ${isLevel && !isActive
+                                ? "rgba(34,197,94,0.40)"
+                                : "var(--hud-divider)"}`,
+        backdropFilter:       "var(--hud-blur)",
         WebkitBackdropFilter: "var(--hud-blur)",
-        color: "var(--hud-text)",
-        fontSize: "var(--text-caption)",
-        fontWeight: 800,
-        letterSpacing: "var(--tracking-caps)",
-        textTransform: "uppercase",
-        pointerEvents: "none",
-        fontFamily: "var(--font-family)",
-        transition: "background var(--duration-normal) var(--ease-default)",
+        color:                "var(--hud-text)",
+        fontSize:             "var(--text-caption)",
+        fontWeight:           700,
+        letterSpacing:        "var(--tracking-caps)",
+        textTransform:        "uppercase",
+        pointerEvents:        "none",
+        fontFamily:           "var(--font-family)",
+        transition:           "background var(--duration-normal) var(--ease-default), border-color 0.3s ease",
       }}
     >
-      <span
-        style={{
-          opacity: statusLabel ? 1 : 0.85,
-          fontVariantNumeric: "tabular-nums",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {leadingText}
+      {/* ── label / recording status ──────────────────────────────────────── */}
+      <span style={{
+        display:            "flex",
+        alignItems:         "center",
+        gap:                5,
+        opacity:            isActive ? 1 : 0.85,
+        whiteSpace:         "nowrap",
+        fontVariantNumeric: "tabular-nums",
+      }}>
+        {isActive && (
+          <span
+            aria-hidden="true"
+            style={{
+              display:      "inline-block",
+              width:        6,
+              height:       6,
+              borderRadius: "50%",
+              flexShrink:   0,
+              background:   statusTone === "recording" ? "var(--danger)" : "var(--warning)",
+            }}
+          />
+        )}
+        {statusLabel || "Level"}
       </span>
-      <div
-        style={{
-          position: "relative",
-          width: trackWidth,
-          height: 4,
+
+      {/* ── level track ───────────────────────────────────────────────────── */}
+      <div style={{
+        position:     "relative",
+        width:        trackW,
+        height:       4,
+        borderRadius: "var(--radius-pill)",
+        background:   "var(--hud-rail)",
+        flexShrink:   0,
+        overflow:     "visible",
+      }}>
+        {/* Green zone — marks the ±1.5° target window */}
+        <span aria-hidden="true" style={{
+          position:      "absolute",
+          top:           0,
+          left:          `${ZONE_LEFT_PCT}%`,
+          width:         `${ZONE_WIDTH_PCT}%`,
+          height:        "100%",
+          borderRadius:  "var(--radius-pill)",
+          background:    "rgba(34,197,94,0.40)",
+          pointerEvents: "none",
+        }} />
+
+        {/* Tick marks — visual scale reference */}
+        {TICKS.map(({ deg, major }) => (
+          <span key={deg} aria-hidden="true" style={{
+            position:   "absolute",
+            left:       `${tiltToPos(deg) * 100}%`,
+            top:        "50%",
+            width:      1,
+            height:     major ? 10 : 6,
+            background: "rgba(var(--hud-text-rgb),0.22)",
+            transform:  "translate(-50%,-50%)",
+          }} />
+        ))}
+
+        {/* Centre mark — glows green when the frame is level */}
+        <span aria-hidden="true" style={{
+          position:   "absolute",
+          left:       "50%",
+          top:        "50%",
+          width:      2,
+          height:     14,
+          background: supported && isLevel
+            ? color
+            : "rgba(var(--hud-text-rgb),0.50)",
+          transform:  "translate(-50%,-50%)",
+          transition: "background 0.3s ease",
+        }} />
+
+        {/* Sliding bubble */}
+        <span aria-hidden="true" style={{
+          position:     "absolute",
+          top:          "50%",
+          left:         `${pos * 100}%`,
+          width:        12,
+          height:       12,
           borderRadius: "var(--radius-pill)",
-          background: "var(--hud-rail)",
-          overflow: "hidden",
-        }}
-      >
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: -3,
-            width: 2,
-            height: 10,
-            background: "rgba(var(--hud-text-rgb), 0.4)",
-            transform: "translateX(-50%)",
-          }}
-        />
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: `${position * 100}%`,
-            width: 14,
-            height: 14,
-            borderRadius: "var(--radius-pill)",
-            transform: "translate(-50%, -50%)",
-            background: isLevel ? "var(--success)" : "var(--warning)",
-            boxShadow: "var(--hud-shadow-md)",
-            transition: "left 80ms linear, background-color var(--duration-normal) var(--ease-default)",
-          }}
-        />
+          transform:    "translate(-50%,-50%)",
+          background:   supported ? color : "rgba(var(--hud-text-rgb),0.28)",
+          boxShadow:    supported && isLevel
+            ? "0 0 6px 2px rgba(34,197,94,0.55), var(--hud-shadow-md)"
+            : "var(--hud-shadow-md)",
+          transition:   "left 80ms linear, background 200ms ease, box-shadow 200ms ease",
+          zIndex:       1,
+        }} />
       </div>
-      <span style={{ minWidth: 34, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        {supported ? `${tilt.toFixed(1)}°` : "—"}
+
+      {/* ── degree readout ────────────────────────────────────────────────── */}
+      <span style={{
+        minWidth:           32,
+        textAlign:          "right",
+        fontVariantNumeric: "tabular-nums",
+        letterSpacing:      0,
+        textTransform:      "none",
+        fontWeight:         supported && isLevel ? 800 : 700,
+        color:              supported
+          ? (isLevel ? "var(--success)" : "var(--hud-text)")
+          : "var(--hud-text-dim)",
+        transition:         "color 0.2s ease",
+      }}>
+        {supported ? `${Math.abs(tilt).toFixed(1)}°` : "—"}
       </span>
     </div>
   );

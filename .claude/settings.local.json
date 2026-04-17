@@ -90,7 +90,8 @@
       "Bash(git rm:*)",
       "Bash(powershell -Command \"Get-MpPreference | Select-Object -ExpandProperty ExclusionPath\")",
       "Bash(awk '/useEffect.*loading/,/^  }/' /workspaces/hnpsystem/src/pages/job-cards/myjobs/[jobNumber].js)",
-      "Bash(echo \"exit=$?\")"
+      "Bash(echo \"exit=$?\")",
+      "Bash(node --input-type=module --eval \"import\\('/workspaces/hnpsystem/src/pages/job-cards/myjobs/[jobNumber].js'\\).catch\\(e => console.error\\(e.message\\)\\)\")"
     ],
     "deny": [],
     "ask": []

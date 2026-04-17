@@ -17,14 +17,14 @@ const RAIL_MAX_FLOOR = 5;
 // Pixel height of every pill — active and inactive share the exact same value.
 const PILL_H = 30;
 // Horizontal inset inside the track so pills don't touch the container edges.
-const PILL_H_INSET = 8;
+const PILL_H_INSET = 6;
 
 function clamp(v, a, b) { return Math.min(Math.max(v, a), b); }
 
 function formatZoom(v) {
-  if (v < 1) return `${v.toFixed(1)}×`;
-  if (Math.abs(v - Math.round(v)) < 0.05) return `${Math.round(v)}×`;
-  return `${v.toFixed(1)}×`;
+  if (Math.abs(v - Math.round(v)) < 0.05) return `${Math.round(v)}`;
+  const s = v.toFixed(1);
+  return s.startsWith("0.") ? s.slice(1) : s; // "0.5" → ".5", "1.5" → "1.5"
 }
 
 // Log-scale mapping — ensures the four presets appear evenly spaced on the rail.
@@ -413,7 +413,7 @@ export default function VerticalZoomSlider({
                 pointerEvents: disabled ? "none" : "auto",
               }}
             >
-              {`${point}x`}
+              {formatZoom(point)}
             </button>
           );
         })}

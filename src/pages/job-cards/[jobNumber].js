@@ -44,6 +44,8 @@ import { clockInToJob, getUserActiveJobs, switchJob } from "@/lib/database/jobCl
 import PartsTabNew from "@/components/PartsTab";
 import NotesTabNew from "@/components/NotesTab";
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
+import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
+import VideoEditorModal from "@/components/VHC/VideoEditorModal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
@@ -1383,6 +1385,40 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     });
     setJobDocuments((prev) => [...prev, newDoc]);
   }, [dbUserId]);
+
+  const handleReplaceDocument = useCallback(async (oldDoc, editedFile) => {
+    if (!oldDoc?.id || !editedFile) return;
+    const jobIdNum = jobData?.id;
+    if (!jobIdNum) return;
+    try {
+      const formData = new FormData();
+      formData.append("file", editedFile);
+      formData.append("jobId", String(jobIdNum));
+      formData.append("userId", String(actingUserNumericId || ""));
+      const res = await fetch("/api/jobcards/upload-document", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+
+      const storagePath = deriveStoragePathFromUrl(oldDoc.url);
+      if (storagePath) {
+        await supabase.storage.from(JOB_DOCUMENT_BUCKET).remove([storagePath]).catch(() => {});
+      }
+      await deleteJobFile(oldDoc.id).catch(() => {});
+
+      const newDoc = mapJobFileRecord({
+        file_id: data.file?.fileId || null,
+        file_name: data.file?.filename || data.file?.originalName || editedFile.name || "Document",
+        file_url: data.file?.path || "",
+        file_type: data.file?.mimetype || editedFile.type || "",
+        folder: "documents",
+        uploaded_by: actingUserNumericId || null,
+        uploaded_at: data.file?.uploadedAt || new Date().toISOString(),
+      });
+      setJobDocuments((prev) => prev.map((d) => d.id === oldDoc.id ? newDoc : d));
+    } catch (err) {
+      alert(err?.message || "Failed to replace document");
+    }
+  }, [jobData?.id, actingUserNumericId]);
 
   // Fetch job files directly from job_files table (bypasses embedded-join cache issues)
   const fetchDocuments = useCallback(async () => {
@@ -4329,6 +4365,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
               clockingLockDescription={clockingLockDescription}
               onValetUploadComplete={() => fetchJobData({ silent: true, force: true })}
               onRenameDocument={handleRenameDocument}
+              onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined}
             />
           </div>
 
@@ -10759,6 +10796,10 @@ function isImageMime(mime = "") {
   return /^image\/(png|jpe?g|gif|webp|svg\+xml|bmp)$/i.test(mime);
 }
 
+function isVideoMime(mime = "") {
+  return /^video\//i.test(mime);
+}
+
 function DocumentsTab({
   documents = [],
   canDelete,
@@ -10772,6 +10813,7 @@ function DocumentsTab({
   clockingLockDescription = "",
   onValetUploadComplete = () => {},
   onRenameDocument,
+  onReplaceDocument,
 }) {
   const [valetUploadFile, setValetUploadFile] = useState(null);
   const [valetUploading, setValetUploading] = useState(false);
@@ -10779,6 +10821,7 @@ function DocumentsTab({
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isRenamingPreview, setIsRenamingPreview] = useState(false);
   const [previewRenameValue, setPreviewRenameValue] = useState("");
+  const [editingDoc, setEditingDoc] = useState(null);
 
   const sortedDocuments = useMemo(() => {
     return [...(documents || [])].sort((a, b) => {
@@ -10836,7 +10879,7 @@ function DocumentsTab({
           onClick={() => setPreviewDoc(null)}
           style={{
             position: "fixed", inset: 0, zIndex: 1400,
-            backgroundColor: "rgba(0,0,0,0.75)",
+            backgroundColor: "var(--overlay)",
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: "24px",
           }}
@@ -10928,22 +10971,38 @@ function DocumentsTab({
                   <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
                     Document Preview
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const currentName = previewDoc.name || previewDoc.file_name || "";
-                      setPreviewRenameValue(currentName);
-                      setIsRenamingPreview(true);
-                    }}
-                    style={{
-                      padding: "6px 14px", border: "1px solid var(--surface-light)",
-                      borderRadius: "var(--input-radius)",
-                      backgroundColor: "var(--surface)", color: "var(--text-primary)",
-                      fontSize: "13px", fontWeight: 600, cursor: "pointer",
-                    }}
-                  >
-                    Rename
-                  </button>
+                  {typeof onReplaceDocument === "function" && (isImageMime(previewDoc.type || previewDoc.file_type || "") || isVideoMime(previewDoc.type || previewDoc.file_type || "")) && (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingDoc(previewDoc); setPreviewDoc(null); }}
+                      style={{
+                        padding: "6px 14px", border: "1px solid var(--surface-light)",
+                        borderRadius: "var(--input-radius)",
+                        backgroundColor: "var(--surface)", color: "var(--text-primary)",
+                        fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {typeof onRenameDocument === "function" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentName = previewDoc.name || previewDoc.file_name || "";
+                        setPreviewRenameValue(currentName);
+                        setIsRenamingPreview(true);
+                      }}
+                      style={{
+                        padding: "6px 14px", border: "1px solid var(--surface-light)",
+                        borderRadius: "var(--input-radius)",
+                        backgroundColor: "var(--surface)", color: "var(--text-primary)",
+                        fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                      }}
+                    >
+                      Rename
+                    </button>
+                  )}
                 </>
               )}
               <button
@@ -10969,7 +11028,7 @@ function DocumentsTab({
               style={{
                 flex: 1, overflow: "auto",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                backgroundColor: "var(--surface-dark, #0a0a0a)",
+                backgroundColor: "var(--surface)",
                 minHeight: "300px",
               }}
             >
@@ -11209,6 +11268,28 @@ function DocumentsTab({
           })}
         </div>
       )}
+
+      <PhotoEditorModal
+        isOpen={editingDoc !== null && isImageMime(editingDoc?.type || editingDoc?.file_type || "")}
+        photoFile={editingDoc?.url || editingDoc?.file_url || ""}
+        onSave={(editedFile) => {
+          if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
+          setEditingDoc(null);
+        }}
+        onCancel={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
+        onSkip={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
+      />
+
+      <VideoEditorModal
+        isOpen={editingDoc !== null && isVideoMime(editingDoc?.type || editingDoc?.file_type || "")}
+        videoFile={editingDoc?.url || editingDoc?.file_url || ""}
+        onSave={(editedFile) => {
+          if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
+          setEditingDoc(null);
+        }}
+        onCancel={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
+        onSkip={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
+      />
     </div>
   );
 }
