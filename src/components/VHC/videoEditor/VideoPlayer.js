@@ -4,7 +4,7 @@
 // bottom time strip (current / total). Playback state is owned by the
 // parent so a single source of truth drives the timeline too.
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 
 function formatTime(seconds = 0) {
   const m = Math.floor(seconds / 60);
@@ -32,11 +32,17 @@ const VideoPlayer = React.forwardRef(function VideoPlayer(
   ref
 ) {
   const [hovering, setHovering] = useState(false);
+  const hideTimerRef = useRef(null);
 
   return (
     <div
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
+      onMouseEnter={() => {
+        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+        setHovering(true);
+      }}
+      onMouseLeave={() => {
+        hideTimerRef.current = setTimeout(() => setHovering(false), 100);
+      }}
       style={{
         position: "relative",
         background: "#000",
@@ -116,7 +122,7 @@ const VideoPlayer = React.forwardRef(function VideoPlayer(
             backdropFilter: "blur(14px)",
             WebkitBackdropFilter: "blur(14px)",
             transition: "opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease",
-            opacity: isPlaying && !hovering ? 0 : 1,
+            opacity: isPlaying && !hovering ? 0 : hovering ? 1 : 0.85,
             boxShadow: hovering
               ? "0 0 0 6px rgba(255,255,255,0.08), 0 12px 32px rgba(0,0,0,0.5)"
               : "0 8px 24px rgba(0,0,0,0.45)",
@@ -147,6 +153,8 @@ const VideoPlayer = React.forwardRef(function VideoPlayer(
             fontVariantNumeric: "tabular-nums",
             fontWeight: 700,
             pointerEvents: "none",
+            opacity: hovering ? 1 : 0,
+            transition: "opacity 160ms ease",
           }}
         >
           <span>{formatTime(currentTime)}</span>

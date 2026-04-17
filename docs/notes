@@ -1,6 +1,7 @@
 TODO
-have it so moveing the "Timeline" player head it moves the video to that section as well, have it linked 
+improve the error handling frontend for the camera and uploading information, deep dive to have every error message popup in the top right coner as an alert type message with a user friendly description on what happened, within all error messsages add a copy button which copys the backend information everything which a dev will need of why that error has eccured so the dev knows exactly what has happendend and can put the infomraiton into claude or codex and that will fix whats happening. 
 
+device level but level sareadings showing -50 degreess fix this 
 
 within "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.2 (myjob-documents-panel)" section add a edit button within the "Document Preview" popup
 
@@ -8,16 +9,11 @@ EXPAND
 have it so premition to use the audio and camera is onyl aksed once by the browser and for it to remember
 
 
-look into "Review Media
-" section after editing photo
+look into "Review Media" section after editing photo
 
 
-TODOOOOO
-Chatgpt prompt 2nd
-with edit popup prompt have it hide the pause and play button after 0.1 second when the curse has left the video section 
-
-
-TODO DEEP ONE, with camera for concerns, hgave ir link rto vhc photo and vedio section  in catagory of wipers etc
+TODO DEEP ONE
+with camera for concerns, hgave ir link rto vhc photo and vedio section  in catagory of wipers etc
 
 
 TODO

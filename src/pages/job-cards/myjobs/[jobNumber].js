@@ -4776,6 +4776,21 @@ function DocumentsTab({
                   <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
                     Document Preview
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = previewDoc.url || previewDoc.file_url || "";
+                      if (url) window.open(url, "_blank", "noopener,noreferrer");
+                    }}
+                    style={{
+                      padding: "6px 14px", border: "1px solid var(--surface-light)",
+                      borderRadius: "var(--input-radius)",
+                      backgroundColor: "var(--surface)", color: "var(--text-primary)",
+                      fontSize: "13px", fontWeight: 600, cursor: "pointer",
+                    }}
+                  >
+                    Edit
+                  </button>
                   {typeof onRenameDocument === "function" && (
                     <button
                       type="button"

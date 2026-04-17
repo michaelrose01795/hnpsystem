@@ -120,6 +120,8 @@ export default function FullScreenCapture({
 
   const orientation = useOrientation();
   const RIGHT_CONTROLS_WIDTH = getControlsWidth(orientation.screenWidth);
+  const ZOOM_SLIDER_WIDTH = Math.round(Math.min(RIGHT_CONTROLS_WIDTH - 8, Math.max(44, RIGHT_CONTROLS_WIDTH * 0.7)));
+  const ZOOM_SLIDER_HEIGHT = Math.round(Math.min(Math.max(220, orientation.screenHeight * 0.38), 420));
 
   const [mode, setMode] = useState(initialMode);
   useEffect(() => { setMode(initialMode); }, [initialMode, isOpen]);
@@ -484,9 +486,9 @@ export default function FullScreenCapture({
         style={{
           position: "absolute",
           top: "calc(env(safe-area-inset-top, 0px) + var(--space-6))",
-          right: `${(RIGHT_CONTROLS_WIDTH - 52) / 2}px`,
-          width: 52,
-          height: 340,
+          right: `${(RIGHT_CONTROLS_WIDTH - ZOOM_SLIDER_WIDTH) / 2}px`,
+          width: ZOOM_SLIDER_WIDTH,
+          height: ZOOM_SLIDER_HEIGHT,
           pointerEvents: "auto",
           zIndex: 4,
           display: "flex",
@@ -498,6 +500,7 @@ export default function FullScreenCapture({
           zoomValue={camera.zoomValue}
           onChange={handleZoomChange}
           disabled={camera.loading || !camera.permissionGranted}
+          sliderWidth={ZOOM_SLIDER_WIDTH}
         />
       </div>
 

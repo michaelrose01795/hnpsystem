@@ -37,10 +37,13 @@ function normaliseAngle(angle) {
 function computeScreenTilt(beta, gamma, screenAngle) {
   const b = Number(beta) || 0;
   const g = Number(gamma) || 0;
+  // In portrait (0°/180°), gamma directly measures camera roll.
+  // In landscape (90°/270°), the device is upright when beta≈90°, so roll
+  // is the deviation of beta from that baseline — not raw beta.
   switch (((screenAngle % 360) + 360) % 360) {
-    case 90:  return normaliseAngle(-b);
+    case 90:  return normaliseAngle(90 - b);
     case 180: return normaliseAngle(-g);
-    case 270: return normaliseAngle(b);
+    case 270: return normaliseAngle(b - 90);
     case 0:
     default:  return normaliseAngle(g);
   }
