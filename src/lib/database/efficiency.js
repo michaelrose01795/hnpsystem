@@ -3,11 +3,10 @@ import { getDatabaseClient } from "@/lib/database/client";
 
 const db = getDatabaseClient();
 
-const TECH_NAMES = ["Glen", "Jake", "Scott", "Paul", "Cheryl", "Michael"];
+const TECH_ROLES = ["Techs", "MOT Tester"];
 
 const DEFAULT_TARGET_HOURS = 160;
 const DEFAULT_WEIGHT = 1.0;
-const MICHAEL_WEIGHT = 1.0;
 const ENTRY_META_PREFIX = "__HNP_JOB_META__:";
 
 const normalizeHourValue = (value, { allowNull = false } = {}) => {
@@ -80,25 +79,20 @@ const normalizeEfficiencyEntry = (row = {}) => {
 };
 
 /**
- * Fetch the list of technicians matching the efficiency roster.
- * Returns users whose first_name matches one of the TECH_NAMES.
+ * Fetch the list of technicians for the efficiency roster.
+ * Queries by role so results remain correct if names change.
  */
 export async function getEfficiencyTechnicians() {
   const { data, error } = await db
     .from("users")
     .select("user_id, first_name, last_name, role, contracted_hours")
-    .in("first_name", TECH_NAMES);
+    .in("role", TECH_ROLES)
+    .eq("is_active", true)
+    .order("first_name", { ascending: true });
 
   if (error) throw error;
 
-  // Sort by the predefined order
-  const ordered = TECH_NAMES.map((name) =>
-    (data || []).find(
-      (u) => u.first_name.toLowerCase() === name.toLowerCase()
-    )
-  ).filter(Boolean);
-
-  return ordered;
+  return data || [];
 }
 
 /**
@@ -569,4 +563,4 @@ export function calculateOverallTotals(techSummaries) {
   };
 }
 
-export { TECH_NAMES, DEFAULT_TARGET_HOURS, DEFAULT_WEIGHT, MICHAEL_WEIGHT };
+export { DEFAULT_TARGET_HOURS, DEFAULT_WEIGHT };

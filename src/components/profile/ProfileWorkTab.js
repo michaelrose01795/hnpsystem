@@ -1721,9 +1721,9 @@ export function ProfileWorkTab({
     let attendanceSource, overtimeSource, leaveSource;
 
     if (shouldUseHrData) {
-      attendanceSource = attendanceLogs.filter((entry) => entry.employeeId === profile.id || entry.employeeId === profile.name);
-      overtimeSource = overtimeSummaries.find((entry) => entry.employee === profile.name || entry.id === profile.userId) ?? null;
-      leaveSource = leaveBalances.find((entry) => entry.employee === profile.name) ?? null;
+      attendanceSource = attendanceLogs.filter((entry) => entry.userId === profile.userId);
+      overtimeSource = overtimeSummaries.find((entry) => entry.id === profile.userId) ?? null;
+      leaveSource = leaveBalances.find((entry) => entry.employeeId === profile.id) ?? null;
     } else {
       attendanceSource = attendanceLogs;
       overtimeSource = userProfileData?.overtimeSummary ?? null;

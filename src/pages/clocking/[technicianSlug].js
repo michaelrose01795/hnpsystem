@@ -156,6 +156,17 @@ export default function UserClockingHistory() {
       return;
     }
 
+    // New slug format: "{Name}-{userId}" — extract the trailing ID first.
+    const trailingId = slugParam.match(/-(\d+)$/);
+    if (trailingId) {
+      const numeric = Number(trailingId[1]);
+      if (!Number.isNaN(numeric)) {
+        setResolvedUserId(numeric);
+        return;
+      }
+    }
+
+    // Legacy: slug was leading digits only (e.g. "5Smith").
     const leadingDigits = slugParam.match(/^(\d+)/);
     if (leadingDigits) {
       const numeric = Number(leadingDigits[1]);

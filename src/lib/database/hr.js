@@ -220,6 +220,7 @@ export async function getAttendanceLogs({ startDate, endDate, limit = DEFAULT_AT
 
     return {
       id: record.id,
+      userId: employee.id,
       employeeId: employee.name,
       employeeName: employee.name,
       date: record.date,

@@ -11,15 +11,16 @@ const formatSegment = (value) => {
   return sanitized.charAt(0).toUpperCase() + sanitized.slice(1);
 };
 
-export const generateTechnicianSlug = (firstName, lastName, fallbackId) => {
+export const generateTechnicianSlug = (firstName, lastName, userId) => {
   const first = formatSegment(firstName);
   const last = formatSegment(lastName);
-  const combinedName = `${first}${last}`.trim();
-  if (combinedName) {
-    return combinedName;
+  const namePart = `${first}${last}`.trim();
+  const idSuffix = userId !== undefined && userId !== null ? `-${sanitize(userId)}` : "";
+  if (namePart) {
+    return `${namePart}${idSuffix}`;
   }
-  if (fallbackId !== undefined && fallbackId !== null) {
-    return `Tech${sanitize(fallbackId)}`;
+  if (idSuffix) {
+    return `Tech${idSuffix}`;
   }
   return "Technician";
 };
