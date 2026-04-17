@@ -49,6 +49,7 @@ import VideoEditorModal from "@/components/VHC/VideoEditorModal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
+import { JobCardPageShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
@@ -3226,11 +3227,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
 
   // ✅ Loading State
   if (loading) {
-    return (
-      <>
-        <PageContentSkeleton route={router.asPath || "/job-cards"} />
-      </>
-    );
+    return <JobCardPageShellSkeleton jobNumber={jobNumber} />;
   }
 
   // ✅ Error State

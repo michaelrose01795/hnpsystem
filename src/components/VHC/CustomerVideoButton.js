@@ -10,6 +10,8 @@ import React, { useMemo, useState } from "react"; // React primitives
 import FullScreenCapture from "@/components/VHC/mediaCapture/FullScreenCapture"; // New full-screen camera
 import VideoEditorModal from "@/components/VHC/VideoEditorModal"; // Post-capture edit modal (trim/mute)
 import { buildInspectionConcerns } from "@/components/VHC/mediaCapture/buildInspectionConcerns"; // Panel data helper
+import { showAlert } from "@/lib/notifications/alertBus";
+import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 
 // Upload the final customer video (after optional editing) with the
 // widget metadata preserved on the record. Widgets are already burned
@@ -82,7 +84,15 @@ export default function CustomerVideoButton({
       onUploadComplete?.(record); // Let parent refresh its data
     } catch (err) {
       console.error("Customer video upload failed:", err); // Log
-      setUploadError(err?.message || "Upload failed"); // Surface to user
+      const friendlyMsg = "Customer video could not be uploaded. Please try again.";
+      setUploadError(friendlyMsg);
+      showAlert(buildErrorAlert(friendlyMsg, err, {
+        component: "CustomerVideoButton",
+        action: "handleEditorSave",
+        endpoint: "POST /api/vhc/customer-video-upload",
+        jobNumber,
+        userId,
+      }));
     } finally {
       setUploading(false); // Re-enable UI
     }
@@ -111,7 +121,15 @@ export default function CustomerVideoButton({
       onUploadComplete?.(record); // Notify parent
     } catch (err) {
       console.error("Customer video upload failed:", err); // Log
-      setUploadError(err?.message || "Upload failed"); // Surface
+      const friendlyMsg = "Customer video could not be uploaded. Please try again.";
+      setUploadError(friendlyMsg);
+      showAlert(buildErrorAlert(friendlyMsg, err, {
+        component: "CustomerVideoButton",
+        action: "handleEditorSkip",
+        endpoint: "POST /api/vhc/customer-video-upload",
+        jobNumber,
+        userId,
+      }));
     } finally {
       setUploading(false); // Re-enable
     }

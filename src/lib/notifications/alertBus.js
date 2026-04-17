@@ -25,6 +25,7 @@ export const showAlert = (message, type = "info", options = {}) => {
     type: payload.type || type || deriveTypeFromMessage(payload.message),
     autoClose: payload.autoClose !== undefined ? payload.autoClose : options.autoClose ?? true,
     duration: payload.duration || options.duration || 5000,
+    devInfo: payload.devInfo || options.devInfo || null,
   };
   listeners.forEach((listener) => listener(alert));
   return alert.id;

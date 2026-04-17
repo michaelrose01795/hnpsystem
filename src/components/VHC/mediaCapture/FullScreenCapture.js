@@ -14,6 +14,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
+import { showAlert } from "@/lib/notifications/alertBus";
+import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 
 import useDeviceCamera from "./useDeviceCamera";
 import useWidgetRecorder from "./useWidgetRecorder";
@@ -224,6 +226,11 @@ export default function FullScreenCapture({
       onClose?.();
     } catch (err) {
       console.error("Photo capture failed:", err);
+      showAlert(buildErrorAlert(
+        "Photo capture failed. Please try again.",
+        err,
+        { component: "FullScreenCapture", action: "handlePhotoPress", facing: camera.facingMode }
+      ));
       setCapturing(false);
     }
   }, [camera, capturing, onCapture, onClose, orientation.isLandscape]);
@@ -239,6 +246,11 @@ export default function FullScreenCapture({
         await recorder.start();
       } catch (err) {
         console.error("Start recording failed:", err);
+        showAlert(buildErrorAlert(
+          "Could not start recording. Check camera permissions and try again.",
+          err,
+          { component: "FullScreenCapture", action: "handleVideoPress:start", facing: camera.facingMode }
+        ));
       }
       return;
     }
@@ -253,6 +265,11 @@ export default function FullScreenCapture({
       onClose?.();
     } catch (err) {
       console.error("Stop recording failed:", err);
+      showAlert(buildErrorAlert(
+        "Recording stopped unexpectedly. The video may not have been saved.",
+        err,
+        { component: "FullScreenCapture", action: "handleVideoPress:stop", facing: camera.facingMode }
+      ));
       setCapturing(false);
     }
   }, [camera, capturing, onCapture, onClose, recorder, widgets, orientation.isLandscape]);

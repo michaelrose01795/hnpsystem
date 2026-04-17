@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
+import { MyJobCardShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useNextAction } from "@/context/NextActionContext";
 import { useRoster } from "@/context/RosterContext";
@@ -2367,11 +2368,7 @@ export default function TechJobDetailPage() {
 
   // Loading state
   if (loading) {
-    return (
-      <>
-        <PageContentSkeleton route={router.asPath || "/job-cards/myjobs"} />
-      </>
-    );
+    return <MyJobCardShellSkeleton jobNumber={jobNumber} />;
   }
 
   // Handle case where job is not found

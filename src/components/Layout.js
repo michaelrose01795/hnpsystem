@@ -1279,7 +1279,7 @@ export default function Layout({
                       position: "absolute",
                       inset: 0,
                       zIndex: 10,
-                      background: "var(--page-card-bg)",
+                      background: "var(--surface-muted, var(--page-card-bg))",
                       opacity: isContentLoading ? 1 : 0,
                       transition: isContentLoading ? "none" : "opacity 0.2s ease-out",
                       pointerEvents: isContentLoading ? "auto" : "none",

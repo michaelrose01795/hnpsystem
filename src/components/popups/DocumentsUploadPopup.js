@@ -3,6 +3,8 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import ModalPortal from "./ModalPortal";
+import { showAlert } from "@/lib/notifications/alertBus";
+import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 
 const generateTempJobId = () => `temp-${Date.now()}`;
 
@@ -269,7 +271,11 @@ export default function DocumentsUploadPopup({
     try {
       await uploadDocumentsForJob(targetJobId, failedFiles, true);
     } catch (error) {
-      alert(error?.message || "Retry failed");
+      showAlert(buildErrorAlert(
+        "Retry failed. The document could not be uploaded.",
+        error,
+        { component: "DocumentsUploadPopup", action: "retryFailedUploads", endpoint: "POST /api/jobcards/upload-document", jobId: targetJobId }
+      ));
     }
   }, [effectiveJobId, pendingDocuments, uploadDocumentsForJob, uploadProgress]);
 
@@ -283,7 +289,11 @@ export default function DocumentsUploadPopup({
     try {
       await uploadDocumentsForJob(targetJobId, pendingDocuments);
     } catch (error) {
-      alert(error?.message || "Upload failed");
+      showAlert(buildErrorAlert(
+        "Document upload failed. Please check your connection and try again.",
+        error,
+        { component: "DocumentsUploadPopup", action: "handleUploadClick", endpoint: "POST /api/jobcards/upload-document", jobId: targetJobId }
+      ));
     }
   }, [effectiveJobId, pendingDocuments, uploadDocumentsForJob]);
 

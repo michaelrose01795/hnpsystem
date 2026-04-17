@@ -8,6 +8,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import VHCModalShell, { buildModalButton } from "./VHCModalShell";
 import { uploadVhcMediaFile } from "@/lib/vhc/uploadMediaClient";
+import { showAlert } from "@/lib/notifications/alertBus";
+import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 
 const PANEL_STYLE = {
   background: "var(--surfaceMain)",
@@ -78,7 +80,17 @@ export default function MediaUploadConfirmModal({
       onUploadComplete?.(uploadedFile);
     } catch (uploadError) {
       console.error("Failed to save VHC media:", uploadError);
-      setError(uploadError?.message || "Failed to save media");
+      const friendlyMsg = "Media could not be saved. Please try again.";
+      setError(friendlyMsg);
+      showAlert(buildErrorAlert(friendlyMsg, uploadError, {
+        component: "MediaUploadConfirmModal",
+        endpoint: "POST /api/vhc/upload-media",
+        jobId: jobId ?? "",
+        jobNumber: jobNumber ?? "",
+        mediaType,
+        fileSize: mediaFile?.size ?? "",
+        replaceFileId: existingFileId ?? "",
+      }));
     } finally {
       setUploading(false);
     }
