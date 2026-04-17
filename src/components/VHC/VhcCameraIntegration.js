@@ -7,7 +7,6 @@ import CameraCaptureModal from "./CameraCaptureModal";
 import MediaUploadConfirmModal from "./MediaUploadConfirmModal";
 import PhotoEditorModal from "./PhotoEditorModal";
 import VideoEditorModal from "./VideoEditorModal";
-import { uploadVhcMediaFile } from "@/lib/vhc/uploadMediaClient";
 
 export default function VhcCameraIntegration({
   jobId,
@@ -22,12 +21,10 @@ export default function VhcCameraIntegration({
   const [showVideoEditor, setShowVideoEditor] = useState(false);
   const [showUploadConfirm, setShowUploadConfirm] = useState(false);
   const [launchMode, setLaunchMode] = useState(null);
-  const [isPersistingCapture, setIsPersistingCapture] = useState(false);
 
   const [capturedMedia, setCapturedMedia] = useState(null);
   const [editedMedia, setEditedMedia] = useState(null);
   const [mediaType, setMediaType] = useState(null);
-  const [uploadedMedia, setUploadedMedia] = useState(null);
 
   const resetFlow = () => {
     setShowCameraModal(false);
@@ -38,8 +35,6 @@ export default function VhcCameraIntegration({
     setCapturedMedia(null);
     setEditedMedia(null);
     setMediaType(null);
-    setUploadedMedia(null);
-    setIsPersistingCapture(false);
   };
 
   const getInitialMode = () => {
@@ -53,37 +48,19 @@ export default function VhcCameraIntegration({
     setShowCameraModal(true);
   };
 
-  const handleCapture = async (file, type) => {
+  const handleCapture = (file, type) => {
+    // Hand the local File straight to the editor so trimming /
+    // captureStream() works without remote-URL CORS issues. Upload
+    // happens once after the user confirms in MediaUploadConfirmModal.
     setCapturedMedia(file);
     setEditedMedia(file);
     setMediaType(type);
     setShowCameraModal(false);
     setLaunchMode(null);
-    setIsPersistingCapture(true);
-
-    try {
-      const savedFile = await uploadVhcMediaFile({
-        file,
-        jobId,
-        jobNumber,
-        userId,
-        visibleToCustomer: true,
-      });
-
-      setUploadedMedia(savedFile);
-      onUploadComplete?.(savedFile);
-
-      if (type === "photo") {
-        setShowPhotoEditor(true);
-      } else {
-        setShowVideoEditor(true);
-      }
-    } catch (error) {
-      console.error("Failed to save captured VHC media:", error);
-      alert(error?.message || "Failed to save captured media");
-      resetFlow();
-    } finally {
-      setIsPersistingCapture(false);
+    if (type === "photo") {
+      setShowPhotoEditor(true);
+    } else {
+      setShowVideoEditor(true);
     }
   };
 
@@ -106,10 +83,9 @@ export default function VhcCameraIntegration({
         <button
           type="button"
           onClick={() => handleCameraClick("photo")}
-          disabled={isPersistingCapture}
           style={{ ...createVhcButtonStyle("primary"), ...commonButtonStyle }}
         >
-          {isPersistingCapture ? "Saving..." : "Capture Photo"}
+          Capture Photo
         </button>
       );
     }
@@ -119,10 +95,9 @@ export default function VhcCameraIntegration({
         <button
           type="button"
           onClick={() => handleCameraClick("video")}
-          disabled={isPersistingCapture}
           style={{ ...createVhcButtonStyle("primary"), ...commonButtonStyle }}
         >
-          {isPersistingCapture ? "Saving..." : "Capture Video"}
+          Capture Video
         </button>
       );
     }
@@ -132,18 +107,16 @@ export default function VhcCameraIntegration({
         <button
           type="button"
           onClick={() => handleCameraClick("photo")}
-          disabled={isPersistingCapture}
           style={{ ...createVhcButtonStyle("primary"), ...commonButtonStyle }}
         >
-          {isPersistingCapture ? "Saving..." : "Capture Photo"}
+          Capture Photo
         </button>
         <button
           type="button"
           onClick={() => handleCameraClick("video")}
-          disabled={isPersistingCapture}
           style={{ ...createVhcButtonStyle("secondary"), ...commonButtonStyle }}
         >
-          {isPersistingCapture ? "Saving..." : "Capture Video"}
+          Capture Video
         </button>
       </>
     );
@@ -178,7 +151,7 @@ export default function VhcCameraIntegration({
 
       <VideoEditorModal
         isOpen={showVideoEditor}
-        videoFile={uploadedMedia?.file_url || capturedMedia}
+        videoFile={capturedMedia}
         onSave={(file) => {
           setEditedMedia(file);
           setShowVideoEditor(false);
@@ -196,7 +169,7 @@ export default function VhcCameraIntegration({
         isOpen={showUploadConfirm}
         mediaFile={editedMedia}
         mediaType={mediaType}
-        existingFileId={uploadedMedia?.file_id || uploadedMedia?.id || null}
+        existingFileId={null}
         jobId={jobId}
         jobNumber={jobNumber}
         userId={userId}

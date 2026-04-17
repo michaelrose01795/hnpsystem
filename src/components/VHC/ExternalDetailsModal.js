@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import themeConfig, {
   createVhcButtonStyle,
   vhcModalContentStyles,
@@ -57,7 +58,22 @@ const createDefaultCategoryData = () =>
   }, {});
 
 
-export default function ExternalDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [], inlineMode = false }) {
+export default function ExternalDetailsModal({
+  isOpen,
+  onClose,
+  onComplete,
+  initialData,
+  locked = false,
+  summaryItems = [],
+  inlineMode = false,
+  // Job identifiers for the per-section camera button. When all three
+  // are present the camera button is rendered in the footer; otherwise
+  // the footer falls back to the previous Close / Save & Complete pair.
+  jobId = null,
+  jobNumber = null,
+  userId = null,
+  onSectionMediaUploaded = null,
+}) {
   const { isConcernLocked, getLockReason } = useConcernLock(summaryItems, "External");
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
@@ -167,8 +183,21 @@ export default function ExternalDetailsModal({ isOpen, onClose, onComplete, init
     }
   };
 
+  const canShowCamera = Boolean(jobId || jobNumber);
+
   const modalFooter = (
     <>
+      {canShowCamera ? (
+        <SectionCameraButton
+          sectionKey="external"
+          sectionLabel="External"
+          vhcData={{ externalInspection: data }}
+          jobId={jobId}
+          jobNumber={jobNumber}
+          userId={userId}
+          onUploadComplete={onSectionMediaUploaded}
+        />
+      ) : null}
       <button
         type="button"
         onClick={handleClose}

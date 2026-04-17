@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import themeConfig, {
   createVhcButtonStyle,
   vhcModalContentStyles,
@@ -77,7 +78,18 @@ const resolveServiceSectionKey = (target = "") => {
   return "service_under_bonnet_general";
 };
 
-export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onClose, onComplete, locked = false, inlineMode = false }) {
+export default function ServiceIndicatorDetailsModal({
+  isOpen,
+  initialData,
+  onClose,
+  onComplete,
+  locked = false,
+  inlineMode = false,
+  jobId = null,
+  jobNumber = null,
+  userId = null,
+  onSectionMediaUploaded = null,
+}) {
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
     gap: "20px",
@@ -326,8 +338,21 @@ export default function ServiceIndicatorDetailsModal({ isOpen, initialData, onCl
     });
   };
 
+  const canShowCamera = Boolean(jobId || jobNumber);
+
   const footer = (
     <>
+      {canShowCamera ? (
+        <SectionCameraButton
+          sectionKey="service"
+          sectionLabel="Service Indicator & Under Bonnet"
+          vhcData={{ serviceIndicator: { concerns } }}
+          jobId={jobId}
+          jobNumber={jobNumber}
+          userId={userId}
+          onUploadComplete={onSectionMediaUploaded}
+        />
+      ) : null}
       <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
         Close
       </button>

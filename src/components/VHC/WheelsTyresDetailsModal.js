@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import themeConfig, {
   createVhcButtonStyle,
   vhcModalContentStyles,
@@ -496,7 +497,18 @@ function TyreSpecFields({ tyre, onFieldChange }) {
   );
 }
 
-export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, initialData = null, locked = false, inlineMode = false }) {
+export default function WheelsTyresDetailsModal({
+  isOpen,
+  onClose,
+  onComplete,
+  initialData = null,
+  locked = false,
+  inlineMode = false,
+  jobId = null,
+  jobNumber = null,
+  userId = null,
+  onSectionMediaUploaded = null,
+}) {
   const normalizedInitialTyres = useMemo(() => buildNormalizedTyres(initialData || {}), [initialData]);
   const [tyres, setTyres] = useState(normalizedInitialTyres);
 
@@ -825,8 +837,21 @@ export default function WheelsTyresDetailsModal({ isOpen, onClose, onComplete, i
     gap: "20px",
   };
 
+  const canShowCamera = Boolean(jobId || jobNumber);
+
   const footer = (
     <>
+      {canShowCamera ? (
+        <SectionCameraButton
+          sectionKey="wheels"
+          sectionLabel="Wheels & Tyres"
+          vhcData={{ wheelsTyres: tyres }}
+          jobId={jobId}
+          jobNumber={jobNumber}
+          userId={userId}
+          onUploadComplete={onSectionMediaUploaded}
+        />
+      ) : null}
       <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
         Close
       </button>

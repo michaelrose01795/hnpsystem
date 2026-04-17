@@ -1,15 +1,23 @@
 TODO
-have it so within the "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-wheels-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-brakes-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-service-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-external-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-internal-header)", "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.1.1.1 (vhc-underside-header)" sectiosn to the right of the "Close/Save & Complete" buttons add a camera button, only make it clickable if there has been a concern (red or amber) which has been reported in that section. for example within "Wipers/Washers/Horn" a report of wiper blades require repalcing and in red "Status" then make the camera button clickable, if the user then clicks the camera button, auto link it to the only report which is there, unless if there is more than one report within the seciton or inside the same catagory for example Wipers/Washers/Horn section then it opens a popup with the description of the items reported in a list view, when that reported item is click have it then link the video or photo captured to that section. 
+have it so moveing the "Timeline" player head it moves the video to that section as well, have it linked 
 
+
+within "/job-cards/myjobs/00076 :: 1.2.2.1.1.4.1.1.2 (myjob-documents-panel)" section add a edit button within the "Document Preview" popup
 
 EXPAND
 have it so premition to use the audio and camera is onyl aksed once by the browser and for it to remember
+
+
+look into "Review Media
+" section after editing photo
 
 
 TODOOOOO
 Chatgpt prompt 2nd
 with edit popup prompt have it hide the pause and play button after 0.1 second when the curse has left the video section 
 
+
+TODO DEEP ONE, with camera for concerns, hgave ir link rto vhc photo and vedio section  in catagory of wipers etc
 
 
 TODO

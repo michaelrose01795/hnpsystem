@@ -3673,6 +3673,10 @@ export default function TechJobDetailPage() {
                     onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
                     initialData={vhcData.wheelsTyres}
                     isReopenMode={isReopenMode}
+                    jobId={jobData?.id || null}
+                    jobNumber={jobNumber}
+                    userId={dbUserId || user?.id || null}
+                    onSectionMediaUploaded={() => fetchJobData?.()}
                   />
                 </DevLayoutSection>
               )}
@@ -3692,6 +3696,10 @@ export default function TechJobDetailPage() {
                     onComplete={(data) => handleSectionComplete("brakesHubs", data)}
                     initialData={vhcData.brakesHubs}
                     isReopenMode={isReopenMode}
+                    jobId={jobData?.id || null}
+                    jobNumber={jobNumber}
+                    userId={dbUserId || user?.id || null}
+                    onSectionMediaUploaded={() => fetchJobData?.()}
                   />
                 </DevLayoutSection>
               )}
@@ -3711,6 +3719,10 @@ export default function TechJobDetailPage() {
                     onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
                     initialData={vhcData.serviceIndicator}
                     isReopenMode={isReopenMode}
+                    jobId={jobData?.id || null}
+                    jobNumber={jobNumber}
+                    userId={dbUserId || user?.id || null}
+                    onSectionMediaUploaded={() => fetchJobData?.()}
                   />
                 </DevLayoutSection>
               )}
@@ -3730,6 +3742,10 @@ export default function TechJobDetailPage() {
                     onComplete={(data) => handleSectionComplete("externalInspection", data)}
                     initialData={vhcData.externalInspection}
                     isReopenMode={isReopenMode}
+                    jobId={jobData?.id || null}
+                    jobNumber={jobNumber}
+                    userId={dbUserId || user?.id || null}
+                    onSectionMediaUploaded={() => fetchJobData?.()}
                   />
                 </DevLayoutSection>
               )}
@@ -3749,6 +3765,10 @@ export default function TechJobDetailPage() {
                     onComplete={(data) => handleSectionComplete("internalElectrics", data)}
                     initialData={vhcData.internalElectrics}
                     isReopenMode={isReopenMode}
+                    jobId={jobData?.id || null}
+                    jobNumber={jobNumber}
+                    userId={dbUserId || user?.id || null}
+                    onSectionMediaUploaded={() => fetchJobData?.()}
                   />
                 </DevLayoutSection>
               )}
@@ -3768,6 +3788,10 @@ export default function TechJobDetailPage() {
                     onComplete={(data) => handleSectionComplete("underside", data)}
                     initialData={vhcData.underside}
                     isReopenMode={isReopenMode}
+                    jobId={jobData?.id || null}
+                    jobNumber={jobNumber}
+                    userId={dbUserId || user?.id || null}
+                    onSectionMediaUploaded={() => fetchJobData?.()}
                   />
                 </DevLayoutSection>
               )}

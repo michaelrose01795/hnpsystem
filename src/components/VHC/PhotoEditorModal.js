@@ -1,7 +1,13 @@
 // file location: src/components/VHC/PhotoEditorModal.js
 // Post-capture photo annotation editor. Opens in a VHCModalShell and
-// offers pen / highlighter / eraser tools with a preset colour palette,
-// a line-width slider and undo / redo / reset history.
+// offers pen / shape (circle, square, line, arrow) / eraser tools with
+// a preset colour palette, a line-width slider and undo / redo / reset
+// history.
+//
+// Annotations live on an offscreen canvas that sits above the base
+// photo; the visible canvas is a composite of photo + annotations +
+// (optionally) an in-flight shape preview. Because the eraser only
+// operates on the annotations layer, it can never damage the photo.
 //
 // All colour / radius / spacing / typography values resolve through
 // the global design tokens in src/styles/theme.css so the editor
@@ -11,10 +17,15 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import VHCModalShell, { buildModalButton } from "./VHCModalShell";
 
 const TOOLS = [
-  { id: "pen", label: "✏️ Pen", desc: "Draw lines" },
-  { id: "highlighter", label: "🖍️ Highlighter", desc: "Transparent marks" },
-  { id: "eraser", label: "🧹 Eraser", desc: "Remove marks" },
+  { id: "pen", label: "✏️ Pen", desc: "Freehand draw", group: "draw" },
+  { id: "circle", label: "⭕ Circle", desc: "Drag to size", group: "draw" },
+  { id: "square", label: "▭ Square", desc: "Drag to size", group: "draw" },
+  { id: "line", label: "／ Line", desc: "Drag endpoints", group: "draw" },
+  { id: "arrow", label: "➜ Arrow", desc: "Point & shoot", group: "draw" },
+  { id: "eraser", label: "🧹 Eraser", desc: "Remove marks only", group: "erase" },
 ];
+
+const SHAPE_TOOLS = new Set(["circle", "square", "line", "arrow"]);
 
 // Annotation palette. The first three swatches map to the global
 // danger / warning / success tokens so the editor's default marker
@@ -66,10 +77,7 @@ const SECTION_LABEL_STYLE = {
 
 export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, onSkip }) {
   const [tool, setTool] = useState("pen");
-  // Swatches resolve to the live theme tokens — re-read whenever the
-  // modal opens so an accent/theme change between opens is reflected.
   const presetColors = useMemo(() => {
-    // isOpen is a dependency so the palette is re-evaluated on each open.
     void isOpen;
     return resolvePresetColors();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,58 +89,123 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const canvasRef = useRef(null);
+  const annotationsRef = useRef(null); // offscreen canvas: annotations only
   const imageRef = useRef(null);
   const drawingRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
-  // Latest history needed inside callbacks that don't re-subscribe.
+  const startPosRef = useRef({ x: 0, y: 0 });
+
   const historyRef = useRef({ list: [], step: -1 });
   historyRef.current = { list: history, step: historyStep };
 
+  // --- Compositing ---------------------------------------------------
+  // Paint base image + annotations into the visible canvas. An optional
+  // `preview` callback lets in-flight shape drags render on top without
+  // being committed to the annotations layer.
+  const compose = (preview) => {
+    const canvas = canvasRef.current;
+    const base = imageRef.current;
+    const ann = annotationsRef.current;
+    if (!canvas || !base) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(base, 0, 0);
+    if (ann) ctx.drawImage(ann, 0, 0);
+    if (preview) preview(ctx);
+  };
+
+  // --- Image load ----------------------------------------------------
   useEffect(() => {
-    if (isOpen && photoFile) {
-      setImageLoaded(true);
-      loadImage();
-    } else {
+    if (!isOpen || !photoFile) {
       setImageLoaded(false);
+      setHistory([]);
+      setHistoryStep(-1);
+      imageRef.current = null;
+      annotationsRef.current = null;
+      return undefined;
     }
+
+    let cancelled = false;
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+
+    const img = new Image();
+    let objectUrl = null;
+
+    const sourceIsFile = typeof photoFile !== "string";
+    if (sourceIsFile) {
+      objectUrl = URL.createObjectURL(photoFile);
+      img.src = objectUrl;
+    } else {
+      img.src = photoFile;
+    }
+
+    const handleReady = () => {
+      if (cancelled) return;
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      canvas.width = w;
+      canvas.height = h;
+
+      // Create an offscreen annotations layer sized to the image.
+      const ann = document.createElement("canvas");
+      ann.width = w;
+      ann.height = h;
+      annotationsRef.current = ann;
+      imageRef.current = img;
+
+      compose();
+      setImageLoaded(true);
+      saveHistory(); // empty-annotations baseline
+    };
+
+    if (typeof img.decode === "function") {
+      img.decode().then(handleReady).catch((err) => {
+        if (cancelled) return;
+        img.onload = handleReady;
+        img.onerror = () => {
+          console.error("Error loading image:", err);
+          setImageLoaded(false);
+        };
+      });
+    } else {
+      img.onload = handleReady;
+      img.onerror = (err) => {
+        console.error("Error loading image:", err);
+        setImageLoaded(false);
+      };
+    }
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, photoFile]);
 
-  const loadImage = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    try {
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      const img = new Image();
-      const url = URL.createObjectURL(photoFile);
-      img.src = url;
-      await img.decode();
-
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-
-      imageRef.current = img;
-      saveHistory();
-
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Error loading image:", err);
-      setImageLoaded(false);
-    }
-  };
-
+  // --- History (annotations-layer snapshots) ------------------------
   const saveHistory = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const imageData = canvas.toDataURL();
+    const ann = annotationsRef.current;
+    if (!ann) return;
+    const snapshot = ann.toDataURL();
     const { list, step } = historyRef.current;
     const newHistory = list.slice(0, step + 1);
-    newHistory.push(imageData);
+    newHistory.push(snapshot);
     setHistory(newHistory);
     setHistoryStep(newHistory.length - 1);
+  };
+
+  const restoreFromHistory = (step) => {
+    const ann = annotationsRef.current;
+    if (!ann || !history[step]) return;
+    const ctx = ann.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, ann.width, ann.height);
+      ctx.drawImage(img, 0, 0);
+      compose();
+    };
+    img.src = history[step];
   };
 
   const undo = () => {
@@ -151,19 +224,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     }
   };
 
-  const restoreFromHistory = (step) => {
-    const canvas = canvasRef.current;
-    if (!canvas || !history[step]) return;
-
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-    };
-    img.src = history[step];
-  };
-
   const resetToOriginal = () => {
     if (history.length > 0) {
       restoreFromHistory(0);
@@ -171,6 +231,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     }
   };
 
+  // --- Pointer coords in image space --------------------------------
   const getCanvasCoordinates = (event) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -194,61 +255,153 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     };
   };
 
+  // --- Shape drawing helpers ----------------------------------------
+  const applyStrokeStyle = (ctx) => {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = 1;
+  };
+
+  const drawShape = (ctx, type, a, b) => {
+    applyStrokeStyle(ctx);
+    if (type === "line") {
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      return;
+    }
+    if (type === "arrow") {
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+      const headLen = Math.max(12, lineWidth * 5);
+      const angle = Math.atan2(b.y - a.y, b.x - a.x);
+      ctx.beginPath();
+      ctx.moveTo(b.x, b.y);
+      ctx.lineTo(
+        b.x - headLen * Math.cos(angle - Math.PI / 6),
+        b.y - headLen * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        b.x - headLen * Math.cos(angle + Math.PI / 6),
+        b.y - headLen * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+      return;
+    }
+    if (type === "square") {
+      const x = Math.min(a.x, b.x);
+      const y = Math.min(a.y, b.y);
+      const w = Math.abs(b.x - a.x);
+      const h = Math.abs(b.y - a.y);
+      ctx.strokeRect(x, y, w, h);
+      return;
+    }
+    if (type === "circle") {
+      const cx = (a.x + b.x) / 2;
+      const cy = (a.y + b.y) / 2;
+      const rx = Math.abs(b.x - a.x) / 2;
+      const ry = Math.abs(b.y - a.y) / 2;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  };
+
+  // --- Pointer handlers ---------------------------------------------
   const startDrawing = (event) => {
+    if (!imageLoaded) return;
     event.preventDefault();
     const pos = getCanvasCoordinates(event);
     lastPosRef.current = pos;
+    startPosRef.current = pos;
     drawingRef.current = true;
   };
 
   const draw = (event) => {
     if (!drawingRef.current) return;
     event.preventDefault();
+    const ann = annotationsRef.current;
+    if (!ann) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext("2d");
     const pos = getCanvasCoordinates(event);
 
-    ctx.beginPath();
-    ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y);
-    ctx.lineTo(pos.x, pos.y);
-
     if (tool === "pen") {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.globalCompositeOperation = "source-over";
-    } else if (tool === "highlighter") {
-      ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth * 3;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.globalAlpha = 0.3;
-      ctx.globalCompositeOperation = "source-over";
-    } else if (tool === "eraser") {
-      ctx.strokeStyle = "white";
+      const ctx = ann.getContext("2d");
+      applyStrokeStyle(ctx);
+      ctx.beginPath();
+      ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      lastPosRef.current = pos;
+      compose();
+      return;
+    }
+
+    if (tool === "eraser") {
+      // destination-out targets the annotations canvas only, so the
+      // base photo is untouched when we recomposite.
+      const ctx = ann.getContext("2d");
+      ctx.globalCompositeOperation = "destination-out";
       ctx.lineWidth = lineWidth * 2;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      ctx.globalCompositeOperation = "source-over";
+      lastPosRef.current = pos;
+      compose();
+      return;
     }
 
-    ctx.stroke();
-    ctx.globalAlpha = 1.0;
-    lastPosRef.current = pos;
-  };
-
-  const stopDrawing = () => {
-    if (drawingRef.current) {
-      drawingRef.current = false;
-      saveHistory();
+    if (SHAPE_TOOLS.has(tool)) {
+      // Render the in-flight shape as a live preview — it is not
+      // written into the annotations layer until pointer-up.
+      compose((ctx) => drawShape(ctx, tool, startPosRef.current, pos));
+      lastPosRef.current = pos;
     }
   };
 
+  const stopDrawing = (event) => {
+    if (!drawingRef.current) return;
+    drawingRef.current = false;
+
+    if (SHAPE_TOOLS.has(tool)) {
+      const ann = annotationsRef.current;
+      const end = event ? getCanvasCoordinates(event) : lastPosRef.current;
+      const start = startPosRef.current;
+      const hasSize = Math.hypot(end.x - start.x, end.y - start.y) > 2;
+      if (ann && hasSize) {
+        const ctx = ann.getContext("2d");
+        drawShape(ctx, tool, start, end);
+        compose();
+        saveHistory();
+        return;
+      }
+      // Zero-size drag — just clear the preview.
+      compose();
+      return;
+    }
+
+    // Pen / eraser — a stroke already committed to the annotations
+    // layer, so just snapshot.
+    saveHistory();
+  };
+
+  // --- Export --------------------------------------------------------
   const exportImage = () => {
+    // Ensure we flatten the latest annotations into the visible canvas
+    // before reading a blob off it.
+    compose();
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -267,6 +420,9 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
 
   const canUndo = historyStep > 0;
   const canRedo = historyStep < history.length - 1;
+
+  const drawTools = TOOLS.filter((t) => t.group === "draw");
+  const eraseTools = TOOLS.filter((t) => t.group === "erase");
 
   const footer = (
     <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "space-between", width: "100%", flexWrap: "wrap" }}>
@@ -304,6 +460,38 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     </div>
   );
 
+  const renderToolButton = (t) => {
+    const active = tool === t.id;
+    return (
+      <button
+        key={t.id}
+        type="button"
+        onClick={() => setTool(t.id)}
+        aria-pressed={active}
+        style={{
+          padding: "var(--space-sm) var(--space-3)",
+          borderRadius: "var(--radius-sm)",
+          border: `1px solid ${active ? "var(--accentBorderStrong)" : "var(--accentBorder)"}`,
+          background: active ? "var(--accentSurfaceHover)" : "var(--surfaceMain)",
+          color: active ? "var(--accentMain)" : "var(--text-primary)",
+          fontSize: "var(--text-body-sm)",
+          fontWeight: active ? 700 : 500,
+          fontFamily: "var(--font-family)",
+          cursor: "pointer",
+          textAlign: "left",
+          transition: "var(--control-transition)",
+          display: "grid",
+          gap: 2,
+        }}
+      >
+        <span>{t.label}</span>
+        <span style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)" }}>
+          {t.desc}
+        </span>
+      </button>
+    );
+  };
+
   return (
     <VHCModalShell
       isOpen={isOpen}
@@ -334,39 +522,16 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
           }}
         >
           <div>
-            <span style={SECTION_LABEL_STYLE}>Tool</span>
+            <span style={SECTION_LABEL_STYLE}>Pen</span>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
-              {TOOLS.map((t) => {
-                const active = tool === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTool(t.id)}
-                    aria-pressed={active}
-                    style={{
-                      padding: "var(--space-sm) var(--space-3)",
-                      borderRadius: "var(--radius-sm)",
-                      border: `1px solid ${active ? "var(--accentBorderStrong)" : "var(--accentBorder)"}`,
-                      background: active ? "var(--accentSurfaceHover)" : "var(--surfaceMain)",
-                      color: active ? "var(--accentMain)" : "var(--text-primary)",
-                      fontSize: "var(--text-body-sm)",
-                      fontWeight: active ? 700 : 500,
-                      fontFamily: "var(--font-family)",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      transition: "var(--control-transition)",
-                      display: "grid",
-                      gap: 2,
-                    }}
-                  >
-                    <span>{t.label}</span>
-                    <span style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)" }}>
-                      {t.desc}
-                    </span>
-                  </button>
-                );
-              })}
+              {drawTools.map(renderToolButton)}
+            </div>
+          </div>
+
+          <div>
+            <span style={SECTION_LABEL_STYLE}>Erase</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
+              {eraseTools.map(renderToolButton)}
             </div>
           </div>
 
@@ -502,28 +667,40 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
             minHeight: 0,
           }}
         >
-          {!imageLoaded ? (
-            <div style={{ textAlign: "center", color: "var(--text-secondary)" }}>
+          <canvas
+            ref={canvasRef}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={stopDrawing}
+            onMouseLeave={stopDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={stopDrawing}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "100%",
+              cursor: "crosshair",
+              touchAction: "none",
+              visibility: imageLoaded ? "visible" : "hidden",
+            }}
+          />
+          {!imageLoaded && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                color: "var(--text-secondary)",
+                pointerEvents: "none",
+              }}
+            >
               <div style={{ fontSize: "var(--text-h1)", marginBottom: "var(--space-sm)" }}>📷</div>
               <div style={{ fontSize: "var(--text-body-sm)" }}>Loading image…</div>
             </div>
-          ) : (
-            <canvas
-              ref={canvasRef}
-              onMouseDown={startDrawing}
-              onMouseMove={draw}
-              onMouseUp={stopDrawing}
-              onMouseLeave={stopDrawing}
-              onTouchStart={startDrawing}
-              onTouchMove={draw}
-              onTouchEnd={stopDrawing}
-              style={{
-                maxWidth: "100%",
-                maxHeight: "100%",
-                cursor: "crosshair",
-                touchAction: "none",
-              }}
-            />
           )}
         </div>
       </div>

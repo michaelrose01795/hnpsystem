@@ -15,7 +15,7 @@ import {
 } from "@/lib/storage/jobFilesSchemaRepair";
 
 const BUCKET = "job-files"; // single bucket for all job-related uploads
-const JOB_FILES_OPTIONAL_COLUMNS = ["visible_to_customer", "storage_path"];
+const JOB_FILES_OPTIONAL_COLUMNS = ["visible_to_customer", "storage_path", "vhc_concern_link"];
 
 // Prefer the service-role client (server-side); fall back to anon client.
 function getClient() {
@@ -184,6 +184,11 @@ export async function saveFileRecord(meta) {
     uploaded_at: new Date().toISOString(),
     visible_to_customer: meta.visibleToCustomer ?? true,
     storage_path: meta.storagePath || null,
+    // Concern link JSON — only included when the caller provided it.
+    // Empty objects are filtered so the column stays NULL by default.
+    ...(meta.concernLink && typeof meta.concernLink === "object" && Object.keys(meta.concernLink).length
+      ? { vhc_concern_link: meta.concernLink }
+      : {}),
   };
 
   const insertRow = { ...row };
@@ -258,6 +263,9 @@ export async function updateFileRecord(fileId, meta) {
     uploaded_at: new Date().toISOString(),
     visible_to_customer: meta.visibleToCustomer ?? true,
     storage_path: meta.storagePath || null,
+    ...(meta.concernLink && typeof meta.concernLink === "object" && Object.keys(meta.concernLink).length
+      ? { vhc_concern_link: meta.concernLink }
+      : {}),
   };
 
   const updatePayload = { ...updates };
@@ -342,6 +350,7 @@ export async function uploadAndRecord(file, opts) {
     fileSize: file.size ?? file.buffer.length,
     storageType: "supabase",
     storagePath,
+    concernLink: opts.concernLink || null,
   });
 
   if (!result.success) {

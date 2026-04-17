@@ -7,7 +7,6 @@ import CameraCaptureModal from "./CameraCaptureModal";
 import MediaUploadConfirmModal from "./MediaUploadConfirmModal";
 import PhotoEditorModal from "./PhotoEditorModal";
 import VideoEditorModal from "./VideoEditorModal";
-import { uploadVhcMediaFile } from "@/lib/vhc/uploadMediaClient";
 
 export default function VhcCameraButton({
   jobId,
@@ -20,12 +19,10 @@ export default function VhcCameraButton({
   const [showPhotoEditor, setShowPhotoEditor] = useState(false);
   const [showVideoEditor, setShowVideoEditor] = useState(false);
   const [showUploadConfirm, setShowUploadConfirm] = useState(false);
-  const [isPersistingCapture, setIsPersistingCapture] = useState(false);
 
   const [capturedMedia, setCapturedMedia] = useState(null);
   const [editedMedia, setEditedMedia] = useState(null);
   const [mediaType, setMediaType] = useState(null);
-  const [uploadedMedia, setUploadedMedia] = useState(null);
 
   const resetFlow = () => {
     setShowCameraModal(false);
@@ -35,44 +32,25 @@ export default function VhcCameraButton({
     setCapturedMedia(null);
     setEditedMedia(null);
     setMediaType(null);
-    setUploadedMedia(null);
-    setIsPersistingCapture(false);
   };
 
   const handleCameraClick = () => {
     setShowCameraModal(true);
   };
 
-  const handleCapture = async (file, type) => {
+  const handleCapture = (file, type) => {
+    // Hand the local File straight to the editor so trimming /
+    // captureStream() works without remote-URL CORS issues. We only
+    // upload the final (edited or original) file once the user
+    // confirms in MediaUploadConfirmModal.
     setCapturedMedia(file);
     setEditedMedia(file);
     setMediaType(type);
     setShowCameraModal(false);
-    setIsPersistingCapture(true);
-
-    try {
-      const savedFile = await uploadVhcMediaFile({
-        file,
-        jobId,
-        jobNumber,
-        userId,
-        visibleToCustomer: true,
-      });
-
-      setUploadedMedia(savedFile);
-      onUploadComplete?.(savedFile);
-
-      if (type === "photo") {
-        setShowPhotoEditor(true);
-      } else {
-        setShowVideoEditor(true);
-      }
-    } catch (error) {
-      console.error("Failed to save captured VHC media:", error);
-      alert(error?.message || "Failed to save captured media");
-      resetFlow();
-    } finally {
-      setIsPersistingCapture(false);
+    if (type === "photo") {
+      setShowPhotoEditor(true);
+    } else {
+      setShowVideoEditor(true);
     }
   };
 
@@ -110,7 +88,6 @@ export default function VhcCameraButton({
       <button
         type="button"
         onClick={handleCameraClick}
-        disabled={isPersistingCapture}
         style={{
           ...createVhcButtonStyle("primary"),
           padding: "var(--space-sm) var(--space-md)",
@@ -122,7 +99,7 @@ export default function VhcCameraButton({
         }}
         title="Capture VHC photo or video"
       >
-        {isPersistingCapture ? "Saving..." : "Camera"}
+        Camera
       </button>
 
       <CameraCaptureModal
@@ -142,7 +119,7 @@ export default function VhcCameraButton({
 
       <VideoEditorModal
         isOpen={showVideoEditor}
-        videoFile={uploadedMedia?.file_url || capturedMedia}
+        videoFile={capturedMedia}
         onSave={handleVideoEditorSave}
         onSkip={handleVideoEditorSkip}
         onCancel={resetFlow}
@@ -152,7 +129,7 @@ export default function VhcCameraButton({
         isOpen={showUploadConfirm}
         mediaFile={editedMedia}
         mediaType={mediaType}
-        existingFileId={uploadedMedia?.file_id || uploadedMedia?.id || null}
+        existingFileId={null}
         jobId={jobId}
         jobNumber={jobNumber}
         userId={userId}

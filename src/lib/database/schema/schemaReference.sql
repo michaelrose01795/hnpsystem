@@ -37,6 +37,24 @@ CREATE TABLE public.accounts (
   CONSTRAINT accounts_pkey PRIMARY KEY (account_id),
   CONSTRAINT accounts_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
+CREATE TABLE public.ai_guide_messages (
+  id bigint NOT NULL DEFAULT nextval('ai_guide_messages_id_seq'::regclass),
+  session_id bigint NOT NULL,
+  role text NOT NULL CHECK (role = ANY (ARRAY['user'::text, 'assistant'::text])),
+  content text NOT NULL,
+  sources jsonb NOT NULL DEFAULT '[]'::jsonb,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT ai_guide_messages_pkey PRIMARY KEY (id),
+  CONSTRAINT ai_guide_messages_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.ai_guide_sessions(id)
+);
+CREATE TABLE public.ai_guide_sessions (
+  id bigint NOT NULL DEFAULT nextval('ai_guide_sessions_id_seq'::regclass),
+  user_id integer NOT NULL,
+  title text NOT NULL DEFAULT 'New Chat'::text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT ai_guide_sessions_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.appointments (
   appointment_id integer NOT NULL DEFAULT nextval('appointments_appointment_id_seq'::regclass),
   job_id integer,
@@ -387,6 +405,7 @@ CREATE TABLE public.invoice_request_items (
   net_price numeric NOT NULL DEFAULT 0,
   vat_amount numeric NOT NULL DEFAULT 0,
   vat_rate numeric NOT NULL DEFAULT 20,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT invoice_request_items_pkey PRIMARY KEY (id),
   CONSTRAINT invoice_request_items_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.invoice_requests(id)
 );
@@ -399,6 +418,7 @@ CREATE TABLE public.invoice_requests (
   labour_net numeric NOT NULL DEFAULT 0,
   labour_vat numeric NOT NULL DEFAULT 0,
   labour_vat_rate numeric NOT NULL DEFAULT 20,
+  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT invoice_requests_pkey PRIMARY KEY (id),
   CONSTRAINT invoice_requests_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
@@ -436,6 +456,8 @@ CREATE TABLE public.invoices (
   service_total numeric DEFAULT 0,
   vat_total numeric DEFAULT 0,
   invoice_total numeric DEFAULT 0,
+  snapshot_version integer NOT NULL DEFAULT 0,
+  meta jsonb NOT NULL DEFAULT '{}'::jsonb,
   CONSTRAINT invoices_pkey PRIMARY KEY (id),
   CONSTRAINT invoices_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT invoices_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
@@ -555,10 +577,11 @@ CREATE TABLE public.job_files (
   uploaded_by integer,
   folder text DEFAULT 'general'::text,
   uploaded_at timestamp with time zone DEFAULT now(),
-  visible_to_customer boolean NOT NULL DEFAULT true,
+  visible_to_customer boolean DEFAULT true,
   file_size bigint,
-  storage_type text NOT NULL DEFAULT 'local'::text,
+  storage_type text,
   storage_path text,
+  vhc_concern_link jsonb,
   CONSTRAINT job_files_pkey PRIMARY KEY (file_id),
   CONSTRAINT job_files_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT job_files_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.users(user_id)
@@ -737,6 +760,19 @@ CREATE TABLE public.jobs (
   checked_in_by integer,
   workshop_started_by integer,
   wash_completed_by integer,
+  service_mode text NOT NULL DEFAULT 'workshop'::text CHECK (service_mode = ANY (ARRAY['workshop'::text, 'mobile'::text])),
+  service_address text,
+  service_postcode text,
+  service_contact_name text,
+  service_contact_phone text,
+  appointment_window_start timestamp with time zone,
+  appointment_window_end timestamp with time zone,
+  access_notes text,
+  mobile_outcome text CHECK (mobile_outcome IS NULL OR (mobile_outcome = ANY (ARRAY['completed_onsite'::text, 'follow_up_required'::text, 'redirected_to_workshop'::text, 'unable_to_complete'::text]))),
+  mobile_completed_at timestamp with time zone,
+  redirected_from_mobile_at timestamp with time zone,
+  redirected_from_mobile_by integer,
+  redirect_reason text,
   CONSTRAINT jobs_pkey PRIMARY KEY (id),
   CONSTRAINT jobs_booked_by_fkey FOREIGN KEY (booked_by) REFERENCES public.users(user_id),
   CONSTRAINT jobs_checked_in_by_fkey FOREIGN KEY (checked_in_by) REFERENCES public.users(user_id),
@@ -748,7 +784,8 @@ CREATE TABLE public.jobs (
   CONSTRAINT jobs_warranty_linked_job_id_fkey FOREIGN KEY (warranty_linked_job_id) REFERENCES public.jobs(id),
   CONSTRAINT jobs_warranty_vhc_master_job_id_fkey FOREIGN KEY (warranty_vhc_master_job_id) REFERENCES public.jobs(id),
   CONSTRAINT jobs_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.accounts(account_id),
-  CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id)
+  CONSTRAINT jobs_prime_job_id_fkey FOREIGN KEY (prime_job_id) REFERENCES public.jobs(id),
+  CONSTRAINT jobs_redirected_from_mobile_by_fkey FOREIGN KEY (redirected_from_mobile_by) REFERENCES public.users(user_id)
 );
 CREATE TABLE public.key_tracking_events (
   key_event_id bigint NOT NULL DEFAULT nextval('key_tracking_events_key_event_id_seq'::regclass),
@@ -1103,7 +1140,7 @@ CREATE TABLE public.parts_job_items (
   quantity_requested integer NOT NULL DEFAULT 1,
   quantity_allocated integer NOT NULL DEFAULT 0,
   quantity_fitted integer NOT NULL DEFAULT 0,
-  status text NOT NULL DEFAULT 'pending'::text CHECK (status IS NULL OR (status = ANY (ARRAY['pending'::text, 'waiting_authorisation'::text, 'awaiting_stock'::text, 'on_order'::text, 'booked'::text, 'allocated'::text, 'pre_picked'::text, 'picked'::text, 'stock'::text, 'fitted'::text, 'cancelled'::text, 'removed'::text]))),
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'waiting_authorisation'::text, 'awaiting_stock'::text, 'on_order'::text, 'booked'::text, 'allocated'::text, 'pre_picked'::text, 'picked'::text, 'loaded'::text, 'stock'::text, 'fitted'::text, 'cancelled'::text, 'removed'::text, 'unavailable'::text])),
   origin text DEFAULT 'vhc'::text,
   pre_pick_location text CHECK (pre_pick_location IS NULL OR (pre_pick_location = ANY (ARRAY['service_rack_1'::text, 'service_rack_2'::text, 'service_rack_3'::text, 'service_rack_4'::text, 'sales_rack_1'::text, 'sales_rack_2'::text, 'sales_rack_3'::text, 'sales_rack_4'::text, 'tyre_shed'::text, 'stairs_pre_pick'::text, 'no_pick'::text, 'on_order'::text]))),
   storage_location text,
@@ -1131,7 +1168,7 @@ CREATE TABLE public.parts_job_items (
   CONSTRAINT parts_job_items_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
   CONSTRAINT parts_job_items_allocated_to_request_id_fkey FOREIGN KEY (allocated_to_request_id) REFERENCES public.job_requests(request_id),
   CONSTRAINT parts_job_items_allocated_by_auth_users_fkey FOREIGN KEY (allocated_by) REFERENCES auth.users(id),
-  CONSTRAINT parts_job_items_source_request_id_fkey FOREIGN KEY (source_request_id) REFERENCES public.parts_requests(request_id) ON DELETE SET NULL
+  CONSTRAINT parts_job_items_source_request_id_fkey FOREIGN KEY (source_request_id) REFERENCES public.parts_requests(request_id)
 );
 CREATE TABLE public.parts_order_card_items (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -1205,8 +1242,8 @@ CREATE TABLE public.parts_requests (
   CONSTRAINT parts_requests_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES public.users(user_id),
   CONSTRAINT parts_requests_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT parts_requests_part_id_fkey FOREIGN KEY (part_id) REFERENCES public.parts_catalog(id),
-  CONSTRAINT parts_requests_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id) ON DELETE SET NULL,
-  CONSTRAINT parts_requests_fulfilled_by_fkey FOREIGN KEY (fulfilled_by) REFERENCES public.parts_job_items(id) ON DELETE SET NULL
+  CONSTRAINT parts_requests_vhc_item_id_fkey FOREIGN KEY (vhc_item_id) REFERENCES public.vhc_checks(vhc_id),
+  CONSTRAINT parts_requests_fulfilled_by_fkey FOREIGN KEY (fulfilled_by) REFERENCES public.parts_job_items(id)
 );
 CREATE TABLE public.parts_search_events (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

@@ -8,6 +8,10 @@ const JOB_FILES_COLUMN_DEFINITIONS = {
   file_size: "bigint",
   storage_type: "text",
   storage_path: "text",
+  // Added for the per-section camera button — stores the concern the
+  // captured file was recorded against so we can later correlate media
+  // back to a specific amber/red VHC issue.
+  vhc_concern_link: "jsonb",
 };
 
 const REPAIRABLE_JOB_FILES_COLUMNS = Object.keys(JOB_FILES_COLUMN_DEFINITIONS);

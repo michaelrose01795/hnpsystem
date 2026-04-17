@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import themeConfig, {
   createVhcButtonStyle,
   vhcModalContentStyles,
@@ -42,7 +43,19 @@ const UNDERSIDE_SECTION_KEYS = {
 const isMiscCategory = (category = "") => category === "Miscellaneous";
 
 
-export default function UndersideDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, summaryItems = [], inlineMode = false }) {
+export default function UndersideDetailsModal({
+  isOpen,
+  onClose,
+  onComplete,
+  initialData,
+  locked = false,
+  summaryItems = [],
+  inlineMode = false,
+  jobId = null,
+  jobNumber = null,
+  userId = null,
+  onSectionMediaUploaded = null,
+}) {
   const { isConcernLocked, getLockReason } = useConcernLock(summaryItems, "Underside");
   const contentWrapperStyle = {
     ...vhcModalContentStyles.contentWrapper,
@@ -139,8 +152,21 @@ export default function UndersideDetailsModal({ isOpen, onClose, onComplete, ini
     onComplete(data);
   };
 
+  const canShowCamera = Boolean(jobId || jobNumber);
+
   const modalFooter = (
     <>
+      {canShowCamera ? (
+        <SectionCameraButton
+          sectionKey="underside"
+          sectionLabel="Underside"
+          vhcData={{ undersideInspection: data }}
+          jobId={jobId}
+          jobNumber={jobNumber}
+          userId={userId}
+          onUploadComplete={onSectionMediaUploaded}
+        />
+      ) : null}
       <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
         Close
       </button>

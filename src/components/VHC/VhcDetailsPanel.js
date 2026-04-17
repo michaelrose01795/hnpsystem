@@ -8805,6 +8805,10 @@ export default function VhcDetailsPanel({
           onClose={(draft) => handleSectionDismiss("wheelsTyres", draft)}
           onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
           locked={lockedSectionKeys.has("wheelsTyres")}
+          jobId={job?.id || null}
+          jobNumber={resolvedJobNumber}
+          userId={dbUserId || authUserId || null}
+          onSectionMediaUploaded={() => refreshJobData?.()}
         />
       )}
       {activeSection === "brakesHubs" && (
@@ -8815,6 +8819,10 @@ export default function VhcDetailsPanel({
           onClose={(draft) => handleSectionDismiss("brakesHubs", draft)}
           onComplete={(data) => handleSectionComplete("brakesHubs", data)}
           locked={lockedSectionKeys.has("brakesHubs")}
+          jobId={job?.id || null}
+          jobNumber={resolvedJobNumber}
+          userId={dbUserId || authUserId || null}
+          onSectionMediaUploaded={() => refreshJobData?.()}
         />
       )}
       {activeSection === "serviceIndicator" && (
@@ -8825,6 +8833,10 @@ export default function VhcDetailsPanel({
           onClose={(draft) => handleSectionDismiss("serviceIndicator", draft)}
           onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
           locked={lockedSectionKeys.has("serviceIndicator")}
+          jobId={job?.id || null}
+          jobNumber={resolvedJobNumber}
+          userId={dbUserId || authUserId || null}
+          onSectionMediaUploaded={() => refreshJobData?.()}
         />
       )}
       {activeSection === "externalInspection" && (
@@ -8836,6 +8848,10 @@ export default function VhcDetailsPanel({
           onComplete={(data) => handleSectionComplete("externalInspection", data)}
           locked={lockedSectionKeys.has("externalInspection")}
           summaryItems={summaryItems}
+          jobId={job?.id || null}
+          jobNumber={resolvedJobNumber}
+          userId={dbUserId || authUserId || null}
+          onSectionMediaUploaded={() => refreshJobData?.()}
         />
       )}
       {activeSection === "internalElectrics" && (
@@ -8847,6 +8863,10 @@ export default function VhcDetailsPanel({
           onComplete={(data) => handleSectionComplete("internalElectrics", data)}
           locked={lockedSectionKeys.has("internalElectrics")}
           summaryItems={summaryItems}
+          jobId={job?.id || null}
+          jobNumber={resolvedJobNumber}
+          userId={dbUserId || authUserId || null}
+          onSectionMediaUploaded={() => refreshJobData?.()}
         />
       )}
       {activeSection === "underside" && (
@@ -8858,6 +8878,10 @@ export default function VhcDetailsPanel({
           onComplete={(data) => handleSectionComplete("underside", data)}
           locked={lockedSectionKeys.has("underside")}
           summaryItems={summaryItems}
+          jobId={job?.id || null}
+          jobNumber={resolvedJobNumber}
+          userId={dbUserId || authUserId || null}
+          onSectionMediaUploaded={() => refreshJobData?.()}
         />
       )}
 

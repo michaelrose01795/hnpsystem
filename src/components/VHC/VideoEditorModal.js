@@ -1,26 +1,20 @@
 // file location: src/components/VHC/VideoEditorModal.js
-// Near full-screen editor for trimming and muting a freshly captured
-// video. Designed for mobile first: the preview takes up almost the
-// whole screen, the trim sliders are large and tactile, and the action
-// buttons sit in a sticky footer so they're always reachable.
+// Edit Video popup. Single-column layout: video preview on top, the
+// unified timeline (with audio toggle, Split, Remove section, trim
+// handles and playhead) directly under it. The shell uses the global
+// surface / border tokens so the popup follows light and dark themes
+// the same way the rest of the app does.
 //
-// All colour / radius / spacing / typography values resolve through
-// the global design tokens in src/styles/theme.css so the editor
-// follows the user's selected theme (light and dark). The editor
-// preview itself is deliberately framed in a dark stage (cinema
-// feel) using the camera --hud-* token set, so the video reads well
-// regardless of app theme.
+// Trim/save semantics preserved. Additionally supports "cut" segments
+// removed from the middle of the clip: playback skips them, and export
+// pauses the MediaRecorder while the playhead is inside a cut.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
-import { createVhcButtonStyle } from "@/styles/appTheme";
-
-function formatTime(seconds = 0) {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
+import { createVhcButtonStyle, popupOverlayStyles } from "@/styles/appTheme";
+import VideoPlayer from "./videoEditor/VideoPlayer";
+import TimelineTrimControl from "./videoEditor/TimelineTrimControl";
 
 function getPreferredMimeType() {
   const candidates = [
@@ -33,49 +27,25 @@ function getPreferredMimeType() {
   return candidates.find((type) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type)) || "";
 }
 
-function editorButton(variant = "primary", disabled = false) {
+function actionButton(variant, disabled, extra = {}) {
   return {
     ...createVhcButtonStyle(variant, { disabled }),
     minHeight: "var(--control-height)",
-    padding: "0 var(--space-md)",
+    padding: "0 var(--space-lg)",
     fontSize: "var(--text-body-sm)",
     letterSpacing: "var(--tracking-wide)",
-    textTransform: "uppercase",
+    fontWeight: 800,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     gap: "var(--space-sm)",
+    ...extra,
   };
 }
 
-const SECTION_LABEL_STYLE = {
-  fontSize: "var(--text-caption)",
-  color: "var(--hud-text-muted)",
-  fontWeight: 800,
-  letterSpacing: "var(--tracking-caps)",
-  textTransform: "uppercase",
-};
-
-const VALUE_STYLE = {
-  fontSize: "var(--text-body-sm)",
-  color: "var(--hud-text)",
-  fontWeight: 800,
-  fontVariantNumeric: "tabular-nums",
-};
-
-const PANEL_STYLE = {
-  background: "var(--hud-surface-strong)",
-  borderRadius: "var(--radius-md)",
-  border: "1px solid var(--hud-divider)",
-  padding: "var(--space-4)",
-};
-
-const RANGE_STYLE = {
-  width: "100%",
-  height: "var(--space-5)",
-  accentColor: "var(--accentMain)",
-  cursor: "pointer",
-};
+function findCutContaining(time, cuts) {
+  return cuts.find((c) => time >= c.start && time < c.end);
+}
 
 export default function VideoEditorModal({
   isOpen,
@@ -98,8 +68,11 @@ export default function VideoEditorModal({
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [splits, setSplits] = useState([]);
+  const [cuts, setCuts] = useState([]);
 
   const videoRef = useRef(null);
+  const scrubResumeRef = useRef(false);
 
   const previewSource = useMemo(() => {
     if (!videoFile) return "";
@@ -122,13 +95,45 @@ export default function VideoEditorModal({
     setIsPlaying(false);
     setCurrentTime(0);
     setProcessing(false);
+    setSplits([]);
+    setCuts([]);
   }, [isOpen, previewSource]);
 
   const seekTo = (time) => {
     const v = videoRef.current;
     if (!v) return;
-    v.currentTime = time;
-    setCurrentTime(time);
+    const safe = Number.isFinite(time) ? time : 0;
+    const clamped = Math.max(0, Math.min(safe, duration || safe));
+    // Update React state immediately so the playhead UI tracks the
+    // pointer without waiting for the video's own timeupdate event.
+    setCurrentTime(clamped);
+    try {
+      v.currentTime = clamped;
+    } catch (err) {
+      console.warn("Seek failed:", err);
+    }
+  };
+
+  const handleScrubStart = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    // Pause while scrubbing so rapid currentTime writes aren't
+    // fighting playback — the browser can then keep up with each
+    // seek and actually paint the requested frame.
+    scrubResumeRef.current = !v.paused;
+    if (!v.paused) {
+      v.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleScrubEnd = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (scrubResumeRef.current) {
+      scrubResumeRef.current = false;
+      v.play().then(() => setIsPlaying(true)).catch(() => {});
+    }
   };
 
   const togglePlayPause = async () => {
@@ -160,7 +165,13 @@ export default function VideoEditorModal({
       setProcessing(true);
       const v = videoRef.current;
       if (!v) return;
-      if (trimStart === 0 && Math.abs(trimEnd - duration) < 0.01 && !isMuted) {
+
+      const noEdits =
+        trimStart === 0 &&
+        Math.abs(trimEnd - duration) < 0.01 &&
+        !isMuted &&
+        cuts.length === 0;
+      if (noEdits) {
         onSave?.(videoFile);
         return;
       }
@@ -181,13 +192,32 @@ export default function VideoEditorModal({
         onSave?.(file);
       };
 
+      // Pause/resume across cuts during recording.
+      const onTimeUpdate = () => {
+        const t = v.currentTime;
+        const cut = findCutContaining(t, cuts);
+        if (cut && recorder.state === "recording") {
+          recorder.pause();
+          v.currentTime = cut.end;
+          if (recorder.state === "paused") recorder.resume();
+        }
+      };
+
       v.pause();
       v.currentTime = trimStart;
       const handleSeeked = async () => {
         v.removeEventListener("seeked", handleSeeked);
         recorder.start();
+        v.addEventListener("timeupdate", onTimeUpdate);
         await v.play();
-        window.setTimeout(() => { recorder.stop(); v.pause(); setIsPlaying(false); }, Math.max(100, (trimEnd - trimStart) * 1000));
+        const totalCutMs = cuts.reduce((acc, c) => acc + (c.end - c.start) * 1000, 0);
+        const playMs = Math.max(100, (trimEnd - trimStart) * 1000 - totalCutMs);
+        window.setTimeout(() => {
+          v.removeEventListener("timeupdate", onTimeUpdate);
+          if (recorder.state !== "inactive") recorder.stop();
+          v.pause();
+          setIsPlaying(false);
+        }, playMs + 200);
       };
       v.addEventListener("seeked", handleSeeked);
     } catch (err) {
@@ -197,428 +227,194 @@ export default function VideoEditorModal({
     }
   };
 
-  const trimmedDuration = Math.max(0, trimEnd - trimStart);
-
   if (!isOpen || typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Edit video"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: "var(--z-modal)",
-        background: "var(--overlay)",
-        backdropFilter: "var(--hud-blur)",
-        WebkitBackdropFilter: "var(--hud-blur)",
-        display: "flex",
-        alignItems: "stretch",
-        justifyContent: "center",
-        padding: "max(var(--space-3), env(safe-area-inset-top)) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom))",
-        fontFamily: "var(--font-family)",
-      }}
-    >
+    <div role="dialog" aria-modal="true" aria-label="Edit video" style={popupOverlayStyles}>
       <div
         style={{
-          width: "min(1440px, 100%)",
-          height: "min(100%, 100vh)",
-          display: "grid",
-          gridTemplateRows: "1fr auto",
-          background: "var(--hud-scrim)",
+          width: "min(1100px, 100%)",
+          maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
+          background: "var(--surfaceMain)",
           borderRadius: "var(--radius-xl)",
+          border: "1px solid var(--border)",
+          boxShadow: "0 30px 60px rgba(0,0,0,0.35)",
+          color: "var(--surfaceText)",
+          display: "grid",
+          gridTemplateRows: "auto 1fr auto",
           overflow: "hidden",
-          border: "1px solid var(--hud-divider)",
-          boxShadow: "var(--hud-shadow-lg)",
-          color: "var(--hud-text)",
+          fontFamily: "var(--font-family)",
         }}
       >
+        {/* Header */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.45fr) minmax(280px, 1fr)",
-            gap: "var(--space-4)",
-            padding: "var(--space-4)",
-            minHeight: 0,
-            overflow: "hidden",
+            padding: "var(--space-4) var(--space-5)",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "var(--space-3)",
           }}
         >
-          {/* Preview + trim sliders column */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateRows: "minmax(0, 1fr) auto",
-              gap: "var(--space-3)",
-              minHeight: 0,
-            }}
-          >
-            {/* Preview stage */}
+          <div style={{ display: "grid", gap: 2 }}>
             <div
               style={{
-                position: "relative",
-                background: "var(--hud-scrim)",
-                borderRadius: "var(--radius-md)",
-                overflow: "hidden",
-                minHeight: 260,
-                border: "1px solid var(--hud-divider)",
+                fontSize: "var(--text-caption)",
+                color: "var(--surfaceTextMuted)",
+                fontWeight: 800,
+                letterSpacing: "var(--tracking-caps)",
+                textTransform: "uppercase",
               }}
             >
-              <video
-                ref={videoRef}
-                src={previewSource || undefined}
-                controls={false}
-                playsInline
-                muted={isMuted}
-                onLoadedMetadata={(event) => {
-                  const next = Number(event.currentTarget.duration || 0);
-                  setDuration(next);
-                  setTrimStart(0);
-                  setTrimEnd(next);
-                  setVideoLoaded(true);
-                  setLoadError("");
-                }}
-                onError={() => {
-                  setVideoLoaded(false);
-                  setIsPlaying(false);
-                  setLoadError("This browser could not load the captured video.");
-                }}
-                onTimeUpdate={(event) => {
-                  const v = event.currentTarget;
-                  setCurrentTime(v.currentTime);
-                  if (v.currentTime >= trimEnd) { v.pause(); v.currentTime = trimStart; setIsPlaying(false); }
-                }}
-                onEnded={(event) => { event.currentTarget.currentTime = trimStart; setIsPlaying(false); }}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "contain",
-                  visibility: videoLoaded ? "visible" : "hidden",
-                  background: "var(--hud-scrim)",
-                }}
-              />
-
-              {!videoLoaded ? (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "var(--hud-text)",
-                    padding: "var(--space-lg)",
-                    textAlign: "center",
-                  }}
-                >
-                  <div style={{ display: "grid", gap: "var(--space-sm)", maxWidth: 380 }}>
-                    <div style={{ fontSize: "var(--text-h3)", fontWeight: 800 }}>
-                      {loadError || "Loading video…"}
-                    </div>
-                    <div style={{ fontSize: "var(--text-body-sm)", color: "var(--hud-text-muted)" }}>
-                      The editor will appear as soon as the recorded file is ready.
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {videoLoaded ? (
-                <button
-                  type="button"
-                  onClick={togglePlayPause}
-                  aria-label={isPlaying ? "Pause" : "Play"}
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: "50%",
-                    transform: "translate(-50%, -50%)",
-                    width: 78,
-                    height: 78,
-                    borderRadius: "var(--radius-pill)",
-                    border: "1px solid var(--hud-border-strong)",
-                    background: "var(--hud-surface-strong)",
-                    color: "var(--hud-text)",
-                    fontSize: "var(--text-h2)",
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    backdropFilter: "var(--hud-blur)",
-                    WebkitBackdropFilter: "var(--hud-blur)",
-                    transition: "var(--control-transition)",
-                  }}
-                >
-                  {isPlaying ? "❚❚" : "▶"}
-                </button>
-              ) : null}
-
-              {videoLoaded ? (
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "var(--space-3)",
-                    right: "var(--space-3)",
-                    bottom: "var(--space-3)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "var(--space-sm) var(--space-3)",
-                    borderRadius: "var(--radius-md)",
-                    background: "var(--hud-surface-strong)",
-                    border: "1px solid var(--hud-divider)",
-                    color: "var(--hud-text)",
-                    fontSize: "var(--text-body-sm)",
-                    fontVariantNumeric: "tabular-nums",
-                    backdropFilter: "var(--hud-blur)",
-                    WebkitBackdropFilter: "var(--hud-blur)",
-                  }}
-                >
-                  <span style={{ fontWeight: 800 }}>{formatTime(currentTime)}</span>
-                  <span style={{ color: "var(--hud-text-muted)" }}>
-                    {isMuted ? "Muted" : "Audio on"} • {widgetCount > 0 ? `${widgetCount} widget${widgetCount === 1 ? "" : "s"}` : "No widgets"}
-                  </span>
-                  <span style={{ fontWeight: 800 }}>{formatTime(duration)}</span>
-                </div>
-              ) : null}
+              Edit video
             </div>
-
-            {/* Trim sliders */}
             <div
               style={{
-                ...PANEL_STYLE,
-                display: "grid",
-                gap: "var(--space-4)",
+                fontSize: "var(--text-h3)",
+                fontWeight: 800,
+                color: "var(--surfaceText)",
+                lineHeight: 1.2,
               }}
             >
-              <div style={{ display: "grid", gap: "var(--space-1)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)" }}>
-                  <span style={SECTION_LABEL_STYLE}>Playhead</span>
-                  <span style={VALUE_STYLE}>
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max={duration || 0}
-                  step="0.05"
-                  value={currentTime}
-                  onChange={(event) => seekTo(Number(event.target.value))}
-                  disabled={!videoLoaded}
-                  style={RANGE_STYLE}
-                />
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: "var(--space-3)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "var(--space-1)",
-                    padding: "var(--space-3)",
-                    background: "var(--hud-surface-subtle)",
-                    border: "1px solid var(--hud-divider)",
-                    borderRadius: "var(--radius-sm)",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)" }}>
-                    <span style={SECTION_LABEL_STYLE}>Trim start</span>
-                    <span style={VALUE_STYLE}>{formatTime(trimStart)}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration || 0}
-                    step="0.05"
-                    value={trimStart}
-                    onChange={(event) => handleTrimStartChange(Number(event.target.value))}
-                    disabled={!videoLoaded}
-                    style={{ ...RANGE_STYLE, accentColor: "var(--warning)" }}
-                  />
-                </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "var(--space-1)",
-                    padding: "var(--space-3)",
-                    background: "var(--hud-surface-subtle)",
-                    border: "1px solid var(--hud-divider)",
-                    borderRadius: "var(--radius-sm)",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-2)" }}>
-                    <span style={SECTION_LABEL_STYLE}>Trim end</span>
-                    <span style={VALUE_STYLE}>{formatTime(trimEnd)}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration || 0}
-                    step="0.05"
-                    value={trimEnd}
-                    onChange={(event) => handleTrimEndChange(Number(event.target.value))}
-                    disabled={!videoLoaded}
-                    style={{ ...RANGE_STYLE, accentColor: "var(--danger)" }}
-                  />
-                </div>
-              </div>
+              Trim and review your clip
             </div>
           </div>
-
-          {/* Side panel: summary + audio toggle + tips */}
-          <aside
-            style={{
-              display: "grid",
-              gap: "var(--space-3)",
-              alignContent: "start",
-              overflow: "auto",
-              minHeight: 0,
-            }}
-          >
-            <div style={{ display: "grid", gap: "var(--space-xs)" }}>
-              <span style={SECTION_LABEL_STYLE}>Edit video</span>
-              <span
-                style={{
-                  fontSize: "var(--text-body)",
-                  color: "var(--hud-text)",
-                  fontWeight: 700,
-                  lineHeight: "var(--leading-normal)",
-                }}
-              >
-                Review the clip, trim the useful region, and choose whether audio stays on.
-              </span>
-            </div>
-
-            <div
+          {widgetCount > 0 ? (
+            <span
               style={{
-                ...PANEL_STYLE,
-                display: "grid",
-                gap: "var(--space-2)",
+                fontSize: "var(--text-caption)",
+                color: "var(--surfaceTextMuted)",
+                fontWeight: 700,
               }}
             >
-              {[
-                { label: "Original length", value: formatTime(duration) },
-                { label: "New length", value: formatTime(trimmedDuration) },
-                { label: "Audio", value: isMuted ? "Muted" : "Enabled" },
-                { label: "Baked widgets", value: widgetCount },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "var(--space-2)",
-                    padding: "var(--space-sm) var(--space-3)",
-                    background: "var(--hud-surface-subtle)",
-                    borderRadius: "var(--radius-sm)",
-                  }}
-                >
-                  <span style={{ fontSize: "var(--text-body-sm)", color: "var(--hud-text-muted)" }}>{item.label}</span>
-                  <span style={VALUE_STYLE}>{item.value}</span>
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsMuted((current) => !current)}
-              disabled={processing || !videoLoaded}
-              style={editorButton(isMuted ? "primary" : "secondary", processing || !videoLoaded)}
-            >
-              {isMuted ? "🔇 Muted" : "🔊 Audio on"}
-            </button>
-
-            <div
-              style={{
-                background: "rgba(var(--accentMainRgb), 0.08)",
-                border: "1px solid rgba(var(--accentMainRgb), 0.24)",
-                borderRadius: "var(--radius-md)",
-                padding: "var(--space-3)",
-                color: "var(--hud-text)",
-                fontSize: "var(--text-body-sm)",
-                lineHeight: "var(--leading-normal)",
-                display: "grid",
-                gap: "var(--space-1)",
-              }}
-            >
-              <strong
-                style={{
-                  ...SECTION_LABEL_STYLE,
-                  color: "rgba(var(--accentMainRgb), 0.9)",
-                  marginBottom: "var(--space-xs)",
-                }}
-              >
-                Tips
-              </strong>
-              <div>Keep clips short so the customer sees the issue quickly on mobile.</div>
-              <div>Mute the clip if workshop noise makes the voiceover harder to follow.</div>
-              <div>Baked widgets stay in the file — you don't need to re-add them later.</div>
-            </div>
-
-            {(busyLabel || errorLabel) ? (
-              <div
-                role={errorLabel ? "alert" : undefined}
-                style={{
-                  padding: "var(--space-sm) var(--space-3)",
-                  borderRadius: "var(--radius-sm)",
-                  background: errorLabel ? "rgba(var(--danger-rgb), 0.16)" : "rgba(var(--accentMainRgb), 0.12)",
-                  color: errorLabel ? "rgba(var(--danger-rgb), 1)" : "var(--hud-text)",
-                  fontSize: "var(--text-body-sm)",
-                  fontWeight: 700,
-                  border: `1px solid ${errorLabel ? "rgba(var(--danger-rgb), 0.4)" : "rgba(var(--accentMainRgb), 0.36)"}`,
-                }}
-              >
-                {errorLabel || busyLabel}
-              </div>
-            ) : null}
-          </aside>
+              {widgetCount} widget{widgetCount === 1 ? "" : "s"} baked in
+            </span>
+          ) : null}
         </div>
 
-        {/* Sticky footer action bar */}
+        {/* Body */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr auto",
+            gridTemplateRows: "minmax(260px, 1fr) auto",
+            gap: "var(--space-4)",
+            padding: "var(--space-4) var(--space-5)",
+            minHeight: 0,
+            overflow: "auto",
+          }}
+        >
+          <VideoPlayer
+            ref={videoRef}
+            src={previewSource}
+            isMuted={isMuted}
+            isPlaying={isPlaying}
+            videoLoaded={videoLoaded}
+            loadError={loadError}
+            currentTime={currentTime}
+            duration={duration}
+            trimStart={trimStart}
+            trimEnd={trimEnd}
+            onTogglePlay={togglePlayPause}
+            onLoadedMetadata={(event) => {
+              const next = Number(event.currentTarget.duration || 0);
+              setDuration(next);
+              setTrimStart(0);
+              setTrimEnd(next);
+              setVideoLoaded(true);
+              setLoadError("");
+            }}
+            onError={() => {
+              setVideoLoaded(false);
+              setIsPlaying(false);
+              setLoadError("This browser could not load the captured video.");
+            }}
+            onTimeUpdate={(event) => {
+              const v = event.currentTarget;
+              setCurrentTime(v.currentTime);
+              const cut = findCutContaining(v.currentTime, cuts);
+              if (cut) { v.currentTime = cut.end; return; }
+              if (v.currentTime >= trimEnd) { v.pause(); v.currentTime = trimStart; setIsPlaying(false); }
+            }}
+            onEnded={(event) => { event.currentTarget.currentTime = trimStart; setIsPlaying(false); }}
+          />
+
+          <TimelineTrimControl
+            duration={duration}
+            currentTime={currentTime}
+            trimStart={trimStart}
+            trimEnd={trimEnd}
+            onSeek={seekTo}
+            onTrimStartChange={handleTrimStartChange}
+            onTrimEndChange={handleTrimEndChange}
+            onScrubStart={handleScrubStart}
+            onScrubEnd={handleScrubEnd}
+            disabled={!videoLoaded}
+            isMuted={isMuted}
+            onToggleMute={() => setIsMuted((c) => !c)}
+            splits={splits}
+            cuts={cuts}
+            onSplitsChange={setSplits}
+            onCutsChange={setCuts}
+          />
+
+          {(busyLabel || errorLabel) ? (
+            <div
+              role={errorLabel ? "alert" : undefined}
+              style={{
+                padding: "var(--space-sm) var(--space-3)",
+                borderRadius: "var(--radius-md)",
+                background: errorLabel ? "rgba(var(--danger-rgb), 0.12)" : "var(--control-bg)",
+                color: errorLabel ? "var(--danger)" : "var(--surfaceText)",
+                fontSize: "var(--text-body-sm)",
+                fontWeight: 700,
+                border: `1px solid ${errorLabel ? "rgba(var(--danger-rgb), 0.4)" : "var(--border)"}`,
+              }}
+            >
+              {errorLabel || busyLabel}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Footer */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
             gap: "var(--space-sm)",
-            padding: "var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom))",
-            borderTop: "1px solid var(--hud-divider)",
-            background: "var(--hud-surface-strong)",
-            backdropFilter: "var(--hud-blur)",
-            WebkitBackdropFilter: "var(--hud-blur)",
+            padding: "var(--space-3) var(--space-5) calc(var(--space-3) + env(safe-area-inset-bottom))",
+            borderTop: "1px solid var(--border)",
+            background: "var(--control-bg)",
+            flexWrap: "wrap",
           }}
         >
           <button
             type="button"
             onClick={onCancel}
             disabled={processing}
-            style={editorButton("ghost", processing)}
+            style={actionButton("ghost", processing, { marginRight: "auto" })}
           >
             Cancel
           </button>
-          <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {onSkip ? (
-              <button
-                type="button"
-                onClick={() => onSkip?.(videoFile)}
-                disabled={processing || !videoLoaded}
-                style={editorButton("secondary", processing || !videoLoaded)}
-              >
-                Keep original
-              </button>
-            ) : null}
+          {onSkip ? (
             <button
               type="button"
-              onClick={exportVideo}
-              disabled={!videoLoaded || processing}
-              style={editorButton("primary", !videoLoaded || processing)}
+              onClick={() => onSkip?.(videoFile)}
+              disabled={processing || !videoLoaded}
+              style={actionButton("secondary", processing || !videoLoaded)}
             >
-              {processing ? "Processing…" : "Save edits"}
+              Keep original
             </button>
-          </div>
+          ) : null}
+          <button
+            type="button"
+            onClick={exportVideo}
+            disabled={!videoLoaded || processing}
+            style={actionButton("primary", !videoLoaded || processing)}
+          >
+            {processing ? "Processing…" : "Save edits"}
+          </button>
         </div>
       </div>
     </div>,

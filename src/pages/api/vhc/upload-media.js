@@ -154,7 +154,7 @@ async function fetchExistingMediaRow(client, numericFileId) {
   }
 }
 
-async function replaceExistingMedia({ fileId, jobId, file, uploadedBy, visibleToCustomer }) {
+async function replaceExistingMedia({ fileId, jobId, file, uploadedBy, visibleToCustomer, concernLink = null }) {
   const client = getClient();
   const numericFileId = Number.parseInt(String(fileId || "").trim(), 10);
   if (!Number.isInteger(numericFileId) || numericFileId <= 0) {
@@ -179,6 +179,7 @@ async function replaceExistingMedia({ fileId, jobId, file, uploadedBy, visibleTo
     fileSize: file.size ?? file.buffer.length,
     storageType: "supabase",
     storagePath,
+    concernLink,
   });
 
   if (!result.success) {
@@ -217,6 +218,23 @@ async function handler(req, res) {
     const userId = fields.userId || "system";
     const visibleToCustomer = fields.visibleToCustomer === "true" || fields.visibleToCustomer === true;
     const replaceFileId = fields.replaceFileId || null;
+
+    // Optional per-section concern link, sent as a JSON string. Ignored
+    // if it doesn't parse cleanly — the file still uploads, just without
+    // the back-reference to the VHC concern.
+    let concernLink = null;
+    if (fields.concernLink) {
+      try {
+        const parsed = typeof fields.concernLink === "string"
+          ? JSON.parse(fields.concernLink)
+          : fields.concernLink;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          concernLink = parsed;
+        }
+      } catch {
+        concernLink = null;
+      }
+    }
 
     const validation = validateMediaFile(file.mimetype, file.size || file.buffer.length);
     if (!validation.valid) {
@@ -258,6 +276,7 @@ async function handler(req, res) {
         file,
         uploadedBy: userId,
         visibleToCustomer,
+        concernLink,
       });
     } else {
       const result = await uploadAndRecord(file, {
@@ -265,6 +284,7 @@ async function handler(req, res) {
         folder: VHC_STORAGE_FOLDER,
         uploadedBy: userId,
         visibleToCustomer,
+        concernLink,
       });
 
       if (!result.success) {

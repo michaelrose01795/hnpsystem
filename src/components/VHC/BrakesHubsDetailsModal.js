@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
 import themeConfig, {
   createVhcButtonStyle,
   vhcModalContentStyles,
@@ -451,7 +452,18 @@ const DrumBrakesSection = ({
     </div>
 );
 
-export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, initialData, locked = false, inlineMode = false }) {
+export default function BrakesHubsDetailsModal({
+  isOpen,
+  onClose,
+  onComplete,
+  initialData,
+  locked = false,
+  inlineMode = false,
+  jobId = null,
+  jobNumber = null,
+  userId = null,
+  onSectionMediaUploaded = null,
+}) {
   const normalisedInitial = useMemo(() => normaliseBrakesState(initialData), [initialData]);
 
   const [data, setData] = useState(normalisedInitial.data);
@@ -1005,6 +1017,17 @@ export default function BrakesHubsDetailsModal({ isOpen, onClose, onComplete, in
       sectionKey="vhc-brakes"
       footer={
         <>
+          {(jobId || jobNumber) ? (
+            <SectionCameraButton
+              sectionKey="brakes"
+              sectionLabel="Brakes & Hubs"
+              vhcData={{ brakesHubs: data }}
+              jobId={jobId}
+              jobNumber={jobNumber}
+              userId={userId}
+              onUploadComplete={onSectionMediaUploaded}
+            />
+          ) : null}
           <button type="button" onClick={handleClose} style={buildModalButton("secondary")}>
             Close
           </button>
