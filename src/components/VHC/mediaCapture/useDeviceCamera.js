@@ -48,12 +48,42 @@ function buildDiscreteLensOptions(devices = []) {
   }));
 }
 
+// Query the browser Permissions API for camera (and mic, in video mode) so
+// we can skip our in-app pre-prompt when the user has already granted access
+// in a previous session. The API isn't universal — Safari 16+ supports it,
+// older browsers throw or return undefined. Any failure falls through to
+// "unknown" so the caller still shows the pre-prompt (safer default).
+async function queryCombinedPermissionState(mode) {
+  if (typeof navigator === "undefined" || !navigator.permissions?.query) return "unknown";
+  try {
+    const cameraResult = await navigator.permissions.query({ name: "camera" });
+    if (cameraResult.state === "denied") return "denied";
+    if (mode === "video") {
+      try {
+        const micResult = await navigator.permissions.query({ name: "microphone" });
+        if (micResult.state === "denied") return "denied";
+        if (cameraResult.state === "granted" && micResult.state === "granted") return "granted";
+        return "prompt";
+      } catch {
+        return cameraResult.state === "granted" ? "granted" : "prompt";
+      }
+    }
+    return cameraResult.state === "granted" ? "granted" : "prompt";
+  } catch {
+    return "unknown";
+  }
+}
+
 // Main hook. Accepts the desired capture mode (photo/video) so we only
 // request audio when we actually need it.
 export default function useDeviceCamera({ isActive, mode = "photo" }) {
   // --- State ---------------------------------------------------------
   const [stream, setStream] = useState(null); // Active MediaStream or null
   const [permissionGranted, setPermissionGranted] = useState(false); // True once gUM succeeded
+  // "unknown" (not yet checked), "checking" (query in flight), "prompt" (needs
+  // user to tap Allow in our in-app pre-prompt), "granted" (go straight to
+  // camera), "denied" (browser has blocked us — show guidance).
+  const [permissionStatus, setPermissionStatus] = useState("unknown");
   const [loading, setLoading] = useState(false); // True during initialisation
   const [error, setError] = useState(""); // User-facing error string
   const [devices, setDevices] = useState({ user: [], environment: [] }); // Enumerated cameras
@@ -143,12 +173,14 @@ export default function useDeviceCamera({ isActive, mode = "photo" }) {
       streamRef.current = nextStream; // Mirror to ref for cleanup
       setStream(nextStream); // Update React state
       setPermissionGranted(true); // Permission definitely granted
+      setPermissionStatus("granted"); // Drives the UI state machine
       await enumerateDevices(); // Labels become readable after permission
       syncTrackCapabilities(nextStream, facing); // Sync zoom/facing
     } catch (cameraError) {
       console.error("Camera initialisation failed:", cameraError); // Log for ops
       setPermissionGranted(false); // Mark denied
       if (cameraError?.name === "NotAllowedError") { // Permission rejected
+        setPermissionStatus("denied");
         setError("Camera permission was denied. Allow access in your browser settings to continue.");
       } else if (cameraError?.name === "NotFoundError") { // No camera hardware
         setError("No camera was found on this device.");
@@ -194,14 +226,42 @@ export default function useDeviceCamera({ isActive, mode = "photo" }) {
 
   // --- Effects -------------------------------------------------------
 
+  // Explicit user-initiated permission request, triggered by the in-app
+  // pre-prompt's Allow button. This is what actually fires the native
+  // browser permission dialog.
+  const requestPermission = useCallback(async () => {
+    setPermissionStatus("checking");
+    await start({ facingMode: "environment", requestAudio: mode === "video" });
+  }, [mode, start]);
+
   // Start or stop the camera whenever the hook becomes (in)active or the mode changes.
+  // We gate the native gUM call on the browser's stored permission state —
+  // if it's already "granted", jump straight to the stream; otherwise wait
+  // for the user to confirm via the themed pre-prompt so we don't surprise
+  // them with the native dialog.
   useEffect(() => {
     if (!isActive) { // Being hidden — release the camera
       stopStream(); // Clean up
+      setPermissionStatus("unknown"); // Reset for next open
+      setError(""); // Clear any stale error
       return undefined; // Nothing to tear down
     }
-    start({ facingMode: "environment", requestAudio: mode === "video" }); // Default: rear camera
-    return () => { stopStream(); }; // Cleanup on unmount/mode change
+    let cancelled = false;
+    setPermissionStatus("checking");
+    (async () => {
+      const state = await queryCombinedPermissionState(mode);
+      if (cancelled) return;
+      if (state === "granted") {
+        start({ facingMode: "environment", requestAudio: mode === "video" });
+      } else if (state === "denied") {
+        setPermissionStatus("denied");
+        setPermissionGranted(false);
+        setError("Camera permission was denied. Allow access in your browser settings to continue.");
+      } else {
+        setPermissionStatus("prompt");
+      }
+    })();
+    return () => { cancelled = true; stopStream(); };
     // We intentionally do NOT list `start` here — its identity changes with every call;
     // using start within the effect by closure keeps this stable.
   }, [isActive, mode]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -216,6 +276,8 @@ export default function useDeviceCamera({ isActive, mode = "photo" }) {
   return {
     stream, // Current MediaStream (or null)
     permissionGranted, // Boolean permission flag
+    permissionStatus, // "unknown" | "checking" | "prompt" | "granted" | "denied"
+    requestPermission, // User-initiated native prompt trigger
     loading, // True during initialisation
     error, // Error message (empty string when none)
     facingMode, // "user" | "environment"

@@ -1,13 +1,4 @@
-check
-improve the error handling frontend for the camera and uploading information, deep dive to have every error message popup in the top right coner as an alert type message with a user friendly description on what happened, within all error messsages add a copy button which copys the backend information everything which a dev will need of why that error has eccured so the dev knows exactly what has happendend and can put the infomraiton into claude or codex and that will fix whats happening. 
-
-Fix "Settings file failed to parse: /home/node/.claude/settings.json — Invalid or malformed JSON. Permission rules and other settings from this file are not in effect." 
-
-
 TODO
-have it so premition to use the audio and camera is onyl aksed once by the browser and for that user and then rembers it forever. have it so the audio and camera request to use uses inapp design /theme style. 
-
-
 look into "Review Media" section after editing photo
 
 
