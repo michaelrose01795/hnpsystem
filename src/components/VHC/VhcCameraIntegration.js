@@ -2,7 +2,7 @@
 // Tab-aware VHC capture launcher that shares the full-screen camera flow.
 
 import React, { useState } from "react";
-import { createVhcButtonStyle } from "@/styles/appTheme";
+import Button from "@/components/ui/Button";
 import CameraCaptureModal from "./CameraCaptureModal";
 import MediaUploadConfirmModal from "./MediaUploadConfirmModal";
 import PhotoEditorModal from "./PhotoEditorModal";
@@ -80,44 +80,48 @@ export default function VhcCameraIntegration({
 
     if (activeTab === "photos") {
       return (
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => handleCameraClick("photo")}
-          style={{ ...createVhcButtonStyle("primary"), ...commonButtonStyle }}
+          style={commonButtonStyle}
         >
           Capture Photo
-        </button>
+        </Button>
       );
     }
 
     if (activeTab === "videos") {
       return (
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => handleCameraClick("video")}
-          style={{ ...createVhcButtonStyle("primary"), ...commonButtonStyle }}
+          style={commonButtonStyle}
         >
           Capture Video
-        </button>
+        </Button>
       );
     }
 
     return (
       <>
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => handleCameraClick("photo")}
-          style={{ ...createVhcButtonStyle("primary"), ...commonButtonStyle }}
+          style={commonButtonStyle}
         >
           Capture Photo
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={() => handleCameraClick("video")}
-          style={{ ...createVhcButtonStyle("secondary"), ...commonButtonStyle }}
+          style={commonButtonStyle}
         >
           Capture Video
-        </button>
+        </Button>
       </>
     );
   };

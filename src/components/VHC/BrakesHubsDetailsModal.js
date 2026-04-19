@@ -1,10 +1,10 @@
 // file location: src/components/VHC/BrakesHubsDetailsModal.js
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
+import Button from "@/components/ui/Button";
 import themeConfig, {
-  createVhcButtonStyle,
   vhcModalContentStyles,
   popupOverlayStyles,
   popupCardStyles,
@@ -380,11 +380,15 @@ const DiscsSection = ({
       )}
 
       {showDrumButton && !showSwitchInTabs && (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onSwitchToDrum}
           style={{
-            ...buildModalButton("ghost"),
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "6px",
             border: "none",
             color: palette.accent,
             background: "var(--control-bg)",
@@ -392,7 +396,7 @@ const DiscsSection = ({
           }}
         >
           Switch to Drum Brakes
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -432,19 +436,19 @@ const DrumBrakesSection = ({
         {["Good", "Monitor", "Replace"].map((label) => {
           const active = status === label;
           return (
-            <button
+            <Button
               key={label}
-              type="button"
+              variant={active ? "primary" : "ghost"}
+              size="sm"
               onClick={() => onStatusChange?.(label)}
               style={{
-                ...createVhcButtonStyle(active ? "primary" : "ghost"),
                 backgroundColor: active ? palette.accent : "var(--control-bg)",
                 color: active ? "var(--text-inverse)" : "var(--text-primary)",
                 border: "none",
               }}
             >
               {label}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -1028,17 +1032,18 @@ export default function BrakesHubsDetailsModal({
               onUploadComplete={onSectionMediaUploaded}
             />
           ) : null}
-          <button type="button" onClick={handleClose} style={buildModalButton("secondary")}>
+          <Button variant="secondary" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
             Close
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleSaveComplete}
             disabled={locked}
-            style={buildModalButton("primary", { disabled: locked })}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
           >
             Save & Complete
-          </button>
+          </Button>
         </>
       }
     >
@@ -1235,9 +1240,9 @@ export default function BrakesHubsDetailsModal({
                   }}
                 >
                   <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700 }}>Issues Logged</h3>
-                  <button type="button" onClick={openConcernPopup} style={{ ...buildModalButton("ghost"), gap: "8px" }}>
+                  <Button variant="ghost" size="sm" onClick={openConcernPopup} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
                     + Add Concern
-                  </button>
+                  </Button>
                 </div>
                 {activeIssueEntries.length === 0 ? (
                   <span style={{ fontSize: "13px", color: palette.textMuted, marginTop: "10px" }}>
@@ -1340,33 +1345,35 @@ export default function BrakesHubsDetailsModal({
 
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
                   {concernPopup.editIndex !== null && (
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         deleteConcern(concernPopup.category, concernPopup.editIndex);
                         resetConcernPopup();
                       }}
-                      style={{ ...buildModalButton("ghost"), color: palette.danger }}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", color: "var(--danger)" }}
                     >
                       Delete
-                    </button>
+                    </Button>
                   )}
                   <div style={{ display: "flex", gap: "10px" }}>
-                    <button type="button" onClick={resetConcernPopup} style={buildModalButton("ghost")}>
+                    <Button variant="ghost" size="sm" onClick={resetConcernPopup} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
                       Cancel
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
                       onClick={() => {
                         if (!concernPopup.tempConcern.issue.trim()) return;
                         addConcern(concernPopup.category, concernPopup.tempConcern, concernPopup.editIndex);
                         resetConcernPopup();
                       }}
                       disabled={locked}
-                      style={buildModalButton("primary")}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
                     >
                       {concernPopup.editIndex !== null ? "Save" : "Add Concern"}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

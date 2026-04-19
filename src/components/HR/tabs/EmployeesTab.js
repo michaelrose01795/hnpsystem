@@ -11,6 +11,7 @@ import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 import { roleCategories } from "@/config/users";
 import { CalendarField } from "@/components/ui/calendarAPI"; // Date input component
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
@@ -727,16 +728,17 @@ export default function EmployeesTab() {
                 departments={uniqueDepartments}
                 employmentTypes={uniqueEmploymentTypes}
               />
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={handleShowAddEmployee}
-                style={{ ...surfaceButtonStyle, border: "1px solid rgba(var(--accent-base-rgb), 0.12)", background: "var(--accent-surface)" }}
-                className="hr-employees-add-button"
                 aria-label="Add employee"
+                style={{ gap: "6px" }}
               >
-                <span className="hr-employees-add-button-icon">+</span>
-                <span className="hr-employees-add-button-label">Add Employee</span>
-              </button>
+                <span style={{ fontSize: "1rem", lineHeight: 1, fontWeight: 700 }}>+</span>
+                <span>Add Employee</span>
+              </Button>
             </div>
           </div>
           <div className="hr-employees-summary-row">

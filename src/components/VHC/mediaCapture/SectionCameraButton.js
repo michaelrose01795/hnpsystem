@@ -20,7 +20,7 @@
 // pass the section key, the current vhcData, and the job identifiers.
 
 import React, { useMemo, useState } from "react";
-import { createVhcButtonStyle } from "@/styles/appTheme";
+import Button from "@/components/ui/Button";
 import CameraCaptureModal from "@/components/VHC/CameraCaptureModal";
 import ConcernPickerModal from "@/components/VHC/mediaCapture/ConcernPickerModal";
 import { collectSectionConcerns } from "@/components/VHC/mediaCapture/collectSectionConcerns";
@@ -124,8 +124,9 @@ export default function SectionCameraButton({
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="sm"
         onClick={handleClick}
         disabled={!isEnabled || uploading}
         aria-disabled={!isEnabled || uploading}
@@ -139,7 +140,6 @@ export default function SectionCameraButton({
                 : `Pick from ${concernCount} concerns to capture`
         }
         style={{
-          ...createVhcButtonStyle("primary", { disabled: !isEnabled || uploading }),
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
@@ -149,7 +149,7 @@ export default function SectionCameraButton({
       >
         <CameraGlyph size={16} />
         {uploading ? "Uploading…" : `Camera${countLabel}`}
-      </button>
+      </Button>
 
       {errorMessage ? (
         <span

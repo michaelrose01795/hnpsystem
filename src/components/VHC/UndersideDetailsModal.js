@@ -1,10 +1,10 @@
 // file location: src/components/VHC/UndersideDetailsModal.js
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
+import Button from "@/components/ui/Button";
 import themeConfig, {
-  createVhcButtonStyle,
   vhcModalContentStyles,
   popupOverlayStyles,
   popupCardStyles,
@@ -167,12 +167,12 @@ export default function UndersideDetailsModal({
           onUploadComplete={onSectionMediaUploaded}
         />
       ) : null}
-      <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
+      <Button variant="ghost" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Close
-      </button>
-      <button type="button" onClick={handleSaveComplete} style={buildModalButton("primary")}>
+      </Button>
+      <Button variant="primary" size="sm" onClick={handleSaveComplete} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Save & Complete
-      </button>
+      </Button>
     </>
   );
 
@@ -276,13 +276,14 @@ export default function UndersideDetailsModal({
               <h3 style={{ fontSize: "18px", fontWeight: 700, color: palette.accent, margin: 0 }}>
                 {activeConcern.category}
               </h3>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
-                style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
+                style={{ padding: "6px 14px" }}
               >
                 Close
-              </button>
+              </Button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -352,9 +353,9 @@ export default function UndersideDetailsModal({
                     ))}
                   </DropdownField>
                 </div>
-                <button type="button" onClick={addConcern} disabled={locked} style={{ ...createVhcButtonStyle("primary") }}>
+                <Button variant="primary" size="sm" onClick={addConcern} disabled={locked}>
                   Add Concern
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -451,18 +452,18 @@ export default function UndersideDetailsModal({
                           ))}
                         </DropdownField>
 
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => deleteConcern(activeConcern.category, idx)}
                           disabled={rowLocked}
                           style={{
-                            ...createVhcButtonStyle("ghost", { disabled: rowLocked }),
-                            color: rowLocked ? palette.textMuted : palette.danger,
+                            color: rowLocked ? "var(--text-secondary)" : "var(--danger)",
                             backgroundColor: "var(--control-bg)", boxShadow: "none",
                           }}
                         >
                           Remove
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   );

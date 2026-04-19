@@ -12,6 +12,7 @@ import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
+import Button from "@/components/ui/Button";
 
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
@@ -553,13 +554,13 @@ export default function LoginPage() {
                 </p>
               )}
 
-              <button
+              <Button
                 type="submit"
-                className="login-button"
-                style={{ background: "var(--primary)" }}
+                variant="primary"
+                style={{ width: "100%", padding: "14px 18px", borderRadius: "var(--radius-xl)", fontSize: "1rem" }}
               >
                 Login
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={openResetModal}
@@ -610,13 +611,14 @@ export default function LoginPage() {
                 </p>
 
 
-                <button
+                <Button
+                  type="button"
                   onClick={handleDevLogin}
-                  className="login-button"
-                  style={{ background: "var(--primary)" }}
+                  variant="primary"
+                  style={{ width: "100%", padding: "14px 18px", borderRadius: "var(--radius-xl)", fontSize: "1rem" }}
                 >
                   Dev Login
-                </button>
+                </Button>
               </div>
             </LoginCard>
           </div>

@@ -6,7 +6,8 @@
 // through the global design tokens in src/styles/theme.css.
 
 import React, { useEffect, useMemo, useState } from "react";
-import VHCModalShell, { buildModalButton } from "./VHCModalShell";
+import VHCModalShell from "./VHCModalShell";
+import Button from "@/components/ui/Button";
 import { uploadVhcMediaFile } from "@/lib/vhc/uploadMediaClient";
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
@@ -110,23 +111,25 @@ export default function MediaUploadConfirmModal({
         flexWrap: "wrap",
       }}
     >
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={onCancel}
         disabled={uploading}
-        style={buildModalButton("ghost", { disabled: uploading })}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
         Cancel
-      </button>
+      </Button>
 
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="sm"
         onClick={handleUpload}
         disabled={uploading || !mediaFile}
-        style={buildModalButton("primary", { disabled: uploading || !mediaFile })}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
         {uploading ? "Saving…" : "Save to VHC"}
-      </button>
+      </Button>
     </div>
   );
 

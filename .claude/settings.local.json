@@ -94,7 +94,8 @@
       "Bash(node --input-type=module --eval \"import\\('/workspaces/hnpsystem/src/pages/job-cards/myjobs/[jobNumber].js'\\).catch\\(e => console.error\\(e.message\\)\\)\")",
       "Bash(echo \"exit code: $?\")",
       "Bash(echo \"esbuild: $?\")",
-      "Bash(echo \"eslint: $?\")"
+      "Bash(echo \"eslint: $?\")",
+      "Bash(node _reorder-showcase.js)"
     ],
     "deny": [],
     "ask": []

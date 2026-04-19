@@ -1,8 +1,9 @@
 // file location: src/components/VHC/VHCModalShell.js
 import React from "react";
 import { createPortal } from "react-dom";
-import { vhcModalStyles, createVhcButtonStyle } from "@/styles/appTheme";
+import { vhcModalStyles } from "@/styles/appTheme";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
+import Button from "@/components/ui/Button";
 
 export default function VHCModalShell({
   isOpen,
@@ -75,12 +76,12 @@ export default function VHCModalShell({
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
             {inlineMode && footer ? footer : null}
             {!hideCloseButton && (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={onClose}
                 aria-label="Close modal"
                 style={{
-                  ...createVhcButtonStyle("ghost"),
                   border: "none",
                   boxShadow: "none",
                   padding: "6px 12px",
@@ -92,7 +93,7 @@ export default function VHCModalShell({
                 }}
               >
                 Close
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -176,16 +177,16 @@ export default function VHCModalShell({
             >
               {lockedMessage}
               {onClose ? (
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={onClose}
                   style={{
-                    ...createVhcButtonStyle("primary"),
                     alignSelf: "center",
                   }}
                 >
                   Close
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
@@ -203,7 +204,6 @@ export default function VHCModalShell({
 }
 
 export const buildModalButton = (variant = "primary", { disabled = false } = {}) => ({
-  ...createVhcButtonStyle(variant, { disabled }),
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",

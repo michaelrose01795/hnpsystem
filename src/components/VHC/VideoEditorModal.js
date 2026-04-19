@@ -12,7 +12,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
-import { createVhcButtonStyle, popupOverlayStyles } from "@/styles/appTheme";
+import { popupOverlayStyles } from "@/styles/appTheme";
+import Button from "@/components/ui/Button";
 import VideoPlayer from "./videoEditor/VideoPlayer";
 import TimelineTrimControl from "./videoEditor/TimelineTrimControl";
 
@@ -27,21 +28,18 @@ function getPreferredMimeType() {
   return candidates.find((type) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type)) || "";
 }
 
-function actionButton(variant, disabled, extra = {}) {
-  return {
-    ...createVhcButtonStyle(variant, { disabled }),
-    minHeight: "var(--control-height)",
-    padding: "0 var(--space-lg)",
-    fontSize: "var(--text-body-sm)",
-    letterSpacing: "var(--tracking-wide)",
-    fontWeight: 800,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "var(--space-sm)",
-    ...extra,
-  };
-}
+const actionButtonStyle = (extra = {}) => ({
+  minHeight: "var(--control-height)",
+  padding: "0 var(--space-lg)",
+  fontSize: "var(--text-body-sm)",
+  letterSpacing: "var(--tracking-wide)",
+  fontWeight: 800,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "var(--space-sm)",
+  ...extra,
+});
 
 function findCutContaining(time, cuts) {
   return cuts.find((c) => time >= c.start && time < c.end);
@@ -389,32 +387,35 @@ export default function VideoEditorModal({
             flexWrap: "wrap",
           }}
         >
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onCancel}
             disabled={processing}
-            style={actionButton("ghost", processing, { marginRight: "auto" })}
+            style={actionButtonStyle({ marginRight: "auto" })}
           >
             Cancel
-          </button>
+          </Button>
           {onSkip ? (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => onSkip?.(videoFile)}
               disabled={processing || !videoLoaded}
-              style={actionButton("secondary", processing || !videoLoaded)}
+              style={actionButtonStyle()}
             >
               Keep original
-            </button>
+            </Button>
           ) : null}
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="sm"
             onClick={exportVideo}
             disabled={!videoLoaded || processing}
-            style={actionButton("primary", !videoLoaded || processing)}
+            style={actionButtonStyle()}
           >
             {processing ? "Processing…" : "Save edits"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

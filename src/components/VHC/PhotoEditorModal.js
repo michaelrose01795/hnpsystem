@@ -14,7 +14,8 @@
 // follows the user's chosen theme in both light and dark mode.
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import VHCModalShell, { buildModalButton } from "./VHCModalShell";
+import VHCModalShell from "./VHCModalShell";
+import Button from "@/components/ui/Button";
 
 const TOOLS = [
   { id: "pen", label: "✏️ Pen", desc: "Freehand draw", group: "draw" },
@@ -426,36 +427,42 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
 
   const footer = (
     <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "space-between", width: "100%", flexWrap: "wrap" }}>
-      <button onClick={onCancel} style={buildModalButton("ghost")}>
+      <Button variant="ghost" size="sm" onClick={onCancel} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Cancel
-      </button>
+      </Button>
 
       <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "flex-end" }}>
         {onSkip && (
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => onSkip(photoFile)}
-            style={buildModalButton("secondary", { disabled: !imageLoaded })}
             disabled={!imageLoaded}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
           >
             Skip Editing
-          </button>
+          </Button>
         )}
 
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={resetToOriginal}
-          style={buildModalButton("secondary", { disabled: historyStep === 0 })}
           disabled={historyStep === 0}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
         >
           Reset
-        </button>
+        </Button>
 
-        <button
+        <Button
+          variant="primary"
+          size="sm"
           onClick={exportImage}
-          style={buildModalButton("primary", { disabled: !imageLoaded })}
           disabled={!imageLoaded}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
         >
           Save Edits
-        </button>
+        </Button>
       </div>
     </div>
   );

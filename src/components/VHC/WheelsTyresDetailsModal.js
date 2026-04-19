@@ -1,10 +1,10 @@
 // file location: src/components/VHC/WheelsTyresDetailsModal.js
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
+import Button from "@/components/ui/Button";
 import themeConfig, {
-  createVhcButtonStyle,
   vhcModalContentStyles,
   popupOverlayStyles,
   popupCardStyles,
@@ -852,17 +852,18 @@ export default function WheelsTyresDetailsModal({
           onUploadComplete={onSectionMediaUploaded}
         />
       ) : null}
-      <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
+      <Button variant="ghost" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Close
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="primary"
+        size="sm"
         onClick={handleSaveComplete}
-        style={buildModalButton("primary", { disabled: locked })}
         disabled={locked}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
         Save & Complete
-      </button>
+      </Button>
     </>
   );
 
@@ -1222,18 +1223,18 @@ export default function WheelsTyresDetailsModal({
                     Logged Concerns ({activeWheel})
                   </h3>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setConcernTarget(activeWheel);
                         setConcernInput("");
                         setConcernStatus("Amber");
                         setConcernEditIndex(null);
                       }}
-                      style={createVhcButtonStyle("ghost")}
                     >
                       + Add Concern
-                    </button>
+                    </Button>
                     <div style={concernBadge(statusColors.Amber)}>{(currentTyre.concerns ?? []).length} total</div>
                   </div>
                 </div>
@@ -1350,35 +1351,36 @@ export default function WheelsTyresDetailsModal({
 
             <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "6px", flexWrap: "wrap" }}>
               {concernEditIndex !== null && (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={deleteConcern}
-                  style={{ ...createVhcButtonStyle("ghost"), color: palette.danger }}
+                  style={{ color: "var(--danger)" }}
                 >
                   Delete
-                </button>
+                </Button>
               )}
               <div style={{ display: "flex", gap: "10px" }}>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setConcernTarget(null);
                     setConcernInput("");
                     setConcernStatus("Amber");
                     setConcernEditIndex(null);
                   }}
-                  style={{ ...createVhcButtonStyle("ghost") }}
                 >
                   Close
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={addConcern}
                   disabled={locked}
-                  style={{ ...createVhcButtonStyle("primary") }}
                 >
                   {concernEditIndex !== null ? "Save" : "Add Concern"}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

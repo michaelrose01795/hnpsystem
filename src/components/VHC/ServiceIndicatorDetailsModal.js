@@ -1,10 +1,10 @@
 // file location: src/components/VHC/ServiceIndicatorDetailsModal.js
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
+import Button from "@/components/ui/Button";
 import themeConfig, {
-  createVhcButtonStyle,
   vhcModalContentStyles,
   popupOverlayStyles,
   popupCardStyles,
@@ -172,13 +172,14 @@ export default function ServiceIndicatorDetailsModal({
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={onAdd}
-              style={{ ...createVhcButtonStyle("ghost"), gap: "6px" }}
+              style={{ gap: "6px" }}
             >
               + Add Concern
-            </button>
+            </Button>
             <span
               style={{
                 padding: "6px 12px",
@@ -353,17 +354,18 @@ export default function ServiceIndicatorDetailsModal({
           onUploadComplete={onSectionMediaUploaded}
         />
       ) : null}
-      <button type="button" onClick={handleClose} style={buildModalButton("ghost")}>
+      <Button variant="ghost" size="sm" onClick={handleClose} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
         Close
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="primary"
+        size="sm"
         onClick={handleSaveComplete}
-        style={buildModalButton("primary", { disabled: locked })}
         disabled={locked}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
         Save & Complete
-      </button>
+      </Button>
     </>
   );
 
@@ -582,18 +584,19 @@ export default function ServiceIndicatorDetailsModal({
               <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
                 {activeConcernLabel}
               </h3>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   setShowConcernModal(false);
                   setActiveConcernTarget(null);
                   setNewConcern("");
                   setConcernStatus("Red");
                 }}
-                style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
+                style={{ padding: "6px 14px" }}
               >
                 Close
-              </button>
+              </Button>
             </div>
 
             <div data-dev-section="1" data-dev-section-key="vhc-service-concern-form" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-concern-popup" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -661,14 +664,15 @@ export default function ServiceIndicatorDetailsModal({
                 ))}
               </DropdownField>
 
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={addConcern}
                 disabled={locked}
-                style={{ ...createVhcButtonStyle("primary"), alignSelf: "flex-end" }}
+                style={{ alignSelf: "flex-end" }}
               >
                 Save Concern
-              </button>
+              </Button>
             </div>
 
             <div
@@ -767,13 +771,14 @@ export default function ServiceIndicatorDetailsModal({
                         }}
                       />
                     )}
-                    <button
-                      type="button"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => deleteConcern(concern._globalIndex)}
-                      style={{ ...createVhcButtonStyle("ghost"), color: palette.danger, border: "none" }}
+                      style={{ color: "var(--danger)", border: "none" }}
                     >
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 ))
               )}

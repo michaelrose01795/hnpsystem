@@ -2,7 +2,7 @@
 // Standalone VHC capture launcher that now saves media immediately after capture.
 
 import React, { useState } from "react";
-import { createVhcButtonStyle } from "@/styles/appTheme";
+import Button from "@/components/ui/Button";
 import CameraCaptureModal from "./CameraCaptureModal";
 import MediaUploadConfirmModal from "./MediaUploadConfirmModal";
 import PhotoEditorModal from "./PhotoEditorModal";
@@ -85,11 +85,11 @@ export default function VhcCameraButton({
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="primary"
+        size="sm"
         onClick={handleCameraClick}
         style={{
-          ...createVhcButtonStyle("primary"),
           padding: "var(--space-sm) var(--space-md)",
           display: "inline-flex",
           alignItems: "center",
@@ -100,7 +100,7 @@ export default function VhcCameraButton({
         title="Capture VHC photo or video"
       >
         Camera
-      </button>
+      </Button>
 
       <CameraCaptureModal
         isOpen={showCameraModal}

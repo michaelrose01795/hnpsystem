@@ -1,10 +1,10 @@
 // file location: src/components/VHC/ExternalDetailsModal.js
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import VHCModalShell, { buildModalButton } from "@/components/VHC/VHCModalShell";
+import VHCModalShell from "@/components/VHC/VHCModalShell";
 import SectionCameraButton from "@/components/VHC/mediaCapture/SectionCameraButton";
+import Button from "@/components/ui/Button";
 import themeConfig, {
-  createVhcButtonStyle,
   vhcModalContentStyles,
   popupOverlayStyles,
   popupCardStyles,
@@ -198,20 +198,22 @@ export default function ExternalDetailsModal({
           onUploadComplete={onSectionMediaUploaded}
         />
       ) : null}
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleClose}
-        style={buildModalButton("ghost")}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
         Close
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="primary"
+        size="sm"
         onClick={() => onComplete(data)}
-        style={buildModalButton("primary")}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
       >
         Save & Complete
-      </button>
+      </Button>
     </>
   );
 
@@ -312,13 +314,14 @@ export default function ExternalDetailsModal({
               <h3 style={{ fontSize: "18px", fontWeight: 700, color: palette.accent, margin: 0 }}>
                 {activeConcern.category}
               </h3>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setActiveConcern({ open: false, category: "", temp: { issue: "", status: "Red" } })}
-                style={{ ...createVhcButtonStyle("ghost"), padding: "6px 14px" }}
+                style={{ padding: "6px 14px" }}
               >
                 Close
-              </button>
+              </Button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -388,14 +391,14 @@ export default function ExternalDetailsModal({
                     ))}
                   </DropdownField>
                 </div>
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="sm"
                   onClick={addConcern}
                   disabled={locked}
-                  style={{ ...createVhcButtonStyle("primary") }}
                 >
                   Add Concern
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -492,18 +495,18 @@ export default function ExternalDetailsModal({
                           ))}
                         </DropdownField>
 
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => deleteConcern(activeConcern.category, idx)}
                           disabled={rowLocked}
                           style={{
-                            ...createVhcButtonStyle("ghost", { disabled: rowLocked }),
-                            color: rowLocked ? palette.textMuted : palette.danger,
+                            color: rowLocked ? "var(--text-secondary)" : "var(--danger)",
                             backgroundColor: "var(--control-bg)", boxShadow: "none",
                           }}
                         >
                           Remove
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   );

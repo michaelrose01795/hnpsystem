@@ -1,7 +1,7 @@
 // file location: src/components/VHC/PrePickLocationModal.js
 import React, { useState } from "react";
 import VHCModalShell from "./VHCModalShell";
-import { buildModalButton } from "./VHCModalShell";
+import Button from "@/components/ui/Button";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 
 const PRE_PICK_LOCATIONS = [
@@ -55,37 +55,49 @@ export default function PrePickLocationModal({
       footer={
         <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
           {allowSkip && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleSkip}
               style={{
-                ...buildModalButton("ghost"),
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
                 padding: "10px 20px",
               }}
             >
               Skip for Now
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleClose}
             style={{
-              ...buildModalButton("secondary"),
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
               padding: "10px 20px",
             }}
           >
             Cancel
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
             onClick={handleConfirm}
             style={{
-              ...buildModalButton("primary"),
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
               padding: "10px 20px",
             }}
           >
             Confirm
-          </button>
+          </Button>
         </div>
       }
     >

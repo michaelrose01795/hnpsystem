@@ -55,7 +55,6 @@ import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
 import VideoEditorModal from "@/components/VHC/VideoEditorModal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import themeConfig, {
-  createVhcButtonStyle, // VHC button style factory — still comes from appTheme
   vhcCardStates, // VHC section state colours — still comes from appTheme
 } from "@/styles/appTheme";
 
