@@ -2403,6 +2403,102 @@ textarea:disabled {
   cursor: not-allowed;
 }
 
+/* ========================================================= */
+/* === Enforcement: global style wins over inline props   === */
+/* ========================================================= */
+/* Dropdown triggers, calendar/timepicker triggers, and the shared searchbar
+   must always render in the secondary-button treatment (accent-tinted bg,
+   accent text, no border). `!important` here is intentional — it prevents any
+   page-level `style={{}}` or CSS module from re-introducing a different look
+   or a border. If a variant genuinely needs different sizing, add a modifier
+   class (e.g. `.app-topbar-dropdown`) instead of an inline style. */
+.dropdown-api__control,
+.calendar-api__control,
+.timepicker-api__control,
+.searchbar-api {
+  background: var(--control-bg) !important;
+  background-image: none !important;
+  color: var(--accentText) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.dropdown-api.is-open .dropdown-api__control,
+.dropdown-api__control:focus-visible,
+.calendar-api__control:focus,
+.calendar-api__control:focus-visible,
+.timepicker-api__control:focus,
+.timepicker-api__control:focus-visible,
+.searchbar-api:focus-within {
+  background: var(--control-bg-hover) !important;
+  box-shadow: var(--control-ring) !important;
+}
+
+.dropdown-api__control:hover:not(:disabled),
+.calendar-api__control:hover:not(:disabled),
+.timepicker-api__control:hover:not(:disabled),
+.searchbar-api:hover {
+  background: var(--control-bg-hover) !important;
+}
+
+.dropdown-api__value,
+.calendar-api__value,
+.timepicker-api__value {
+  color: var(--accentText) !important;
+}
+
+.dropdown-api__chevron,
+.calendar-api__icon,
+.timepicker-api__icon,
+.searchbar-api__icon {
+  color: var(--accentText) !important;
+}
+
+/* All `.app-btn` variants lock their visual treatment so page-level inline
+   styles can only affect layout (width/flex/margin), never the look. */
+.app-btn--primary {
+  background: var(--accentMain) !important;
+  color: var(--onAccentText) !important;
+  border: none !important;
+}
+.app-btn--primary:hover { background: var(--accentHover) !important; }
+
+.app-btn--secondary {
+  background: var(--control-bg) !important;
+  color: var(--accentText) !important;
+  border: none !important;
+}
+.app-btn--secondary:hover { background: var(--control-bg-hover) !important; }
+
+.app-btn--ghost {
+  background: transparent !important;
+  color: var(--accentText) !important;
+  border: none !important;
+}
+.app-btn--ghost:hover { background: var(--control-bg) !important; }
+
+.app-btn--control {
+  background: var(--control-bg) !important;
+  color: var(--accentText) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.app-btn--control:hover { background: var(--control-bg-hover) !important; }
+
+.app-btn--danger {
+  background: var(--danger) !important;
+  color: var(--onAccentText) !important;
+  border: none !important;
+}
+.app-btn--danger:hover { background: var(--danger-dark) !important; }
+
+.app-btn--on-primary {
+  background: rgba(var(--surface-rgb), 0.18) !important;
+  color: var(--text-inverse) !important;
+  border: none !important;
+}
+.app-btn--on-primary:hover { background: rgba(var(--surface-rgb), 0.3) !important; }
+
 .dropdown-api__value,
 .calendar-api__value,
 .timepicker-api__value {
