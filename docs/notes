@@ -18,6 +18,9 @@ TODO
 have it so customers wihci are wihtin a 40min drdaius drive of a humphries and parks in west malling are eligeible for mobiule mechanic, add this secton within /job-cards/create :: 1.2.1.1.1.2.1.1 (job-cards-create-job-information), so if the addresss entered, cars 3 years old or newer and is a suzuki and the job detected is a service then the status of the job can be set for mobile mechanic. add this seciton adn then have it if yes is selected within the eligible section then have it show for the mobile mechanic. 
 
 
+FIX playwritght still
+
+
 
 /dashboard/service
 
