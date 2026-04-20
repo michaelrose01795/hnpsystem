@@ -641,10 +641,13 @@ const USAGE_REGISTRY = {
     { label: "SeverityBadge", file: "src/components/VHC/VhcSharedComponents.js" },
   ],
   "non-global-buttons": [
-    { label: ".login-button → Button primary", file: "src/pages/login.js", route: "/login", migrated: true, suggestion: 'Replace <button className="login-button"> with <Button variant="primary">' },
-    { label: ".hr-employees-add-button → Button secondary", file: "src/components/HR/tabs/EmployeesTab.js", route: "/hr", migrated: true, suggestion: 'Replace <button className="hr-employees-add-button"> with <Button variant="secondary" size="sm">' },
-    { label: "createVhcButtonStyle() → Button variants", file: "src/styles/appTheme.js", migrated: true, suggestion: "All VHC modals now use <Button variant> instead of createVhcButtonStyle() inline styles" },
-    { label: "VHC modal buttons → Button sm", file: "src/components/VHC/WheelsTyresDetailsModal.js", route: "/job-cards/myjobs", migrated: true, suggestion: "All VHC detail modal buttons migrated to <Button variant size='sm'>" },
+    { label: ".login-button → Button primary", file: "src/pages/login.js", route: "/login", migrated: true, validated: true, suggestion: 'JSX uses <Button variant="primary">; .login-button CSS (5 declarations incl. media-query overrides) deleted from globals.css.' },
+    { label: "Login modals (reset / revert) → Button", file: "src/pages/login.js", route: "/login", migrated: true, validated: true, suggestion: 'All raw <button> tags in reset-password and revert-password modals replaced with <Button variant="primary"|"secondary"|"danger" size="sm">.' },
+    { label: ".hr-employees-add-button → Button secondary", file: "src/components/HR/tabs/EmployeesTab.js", route: "/hr", migrated: true, validated: true, suggestion: 'JSX uses <Button variant="secondary" size="sm">; .hr-employees-add-button + .hr-employees-add-button-icon/-label CSS (incl. 1400px media query) deleted from globals.css.' },
+    { label: "createVhcButtonStyle() → Button variants", file: "src/styles/appTheme.js", migrated: true, validated: true, suggestion: "createVhcButtonStyle() export deleted from appTheme.js — VHC modals use <Button variant size='sm'> directly." },
+    { label: "VHC modal buttons → Button sm", file: "src/components/VHC/WheelsTyresDetailsModal.js", route: "/job-cards/myjobs", migrated: true, validated: true, suggestion: "Delete button now uses variant='danger' (was ghost + inline color override). All other VHC detail modal buttons migrated to <Button variant size='sm'>." },
+    { label: "Global Button enforcement", file: "src/components/ui/Button.js", migrated: true, validated: true, suggestion: "Button.js now strips disallowed inline-style keys (background, color, padding, border*, borderRadius, font*, boxShadow, height/minHeight) so the global system is the single source of truth for visual appearance. Layout-only style props (width, margin, alignSelf, etc.) still pass through." },
+    { label: "Base button {} reset scoped to :not(.app-btn)", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "Bare <button> defaults in globals.css scoped to button:not(.app-btn) so they cannot fight .app-btn variant rules — eliminates filter:brightness double-hover and ensures .app-btn--* variants are decisive." },
   ],
   "non-global-inputs": [
     { label: ".login-input — login page", file: "src/pages/login.js", route: "/login" },
@@ -2094,11 +2097,14 @@ function GlobalUiShowcase() {
       )}
       {isSectionVisible("interaction-states-buttons") && (
       <ShowcaseSection title="Interaction States — Buttons" itemKey="interaction-states-buttons" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+        {/* Simulated state previews use raw <button class="app-btn …"> so the demo can
+            paint each pseudo-state inline. <Button> now strips visual style overrides
+            (the design-system enforcement), so we cannot use it for static state mocks. */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
           <Button variant="primary">Default</Button>
-          <Button variant="primary" style={{ background: "var(--accentHover)" }}>Hover</Button>
-          <Button variant="primary" style={{ background: "var(--accentPressed)" }}>Active</Button>
-          <Button variant="primary" style={{ boxShadow: "var(--control-ring)" }}>Focus</Button>
+          <button type="button" className="app-btn app-btn--primary" style={{ background: "var(--accentHover)" }}>Hover</button>
+          <button type="button" className="app-btn app-btn--primary" style={{ background: "var(--accentPressed)" }}>Active</button>
+          <button type="button" className="app-btn app-btn--primary" style={{ boxShadow: "var(--control-ring)" }}>Focus</button>
           <Button variant="primary" disabled>Disabled</Button>
         </div>
         <div style={{ fontSize: "10px", color: "var(--text-secondary)" }}>
@@ -2109,23 +2115,35 @@ function GlobalUiShowcase() {
       {isSectionVisible("non-global-buttons") && (
       <ShowcaseSection title="Non-Global Buttons (per-module)" itemKey="non-global-buttons" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <p style={{ margin: "0 0 10px", fontSize: "11px", color: "var(--text-secondary)" }}>
-          Green = migrated to global <code>Button</code> component. Red = still using non-global style.
+          Status reads <code>migrated</code> + <code>validated</code> flags from <code>USAGE_REGISTRY</code>.{" "}
+          <strong style={{ color: "var(--success-text)" }}>Green</strong> = migrated AND visually validated (no legacy CSS, no disallowed inline overrides).{" "}
+          <strong style={{ color: "var(--warning-text)" }}>Amber</strong> = migrated in JSX but still has legacy CSS or inline overrides bleeding through.{" "}
+          <strong style={{ color: "var(--danger-text)" }}>Red</strong> = not migrated.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {[
-            { oldName: ".login-button", newName: "→ Button primary (full-width)", search: "login-button", variant: "primary" },
-            { oldName: ".hr-employees-add-button", newName: "→ Button secondary sm", search: "hr-employees-add-button", variant: "secondary" },
-            { oldName: "createVhcButtonStyle('primary')", newName: "→ Button primary sm", search: "createVhcButtonStyle", variant: "primary" },
-            { oldName: "createVhcButtonStyle('secondary')", newName: "→ Button secondary sm", search: "createVhcButtonStyle", variant: "secondary" },
-            { oldName: "createVhcButtonStyle('ghost')", newName: "→ Button ghost sm", search: "createVhcButtonStyle", variant: "ghost" },
+            { oldName: ".login-button", newName: "→ Button primary (full-width, default size)", registryLabel: ".login-button → Button primary", variant: "primary" },
+            { oldName: "Login modals (reset / revert)", newName: "→ Button primary | secondary | danger sm", registryLabel: "Login modals (reset / revert) → Button", variant: "danger" },
+            { oldName: ".hr-employees-add-button", newName: "→ Button secondary sm", registryLabel: ".hr-employees-add-button → Button secondary", variant: "secondary" },
+            { oldName: "createVhcButtonStyle()", newName: "→ Button variant sm (deleted from appTheme.js)", registryLabel: "createVhcButtonStyle() → Button variants", variant: "primary" },
+            { oldName: "VHC modal buttons (incl. Delete)", newName: "→ Button primary | ghost | danger sm", registryLabel: "VHC modal buttons → Button sm", variant: "ghost" },
+            { oldName: "Inline style overrides on <Button>", newName: "→ stripped by Button.js sanitizeStyle()", registryLabel: "Global Button enforcement", variant: "primary" },
+            { oldName: "Bare button {} reset competing with .app-btn", newName: "→ scoped to button:not(.app-btn)", registryLabel: "Base button {} reset scoped to :not(.app-btn)", variant: "secondary" },
           ].map((item) => {
-            const migrated = !(document.querySelector && false);
+            const entry = (USAGE_REGISTRY["non-global-buttons"] || []).find((u) => u.label === item.registryLabel) || {};
+            const migrated = entry.migrated === true;
+            const validated = entry.validated === true;
+            const tone = !migrated ? "danger" : (validated ? "success" : "warning");
+            const borderColor = tone === "success" ? "var(--success)" : tone === "warning" ? "var(--warning)" : "var(--danger)";
+            const iconColor = tone === "success" ? "var(--success)" : tone === "warning" ? "var(--warning)" : "var(--danger)";
+            const labelColor = tone === "success" ? "var(--success-text)" : tone === "warning" ? "var(--warning-text)" : "var(--danger-text)";
+            const icon = tone === "success" ? "\u2713" : tone === "warning" ? "\u26A0" : "\u2717";
             return (
-              <div key={item.oldName} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 10px", borderRadius: "var(--radius-xs)", background: "var(--surface-light)", border: `1px solid var(--success)` }}>
-                <span style={{ fontSize: "14px", color: "var(--success)" }}>{"\u2713"}</span>
+              <div key={item.oldName} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 10px", borderRadius: "var(--radius-xs)", background: "var(--surface-light)", border: `1px solid ${borderColor}` }}>
+                <span style={{ fontSize: "14px", color: iconColor }}>{icon}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: "11px", color: "var(--text-secondary)", textDecoration: "line-through" }}>{item.oldName}</div>
-                  <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--success-text)" }}>{item.newName}</div>
+                  <div style={{ fontSize: "12px", fontWeight: 600, color: labelColor }}>{item.newName}</div>
                 </div>
                 <Button variant={item.variant} size="xs">{item.variant}</Button>
               </div>

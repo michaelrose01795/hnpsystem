@@ -6,6 +6,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { useUser } from "@/context/UserContext";
 import { MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import { roleCategories } from "@/config/users";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const FALLBACK_UPDATES = [
   {
@@ -298,12 +299,30 @@ export default function NewsFeed() {
         )}
 
         {loading && (
-          <p
-            className="text-sm mb-6"
-            style={{ color: "var(--text-secondary)", opacity: 0.7 }}
-          >
-            Loading latest updates…
-          </p>
+          <div className="mb-6" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <SkeletonKeyframes />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "var(--surface)",
+                  borderRadius: "var(--radius-md)",
+                  padding: 18,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <SkeletonBlock width="38px" height="38px" borderRadius="999px" />
+                  <SkeletonBlock width="160px" height="14px" />
+                </div>
+                <SkeletonBlock width="80%" height="18px" />
+                <SkeletonBlock width="100%" height="12px" />
+                <SkeletonBlock width="90%" height="12px" />
+              </div>
+            ))}
+          </div>
         )}
 
         {!loading && accessibleUpdates.length === 0 && (

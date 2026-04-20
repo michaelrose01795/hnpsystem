@@ -5,6 +5,7 @@ import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/database/supabaseClient";
 import ModalPortal from "@/components/popups/ModalPortal";
+import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const STATUS_META = {
   planned: { label: "Planned", background: "rgba(var(--warning-rgb), 0.15)", color: "var(--danger-dark)" },
@@ -904,7 +905,7 @@ export default function DeliveryRoutePage() {
                   padding: "10px 12px",
                 }}
               />
-              {customerSearchLoading && <p style={{ margin: 0, color: "var(--info)" }}>Searching…</p>}
+              {customerSearchLoading && <InlineLoading width={120} label="Searching" />}
               {customerResults.length > 0 && (
                 <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: "8px" }}>
                   {customerResults.map((customer) => {
@@ -1062,7 +1063,31 @@ export default function DeliveryRoutePage() {
           {error && <p style={{ color: "var(--danger)", margin: 0 }}>{error}</p>}
         </section>
 
-        {loading && <p style={{ color: "var(--info)" }}>Loading route stops…</p>}
+        {loading && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <SkeletonKeyframes />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "40px 1fr auto",
+                  gap: 12,
+                  padding: 12,
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--surface)",
+                }}
+              >
+                <SkeletonBlock width="32px" height="32px" borderRadius="999px" />
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <SkeletonBlock width="60%" height="12px" />
+                  <SkeletonBlock width="80%" height="10px" />
+                </div>
+                <SkeletonBlock width="60px" height="20px" />
+              </div>
+            ))}
+          </div>
+        )}
 
         {!loading && !orderedStops.length && (
           <p style={{ color: "var(--info)" }}>No stops have been planned for this route yet.</p>

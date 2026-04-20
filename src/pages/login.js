@@ -557,25 +557,19 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 variant="primary"
-                style={{ width: "100%", padding: "14px 18px", borderRadius: "var(--radius-xl)", fontSize: "1rem" }}
+                style={{ width: "100%" }}
               >
                 Login
               </Button>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="xs"
                 onClick={openResetModal}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  color: "var(--text-secondary)",
-                  fontSize: "0.75rem",
-                  textDecoration: "underline",
-                  marginTop: "8px",
-                  cursor: "pointer",
-                }}
+                style={{ alignSelf: "center", marginTop: "8px" }}
               >
                 Reset password
-              </button>
+              </Button>
             </form>
           </LoginCard>
         </div>
@@ -615,7 +609,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={handleDevLogin}
                   variant="primary"
-                  style={{ width: "100%", padding: "14px 18px", borderRadius: "var(--radius-xl)", fontSize: "1rem" }}
+                  style={{ width: "100%" }}
                 >
                   Dev Login
                 </Button>
@@ -698,35 +692,22 @@ export default function LoginPage() {
                 </p>
               )}
               <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={closeResetModal}
-                  style={{
-                    border: "none",
-                    background: "var(--surface-light)",
-                    color: "var(--text-primary)",
-                    borderRadius: "var(--radius-xs)",
-                    padding: "8px 12px",
-                    cursor: "pointer",
-                  }}
                 >
                   Close
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="sm"
                   disabled={isResettingPassword}
-                  style={{
-                    border: "none",
-                    background: "var(--primary)",
-                    color: "var(--text-inverse)",
-                    borderRadius: "var(--radius-xs)",
-                    padding: "8px 12px",
-                    cursor: isResettingPassword ? "not-allowed" : "pointer",
-                    opacity: isResettingPassword ? 0.6 : 1,
-                  }}
                 >
                   {isResettingPassword ? "Resetting..." : "Reset Password"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -763,37 +744,24 @@ export default function LoginPage() {
               If you click "Yes, it wasn't me", your previous password will be restored.
             </p>
             <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => handlePasswordRevertDecision(false)}
                 disabled={isRevertingPassword}
-                style={{
-                  border: "none",
-                  background: "var(--surface-light)",
-                  color: "var(--text-primary)",
-                  borderRadius: "var(--radius-xs)",
-                  padding: "8px 12px",
-                  cursor: "pointer",
-                }}
               >
                 No, this was me
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
                 onClick={() => handlePasswordRevertDecision(true)}
                 disabled={isRevertingPassword}
-                style={{
-                  border: "none",
-                  background: "var(--danger)",
-                  color: "var(--text-inverse)",
-                  borderRadius: "var(--radius-xs)",
-                  padding: "8px 12px",
-                  cursor: isRevertingPassword ? "not-allowed" : "pointer",
-                  opacity: isRevertingPassword ? 0.6 : 1,
-                }}
               >
                 {isRevertingPassword ? "Reverting..." : "Yes, it wasn't me"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -830,21 +798,14 @@ export default function LoginPage() {
             <p style={{ margin: "10px 0 18px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
               {revertResultMessage}
             </p>
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               onClick={() => setShowRevertResult(false)}
-              style={{
-                border: "none",
-                background: "var(--primary-dark)",
-                color: "#ffffff",
-                borderRadius: "var(--radius-xs)",
-                padding: "9px 14px",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       )}

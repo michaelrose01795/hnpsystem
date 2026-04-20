@@ -6,6 +6,7 @@ import { supabaseClient } from "@/lib/database/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 
 const sectionStyle = {
   gap: "18px",
@@ -1497,7 +1498,7 @@ function DeliveryJobModal({
             }}
           />
         </label>
-        {invoiceSearching && <div style={{ color: "var(--info)", fontSize: "0.85rem" }}>Searching invoices…</div>}
+        {invoiceSearching && <InlineLoading width={160} label="Searching invoices" />}
         {!invoiceSearching && invoiceResults.length > 0 && (
           <div
             style={{

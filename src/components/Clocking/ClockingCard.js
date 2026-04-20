@@ -20,13 +20,23 @@
 import React from "react";
 import { useClockingContext } from "@/context/ClockingContext"; // canonical clocking source
 import { Button, Card } from "@/components/ui";
+import { SectionSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function ClockingCard() {
   // Pull state + actions straight from the provider — no legacy hook layer.
   const { clockedIn, hoursWorked, loading, clockIn, clockOut } = useClockingContext();
 
-  // Provider is still resolving the user's status — show a placeholder.
-  if (loading) return <p>Loading clocking info...</p>;
+  // Provider is still resolving the user's status — show a structured skeleton
+  // that matches the real card shape (title + status lines + action button).
+  if (loading)
+    return (
+      <SectionSkeleton
+        titleWidth="180px"
+        subtitleWidth="140px"
+        rows={2}
+        style={{ width: "100%", maxWidth: "32rem" }}
+      />
+    );
 
   // Defensive numeric coercion: hoursWorked should be a Number, but during
   // first render or after an error it can be undefined. Default to 0.

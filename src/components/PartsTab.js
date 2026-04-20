@@ -7,6 +7,7 @@ import TimePickerField from "@/components/ui/timePickerAPI/TimePickerField";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import {
@@ -1736,7 +1737,11 @@ const PartsTabNew = forwardRef(function PartsTabNew(
             opacity: canAllocateParts ? 1 : 0.7,
           }}
         />
-        {catalogLoading && <div style={{ fontSize: "var(--text-label)", color: "var(--info)", marginTop: "8px" }}>Searching...</div>}
+        {catalogLoading && (
+          <div style={{ marginTop: "8px" }}>
+            <InlineLoading width={120} label="Searching" />
+          </div>
+        )}
         {!catalogLoading && catalogError && (
           <div style={{ fontSize: "var(--text-caption)", color: "var(--danger)", marginTop: "8px" }}>{catalogError}</div>
         )}

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react"; // import React along with h
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Button from "@/components/ui/Button";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 const DETAIL_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "SALES", "WORKSHOP", "WORKSHOP MANAGER", "PARTS", "PARTS MANAGER"];
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 
@@ -106,7 +107,54 @@ export default function InvoiceDetailPage() {
               <Button type="button" variant="secondary" onClick={() => router.push("/accounts/invoices")}>All Invoices</Button>
             </div>
           </section>
-          {loading && <p style={{ color: "var(--text-secondary)" }}>Loading invoice…</p>}
+          {loading && (
+            <>
+              <SkeletonKeyframes />
+              <section
+                className="app-section-card"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: "16px",
+                  background: "rgba(var(--primary-rgb), 0.08)",
+                  border: "1px solid rgba(var(--primary-rgb), 0.16)",
+                }}
+              >
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: "var(--surface)",
+                      borderRadius: "var(--control-radius)",
+                      padding: "16px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                    }}
+                  >
+                    <SkeletonBlock width="50%" height="10px" />
+                    <SkeletonBlock width="70%" height="24px" />
+                    <SkeletonBlock width="40%" height="10px" />
+                  </div>
+                ))}
+              </section>
+              <section
+                className="app-section-card"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  background: "rgba(var(--primary-rgb), 0.08)",
+                  border: "1px solid rgba(var(--primary-rgb), 0.16)",
+                }}
+              >
+                <SkeletonBlock width="20%" height="16px" />
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonBlock key={i} width={i % 2 === 0 ? "100%" : "88%"} height="14px" />
+                ))}
+              </section>
+            </>
+          )}
           {!loading && invoice && (
             <>
               <section className="app-section-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>

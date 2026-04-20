@@ -11,7 +11,7 @@
 import React from "react";
 import { getLayoutFingerprint } from "@/lib/loading/layoutFingerprint";
 
-export function SkeletonBlock({ width = "100%", height = "20px", borderRadius = "8px" }) {
+export function SkeletonBlock({ width = "100%", height = "20px", borderRadius = "var(--skeleton-radius, 8px)", style }) {
   return (
     <div
       className="skeleton-block"
@@ -19,12 +19,96 @@ export function SkeletonBlock({ width = "100%", height = "20px", borderRadius = 
         width,
         height,
         borderRadius,
-        background: "linear-gradient(90deg, var(--surface-light,#e8e8e8) 25%, var(--surface,#f4f4f4) 50%, var(--surface-light,#e8e8e8) 75%)",
+        background:
+          "linear-gradient(90deg, var(--skeleton-base,#ececef) 25%, var(--skeleton-highlight,#f6f6f8) 50%, var(--skeleton-base,#ececef) 75%)",
         backgroundSize: "200% 100%",
-        animation: "skeleton-scan 1.8s ease-in-out infinite",
+        animation: "skeleton-scan var(--skeleton-animation-duration,1.8s) ease-in-out infinite",
         flexShrink: 0,
+        ...(style || {}),
       }}
     />
+  );
+}
+
+// Tiny inline loader used in place of plain "Loading…" / "Searching…" text inside
+// search results, filters, or composer rows. Never full-block — short, subtle,
+// themed. Always wrap next to the item being loaded so layout doesn't jump.
+export function InlineLoading({ width = 140, height = 12, label = "Loading", className, style }) {
+  return (
+    <span
+      role="status"
+      aria-live="polite"
+      aria-label={label}
+      className={className}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        verticalAlign: "middle",
+        ...(style || {}),
+      }}
+    >
+      <SkeletonKeyframes />
+      <SkeletonBlock width={`${width}px`} height={`${height}px`} borderRadius="999px" />
+    </span>
+  );
+}
+
+// Generic section card skeleton — mirrors the `.app-section-card` pattern: header
+// row + 2-column body grid. Use this as the default loading placeholder for any
+// card-based page section (HR dashboard, reports, detail pages, etc.).
+export function SectionSkeleton({
+  titleWidth = "180px",
+  subtitleWidth = "240px",
+  rows = 3,
+  showHeader = true,
+  minHeight = "auto",
+  style,
+}) {
+  return (
+    <div
+      className="app-section-card"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--layout-card-gap, 14px)",
+        minHeight,
+        ...(style || {}),
+      }}
+    >
+      <SkeletonKeyframes />
+      {showHeader && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <SkeletonBlock width={titleWidth} height="18px" />
+          <SkeletonBlock width={subtitleWidth} height="12px" />
+        </div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {Array.from({ length: rows }).map((_, i) => (
+          <SkeletonBlock key={i} width={i % 2 === 0 ? "100%" : "92%"} height="14px" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Grid of section skeletons — useful for dashboard pages and tabs that render a
+// collection of cards. Use `cols` to match the final grid width.
+export function SectionGridSkeleton({ cards = 4, cols = "repeat(auto-fit, minmax(220px, 1fr))", rows = 3, style }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: "var(--layout-card-gap, 16px)",
+        gridTemplateColumns: cols,
+        ...(style || {}),
+      }}
+    >
+      <SkeletonKeyframes />
+      {Array.from({ length: cards }).map((_, i) => (
+        <SectionSkeleton key={i} rows={rows} />
+      ))}
+    </div>
   );
 }
 
@@ -716,9 +800,10 @@ export function PageContentSkeleton({ route, fallbackMinHeight = 480 }) {
             width: `${block.width}px`,
             height: `${block.height}px`,
             borderRadius: `${block.radius}px`,
-            background: "linear-gradient(90deg, var(--surface-light,#e8e8e8) 25%, var(--surface,#f4f4f4) 50%, var(--surface-light,#e8e8e8) 75%)",
+            background:
+              "linear-gradient(90deg, var(--skeleton-base,#ececef) 25%, var(--skeleton-highlight,#f6f6f8) 50%, var(--skeleton-base,#ececef) 75%)",
             backgroundSize: "200% 100%",
-            animation: "skeleton-scan 1.8s ease-in-out infinite",
+            animation: "skeleton-scan var(--skeleton-animation-duration,1.8s) ease-in-out infinite",
           }}
         />
       ))}

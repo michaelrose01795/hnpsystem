@@ -21,6 +21,7 @@
 //   - Defensive: filter ignores users with no `roles` array.
 import React, { useEffect, useState } from "react";
 import { useClockingContext } from "@/context/ClockingContext"; // canonical clocking source
+import { SectionGridSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function DashboardClocking() {
   // Pull the all-users clocking snapshot from the provider.
@@ -39,8 +40,14 @@ export default function DashboardClocking() {
     setTechs(techUsers);
   }, [allUsersClocking]);
 
-  // Provider is still loading the snapshot — placeholder until data arrives.
-  if (loading) return <p>Loading clocking info...</p>;
+  // Provider is still loading the snapshot — show a structured grid skeleton
+  // that matches the final 3-column technician card layout.
+  if (loading)
+    return (
+      <div style={{ marginTop: "var(--space-4)" }}>
+        <SectionGridSkeleton cards={6} cols="repeat(3, 1fr)" rows={2} />
+      </div>
+    );
 
   return (
     <div style={{ marginTop: "var(--space-4)" }}>

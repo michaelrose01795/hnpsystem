@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { ScrollArea } from "@/components/ui/scrollAPI";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const GOODS_IN_ROLES = new Set([
   "parts",
@@ -161,7 +162,15 @@ function GoodsInDetailPage() {
               <div>{goodsIn?.invoice_date ? `Invoice date: ${goodsIn.invoice_date}` : ""}</div>
             </div>
           </div>
-          {loading && <div>Loading goods-in record...</div>}
+          {loading && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <SkeletonKeyframes />
+              <SkeletonBlock width="40%" height="16px" />
+              <SkeletonBlock width="70%" height="12px" />
+              <SkeletonBlock width="60%" height="12px" />
+              <SkeletonBlock width="50%" height="12px" />
+            </div>
+          )}
           {error && <div style={{ color: "var(--danger)" }}>{error}</div>}
           {!loading && !error && goodsIn && (
             <div style={fieldGridStyle}>

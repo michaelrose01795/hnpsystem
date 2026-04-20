@@ -8,6 +8,7 @@ import InvoiceTable from "@/components/accounts/InvoiceTable";
 import TransactionTable from "@/components/accounts/TransactionTable";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const VIEW_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER", "WORKSHOP MANAGER", "SALES"];
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
@@ -90,7 +91,59 @@ export default function ViewAccountPage() {
       <>
         <DevLayoutSection sectionKey="account-view-page-shell" sectionType="page-shell" shell>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          {loading && <p style={{ color: "var(--text-secondary)" }}>Loading account…</p>}
+          {loading && (
+            <>
+              <SkeletonKeyframes />
+              <section
+                className="app-section-card"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 14,
+                  background: "rgba(var(--primary-rgb), 0.08)",
+                  border: "1px solid rgba(var(--primary-rgb), 0.16)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                  <SkeletonBlock width="280px" height="28px" />
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <SkeletonBlock width="120px" height="36px" borderRadius="var(--radius-pill)" />
+                    <SkeletonBlock width="120px" height="36px" borderRadius="var(--radius-pill)" />
+                  </div>
+                </div>
+                <SkeletonBlock width="60%" height="12px" />
+                <SkeletonBlock width="50%" height="12px" />
+              </section>
+              <section
+                className="app-section-card"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: 16,
+                  background: "rgba(var(--primary-rgb), 0.08)",
+                  border: "1px solid rgba(var(--primary-rgb), 0.16)",
+                }}
+              >
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: "var(--surface)",
+                      borderRadius: "var(--control-radius)",
+                      padding: 16,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    <SkeletonBlock width="50%" height="10px" />
+                    <SkeletonBlock width="80%" height="22px" />
+                    <SkeletonBlock width="40%" height="10px" />
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
           {!loading && account && (
             <>
               <DevLayoutSection as="section" sectionKey="account-view-header" sectionType="content-card" parentKey="account-view-page-shell" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>

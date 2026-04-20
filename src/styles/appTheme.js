@@ -64,42 +64,10 @@ export const vhcCardStates = {
   },
 };
 
-export const createVhcButtonStyle = (variant = "primary", { disabled = false } = {}) => {
-  const base = {
-    minHeight: "var(--control-height-sm)",
-    padding: "var(--control-padding-sm)",
-    borderRadius: "var(--control-radius)",
-    fontSize: "var(--control-font-size)",
-    fontWeight: "600",
-    border: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    transition: "background-color 0.18s ease, color 0.18s ease, opacity 0.18s ease",
-    boxShadow: "none",
-    opacity: disabled ? 0.5 : 1,
-  };
-
-  if (variant === "secondary") {
-    return {
-      ...base,
-      backgroundColor: "var(--control-bg)",
-      color: palette.accent,
-    };
-  }
-
-  if (variant === "ghost") {
-    return {
-      ...base,
-      backgroundColor: "var(--control-bg)",
-      color: palette.accent,
-    };
-  }
-
-  return {
-    ...base,
-    backgroundColor: disabled ? "var(--control-bg)" : palette.accent,
-    color: disabled ? palette.textMuted : palette.onAccent,
-  };
-};
+// createVhcButtonStyle() removed — VHC modals now use the global <Button> component
+// (variant="primary"|"secondary"|"ghost"|"danger", size="sm"). The global Button is
+// the single source of truth for button appearance; do not reintroduce per-domain
+// button factories.
 
 export const dropdownTriggerButtonStyle = {
   minHeight: "var(--dropdown-trigger-height)",

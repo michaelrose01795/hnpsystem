@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useHrDashboardData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { MetricCard, StatusTag } from "@/components/HR/MetricCard"; // metric display and status badge components
+import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
 export default function HrDashboard() {
   const { data, isLoading, error } = useHrDashboardData();
@@ -47,13 +48,7 @@ export default function HrDashboard() {
           padding: "8px 8px 32px",
         }}
       >
-        {isLoading && (
-          <SectionCard title="Loading dashboard…" subtitle="Fetching HR overview data.">
-            <span style={{ color: "var(--info)" }}>
-              Please wait while we pull the latest HR metrics from the placeholder service.
-            </span>
-          </SectionCard>
-        )}
+        {isLoading && <HrTabLoadingSkeleton variant="dashboard" />}
 
         {error && (
           <SectionCard title="Failed to load HR data" subtitle="Mock API returned an error.">

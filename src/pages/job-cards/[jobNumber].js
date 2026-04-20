@@ -70,14 +70,57 @@ import { getWriteUpCompletionState, getInvoiceWorkflowState, getNextBestAction }
 import JobWorkflowAssistantCard from "@/features/jobCards/components/JobWorkflowAssistantCard";
 import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
 import VhcAssistantPanel from "@/features/vhcAssistant/components/VhcAssistantPanel";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
+// Dynamic import loading state renders a structured skeleton that mirrors the
+// real WriteUpForm shape (tab bar + content grid) so switching tabs never
+// flashes a plain text loader.
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), {
   ssr: false,
-  loading: () => (
-    <div style={{ color: "var(--info)", padding: "12px 0" }}>
-      Loading write up...
-    </div>
-  ),
+  loading: () => {
+    return (
+      <div
+        style={{
+          padding: "12px 0",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+        }}
+      >
+        <SkeletonKeyframes />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonBlock key={i} width="90px" height="32px" borderRadius="999px" />
+          ))}
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gap: 14,
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          }}
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                background: "var(--surface)",
+                borderRadius: "var(--radius-md)",
+                padding: 16,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              <SkeletonBlock width="50%" height="12px" />
+              <SkeletonBlock width="90%" height="14px" />
+              <SkeletonBlock width="70%" height="14px" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  },
 });
 
 const deriveVhcSeverity = (check = {}) => {

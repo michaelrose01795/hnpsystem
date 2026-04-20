@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px" };
 const cardStyle = {
@@ -28,7 +29,27 @@ function MobileJobsInner() {
   return (
     <div style={pageStyle}>
       <h1 style={{ margin: 0 }}>My Mobile Jobs</h1>
-      {loading ? <p>Loading…</p> : (
+      {loading ? (
+        <div style={cardStyle}>
+          <SkeletonKeyframes />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                padding: "10px 0",
+                borderBottom: "1px solid var(--border-subtle, rgba(15,23,42,0.08))",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <SkeletonBlock width="50%" height="14px" />
+              <SkeletonBlock width="70%" height="10px" />
+              <SkeletonBlock width="60%" height="10px" />
+            </div>
+          ))}
+        </div>
+      ) : (
         <div style={cardStyle}>
           {jobs.length === 0 ? <p>No mobile jobs assigned.</p> : jobs.map((j) => (
             <div key={j.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--border-subtle)" }}>

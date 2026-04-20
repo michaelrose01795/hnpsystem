@@ -7,6 +7,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { saveChecksheet } from "@/lib/database/jobs";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -8030,7 +8031,59 @@ export default function VhcDetailsPanel({
     return renderStatusMessage("Provide a job number to view VHC details.");
   }
 
-  if (loading) return null;
+  if (loading) {
+    // Shell-first skeleton: render a structured placeholder that matches the
+    // VHC details panel shape (header summary + section blocks) so the panel
+    // never collapses to empty while data fetches.
+    return (
+      <div style={{ padding: containerPadding, display: "flex", flexDirection: "column", gap: 14 }}>
+        <SkeletonKeyframes />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: 12,
+          }}
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                background: "var(--surface)",
+                borderRadius: "var(--radius-md)",
+                padding: 14,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <SkeletonBlock width="60%" height="10px" />
+              <SkeletonBlock width="80%" height="20px" />
+              <SkeletonBlock width="50%" height="10px" />
+            </div>
+          ))}
+        </div>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              background: "var(--surface)",
+              borderRadius: "var(--radius-md)",
+              padding: 16,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <SkeletonBlock width="35%" height="14px" />
+            <SkeletonBlock width="100%" height="12px" />
+            <SkeletonBlock width="90%" height="12px" />
+            <SkeletonBlock width="65%" height="12px" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (error) {
     return renderStatusMessage(error, "var(--danger)");

@@ -26,6 +26,13 @@
   --surface-light: var(--surfaceHover);
   --surface-muted: var(--surfaceMutedToken);
   --surface-gradient: var(--surfaceMain);
+  /* Skeleton loading tokens — consumed by SkeletonBlock/InlineLoading so shimmer
+     matches the theme cleanly in light and dark mode. Kept subtle and professional. */
+  --skeleton-base: #ececef;
+  --skeleton-highlight: #f6f6f8;
+  --skeleton-border: rgba(var(--accentMainRgb), 0.08);
+  --skeleton-radius: 8px;
+  --skeleton-animation-duration: 1.8s;
   --border: #d1a5a5;
   --text-primary: var(--surfaceText);
   --text-primary-rgb: 15, 15, 15;
@@ -353,6 +360,11 @@
   --surface-light: var(--surfaceHover);
   --surface-muted: var(--surfaceMutedToken);
   --surface-gradient: var(--surfaceMain);
+  --skeleton-base: #23232c;
+  --skeleton-highlight: #2f2f3a;
+  --skeleton-border: rgba(255, 255, 255, 0.04);
+  --skeleton-radius: 8px;
+  --skeleton-animation-duration: 1.8s;
   --border: #d06f6f;
   --text-primary: var(--surfaceText);
   --text-primary-rgb: 248, 247, 255;

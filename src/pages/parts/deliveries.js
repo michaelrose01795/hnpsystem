@@ -4,6 +4,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const pageStyles = {
   container: {
@@ -396,7 +397,31 @@ export default function PartsDeliveriesPage() {
             </p>
           </div>
           {error && <div style={{ color: "var(--danger)", fontWeight: 600 }}>{error}</div>}
-          {loading && <div style={{ color: "var(--info)" }}>Loading deliveries…</div>}
+          {loading && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <SkeletonKeyframes />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "36px 1fr auto",
+                    gap: 12,
+                    padding: 12,
+                    borderRadius: "var(--radius-md)",
+                    background: "var(--surface)",
+                  }}
+                >
+                  <SkeletonBlock width="28px" height="28px" borderRadius="999px" />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <SkeletonBlock width="55%" height="12px" />
+                    <SkeletonBlock width="75%" height="10px" />
+                  </div>
+                  <SkeletonBlock width="56px" height="18px" />
+                </div>
+              ))}
+            </div>
+          )}
           {!loading && sortedJobs.length === 0 && (
             <div style={{ color: "var(--info)" }}>No deliveries queued for this day.</div>
           )}

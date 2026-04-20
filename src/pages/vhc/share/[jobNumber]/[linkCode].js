@@ -9,6 +9,7 @@ import { useTheme } from "@/styles/themeProvider";
 import BrandLogo from "@/components/BrandLogo";
 import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -957,7 +958,58 @@ export default function PublicSharePreviewPage() {
     </div>
   );
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <>
+        <Head>
+          <title>Vehicle Health Check</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+        </Head>
+        <div style={{ minHeight: "100vh", background: "var(--surface-light)", padding: "24px 16px" }}>
+          <SkeletonKeyframes />
+          <div style={{ maxWidth: 820, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <SkeletonBlock width="140px" height="40px" />
+              <div style={{ flex: 1 }} />
+              <SkeletonBlock width="120px" height="32px" borderRadius="999px" />
+            </div>
+            <div
+              style={{
+                background: "var(--surface)",
+                borderRadius: "var(--radius-md)",
+                padding: 20,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              <SkeletonBlock width="60%" height="22px" />
+              <SkeletonBlock width="80%" height="12px" />
+              <SkeletonBlock width="50%" height="12px" />
+            </div>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "var(--surface)",
+                  borderRadius: "var(--radius-md)",
+                  padding: 20,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                <SkeletonBlock width="40%" height="16px" />
+                <SkeletonBlock width="100%" height="12px" />
+                <SkeletonBlock width="90%" height="12px" />
+                <SkeletonBlock width="70%" height="12px" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </>
+    );
+  }
 
   // Error state
   if (error) {

@@ -10,6 +10,7 @@ import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/database/supabaseClient";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { InlineLoading, SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const STAFF_ROLE_ALLOWLIST = new Set([
   "workshop manager",
@@ -977,7 +978,15 @@ export default function CustomerMessagesPage() {
                   </div>
                   <div className="space-y-2 max-h-[60dvh] overflow-y-auto">
                     {systemLoading && (
-                      <p className="text-sm text-[var(--text-secondary)]">Loading…</p>
+                      <div className="space-y-2">
+                        <SkeletonKeyframes />
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <div key={i} className="flex flex-col gap-1">
+                            <SkeletonBlock width="50%" height="10px" />
+                            <SkeletonBlock width="80%" height="12px" />
+                          </div>
+                        ))}
+                      </div>
                     )}
                     {!systemLoading && systemError && (
                       <p className="text-sm text-[var(--danger)]">{systemError}</p>
@@ -1012,7 +1021,27 @@ export default function CustomerMessagesPage() {
                   </div>
                   <div className="flex-1 space-y-2 overflow-y-auto pb-2" style={{ maxHeight: "calc(100dvh - 340px)" }}>
                     {messagesLoading && (
-                      <p className="text-sm text-[var(--text-secondary)]">Loading…</p>
+                      <div className="space-y-3">
+                        <SkeletonKeyframes />
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <div
+                            key={i}
+                            className={i % 2 === 0 ? "self-start" : "self-end ml-auto"}
+                            style={{
+                              width: i % 2 === 0 ? "62%" : "52%",
+                              background: "var(--surface)",
+                              borderRadius: 14,
+                              padding: 10,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 6,
+                            }}
+                          >
+                            <SkeletonBlock width="70%" height="10px" />
+                            <SkeletonBlock width="100%" height="12px" />
+                          </div>
+                        ))}
+                      </div>
                     )}
                     {!messagesLoading && messagesError && (
                       <p className="text-sm text-[var(--danger)]">{messagesError}</p>
@@ -1499,9 +1528,7 @@ export default function CustomerMessagesPage() {
                 placeholder="Find teammates by name or email"
               />
               <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] p-3 text-[var(--search-text)]">
-                {composerLoading && (
-                  <p className="text-sm text-[var(--search-text)]">Searching your roster…</p>
-                )}
+                {composerLoading && <InlineLoading width={160} label="Searching your roster" />}
                 {!composerLoading && composerError && (
                   <p className="text-sm text-[var(--search-text)]">{composerError}</p>
                 )}

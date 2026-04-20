@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import {
   getWriteUpByJobNumber,
   saveWriteUpToDatabase,
@@ -2459,9 +2460,53 @@ function WriteUpForm({
     }
   }, [isWarrantyJob, activeTab]);
 
-  if (loading) return null;
-
-  if (rosterLoading) return null;
+  if (loading || rosterLoading) {
+    // Shell-first: preserve the write-up shape while data loads so the tab panel
+    // never collapses to an empty block. Matches the dynamic import fallback.
+    return (
+      <div
+        style={{
+          height: "100%",
+          padding: "12px 0",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+        }}
+      >
+        <SkeletonKeyframes />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonBlock key={i} width="90px" height="32px" borderRadius="999px" />
+          ))}
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gap: 14,
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          }}
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                background: "var(--surface)",
+                borderRadius: "var(--radius-md)",
+                padding: 16,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              <SkeletonBlock width="50%" height="12px" />
+              <SkeletonBlock width="90%" height="14px" />
+              <SkeletonBlock width="70%" height="14px" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{

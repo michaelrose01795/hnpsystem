@@ -19,6 +19,80 @@ import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Button from "@/components/ui/Button";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { SkeletonBlock, SkeletonKeyframes, InlineLoading } from "@/components/ui/LoadingSkeleton";
+
+// Structured inline skeletons used inside the messages page. Kept local because
+// thread, message, and colleague rows have distinct final shapes — the skeleton
+// matches each one so the loading frame already mirrors the final layout.
+function ThreadRowsSkeleton({ count = 4 }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <SkeletonKeyframes />
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            gap: "10px",
+            alignItems: "center",
+            padding: "10px",
+            borderRadius: "var(--radius-md)",
+          }}
+        >
+          <SkeletonBlock width="36px" height="36px" borderRadius="999px" />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
+            <SkeletonBlock width="50%" height="12px" />
+            <SkeletonBlock width="80%" height="10px" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MessageBubblesSkeleton({ count = 3 }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <SkeletonKeyframes />
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            alignSelf: i % 2 === 0 ? "flex-start" : "flex-end",
+            width: i % 2 === 0 ? "62%" : "54%",
+            display: "flex",
+            flexDirection: "column",
+            gap: "6px",
+            padding: "12px",
+            borderRadius: "14px",
+            background: "var(--surface)",
+          }}
+        >
+          <SkeletonBlock width="70%" height="10px" />
+          <SkeletonBlock width="100%" height="12px" />
+          <SkeletonBlock width="40%" height="10px" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ColleagueRowsSkeleton({ count = 5 }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <SkeletonKeyframes />
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} style={{ display: "flex", gap: "10px", alignItems: "center", padding: "6px 0" }}>
+          <SkeletonBlock width="32px" height="32px" borderRadius="999px" />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+            <SkeletonBlock width="60%" height="10px" />
+            <SkeletonBlock width="40%" height="8px" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const palette = appShellTheme.palette;
 const radii = appShellTheme.radii;
@@ -2413,9 +2487,7 @@ function MessagesPage() {
                   paddingRight: "2px",
                 }}
               >
-                {loadingThreads && (
-                  <p style={{ color: palette.textMuted }}>Loading threads…</p>
-                )}
+                {loadingThreads && <ThreadRowsSkeleton count={5} />}
                 {!loadingThreads && (
                   <>
                     {filteredThreads.length ? (
@@ -2609,9 +2681,11 @@ function MessagesPage() {
                   <div>
                     <h3 style={{ margin: 0, color: systemTitleColor }}>System notifications</h3>
                     <p style={{ margin: "4px 0 0", color: palette.textMuted }}>
-                      {systemLoading
-                        ? "Loading updates…"
-                        : `Read-only alerts feed. Latest ${systemTimestampLabel}.`}
+                      {systemLoading ? (
+                        <InlineLoading width={140} label="Loading updates" />
+                      ) : (
+                        `Read-only alerts feed. Latest ${systemTimestampLabel}.`
+                      )}
                     </p>
                   </div>
                   <span
@@ -2644,9 +2718,7 @@ function MessagesPage() {
                     paddingRight: "4px",
                   }}
                 >
-                  {systemLoading && (
-                    <p style={{ color: palette.textMuted, margin: 0 }}>Loading system updates…</p>
-                  )}
+                  {systemLoading && <ThreadRowsSkeleton count={3} />}
                   {!systemLoading && systemError && (
                     <p style={{ color: "var(--danger)", margin: 0 }}>{systemError}</p>
                   )}
@@ -2784,9 +2856,7 @@ function MessagesPage() {
                     overscrollBehavior: "contain",
                   }}
                 >
-                  {loadingMessages && (
-                    <p style={{ color: palette.textMuted }}>Loading conversation…</p>
-                  )}
+                  {loadingMessages && <MessageBubblesSkeleton count={4} />}
                   {!loadingMessages && messages.length === 0 && (
                     <p style={{ color: palette.textMuted }}>No messages yet.</p>
                   )}
@@ -3339,11 +3409,7 @@ function MessagesPage() {
                     Keep typing at least 2 letters to search.
                   </p>
                 )}
-                {groupSearchLoading && (
-                  <p style={{ margin: 0, fontSize: "var(--text-label)", color: "var(--search-text)" }}>
-                    Looking up colleagues…
-                  </p>
-                )}
+                {groupSearchLoading && <InlineLoading width={160} label="Looking up colleagues" />}
                 {!groupSearchLoading && groupSearchResults.length > 0 && (
                   <div
                     style={{
@@ -3520,9 +3586,7 @@ function MessagesPage() {
                 paddingBottom: "2px",
               }}
             >
-              {directoryLoading && (
-                <p style={{ color: palette.textMuted, margin: 0 }}>Loading colleagues…</p>
-              )}
+              {directoryLoading && <ColleagueRowsSkeleton count={6} />}
               {!directoryLoading && directory.length === 0 && (
                 <p style={{ margin: 0, color: palette.textMuted }}>No colleagues found.</p>
               )}

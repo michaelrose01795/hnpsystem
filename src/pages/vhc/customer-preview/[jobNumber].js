@@ -10,6 +10,7 @@ import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summar
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { useTheme } from "@/styles/themeProvider";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -1325,7 +1326,55 @@ export default function CustomerPreviewPage() {
     </div>
   );
 
-  if (loading) return null;
+  if (loading) {
+    // Shell-first skeleton: preserve the customer preview shape (logo header,
+    // vehicle summary card, section cards) so the user sees the final layout
+    // immediately instead of a blank viewport.
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--surface-light)", padding: "24px 16px" }}>
+        <SkeletonKeyframes />
+        <div style={{ maxWidth: 820, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <SkeletonBlock width="140px" height="40px" />
+            <div style={{ flex: 1 }} />
+            <SkeletonBlock width="120px" height="32px" borderRadius="999px" />
+          </div>
+          <div
+            style={{
+              background: "var(--surface)",
+              borderRadius: "var(--radius-md)",
+              padding: 20,
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <SkeletonBlock width="60%" height="22px" />
+            <SkeletonBlock width="80%" height="12px" />
+            <SkeletonBlock width="50%" height="12px" />
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                background: "var(--surface)",
+                borderRadius: "var(--radius-md)",
+                padding: 20,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              <SkeletonBlock width="40%" height="16px" />
+              <SkeletonBlock width="100%" height="12px" />
+              <SkeletonBlock width="90%" height="12px" />
+              <SkeletonBlock width="70%" height="12px" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Error state
   if (error) {

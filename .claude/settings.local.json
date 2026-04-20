@@ -95,7 +95,8 @@
       "Bash(echo \"exit code: $?\")",
       "Bash(echo \"esbuild: $?\")",
       "Bash(echo \"eslint: $?\")",
-      "Bash(node _reorder-showcase.js)"
+      "Bash(node _reorder-showcase.js)",
+      "Bash(bash /tmp/search_patterns.sh)"
     ],
     "deny": [],
     "ask": []

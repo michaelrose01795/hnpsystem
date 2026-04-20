@@ -5,6 +5,36 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+
+// Structured job-row skeleton shaped like the real JobRow (title + time stamp + body).
+// Kept local to this file because the mobile dashboard cards use a compact two-column
+// grid that differs from the main app table layout.
+function MobileJobRowsSkeleton({ count = 2 }) {
+  return (
+    <div>
+      <SkeletonKeyframes />
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr auto",
+            gap: "10px",
+            padding: "12px 0",
+            borderBottom: "1px solid var(--border-subtle, rgba(15,23,42,0.08))",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <SkeletonBlock width="60%" height="14px" />
+            <SkeletonBlock width="80%" height="10px" />
+          </div>
+          <SkeletonBlock width="80px" height="12px" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const pageStyle = {
   padding: "16px",
@@ -90,16 +120,24 @@ function MobileDashboardInner() {
 
       <section style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Today ({today.length})</h2>
-        {loading ? <p>Loading…</p> : today.length === 0 ? <p>No mobile visits scheduled today.</p> : today.map((j) => (
-          <JobRow key={j.id} job={j} />
-        ))}
+        {loading ? (
+          <MobileJobRowsSkeleton count={2} />
+        ) : today.length === 0 ? (
+          <p>No mobile visits scheduled today.</p>
+        ) : (
+          today.map((j) => <JobRow key={j.id} job={j} />)
+        )}
       </section>
 
       <section style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Upcoming ({upcoming.length})</h2>
-        {loading ? <p>Loading…</p> : upcoming.length === 0 ? <p>Nothing upcoming.</p> : upcoming.map((j) => (
-          <JobRow key={j.id} job={j} />
-        ))}
+        {loading ? (
+          <MobileJobRowsSkeleton count={3} />
+        ) : upcoming.length === 0 ? (
+          <p>Nothing upcoming.</p>
+        ) : (
+          upcoming.map((j) => <JobRow key={j.id} job={j} />)
+        )}
       </section>
 
       <section style={cardStyle}>

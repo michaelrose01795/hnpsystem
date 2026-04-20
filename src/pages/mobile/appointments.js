@@ -6,6 +6,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px" };
 const cardStyle = {
@@ -41,7 +42,24 @@ function MobileAppointmentsInner() {
   return (
     <div style={pageStyle}>
       <h1 style={{ margin: 0 }}>Mobile Appointments</h1>
-      {loading ? <p>Loading…</p> : grouped.length === 0 ? (
+      {loading ? (
+        <>
+          <SkeletonKeyframes />
+          {Array.from({ length: 2 }).map((_, g) => (
+            <section key={g} style={cardStyle}>
+              <SkeletonBlock width="40%" height="16px" />
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                {Array.from({ length: 3 }).map((__, i) => (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <SkeletonBlock width="60%" height="12px" />
+                    <SkeletonBlock width="80%" height="10px" />
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </>
+      ) : grouped.length === 0 ? (
         <p>No mobile appointments scheduled.</p>
       ) : grouped.map(([day, list]) => (
         <section key={day} style={cardStyle}>

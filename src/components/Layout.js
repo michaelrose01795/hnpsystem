@@ -414,11 +414,12 @@ export default function Layout({
   // stay mounted and only the content area shows the skeleton.
   const isContentLoading = !hideSidebar && (isGlobalLoading || userLoading || !user);
 
-  // Keep the skeleton overlay mounted for a brief exit fade after isContentLoading goes false.
-  // This ensures page content (which now renders behind the overlay) is ready before the
-  // skeleton disappears, preventing the solid-colour flash caused by pages that return null
-  // or empty content while their own data is still loading.
-  const [skeletonOverlayActive, setSkeletonOverlayActive] = useState(false);
+  // Shell-first skeleton contract:
+  // The overlay renders IMMEDIATELY when isContentLoading is true — no useEffect
+  // race, no 1-frame delay. `exitingSkeleton` keeps the overlay mounted for a
+  // 250ms fade after loading ends so pages that return null mid-fetch don't
+  // flash a solid-colour background. The sidebar/topbar stay mounted throughout.
+  const [exitingSkeleton, setExitingSkeleton] = useState(false);
   const skeletonOverlayRouteRef = useRef(router.asPath || router.pathname);
   const skeletonExitTimerRef = useRef(null);
   useEffect(() => {
@@ -428,11 +429,12 @@ export default function Layout({
     }
     if (isContentLoading) {
       skeletonOverlayRouteRef.current = router.asPath || router.pathname;
-      setSkeletonOverlayActive(true);
+      setExitingSkeleton(false);
     } else {
       // Keep overlay mounted long enough for the 0.2s CSS fade-out to complete.
+      setExitingSkeleton(true);
       skeletonExitTimerRef.current = setTimeout(() => {
-        setSkeletonOverlayActive(false);
+        setExitingSkeleton(false);
         skeletonExitTimerRef.current = null;
       }, 250);
     }
@@ -440,6 +442,7 @@ export default function Layout({
       if (skeletonExitTimerRef.current) clearTimeout(skeletonExitTimerRef.current);
     };
   }, [isContentLoading, router.asPath, router.pathname]);
+  const skeletonOverlayActive = isContentLoading || exitingSkeleton;
 
   useEffect(() => {
     if (isTablet) {

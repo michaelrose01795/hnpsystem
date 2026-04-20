@@ -1066,8 +1066,11 @@ a:hover {
   z-index: var(--hover-surface-z);
 }
 
-/* Buttons */
-button {
+/* Buttons — base resets for raw <button> tags only.
+   `<Button>` (the global component) carries .app-btn and is styled by the
+   .app-btn--* rules below. Scoping these defaults to :not(.app-btn) keeps
+   the global system as the single source of truth for variant appearance. */
+button:not(.app-btn) {
   background: var(--accent-strong);
   color: var(--text-inverse);
   border: none;
@@ -1081,10 +1084,10 @@ button {
   position: relative;
   z-index: 0;
 }
-button:hover {
+button:not(.app-btn):hover {
   filter: brightness(1.06);
 }
-button:disabled {
+button:not(.app-btn):disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -1791,29 +1794,7 @@ body:has(.login-page-wrapper) {
   color: var(--danger-dark);
 }
 
-.login-button {
-  width: 100%;
-  border: none;
-  border-radius: var(--radius-xl);
-  padding: 14px 18px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #ffffff;
-  background: var(--accent-strong);
-  box-shadow: none;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.login-button:hover {
-  transform: translateY(1px);
-  box-shadow: none;
-}
-
-.login-button:focus-visible {
-  outline: 2px solid rgba(var(--accent-base-rgb), 0.45);
-  outline-offset: 3px;
-}
+/* .login-button removed — login page now uses the global <Button> component. */
 
 .login-card-inner {
   width: 100%;
@@ -3237,38 +3218,7 @@ input[type="search"]::-webkit-search-results-decoration {
   flex-wrap: nowrap;
 }
 
-.hr-employees-add-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-width: 44px;
-  min-height: var(--dropdown-trigger-height);
-  padding: var(--dropdown-trigger-padding) !important;
-  white-space: nowrap;
-  border-radius: var(--dropdown-trigger-radius) !important;
-  border: none !important;
-  background: var(--control-bg) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--control-font-size);
-  font-weight: var(--control-font-weight);
-  box-shadow: none;
-}
-
-.hr-employees-add-button:hover,
-.hr-employees-add-button:focus-visible {
-  background: var(--control-bg-hover) !important;
-}
-
-.hr-employees-add-button-icon {
-  font-size: 1rem;
-  line-height: 1;
-  font-weight: 700;
-}
-
-.hr-employees-add-button-label {
-  display: inline;
-}
+/* .hr-employees-add-button + helpers removed — HR Employees tab now uses the global <Button> component. */
 
 .hr-employees-search {
   position: relative;
@@ -3523,18 +3473,6 @@ input[type="search"]::-webkit-search-results-decoration {
 
 .hr-employee-key-value:last-child {
   border-bottom: none;
-}
-
-@media (max-width: 1400px) {
-  .hr-employees-add-button-label {
-    display: none;
-  }
-
-  .hr-employees-add-button {
-    gap: 0;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-  }
 }
 
 @media (max-width: 1100px) {
@@ -4038,11 +3976,6 @@ input[type="search"]::-webkit-search-results-decoration {
   .login-form {
     gap: 18px;
   }
-
-  .login-button {
-    padding: 13px 16px;
-    font-size: 0.95rem;
-  }
 }
 
 /* iPhone landscape and small tablets */
@@ -4127,12 +4060,6 @@ input[type="search"]::-webkit-search-results-decoration {
     border-radius: var(--radius-lg);
   }
 
-  .login-button {
-    padding: 12px 16px;
-    font-size: 0.9rem;
-    border-radius: var(--radius-lg);
-  }
-
   .login-label {
     font-size: 0.8rem;
   }
@@ -4165,12 +4092,6 @@ input[type="search"]::-webkit-search-results-decoration {
   .login-input,
   .login-select {
     padding: 10px 12px;
-    font-size: 0.85rem;
-    border-radius: var(--radius-lg);
-  }
-
-  .login-button {
-    padding: 11px 14px;
     font-size: 0.85rem;
     border-radius: var(--radius-lg);
   }
@@ -4213,11 +4134,6 @@ input[type="search"]::-webkit-search-results-decoration {
   .login-input,
   .login-select {
     padding: 9px 12px;
-    font-size: 0.85rem;
-  }
-
-  .login-button {
-    padding: 10px 14px;
     font-size: 0.85rem;
   }
 

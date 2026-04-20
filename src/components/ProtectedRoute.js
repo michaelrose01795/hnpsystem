@@ -44,9 +44,12 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     }
   }, [loading, status, session, user, allowedRoles, router]);
 
-  // Show nothing until we’ve finished checking
+  // While auth is resolving we return null — the persistent <Layout> detects
+  // `!user` and overlays the structured PageContentSkeleton over the content area,
+  // so the sidebar/topbar stay mounted and the first visible loading frame is
+  // already the proper skeleton (not a flat text stage).
   if (loading || status === "loading" || !checked) {
-    return <p>Loading...</p>;
+    return null;
   }
 
   return <>{children}</>;

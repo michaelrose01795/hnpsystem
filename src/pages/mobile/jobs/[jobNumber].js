@@ -7,6 +7,7 @@ import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
 import RedirectToWorkshopButton from "@/components/mobile/RedirectToWorkshopButton";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { showAlert } from "@/lib/notifications/alertBus";
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: "720px" };
@@ -107,7 +108,36 @@ function MobileJobCardInner() {
     }
   }
 
-  if (loading) return <div style={pageStyle}><p>Loading…</p></div>;
+  if (loading) {
+    // Shell-first: render header + 2 content sections as structured skeletons so
+    // the user sees the final shape immediately, not a text placeholder.
+    return (
+      <div style={pageStyle}>
+        <SkeletonKeyframes />
+        <header style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <SkeletonBlock width="80px" height="14px" />
+          <SkeletonBlock width="140px" height="22px" />
+          <SkeletonBlock width="64px" height="18px" borderRadius="999px" />
+        </header>
+        <section style={cardStyle}>
+          <SkeletonBlock width="60%" height="16px" />
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            <SkeletonBlock width="80%" height="12px" />
+            <SkeletonBlock width="70%" height="12px" />
+            <SkeletonBlock width="65%" height="12px" />
+          </div>
+        </section>
+        <section style={cardStyle}>
+          <SkeletonBlock width="40%" height="16px" />
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            <SkeletonBlock width="90%" height="12px" />
+            <SkeletonBlock width="85%" height="12px" />
+            <SkeletonBlock width="60%" height="12px" />
+          </div>
+        </section>
+      </div>
+    );
+  }
   if (error) return <div style={pageStyle}><p style={{ color: "var(--danger)" }}>{error}</p></div>;
   if (!job) return <div style={pageStyle}><p>Not found.</p></div>;
 

@@ -7,6 +7,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { ScrollArea } from "@/components/ui/scrollAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 
@@ -1989,7 +1990,7 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
           onChange={(event) => setQuery(event.target.value)}
         />
         <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "8px" }}>
-          {loading ? "Searching..." : "Results update automatically as you type"}
+          {loading ? <InlineLoading width={140} label="Searching" /> : "Results update automatically as you type"}
         </div>
         {error && <div style={{ color: "var(--danger)", marginTop: "10px" }}>{error}</div>}
         <div style={{ maxHeight: "420px", overflowY: "auto", marginTop: "12px" }}>
@@ -2379,7 +2380,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               placeholder="e.g., GJ12345, AB12CDE, Jane Smith"
               disabled={submitting}
             />
-            {loading && <div style={{ color: "var(--text-secondary)" }}>Searching...</div>}
+            {loading && <InlineLoading width={120} label="Searching" />}
             {error && <div style={{ color: "var(--danger)" }}>{error}</div>}
             <div>
               {jobResults.map((job) => {

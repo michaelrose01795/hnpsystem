@@ -6,6 +6,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { formatCurrencyRounded as formatCurrency } from "@/components/dashboards/DashboardPrimitives"; // currency formatter
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { SkeletonBlock } from "@/components/ui/LoadingSkeleton";
 
 const revenueStreams = [
   { label: "Service Retail", actual: 28600, target: 26000 },
@@ -176,7 +177,13 @@ export default function AfterSalesManagerDashboard() {
 
     return descriptors.map((descriptor) => {
       if (kpiLoading) {
-        return { ...descriptor, value: "Loading…", helper: "Fetching live data" };
+        // Render a skeleton block in the value slot so the KPI card shape is
+        // preserved exactly — no "Loading…" text replacing the metric.
+        return {
+          ...descriptor,
+          value: <SkeletonBlock width="64px" height="28px" />,
+          helper: <SkeletonBlock width="120px" height="10px" />,
+        };
       }
       if (kpiError) {
         return { ...descriptor, value: "--", helper: kpiError };

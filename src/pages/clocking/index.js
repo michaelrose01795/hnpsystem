@@ -9,6 +9,7 @@ import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import dynamic from "next/dynamic";
 const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
 
@@ -540,7 +541,32 @@ function ClockingOverviewTab({ onSummaryChange }) {
         </div>
 
         {loading && teamStatus.length === 0 ? (
-          <p style={{ color: "var(--info)" }}>Loading statistics...</p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+              gap: "14px",
+            }}
+          >
+            <SkeletonKeyframes />
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  borderRadius: "var(--radius-md)",
+                  padding: "16px",
+                  background: "var(--section-card-bg, var(--surface))",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                }}
+              >
+                <SkeletonBlock width="60%" height="10px" />
+                <SkeletonBlock width="40%" height="28px" />
+                <SkeletonBlock width="80%" height="10px" />
+              </div>
+            ))}
+          </div>
         ) : (
             <DevLayoutSection
               sectionKey="clocking-overview-stats-grid"
@@ -801,7 +827,36 @@ function ClockingOverviewTab({ onSummaryChange }) {
         </div>
 
         {loading && teamStatus.length === 0 ? (
-          <p style={{ color: "var(--info)" }}>Loading technician data...</p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "14px",
+            }}
+          >
+            <SkeletonKeyframes />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  borderRadius: "var(--radius-md)",
+                  padding: "16px",
+                  background: "var(--section-card-bg, var(--surface))",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                  minHeight: "110px",
+                }}
+              >
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <SkeletonBlock width="32px" height="32px" borderRadius="999px" />
+                  <SkeletonBlock width="60%" height="14px" />
+                </div>
+                <SkeletonBlock width="70%" height="12px" />
+                <SkeletonBlock width="45%" height="10px" />
+              </div>
+            ))}
+          </div>
         ) : teamStatus.length === 0 ? (
           <div
             style={{

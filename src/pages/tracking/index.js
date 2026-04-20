@@ -11,6 +11,7 @@ import { supabaseClient } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
@@ -2914,9 +2915,7 @@ export default function TrackingDashboard() {
                   >
                     Refresh
                   </button>
-                  {loading && (
-                    <span style={{ color: "var(--accent-purple)", fontWeight: 600 }}>Refreshing…</span>
-                  )}
+                  {loading && <InlineLoading width={100} label="Refreshing" />}
                   <button
                     type="button"
                     onClick={() => openEntryModal("car")}

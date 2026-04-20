@@ -1352,10 +1352,9 @@ export default function WheelsTyresDetailsModal({
             <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "6px", flexWrap: "wrap" }}>
               {concernEditIndex !== null && (
                 <Button
-                  variant="ghost"
+                  variant="danger"
                   size="sm"
                   onClick={deleteConcern}
-                  style={{ color: "var(--danger)" }}
                 >
                   Delete
                 </Button>
