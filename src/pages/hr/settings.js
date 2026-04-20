@@ -1,127 +1,154 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/settings.js
 import React from "react";
-import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
+import { SectionCard } from "@/components/Section";
+import { Button, InputField } from "@/components/ui";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 
 function SettingsContent() {
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <header>
-          <p style={{ color: "var(--info)", marginTop: "6px" }}>
-            Upload policy documents, configure shift patterns, and manage role-based access for HR tools.
-          </p>
-        </header>
+      <header>
+        <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-1)" }}>
+          Upload policy documents, configure shift patterns, and manage role-based access for HR tools.
+        </p>
+      </header>
 
-        <section style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: "20px" }}>
-          <SectionCard
-            title="Company Policies"
-            subtitle="Upload and manage policies available to employees."
-          >
-            <form style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <label style={labelStyle}>
-                <span>Policy Title</span>
-                <input style={inputStyle} type="text" placeholder="e.g., Health & Safety Handbook" />
-              </label>
-              <label style={labelStyle}>
-                <span>Category</span>
-                <select style={inputStyle} defaultValue="">
-                  <option value="" disabled>
-                    Choose category
-                  </option>
-                  <option value="Health & Safety">Health & Safety</option>
-                  <option value="Equality & Diversity">Equality & Diversity</option>
-                  <option value="Employee Handbook">Employee Handbook</option>
-                  <option value="Code of Conduct">Code of Conduct</option>
-                </select>
-              </label>
-              <label style={labelStyle}>
-                <span>Upload File</span>
-                <input style={inputStyle} type="file" />
-              </label>
-              <div style={{ display: "flex", gap: "12px" }}>
-                <button type="button" style={buttonStylePrimary}>
-                  Upload policy
-                </button>
-                <button type="button" style={buttonStyleGhost}>
-                  Preview existing
-                </button>
-              </div>
-            </form>
-            <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", marginTop: "16px" }}>
-              TODO: Wire upload to Supabase Storage. Persist policy metadata (title, category, file URL) in the policies table.
-            </p>
-          </SectionCard>
-
-          <SectionCard
-            title="Shift Patterns & Break Rules"
-            subtitle="Configure default schedules used across departments."
-          >
-            <label style={labelStyle}>
-              <span>Default shift duration</span>
-              <input style={inputStyle} type="number" min="0" step="1" defaultValue="8" />
-            </label>
-            <label style={labelStyle}>
-              <span>Break entitlement (minutes)</span>
-              <input style={inputStyle} type="number" min="0" step="5" defaultValue="30" />
-            </label>
-            <label style={labelStyle}>
-              <span>Overtime threshold (hours per week)</span>
-              <input style={inputStyle} type="number" min="0" step="1" defaultValue="40" />
-            </label>
-            <button type="button" style={buttonStylePrimary}>
-              Save schedule rules
-            </button>
-          </SectionCard>
-        </section>
-
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "var(--layout-card-gap)",
+        }}
+      >
         <SectionCard
-          title="Role-Based Access"
-          subtitle="Control which roles can access HR functionality."
+          title="Company Policies"
+          subtitle="Upload and manage policies available to employees."
         >
-          <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch role permissions from Supabase policy tables. Display editable access matrix with roles (HR Manager, Admin, Manager, Employee) and toggles for each HR module (Dashboard, Records, Payroll, Leave, Recruitment).
+          <form style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <InputField label="Policy Title" type="text" placeholder="e.g., Health & Safety Handbook" />
+            <DropdownField
+              label="Category"
+              name="category"
+              placeholder="Choose category"
+              defaultValue=""
+              options={[
+                { value: "Health & Safety", label: "Health & Safety" },
+                { value: "Equality & Diversity", label: "Equality & Diversity" },
+                { value: "Employee Handbook", label: "Employee Handbook" },
+                { value: "Code of Conduct", label: "Code of Conduct" },
+              ]}
+            />
+            <InputField label="Upload File" type="file" />
+            <div style={{ display: "flex", gap: "var(--space-3)" }}>
+              <Button type="button" variant="primary">
+                Upload policy
+              </Button>
+              <Button type="button" variant="ghost">
+                Preview existing
+              </Button>
+            </div>
+          </form>
+          <p
+            style={{
+              fontSize: "var(--text-caption)",
+              color: "var(--text-secondary)",
+              fontStyle: "italic",
+              marginTop: "var(--space-md)",
+            }}
+          >
+            TODO: Wire upload to Supabase Storage. Persist policy metadata (title, category, file URL) in the policies table.
           </p>
         </SectionCard>
 
         <SectionCard
-          title="Notification Settings"
-          subtitle="Configure email alerts and reminders for HR events."
+          title="Shift Patterns & Break Rules"
+          subtitle="Configure default schedules used across departments."
         >
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
-            <ToggleSetting label="Overtime submission" defaultChecked />
-            <ToggleSetting label="Leave approvals" defaultChecked />
-            <ToggleSetting label="Training expiries" defaultChecked={false} />
-            <ToggleSetting label="Disciplinary follow-ups" defaultChecked />
-            <ToggleSetting label="Recruitment updates" defaultChecked={false} />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <InputField
+              label="Default shift duration"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue="8"
+            />
+            <InputField
+              label="Break entitlement (minutes)"
+              type="number"
+              min="0"
+              step="5"
+              defaultValue="30"
+            />
+            <InputField
+              label="Overtime threshold (hours per week)"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue="40"
+            />
+            <div>
+              <Button type="button" variant="primary">
+                Save schedule rules
+              </Button>
+            </div>
           </div>
-          <button type="button" style={{ ...buttonStylePrimary, marginTop: "16px" }}>
-            Save notification preferences
-          </button>
         </SectionCard>
+      </section>
+
+      <SectionCard
+        title="Role-Based Access"
+        subtitle="Control which roles can access HR functionality."
+      >
+        <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
+          TODO: Fetch role permissions from Supabase policy tables. Display editable access matrix with roles (HR Manager, Admin, Manager, Employee) and toggles for each HR module (Dashboard, Records, Payroll, Leave, Recruitment).
+        </p>
+      </SectionCard>
+
+      <SectionCard
+        title="Notification Settings"
+        subtitle="Configure email alerts and reminders for HR events."
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "var(--space-md)",
+          }}
+        >
+          <ToggleSetting label="Overtime submission" defaultChecked />
+          <ToggleSetting label="Leave approvals" defaultChecked />
+          <ToggleSetting label="Training expiries" defaultChecked={false} />
+          <ToggleSetting label="Disciplinary follow-ups" defaultChecked />
+          <ToggleSetting label="Recruitment updates" defaultChecked={false} />
+        </div>
+        <div style={{ marginTop: "var(--space-md)" }}>
+          <Button type="button" variant="primary">
+            Save notification preferences
+          </Button>
+        </div>
+      </SectionCard>
     </div>
   );
 }
 
 export default function HrSettingsPolicies({ embedded = false } = {}) {
-  const content = <SettingsContent />;
-  return content;
+  return <SettingsContent />;
 }
 
-
-
+// Local toggle row — no global toggle component exists in the UI kit yet; uses token-only styling.
 function ToggleSetting({ label, defaultChecked }) {
   return (
     <label
       style={{
         display: "flex",
         alignItems: "center",
-        gap: "10px",
-        padding: "12px",
+        gap: "var(--space-2)",
+        padding: "var(--space-3)",
         borderRadius: "var(--radius-sm)",
-        border: "1px solid var(--accent-purple-surface)",
+        border: "1px solid var(--border)",
         background: "var(--surface)",
         fontWeight: 600,
-        color: "var(--info-dark)",
+        color: "var(--text-primary)",
       }}
     >
       <input type="checkbox" defaultChecked={defaultChecked} />
@@ -129,42 +156,3 @@ function ToggleSetting({ label, defaultChecked }) {
     </label>
   );
 }
-
-const buttonStylePrimary = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "none",
-  background: "var(--accent-purple)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonStyleGhost = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "1px dashed var(--info)",
-  background: "transparent",
-  color: "var(--info)",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const labelStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "6px",
-  fontSize: "0.85rem",
-  color: "var(--info-dark)",
-  fontWeight: 600,
-};
-
-const inputStyle = {
-  borderRadius: "var(--input-radius)",
-  border: "1px solid var(--accent-purple-surface)",
-  padding: "var(--control-padding)",
-  fontWeight: 500,
-  color: "var(--accent-purple)",
-  background: "var(--surface)",
-};
-

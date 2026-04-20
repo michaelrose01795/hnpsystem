@@ -96,7 +96,8 @@
       "Bash(echo \"esbuild: $?\")",
       "Bash(echo \"eslint: $?\")",
       "Bash(node _reorder-showcase.js)",
-      "Bash(bash /tmp/search_patterns.sh)"
+      "Bash(bash /tmp/search_patterns.sh)",
+      "Bash(awk 'NR>=2663 && NR<=4543' /workspaces/hnpsystem/src/pages/job-cards/myjobs/\\\\[jobNumber\\\\].js)"
     ],
     "deny": [],
     "ask": []

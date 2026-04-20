@@ -406,14 +406,6 @@
   color: var(--text-secondary);
 }
 
-.paymentField input {
-  border: 1px solid var(--surface-light);
-  background: var(--surface);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  color: var(--text-primary);
-}
-
 .paymentNoteBox {
   margin-top: 16px;
   border: 1px solid var(--surface-light);

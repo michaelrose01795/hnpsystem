@@ -12,32 +12,23 @@ export { palette };
 
 export const STATUS_OPTIONS = ["Red", "Amber", "Green"];
 
+// Mirrors the global .app-page-eyebrow tokens so modal field labels share the
+// shared page-header typography.
 export const fieldLabelStyle = {
-  fontSize: "12px",
-  fontWeight: 600,
-  color: palette.textMuted,
-  letterSpacing: "0.3px",
+  margin: 0,
+  color: "var(--text-secondary)",
+  textTransform: "uppercase",
+  fontSize: "var(--text-label)",
+  letterSpacing: "var(--tracking-caps)",
 };
 
-export const inputStyle = {
-  width: "100%",
-  minHeight: "var(--control-height)",
-  padding: "var(--control-padding)",
-  borderRadius: "var(--control-radius)",
-  border: "none",
-  backgroundColor: "var(--control-bg)",
-  fontSize: "var(--control-font-size)",
-  fontWeight: "var(--control-font-weight)",
-  color: "var(--text-primary)",
-  outline: "none",
-  boxShadow: "none",
-  transition: "background-color 0.18s ease, box-shadow 0.18s ease",
-};
+// Inputs and selects now inherit the global control styling defined in
+// globals.css (input / select / .dropdown-api__control rules). These exports
+// remain so existing spread patterns (`{ ...inputStyle, width: "8ch" }`) keep
+// working — they contribute no inline style of their own.
+export const inputStyle = { width: "100%" };
 
-export const statusSelectStyle = {
-  ...inputStyle,
-  width: "auto",
-};
+export const statusSelectStyle = { width: "auto" };
 
 export const lockedRowOverlayStyle = {
   position: "absolute",

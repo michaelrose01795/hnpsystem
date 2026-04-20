@@ -209,7 +209,10 @@ export default function MultiSelectDropdown({
       {selectedOptions.length > 0 && (
         <div className="multiselect-dropdown-api__selected-items">
           {selectedOptions.map((option) => (
-            <span key={option.key} className="multiselect-dropdown-api__tag">
+            <span
+              key={option.key}
+              className="multiselect-dropdown-api__tag app-badge app-badge--control app-badge--accent-hover"
+            >
               {option.label}
               <button
                 type="button"

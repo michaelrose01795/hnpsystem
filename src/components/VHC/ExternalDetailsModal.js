@@ -79,7 +79,6 @@ export default function ExternalDetailsModal({
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
   };
-  const summaryBadgeBase = vhcModalContentStyles.badge;
   const baseCardStyle = {
     ...vhcModalContentStyles.baseCard,
     alignItems: "flex-start",
@@ -277,7 +276,7 @@ export default function ExternalDetailsModal({
                   Tap to log observations or review existing issues.
                 </span>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <div style={summaryBadgeBase}>{loggedCount} logged</div>
+                  <div className="app-badge app-badge--control app-badge--accent-soft">{loggedCount} logged</div>
                 </div>
               </button>
             );

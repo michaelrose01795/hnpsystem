@@ -4061,7 +4061,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
                   <span>{tab.label}</span>
                   {isLocked && <span aria-hidden="true">Lock</span>}
                   {tab.badge && (
-                    <span className="jobcard-tab-badge" data-tab-id={tab.id}>
+                    <span
+                      className={`app-badge app-badge--control ${tab.id === "notes" ? "app-badge--danger-strong" : "app-badge--accent-strong"}`}
+                    >
                       {tab.badge}
                     </span>
                   )}

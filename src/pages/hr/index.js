@@ -1,10 +1,10 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/index.js
 import React, { useMemo } from "react";
 import Link from "next/link";
 import { useHrDashboardData } from "@/hooks/useHrData";
-import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
-import { MetricCard, StatusTag } from "@/components/HR/MetricCard"; // metric display and status badge components
+import { SectionCard } from "@/components/Section";
+import { StatusMessage } from "@/components/ui";
+import { MetricCard, StatusTag } from "@/components/HR/MetricCard";
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
 export default function HrDashboard() {
@@ -41,40 +41,45 @@ export default function HrDashboard() {
   }, [hrDashboardMetrics]);
 
   return (
-    <>
-      <div
-        className="app-page-stack"
-        style={{
-          padding: "8px 8px 32px",
-        }}
-      >
-        {isLoading && <HrTabLoadingSkeleton variant="dashboard" />}
+    <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+      {isLoading && <HrTabLoadingSkeleton variant="dashboard" />}
 
-        {error && (
-          <SectionCard title="Failed to load HR data" subtitle="Mock API returned an error.">
-            <span style={{ color: "var(--danger)" }}>{error.message}</span>
-          </SectionCard>
-        )}
+      {error && (
+        <SectionCard title="Failed to load HR data" subtitle="Mock API returned an error.">
+          <StatusMessage tone="danger">{error.message}</StatusMessage>
+        </SectionCard>
+      )}
 
-        {!isLoading && !error && (
-          <>
-            <section
-              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "18px" }}
+      {!isLoading && !error && (
+        <>
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: "var(--layout-card-gap)",
+            }}
+          >
+            {formattedMetrics.map((metric) => (
+              <MetricCard key={metric.label} {...metric} accentColor="var(--accentMain)" />
+            ))}
+          </section>
+
+          <section
+            style={{
+              display: "grid",
+              gap: "var(--layout-card-gap)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            }}
+          >
+            <SectionCard
+              title="Department Performance Snapshot"
+              subtitle="Productivity, quality, and teamwork scoring (rolling 30 days)"
             >
-              {formattedMetrics.map((metric) => (
-                <MetricCard key={metric.label} {...metric} accentColor="var(--info)" />
-              ))}
-            </section>
-
-            <section style={{ display: "grid", gap: "18px", gridTemplateColumns: "2fr 1.2fr" }}>
-              <SectionCard
-                title="Department Performance Snapshot"
-                subtitle="Productivity, quality, and teamwork scoring (rolling 30 days)"
-              >
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <div style={{ overflowX: "auto" }}>
+                <table className="app-data-table">
                   <thead>
-                    <tr style={{ textAlign: "left", color: "var(--info)", fontSize: "0.8rem" }}>
-                      <th style={{ padding: "12px 0" }}>Department</th>
+                    <tr>
+                      <th>Department</th>
                       <th>Productivity</th>
                       <th>Quality</th>
                       <th>Teamwork</th>
@@ -82,8 +87,8 @@ export default function HrDashboard() {
                   </thead>
                   <tbody>
                     {departmentPerformance.map((dept) => (
-                      <tr key={dept.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                        <td style={{ padding: "14px 0", fontWeight: 600 }}>{dept.department}</td>
+                      <tr key={dept.id}>
+                        <td style={{ fontWeight: 600 }}>{dept.department}</td>
                         <td>{dept.productivity}%</td>
                         <td>{dept.quality}%</td>
                         <td>{dept.teamwork}%</td>
@@ -91,69 +96,92 @@ export default function HrDashboard() {
                     ))}
                   </tbody>
                 </table>
-              </SectionCard>
+              </div>
+            </SectionCard>
 
-              <SectionCard
-                title="Training Renewals"
-                subtitle="Upcoming expiries across mandatory certifications"
-                action={
-                  <Link href="/hr/training" style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--info)" }}>
-                    View all
-                  </Link>
-                }
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                  {trainingRenewals.map((renewal) => {
-                    const tone =
-                      renewal.status === "Overdue"
-                        ? "danger"
-                        : renewal.status === "Due Soon"
-                        ? "warning"
-                        : "default";
+            <SectionCard
+              title="Training Renewals"
+              subtitle="Upcoming expiries across mandatory certifications"
+              action={
+                <Link
+                  href="/hr/training"
+                  style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--accentText)" }}
+                >
+                  View all
+                </Link>
+              }
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                {trainingRenewals.map((renewal) => {
+                  const tone =
+                    renewal.status === "Overdue"
+                      ? "danger"
+                      : renewal.status === "Due Soon"
+                      ? "warning"
+                      : "default";
 
-                    return (
+                  return (
+                    <div
+                      key={renewal.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingBottom: "var(--space-3)",
+                        borderBottom: "1px solid var(--border)",
+                        gap: "var(--space-3)",
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+                        <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{renewal.course}</span>
+                        <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                          {renewal.employee}
+                        </span>
+                      </div>
                       <div
-                        key={renewal.id}
                         style={{
                           display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          paddingBottom: "12px",
-                          borderBottom: "1px solid var(--info-surface)",
-                          gap: "12px",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: "var(--space-1)",
                         }}
                       >
-                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{renewal.course}</span>
-                          <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{renewal.employee}</span>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
-                          <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
-                            Due {new Date(renewal.dueDate).toLocaleDateString()}
-                          </span>
-                          <StatusTag label={renewal.status} tone={tone} />
-                        </div>
+                        <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                          Due {new Date(renewal.dueDate).toLocaleDateString()}
+                        </span>
+                        <StatusTag label={renewal.status} tone={tone} />
                       </div>
-                    );
-                  })}
-                </div>
-              </SectionCard>
-            </section>
+                    </div>
+                  );
+                })}
+              </div>
+            </SectionCard>
+          </section>
 
-            <section style={{ display: "grid", gap: "18px", gridTemplateColumns: "1.4fr 1fr" }}>
-              <SectionCard
-                title="Upcoming Holidays & Absences"
-                subtitle="Next 14 days across the business"
-                action={
-                  <Link href="/hr/leave" style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--info)" }}>
-                    Manage leave
-                  </Link>
-                }
-              >
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <section
+            style={{
+              display: "grid",
+              gap: "var(--layout-card-gap)",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            }}
+          >
+            <SectionCard
+              title="Upcoming Holidays & Absences"
+              subtitle="Next 14 days across the business"
+              action={
+                <Link
+                  href="/hr/leave"
+                  style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--accentText)" }}
+                >
+                  Manage leave
+                </Link>
+              }
+            >
+              <div style={{ overflowX: "auto" }}>
+                <table className="app-data-table">
                   <thead>
-                    <tr style={{ textAlign: "left", color: "var(--info)", fontSize: "0.8rem" }}>
-                      <th style={{ paddingBottom: "10px" }}>Employee</th>
+                    <tr>
+                      <th>Employee</th>
                       <th>Department</th>
                       <th>Type</th>
                       <th>Dates</th>
@@ -161,8 +189,8 @@ export default function HrDashboard() {
                   </thead>
                   <tbody>
                     {upcomingAbsences.map((absence) => (
-                      <tr key={absence.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                        <td style={{ padding: "12px 0", fontWeight: 600 }}>{absence.employee}</td>
+                      <tr key={absence.id}>
+                        <td style={{ fontWeight: 600 }}>{absence.employee}</td>
                         <td>{absence.department}</td>
                         <td>{absence.type}</td>
                         <td>
@@ -173,49 +201,56 @@ export default function HrDashboard() {
                     ))}
                   </tbody>
                 </table>
-              </SectionCard>
+              </div>
+            </SectionCard>
 
-              <SectionCard
-                title="Active Warnings"
-                subtitle="Summary of open disciplinary notices"
-                action={
-                  <Link href="/hr/disciplinary" style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--info)" }}>
-                    Review log
-                  </Link>
-                }
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {activeWarnings.map((warning) => (
-                    <div
-                      key={warning.id}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                        paddingBottom: "12px",
-                        borderBottom: "1px solid var(--info-surface)",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{warning.employee}</span>
-                        <StatusTag
-                          label={warning.level}
-                          tone={warning.level.includes("Final") ? "danger" : "warning"}
-                        />
-                      </div>
-                      <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{warning.department}</span>
-                      <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
-                        Issued {new Date(warning.issuedOn).toLocaleDateString()}
-                      </span>
-                      <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>{warning.notes}</span>
+            <SectionCard
+              title="Active Warnings"
+              subtitle="Summary of open disciplinary notices"
+              action={
+                <Link
+                  href="/hr/disciplinary"
+                  style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--accentText)" }}
+                >
+                  Review log
+                </Link>
+              }
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+                {activeWarnings.map((warning) => (
+                  <div
+                    key={warning.id}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "var(--space-1)",
+                      paddingBottom: "var(--space-3)",
+                      borderBottom: "1px solid var(--border)",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{warning.employee}</span>
+                      <StatusTag
+                        label={warning.level}
+                        tone={warning.level.includes("Final") ? "danger" : "warning"}
+                      />
                     </div>
-                  ))}
-                </div>
-              </SectionCard>
-            </section>
-          </>
-        )}
-      </div>
-    </>
+                    <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                      {warning.department}
+                    </span>
+                    <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                      Issued {new Date(warning.issuedOn).toLocaleDateString()}
+                    </span>
+                    <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-primary)" }}>
+                      {warning.notes}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          </section>
+        </>
+      )}
+    </div>
   );
 }

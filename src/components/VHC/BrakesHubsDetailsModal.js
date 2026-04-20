@@ -673,18 +673,7 @@ export default function BrakesHubsDetailsModal({
     width: "100%",
   };
 
-  const inputStyle = {
-    width: "100%",
-    minHeight: "var(--control-height)",
-    padding: "var(--control-padding)",
-    borderRadius: "var(--control-radius)",
-    border: "none",
-    backgroundColor: "var(--control-bg)",
-    color: "var(--text-primary)",
-    fontSize: "var(--control-font-size)",
-    outline: "none",
-    transition: "background-color 0.18s ease, box-shadow 0.18s ease",
-  };
+  const inputStyle = { width: "100%" };
 
   const popupOverlayStyle = {
     ...popupOverlayStyles,

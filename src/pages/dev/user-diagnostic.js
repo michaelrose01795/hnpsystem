@@ -649,11 +649,6 @@ const USAGE_REGISTRY = {
     { label: "Global Button enforcement", file: "src/components/ui/Button.js", migrated: true, validated: true, suggestion: "Button.js now strips disallowed inline-style keys (background, color, padding, border*, borderRadius, font*, boxShadow, height/minHeight) so the global system is the single source of truth for visual appearance. Layout-only style props (width, margin, alignSelf, etc.) still pass through." },
     { label: "Base button {} reset scoped to :not(.app-btn)", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "Bare <button> defaults in globals.css scoped to button:not(.app-btn) so they cannot fight .app-btn variant rules — eliminates filter:brightness double-hover and ensures .app-btn--* variants are decisive." },
   ],
-  "non-global-inputs": [
-    { label: ".login-input — login page", file: "src/pages/login.js", route: "/login" },
-    { label: "vhcModalStyles fields", file: "src/components/VHC/vhcModalStyles.js" },
-    { label: "Payment modal fields", file: "src/features/invoices/styles/invoice.module.css" },
-  ],
   "non-global-banners": [
     { label: "EmptyStateMessage (VHC)", file: "src/components/VHC/VhcSharedComponents.js" },
     { label: ".login-error", file: "src/pages/login.js", route: "/login" },
@@ -663,11 +658,6 @@ const USAGE_REGISTRY = {
     { label: ".vhc-card — VHC inspection", file: "src/components/VHC/VhcDetailsPanel.js" },
     { label: ".customer-portal-card", file: "src/features/customerPortal/components/CustomerLayout.js" },
     { label: "vhcModal.summaryCard / baseCard", file: "src/styles/appTheme.js" },
-  ],
-  "non-global-typography": [
-    { label: ".hr-employees-heading / kicker", file: "src/components/HR/tabs/EmployeesTab.js" },
-    { label: ".vhc-card__title", file: "src/components/VHC/VhcDetailsPanel.js" },
-    { label: "VHC field labels", file: "src/components/VHC/vhcModalStyles.js" },
   ],
   "non-global-modals": [
     { label: "VHC modal shells (1080×640)", file: "src/components/VHC/WheelsTyresDetailsModal.js" },
@@ -1530,7 +1520,6 @@ const SHOWCASE_CATALOG = {
   "interaction-states-buttons": { category: "Buttons",    scope: "global",     terms: "button hover active focus pressed disabled interaction state" },
   // ── Inputs & Fields ──
   "input-app-input":           { category: "Inputs & Fields", scope: "global",     terms: "input text field form app-input textfield" },
-  "non-global-inputs":         { category: "Inputs & Fields", scope: "non-global", terms: "input field form per-module custom" },
   "interaction-states-inputs":  { category: "Inputs & Fields", scope: "global",    terms: "input hover focus active disabled interaction state" },
   "native-form-controls":      { category: "Inputs & Fields", scope: "global",     terms: "checkbox radio textarea select native form control globals.css" },
   "checkboxes-states":         { category: "Inputs & Fields", scope: "global",     terms: "checkbox checked unchecked indeterminate disabled state toggle" },
@@ -1553,7 +1542,6 @@ const SHOWCASE_CATALOG = {
   "badge-unified-proposal":    { category: "Badges & Labels", scope: "global",     terms: "badge unified proposal variant replace consolidate" },
   // ── Typography ──
   "typography-app-page":       { category: "Typography",  scope: "global",     terms: "typography heading title text font size weight page" },
-  "non-global-typography":     { category: "Typography",  scope: "non-global", terms: "typography heading text font per-module custom" },
   // ── Colours & Tokens ──
   "colour-tokens":             { category: "Colours & Tokens", scope: "global",     terms: "colour color token swatch palette theme accent surface primary danger success warning" },
   "section-layers":            { category: "Colours & Tokens", scope: "global",     terms: "section layer level background surface nesting depth token" },
@@ -2344,25 +2332,6 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       )}
-      {isSectionVisible("non-global-inputs") && (
-      <ShowcaseSection title="Non-Global Inputs (per-module)" itemKey="non-global-inputs" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <input
-            placeholder="login-input style"
-            style={{ width: "100%", padding: "12px 16px", borderRadius: "var(--radius-xl)", background: "var(--control-bg)", border: "1px solid var(--accentBorder)", fontSize: "14px" }}
-          />
-          <input
-            placeholder="vhc modal field style"
-            style={{ width: "100%", padding: "var(--control-padding)", borderRadius: "var(--radius-sm)", background: "var(--control-bg)", border: "none", fontSize: "14px" }}
-          />
-          <input
-            placeholder="payment modal field"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: "var(--radius-sm)", background: "var(--surface)", border: "1px solid var(--surface-light)", fontSize: "14px" }}
-          />
-        </div>
-      </ShowcaseSection>
-      )}
-
       <ShowcaseCategoryHeader category="Dropdowns & Selects" visible={visibleCategorySet.has("Dropdowns & Selects")} />
       {isSectionVisible("dropdown-api") && (
       <ShowcaseSection title="Dropdown (.dropdown-api)" itemKey="dropdown-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
@@ -2837,15 +2806,6 @@ function GlobalUiShowcase() {
         <p className="app-page-copy" style={{ margin: "4px 0" }}>Body copy using the global page-copy class.</p>
       </ShowcaseSection>
       )}
-      {isSectionVisible("non-global-typography") && (
-      <ShowcaseSection title="Non-Global Typography" itemKey="non-global-typography" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ fontSize: "0.74rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-secondary)" }}>hr-employees-kicker</div>
-        <div style={{ fontSize: "clamp(1.2rem, 2vw, 1.55rem)", color: "var(--text-primary)", fontWeight: 700 }}>hr-employees-heading</div>
-        <div style={{ fontSize: "16px", fontWeight: 600, color: "var(--primary)", marginTop: "6px" }}>vhc-card__title</div>
-        <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", marginTop: "6px" }}>vhc field-label (modal)</div>
-      </ShowcaseSection>
-      )}
-
       <ShowcaseCategoryHeader category="Colours & Tokens" visible={visibleCategorySet.has("Colours & Tokens")} />
       {isSectionVisible("section-layers") && (
       <ShowcaseSection title="Section Layers (--layer-section-level-*)" itemKey="section-layers" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>

@@ -821,12 +821,12 @@ export default function EmployeesTab() {
                     </div>
                     <div className="hr-employees-row-badges">
                       {employee.status && (
-                        <span className="hr-employees-row-pill hr-employees-row-pill--status">
+                        <span className="app-badge app-badge--control app-badge--accent-soft">
                           {employee.status}
                         </span>
                       )}
                       {employee.employmentType && (
-                        <span className="hr-employees-row-pill">
+                        <span className="app-badge app-badge--control app-badge--neutral">
                           {employee.employmentType}
                         </span>
                       )}

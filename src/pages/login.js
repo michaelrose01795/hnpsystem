@@ -526,7 +526,7 @@ export default function LoginPage() {
                   placeholder="email@humphriesandpark.co.uk"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="login-input"
+                  className="app-input"
                   required
                 />
               </div>
@@ -543,7 +543,7 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="login-input"
+                  className="app-input"
                   required
                 />
               </div>
@@ -655,12 +655,7 @@ export default function LoginPage() {
                 onChange={(event) => setResetEmail(event.target.value)}
                 placeholder="Email"
                 required
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                }}
+                className="app-input"
               />
               <input
                 type="password"
@@ -668,12 +663,7 @@ export default function LoginPage() {
                 onChange={(event) => setResetPassword(event.target.value)}
                 placeholder="New password"
                 required
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                }}
+                className="app-input"
               />
               {resetStatus && (
                 <p

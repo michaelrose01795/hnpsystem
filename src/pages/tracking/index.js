@@ -13,6 +13,7 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { Button, InputField, StatusMessage } from "@/components/ui";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { addMonths } from "date-fns";
@@ -371,7 +372,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
           style={{
             fontSize: "clamp(0.78rem, 1.4vw, var(--text-h3))",
             fontWeight: 700,
-            color: "var(--text)",
+            color: "var(--text-primary)",
             display: "block",
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -489,22 +490,9 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
             </p>
             <h2 style={{ margin: "4px 0 0" }}>Search location</h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              width: "var(--control-height-sm)",
-              height: "var(--control-height-sm)",
-              borderRadius: "var(--radius-full)",
-              border: "none",
-              backgroundColor: "var(--search-surface)",
-              color: "var(--search-text)",
-              cursor: "pointer",
-              fontWeight: 700,
-            }}
-          >
+          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </Button>
         </div>
 
         <SearchBar
@@ -514,12 +502,20 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
           placeholder={type === "car" ? "Search bays or overflow" : "Search key safes, drawers"}
         />
 
-        <div style={{ maxHeight: "320px", overflow: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div
+          style={{
+            maxHeight: "320px",
+            overflow: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-2)",
+          }}
+        >
           {filtered.map((option) => (
             <div
               key={option.id}
               style={{
-                padding: "14px",
+                padding: "var(--space-4)",
                 borderRadius: "var(--radius-md)",
                 border: "1px solid var(--search-surface-muted)",
                 background: "var(--search-surface)",
@@ -527,26 +523,14 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                gap: "12px",
+                gap: "var(--space-3)",
                 flexWrap: "wrap",
               }}
             >
-              <strong style={{ color: "var(--accent-purple)" }}>{option.label}</strong>
-              <button
-                type="button"
-                onClick={() => onSelect(option)}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--primary-dark)",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
+              <strong style={{ color: "var(--text-primary)" }}>{option.label}</strong>
+              <Button variant="secondary" size="sm" onClick={() => onSelect(option)}>
                 Use location
-              </button>
+              </Button>
             </div>
           ))}
 
@@ -671,87 +655,60 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>{initialData ? "Edit Equipment/Tools" : "Add Equipment/Tools"}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              width: "var(--control-height-sm)",
-              height: "var(--control-height-sm)",
-              borderRadius: "var(--radius-full)",
-              border: "none",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-primary)",
-              cursor: "pointer",
-              fontWeight: 700,
-            }}
-          >
+          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </Button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-            Name *
-          </label>
-          <input
-            required
-            value={form.name}
-            onChange={(event) => handleChange("name", event.target.value)}
-            placeholder="Equipment name"
-            style={{
-              padding: "10px 12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--accent-purple-surface)",
-              fontSize: "var(--text-body)",
-            }}
-          />
-        </div>
+        <InputField
+          label="Name *"
+          required
+          value={form.name}
+          onChange={(event) => handleChange("name", event.target.value)}
+          placeholder="Equipment name"
+        />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-            Last Checked
-          </label>
-          <CalendarField
-            value={form.lastCheckedDate}
-            onChange={(e) => handleChange("lastCheckedDate", e.target.value)}
-            placeholder="Select date"
-            size="md"
-          />
-        </div>
+        <CalendarField
+          label="Last Checked"
+          value={form.lastCheckedDate}
+          onChange={(e) => handleChange("lastCheckedDate", e.target.value)}
+          placeholder="Select date"
+          size="md"
+        />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-            Duration until next check *
-          </label>
-          <DropdownField
-            required
-            options={CHECK_DURATION_OPTIONS}
-            value={form.intervalMonths}
-            onValueChange={(value) =>
-              handleChange("intervalMonths", value ? Number(value) : "")
-            }
-            placeholder="Select duration"
-            size="md"
-          />
-        </div>
+        <DropdownField
+          label="Duration until next check *"
+          required
+          options={CHECK_DURATION_OPTIONS}
+          value={form.intervalMonths}
+          onValueChange={(value) =>
+            handleChange("intervalMonths", value ? Number(value) : "")
+          }
+          placeholder="Select duration"
+          size="md"
+        />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-            Next Due
-          </label>
-          <CalendarField
-            value={form.nextDueDate}
-            placeholder="Select date"
-            size="md"
-            disabled
-          />
-        </div>
+        <CalendarField
+          label="Next Due"
+          value={form.nextDueDate}
+          placeholder="Select date"
+          size="md"
+          disabled
+        />
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-          <div style={{ display: "flex", gap: "10px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "var(--space-2)",
+            marginTop: "var(--space-2)",
+          }}
+        >
+          <div style={{ display: "flex", gap: "var(--space-2)" }}>
             {initialData?.id && (
-              <button
+              <Button
                 type="button"
+                variant="danger"
                 onClick={() => {
                   if (!initialData?.id) return;
                   setConfirmDialog({
@@ -762,48 +719,16 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
                     },
                   });
                 }}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid rgba(var(--danger-rgb), 0.4)",
-                  backgroundColor: "transparent",
-                  color: "var(--danger)",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
               >
                 Delete
-              </button>
+              </Button>
             )}
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: "10px 16px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--accent-purple-surface)",
-                backgroundColor: "transparent",
-                color: "var(--text)",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
-            >
+            <Button type="button" variant="secondary" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              style={{
-                padding: "10px 16px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--primary)",
-                color: "white",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
+            </Button>
+            <Button type="submit" variant="primary">
               {initialData ? "Save" : "Add"}
-            </button>
+            </Button>
           </div>
         </div>
       </form>
@@ -900,103 +825,67 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>{initialData ? "Edit Oil / Stock" : "Add Oil / Stock"}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              width: "var(--control-height-sm)",
-              height: "var(--control-height-sm)",
-              borderRadius: "var(--radius-full)",
-              border: "none",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-primary)",
-              cursor: "pointer",
-              fontWeight: 700,
-            }}
-          >
+          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </Button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-            Title *
-          </label>
-          <input
-            required
-            value={form.title}
-            onChange={(event) => handleChange("title", event.target.value)}
-            placeholder="Oil/Stock title"
-            style={{
-              padding: "10px 12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--accent-purple-surface)",
-              fontSize: "var(--text-body)",
-            }}
-          />
-        </div>
+        <InputField
+          label="Title *"
+          required
+          value={form.title}
+          onChange={(event) => handleChange("title", event.target.value)}
+          placeholder="Oil/Stock title"
+        />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-            Stock
-          </label>
-          <input
-            value={form.stock}
-            onChange={(event) => handleChange("stock", event.target.value)}
-            placeholder="e.g., 18 × 5L cans"
-            style={{
-              padding: "10px 12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--accent-purple-surface)",
-              fontSize: "var(--text-body)",
-            }}
-          />
-        </div>
+        <InputField
+          label="Stock"
+          value={form.stock}
+          onChange={(event) => handleChange("stock", event.target.value)}
+          placeholder="e.g., 18 × 5L cans"
+        />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-            Last Check
-          </label>
-          <CalendarField
-            value={form.lastCheckDate}
-            onChange={(e) => handleChange("lastCheckDate", e.target.value)}
-            placeholder="Select date"
-            size="md"
-          />
-        </div>
+        <CalendarField
+          label="Last Check"
+          value={form.lastCheckDate}
+          onChange={(e) => handleChange("lastCheckDate", e.target.value)}
+          placeholder="Select date"
+          size="md"
+        />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-            Duration until next check *
-          </label>
-          <DropdownField
-            required
-            options={CHECK_DURATION_OPTIONS}
-            value={form.intervalMonths}
-            onValueChange={(value) =>
-              handleChange("intervalMonths", value ? Number(value) : "")
-            }
-            placeholder="Select duration"
-            size="md"
-          />
-        </div>
+        <DropdownField
+          label="Duration until next check *"
+          required
+          options={CHECK_DURATION_OPTIONS}
+          value={form.intervalMonths}
+          onValueChange={(value) =>
+            handleChange("intervalMonths", value ? Number(value) : "")
+          }
+          placeholder="Select duration"
+          size="md"
+        />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-            Next Check
-          </label>
-          <CalendarField
-            value={form.nextCheckDate}
-            placeholder="Select date"
-            size="md"
-            disabled
-          />
-        </div>
+        <CalendarField
+          label="Next Check"
+          value={form.nextCheckDate}
+          placeholder="Select date"
+          size="md"
+          disabled
+        />
 
-        <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: "var(--space-2)",
+            marginTop: "var(--space-2)",
+            flexWrap: "wrap",
+          }}
+        >
           {initialData?.id && (
-            <button
+            <Button
               type="button"
+              variant="danger"
               onClick={() => {
                 if (!initialData?.id) return;
                 setConfirmDialog({
@@ -1007,49 +896,17 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
                   },
                 });
               }}
-              style={{
-                padding: "10px 16px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid rgba(var(--danger-rgb), 0.4)",
-                backgroundColor: "transparent",
-                color: "var(--danger)",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
             >
               Delete
-            </button>
+            </Button>
           )}
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: "10px 16px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--accent-purple-surface)",
-                backgroundColor: "transparent",
-                color: "var(--text)",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
-            >
+          <div style={{ display: "flex", gap: "var(--space-2)", marginLeft: "auto" }}>
+            <Button type="button" variant="secondary" onClick={onClose}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              style={{
-                padding: "10px 16px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--primary)",
-                color: "white",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
+            </Button>
+            <Button type="submit" variant="primary">
               {initialData ? "Save" : "Add"}
-            </button>
+            </Button>
           </div>
         </div>
       </form>
@@ -1161,119 +1018,132 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h2 style={{ margin: "0 0 4px 0" }}>Vehicle & Key Tracking</h2>
-            <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--info)" }}>
+            <h2 style={{ margin: "0 0 var(--space-xs) 0" }}>Vehicle & Key Tracking</h2>
+            <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>
               Track vehicle and key locations
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              width: "var(--control-height-sm)",
-              height: "var(--control-height-sm)",
-              borderRadius: "var(--radius-full)",
-              border: "none",
-              backgroundColor: "var(--surface)",
-              color: "var(--text-primary)",
-              cursor: "pointer",
-              fontWeight: 700,
-            }}
-          >
+          <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
             ✕
-          </button>
+          </Button>
         </div>
 
-        {/* Top Row: Job Details */}
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-            gap: "12px",
-            padding: "16px",
+            gap: "var(--space-3)",
+            padding: "var(--space-md)",
             backgroundColor: "var(--surface-light)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--accent-purple-surface)",
+            border: "1px solid var(--border)",
           }}
         >
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Job Number</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Job Number</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.jobNumber || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Registration</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Registration</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.reg || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Make & Model</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Make & Model</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.makeModel || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Colour</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Colour</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.colour || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--info)", marginBottom: "4px" }}>Customer</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Customer</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.customer || "—"}</div>
           </div>
         </div>
 
-        {/* Add Location Section */}
-        <form onSubmit={handleAddLocation} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        <form onSubmit={handleAddLocation} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <h3 style={{ margin: "0", fontSize: "var(--text-h4)", fontWeight: 600 }}>Add Location</h3>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
-                Job Number / Reg / Customer
-              </span>
-              <input
-                value={form.jobNumber || form.reg || form.customer}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Try to determine which field it is
-                  if (value.match(/^\d+$/)) {
-                    handleChange("jobNumber", value);
-                    handleAutoFill("jobNumber", value);
-                  } else if (value.match(/^[A-Z0-9\s]+$/i) && value.length <= 10) {
-                    handleChange("reg", value);
-                    handleAutoFill("reg", value);
-                  } else {
-                    handleChange("customer", value);
-                    handleAutoFill("customer", value);
-                  }
-                }}
-                placeholder="Enter job number, reg, or customer name"
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--accent-purple-surface)",
-                  fontSize: "var(--text-body)",
-                }}
-                disabled={isSearching}
-              />
-            </label>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "var(--space-3)",
+            }}
+          >
+            <InputField
+              label="Job Number / Reg / Customer"
+              value={form.jobNumber || form.reg || form.customer}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.match(/^\d+$/)) {
+                  handleChange("jobNumber", value);
+                  handleAutoFill("jobNumber", value);
+                } else if (value.match(/^[A-Z0-9\s]+$/i) && value.length <= 10) {
+                  handleChange("reg", value);
+                  handleAutoFill("reg", value);
+                } else {
+                  handleChange("customer", value);
+                  handleAutoFill("customer", value);
+                }
+              }}
+              placeholder="Enter job number, reg, or customer name"
+              disabled={isSearching}
+            />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
-                Vehicle Location
-              </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+            <DropdownField
+              label="Vehicle Location"
+              options={CAR_LOCATION_OPTIONS}
+              value={form.vehicleLocation}
+              onValueChange={(value) => handleChange("vehicleLocation", value)}
+              placeholder="Select location"
+              size="md"
+            />
+            <DropdownField
+              label="Key Location"
+              options={KEY_LOCATION_OPTIONS}
+              value={form.keyLocation}
+              onValueChange={(value) => handleChange("keyLocation", value)}
+              placeholder="Select key location"
+              size="md"
+            />
+          </div>
+
+          <Button type="submit" variant="primary">
+            Add Location
+          </Button>
+        </form>
+
+        <div style={{ height: "1px", backgroundColor: "var(--border)" }} />
+
+        <Button
+          type="button"
+          variant={showUpdate ? "primary" : "secondary"}
+          onClick={() => setShowUpdate(!showUpdate)}
+        >
+          {showUpdate ? "Hide Update Section" : "Update Existing Location"}
+        </Button>
+
+        {showUpdate && (
+          <form
+            onSubmit={handleUpdateLocation}
+            style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
+          >
+            <h3 style={{ margin: "0", fontSize: "var(--text-h4)", fontWeight: 600 }}>Update Location</h3>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
               <DropdownField
+                label="Vehicle Location"
                 options={CAR_LOCATION_OPTIONS}
                 value={form.vehicleLocation}
                 onValueChange={(value) => handleChange("vehicleLocation", value)}
                 placeholder="Select location"
                 size="md"
               />
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
-                Key Location
-              </label>
               <DropdownField
+                label="Key Location"
                 options={KEY_LOCATION_OPTIONS}
                 value={form.keyLocation}
                 onValueChange={(value) => handleChange("keyLocation", value)}
@@ -1281,94 +1151,10 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
                 size="md"
               />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            style={{
-              padding: "12px 20px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              background: "var(--primary)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontSize: "var(--text-body)",
-            }}
-          >
-            Add Location
-          </button>
-        </form>
-
-        {/* Divider */}
-        <div style={{ height: "1px", backgroundColor: "var(--accent-purple-surface)" }} />
-
-        {/* Update Section Toggle */}
-        <button
-          type="button"
-          onClick={() => setShowUpdate(!showUpdate)}
-          style={{
-            padding: "12px 20px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--info)",
-            background: showUpdate ? "var(--info)" : "transparent",
-            color: showUpdate ? "white" : "var(--info)",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontSize: "var(--text-body)",
-          }}
-        >
-          {showUpdate ? "Hide Update Section" : "Update Existing Location"}
-        </button>
-
-        {/* Update Location Section */}
-        {showUpdate && (
-          <form onSubmit={handleUpdateLocation} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            <h3 style={{ margin: "0", fontSize: "var(--text-h4)", fontWeight: 600 }}>Update Location</h3>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
-                  Vehicle Location
-                </label>
-                <DropdownField
-                  options={CAR_LOCATION_OPTIONS}
-                  value={form.vehicleLocation}
-                  onValueChange={(value) => handleChange("vehicleLocation", value)}
-                  placeholder="Select location"
-                  size="md"
-                />
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--info)" }}>
-                  Key Location
-                </label>
-                <DropdownField
-                  options={KEY_LOCATION_OPTIONS}
-                  value={form.keyLocation}
-                  onValueChange={(value) => handleChange("keyLocation", value)}
-                  placeholder="Select key location"
-                  size="md"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              style={{
-                padding: "12px 20px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--success)",
-                color: "white",
-                fontWeight: 600,
-                cursor: "pointer",
-                fontSize: "var(--text-body)",
-              }}
-            >
+            <Button type="submit" variant="primary">
               Update
-            </button>
+            </Button>
           </form>
         )}
       </div>
@@ -1488,27 +1274,18 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           }}
         >
           {[
-            { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821", required: false },
-            { label: "Registration", field: "reg", placeholder: "GY21 HNP", required: false },
-            { label: "Customer", field: "customer", placeholder: "Customer name", required: false },
-            { label: "Service Type", field: "serviceType", placeholder: "MOT, Service...", required: false },
+            { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821" },
+            { label: "Registration", field: "reg", placeholder: "GY21 HNP" },
+            { label: "Customer", field: "customer", placeholder: "Customer name" },
+            { label: "Service Type", field: "serviceType", placeholder: "MOT, Service..." },
           ].map((input) => (
-            <div key={input.field} style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-                {input.label}
-              </label>
-              <input
-                value={form[input.field]}
-                onChange={(event) => handleChange(input.field, event.target.value)}
-                placeholder={input.placeholder}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--accent-purple-surface)",
-                  fontSize: "var(--text-body)",
-                }}
-              />
-            </div>
+            <InputField
+              key={input.field}
+              label={input.label}
+              value={form[input.field]}
+              onChange={(event) => handleChange(input.field, event.target.value)}
+              placeholder={input.placeholder}
+            />
           ))}
         </div>
 
@@ -1516,67 +1293,35 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "10px",
+            gap: "var(--space-2)",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-              Vehicle Location
-            </label>
-            <DropdownField
-              options={vehicleLocationOptions}
-              value={form.vehicleLocation}
-              onValueChange={(value) => handleChange("vehicleLocation", value)}
-              placeholder="Select location"
-              size="md"
-            />
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-              Key Location
-            </label>
-            <DropdownField
-              required
-              options={keyLocationOptions}
-              value={form.keyLocation}
-              onValueChange={(value) => handleChange("keyLocation", value)}
-              placeholder="Select key location"
-              size="md"
-            />
-          </div>
+          <DropdownField
+            label="Vehicle Location"
+            options={vehicleLocationOptions}
+            value={form.vehicleLocation}
+            onValueChange={(value) => handleChange("vehicleLocation", value)}
+            placeholder="Select location"
+            size="md"
+          />
+          <DropdownField
+            label="Key Location"
+            required
+            options={keyLocationOptions}
+            value={form.keyLocation}
+            onValueChange={(value) => handleChange("keyLocation", value)}
+            placeholder="Select key location"
+            size="md"
+          />
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: "10px 16px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--accent-purple-surface)",
-              backgroundColor: "transparent",
-              cursor: "pointer",
-              fontWeight: 600,
-              color: "var(--text)",
-            }}
-          >
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            style={{
-              padding: "10px 16px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              background: "var(--primary)",
-              color: "white",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
+          </Button>
+          <Button type="submit" variant="primary">
             Save update
-          </button>
+          </Button>
         </div>
 
         {/* TODO: Persist vehicle/key updates via API endpoint */}
@@ -2493,7 +2238,7 @@ export default function TrackingDashboard() {
                       display: "block",
                       fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
                       fontWeight: 700,
-                      color: "var(--text)",
+                      color: "var(--text-primary)",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -2541,26 +2286,18 @@ export default function TrackingDashboard() {
                   <strong>{durationLabel}</strong>
                 </div>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={(event) => {
                   event.stopPropagation();
                   handleEquipmentCheck(check.id);
                 }}
-                style={{
-                  marginTop: "auto",
-                  padding: "8px 14px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  background: "var(--primary)",
-                  color: "white",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  width: "100%",
-                }}
+                style={{ marginTop: "auto", width: "100%" }}
               >
                 Log check
-              </button>
+              </Button>
             </DevLayoutSection>
           );
         })}
@@ -2703,7 +2440,7 @@ export default function TrackingDashboard() {
                       display: "block",
                       fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
                       fontWeight: 700,
-                      color: "var(--text)",
+                      color: "var(--text-primary)",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -2763,66 +2500,43 @@ export default function TrackingDashboard() {
                 </div>
               </div>
               {isTopUpActive && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <label style={{ fontSize: "var(--text-body-sm)", color: "var(--info)", fontWeight: 600 }}>
-                    Top up stock amount
-                  </label>
-                  <input
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
+                  <InputField
+                    label="Top up stock amount"
                     type="text"
                     value={topUpValue}
                     onChange={(e) => setTopUpValue(e.target.value)}
                     onClick={(e) => e.stopPropagation()}
                     placeholder="e.g., 18 × 5L cans"
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--accent-purple-surface)",
-                      fontSize: "var(--text-body)",
-                    }}
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="sm"
                     onClick={(event) => {
                       event.stopPropagation();
                       handleOilCheck(item.id, topUpValue);
                     }}
-                    style={{
-                      padding: "8px 14px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "none",
-                      background: "var(--success)",
-                      color: "white",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      width: "100%",
-                    }}
+                    style={{ width: "100%" }}
                   >
                     Save
-                  </button>
+                  </Button>
                 </div>
               )}
               {!isTopUpActive && (
-                <button
+                <Button
                   type="button"
+                  variant="primary"
+                  size="sm"
                   onClick={(event) => {
                     event.stopPropagation();
                     setActiveTopUpId(item.id);
                     setTopUpValue(item.stock || "");
                   }}
-                  style={{
-                    marginTop: "auto",
-                    padding: "8px 14px",
-                    borderRadius: "var(--radius-sm)",
-                    border: "none",
-                    background: "var(--primary)",
-                    color: "white",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    width: "100%",
-                  }}
+                  style={{ marginTop: "auto", width: "100%" }}
                 >
                   Mark checked
-                </button>
+                </Button>
               )}
             </DevLayoutSection>
           );
@@ -2898,83 +2612,62 @@ export default function TrackingDashboard() {
                 />
               </DevLayoutSection>
               {activeTab === "tracker" && (
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
-                  <button
-                    type="button"
-                    onClick={loadEntries}
-                    style={{
-                      padding: "8px 16px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "none",
-                      background: "var(--accent-purple)",
-                      color: "white",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      boxShadow: "none",
-                    }}
-                  >
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "var(--space-sm)",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    marginLeft: "auto",
+                  }}
+                >
+                  <Button variant="secondary" size="sm" onClick={loadEntries}>
                     Refresh
-                  </button>
+                  </Button>
                   {loading && <InlineLoading width={100} label="Refreshing" />}
-                  <button
-                    type="button"
-                    onClick={() => openEntryModal("car")}
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "none",
-                      background: "var(--primary)",
-                      color: "white",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
+                  <Button variant="primary" size="sm" onClick={() => openEntryModal("car")}>
                     Add location
-                  </button>
+                  </Button>
                 </div>
               )}
               {activeTab === "equipment" && (
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
-                  {equipmentLoading && (
-                    <span style={{ color: "var(--info)", fontWeight: 600 }}>Loading…</span>
-                  )}
-                  <button
-                    type="button"
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "var(--space-sm)",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    marginLeft: "auto",
+                  }}
+                >
+                  {equipmentLoading && <InlineLoading width={80} label="Loading" />}
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={() => setEquipmentModal({ open: true, item: null })}
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "none",
-                      background: "var(--primary)",
-                      color: "white",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
                   >
                     Add Equipment/tools
-                  </button>
+                  </Button>
                 </div>
               )}
               {activeTab === "oil-stock" && (
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center", marginLeft: "auto" }}>
-                  {oilLoading && (
-                    <span style={{ color: "var(--info)", fontWeight: 600 }}>Loading…</span>
-                  )}
-                  <button
-                    type="button"
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "var(--space-sm)",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    marginLeft: "auto",
+                  }}
+                >
+                  {oilLoading && <InlineLoading width={80} label="Loading" />}
+                  <Button
+                    variant="primary"
+                    size="sm"
                     onClick={() => setOilStockModal({ open: true, item: null })}
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "none",
-                      background: "var(--primary)",
-                      color: "white",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
                   >
                     Add Oil / Stock
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -2984,16 +2677,8 @@ export default function TrackingDashboard() {
               sectionKey="tracking-page-error"
               parentKey="tracking-page-body"
               sectionType="banner"
-              style={{
-                padding: "12px 16px",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid rgba(var(--danger-rgb), 0.25)",
-                background: "rgba(var(--danger-rgb), 0.8)",
-                color: "var(--danger)",
-                fontWeight: 600,
-              }}
             >
-              {error}
+              <StatusMessage tone="danger">{error}</StatusMessage>
             </DevLayoutSection>
           )}
           {renderActiveTabContent()}

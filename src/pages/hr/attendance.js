@@ -1,9 +1,9 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/attendance.js
 import React from "react";
 import { useHrAttendanceData } from "@/hooks/useHrData";
-import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
-import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
+import { SectionCard } from "@/components/Section";
+import { Button, StatusMessage } from "@/components/ui";
+import { StatusTag } from "@/components/HR/MetricCard";
 
 export default function HrAttendance() {
   const { data, isLoading, error } = useHrAttendanceData();
@@ -13,159 +13,73 @@ export default function HrAttendance() {
   const absenceRecords = data?.absenceRecords ?? [];
 
   return (
-    <>
-      <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <p style={{ color: "var(--info)" }}>
-            Monitor time logs, absences, late arrivals, and overtime activity across the team.
-          </p>
-        </header>
+    <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+        <p style={{ color: "var(--text-secondary)", margin: 0 }}>
+          Monitor time logs, absences, late arrivals, and overtime activity across the team.
+        </p>
+      </header>
 
-        {isLoading && (
-          <SectionCard title="Loading attendance" subtitle="Fetching clocking data.">
-            <span style={{ color: "var(--info)" }}>Pulling attendance data from Supabase.</span>
-          </SectionCard>
-        )}
+      {isLoading && (
+        <SectionCard title="Loading attendance" subtitle="Fetching clocking data.">
+          <StatusMessage tone="info">Pulling attendance data from Supabase.</StatusMessage>
+        </SectionCard>
+      )}
 
-        {error && (
-          <SectionCard title="Unable to load attendance" subtitle="Mock API returned an error.">
-            <span style={{ color: "var(--danger)" }}>{error.message}</span>
-          </SectionCard>
-        )}
+      {error && (
+        <SectionCard title="Unable to load attendance" subtitle="Mock API returned an error.">
+          <StatusMessage tone="danger">{error.message}</StatusMessage>
+        </SectionCard>
+      )}
 
-        {!isLoading && !error && (
-          <>
-            <section style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "20px" }}>
-              <SectionCard
-                title="Daily Time Logs"
-                subtitle="Sourced from the workshop clocking system"
-                action={
-                  <button type="button" style={buttonStyleSecondary}>
-                    Export CSV
-                  </button>
-                }
-              >
-                <div style={{ maxHeight: "360px", overflowY: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                        <th style={{ paddingBottom: "10px", textAlign: "left" }}>Employee</th>
-                        <th>Date</th>
-                        <th>Clock In</th>
-                        <th>Clock Out</th>
-                        <th>Total Hours</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {attendanceLogs.map((log) => (
-                        <tr key={log.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                          <td style={{ padding: "12px 0", fontWeight: 600 }}>
-                            {log.employeeName || "Unknown user"}
-                          </td>
-                          <td>{new Date(log.date).toLocaleDateString()}</td>
-                          <td>{log.clockIn}</td>
-                          <td>{log.clockOut}</td>
-                          <td>{Number(log.totalHours).toFixed(1)} hrs</td>
-                          <td>
-                            <StatusTag
-                              label={log.status}
-                              tone={
-                                log.status === "On Time"
-                                  ? "success"
-                                  : log.status === "Overtime"
-                                  ? "warning"
-                                  : "default"
-                              }
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </SectionCard>
-
-              <SectionCard
-                title="Overtime Summary"
-                subtitle="Captured per 26th-to-26th overtime period"
-                action={
-                  <button type="button" style={buttonStylePrimary}>
-                    Review Timesheets
-                  </button>
-                }
-              >
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {overtimeSummaries.map((record) => (
-                    <div
-                      key={record.id}
-                      style={{
-                        border: "1px solid var(--accent-purple-surface)",
-                        borderRadius: "var(--radius-sm)",
-                        padding: "12px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "6px",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{record.employee}</span>
-                        <StatusTag
-                          label={record.status}
-                          tone={record.status === "Ready" ? "success" : "warning"}
-                        />
-                      </div>
-                      <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
-                        {new Date(record.periodStart).toLocaleDateString()} -{" "}
-                        {new Date(record.periodEnd).toLocaleDateString()}
-                      </span>
-                      <div style={{ display: "flex", gap: "16px", fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                        <span>{record.overtimeHours} hrs</span>
-                        <span>OT rate £{Number(record.overtimeRate).toFixed(2)}</span>
-                        <span>Bonus £{Number(record.bonus).toFixed(0)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SectionCard>
-            </section>
-
+      {!isLoading && !error && (
+        <>
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "var(--layout-card-gap)",
+            }}
+          >
             <SectionCard
-              title="Absence Tracking"
-              subtitle="Holiday, sickness, unpaid leave, and other absences"
+              title="Daily Time Logs"
+              subtitle="Sourced from the workshop clocking system"
               action={
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button type="button" style={buttonStyleSecondary}>
-                    Export PDF
-                  </button>
-                  <button type="button" style={buttonStylePrimary}>
-                    New Absence
-                  </button>
-                </div>
+                <Button variant="secondary" size="sm">
+                  Export CSV
+                </Button>
               }
             >
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <div style={{ maxHeight: "360px", overflowY: "auto" }}>
+                <table className="app-data-table">
                   <thead>
-                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                      <th style={{ textAlign: "left", paddingBottom: "10px" }}>Employee</th>
-                      <th>Type</th>
-                      <th>Start</th>
-                      <th>End</th>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Date</th>
+                      <th>Clock In</th>
+                      <th>Clock Out</th>
+                      <th>Total Hours</th>
                       <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {absenceRecords.map((absence) => (
-                      <tr key={absence.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                        <td style={{ padding: "12px 0", fontWeight: 600 }}>{absence.employee}</td>
-                        <td>{absence.type}</td>
-                        <td>{new Date(absence.startDate).toLocaleDateString()}</td>
-                        <td>{new Date(absence.endDate).toLocaleDateString()}</td>
+                    {attendanceLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td style={{ fontWeight: 600 }}>{log.employeeName || "Unknown user"}</td>
+                        <td>{new Date(log.date).toLocaleDateString()}</td>
+                        <td>{log.clockIn}</td>
+                        <td>{log.clockOut}</td>
+                        <td>{Number(log.totalHours).toFixed(1)} hrs</td>
                         <td>
                           <StatusTag
-                            label={absence.approvalStatus}
-                            tone={absence.approvalStatus === "Approved" ? "success" : "warning"}
+                            label={log.status}
+                            tone={
+                              log.status === "On Time"
+                                ? "success"
+                                : log.status === "Overtime"
+                                ? "warning"
+                                : "default"
+                            }
                           />
                         </td>
                       </tr>
@@ -174,29 +88,104 @@ export default function HrAttendance() {
                 </table>
               </div>
             </SectionCard>
-          </>
-        )}
-      </div>
-    </>
+
+            <SectionCard
+              title="Overtime Summary"
+              subtitle="Captured per 26th-to-26th overtime period"
+              action={
+                <Button variant="primary" size="sm">
+                  Review Timesheets
+                </Button>
+              }
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                {overtimeSummaries.map((record) => (
+                  <div
+                    key={record.id}
+                    style={{
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-sm)",
+                      padding: "var(--space-3)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "var(--space-1)",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{record.employee}</span>
+                      <StatusTag
+                        label={record.status}
+                        tone={record.status === "Ready" ? "success" : "warning"}
+                      />
+                    </div>
+                    <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                      {new Date(record.periodStart).toLocaleDateString()} -{" "}
+                      {new Date(record.periodEnd).toLocaleDateString()}
+                    </span>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "var(--space-md)",
+                        fontSize: "var(--text-body-sm)",
+                        color: "var(--text-primary)",
+                      }}
+                    >
+                      <span>{record.overtimeHours} hrs</span>
+                      <span>OT rate £{Number(record.overtimeRate).toFixed(2)}</span>
+                      <span>Bonus £{Number(record.bonus).toFixed(0)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          </section>
+
+          <SectionCard
+            title="Absence Tracking"
+            subtitle="Holiday, sickness, unpaid leave, and other absences"
+            action={
+              <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                <Button variant="secondary" size="sm">
+                  Export PDF
+                </Button>
+                <Button variant="primary" size="sm">
+                  New Absence
+                </Button>
+              </div>
+            }
+          >
+            <div style={{ overflowX: "auto" }}>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Type</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {absenceRecords.map((absence) => (
+                    <tr key={absence.id}>
+                      <td style={{ fontWeight: 600 }}>{absence.employee}</td>
+                      <td>{absence.type}</td>
+                      <td>{new Date(absence.startDate).toLocaleDateString()}</td>
+                      <td>{new Date(absence.endDate).toLocaleDateString()}</td>
+                      <td>
+                        <StatusTag
+                          label={absence.approvalStatus}
+                          tone={absence.approvalStatus === "Approved" ? "success" : "warning"}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </SectionCard>
+        </>
+      )}
+    </div>
   );
 }
-
-const buttonStylePrimary = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "none",
-  background: "var(--info)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonStyleSecondary = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "1px solid var(--info)",
-  background: "var(--surface)",
-  color: "var(--accent-purple)",
-  fontWeight: 600,
-  cursor: "pointer",
-};

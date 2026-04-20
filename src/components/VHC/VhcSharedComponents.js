@@ -17,51 +17,23 @@ export const EmptyStateMessage = ({ message }) => (
   </div>
 );
 
-// Severity badge component (used 10+ times)
-export const SeverityBadge = ({ severity, label, style = {} }) => {
-  const getSeverityStyles = (severity) => {
-    const baseStyles = {
-      padding: "4px 10px",
-      borderRadius: "var(--radius-pill)",
-      fontSize: "12px",
-      fontWeight: 600,
-      textTransform: "uppercase",
-      letterSpacing: "0.03em",
-    };
+// Severity badge component (used 10+ times). Renders a global .app-badge with
+// the matching tone modifier so shape/colour come from globals.css.
+const SEVERITY_TONE_CLASS = {
+  red: "app-badge--danger",
+  amber: "app-badge--warning",
+  green: "app-badge--success",
+  authorized: "app-badge--success",
+  declined: "app-badge--danger",
+};
 
-    const severityColors = {
-      red: {
-        background: "var(--danger-surface)",
-        color: "var(--danger-dark)",
-        border: "1px solid var(--danger)",
-      },
-      amber: {
-        background: "var(--warning-surface)",
-        color: "var(--warning-dark)",
-        border: "1px solid var(--warning)",
-      },
-      green: {
-        background: "var(--success-surface)",
-        color: "var(--success)",
-        border: "1px solid var(--success)",
-      },
-      authorized: {
-        background: "var(--success-surface)",
-        color: "var(--success)",
-        border: "1px solid var(--success)",
-      },
-      declined: {
-        background: "var(--danger-surface)",
-        color: "var(--danger-dark)",
-        border: "1px solid var(--danger)",
-      },
-    };
-
-    return { ...baseStyles, ...(severityColors[severity] || severityColors.green) };
-  };
-
+export const SeverityBadge = ({ severity, label, style = {}, className = "" }) => {
+  const tone = SEVERITY_TONE_CLASS[severity] || SEVERITY_TONE_CLASS.green;
+  const classes = ["app-badge", "app-badge--control", "app-badge--uppercase", tone, className]
+    .filter(Boolean)
+    .join(" ");
   return (
-    <span style={{ ...getSeverityStyles(severity), ...style }}>
+    <span className={classes} style={style}>
       {label || severity}
     </span>
   );

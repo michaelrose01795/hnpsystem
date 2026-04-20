@@ -35,7 +35,15 @@ export default function VhcAssistantPanel({
       data-dev-section="1"
       data-dev-section-type="content-card"
     >
-      {/* Header row: title + readiness + stage */}
+      {/* Header row: title + readiness + stage.
+          Readiness + counter pills use the global `.app-btn.app-btn--xs.app-btn--pill`
+          shape so padding, min-height, radius, font-size and weight are all owned
+          by the design system — previously each <span> hardcoded these values.
+          Status-specific colours come from existing semantic theme tokens
+          (--success-surface, --warning-surface, --danger-surface, --surface-light
+          + matching --*-dark text tokens), driven by the `scoreTone` helper.
+          `cursor: default` keeps the read-only semantics since these are status
+          indicators, not interactive buttons. */}
       <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", flex: 1, minWidth: 0 }}>
           <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "var(--primary)", whiteSpace: "nowrap" }}>{title}</h3>
@@ -44,16 +52,13 @@ export default function VhcAssistantPanel({
           </p>
         </div>
         <span
+          className="app-btn app-btn--xs app-btn--pill"
           style={{
-            fontSize: "11px",
-            fontWeight: 700,
             color: tone.fg,
-            backgroundColor: tone.bg,
+            background: tone.bg,
             border: `1px solid ${tone.border}`,
-            borderRadius: "999px",
-            padding: "4px 12px",
+            cursor: "default",
             letterSpacing: "0.02em",
-            whiteSpace: "nowrap",
           }}
         >
           Readiness {Math.round(state?.readinessScore || 0)}%
@@ -62,16 +67,28 @@ export default function VhcAssistantPanel({
 
       {/* Counters row - spread across full width */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-        <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--danger-dark)", backgroundColor: "var(--danger-surface)", borderRadius: "999px", padding: "3px 10px" }}>
+        <span
+          className="app-btn app-btn--xs app-btn--pill"
+          style={{ color: "var(--danger-dark)", background: "var(--danger-surface)", cursor: "default" }}
+        >
           Red {state?.counters?.red || 0}
         </span>
-        <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--warning-dark)", backgroundColor: "var(--warning-surface)", borderRadius: "999px", padding: "3px 10px" }}>
+        <span
+          className="app-btn app-btn--xs app-btn--pill"
+          style={{ color: "var(--warning-dark)", background: "var(--warning-surface)", cursor: "default" }}
+        >
           Amber {state?.counters?.amber || 0}
         </span>
-        <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--success-dark)", backgroundColor: "var(--success-surface)", borderRadius: "999px", padding: "3px 10px" }}>
+        <span
+          className="app-btn app-btn--xs app-btn--pill"
+          style={{ color: "var(--success-dark)", background: "var(--success-surface)", cursor: "default" }}
+        >
           Authorised {state?.counters?.authorized || 0}
         </span>
-        <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-secondary)", backgroundColor: "var(--surface-light)", borderRadius: "999px", padding: "3px 10px" }}>
+        <span
+          className="app-btn app-btn--xs app-btn--pill"
+          style={{ color: "var(--text-secondary)", background: "var(--surface-light)", cursor: "default" }}
+        >
           Awaiting decision {state?.counters?.awaitingCustomerDecision || 0}
         </span>
       </div>

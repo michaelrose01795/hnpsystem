@@ -18,6 +18,8 @@ import { useTheme } from "@/styles/themeProvider";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Button from "@/components/ui/Button";
+import InputField from "@/components/ui/InputField";
+import StatusMessage from "@/components/ui/StatusMessage";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { SkeletonBlock, SkeletonKeyframes, InlineLoading } from "@/components/ui/LoadingSkeleton";
 
@@ -145,23 +147,14 @@ const SectionTitle = ({ title, subtitle, action }) => {
 };
 
 const ComposeToggleButton = ({ active, children, onClick }) => (
-  <button
+  <Button
     type="button"
+    variant={active ? "primary" : "secondary"}
     onClick={onClick}
-    style={{
-      flex: 1,
-      borderRadius: radii.lg,
-      padding: "10px 12px",
-      border: `1px solid ${active ? palette.accent : palette.border}`,
-      backgroundColor: active ? palette.accent : "var(--surface)",
-      color: active ? "var(--text-inverse)" : palette.accent,
-      fontWeight: 600,
-      cursor: "pointer",
-      transition: "all 0.2s ease",
-    }}
+    style={{ flex: 1 }}
   >
     {children}
-  </button>
+  </Button>
 );
 
 const Chip = ({ label, onRemove, disabled = false, color = palette.accent }) => (
@@ -169,8 +162,8 @@ const Chip = ({ label, onRemove, disabled = false, color = palette.accent }) => 
     style={{
       display: "inline-flex",
       alignItems: "center",
-      gap: "6px",
-      padding: "6px 12px",
+      gap: "var(--space-1)",
+      padding: "var(--space-1) var(--space-3)",
       borderRadius: radii.pill,
       backgroundColor: palette.accentSurface,
       color,
@@ -180,20 +173,17 @@ const Chip = ({ label, onRemove, disabled = false, color = palette.accent }) => 
   >
     {label}
     {onRemove && (
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="xs"
+        pill
         onClick={disabled ? undefined : onRemove}
         disabled={disabled}
-        style={{
-          border: "none",
-          background: "transparent",
-          color: disabled ? palette.textMuted : color,
-          cursor: disabled ? "not-allowed" : "pointer",
-          fontSize: "var(--text-body)",
-        }}
+        aria-label="Remove"
       >
         ×
-      </button>
+      </Button>
     )}
   </span>
 );
@@ -499,46 +489,35 @@ const MessageBubble = ({
               }}
             >
               {REACTION_EMOJIS.map((emoji) => (
-                <button
+                <Button
                   key={emoji}
                   type="button"
+                  variant="ghost"
+                  size="xs"
+                  pill
                   onClick={(e) => {
                     e.stopPropagation();
                     onReact?.(emoji);
                     setActionsOpen(false);
                   }}
-                  style={{
-                    border: "none",
-                    background: "transparent",
-                    fontSize: "1.1rem",
-                    cursor: "pointer",
-                    padding: "2px 4px",
-                  }}
                   aria-label={`React with ${emoji}`}
                 >
                   {emoji}
-                </button>
+                </Button>
               ))}
               <div style={{ width: "1px", height: "18px", backgroundColor: palette.border }} />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="xs"
                 onClick={(e) => {
                   e.stopPropagation();
                   onReply?.();
                   setActionsOpen(false);
                 }}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  color: palette.accent,
-                  fontSize: "0.78rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  padding: "2px 6px",
-                }}
               >
                 Reply
-              </button>
+              </Button>
             </div>
           )}
           <div
@@ -591,39 +570,27 @@ const MessageBubble = ({
                   </div>
                 ) : null}
                 {canDecideLeaveRequest ? (
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    <button
+                  <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+                    <Button
                       type="button"
+                      variant="primary"
+                      size="sm"
+                      pill
                       disabled={decisionBusy}
                       onClick={() => onApproveLeaveRequest?.(message)}
-                      style={{
-                        border: "none",
-                        borderRadius: radii.pill,
-                        padding: "8px 14px",
-                        backgroundColor: decisionBusy ? "var(--info-surface)" : "var(--success)",
-                        color: "var(--surface)",
-                        fontWeight: 700,
-                        cursor: decisionBusy ? "not-allowed" : "pointer",
-                      }}
                     >
                       Approve
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="danger"
+                      size="sm"
+                      pill
                       disabled={decisionBusy}
                       onClick={() => onDeclineLeaveRequest?.(message)}
-                      style={{
-                        border: "none",
-                        borderRadius: radii.pill,
-                        padding: "8px 14px",
-                        backgroundColor: decisionBusy ? "var(--info-surface)" : "var(--danger)",
-                        color: "var(--surface)",
-                        fontWeight: 700,
-                        cursor: decisionBusy ? "not-allowed" : "pointer",
-                      }}
                     >
                       Decline
-                    </button>
+                    </Button>
                   </div>
                 ) : null}
               </div>
@@ -640,28 +607,24 @@ const MessageBubble = ({
               }}
             >
               {Object.entries(aggregatedReactions).map(([emoji, count]) => (
-                <button
+                <Button
                   key={emoji}
                   type="button"
+                  variant="secondary"
+                  size="xs"
+                  pill
                   onClick={(e) => {
                     e.stopPropagation();
                     onReact?.(emoji);
                   }}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    padding: "2px 8px",
-                    borderRadius: radii.pill,
-                    border: `1px solid ${palette.border}`,
-                    backgroundColor: "var(--surface)",
-                    fontSize: "0.78rem",
-                    cursor: "pointer",
-                  }}
                 >
                   <span>{emoji}</span>
-                  {count > 1 && <span style={{ color: palette.textMuted }}>{count}</span>}
-                </button>
+                  {count > 1 && (
+                    <span style={{ color: palette.textMuted, marginLeft: "var(--space-xs)" }}>
+                      {count}
+                    </span>
+                  )}
+                </Button>
               ))}
             </div>
           )}
@@ -2519,12 +2482,20 @@ function MessagesPage() {
                                 }}
                               />
                             )}
-                            <button
-                              type="button"
+                            <div
+                              role="button"
+                              tabIndex={threadSelectionMode ? -1 : 0}
+                              aria-disabled={threadSelectionMode}
                               onClick={() =>
                                 threadSelectionMode ? null : openThread(thread.id, thread)
                               }
-                              disabled={threadSelectionMode}
+                              onKeyDown={(event) => {
+                                if (threadSelectionMode) return;
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  openThread(thread.id, thread);
+                                }
+                              }}
                               data-dev-section="1"
                               data-dev-section-key={`messages-thread-card-${thread.id}`}
                               data-dev-section-type="content-card"
@@ -2539,22 +2510,18 @@ function MessagesPage() {
                               style={{
                                 flex: 1,
                                 borderRadius: "var(--radius-md)",
-                                border: "none",
                                 backgroundColor:
                                   activeThreadId === thread.id
                                     ? "rgba(var(--accent-purple-rgb), 0.12)"
                                     : thread.hasUnread
                                     ? unreadBackgroundColor
                                     : "var(--surface)",
-                                padding: "16px",
+                                padding: "var(--space-md)",
                                 textAlign: "left",
                                 cursor: threadSelectionMode ? "default" : "pointer",
                                 boxShadow: activeThreadId === thread.id
                                   ? `inset 4px 0 0 ${palette.accent}`
                                   : "none",
-                                backdropFilter: "none",
-                                WebkitBackdropFilter: "none",
-                                filter: "none",
                                 transition: "background-color 0.16s ease",
                               }}
                               onMouseEnter={(event) => {
@@ -2582,9 +2549,9 @@ function MessagesPage() {
                                 <span
                                   style={{
                                     display: "block",
-                                    marginTop: "6px",
+                                    marginTop: "var(--space-1)",
                                     fontSize: "var(--text-label)",
-                                    color: "rgba(71, 85, 105, 0.86)",
+                                    color: "var(--text-secondary)",
                                     lineHeight: 1.45,
                                   }}
                                 >
@@ -2604,22 +2571,22 @@ function MessagesPage() {
                               {thread.hasUnread && (
                                 <span
                                   style={{
-                                    marginTop: "8px",
+                                    marginTop: "var(--space-sm)",
                                     display: "inline-flex",
                                     padding: "3px 8px",
                                     borderRadius: radii.pill,
                                     backgroundColor: palette.accent,
                                     color: "var(--surface)",
-                                    fontSize: "0.68rem",
+                                    fontSize: "var(--text-caption)",
                                     fontWeight: 700,
-                                    letterSpacing: "0.03em",
+                                    letterSpacing: "var(--tracking-wide)",
                                     textTransform: "uppercase",
                                   }}
                                 >
                                   Unread
                                 </span>
                               )}
-                            </button>
+                            </div>
                           </div>
                         ))}
                       </div>

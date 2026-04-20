@@ -148,6 +148,18 @@
   background: transparent;
   cursor: pointer;
   pointer-events: auto;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.inspectButton:focus-visible {
+  outline: 2px solid rgba(var(--accent-base-rgb), 0.6);
+  outline-offset: 2px;
 }
 
 .panel {
@@ -158,10 +170,14 @@
   max-height: min(78vh, 760px);
   overflow: hidden;
   border-radius: 20px;
-  border: 1px solid rgba(var(--accent-base-rgb), 0.28);
-  background: var(--surface);
+  border: 1.5px solid rgba(var(--accent-base-rgb), 0.75);
+  background: rgba(var(--surface-rgb), 0.18);
   color: var(--text-primary);
-  box-shadow: none;
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-base-rgb), 0.18),
+    0 12px 32px rgba(var(--text-primary-rgb), 0.18);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
   pointer-events: auto;
   display: flex;
   flex-direction: column;
@@ -170,9 +186,10 @@
 .panelCreate {
   width: min(640px, calc(100vw - 24px));
   max-height: min(84vh, 860px);
-  border-color: rgba(var(--accent-base-rgb), 0.22);
-  background: var(--surface);
-  backdrop-filter: none;
+  border-color: rgba(var(--accent-base-rgb), 0.7);
+  background: rgba(var(--surface-rgb), 0.22);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
 }
 
 .panelScroll {
@@ -193,7 +210,9 @@
   top: 0;
   z-index: 1;
   padding-bottom: 12px;
-  background: var(--surface);
+  background: rgba(var(--surface-rgb), 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .panelTitleBlock {
@@ -234,13 +253,13 @@
 }
 
 .sectionBlock {
-  border: 1px solid rgba(var(--accent-base-rgb), 0.18);
+  border: 1px solid rgba(var(--accent-base-rgb), 0.22);
   border-radius: 14px;
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: rgba(var(--surface-rgb), 0.92);
+  background: rgba(var(--surface-rgb), 0.35);
 }
 
 .blockTitle {
@@ -322,8 +341,8 @@
 
 .panelCreate .summaryCard,
 .panelCreate .sectionBlock {
-  background: rgba(var(--surface-rgb), 0.88);
-  border-color: rgba(var(--accent-base-rgb), 0.2);
+  background: rgba(var(--surface-rgb), 0.38);
+  border-color: rgba(var(--accent-base-rgb), 0.24);
 }
 
 .summaryLabel {

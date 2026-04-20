@@ -1,8 +1,8 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/payroll.js
-import React from "react"; // React runtime for the payroll workspace
-import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook
-import { SectionCard } from "@/components/Section"; // section card layout — imported directly, ghost chain removed
+import React from "react";
+import { useHrOperationsData } from "@/hooks/useHrData";
+import { SectionCard } from "@/components/Section";
+import { Button, StatusMessage } from "@/components/ui";
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
 function PayrollContent() {
@@ -18,9 +18,9 @@ function PayrollContent() {
 
   if (error) {
     return (
-      <div style={{ padding: "8px 8px 32px" }}>
+      <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
         <SectionCard title="Unable to load payroll data" subtitle="Mock API returned an error.">
-          <span style={{ color: "var(--danger)" }}>{error.message}</span>
+          <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
       </div>
     );
@@ -28,27 +28,33 @@ function PayrollContent() {
 
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-      <header style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-        <p style={{ color: "var(--info)" }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
+        <p style={{ color: "var(--text-secondary)", margin: 0 }}>
           Track compensation, pay rise approvals, overtime payments, and exports.
         </p>
       </header>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}>
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "var(--layout-card-gap)",
+        }}
+      >
         <SectionCard
           title="Compensation Overview"
           subtitle="Current salary/hourly rate by employee"
           action={
-            <button type="button" style={buttonStylePrimary}>
+            <Button variant="primary" size="sm">
               Export Payroll CSV
-            </button>
+            </Button>
           }
         >
           <div style={{ maxHeight: "440px", overflowY: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table className="app-data-table">
               <thead>
-                <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                  <th style={{ paddingBottom: "10px", textAlign: "left" }}>Employee</th>
+                <tr>
+                  <th>Employee</th>
                   <th>Department</th>
                   <th>Contract</th>
                   <th>Pay Rate</th>
@@ -56,11 +62,13 @@ function PayrollContent() {
               </thead>
               <tbody>
                 {employeeDirectory.map((employee) => (
-                  <tr key={employee.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                    <td style={{ padding: "12px 0" }}>
+                  <tr key={employee.id}>
+                    <td>
                       <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{employee.name}</span>
-                        <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{employee.jobTitle}</span>
+                        <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{employee.name}</span>
+                        <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                          {employee.jobTitle}
+                        </span>
                       </div>
                     </td>
                     <td>{employee.department}</td>
@@ -74,77 +82,94 @@ function PayrollContent() {
         </SectionCard>
 
         <SectionCard title="Pay Rise Requests" subtitle="Approval workflow: Employee → Manager → HR">
-          <p style={{ fontSize: "0.75rem", color: "var(--info)", fontStyle: "italic", margin: 0 }}>
+          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
             TODO: Fetch pay rise requests from Supabase. Display employee name, current/requested rate, approver, status, and approve/reject actions.
           </p>
         </SectionCard>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "var(--layout-card-gap)",
+        }}
+      >
         <SectionCard
           title="Pay Rate History"
           subtitle="Audit trail of pay changes with effective dates"
           action={
-            <button type="button" style={buttonStyleSecondary}>
+            <Button variant="secondary" size="sm">
               Add record
-            </button>
+            </Button>
           }
         >
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                <th style={{ textAlign: "left", paddingBottom: "10px" }}>Employee</th>
-                <th>Effective Date</th>
-                <th>Rate</th>
-                <th>Type</th>
-                <th>Approved By</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payRateHistory.map((entry) => (
-                <tr key={entry.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                  <td style={{ padding: "12px 0", fontWeight: 600 }}>{entry.employee}</td>
-                  <td>{new Date(entry.effectiveDate).toLocaleDateString()}</td>
-                  <td>£{Number(entry.rate).toFixed(2)}</td>
-                  <td>{entry.type}</td>
-                  <td>{entry.approvedBy}</td>
+          <div style={{ overflowX: "auto" }}>
+            <table className="app-data-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Effective Date</th>
+                  <th>Rate</th>
+                  <th>Type</th>
+                  <th>Approved By</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {payRateHistory.map((entry) => (
+                  <tr key={entry.id}>
+                    <td style={{ fontWeight: 600 }}>{entry.employee}</td>
+                    <td>{new Date(entry.effectiveDate).toLocaleDateString()}</td>
+                    <td>£{Number(entry.rate).toFixed(2)}</td>
+                    <td>{entry.type}</td>
+                    <td>{entry.approvedBy}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </SectionCard>
 
         <SectionCard
           title="Overtime & Bonus Tracking"
           subtitle="Hours and earnings rolled up per period"
           action={
-            <button type="button" style={buttonStylePrimary}>
+            <Button variant="primary" size="sm">
               Generate Payroll Pack
-            </button>
+            </Button>
           }
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
             {overtimeSummaries.map((summary) => (
               <div
                 key={summary.id}
                 style={{
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--border)",
                   borderRadius: "var(--radius-sm)",
-                  padding: "12px",
+                  padding: "var(--space-3)",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "6px",
+                  gap: "var(--space-1)",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{summary.employee}</span>
-                  <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>{summary.status}</span>
+                  <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{summary.employee}</span>
+                  <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--text-secondary)" }}>
+                    {summary.status}
+                  </span>
                 </div>
-                <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>
+                <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
                   Period {new Date(summary.periodStart).toLocaleDateString()} -{" "}
                   {new Date(summary.periodEnd).toLocaleDateString()}
                 </span>
-                <div style={{ display: "flex", gap: "14px", fontSize: "0.85rem", color: "var(--info-dark)" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "var(--space-4)",
+                    fontSize: "var(--text-body-sm)",
+                    color: "var(--text-primary)",
+                  }}
+                >
                   <span>{summary.overtimeHours} hrs</span>
                   <span>Rate £{Number(summary.overtimeRate).toFixed(2)}</span>
                   <span>Bonus £{Number(summary.bonus).toFixed(2)}</span>
@@ -159,26 +184,5 @@ function PayrollContent() {
 }
 
 export default function HrPayroll({ embedded = false } = {}) {
-  const content = <PayrollContent />;
-  return content;
+  return <PayrollContent />;
 }
-
-const buttonStylePrimary = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "none",
-  background: "var(--danger)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonStyleSecondary = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "1px solid var(--warning)",
-  background: "var(--surface)",
-  color: "var(--danger)",
-  fontWeight: 600,
-  cursor: "pointer",
-};

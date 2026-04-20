@@ -1,12 +1,11 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/performance.js
-import React from "react"; // React runtime for the page component
-import { useHrOperationsData } from "@/hooks/useHrData"; // aggregated HR hook backed by Supabase
-import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
-import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
+import React from "react";
+import { useHrOperationsData } from "@/hooks/useHrData";
+import { SectionCard } from "@/components/Section";
+import { Button, InputField, StatusMessage } from "@/components/ui";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { StatusTag } from "@/components/HR/MetricCard";
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
-// ⚠️ Mock data found — replacing with Supabase query
-// ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
 function PerformanceContent() {
   const { data, isLoading, error } = useHrOperationsData();
@@ -19,61 +18,82 @@ function PerformanceContent() {
 
   if (error) {
     return (
-      <div style={{ padding: "8px 8px 32px" }}>
+      <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
         <SectionCard title="Unable to load performance data" subtitle="Mock API returned an error.">
-          <span style={{ color: "var(--danger)" }}>{error.message}</span>
+          <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
       </div>
     );
   }
 
+  const employeeOptions = employeeDirectory.map((employee) => ({
+    value: employee.id,
+    label: employee.name,
+  }));
+
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <header>
-        <p style={{ color: "var(--info)", marginTop: "6px" }}>
+        <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-1)" }}>
           Track reviews, ratings, development plans, and upcoming appraisals.
         </p>
       </header>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+      <section
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "var(--layout-card-gap)",
+        }}
+      >
         <SectionCard
           title="Upcoming Reviews"
           subtitle="Schedule and prepare feedback before the review date"
         >
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                <th style={{ textAlign: "left", paddingBottom: "10px" }}>Employee</th>
-                <th>Period</th>
-                <th>Reviewer</th>
-                <th>Next Review</th>
-              </tr>
-            </thead>
-            <tbody>
-              {performanceReviews.map((review) => (
-                <tr key={review.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                  <td style={{ padding: "12px 0", fontWeight: 600 }}>{review.employee}</td>
-                  <td>{review.period}</td>
-                  <td>{review.reviewer}</td>
-                  <td>{new Date(review.nextReview).toLocaleDateString()}</td>
+          <div style={{ overflowX: "auto" }}>
+            <table className="app-data-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Period</th>
+                  <th>Reviewer</th>
+                  <th>Next Review</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {performanceReviews.map((review) => (
+                  <tr key={review.id}>
+                    <td style={{ fontWeight: 600 }}>{review.employee}</td>
+                    <td>{review.period}</td>
+                    <td>{review.reviewer}</td>
+                    <td>{new Date(review.nextReview).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </SectionCard>
 
         <SectionCard
           title="Development To-Do"
           subtitle="Actions to follow up after reviews"
           action={
-            <button type="button" style={buttonStylePrimary}>
+            <Button variant="primary" size="sm">
               Add reminder
-            </button>
+            </Button>
           }
         >
-          <ul style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: "var(--space-6)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-sm)",
+            }}
+          >
             {performanceReviews.map((review) => (
-              <li key={review.id} style={{ color: "var(--info-dark)" }}>
+              <li key={review.id} style={{ color: "var(--text-primary)" }}>
                 <strong>{review.employee}:</strong> {review.developmentFocus}
               </li>
             ))}
@@ -85,16 +105,16 @@ function PerformanceContent() {
         title="Recent Appraisals"
         subtitle="Summary of the last review and ratings"
         action={
-          <button type="button" style={buttonStyleSecondary}>
+          <Button variant="secondary" size="sm">
             Export PDF
-          </button>
+          </Button>
         }
       >
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="app-data-table">
             <thead>
-              <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                <th style={{ textAlign: "left", paddingBottom: "10px" }}>Employee</th>
+              <tr>
+                <th>Employee</th>
                 <th>Overall</th>
                 <th>Attendance</th>
                 <th>Productivity</th>
@@ -105,8 +125,8 @@ function PerformanceContent() {
             </thead>
             <tbody>
               {performanceReviews.map((review) => (
-                <tr key={review.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
-                  <td style={{ padding: "12px 0", fontWeight: 600 }}>{review.employee}</td>
+                <tr key={review.id}>
+                  <td style={{ fontWeight: 600 }}>{review.employee}</td>
                   <td>
                     <StatusTag
                       label={`${review.overall ?? 0}/5`}
@@ -129,46 +149,41 @@ function PerformanceContent() {
         title="Create Performance Review"
         subtitle="Kick off a new review cycle or log a mid-year check-in."
       >
-        <p style={{ color: "var(--info-dark)", marginBottom: "14px" }}>
+        <p style={{ color: "var(--text-primary)", marginBottom: "var(--space-4)" }}>
           Select an employee to start drafting their performance review. You can attach supporting documents and invite
           co-reviewers.
         </p>
-        <form style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
+        <form
+          style={{
+            display: "grid",
+            gap: "var(--space-md)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          }}
+        >
+          <DropdownField
+            label="Employee"
+            name="employee"
+            placeholder="Choose employee"
+            defaultValue=""
+            options={employeeOptions}
+          />
+          <InputField label="Review Period" type="text" placeholder="e.g., Q2 2024" />
+          <InputField label="Reviewer" type="text" placeholder="Name of reviewer" />
           <label style={labelStyle}>
-            <span>Employee</span>
-            <select style={inputStyle} defaultValue="">
-              <option value="" disabled>
-                Choose employee
-              </option>
-              {employeeDirectory.map((employee) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label style={labelStyle}>
-            <span>Review Period</span>
-            <input style={inputStyle} type="text" placeholder="e.g., Q2 2024" />
-          </label>
-          <label style={labelStyle}>
-            <span>Reviewer</span>
-            <input style={inputStyle} type="text" placeholder="Name of reviewer" />
-          </label>
-          <label style={{ ...labelStyle, gridColumn: "1 / -1" }}>
             <span>Summary & Notes</span>
             <textarea
-              style={{ ...inputStyle, minHeight: "120px", resize: "vertical" }}
+              className="app-input"
+              style={{ minHeight: "120px", resize: "vertical" }}
               placeholder="Enter objectives, observations, and feedback"
-            ></textarea>
+            />
           </label>
-          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "12px" }}>
-            <button type="button" style={buttonStylePrimary}>
+          <div style={{ gridColumn: "1 / -1", display: "flex", gap: "var(--space-3)" }}>
+            <Button type="button" variant="primary">
               Save Draft
-            </button>
-            <button type="button" style={buttonStyleGhost}>
+            </Button>
+            <Button type="button" variant="ghost">
               Share with reviewer
-            </button>
+            </Button>
           </div>
         </form>
       </SectionCard>
@@ -177,55 +192,18 @@ function PerformanceContent() {
 }
 
 export default function HrPerformanceAppraisals({ embedded = false } = {}) {
-  const content = <PerformanceContent />;
-  return content;
+  return <PerformanceContent />;
 }
 
-const buttonStylePrimary = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "none",
-  background: "var(--danger)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonStyleSecondary = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "1px solid var(--warning)",
-  background: "var(--surface)",
-  color: "var(--danger)",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const buttonStyleGhost = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "1px solid transparent",
-  background: "transparent",
-  color: "var(--danger)",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
+// Local textarea label — InputField covers input/select fields, but no global textarea component exists yet.
 const labelStyle = {
   display: "flex",
   flexDirection: "column",
-  gap: "6px",
-  color: "var(--info-dark)",
-  fontSize: "0.85rem",
-  fontWeight: 600,
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "var(--control-padding)",
-  borderRadius: "var(--input-radius)",
-  border: "1px solid var(--accent-purple-surface)",
-  background: "var(--surface)",
-  color: "var(--accent-purple)",
-  fontSize: "0.9rem",
+  gap: "var(--space-xs)",
+  color: "var(--text-secondary)",
+  fontSize: "var(--text-label)",
+  fontWeight: "var(--control-label-weight)",
+  textTransform: "uppercase",
+  letterSpacing: "var(--tracking-caps)",
+  gridColumn: "1 / -1",
 };

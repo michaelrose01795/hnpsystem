@@ -51,6 +51,7 @@ import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDet
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import VhcCameraButton from "@/components/VHC/VhcCameraButton";
 import CustomerVideoButton from "@/components/VHC/CustomerVideoButton";
+import Button from "@/components/ui/Button";
 import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
 import VideoEditorModal from "@/components/VHC/VideoEditorModal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -438,7 +439,6 @@ export default function TechJobDetailPage() {
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesSubmitting, setNotesSubmitting] = useState(false);
-  const [isCompleteJobHover, setIsCompleteJobHover] = useState(false);
   const [showJobTypesPopup, setShowJobTypesPopup] = useState(false);
 
   // VHC state management
@@ -2506,9 +2506,6 @@ export default function TechJobDetailPage() {
     : completeJobLockedReasons.length > 0
     ? completeJobLockedReasons.join(" • ")
     : "Complete the required steps to unlock";
-  const completeJobHoverShadow = isCompleteJobHover
-    ? "0 10px 20px rgba(0, 0, 0, 0.18)"
-    : "0 6px 14px rgba(0, 0, 0, 0.12)";
 
   // Callback: Handle job clock in
   const handleJobClockIn = async () => {
@@ -2736,25 +2733,29 @@ export default function TechJobDetailPage() {
             padding: "10px 14px",
             flexShrink: 0
           }}>
+              {/* Status pill uses the global `.app-topbar-button` shape (padding,
+                  radius, height, font) for every status so the badge never drifts
+                  from the surrounding button row. Semantic colour comes from the
+                  STATUS_BADGE_STYLES token map — all values are theme tokens, not
+                  one-offs. `--primary` variant is used for "Complete" so the success
+                  state matches the filled accent treatment. */}
               <span
-                className={isHeaderCompleteStatus ? "app-topbar-button app-topbar-button--primary" : undefined}
-                style={{
-                  backgroundColor: isHeaderCompleteStatus ? undefined : jobStatusBadgeStyle.background,
-                  padding: isHeaderCompleteStatus ? undefined : "var(--control-padding-sm)",
-                  borderRadius: isHeaderCompleteStatus ? undefined : "var(--control-radius-sm)",
-                  fontSize: isHeaderCompleteStatus ? undefined : "0.86rem",
-                  letterSpacing: "0.02em",
-                  color: isHeaderCompleteStatus ? undefined : jobStatusBadgeStyle.color,
-                  fontWeight: "600",
-                  border: isHeaderCompleteStatus ? undefined : "none",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: "var(--control-height-sm)",
-                  lineHeight: 1,
-                  whiteSpace: "nowrap",
-                  cursor: "default",
-                }}
+                className={
+                  isHeaderCompleteStatus
+                    ? "app-topbar-button app-topbar-button--primary"
+                    : "app-topbar-button"
+                }
+                style={
+                  isHeaderCompleteStatus
+                    ? { cursor: "default", letterSpacing: "0.02em" }
+                    : {
+                        background: jobStatusBadgeStyle.background,
+                        color: jobStatusBadgeStyle.color,
+                        border: "none",
+                        cursor: "default",
+                        letterSpacing: "0.02em",
+                      }
+                }
               >
                 {techStatusDisplay}
               </span>
@@ -2762,28 +2763,24 @@ export default function TechJobDetailPage() {
                 Updated {formatDateTime(jobCard.updatedAt)}
               </span>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {/* Clock Out / Clock In / Complete Job all use the global `<Button>`
+                    component so they share the canonical `.app-btn` sizing, radius
+                    and hover treatment. Previously each was an inline-styled <button>
+                    with hardcoded padding/border-radius — now visual appearance is
+                    centrally owned by the design system. */}
                 {jobClocking ? (
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={handleJobClockOut}
                     disabled={clockOutLoading || clockInLoading}
-                    style={{
-                      padding: "6px 12px",
-                      backgroundColor: "var(--accent-purple-surface)",
-                      color: "var(--accent-purple)",
-                      border: "none",
-                      borderRadius: "var(--radius-xs)",
-                      cursor: clockOutLoading || clockInLoading ? "not-allowed" : "pointer",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      opacity: clockOutLoading ? 0.8 : 1,
-                      transition: "all 0.2s ease"
-                    }}
                   >
                     {clockOutLoading ? "Clocking Out..." : "Clock Out"}
-                  </button>
+                  </Button>
                 ) : (
-                  <>
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={handleJobClockIn}
                     disabled={clockInLoading || clockOutLoading}
                     title={
@@ -2791,65 +2788,24 @@ export default function TechJobDetailPage() {
                         ? "Clock in to complete the remaining MOT request"
                         : "Clock in to start technician work"
                     }
-                    style={{
-                      padding: "6px 12px",
-                      backgroundColor: "var(--accent-purple-surface)",
-                      color: "var(--accent-purple)",
-                      border: "none",
-                      borderRadius: "var(--radius-xs)",
-                      cursor: clockInLoading || clockOutLoading ? "not-allowed" : "pointer",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                      opacity: clockInLoading ? 0.8 : 1,
-                      transition: "all 0.2s ease"
-                    }}
                   >
                     {clockInLoading
                       ? "Clocking In..."
                       : canClockIntoMotHandoff
                       ? "Clock In to MOT"
                       : "Clock In"}
-                  </button>
-                  </>
+                  </Button>
                 )}
 
-                <button
-                  onClick={() => {
-                    if (!canCompleteJob || clockInLoading || clockOutLoading) {
-                      return;
-                    }
-                    handleCompleteJob();
-                  }}
-                  aria-disabled={!canCompleteJob || clockInLoading || clockOutLoading}
-                  onMouseEnter={() => setIsCompleteJobHover(true)}
-                  onMouseLeave={() => setIsCompleteJobHover(false)}
-                  style={{
-                    padding: "6px 12px",
-                    backgroundColor: canCompleteJob
-                      ? isCompleteJobHover
-                        ? "var(--primary-dark)"
-                        : "var(--primary)"
-                      : isCompleteJobHover
-                      ? "var(--accent-purple-surface)"
-                      : "var(--layer-section-level-2)",
-                    color: canCompleteJob ? "var(--text-inverse)" : "var(--accent-purple)",
-                    border: canCompleteJob
-                      ? "1px solid var(--primary)"
-                      : isCompleteJobHover
-                      ? "1px solid var(--accent-purple)"
-                      : "1px solid var(--surface-light)",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: canCompleteJob ? "pointer" : "not-allowed",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    opacity: clockInLoading || clockOutLoading ? 0.8 : 1,
-                    transition: "all 0.2s ease",
-                    boxShadow: canCompleteJob || isCompleteJobHover ? completeJobHoverShadow : "none"
-                  }}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleCompleteJob}
+                  disabled={!canCompleteJob || clockInLoading || clockOutLoading}
                   title={completeJobLockedTitle}
                 >
                   {canCompleteJob ? "Complete Job" : "Complete Job (locked)"}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -3463,7 +3419,7 @@ export default function TechJobDetailPage() {
                   >
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title">Wheels & Tyres</h4>
-                      <span className="vhc-badge" style={getBadgeState(sectionStatus.wheelsTyres)}>
+                      <span className="app-badge app-badge--control app-badge--uppercase" style={getBadgeState(sectionStatus.wheelsTyres)}>
                         {sectionStatus.wheelsTyres}
                       </span>
                     </div>
@@ -3482,7 +3438,7 @@ export default function TechJobDetailPage() {
                   >
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title">Brakes & Hubs</h4>
-                      <span className="vhc-badge" style={getBadgeState(sectionStatus.brakesHubs)}>
+                      <span className="app-badge app-badge--control app-badge--uppercase" style={getBadgeState(sectionStatus.brakesHubs)}>
                         {sectionStatus.brakesHubs}
                       </span>
                     </div>
@@ -3501,7 +3457,7 @@ export default function TechJobDetailPage() {
                   >
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title">Service Indicator & Under Bonnet</h4>
-                      <span className="vhc-badge" style={getBadgeState(sectionStatus.serviceIndicator)}>
+                      <span className="app-badge app-badge--control app-badge--uppercase" style={getBadgeState(sectionStatus.serviceIndicator)}>
                         {sectionStatus.serviceIndicator}
                       </span>
                     </div>
@@ -3540,7 +3496,7 @@ export default function TechJobDetailPage() {
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title">External</h4>
                       {getOptionalCount("externalInspection") > 0 && (
-                        <span className="vhc-badge" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
+                        <span className="app-badge app-badge--control app-badge--uppercase" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
                           {getOptionalCount("externalInspection")} items
                         </span>
                       )}
@@ -3561,7 +3517,7 @@ export default function TechJobDetailPage() {
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title">Internal & Electrics</h4>
                       {getOptionalCount("internalElectrics") > 0 && (
-                        <span className="vhc-badge" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
+                        <span className="app-badge app-badge--control app-badge--uppercase" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
                           {getOptionalCount("internalElectrics")} items
                         </span>
                       )}
@@ -3582,7 +3538,7 @@ export default function TechJobDetailPage() {
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title">Underside</h4>
                       {getOptionalCount("underside") > 0 && (
-                        <span className="vhc-badge" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
+                        <span className="app-badge app-badge--control app-badge--uppercase" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
                           {getOptionalCount("underside")} items
                         </span>
                       )}

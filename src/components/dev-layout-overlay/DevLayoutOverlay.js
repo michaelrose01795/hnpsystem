@@ -809,13 +809,22 @@ export default function DevLayoutOverlay() {
         return (
           <React.Fragment key={section.key}>
             {canInspectClick && (
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label={`Inspect section ${section.number} (${section.key})`}
                 className={styles.inspectButton}
                 onClick={async (event) => {
                   event.preventDefault();
                   event.stopPropagation();
                   await handleInspectClick(section.key);
+                }}
+                onKeyDown={async (event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    await handleInspectClick(section.key);
+                  }
                 }}
                 style={{
                   left: localRect.left,

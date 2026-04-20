@@ -1,14 +1,13 @@
-// ✅ HR Manager Dashboard - Comprehensive interface for HR management
+// HR Manager Dashboard - Comprehensive interface for HR management
 // file location: src/pages/hr/manager/index.js
-// This page is only accessible to users with "owner" or "admin manager" roles
-// It provides tabbed access to all HR functions from a single interface
+// This page is only accessible to users with "owner" or "admin manager" roles.
+// Provides tabbed access to all HR functions from a single interface.
 
 import React, { useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { useSession } from "next-auth/react";
 import { canAccessHrManagerDashboard, normalizeRoles } from "@/lib/auth/roles";
 
-// Import individual HR sections as separate components
 import HRDashboardTab from "@/components/HR/tabs/HRDashboardTab";
 import EmployeesTab from "@/components/HR/tabs/EmployeesTab";
 import AttendanceTab from "@/components/HR/tabs/AttendanceTab";
@@ -23,8 +22,9 @@ import SettingsTab from "@/components/HR/tabs/SettingsTab";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, PageShell } from "@/components/ui/layout-system";
 import TabRow from "@/components/ui/layout-system/TabRow";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+import { StatusMessage } from "@/components/ui";
 
-// Tab configuration - each tab represents a major HR function
 const HR_TABS = [
   { id: "dashboard", label: "Dashboard", component: HRDashboardTab },
   { id: "employees", label: "Employees", component: EmployeesTab },
@@ -40,8 +40,6 @@ const HR_TABS = [
 ];
 
 export default function HRManagerDashboard() {
-  console.log("🎯 HR Manager Dashboard component is RENDERING");
-
   const { user, loading: userLoading } = useUser();
   const { data: session, status: sessionStatus } = useSession();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -49,147 +47,77 @@ export default function HRManagerDashboard() {
 
   const userRoles = normalizeRoles(session?.user?.roles || user?.roles || []);
   const authIsLoading = sessionStatus === "loading" || userLoading;
-
-  // Debug logging
-  console.log("🔍 HR Manager Dashboard - User Roles:", userRoles);
-  console.log("🔍 HR Manager Dashboard - User:", user);
-  console.log("🔍 HR Manager Dashboard - Session:", session);
-
-  // Shared with middleware so client-side and server-side checks stay aligned
   const hasHRAccess = canAccessHrManagerDashboard(userRoles);
-
-  console.log("🔍 HR Manager Dashboard - Has Access:", hasHRAccess);
 
   if (authIsLoading) {
     return (
-      <>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "50vh",
-            color: "var(--text-secondary)",
-          }}
-        >
-          Checking access…
-        </div>
-      </>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "50vh",
+          color: "var(--text-secondary)",
+        }}
+      >
+        Checking access…
+      </div>
     );
   }
 
-  // Access denied for unauthorized users
   if (!hasHRAccess) {
-    console.log("❌ HR Manager Dashboard - Access DENIED");
     return (
-      <>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "60vh",
-            padding: "24px",
-            textAlign: "center",
-          }}
-        >
-          <h1 style={{ fontSize: "2rem", fontWeight: 700, color: "var(--danger)", marginBottom: "16px" }}>
-            Access Denied
-          </h1>
-          <p style={{ color: "var(--text-secondary)", maxWidth: "500px" }}>
-            You don't have permission to access the HR Manager dashboard. This area is restricted to Owners and Admin Managers.
-          </p>
-        </div>
-      </>
+      <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+        <StatusMessage tone="danger">
+          <strong>Access Denied.</strong> You don&apos;t have permission to access the HR Manager dashboard. This area
+          is restricted to Owners and Admin Managers.
+        </StatusMessage>
+      </div>
     );
   }
 
   if (safeModeEnabled) {
     return (
-      <>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px",
-            padding: "32px",
-            minHeight: "60vh",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-          }}
-        >
-          <h1 style={{ fontSize: "2rem", fontWeight: 800, color: "var(--primary)" }}>
-            HR Manager Safe Mode
-          </h1>
-          <p style={{ maxWidth: "640px", color: "var(--text-secondary)" }}>
-            The dashboard UI is temporarily replaced with this lightweight view so we can confirm
-            routing and permissions without rendering the heavier HR widgets. Set{" "}
-            <code>NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false</code> (or remove it) and restart the dev
-            server when you are ready to restore the full interface.
-          </p>
-          <pre
-            style={{
-              padding: "16px 20px",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--surface-light)",
-              border: "1px dashed var(--primary-light)",
-              fontSize: "0.95rem",
-              maxWidth: "520px",
-              width: "100%",
-              textAlign: "left",
-            }}
-          >
-            {`# .env.local
-NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false`}
-          </pre>
-        </div>
-      </>
+      <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+        <StatusMessage tone="info">
+          <strong>HR Manager Safe Mode.</strong> The dashboard UI is temporarily replaced with this lightweight view so
+          we can confirm routing and permissions without rendering the heavier HR widgets. Set{" "}
+          <code>NEXT_PUBLIC_HR_MANAGER_SAFE_MODE=false</code> (or remove it) and restart the dev server when you are
+          ready to restore the full interface.
+        </StatusMessage>
+      </div>
     );
   }
 
-  // Get the active tab component
-  const ActiveTabComponent = HR_TABS.find(tab => tab.id === activeTab)?.component || HRDashboardTab;
+  const ActiveTabComponent = HR_TABS.find((tab) => tab.id === activeTab)?.component || HRDashboardTab;
 
   return (
-    <>
-      <PageShell sectionKey="hr-manager-shell" className="hr-manager-shell">
-        <ContentWidth sectionKey="hr-manager-content" parentKey="hr-manager-shell" widthMode="full">
-          <TabRow
-            sectionKey="hr-manager-tabs"
-            parentKey="hr-manager-content"
-            className="tab-api tab-scroll-row is-overflowing hr-manager-tabs-row"
-          >
-            {HR_TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`tab-api__item${isActive ? " is-active" : ""}`}
-                  data-tone="default"
-                  aria-pressed={isActive}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </TabRow>
+    <PageShell sectionKey="hr-manager-shell" className="hr-manager-shell">
+      <ContentWidth sectionKey="hr-manager-content" parentKey="hr-manager-shell" widthMode="full">
+        <TabRow
+          sectionKey="hr-manager-tabs"
+          parentKey="hr-manager-content"
+          className="tab-scroll-row is-overflowing hr-manager-tabs-row"
+        >
+          <TabGroup
+            ariaLabel="HR sections"
+            items={HR_TABS.map((tab) => ({ value: tab.id, label: tab.label }))}
+            value={activeTab}
+            onChange={(value) => setActiveTab(value)}
+          />
+        </TabRow>
 
-          <DevLayoutSection
-            sectionKey={`hr-manager-tab-${activeTab}`}
-            parentKey="hr-manager-content"
-            sectionType="section-shell"
-            className="hr-manager-tab-panel"
-          >
-            <div className="hr-manager-tab-content">
-              <ActiveTabComponent />
-            </div>
-          </DevLayoutSection>
-        </ContentWidth>
-      </PageShell>
-    </>
+        <DevLayoutSection
+          sectionKey={`hr-manager-tab-${activeTab}`}
+          parentKey="hr-manager-content"
+          sectionType="section-shell"
+          className="hr-manager-tab-panel"
+        >
+          <div className="hr-manager-tab-content">
+            <ActiveTabComponent />
+          </div>
+        </DevLayoutSection>
+      </ContentWidth>
+    </PageShell>
   );
 }

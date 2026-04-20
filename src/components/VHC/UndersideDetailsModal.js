@@ -61,7 +61,6 @@ export default function UndersideDetailsModal({
     ...vhcModalContentStyles.contentWrapper,
     gap: "24px",
   };
-  const summaryBadgeBase = vhcModalContentStyles.badge;
   const baseCardStyle = {
     ...vhcModalContentStyles.baseCard,
     alignItems: "flex-start",

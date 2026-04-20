@@ -92,7 +92,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 }
 
 .personal-widget-board--move {
-  border: 1px dashed rgba(var(--accent-base-rgb), 0.3);
+  border: none;
   background: var(--accent-surface);
   padding: 10px;
 }
@@ -254,7 +254,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   padding: var(--space-4);
   border-radius: var(--radius-sm);
   background: var(--accent-surface);
-  border: 1px solid rgba(var(--accent-base-rgb), 0.16);
+  border: none;
   box-shadow: none;
   background-image: none;
   backdrop-filter: none;
@@ -263,7 +263,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 
 .app-layout-surface-accent {
   --profile-card-bg: var(--accent-surface);
-  --profile-card-border: 1px solid rgba(var(--accent-base-rgb), 0.22);
+  --profile-card-border: none;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -271,7 +271,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   border-radius: var(--radius-sm);
   background: var(--profile-card-bg);
   background-image: none;
-  border: var(--profile-card-border);
+  border: none;
   box-shadow: none;
   backdrop-filter: none;
   filter: none;
@@ -279,7 +279,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 
 .app-profile-accent-card {
   --profile-card-bg: var(--accent-surface);
-  --profile-card-border: 1px solid rgba(var(--accent-base-rgb), 0.22);
+  --profile-card-border: none;
 }
 
 /* ========================================================= */
@@ -374,24 +374,16 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 
 .vhc-card__title {
   margin: 0;
-  font-size: 16px;
+  color: var(--accent-strong);
+  font-size: var(--text-h3);
   font-weight: 600;
-  color: var(--primary);
+  line-height: var(--leading-tight);
 }
 
 .vhc-card__description {
   margin: 0;
   font-size: 13px;
   color: var(--text-secondary);
-}
-
-.vhc-badge {
-  padding: 4px 12px;
-  border-radius: var(--control-radius);
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .vhc-btn {
@@ -1317,7 +1309,7 @@ label {
 .app-data-table {
   width: 100%;
   border-collapse: collapse;
-  border: var(--control-border);
+  border: var(--table-border);
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--surface);
@@ -1326,7 +1318,7 @@ label {
 .app-data-table th,
 .app-data-table td {
   padding: var(--space-3) var(--space-md);
-  border-bottom: var(--control-border);
+  border-bottom: var(--table-border);
   text-align: left;
 }
 
@@ -1357,6 +1349,81 @@ label {
 .app-badge--primary {
   background: var(--accentMain);
   color: var(--onAccentText);
+}
+
+/* === Badge size + tone modifiers === */
+/* Size: control = primary-button height/padding/radius, used on the
+   per-feature badges that were previously vhc-badge, hr-employees-row-pill,
+   jobcard-tab-badge, multiselect tag, severity pill, and the vhc modal badge. */
+.app-badge--control {
+  min-width: 0;
+  min-height: var(--control-height);
+  padding: var(--control-padding);
+  border-radius: var(--control-radius);
+  font-size: var(--control-font-size);
+  font-weight: 600;
+  gap: var(--space-sm);
+  white-space: nowrap;
+}
+
+.app-badge--uppercase {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.app-badge--neutral {
+  background: rgba(var(--grey-accent-rgb), 0.18);
+  color: var(--text-primary);
+}
+
+.app-badge--accent-strong {
+  background: var(--accent-strong);
+  color: var(--text-inverse);
+}
+
+.app-badge--accent-soft {
+  background: var(--accent-surface);
+  color: var(--accent-strong);
+  border: 1px solid rgba(var(--accent-base-rgb), 0.3);
+}
+
+.app-badge--accent-hover {
+  background: var(--accent-surface-hover);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease;
+}
+.app-badge--accent-hover:hover {
+  background: rgba(var(--accent-base-rgb), 0.3);
+}
+
+.app-badge--danger {
+  background: var(--danger-surface);
+  color: var(--danger-dark);
+  border: 1px solid var(--danger);
+}
+
+.app-badge--danger-strong {
+  background: var(--danger);
+  color: var(--text-inverse);
+}
+
+.app-badge--warning {
+  background: var(--warning-surface);
+  color: var(--warning-dark);
+  border: 1px solid var(--warning);
+}
+
+.app-badge--success {
+  background: var(--success-surface);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+
+/* Active-tab override — when a jobcard tab badge sits inside an active tab
+   item, swap its fill for a translucent white so it reads on the accent bg. */
+.tab-api__item.is-active .app-badge--accent-strong,
+.tab-api__item.is-active .app-badge--danger-strong {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .customer-portal-shell {
@@ -1989,31 +2056,6 @@ body:has(.login-page-wrapper) {
   margin-top: 4px;
 }
 
-.login-selection-pill {
-  border-radius: var(--radius-pill);
-  background: var(--accent-surface);
-  border: 1px solid rgba(var(--accent-base-rgb), 0.18);
-  padding: 8px 14px;
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 140px;
-  box-shadow: none;
-}
-
-.login-selection-pill strong {
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(var(--text-secondary-rgb), 0.9);
-}
-
-.login-selection-pill span {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
 .login-brand {
   display: flex;
   flex-direction: column;
@@ -2251,14 +2293,13 @@ textarea {
   border-radius: var(--control-radius);
   border: none;
   background: var(--control-bg);
-  color: var(--text-primary);
+  color: var(--accentText);
   font-size: var(--control-font-size);
   font-weight: var(--control-font-weight);
   line-height: 1.2;
   box-shadow: none;
   transition:
     background-color 0.18s ease,
-    border-color 0.18s ease,
     color 0.18s ease,
     box-shadow 0.18s ease;
 }
@@ -2337,8 +2378,8 @@ textarea:disabled {
   align-items: center;
   min-width: 0;
   text-align: left;
-  color: var(--text-primary);
-  font-weight: 500;
+  color: var(--accentText);
+  font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -2423,7 +2464,7 @@ textarea:disabled {
   padding: var(--control-padding-sm);
   border: none;
   border-radius: var(--control-radius-sm);
-  background: transparent;
+  background: var(--surface);
   text-align: left;
   color: var(--text-primary);
   font-size: 0.9rem;
@@ -2435,15 +2476,20 @@ textarea:disabled {
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
+.dropdown-api__option + .dropdown-api__option {
+  margin-top: 2px;
+}
+
 .dropdown-api__option:hover,
 .dropdown-api__option:focus-visible {
-  background: var(--control-bg-active);
+  background: var(--control-bg);
+  color: var(--accentText);
   outline: none;
 }
 
 .dropdown-api__option.is-selected {
-  background: var(--accent-surface-hover);
-  color: var(--text-primary);
+  background: var(--control-bg-hover);
+  color: var(--accentText);
 }
 
 .dropdown-api__option.is-disabled {
@@ -2522,23 +2568,9 @@ select {
   align-items: center;
 }
 
-.multiselect-dropdown-api__tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: var(--control-radius-sm);
-  background: var(--accent-surface-hover);
-  color: var(--text-primary);
-  border: none;
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition: background-color 0.2s ease;
-}
-
-.multiselect-dropdown-api__tag:hover {
-  background: rgba(var(--accent-base-rgb), 0.3);
-}
+/* Shape + colour now come from .app-badge .app-badge--control
+   .app-badge--accent-hover. This class stays on the span only so the
+   .multiselect-dropdown-api__tag-remove child selector keeps working. */
 
 .multiselect-dropdown-api__tag-remove {
   background: none;
@@ -3161,18 +3193,21 @@ input[type="search"]::-webkit-search-results-decoration {
   flex: 1 1 320px;
 }
 
+/* Aliases onto the global .app-page-eyebrow / .app-page-title tokens so
+   HR directory typography matches the shared page-header system. */
 .hr-employees-kicker {
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin: 0;
   color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-caps);
 }
 
 .hr-employees-heading {
   margin: 0;
-  font-size: clamp(1.2rem, 2vw, 1.55rem);
-  color: var(--text-primary);
+  color: var(--accent-strong);
+  font-size: clamp(1.75rem, 2vw, 2rem);
+  line-height: var(--leading-tight);
 }
 
 .hr-employees-subtitle {
@@ -3394,21 +3429,6 @@ input[type="search"]::-webkit-search-results-decoration {
   flex-wrap: wrap;
 }
 
-.hr-employees-row-pill {
-  padding: 5px 9px;
-  border-radius: var(--radius-pill);
-  background: rgba(var(--grey-accent-rgb), 0.18);
-  color: var(--text-primary);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.hr-employees-row-pill--status {
-  border: 1px solid rgba(var(--accent-base-rgb), 0.3);
-  background: var(--accent-surface);
-  color: var(--accent-strong);
-}
-
 .hr-employees-row-end {
   display: flex;
   flex-direction: column;
@@ -3528,27 +3548,6 @@ input[type="search"]::-webkit-search-results-decoration {
 .tab-api__item[data-tone="warning"].is-active {
   background: var(--warning);
   color: var(--text-inverse);
-}
-
-.jobcard-tab-badge {
-  padding: 3px 8px;
-  background: var(--accent-strong);
-  color: var(--text-inverse);
-  border-radius: var(--radius-xs);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.tab-api__item.is-active .jobcard-tab-badge {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.jobcard-tab-badge[data-tab-id="notes"] {
-  background: var(--danger);
-}
-
-.tab-api__item.is-active .jobcard-tab-badge[data-tab-id="notes"] {
-  background: rgba(255, 255, 255, 0.28);
 }
 
 .dropdown-api--sm .dropdown-api__control,

@@ -19,8 +19,10 @@
   --accentSurface: rgba(var(--accentMainRgb), 0.14);
   --accentSurfaceHover: rgba(var(--accentMainRgb), 0.22);
   --accentSurfaceSubtle: rgba(var(--accentMainRgb), 0.08);
-  --accentBorder: rgba(var(--accentMainRgb), 0.18);
-  --accentBorderStrong: rgba(var(--accentMainRgb), 0.32);
+  /* Borders globally removed (except tables + status tokens). Kept as transparent
+     rather than deleted so any remaining consumers degrade to invisible-but-valid. */
+  --accentBorder: transparent;
+  --accentBorderStrong: transparent;
   --surface: var(--surfaceMain);
   --surface-rgb: 255, 255, 255;
   --surface-light: var(--surfaceHover);
@@ -30,10 +32,12 @@
      matches the theme cleanly in light and dark mode. Kept subtle and professional. */
   --skeleton-base: #ececef;
   --skeleton-highlight: #f6f6f8;
-  --skeleton-border: rgba(var(--accentMainRgb), 0.08);
+  --skeleton-border: transparent;
   --skeleton-radius: 8px;
   --skeleton-animation-duration: 1.8s;
-  --border: #d1a5a5;
+  --border: transparent;
+  /* Table borders still render — tables are the one exception to the global no-border rule. */
+  --table-border: 1px solid rgba(var(--accent-base-rgb), 0.14);
   --text-primary: var(--surfaceText);
   --text-primary-rgb: 15, 15, 15;
   --text-secondary: var(--surfaceTextMuted);
@@ -206,8 +210,8 @@
   --nav-link-bg: var(--accentSurface);
   --nav-link-bg-hover: var(--accentSurfaceHover);
   --nav-link-bg-active: var(--accentMain);
-  --nav-link-border: 1px solid var(--accentBorder);
-  --nav-link-border-active: 1px solid var(--accentBorderStrong);
+  --nav-link-border: none;
+  --nav-link-border-active: none;
   --control-height: 44px;
   --control-height-sm: 40px;
   --control-height-xs: 34px;
@@ -229,10 +233,10 @@
   --control-label-size: 0.82rem;
   --control-label-weight: 600;
   --control-gap: 10px;
-  --control-border-color: var(--accentBorder);
-  --control-border: 1px solid var(--accentBorder);
-  --control-border-hover: var(--accentBorderStrong);
-  --control-border-focus: var(--accentBorderStrong);
+  --control-border-color: transparent;
+  --control-border: none;
+  --control-border-hover: transparent;
+  --control-border-focus: transparent;
   --control-bg: var(--accentSurface);
   --control-bg-hover: var(--accentSurfaceHover);
   --control-bg-active: var(--accentSurfaceHover);
@@ -362,10 +366,11 @@
   --surface-gradient: var(--surfaceMain);
   --skeleton-base: #23232c;
   --skeleton-highlight: #2f2f3a;
-  --skeleton-border: rgba(255, 255, 255, 0.04);
+  --skeleton-border: transparent;
   --skeleton-radius: 8px;
   --skeleton-animation-duration: 1.8s;
-  --border: #d06f6f;
+  --border: transparent;
+  --table-border: 1px solid rgba(var(--accent-base-rgb), 0.2);
   --text-primary: var(--surfaceText);
   --text-primary-rgb: 248, 247, 255;
   --text-secondary: var(--surfaceTextMuted);
@@ -492,10 +497,10 @@
   /* Scrollbar colors */
   --scrollbar-thumb: var(--accent-strong);
   --scrollbar-thumb-hover: var(--primary-light);
-  --control-border-color: var(--accentBorder);
-  --control-border: 1px solid var(--accentBorder);
-  --control-border-hover: var(--accentBorderStrong);
-  --control-border-focus: var(--accentBorderStrong);
+  --control-border-color: transparent;
+  --control-border: none;
+  --control-border-hover: transparent;
+  --control-border-focus: transparent;
   --control-bg: var(--accentSurface);
   --control-bg-hover: var(--accentSurfaceHover);
   --control-bg-active: var(--accentSurfaceHover);
@@ -514,8 +519,8 @@
   --nav-link-bg: var(--accentSurface);
   --nav-link-bg-hover: var(--accentSurfaceHover);
   --nav-link-bg-active: var(--accentMain);
-  --nav-link-border: 1px solid var(--accentBorder);
-  --nav-link-border-active: 1px solid var(--accentBorderStrong);
+  --nav-link-border: none;
+  --nav-link-border-active: none;
 
   /* Dark mode shadow overrides */
   --shadow-sm: none;

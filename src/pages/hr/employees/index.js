@@ -1,12 +1,11 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/hr/employees/index.js
 import React, { useEffect, useMemo, useState } from "react";
 import { useHrEmployeesData } from "@/hooks/useHrData";
-import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
-import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
+import { SectionCard } from "@/components/Section";
+import { Button, StatusMessage } from "@/components/ui";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { StatusTag } from "@/components/HR/MetricCard";
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
-
-// TODO: Connect employee directory, filters, and profile panel to live HR tables.
 
 const defaultFilters = { department: "all", status: "all", employmentType: "all" };
 
@@ -48,159 +47,145 @@ export default function EmployeeManagement() {
   }, [employees]);
 
   return (
-    <>
-      <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <p style={{ color: "var(--info)", marginTop: "6px" }}>
-              Maintain staff records, employment details, documents, and system access.
-            </p>
-          </div>
-          <div style={{ display: "flex", gap: "12px" }}>
-            <button
-              type="button"
-              style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--input-radius)",
-                border: "1px solid var(--accent-purple-surface)",
-                background: "var(--surface)",
-                fontWeight: 600,
-                color: "var(--accent-purple)",
-              }}
-            >
-              + Add Employee
-            </button>
-          </div>
-        </header>
+    <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+      <header
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "var(--space-3)",
+          flexWrap: "wrap",
+        }}
+      >
+        <p style={{ color: "var(--text-secondary)", margin: 0 }}>
+          Maintain staff records, employment details, documents, and system access.
+        </p>
+        <Button variant="secondary">+ Add Employee</Button>
+      </header>
 
-        {isLoading && (
-          <SectionCard title="Loading directory…" subtitle="Fetching employee listing.">
-            <span style={{ color: "var(--info)" }}>Please wait while we load the placeholder directory data.</span>
+      {isLoading && (
+        <SectionCard title="Loading directory…" subtitle="Fetching employee listing.">
+          <StatusMessage tone="info">Please wait while we load the placeholder directory data.</StatusMessage>
+        </SectionCard>
+      )}
+
+      {error && (
+        <SectionCard title="Failed to load employee directory" subtitle="Mock API returned an error.">
+          <StatusMessage tone="danger">{error.message}</StatusMessage>
+        </SectionCard>
+      )}
+
+      {!isLoading && !error && (
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: "var(--layout-card-gap)",
+          }}
+        >
+          <SectionCard
+            title="Employee Directory"
+            subtitle={`${filteredEmployees.length} of ${employees.length} employees`}
+            action={
+              <DirectoryFilters
+                filters={filters}
+                setFilters={setFilters}
+                departments={uniqueDepartments}
+                employmentTypes={uniqueEmploymentTypes}
+              />
+            }
+          >
+            <div style={{ maxHeight: "520px", overflowY: "auto" }}>
+              <table className="app-data-table">
+                <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEmployees.map((employee) => {
+                    const isSelected = employee.id === selectedEmployeeId;
+                    return (
+                      <tr
+                        key={employee.id}
+                        onClick={() => setSelectedEmployeeId(employee.id)}
+                        style={{
+                          cursor: "pointer",
+                          backgroundColor: isSelected ? "var(--accent-surface-hover)" : "transparent",
+                        }}
+                      >
+                        <td>
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{employee.name}</span>
+                            <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                              {employee.jobTitle}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ fontWeight: 500 }}>{employee.department}</td>
+                        <td style={{ fontSize: "var(--text-body-sm)", color: "var(--text-primary)" }}>
+                          {employee.employmentType}
+                        </td>
+                        <td>
+                          <StatusTag
+                            label={employee.status}
+                            tone={employee.status === "Active" ? "success" : "warning"}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </SectionCard>
-        )}
 
-        {error && (
-          <SectionCard title="Failed to load employee directory" subtitle="Mock API returned an error.">
-            <span style={{ color: "var(--danger)" }}>{error.message}</span>
-          </SectionCard>
-        )}
-
-        {!isLoading && !error && (
-          <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "20px" }}>
-            <SectionCard
-              title="Employee Directory"
-              subtitle={`${filteredEmployees.length} of ${employees.length} employees`}
-              action={
-                <DirectoryFilters
-                  filters={filters}
-                  setFilters={setFilters}
-                  departments={uniqueDepartments}
-                  employmentTypes={uniqueEmploymentTypes}
-                />
-              }
-            >
-              <div style={{ maxHeight: "520px", overflowY: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead style={{ position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
-                    <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
-                      <th style={{ padding: "12px 0", textAlign: "left" }}>Employee</th>
-                      <th>Department</th>
-                      <th>Type</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredEmployees.map((employee) => {
-                      const isSelected = employee.id === selectedEmployeeId;
-                      return (
-                        <tr
-                          key={employee.id}
-                          onClick={() => setSelectedEmployeeId(employee.id)}
-                          style={{
-                            cursor: "pointer",
-                            backgroundColor: isSelected ? "rgba(var(--accent-purple-rgb), 0.08)" : "transparent",
-                            borderTop: "1px solid var(--accent-purple-surface)",
-                          }}
-                        >
-                          <td style={{ padding: "14px 0" }}>
-                            <div style={{ display: "flex", flexDirection: "column" }}>
-                              <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{employee.name}</span>
-                              <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{employee.jobTitle}</span>
-                            </div>
-                          </td>
-                          <td style={{ fontWeight: 500 }}>{employee.department}</td>
-                          <td style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>{employee.employmentType}</td>
-                          <td>
-                            <StatusTag
-                              label={employee.status}
-                              tone={employee.status === "Active" ? "success" : "warning"}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </SectionCard>
-
-            <EmployeeProfilePanel employee={selectedEmployee} />
-          </section>
-        )}
-      </div>
-    </>
-  );
-}
-
-function DirectoryFilters({ filters, setFilters, departments, employmentTypes }) {
-  return (
-    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-      <select
-        value={filters.department}
-        onChange={(event) => setFilters((prev) => ({ ...prev, department: event.target.value }))}
-        style={selectStyle}
-      >
-        {departments.map((dept) => (
-          <option key={dept} value={dept}>
-            {dept === "all" ? "All departments" : dept}
-          </option>
-        ))}
-      </select>
-
-      <select
-        value={filters.employmentType}
-        onChange={(event) =>
-          setFilters((prev) => ({ ...prev, employmentType: event.target.value }))
-        }
-        style={selectStyle}
-      >
-        {employmentTypes.map((type) => (
-          <option key={type} value={type}>
-            {type === "all" ? "All contracts" : type}
-          </option>
-        ))}
-      </select>
-
-      <select
-        value={filters.status}
-        onChange={(event) => setFilters((prev) => ({ ...prev, status: event.target.value }))}
-        style={selectStyle}
-      >
-        {["all", "Active", "On leave", "Resigned", "Terminated"].map((status) => (
-          <option key={status} value={status}>
-            {status === "all" ? "All statuses" : status}
-          </option>
-        ))}
-      </select>
+          <EmployeeProfilePanel employee={selectedEmployee} />
+        </section>
+      )}
     </div>
   );
 }
 
-const selectStyle = {
-  borderRadius: "var(--radius-pill)",
-  border: "1px solid var(--accent-purple-surface)",
-  padding: "6px 12px",
-  fontWeight: 600,
-  color: "var(--accent-purple)",
-  background: "var(--surface)",
-};
+function DirectoryFilters({ filters, setFilters, departments, employmentTypes }) {
+  const departmentOptions = departments.map((dept) => ({
+    value: dept,
+    label: dept === "all" ? "All departments" : dept,
+  }));
+
+  const employmentTypeOptions = employmentTypes.map((type) => ({
+    value: type,
+    label: type === "all" ? "All contracts" : type,
+  }));
+
+  const statusOptions = ["all", "Active", "On leave", "Resigned", "Terminated"].map((status) => ({
+    value: status,
+    label: status === "all" ? "All statuses" : status,
+  }));
+
+  return (
+    <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+      <DropdownField
+        size="sm"
+        options={departmentOptions}
+        value={filters.department}
+        onValueChange={(value) => setFilters((prev) => ({ ...prev, department: value }))}
+      />
+      <DropdownField
+        size="sm"
+        options={employmentTypeOptions}
+        value={filters.employmentType}
+        onValueChange={(value) => setFilters((prev) => ({ ...prev, employmentType: value }))}
+      />
+      <DropdownField
+        size="sm"
+        options={statusOptions}
+        value={filters.status}
+        onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value }))}
+      />
+    </div>
+  );
+}
