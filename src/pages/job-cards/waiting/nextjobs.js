@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"; // Core React hooks
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext"; // Logged-in user context
 import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router"; // Next.js router for navigation
@@ -1603,11 +1604,9 @@ export default function NextJobsPage() {
   // ✅ Access check
   if (rosterLoading) {
     return (
-      <>
-        <div style={{ padding: "40px", textAlign: "center", color: "var(--accent-purple)" }}>
-          Loading roster…
-        </div>
-      </>
+      <div style={{ padding: "40px", display: "flex", justifyContent: "center" }}>
+        <InlineLoading width={180} label="Loading roster" />
+      </div>
     );
   }
 

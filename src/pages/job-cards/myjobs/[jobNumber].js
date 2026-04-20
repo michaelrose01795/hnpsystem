@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useState, useRef, useMemo } from "react"
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
-import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
+import { PageContentSkeleton, InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { MyJobCardShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useNextAction } from "@/context/NextActionContext";
@@ -2649,9 +2649,9 @@ export default function TechJobDetailPage() {
 
   if (rosterLoading) {
     return (
-      <>
-        <div style={{ padding: "24px", color: "var(--info)" }}>Loading roster…</div>
-      </>
+      <div style={{ padding: "24px", display: "flex", justifyContent: "center" }}>
+        <InlineLoading width={180} label="Loading roster" />
+      </div>
     );
   }
 

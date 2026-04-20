@@ -7,6 +7,12 @@ import { StatusTag } from "@/components/HR/MetricCard"; // status badge componen
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
+import {
+  SkeletonBlock,
+  SkeletonKeyframes,
+  SkeletonTableRow,
+  InlineLoading,
+} from "@/components/ui/LoadingSkeleton";
 
 const defaultCompanyProfile = {
   company_name: "",
@@ -255,7 +261,21 @@ export default function AdminUserManagement() {
             </div>
           )}
           {companyLoading ? (
-            <p style={{ color: "var(--text-secondary)" }}>Loading company profile…</p>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: "12px",
+              }}
+              role="status"
+              aria-live="polite"
+              aria-label="Loading company profile"
+            >
+              <SkeletonKeyframes />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonBlock key={i} width="100%" height="38px" borderRadius="var(--control-radius,10px)" />
+              ))}
+            </div>
           ) : (
             <div
               style={{
@@ -356,7 +376,13 @@ export default function AdminUserManagement() {
 
         <SectionCard
           title="Live Platform Users"
-          subtitle={dbLoading ? "Loading user roster" : "Manage accounts stored in Supabase"}
+          subtitle={
+            dbLoading ? (
+              <InlineLoading width={160} label="Loading user roster" />
+            ) : (
+              "Manage accounts stored in Supabase"
+            )
+          }
           action={
             <div style={{ display: "flex", gap: "8px" }}>
               <button type="button" onClick={() => setShowAddForm((prev) => !prev)} style={primaryActionButtonStyle}>
@@ -435,7 +461,28 @@ export default function AdminUserManagement() {
             </div>
           )}
           {directoryLoading ? (
-            <div style={{ color: "var(--info)" }}>Loading employee directory…</div>
+            <div
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}
+              role="status"
+              aria-live="polite"
+              aria-label="Loading employee directory"
+            >
+              <SkeletonKeyframes />
+              {Array.from({ length: 4 }).map((_, deptIdx) => (
+                <div key={deptIdx} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <SkeletonBlock width="60%" height="16px" />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingLeft: "18px" }}>
+                    {Array.from({ length: 4 }).map((_, nameIdx) => (
+                      <SkeletonBlock
+                        key={nameIdx}
+                        width={nameIdx % 2 === 0 ? "80%" : "66%"}
+                        height="12px"
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
               {departmentList.map(({ department, names }) => (
@@ -460,7 +507,27 @@ export default function AdminUserManagement() {
           subtitle="Cross-reference roles with associated team members"
         >
           {rosterLoading ? (
-            <div style={{ color: "var(--info)" }}>Loading roster…</div>
+            <div
+              style={{ overflowX: "auto" }}
+              role="status"
+              aria-live="polite"
+              aria-label="Loading roster"
+            >
+              <SkeletonKeyframes />
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ color: "var(--info)", fontSize: "0.8rem" }}>
+                    <th style={{ textAlign: "left", paddingBottom: "10px" }}>Role</th>
+                    <th style={{ textAlign: "left", paddingBottom: "10px" }}>Members</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <SkeletonTableRow key={i} cols={2} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>

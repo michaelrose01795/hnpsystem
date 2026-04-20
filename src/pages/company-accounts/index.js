@@ -9,6 +9,7 @@ import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 const ALLOWED_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
@@ -200,7 +201,24 @@ export default function CompanyAccountsIndexPage() {
 
   const renderList = () => {
     if (loading) {
-      return <p>Loading company accounts…</p>;
+      // Skeleton list mirrors the real accounts list layout below (button-shaped
+      // rows inside the same section-card container) so the first visible frame
+      // already matches the final structure.
+      return (
+        <DevLayoutSection sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+            role="status"
+            aria-live="polite"
+            aria-label="Loading company accounts"
+          >
+            <SkeletonKeyframes />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonBlock key={i} width="100%" height="54px" borderRadius="var(--radius-md,12px)" />
+            ))}
+          </div>
+        </DevLayoutSection>
+      );
     }
     if (!accounts.length) {
       return <p>{feedback || "No company accounts to display."}</p>;

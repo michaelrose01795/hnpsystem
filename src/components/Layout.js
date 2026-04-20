@@ -35,7 +35,8 @@ import BrandLogo from "@/components/BrandLogo";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useLoadingState } from "@/context/LoadingStateContext";
-import { captureLayoutFingerprint, setLayoutFingerprint } from "@/lib/loading/layoutFingerprint";
+import useCaptureLayoutFingerprint from "@/hooks/useCaptureLayoutFingerprint";
+import { clearAllLayoutFingerprints } from "@/lib/loading/layoutFingerprint";
 
 const SERVICE_ACTION_ROLES = new Set([
   "service",
@@ -467,29 +468,28 @@ export default function Layout({
     setContentKey(router.asPath || `${router.pathname}-${Date.now()}`);
   }, [router.asPath, router.pathname]);
 
-  // Capture a layout fingerprint of the current page after the skeleton overlay has fully
-  // exited. Waiting until skeletonOverlayActive=false ensures the overlay div is unmounted
-  // so it cannot appear in the captured candidates.
+  // Capture a layout fingerprint of the current page after the skeleton overlay has
+  // fully exited. Waiting until skeletonOverlayActive=false ensures the overlay div
+  // is unmounted so it cannot appear in the captured candidates. Delegated to the
+  // shared hook so CustomerLayout can reuse identical logic.
+  // Derive a viewport-bucket string so the fingerprint recaptures when the user
+  // rotates / resizes across a breakpoint (the cache also keys by bucket, so a
+  // desktop fingerprint is never replayed at mobile width).
+  const viewportBucket = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
+  useCaptureLayoutFingerprint(
+    contentRef,
+    router.asPath || router.pathname,
+    skeletonOverlayActive,
+    `${contentKey}::${viewportBucket}`
+  );
+
+  // When the viewport bucket flips (mobile ↔ tablet ↔ desktop), flush every
+  // cached fingerprint — geometry at the old bucket is irrelevant and would
+  // paint misshapen shimmer rectangles on the next route change until the new
+  // page gets a chance to re-capture.
   useEffect(() => {
-    if (skeletonOverlayActive) return undefined;
-    if (typeof window === "undefined") return undefined;
-    const el = contentRef.current;
-    if (!el) return undefined;
-
-    const route = router.asPath || router.pathname;
-    let timeoutId = null;
-    const rafId = window.requestAnimationFrame(() => {
-      timeoutId = window.setTimeout(() => {
-        const fingerprint = captureLayoutFingerprint(el);
-        if (fingerprint) setLayoutFingerprint(route, fingerprint);
-      }, 80);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(rafId);
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
-    };
-  }, [skeletonOverlayActive, router.asPath, router.pathname, contentKey]);
+    clearAllLayoutFingerprints();
+  }, [viewportBucket]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
@@ -840,21 +840,8 @@ export default function Layout({
               <button
                 type="button"
                 onClick={() => setIsSidebarOpen(true)}
-                style={{
-                  flex: 1,
-                  padding: "12px 14px",
-                  borderRadius: "var(--radius-sm)",
-                  border: isSidebarOpen ? `2px solid ${colors.accent}` : "1px solid var(--surface-light)",
-                  background: isSidebarOpen ? "var(--primary)" : "var(--surface)",
-                  fontWeight: 600,
-                  color: isSidebarOpen ? "var(--surface)" : colors.accent,
-                  boxShadow: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transition: "all 0.2s ease",
-                }}
+                className={`app-btn ${isSidebarOpen ? "app-btn--primary" : "app-btn--secondary"}`}
+                style={{ flex: 1 }}
               >
                 Menu
               </button>
@@ -862,21 +849,8 @@ export default function Layout({
                 <button
                   type="button"
                   onClick={() => setIsStatusSidebarOpen(true)}
-                  style={{
-                    flex: 1,
-                    padding: "12px 14px",
-                    borderRadius: "var(--radius-sm)",
-                    border: isStatusSidebarOpen ? `2px solid ${colors.accent}` : "1px solid var(--surface-light)",
-                    background: isStatusSidebarOpen ? "var(--primary)" : "var(--surface)",
-                    fontWeight: 600,
-                    color: isStatusSidebarOpen ? "var(--surface)" : colors.accent,
-                    boxShadow: "none",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s ease",
-                  }}
+                  className={`app-btn ${isStatusSidebarOpen ? "app-btn--primary" : "app-btn--secondary"}`}
+                  style={{ flex: 1 }}
                 >
                   Status
                 </button>
@@ -1024,18 +998,9 @@ export default function Layout({
                         </span>
                         {availableModes.length > 1 ? (
                           <DropdownField
+                            className="app-topbar-dropdown app-topbar-dropdown--mode"
                             value={selectedMode || activeModeLabel || ""}
                             onChange={(event) => handleModeSelect(event.target.value)}
-                            style={{
-                              borderRadius: "var(--radius-pill)",
-                              border: "none",
-                              padding: "2px 8px",
-                              background: "var(--surface-light)",
-                              color: colors.accent,
-                              fontWeight: 600,
-                              fontSize: "0.65rem",
-                              cursor: "pointer",
-                            }}
                           >
                             {availableModes.map((mode) => (
                               <option key={mode} value={mode}>
@@ -1074,21 +1039,9 @@ export default function Layout({
                   {isTech && (
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       <DropdownField
+                        className="app-topbar-dropdown app-topbar-dropdown--status"
                         value={status}
                         onChange={(e) => handleStatusChange(e.target.value)}
-                        style={{
-                          padding: isMobile ? "4px 10px" : isTablet ? "5px 12px" : "6px 14px",
-                          borderRadius: isMobile ? "10px" : "12px",
-                          border: "none",
-                          backgroundColor: "var(--surface)",
-                          color: colors.accent,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          boxShadow: "none",
-                          fontSize: isMobile ? "0.75rem" : "0.85rem",
-                          minWidth: "auto",
-                          whiteSpace: "nowrap",
-                        }}
                       >
                         <option>Waiting for Job</option>
                         <option>In Progress</option>
@@ -1274,18 +1227,16 @@ export default function Layout({
                   {showHrTabs && <HrTabsBar />}
                   {children}
                 </div>
-                {/* Skeleton overlays on top and fades out when loading ends */}
+                {/* Skeleton overlays on top and fades out when loading ends.
+                    Theme-aware: `--page-card-bg` resolves to the current theme's
+                    card surface so the overlay never flashes white in dark mode.
+                    `.app-page-skeleton-overlay` in globals.css scopes the fade
+                    under a `prefers-reduced-motion: reduce` media query. */}
                 {skeletonOverlayActive && (
                   <div
                     data-loading-overlay="true"
+                    className={`app-page-skeleton-overlay${isContentLoading ? "" : " app-page-skeleton-overlay--exiting"}`}
                     style={{
-                      position: "absolute",
-                      inset: 0,
-                      zIndex: 10,
-                      background: "var(--surface-muted, var(--page-card-bg))",
-                      opacity: isContentLoading ? 1 : 0,
-                      transition: isContentLoading ? "none" : "opacity 0.2s ease-out",
-                      pointerEvents: isContentLoading ? "auto" : "none",
                       borderRadius: "var(--page-card-radius)",
                     }}
                   >

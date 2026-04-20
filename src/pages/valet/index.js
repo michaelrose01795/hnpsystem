@@ -11,6 +11,7 @@ import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { calculateSmartTechEta } from "@/utils/jobs/calculateSmartTechEta";
 
@@ -943,7 +944,7 @@ export default function ValetDashboard() {
               fontSize: "16px",
             }}
           >
-            Loading user…
+            <InlineLoading width={180} label="Loading user" />
           </DevLayoutSection>
         </DevLayoutSection>
       </>

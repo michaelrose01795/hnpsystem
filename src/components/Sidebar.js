@@ -393,10 +393,8 @@ export default function Sidebar({
                         disabled={clockLoading}
                         style={{
                           flex: 1,
-                          background: isClockedIn
-                            ? "var(--danger, #e53935)"
-                            : "var(--success, #43a047)",
-                          color: "#fff",
+                          background: isClockedIn ? "var(--danger)" : "var(--success)",
+                          color: "var(--onAccentText)",
                           fontWeight: 700,
                           fontSize: "0.82rem",
                           opacity: clockLoading ? 0.6 : 1,

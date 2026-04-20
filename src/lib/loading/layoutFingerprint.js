@@ -4,8 +4,25 @@
 // The global loading skeleton uses these snapshots to render shimmer placeholders
 // that exactly match the page that's about to mount, so the loading grid mirrors
 // the real page layout instead of a generic template.
+//
+// Keys are composed from the route + a "viewport bucket" (mobile/tablet/desktop)
+// so a fingerprint captured at desktop width isn't replayed on mobile — that
+// would produce off-screen shimmer rectangles and a misshapen loading frame.
 
 const fingerprintCache = new Map();
+
+function getViewportBucket() {
+  if (typeof window === "undefined") return "ssr";
+  const w = window.innerWidth || 0;
+  if (w <= 640) return "mobile";
+  if (w <= 1024) return "tablet";
+  return "desktop";
+}
+
+function cacheKey(route) {
+  if (!route) return null;
+  return `${route}::${getViewportBucket()}`;
+}
 
 const MIN_BLOCK_WIDTH = 24;
 const MIN_BLOCK_HEIGHT = 18;
@@ -111,16 +128,26 @@ export function captureLayoutFingerprint(container) {
 }
 
 export function setLayoutFingerprint(route, fingerprint) {
-  if (!route || !fingerprint) return;
-  fingerprintCache.set(route, fingerprint);
+  const key = cacheKey(route);
+  if (!key || !fingerprint) return;
+  fingerprintCache.set(key, fingerprint);
 }
 
 export function getLayoutFingerprint(route) {
-  if (!route) return null;
-  return fingerprintCache.get(route) || null;
+  const key = cacheKey(route);
+  if (!key) return null;
+  return fingerprintCache.get(key) || null;
 }
 
 export function clearLayoutFingerprint(route) {
-  if (!route) return;
-  fingerprintCache.delete(route);
+  const key = cacheKey(route);
+  if (!key) return;
+  fingerprintCache.delete(key);
+}
+
+// Wipe every cached fingerprint. Call this on viewport-bucket change or theme
+// change so the next loading frame re-captures at the new breakpoint rather
+// than replaying stale geometry.
+export function clearAllLayoutFingerprints() {
+  fingerprintCache.clear();
 }

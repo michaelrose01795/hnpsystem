@@ -221,8 +221,9 @@ const sectionCardStyle = {
   borderRadius: "var(--section-card-radius)",
 };
 
+// Shape now comes from `.app-badge .app-badge--control`; this helper only
+// supplies the dynamic tone colours. Consumers add the badge classes inline.
 const concernBadge = (color) => ({
-  ...vhcModalContentStyles.badge,
   backgroundColor: color.background,
   color: color.text,
   border: "none",
@@ -1235,7 +1236,7 @@ export default function WheelsTyresDetailsModal({
                     >
                       + Add Concern
                     </Button>
-                    <div style={concernBadge(statusColors.Amber)}>{(currentTyre.concerns ?? []).length} total</div>
+                    <div className="app-badge app-badge--control" style={concernBadge(statusColors.Amber)}>{(currentTyre.concerns ?? []).length} total</div>
                   </div>
                 </div>
 
@@ -1284,7 +1285,7 @@ export default function WheelsTyresDetailsModal({
                         }}
                       >
                         <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textPrimary }}>{concern.text}</span>
-                        <span style={concernBadge(statusColors[concern.status] || statusColors.Amber)}>
+                        <span className="app-badge app-badge--control" style={concernBadge(statusColors[concern.status] || statusColors.Amber)}>
                           {concern.status}
                         </span>
                       </div>

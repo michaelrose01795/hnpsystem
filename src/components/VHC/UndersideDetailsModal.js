@@ -239,7 +239,7 @@ export default function UndersideDetailsModal({
                   Tap to log underside observations or amend existing notes.
                 </span>
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <div style={summaryBadgeBase}>{loggedCount} logged</div>
+                  <div className="app-badge app-badge--control app-badge--accent-soft">{loggedCount} logged</div>
                 </div>
               </button>
             );

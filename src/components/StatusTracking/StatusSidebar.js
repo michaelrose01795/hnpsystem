@@ -485,19 +485,8 @@ export default function StatusSidebar({
                 e.stopPropagation();
                 onToggle();
               }}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                background: 'rgba(var(--surface-rgb), 0.2)',
-                border: '1px solid rgba(var(--surface-rgb), 0.35)',
-                borderRadius: 'var(--radius-pill)',
-                color: 'var(--text-inverse)',
-                fontWeight: '700',
-                fontSize: '14px',
-                padding: '4px 10px',
-                cursor: 'pointer'
-              }}
+              className="app-btn app-btn--xs app-btn--on-primary"
+              style={{ position: 'absolute', top: '16px', right: '16px' }}
             >
               Close
             </button>
@@ -526,32 +515,7 @@ export default function StatusSidebar({
                   inputClassName="status-sidebar__searchbar-input"
                   style={{ flex: 1 }}
                 />
-                <button
-                  type="submit"
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: 'var(--surface)',
-                    color: 'var(--accent-purple)',
-                    border: 'none',
-                    borderRadius: 'var(--radius-xs)',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--background)';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(var(--shadow-rgb),0.15)';
-                    e.currentTarget.style.zIndex = 'var(--hover-surface-z, 80)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--surface)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 6px rgba(var(--shadow-rgb),0.1)';
-                    e.currentTarget.style.zIndex = '0';
-                  }}
-                >
+                <button type="submit" className="app-btn app-btn--secondary app-btn--sm">
                   Search
                 </button>
               </div>
@@ -561,7 +525,6 @@ export default function StatusSidebar({
                     marginTop: '10px',
                     borderRadius: 'var(--radius-sm)',
                     backgroundColor: 'rgba(var(--surface-rgb), 0.14)',
-                    border: '1px solid rgba(var(--surface-rgb), 0.24)',
                     overflow: 'hidden',
                   }}
                 >
@@ -582,24 +545,7 @@ export default function StatusSidebar({
                           key={result.id || result.job_number}
                           type="button"
                           onClick={() => handleSelectSearchResult(result)}
-                          style={{
-                            padding: '11px 12px',
-                            background: 'transparent',
-                            border: 'none',
-                            borderTop: '1px solid rgba(var(--surface-rgb), 0.12)',
-                            color: 'var(--text-inverse)',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '4px',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(var(--surface-rgb), 0.12)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
+                          className="status-sidebar__search-result"
                         >
                           <span style={{ fontWeight: '700', fontSize: '13px' }}>
                             Job {result.job_number}
@@ -637,7 +583,6 @@ export default function StatusSidebar({
                   backgroundColor: 'rgba(var(--surface-rgb), 0.15)',
                   padding: '6px 10px',
                   borderRadius: 'var(--radius-xs)',
-                  border: '1px solid rgba(var(--surface-rgb), 0.3)'
                 }}>
                   {searchError}
                 </div>
@@ -664,23 +609,7 @@ export default function StatusSidebar({
                   </span>
                   <button
                     onClick={handleClearJob}
-                    style={{
-                      padding: '4px 10px',
-                      backgroundColor: 'rgba(var(--surface-rgb), 0.15)',
-                      color: 'var(--text-inverse)',
-                      border: '1px solid rgba(var(--surface-rgb), 0.3)',
-                      borderRadius: 'var(--radius-xs)',
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(var(--surface-rgb), 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(var(--surface-rgb), 0.2)';
-                    }}
+                    className="app-btn app-btn--xs app-btn--on-primary"
                   >
                     Clear Job
                   </button>

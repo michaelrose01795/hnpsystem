@@ -3,7 +3,44 @@ import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
 import { Button, StatusMessage } from "@/components/ui";
-import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
+import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+
+// Structured skeleton bodies that sit inside each SectionCard while payroll
+// data loads — outer page shell (header, section grids, card chrome) stays
+// mounted so the first frame matches the final layout.
+function TableRowsSkeleton({ rows = 5, cols = 4 }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <SkeletonTableRow key={i} cols={cols} />
+      ))}
+    </>
+  );
+}
+
+function ListRowsSkeleton({ rows = 3 }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-sm)",
+            padding: "var(--space-3)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-1)",
+          }}
+        >
+          <SkeletonBlock width="58%" height="14px" />
+          <SkeletonBlock width="70%" height="12px" />
+          <SkeletonBlock width="48%" height="12px" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function PayrollContent() {
   const { data, isLoading, error } = useHrOperationsData();
@@ -11,10 +48,6 @@ function PayrollContent() {
   const employeeDirectory = data?.employeeDirectory ?? [];
   const overtimeSummaries = data?.overtimeSummaries ?? [];
   const payRateHistory = data?.payRateHistory ?? [];
-
-  if (isLoading) {
-    return <HrTabLoadingSkeleton />;
-  }
 
   if (error) {
     return (
@@ -28,6 +61,7 @@ function PayrollContent() {
 
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+      <SkeletonKeyframes />
       <header style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
         <p style={{ color: "var(--text-secondary)", margin: 0 }}>
           Track compensation, pay rise approvals, overtime payments, and exports.
@@ -61,21 +95,25 @@ function PayrollContent() {
                 </tr>
               </thead>
               <tbody>
-                {employeeDirectory.map((employee) => (
-                  <tr key={employee.id}>
-                    <td>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{employee.name}</span>
-                        <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
-                          {employee.jobTitle}
-                        </span>
-                      </div>
-                    </td>
-                    <td>{employee.department}</td>
-                    <td>{employee.employmentType}</td>
-                    <td>£{Number(employee.hourlyRate).toFixed(2)} / hr</td>
-                  </tr>
-                ))}
+                {isLoading ? (
+                  <TableRowsSkeleton rows={6} cols={4} />
+                ) : (
+                  employeeDirectory.map((employee) => (
+                    <tr key={employee.id}>
+                      <td>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{employee.name}</span>
+                          <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                            {employee.jobTitle}
+                          </span>
+                        </div>
+                      </td>
+                      <td>{employee.department}</td>
+                      <td>{employee.employmentType}</td>
+                      <td>£{Number(employee.hourlyRate).toFixed(2)} / hr</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -116,15 +154,19 @@ function PayrollContent() {
                 </tr>
               </thead>
               <tbody>
-                {payRateHistory.map((entry) => (
-                  <tr key={entry.id}>
-                    <td style={{ fontWeight: 600 }}>{entry.employee}</td>
-                    <td>{new Date(entry.effectiveDate).toLocaleDateString()}</td>
-                    <td>£{Number(entry.rate).toFixed(2)}</td>
-                    <td>{entry.type}</td>
-                    <td>{entry.approvedBy}</td>
-                  </tr>
-                ))}
+                {isLoading ? (
+                  <TableRowsSkeleton rows={5} cols={5} />
+                ) : (
+                  payRateHistory.map((entry) => (
+                    <tr key={entry.id}>
+                      <td style={{ fontWeight: 600 }}>{entry.employee}</td>
+                      <td>{new Date(entry.effectiveDate).toLocaleDateString()}</td>
+                      <td>£{Number(entry.rate).toFixed(2)}</td>
+                      <td>{entry.type}</td>
+                      <td>{entry.approvedBy}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -139,44 +181,48 @@ function PayrollContent() {
             </Button>
           }
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            {overtimeSummaries.map((summary) => (
-              <div
-                key={summary.id}
-                style={{
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "var(--space-3)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-1)",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{summary.employee}</span>
-                  <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--text-secondary)" }}>
-                    {summary.status}
-                  </span>
-                </div>
-                <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
-                  Period {new Date(summary.periodStart).toLocaleDateString()} -{" "}
-                  {new Date(summary.periodEnd).toLocaleDateString()}
-                </span>
+          {isLoading ? (
+            <ListRowsSkeleton rows={4} />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {overtimeSummaries.map((summary) => (
                 <div
+                  key={summary.id}
                   style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-sm)",
+                    padding: "var(--space-3)",
                     display: "flex",
-                    gap: "var(--space-4)",
-                    fontSize: "var(--text-body-sm)",
-                    color: "var(--text-primary)",
+                    flexDirection: "column",
+                    gap: "var(--space-1)",
                   }}
                 >
-                  <span>{summary.overtimeHours} hrs</span>
-                  <span>Rate £{Number(summary.overtimeRate).toFixed(2)}</span>
-                  <span>Bonus £{Number(summary.bonus).toFixed(2)}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{summary.employee}</span>
+                    <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--text-secondary)" }}>
+                      {summary.status}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                    Period {new Date(summary.periodStart).toLocaleDateString()} -{" "}
+                    {new Date(summary.periodEnd).toLocaleDateString()}
+                  </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "var(--space-4)",
+                      fontSize: "var(--text-body-sm)",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    <span>{summary.overtimeHours} hrs</span>
+                    <span>Rate £{Number(summary.overtimeRate).toFixed(2)}</span>
+                    <span>Bonus £{Number(summary.bonus).toFixed(2)}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
       </section>
     </div>

@@ -97,7 +97,8 @@
       "Bash(echo \"eslint: $?\")",
       "Bash(node _reorder-showcase.js)",
       "Bash(bash /tmp/search_patterns.sh)",
-      "Bash(awk 'NR>=2663 && NR<=4543' /workspaces/hnpsystem/src/pages/job-cards/myjobs/\\\\[jobNumber\\\\].js)"
+      "Bash(awk 'NR>=2663 && NR<=4543' /workspaces/hnpsystem/src/pages/job-cards/myjobs/\\\\[jobNumber\\\\].js)",
+      "Bash(awk '/^\\\\s*<Button/,/>/' /workspaces/hnpsystem/src/pages/messages/index.js)"
     ],
     "deny": [],
     "ask": []

@@ -1,10 +1,14 @@
-have it so all dropdowns buttons follows the seconday button style theme, and even when not selected 
 
-4 updates to continue
+TODO
+Have it so the dropdown and everything else linked follows the style of the what the buttons look like when hover is active, make this change to the global setting so they all change. 
 
 
-laoding UPDATE CON
-Do all 4 teirs
+Remove "/job-cards/myjobs/00076 :: 1.2.2.1.1 (myjob-page-shell)" card and put all of the contents which as in that card into "/job-cards/myjobs/00076 :: 1.2.2.1 (app-layout-page-card)" section. 
+
+
+"/tech/efficiency :: 1.2.2.1.1 (tech-efficiency-page)" remove this card. 
+
+
 
 
 TODO

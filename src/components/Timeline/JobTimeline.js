@@ -71,7 +71,7 @@ export default function JobTimeline({ jobNumber }) {
 const styles = {
   container: {
     padding: "16px",
-    borderLeft: "3px solid var(--danger)",
+    boxShadow: "inset 3px 0 0 0 var(--danger)",
     backgroundColor: "var(--text-primary)",
     color: "var(--surface)",
     borderRadius: "var(--radius-xs)",
@@ -79,7 +79,6 @@ const styles = {
   },
   header: {
     marginBottom: "12px",
-    borderBottom: "1px solid var(--danger)",
     paddingBottom: "4px",
   },
   timeline: { listStyle: "none", padding: 0, margin: 0 },

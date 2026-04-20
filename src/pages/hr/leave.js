@@ -4,7 +4,44 @@ import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
 import { Button, StatusMessage } from "@/components/ui";
 import { StatusTag } from "@/components/HR/MetricCard";
-import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
+import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+
+// Structured skeleton body used inside each SectionCard while leave data loads.
+// Rendered in place of the table rows / list rows so the outer page shell —
+// header row, action buttons, section grid, card headings — stays mounted and
+// the user sees the final layout from the first frame.
+function TableRowsSkeleton({ rows = 5, cols = 5 }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <SkeletonTableRow key={i} cols={cols} />
+      ))}
+    </>
+  );
+}
+
+function ListRowsSkeleton({ rows = 3 }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-sm)",
+            padding: "var(--space-3)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-xs)",
+          }}
+        >
+          <SkeletonBlock width="58%" height="14px" />
+          <SkeletonBlock width="72%" height="12px" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function LeaveContent() {
   const { data, isLoading, error } = useHrOperationsData();
@@ -12,10 +49,6 @@ function LeaveContent() {
   const leaveRequests = data?.leaveRequests ?? [];
   const leaveBalances = data?.leaveBalances ?? [];
   const upcomingAbsences = data?.upcomingAbsences ?? [];
-
-  if (isLoading) {
-    return <HrTabLoadingSkeleton />;
-  }
 
   if (error) {
     return (
@@ -29,6 +62,7 @@ function LeaveContent() {
 
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+      <SkeletonKeyframes />
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)" }}>
         <p style={{ color: "var(--text-secondary)", margin: 0 }}>
           Approve leave requests, calculate balances, and track special leave programmes.
@@ -69,58 +103,66 @@ function LeaveContent() {
                 </tr>
               </thead>
               <tbody>
-                {leaveRequests.map((request) => (
-                  <tr key={request.id}>
-                    <td style={{ fontWeight: 600 }}>{request.employee}</td>
-                    <td>{request.type}</td>
-                    <td>
-                      {new Date(request.startDate).toLocaleDateString()} -{" "}
-                      {new Date(request.endDate).toLocaleDateString()}
-                    </td>
-                    <td>
-                      <StatusTag
-                        label={request.status}
-                        tone={
-                          request.status === "Approved"
-                            ? "success"
-                            : request.status === "Pending"
-                            ? "warning"
-                            : "default"
-                        }
-                      />
-                    </td>
-                    <td>{request.approver}</td>
-                  </tr>
-                ))}
+                {isLoading ? (
+                  <TableRowsSkeleton rows={5} cols={5} />
+                ) : (
+                  leaveRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td style={{ fontWeight: 600 }}>{request.employee}</td>
+                      <td>{request.type}</td>
+                      <td>
+                        {new Date(request.startDate).toLocaleDateString()} -{" "}
+                        {new Date(request.endDate).toLocaleDateString()}
+                      </td>
+                      <td>
+                        <StatusTag
+                          label={request.status}
+                          tone={
+                            request.status === "Approved"
+                              ? "success"
+                              : request.status === "Pending"
+                              ? "warning"
+                              : "default"
+                          }
+                        />
+                      </td>
+                      <td>{request.approver}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </SectionCard>
 
         <SectionCard title="Team Availability" subtitle="Upcoming leave by date range">
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-            {upcomingAbsences.map((absence) => (
-              <div
-                key={absence.id}
-                style={{
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "var(--space-3)",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--space-xs)",
-                }}
-              >
-                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                  {absence.employee} • {absence.department}
-                </span>
-                <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
-                  {absence.type} from {new Date(absence.startDate).toLocaleDateString()} to{" "}
-                  {new Date(absence.endDate).toLocaleDateString()}
-                </span>
-              </div>
-            ))}
-          </div>
+          {isLoading ? (
+            <ListRowsSkeleton rows={3} />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {upcomingAbsences.map((absence) => (
+                <div
+                  key={absence.id}
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-sm)",
+                    padding: "var(--space-3)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "var(--space-xs)",
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                    {absence.employee} • {absence.department}
+                  </span>
+                  <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                    {absence.type} from {new Date(absence.startDate).toLocaleDateString()} to{" "}
+                    {new Date(absence.endDate).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
       </section>
 
@@ -144,15 +186,19 @@ function LeaveContent() {
                 </tr>
               </thead>
               <tbody>
-                {leaveBalances.map((balance) => (
-                  <tr key={balance.employeeId}>
-                    <td style={{ fontWeight: 600 }}>{balance.employee}</td>
-                    <td>{balance.department}</td>
-                    <td>{balance.entitlement} days</td>
-                    <td>{balance.taken} days</td>
-                    <td>{balance.remaining} days</td>
-                  </tr>
-                ))}
+                {isLoading ? (
+                  <TableRowsSkeleton rows={5} cols={5} />
+                ) : (
+                  leaveBalances.map((balance) => (
+                    <tr key={balance.employeeId}>
+                      <td style={{ fontWeight: 600 }}>{balance.employee}</td>
+                      <td>{balance.department}</td>
+                      <td>{balance.entitlement} days</td>
+                      <td>{balance.taken} days</td>
+                      <td>{balance.remaining} days</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

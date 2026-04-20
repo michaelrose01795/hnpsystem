@@ -6,16 +6,25 @@ import { Button, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { StatusTag } from "@/components/HR/MetricCard";
 import { CalendarField } from "@/components/ui/calendarAPI";
-import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
+import { SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+
+// Skeleton rows shown inside the Upcoming Expiries table while training data
+// loads. Keeps the outer page shell + header + assign-training form mounted so
+// the first visible frame matches the final layout.
+function TableRowsSkeleton({ rows = 5, cols = 4 }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <SkeletonTableRow key={i} cols={cols} />
+      ))}
+    </>
+  );
+}
 
 function TrainingContent() {
   const { data, isLoading, error } = useHrOperationsData();
   const trainingRenewals = data?.trainingRenewals ?? [];
   const employeeDirectory = data?.employeeDirectory ?? [];
-
-  if (isLoading) {
-    return <HrTabLoadingSkeleton />;
-  }
 
   if (error) {
     return (
@@ -34,6 +43,7 @@ function TrainingContent() {
 
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+      <SkeletonKeyframes />
       <header>
         <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-1)" }}>
           Monitor mandatory training, certificate uploads, and renewal reminders.
@@ -67,20 +77,24 @@ function TrainingContent() {
                 </tr>
               </thead>
               <tbody>
-                {trainingRenewals.map((record) => {
-                  const tone =
-                    record.status === "Overdue" ? "danger" : record.status === "Due Soon" ? "warning" : "default";
-                  return (
-                    <tr key={record.id}>
-                      <td style={{ fontWeight: 600 }}>{record.course}</td>
-                      <td>{record.employee}</td>
-                      <td>{new Date(record.dueDate).toLocaleDateString()}</td>
-                      <td>
-                        <StatusTag label={record.status} tone={tone} />
-                      </td>
-                    </tr>
-                  );
-                })}
+                {isLoading ? (
+                  <TableRowsSkeleton rows={5} cols={4} />
+                ) : (
+                  trainingRenewals.map((record) => {
+                    const tone =
+                      record.status === "Overdue" ? "danger" : record.status === "Due Soon" ? "warning" : "default";
+                    return (
+                      <tr key={record.id}>
+                        <td style={{ fontWeight: 600 }}>{record.course}</td>
+                        <td>{record.employee}</td>
+                        <td>{new Date(record.dueDate).toLocaleDateString()}</td>
+                        <td>
+                          <StatusTag label={record.status} tone={tone} />
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

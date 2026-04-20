@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SectionShell, StatCard } from "@/components/ui";
-import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
+import { PageContentSkeleton, InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
@@ -239,7 +239,7 @@ export default function TechsDashboard() {
           parentKey="app-layout-page-card"
           style={centeredStateStyle}
         >
-          <p style={{ color: "var(--text-secondary)", margin: 0 }}>Loading roster...</p>
+          <InlineLoading width={180} label="Loading roster" />
         </SectionShell>
       </>
     );

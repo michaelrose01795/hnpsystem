@@ -151,7 +151,6 @@ const ComposeToggleButton = ({ active, children, onClick }) => (
     type="button"
     variant={active ? "primary" : "secondary"}
     onClick={onClick}
-    style={{ flex: 1 }}
   >
     {children}
   </Button>
@@ -2267,11 +2266,9 @@ function MessagesPage() {
 
   if (!user) {
     return (
-      <>
-        <div style={{ padding: "40px", textAlign: "center" }}>
-          <h2>Please log in to access internal messages.</h2>
-        </div>
-      </>
+      <div style={{ padding: "var(--space-2xl)", textAlign: "center" }}>
+        <h2>Please log in to access internal messages.</h2>
+      </div>
     );
   }
 
@@ -2316,105 +2313,89 @@ function MessagesPage() {
                   }
                   action={
                     threadSelectionMode ? (
-                      <div style={{ display: "flex", gap: "8px" }}>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        size="sm"
-                        pill
-                        onClick={handleDeleteSelectedThreads}
-                        disabled={threadDeleteBusy || !selectedThreadIds.length}
-                      >
-                        {threadDeleteBusy ? "Deleting..." : "Delete"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        pill
-                        onClick={handleCloseSelectionMode}
-                      >
-                        Close
-                      </Button>
+                      <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          pill
+                          onClick={handleDeleteSelectedThreads}
+                          disabled={threadDeleteBusy || !selectedThreadIds.length}
+                        >
+                          {threadDeleteBusy ? "Deleting..." : "Delete"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          pill
+                          onClick={handleCloseSelectionMode}
+                        >
+                          Close
+                        </Button>
                       </div>
                     ) : (
                       <div
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: "8px",
-                          paddingTop: "4px",
-                          paddingBottom: "2px",
-                          position: "relative",
-                          overflow: "visible",
-                          zIndex: 2,
+                          gap: "var(--space-sm)",
                         }}
                       >
-                      <Button
-                        type="button"
-                        variant={activeSystemView ? "primary" : "secondary"}
-                        size="sm"
-                        pill
-                        onClick={openSystemNotificationsThread}
-                      >
-                        System
-                        {hasSystemUnread && (
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: "var(--radius-full)",
-                              backgroundColor: palette.accent,
-                              display: "inline-block",
-                            }}
-                          />
-                        )}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        pill
-                        onClick={() => {
-                          if (!visibleThreads.length) return;
-                          setThreadSelectionMode(true);
-                          setSelectedThreadIds([]);
-                        }}
-                        disabled={!visibleThreads.length}
-                      >
-                        Select
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="primary"
-                        pill
-                        onClick={handleOpenNewChatModal}
-                        aria-label="Start new chat"
-                        style={{
-                          width: 42,
-                          height: 42,
-                          minWidth: 42,
-                          minHeight: 42,
-                          padding: 0,
-                          flex: "0 0 42px",
-                          fontSize: "var(--text-h2)",
-                          fontWeight: 700,
-                          lineHeight: 1,
-                        }}
-                      >
-                        +
-                      </Button>
+                        <Button
+                          type="button"
+                          variant={activeSystemView ? "primary" : "secondary"}
+                          size="sm"
+                          pill
+                          onClick={openSystemNotificationsThread}
+                        >
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)" }}>
+                            System
+                            {hasSystemUnread && (
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  width: "var(--space-sm)",
+                                  height: "var(--space-sm)",
+                                  borderRadius: "var(--radius-full)",
+                                  backgroundColor: "var(--accentMain)",
+                                  display: "inline-block",
+                                }}
+                              />
+                            )}
+                          </span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          pill
+                          onClick={() => {
+                            if (!visibleThreads.length) return;
+                            setThreadSelectionMode(true);
+                            setSelectedThreadIds([]);
+                          }}
+                          disabled={!visibleThreads.length}
+                        >
+                          Select
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          pill
+                          onClick={handleOpenNewChatModal}
+                          aria-label="Start new chat"
+                        >
+                          +
+                        </Button>
                       </div>
                     )
                   }
                 />
               </DevLayoutSection>
 
-              {threadDeleteError && (
-                <p style={{ color: "var(--danger)", margin: "4px 0 0", fontSize: "var(--text-label)" }}>
-                  {threadDeleteError}
-                </p>
-              )}
+              {threadDeleteError && <StatusMessage tone="danger">{threadDeleteError}</StatusMessage>}
 
               <DevLayoutSection sectionKey="messages-thread-search" parentKey="messages-threads-card" sectionType="filter-row">
                 <SearchBar
@@ -2612,25 +2593,16 @@ function MessagesPage() {
           }}>
             {/* Mobile back button — iPhone-style navigation */}
             {isMobileView && mobilePanelView === "conversation" && (
-              <button
-                type="button"
-                onClick={() => handleMobileBack(false)} // false = not from popstate, will call history.back
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 0",
-                  border: "none",
-                  background: "transparent",
-                  color: palette.accent,
-                  fontWeight: 600,
-                  fontSize: "var(--text-body)",
-                  cursor: "pointer",
-                  marginBottom: "4px",
-                }}
-              >
-                <span style={{ fontSize: "var(--text-h4)", lineHeight: 1 }}>←</span> Back
-              </button>
+              <div style={{ display: "flex", marginBottom: "var(--space-xs)" }}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleMobileBack(false)}
+                >
+                  ← Back
+                </Button>
+              </div>
             )}
             {activeSystemView ? (
               <>
@@ -2687,7 +2659,7 @@ function MessagesPage() {
                 >
                   {systemLoading && <ThreadRowsSkeleton count={3} />}
                   {!systemLoading && systemError && (
-                    <p style={{ color: "var(--danger)", margin: 0 }}>{systemError}</p>
+                    <StatusMessage tone="danger">{systemError}</StatusMessage>
                   )}
                   {!systemLoading && !systemError && orderedSystemNotifications.length === 0 && (
                     <p style={{ color: palette.textMuted, margin: 0 }}>No system notifications yet.</p>
@@ -2778,26 +2750,20 @@ function MessagesPage() {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: "12px",
+                        gap: "var(--space-3)",
                         flexWrap: "wrap",
                         justifyContent: "flex-end",
                       }}
                     >
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
+                        pill
                         onClick={openGroupEditModal}
-                        style={{
-                          borderRadius: radii.pill,
-                          padding: "8px 16px",
-                          border: `1px solid ${palette.border}`,
-                          backgroundColor: "var(--surface)",
-                          color: palette.accent,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
                       >
                         Edit
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </DevLayoutSection>
@@ -2965,16 +2931,25 @@ function MessagesPage() {
                       }}
                     >
                       {commandSuggestions.map((cmd, index) => (
-                        <button
+                        <div
                           key={index}
-                          type="button"
+                          role="button"
+                          tabIndex={0}
                           onClick={() => handleSelectCommand(cmd)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              handleSelectCommand(cmd);
+                            }
+                          }}
                           style={{
                             width: "100%",
                             textAlign: "left",
-                            padding: "12px 14px",
-                            border: "none",
-                            borderBottom: index < commandSuggestions.length - 1 ? `1px solid ${palette.border}` : "none",
+                            padding: "var(--space-3) var(--space-4)",
+                            borderBottom:
+                              index < commandSuggestions.length - 1
+                                ? `1px solid ${palette.border}`
+                                : "none",
                             backgroundColor: "var(--surface)",
                             cursor: "pointer",
                             transition: "background-color 0.15s",
@@ -2986,7 +2961,7 @@ function MessagesPage() {
                             e.currentTarget.style.backgroundColor = "var(--surface)";
                           }}
                         >
-                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
                             <span style={{ fontWeight: 700, color: palette.accent, fontSize: "var(--text-body)" }}>
                               {cmd.command}
                             </span>
@@ -2994,7 +2969,7 @@ function MessagesPage() {
                               {cmd.description}
                             </span>
                           </div>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -3034,21 +3009,16 @@ function MessagesPage() {
                           {String(replyTo.content || "").slice(0, 140)}
                         </div>
                       </div>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="xs"
+                        pill
                         onClick={() => setReplyTo(null)}
                         aria-label="Cancel reply"
-                        style={{
-                          border: "none",
-                          background: "transparent",
-                          color: palette.textMuted,
-                          cursor: "pointer",
-                          fontSize: "1rem",
-                          padding: "0 4px",
-                        }}
                       >
                         ×
-                      </button>
+                      </Button>
                     </div>
                   )}
                   <textarea
@@ -3067,23 +3037,22 @@ function MessagesPage() {
                       backgroundColor: "var(--surface)",
                     }}
                   />
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "var(--space-3)",
+                    }}
+                  >
                     <Button
                       type="button"
                       variant="secondary"
+                      size="sm"
                       pill
                       onClick={() => setCommandHelpOpen(true)}
                       title="Slash command help"
                       aria-label="Slash command help"
-                      style={{
-                        width: "32px",
-                        height: "32px",
-                        minWidth: "32px",
-                        minHeight: "32px",
-                        padding: 0,
-                        fontWeight: 700,
-                        fontSize: "var(--text-h4)",
-                      }}
                     >
                       ?
                     </Button>
@@ -3097,9 +3066,7 @@ function MessagesPage() {
                     </Button>
                   </div>
                   {conversationError && (
-                    <p style={{ color: "var(--danger)", margin: 0, fontSize: "var(--text-body-sm)" }}>
-                      {conversationError}
-                    </p>
+                    <StatusMessage tone="danger">{conversationError}</StatusMessage>
                   )}
                 </DevLayoutSection>
               </>
@@ -3131,7 +3098,7 @@ function MessagesPage() {
             style={{
               position: "fixed",
               inset: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.45)",
+              backgroundColor: "var(--overlay)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -3160,6 +3127,7 @@ function MessagesPage() {
               </div>
 
               <textarea
+                className="app-input"
                 rows={4}
                 value={leaveDeclineReason}
                 onChange={(event) => {
@@ -3167,59 +3135,37 @@ function MessagesPage() {
                   setLeaveDecisionError("");
                 }}
                 placeholder="Enter the reason for declining this request..."
-                style={{
-                  width: "100%",
-                  borderRadius: radii.lg,
-                  border: `1px solid ${palette.border}`,
-                  padding: "12px 14px",
-                  resize: "vertical",
-                  backgroundColor: "var(--surface)",
-                }}
+                style={{ width: "100%", resize: "vertical" }}
               />
 
               {leaveDecisionError ? (
-                <p style={{ margin: 0, color: "var(--danger)", fontSize: "var(--text-body-sm)" }}>
-                  {leaveDecisionError}
-                </p>
+                <StatusMessage tone="danger">{leaveDecisionError}</StatusMessage>
               ) : null}
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                <button
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+                <Button
                   type="button"
+                  variant="secondary"
+                  pill
+                  disabled={leaveDecisionBusy}
                   onClick={() => {
                     if (leaveDecisionBusy) return;
                     setLeaveDeclineModal({ open: false, message: null });
                     setLeaveDeclineReason("");
                     setLeaveDecisionError("");
                   }}
-                  style={{
-                    borderRadius: radii.pill,
-                    padding: "10px 16px",
-                    border: `1px solid ${palette.border}`,
-                    backgroundColor: "var(--surface)",
-                    color: palette.textPrimary,
-                    fontWeight: 600,
-                    cursor: leaveDecisionBusy ? "not-allowed" : "pointer",
-                  }}
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="danger"
+                  pill
                   disabled={leaveDecisionBusy}
                   onClick={handleConfirmDeclineLeaveRequest}
-                  style={{
-                    borderRadius: radii.pill,
-                    padding: "10px 16px",
-                    border: "none",
-                    backgroundColor: leaveDecisionBusy ? "var(--info-surface)" : "var(--danger)",
-                    color: "var(--surface)",
-                    fontWeight: 700,
-                    cursor: leaveDecisionBusy ? "not-allowed" : "pointer",
-                  }}
                 >
                   {leaveDecisionBusy ? "Declining..." : "Decline request"}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -3232,7 +3178,7 @@ function MessagesPage() {
             style={{
               position: "fixed",
               inset: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.45)",
+              backgroundColor: "var(--overlay)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -3262,22 +3208,13 @@ function MessagesPage() {
               </p>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{ fontSize: "var(--text-body-sm)", color: palette.textMuted }}>Group name</label>
-              <input
-                type="text"
-                value={groupEditTitle}
-                onChange={(event) => setGroupEditTitle(event.target.value)}
-                placeholder="Group name"
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  borderRadius: radii.lg,
-                  border: `1px solid ${palette.border}`,
-                  backgroundColor: "var(--surface)",
-                }}
-              />
-            </div>
+            <InputField
+              label="Group name"
+              type="text"
+              value={groupEditTitle}
+              onChange={(event) => setGroupEditTitle(event.target.value)}
+              placeholder="Group name"
+            />
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
               <strong style={{ fontSize: "var(--text-body-sm)", color: palette.textMuted }}>
@@ -3323,22 +3260,16 @@ function MessagesPage() {
                         </span>
                       </div>
                       {canRemoveMember && (
-                        <button
+                        <Button
                           type="button"
+                          variant="danger"
+                          size="sm"
+                          pill
                           onClick={() => handleRemoveMemberFromGroup(member.userId)}
                           disabled={groupManageBusy}
-                          style={{
-                            borderRadius: radii.pill,
-                            padding: "6px 14px",
-                            border: "none",
-                            backgroundColor: groupManageBusy ? "var(--info-surface)" : "var(--danger)",
-                            color: "var(--surface)",
-                            fontWeight: 600,
-                            cursor: groupManageBusy ? "not-allowed" : "pointer",
-                          }}
                         >
                           Remove
-                        </button>
+                        </Button>
                       )}
                     </div>
                   );
@@ -3414,22 +3345,16 @@ function MessagesPage() {
                             {entry.role || "Team member"}
                           </p>
                         </div>
-                        <button
+                        <Button
                           type="button"
+                          variant="primary"
+                          size="sm"
+                          pill
                           disabled={groupManageBusy}
                           onClick={() => handleAddMemberToGroup(entry.id)}
-                          style={{
-                            border: "none",
-                            borderRadius: radii.pill,
-                            padding: "8px 14px",
-                            backgroundColor: groupManageBusy ? "var(--info-surface)" : palette.accent,
-                            color: groupManageBusy ? "var(--info)" : "var(--surface)",
-                            fontWeight: 600,
-                            cursor: groupManageBusy ? "not-allowed" : "pointer",
-                          }}
                         >
                           Add
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -3442,49 +3367,26 @@ function MessagesPage() {
                     </p>
                   )}
                 {groupManageError && (
-                  <p style={{ margin: 0, fontSize: "var(--text-label)", color: "var(--danger)" }}>
-                    {groupManageError}
-                  </p>
+                  <StatusMessage tone="danger">{groupManageError}</StatusMessage>
                 )}
               </div>
             )}
 
-            {groupEditError && (
-              <p style={{ color: "var(--danger)", margin: 0, fontSize: "var(--text-body-sm)" }}>{groupEditError}</p>
-            )}
+            {groupEditError && <StatusMessage tone="danger">{groupEditError}</StatusMessage>}
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-              <button
-                type="button"
-                onClick={closeGroupEditModal}
-                style={{
-                  borderRadius: radii.pill,
-                  padding: "10px 16px",
-                  border: `1px solid ${palette.border}`,
-                  backgroundColor: "var(--surface)",
-                  color: palette.textMuted,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+              <Button type="button" variant="secondary" pill onClick={closeGroupEditModal}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
+                pill
                 onClick={handleSaveGroupDetails}
                 disabled={groupEditBusy}
-                style={{
-                  borderRadius: radii.pill,
-                  padding: "10px 18px",
-                  border: "none",
-                  backgroundColor: groupEditBusy ? "var(--info-surface)" : palette.accent,
-                  color: groupEditBusy ? "var(--info)" : "var(--surface)",
-                  fontWeight: 600,
-                  cursor: groupEditBusy ? "not-allowed" : "pointer",
-                }}
               >
                 {groupEditBusy ? "Saving…" : "Save changes"}
-              </button>
+              </Button>
             </div>
             </div>
           </div>
@@ -3510,7 +3412,7 @@ function MessagesPage() {
                   <h3 style={{ margin: 0, color: systemTitleColor }}>Start New Chat</h3>
                 </div>
 
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)" }}>
               <ComposeToggleButton
                 active={composeMode === "direct"}
                 onClick={() => {
@@ -3562,16 +3464,23 @@ function MessagesPage() {
                   {directory.map((entry) => {
                     const selected = isRecipientSelected(entry);
                     return (
-                      <button
+                      <div
                         key={entry.id}
                         className="chat-user-option"
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => handleDirectoryUser(entry)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            handleDirectoryUser(entry);
+                          }
+                        }}
                         style={{
                           textAlign: "left",
                           borderRadius: "var(--radius-md)",
                           border: `1px solid ${selected ? palette.accent : palette.border}`,
-                          padding: "12px 14px",
+                          padding: "var(--space-3) var(--space-4)",
                           backgroundColor: selected ? palette.accentSurface : "var(--surface)",
                           cursor: "pointer",
                         }}
@@ -3581,7 +3490,7 @@ function MessagesPage() {
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            gap: "12px",
+                            gap: "var(--space-3)",
                           }}
                         >
                           <span
@@ -3597,7 +3506,7 @@ function MessagesPage() {
                             {entry.role || "Team member"}
                           </span>
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </>
@@ -3636,60 +3545,30 @@ function MessagesPage() {
               </div>
 
               {composeMode === "group" && (
-                <input
+                <InputField
                   type="text"
                   placeholder="Group name (optional)"
                   value={groupName}
                   onChange={(event) => setGroupName(event.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "12px 14px",
-                    borderRadius: radii.lg,
-                    border: `1px solid ${palette.border}`,
-                    backgroundColor: "var(--surface)",
-                  }}
                 />
               )}
             </div>
 
-            {composeError && (
-              <p style={{ color: "var(--danger)", margin: 0, fontSize: "var(--text-body-sm)" }}>
-                {composeError}
-              </p>
-            )}
+            {composeError && <StatusMessage tone="danger">{composeError}</StatusMessage>}
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-              <button
-                type="button"
-                onClick={closeNewChatModal}
-                style={{
-                  borderRadius: radii.pill,
-                  padding: "10px 16px",
-                  border: `1px solid ${palette.border}`,
-                  backgroundColor: "var(--surface)",
-                  color: palette.textMuted,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-              >
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
+              <Button type="button" variant="secondary" pill onClick={closeNewChatModal}>
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
+                pill
                 onClick={handleStartChat}
                 disabled={!canInitiateChat}
-                style={{
-                  borderRadius: radii.pill,
-                  padding: "10px 18px",
-                  border: "none",
-                  backgroundColor: canInitiateChat ? palette.accent : "var(--info-surface)",
-                  color: canInitiateChat ? "var(--surface)" : "var(--info)",
-                  fontWeight: 600,
-                  cursor: canInitiateChat ? "pointer" : "not-allowed",
-                }}
               >
                 Start Chat
-              </button>
+              </Button>
             </div>
               </div>
             </div>
@@ -3705,7 +3584,7 @@ function MessagesPage() {
             style={{
               position: "fixed",
               inset: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              backgroundColor: "var(--overlay)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -3725,20 +3604,15 @@ function MessagesPage() {
             >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ margin: 0, color: palette.textPrimary }}>Slash Commands Help</h3>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                pill
                 onClick={() => setCommandHelpOpen(false)}
-                style={{
-                  border: "none",
-                  background: "none",
-                  fontSize: "var(--text-h1)",
-                  cursor: "pointer",
-                  color: palette.textMuted,
-                  padding: "4px",
-                }}
+                aria-label="Close"
               >
                 ×
-              </button>
+              </Button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -3872,7 +3746,7 @@ function MessagesPage() {
             style={{
               position: "fixed",
               inset: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.6)",
+              backgroundColor: "var(--overlay)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -3894,20 +3768,15 @@ function MessagesPage() {
               <h3 style={{ margin: 0, color: palette.textPrimary }}>
                 {activeThread.title || "Group Chat"}
               </h3>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                pill
                 onClick={() => setGroupMembersModalOpen(false)}
-                style={{
-                  border: "none",
-                  background: "none",
-                  fontSize: "var(--text-h1)",
-                  cursor: "pointer",
-                  color: palette.textMuted,
-                  padding: "4px",
-                }}
+                aria-label="Close"
               >
                 ×
-              </button>
+              </Button>
             </div>
 
             <div>

@@ -17,6 +17,11 @@ import { deriveJobTypeDisplay } from "@/lib/jobType/display";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { prefetchJob } from "@/lib/swr/prefetch";
+import {
+  InlineLoading,
+  SkeletonBlock,
+  SkeletonKeyframes,
+} from "@/components/ui/LoadingSkeleton";
 
 const STATUS_BADGE_STYLES = {
   Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
@@ -529,11 +534,9 @@ export default function MyJobsPage() {
 
   if (rosterLoading) {
     return (
-      <>
-        <div style={{ padding: "40px", textAlign: "center", color: "var(--info)" }}>
-          Loading roster…
-        </div>
-      </>
+      <div style={{ padding: "40px", display: "flex", justifyContent: "center" }}>
+        <InlineLoading width={180} label="Loading roster" />
+      </div>
     );
   }
 
@@ -569,12 +572,26 @@ export default function MyJobsPage() {
     );
   }
 
-  if (loading) {
-    return null;
-  }
+  // NOTE: we intentionally do NOT early-return while `loading` is true.
+  // Returning null leaves the page-card empty once the global overlay fades, so
+  // the user sees a blank surface before real content arrives. Instead we render
+  // the real shell always — header, filter toolbar (interactive during load),
+  // results shell, summary grid — and swap the row contents + summary totals
+  // for shaped skeleton placeholders. Result: the first visible frame already
+  // matches the final layout, with zero layout jump when data arrives.
+  const SKELETON_ROW_COUNT = 6;
+  const rowSkeletonCells = [
+    { width: "90px" }, // status badge
+    { width: "70px" }, // job number
+    { width: "60px" }, // reg
+    { width: "120px" }, // customer
+    { width: "140px" }, // make/model
+    { width: "60px" }, // type
+  ];
 
   return (
     <>
+      {loading && <SkeletonKeyframes />}
       <DevLayoutSection
         sectionKey="myjobs-page-shell"
         sectionType="page-shell"
@@ -697,7 +714,86 @@ export default function MyJobsPage() {
             minHeight: 0
           }}
         >
-          {filteredJobs.length === 0 ? (
+          {loading ? (
+            <div
+              data-dev-section="1"
+              data-dev-section-key="myjobs-results-scroll"
+              data-dev-section-type="content-card"
+              data-dev-section-parent="myjobs-results-shell"
+              role="status"
+              aria-live="polite"
+              aria-label="Loading jobs"
+              style={{
+                flex: 1,
+                overflowY: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                paddingRight: "8px",
+                minHeight: 0,
+              }}
+            >
+              {/* Header strip — identical to the real header so the column
+                  rhythm matches when real data arrives. */}
+              <div
+                className="myjobs-header"
+                data-dev-section="1"
+                data-dev-section-key="myjobs-results-header"
+                data-dev-section-type="table-headings"
+                data-dev-section-parent="myjobs-results-scroll"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  padding: "8px 16px",
+                  borderRadius: "var(--radius-sm)",
+                  backgroundColor: "var(--accent-surface-hover)",
+                  border: "none",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  color: "var(--primary-dark)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                <div style={{ minWidth: "110px", textAlign: "center" }}>Status</div>
+                <div style={{ minWidth: "90px" }}>Job</div>
+                <div style={{ minWidth: "80px" }}>Reg</div>
+                <div style={{ minWidth: "140px", flex: "0 0 auto" }}>Customer</div>
+                <div style={{ minWidth: "160px", flex: "1 1 auto" }}>Make/Model</div>
+                <div style={{ minWidth: "80px" }}>Type</div>
+              </div>
+              {Array.from({ length: SKELETON_ROW_COUNT }).map((_, rowIndex) => (
+                <div
+                  key={`myjobs-skeleton-${rowIndex}`}
+                  className="myjobs-row"
+                  data-dev-section="1"
+                  data-dev-section-key={`myjobs-row-skeleton-${rowIndex}`}
+                  data-dev-section-type="content-card"
+                  data-dev-section-parent="myjobs-results-scroll"
+                  style={{
+                    border: "none",
+                    padding: "12px 16px",
+                    borderRadius: "var(--radius-sm)",
+                    backgroundColor: "var(--surface)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}
+                >
+                  {/* Status badge skeleton — matches the pill shape + min-width */}
+                  <SkeletonBlock width="110px" height="24px" borderRadius="var(--radius-xs)" />
+                  <SkeletonBlock width={rowSkeletonCells[1].width} height="16px" />
+                  <SkeletonBlock width={rowSkeletonCells[2].width} height="14px" />
+                  <SkeletonBlock width={rowSkeletonCells[3].width} height="14px" />
+                  <div style={{ flex: "1 1 auto", minWidth: "160px" }}>
+                    <SkeletonBlock width={rowSkeletonCells[4].width} height="14px" />
+                  </div>
+                  <SkeletonBlock width={rowSkeletonCells[5].width} height="12px" />
+                </div>
+              ))}
+            </div>
+          ) : filteredJobs.length === 0 ? (
             <div
               data-dev-section="1"
               data-dev-section-key="myjobs-empty-state"
@@ -962,41 +1058,57 @@ export default function MyJobsPage() {
             }}
           >
             <div data-dev-section="1" data-dev-section-key="myjobs-summary-total" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px" }}>
-                {myJobs.length}
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--primary)", marginBottom: "4px", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "34px" }}>
+                {loading ? (
+                  <SkeletonBlock width="48px" height="28px" borderRadius="8px" />
+                ) : (
+                  myJobs.length
+                )}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Total Jobs</div>
             </div>
             <div data-dev-section="1" data-dev-section-key="myjobs-summary-in-progress" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
-                {myJobs.filter(
-                  (j) =>
-                    getTechStatusCategory(
-                      resolveTechStatusLabel(j, { isClockedOn: activeJobIds.has(j.id) })
-                    ) === "in-progress"
-                ).length}
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "34px" }}>
+                {loading ? (
+                  <SkeletonBlock width="48px" height="28px" borderRadius="8px" />
+                ) : (
+                  myJobs.filter(
+                    (j) =>
+                      getTechStatusCategory(
+                        resolveTechStatusLabel(j, { isClockedOn: activeJobIds.has(j.id) })
+                      ) === "in-progress"
+                  ).length
+                )}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>In Progress</div>
             </div>
             <div data-dev-section="1" data-dev-section-key="myjobs-summary-waiting" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px" }}>
-                {myJobs.filter(
-                  (j) =>
-                    getTechStatusCategory(
-                      resolveTechStatusLabel(j, { isClockedOn: activeJobIds.has(j.id) })
-                    ) === "pending"
-                ).length}
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--danger)", marginBottom: "4px", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "34px" }}>
+                {loading ? (
+                  <SkeletonBlock width="48px" height="28px" borderRadius="8px" />
+                ) : (
+                  myJobs.filter(
+                    (j) =>
+                      getTechStatusCategory(
+                        resolveTechStatusLabel(j, { isClockedOn: activeJobIds.has(j.id) })
+                      ) === "pending"
+                  ).length
+                )}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Waiting</div>
             </div>
             <div data-dev-section="1" data-dev-section-key="myjobs-summary-complete" data-dev-section-type="stat-card" data-dev-section-parent="myjobs-summary-grid">
-              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px" }}>
-                {myJobs.filter(
-                  (j) =>
-                    getTechStatusCategory(
-                      resolveTechStatusLabel(j, { isClockedOn: activeJobIds.has(j.id) })
-                    ) === "complete"
-                ).length}
+              <div style={{ fontSize: "28px", fontWeight: "700", color: "var(--info)", marginBottom: "4px", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "34px" }}>
+                {loading ? (
+                  <SkeletonBlock width="48px" height="28px" borderRadius="8px" />
+                ) : (
+                  myJobs.filter(
+                    (j) =>
+                      getTechStatusCategory(
+                        resolveTechStatusLabel(j, { isClockedOn: activeJobIds.has(j.id) })
+                      ) === "complete"
+                  ).length
+                )}
               </div>
               <div style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Completed</div>
             </div>

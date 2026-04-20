@@ -483,23 +483,9 @@
   padding: 16px;
 }
 
-.skeleton { /* // skeleton loader container */
-  display: grid; /* // grid layout */
-  gap: 12px; /* // spacing */
-} /* // end skeleton */
-
-.skeletonRow { /* // skeleton shimmer row */
-  height: 16px; /* // row height */
-  background: rgba(255,255,255,0.24); /* // static fill replaces gradient */
-  animation: shimmer 1.4s infinite; /* // animate shimmer */
-  border-radius: var(--radius-pill); /* // pill shape */
-} /* // end skeletonRow */
-
-@keyframes shimmer { /* // shimmer animation keyframes */
-  0% { transform: translateX(-50%); } /* // start outside left */
-  50% { transform: translateX(0%); } /* // center */
-  100% { transform: translateX(50%); } /* // exit right */
-} /* // end shimmer */
+/* .skeleton / .skeletonRow / @keyframes shimmer removed — dead code.
+   Use <SkeletonBlock>, <SectionSkeleton>, or <InlineLoading> from
+   @/components/ui/LoadingSkeleton for any loading UI in invoice views. */
 
 @media (max-width: 640px) { /* // responsive tweaks for small screens */
   .invoiceShell { padding: 16px; } /* // reduce padding */

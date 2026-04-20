@@ -4,6 +4,11 @@ import PartsOpsDashboard from "@/components/dashboards/PartsOpsDashboard";
 import { supabaseClient } from "@/lib/database/supabaseClient";
 import { summarizePartsPipeline } from "@/lib/parts/pipeline";
 import DeliverySchedulerModal from "@/components/Parts/DeliverySchedulerModal";
+import {
+  SkeletonBlock,
+  SkeletonKeyframes,
+  SkeletonMetricCard,
+} from "@/components/ui/LoadingSkeleton";
 
 const containerStyle = {
   padding: "0 24px 48px",
@@ -389,8 +394,63 @@ export default function PartsManagerDashboard() {
   return (
     <>
       {loading ? (
-        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
-          Loading parts manager dashboard…
+        <div
+          role="status"
+          aria-live="polite"
+          aria-label="Loading parts manager dashboard"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+            padding: "8px 0",
+          }}
+        >
+          <SkeletonKeyframes />
+          {/* Title strip — mirrors PartsOpsDashboard's header */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <SkeletonBlock width="240px" height="22px" />
+            <SkeletonBlock width="420px" height="12px" />
+          </div>
+          {/* Metric cards row */}
+          <div
+            style={{
+              display: "grid",
+              gap: "12px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            }}
+          >
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonMetricCard key={i} />
+            ))}
+          </div>
+          {/* Main content grid */}
+          <div
+            style={{
+              display: "grid",
+              gap: "16px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            }}
+          >
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--accent-base)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "18px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  minHeight: "220px",
+                }}
+              >
+                <SkeletonBlock width="52%" height="16px" />
+                <SkeletonBlock width="100%" height="140px" borderRadius="12px" />
+                <SkeletonBlock width="68%" height="12px" />
+              </div>
+            ))}
+          </div>
         </div>
       ) : error ? (
         <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>{error}</div>

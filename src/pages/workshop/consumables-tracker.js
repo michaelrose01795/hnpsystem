@@ -11,6 +11,7 @@ import { useTheme } from "@/styles/themeProvider";
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 
 const containerStyle = {
   flex: 1,
@@ -1356,9 +1357,11 @@ function ConsumablesTrackerPage() {
                         Budget for {monthLabel}
                       </p>
                       <strong style={{ fontSize: "1.4rem", color: "var(--text-primary)" }}>
-                        {financialLoading
-                          ? "Loading…"
-                          : formatCurrency(totals.monthlyBudget)}
+                        {financialLoading ? (
+                          <InlineLoading width={90} height={18} label="Loading budget" />
+                        ) : (
+                          formatCurrency(totals.monthlyBudget)
+                        )}
                       </strong>
                     </div>
                   </div>
@@ -1520,25 +1523,41 @@ function ConsumablesTrackerPage() {
                 <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
                   <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Spend</p>
                   <strong style={{ fontSize: "1.2rem" }}>
-                    {logsLoading ? "Loading…" : formatCurrency(logsSummary.spend)}
+                    {logsLoading ? (
+                      <InlineLoading width={80} height={16} label="Loading spend" />
+                    ) : (
+                      formatCurrency(logsSummary.spend)
+                    )}
                   </strong>
                 </div>
                 <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
                   <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Quantity</p>
                   <strong style={{ fontSize: "1.2rem" }}>
-                    {logsLoading ? "Loading…" : logsSummary.quantity.toLocaleString()}
+                    {logsLoading ? (
+                      <InlineLoading width={60} height={16} label="Loading quantity" />
+                    ) : (
+                      logsSummary.quantity.toLocaleString()
+                    )}
                   </strong>
                 </div>
                 <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
                   <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Orders</p>
                   <strong style={{ fontSize: "1.2rem" }}>
-                    {logsLoading ? "Loading…" : logsSummary.orders}
+                    {logsLoading ? (
+                      <InlineLoading width={60} height={16} label="Loading orders" />
+                    ) : (
+                      logsSummary.orders
+                    )}
                   </strong>
                 </div>
                 <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
                   <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Suppliers</p>
                   <strong style={{ fontSize: "1.2rem" }}>
-                    {logsLoading ? "Loading…" : logsSummary.suppliers}
+                    {logsLoading ? (
+                      <InlineLoading width={60} height={16} label="Loading suppliers" />
+                    ) : (
+                      logsSummary.suppliers
+                    )}
                   </strong>
                 </div>
               </div>
@@ -1649,9 +1668,11 @@ function ConsumablesTrackerPage() {
                       color: "var(--text-primary)",
                     }}
                   >
-                    {financialLoading
-                      ? "Loading…"
-                      : formatCurrency(totals.monthSpend)}
+                    {financialLoading ? (
+                      <InlineLoading width={110} height={22} label="Loading month spend" />
+                    ) : (
+                      formatCurrency(totals.monthSpend)
+                    )}
                   </h2>
                 </div>
                 <div
@@ -1674,9 +1695,11 @@ function ConsumablesTrackerPage() {
                       color: "var(--text-primary)",
                     }}
                   >
-                    {financialLoading
-                      ? "Loading…"
-                      : formatCurrency(totals.projectedSpend)}
+                    {financialLoading ? (
+                      <InlineLoading width={110} height={22} label="Loading projected spend" />
+                    ) : (
+                      formatCurrency(totals.projectedSpend)
+                    )}
                   </h2>
                 </div>
                 <div
@@ -1702,11 +1725,11 @@ function ConsumablesTrackerPage() {
                           : "var(--success-dark)",
                     }}
                   >
-                    {financialLoading
-                      ? "Loading…"
-                      : formatCurrency(
-                          Math.max(totals.budgetRemaining, -999999)
-                        )}
+                    {financialLoading ? (
+                      <InlineLoading width={110} height={22} label="Loading budget remaining" />
+                    ) : (
+                      formatCurrency(Math.max(totals.budgetRemaining, -999999))
+                    )}
                   </h2>
                 </div>
               </div>
@@ -1882,7 +1905,11 @@ function ConsumablesTrackerPage() {
                 Requests
               </h2>
               <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                {requestsLoading ? "Loading…" : `${techRequests.length} requests`}
+                {requestsLoading ? (
+                  <InlineLoading width={90} label="Loading requests" />
+                ) : (
+                  `${techRequests.length} requests`
+                )}
               </span>
             </div>
             {requestsError && (

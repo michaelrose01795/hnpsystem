@@ -632,14 +632,6 @@ const USAGE_REGISTRY = {
     { label: "Customer portal layout", file: "src/features/customerPortal/components/CustomerLayout.js" },
     { label: "Profile page", file: "src/pages/profile/index.js", route: "/profile" },
   ],
-  "non-global-badges": [
-    { label: ".vhc-badge — VHC details panel", file: "src/components/VHC/VhcDetailsPanel.js" },
-    { label: ".hr-employees-row-pill", file: "src/components/HR/tabs/EmployeesTab.js" },
-    { label: ".jobcard-tab-badge", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" },
-    { label: ".multiselect-dropdown-api__tag", file: "src/components/ui/dropdownAPI/MultiSelectDropdown.js" },
-    { label: ".login-selection-pill", file: "src/pages/login.js", route: "/login" },
-    { label: "SeverityBadge", file: "src/components/VHC/VhcSharedComponents.js" },
-  ],
   "non-global-buttons": [
     { label: ".login-button → Button primary", file: "src/pages/login.js", route: "/login", migrated: true, validated: true, suggestion: 'JSX uses <Button variant="primary">; .login-button CSS (5 declarations incl. media-query overrides) deleted from globals.css.' },
     { label: "Login modals (reset / revert) → Button", file: "src/pages/login.js", route: "/login", migrated: true, validated: true, suggestion: 'All raw <button> tags in reset-password and revert-password modals replaced with <Button variant="primary"|"secondary"|"danger" size="sm">.' },
@@ -780,12 +772,13 @@ const USAGE_REGISTRY = {
     { label: "Proposed: <DataTable /> primitive with empty/loading/selected states", file: "src/components/ui/" },
   ],
   "badge-unified-proposal": [
-    { label: "Replaces .vhc-badge", file: "src/styles/globals.css" },
-    { label: "Replaces .jobcard-tab-badge", file: "src/styles/globals.css" },
-    { label: "Replaces .login-selection-pill", file: "src/styles/globals.css" },
-    { label: "Replaces .hr-employees-row-pill", file: "src/styles/globals.css" },
-    { label: "Replaces vhcModalContentStyles.badge", file: "src/styles/appTheme.js" },
-    { label: "Proposed: src/components/ui/Badge.js with tone prop", file: "src/components/ui/" },
+    { label: "Replaces .vhc-badge", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "vhc-badge JSX swapped to .app-badge .app-badge--control .app-badge--uppercase; .vhc-badge CSS deleted from globals.css." },
+    { label: "Replaces .jobcard-tab-badge", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "jobcard-tab-badge JSX swapped to .app-badge .app-badge--control .app-badge--accent-strong (or --danger-strong for notes); .jobcard-tab-badge + active-tab overrides deleted, replaced with scoped .tab-api__item.is-active .app-badge--accent-strong rule." },
+    { label: "Replaces .login-selection-pill", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "Dead CSS — no JSX consumer. .login-selection-pill + its strong/span child rules deleted from globals.css." },
+    { label: "Replaces .hr-employees-row-pill", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "hr-employees-row-pill JSX swapped to .app-badge .app-badge--control .app-badge--neutral / --accent-soft; both CSS rules deleted from globals.css." },
+    { label: "Replaces vhcModalContentStyles.badge", file: "src/styles/appTheme.js", migrated: true, validated: true, suggestion: "4 VHC modal files swapped `style={summaryBadgeBase}` → `className=\"app-badge app-badge--control app-badge--accent-soft\"`; concernBadge helper now returns only tone colour style, shape from class. `badge` export deleted from vhcModalContentStyles." },
+    { label: "Replaces SeverityBadge inline styles", file: "src/components/VHC/VhcSharedComponents.js", migrated: true, validated: true, suggestion: "SeverityBadge rewritten to render <span className='app-badge app-badge--control app-badge--uppercase app-badge--<tone>'>; severity→tone map drives danger/warning/success." },
+    { label: "Replaces .multiselect-dropdown-api__tag", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "Multiselect tag span JSX now carries .app-badge .app-badge--control .app-badge--accent-hover; per-module rule body collapsed (class retained only as anchor for __tag-remove child selector)." },
   ],
   "popup-unified-proposal": [
     { label: "Merge popupStyleApi.js", file: "src/components/popups/popupStyleApi.js" },
@@ -1538,7 +1531,6 @@ const SHOWCASE_CATALOG = {
   "tab-api":                   { category: "Tabs",        scope: "global",     terms: "tab tabs tabgroup navigation switch panel wrap stretch grid" },
   // ── Badges & Labels ──
   "app-badge":                 { category: "Badges & Labels", scope: "global",     terms: "badge label bubble pill tag status indicator app-badge" },
-  "non-global-badges":         { category: "Badges & Labels", scope: "non-global", terms: "badge pill label tag per-module status custom" },
   "badge-unified-proposal":    { category: "Badges & Labels", scope: "global",     terms: "badge unified proposal variant replace consolidate" },
   // ── Typography ──
   "typography-app-page":       { category: "Typography",  scope: "global",     terms: "typography heading title text font size weight page" },
@@ -2760,39 +2752,20 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       )}
       {isSectionVisible("badge-unified-proposal") && (
-      <ShowcaseSection title="Badge — Unified Proposal (replaces 5 variants)" itemKey="badge-unified-proposal" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
-          {[
-            { tone: "neutral", bg: "var(--surface-light)", fg: "var(--text-primary)", border: "var(--accentBorder)" },
-            { tone: "primary", bg: "var(--accent-surface)", fg: "var(--primary)", border: "var(--accentBorder)" },
-            { tone: "success", bg: "var(--success-surface)", fg: "var(--success-text)", border: "var(--success-border)" },
-            { tone: "warning", bg: "var(--warning-surface)", fg: "var(--warning-text)", border: "var(--warning-border)" },
-            { tone: "danger", bg: "var(--danger-surface)", fg: "var(--danger-text)", border: "var(--danger-border)" },
-          ].map((b) => (
-            <span key={b.tone} style={{ padding: "4px 10px", borderRadius: "var(--radius-pill)", background: b.bg, color: b.fg, border: `1px solid ${b.border}`, fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-              {b.tone}
-            </span>
-          ))}
-        </div>
-        <div style={{ fontSize: "10px", color: "var(--text-secondary)", fontStyle: "italic" }}>
-          Target: single &lt;Badge tone=&quot;neutral|primary|success|warning|danger&quot; /&gt; replacing .vhc-badge, .jobcard-tab-badge, .login-selection-pill, .hr-employees-row-pill, vhcModalContentStyles.badge.
-        </div>
-      </ShowcaseSection>
-      )}
-      {isSectionVisible("non-global-badges") && (
-      <ShowcaseSection title="Non-Global Badges / Pills (per-module)" itemKey="non-global-badges" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Badge — Global tone modifiers (.app-badge--*)" itemKey="badge-unified-proposal" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
-          <span className="vhc-badge" style={{ background: "var(--accent-surface)", color: "var(--accent-strong)", padding: "4px 12px", borderRadius: "var(--control-radius)", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", border: "1px solid var(--accentBorder)" }}>vhc-badge</span>
-          <span style={{ padding: "5px 9px", borderRadius: "var(--radius-pill)", background: "rgba(var(--grey-accent-rgb), 0.18)", fontSize: "0.7rem", fontWeight: 700 }}>hr-row-pill</span>
-          <span style={{ padding: "5px 9px", borderRadius: "var(--radius-pill)", background: "var(--accent-surface)", color: "var(--accent-strong)", border: "1px solid rgba(var(--accent-base-rgb), 0.3)", fontSize: "0.7rem", fontWeight: 700 }}>hr-row-pill--status</span>
-          <span style={{ padding: "3px 8px", background: "var(--accent-strong)", color: "var(--text-inverse)", borderRadius: "var(--radius-xs)", fontSize: "11px", fontWeight: 700 }}>jobcard-tab-badge</span>
-          <span style={{ padding: "3px 8px", background: "var(--danger)", color: "var(--text-inverse)", borderRadius: "var(--radius-xs)", fontSize: "11px", fontWeight: 700 }}>tab-badge.notes</span>
-          <span style={{ padding: "6px 12px", background: "var(--accent-surface-hover)", borderRadius: "var(--control-radius-sm)", fontSize: "12px", fontWeight: 600 }}>multiselect-tag</span>
-          <span style={{ padding: "4px 10px", borderRadius: "var(--radius-pill)", border: "1px solid var(--danger)", color: "var(--danger)", fontSize: "11px", fontWeight: 700 }}>severity:red</span>
-          <span style={{ padding: "4px 10px", borderRadius: "var(--radius-pill)", border: "1px solid var(--warning)", color: "var(--warning-text)", fontSize: "11px", fontWeight: 700 }}>severity:amber</span>
-          <span style={{ padding: "4px 10px", borderRadius: "var(--radius-pill)", border: "1px solid var(--success)", color: "var(--success-text)", fontSize: "11px", fontWeight: 700 }}>severity:green</span>
-          <span style={{ padding: "4px 10px", borderRadius: "var(--radius-pill)", background: "var(--accent-surface)", color: "var(--primary)", fontSize: "11px", fontWeight: 700 }}>vhcModal.badge</span>
-          <span style={{ padding: "6px 14px", borderRadius: "var(--radius-pill)", background: "var(--surface-light)", color: "var(--text-primary)", fontSize: "12px", fontWeight: 600, border: "1px solid var(--accentBorder)" }}>login-selection-pill</span>
+          <span className="app-badge app-badge--control app-badge--neutral">neutral</span>
+          <span className="app-badge app-badge--control app-badge--accent-strong">accent-strong</span>
+          <span className="app-badge app-badge--control app-badge--accent-soft">accent-soft</span>
+          <span className="app-badge app-badge--control app-badge--accent-hover">accent-hover</span>
+          <span className="app-badge app-badge--control app-badge--success">success</span>
+          <span className="app-badge app-badge--control app-badge--warning">warning</span>
+          <span className="app-badge app-badge--control app-badge--danger">danger</span>
+          <span className="app-badge app-badge--control app-badge--danger-strong">danger-strong</span>
+          <span className="app-badge app-badge--control app-badge--uppercase app-badge--success">uppercase</span>
+        </div>
+        <div style={{ fontSize: "10px", color: "var(--text-secondary)", fontStyle: "italic", marginTop: "10px" }}>
+          Shape comes from .app-badge + .app-badge--control; colour from one tone modifier. Replaces the per-module rules that previously lived in vhc-badge, hr-employees-row-pill, jobcard-tab-badge, multiselect-dropdown-api__tag, SeverityBadge inline styles, and vhcModalContentStyles.badge.
         </div>
       </ShowcaseSection>
       )}

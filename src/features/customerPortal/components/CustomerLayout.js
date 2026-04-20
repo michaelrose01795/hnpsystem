@@ -1,13 +1,13 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/features/customerPortal/components/CustomerLayout.js
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import CustomerSidebar from "@/features/customerPortal/components/CustomerSidebar";
 import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useLoadingState } from "@/context/LoadingStateContext";
-import { captureLayoutFingerprint, setLayoutFingerprint } from "@/lib/loading/layoutFingerprint";
+import useCaptureLayoutFingerprint from "@/hooks/useCaptureLayoutFingerprint";
 
 const CUSTOMER_ROLE_ALLOWLIST = ["CUSTOMER"];
 
@@ -24,28 +24,12 @@ export default function CustomerLayout({ children }) {
   const isCustomer = roleList.some((role) => CUSTOMER_ROLE_ALLOWLIST.includes(role));
   const isContentLoading = isGlobalLoading || userLoading || !user;
 
-  // Same fingerprint capture pattern as Layout.js so the customer portal also
-  // gets a skeleton that mirrors its real per-page grid on subsequent visits.
-  useEffect(() => {
-    if (isContentLoading) return undefined;
-    if (typeof window === "undefined") return undefined;
-    const el = contentRef.current;
-    if (!el) return undefined;
-
-    const route = router.asPath || router.pathname;
-    let timeoutId = null;
-    const rafId = window.requestAnimationFrame(() => {
-      timeoutId = window.setTimeout(() => {
-        const fingerprint = captureLayoutFingerprint(el);
-        if (fingerprint) setLayoutFingerprint(route, fingerprint);
-      }, 80);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(rafId);
-      if (timeoutId !== null) window.clearTimeout(timeoutId);
-    };
-  }, [isContentLoading, router.asPath, router.pathname]);
+  // Shared hook with Layout.js so both shells capture fingerprints identically.
+  useCaptureLayoutFingerprint(
+    contentRef,
+    router.asPath || router.pathname,
+    isContentLoading
+  );
 
   if (!user) {
     return (

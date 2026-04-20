@@ -134,19 +134,19 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
   return (
     <div
       style={{
-        width: "100%", // Full width of the timeline column
-        backgroundColor: "var(--surface)", // Card background
-        borderRadius: isCompact ? "var(--radius-sm)" : "var(--radius-xs)", // Rounded corners
-        border: "1px solid var(--border)", // Subtle border
-        borderLeft: isMilestone ? "3px solid var(--accent-purple)" : "1px solid var(--border)", // Accent for milestones
-        padding: isCompact ? "10px 12px" : "10px 12px", // Tightened padding
+        width: "100%",
+        backgroundColor: "var(--surface)",
+        borderRadius: isCompact ? "var(--radius-sm)" : "var(--radius-xs)",
+        border: "none",
+        boxShadow: isMilestone ? "inset 3px 0 0 0 var(--accent-purple)" : "none",
+        padding: "10px 12px",
         display: "flex",
         flexDirection: "column",
-        gap: "6px", // Tightened internal spacing
-        fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif", // Font stack
-        minHeight: isGroupChild ? "auto" : isCompact ? "52px" : "60px", // Reduced min height
-        opacity: cardOpacity, // Importance-aware opacity
-        transition: "opacity 0.2s ease", // Smooth opacity transition
+        gap: "6px",
+        fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif",
+        minHeight: isGroupChild ? "auto" : isCompact ? "52px" : "60px",
+        opacity: cardOpacity,
+        transition: "opacity 0.2s ease",
       }}
     >
       <div style={{ textAlign: "left", minWidth: 0 }}>
@@ -305,18 +305,18 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
       {/* Group header — clickable to expand/collapse */}
       <button
         onClick={onToggle}
+        className="app-btn app-btn--sm"
         style={{
           width: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: "8px",
-          backgroundColor: "var(--surface-light)", // Subtle group header background
-          border: "1px solid var(--border)",
-          borderLeft: group.phaseColor ? `3px solid ${group.phaseColor}` : "1px solid var(--border)", // Phase-specific accent
+          backgroundColor: "var(--surface-light)",
+          border: "none",
+          boxShadow: group.phaseColor ? `inset 3px 0 0 0 ${group.phaseColor}` : "none",
           borderRadius: "var(--radius-xs)",
           padding: "8px 12px",
-          cursor: "pointer",
           fontSize: "13px",
           fontWeight: 600,
           color: COLORS.textDark,

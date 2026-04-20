@@ -5,16 +5,47 @@ import { SectionCard } from "@/components/Section";
 import { Button, InputField, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { StatusTag } from "@/components/HR/MetricCard";
-import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
+import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+
+// Skeleton rows that sit inside each SectionCard while performance data loads.
+// Keeping the outer page shell mounted (header, section grids, card chrome) means
+// the first visible frame already matches the final layout.
+function TableRowsSkeleton({ rows = 5, cols = 4 }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <SkeletonTableRow key={i} cols={cols} />
+      ))}
+    </>
+  );
+}
+
+function BulletsSkeleton({ rows = 4 }) {
+  return (
+    <ul
+      style={{
+        margin: 0,
+        padding: 0,
+        listStyle: "none",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-sm)",
+      }}
+    >
+      {Array.from({ length: rows }).map((_, i) => (
+        <li key={i} style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center" }}>
+          <SkeletonBlock width="6px" height="6px" borderRadius="999px" />
+          <SkeletonBlock width={i % 2 === 0 ? "82%" : "68%"} height="12px" />
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function PerformanceContent() {
   const { data, isLoading, error } = useHrOperationsData();
   const employeeDirectory = data?.employeeDirectory ?? [];
   const performanceReviews = data?.performanceReviews ?? [];
-
-  if (isLoading) {
-    return <HrTabLoadingSkeleton />;
-  }
 
   if (error) {
     return (
@@ -33,6 +64,7 @@ function PerformanceContent() {
 
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
+      <SkeletonKeyframes />
       <header>
         <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-1)" }}>
           Track reviews, ratings, development plans, and upcoming appraisals.
@@ -61,14 +93,18 @@ function PerformanceContent() {
                 </tr>
               </thead>
               <tbody>
-                {performanceReviews.map((review) => (
-                  <tr key={review.id}>
-                    <td style={{ fontWeight: 600 }}>{review.employee}</td>
-                    <td>{review.period}</td>
-                    <td>{review.reviewer}</td>
-                    <td>{new Date(review.nextReview).toLocaleDateString()}</td>
-                  </tr>
-                ))}
+                {isLoading ? (
+                  <TableRowsSkeleton rows={4} cols={4} />
+                ) : (
+                  performanceReviews.map((review) => (
+                    <tr key={review.id}>
+                      <td style={{ fontWeight: 600 }}>{review.employee}</td>
+                      <td>{review.period}</td>
+                      <td>{review.reviewer}</td>
+                      <td>{new Date(review.nextReview).toLocaleDateString()}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -83,21 +119,25 @@ function PerformanceContent() {
             </Button>
           }
         >
-          <ul
-            style={{
-              margin: 0,
-              paddingLeft: "var(--space-6)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--space-sm)",
-            }}
-          >
-            {performanceReviews.map((review) => (
-              <li key={review.id} style={{ color: "var(--text-primary)" }}>
-                <strong>{review.employee}:</strong> {review.developmentFocus}
-              </li>
-            ))}
-          </ul>
+          {isLoading ? (
+            <BulletsSkeleton rows={4} />
+          ) : (
+            <ul
+              style={{
+                margin: 0,
+                paddingLeft: "var(--space-6)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-sm)",
+              }}
+            >
+              {performanceReviews.map((review) => (
+                <li key={review.id} style={{ color: "var(--text-primary)" }}>
+                  <strong>{review.employee}:</strong> {review.developmentFocus}
+                </li>
+              ))}
+            </ul>
+          )}
         </SectionCard>
       </section>
 
@@ -124,22 +164,26 @@ function PerformanceContent() {
               </tr>
             </thead>
             <tbody>
-              {performanceReviews.map((review) => (
-                <tr key={review.id}>
-                  <td style={{ fontWeight: 600 }}>{review.employee}</td>
-                  <td>
-                    <StatusTag
-                      label={`${review.overall ?? 0}/5`}
-                      tone={(review.overall ?? 0) >= 4 ? "success" : "default"}
-                    />
-                  </td>
-                  <td>{review.ratings.attendance}/5</td>
-                  <td>{review.ratings.productivity}/5</td>
-                  <td>{review.ratings.quality}/5</td>
-                  <td>{review.ratings.teamwork}/5</td>
-                  <td>{review.reviewer}</td>
-                </tr>
-              ))}
+              {isLoading ? (
+                <TableRowsSkeleton rows={5} cols={7} />
+              ) : (
+                performanceReviews.map((review) => (
+                  <tr key={review.id}>
+                    <td style={{ fontWeight: 600 }}>{review.employee}</td>
+                    <td>
+                      <StatusTag
+                        label={`${review.overall ?? 0}/5`}
+                        tone={(review.overall ?? 0) >= 4 ? "success" : "default"}
+                      />
+                    </td>
+                    <td>{review.ratings.attendance}/5</td>
+                    <td>{review.ratings.productivity}/5</td>
+                    <td>{review.ratings.quality}/5</td>
+                    <td>{review.ratings.teamwork}/5</td>
+                    <td>{review.reviewer}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
