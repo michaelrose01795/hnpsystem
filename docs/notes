@@ -1,6 +1,6 @@
-delete 
-abour field not emplty when nothing has been enetered, showing "0" inisd field een thoug it should be empty until something is manually entered, override anythign stopping this change. 
+remove the dev overly button from the bottom left of the screen but keep the dev overlay button wihtin sidebar section, dont change the button style or what this button does isnide the sidebar. 
 
+Remove "/job-cards/waiting/nextjobs :: 1.2.1.1.1 (nextjobs-page-shell)" card and move the contents into "/job-cards/waiting/nextjobs :: 1.2.2.1 (app-layout-page-card)" card. 
 
 
 TODO

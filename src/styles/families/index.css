@@ -1,0 +1,24 @@
+/* file location: src/styles/families/index.css
+ *
+ * Single entry point for every UI family stylesheet. Pulled in by
+ * src/styles/globals.css so family files participate in the same cascade.
+ *
+ * Order matters (very slightly) because some trace-mode rules re-use class
+ * names that other families register. Keep structural/base styles before
+ * visual families, and keep trace-mode blocks at the end of each file so
+ * they win only when the overlay is active.
+ */
+
+@import "./buttons.css";
+@import "./tables.css";
+@import "./tabs.css";
+@import "./cards.css";
+@import "./inputs.css";
+@import "./dropdowns.css";
+@import "./modals.css";
+@import "./badges.css";
+@import "./toggles.css";
+@import "./loaders.css";
+@import "./toolbars.css";
+@import "./empty-states.css";
+@import "./toasts.css";

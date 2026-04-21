@@ -1,0 +1,52 @@
+/* file location: src/styles/families/toolbars.css
+ *
+ * Canonical home for the Toolbar family.
+ *
+ * Variants: filter, action, header
+ * Component: src/components/ui/layout-system/FilterToolbarRow.js,
+ *            src/components/ui/ToolbarRow.js
+ * Showcase:  /dev/showcase#toolbar
+ *
+ * NOTE (2026-04 audit pass): the .app-layout-toolbar-row container rule
+ * lives in src/styles/globals.css (~463). New variant modifiers are defined
+ * below so future consumers get density without rolling their own margin/
+ * padding overrides.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Variant modifiers */
+.app-toolbar--filter {
+  padding: 10px 12px;
+  background: var(--layer-section-level-1);
+  border-radius: var(--radius-sm);
+}
+
+.app-toolbar--action {
+  padding: 12px 16px;
+  background: var(--section-card-bg);
+  border-radius: var(--section-card-radius);
+  justify-content: flex-end;
+}
+
+.app-toolbar--header {
+  padding: 0;
+  background: transparent;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud emerald outlines on every toolbar element. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-toolbar="1"])
+  :where(
+    .app-toolbar-row,
+    .app-layout-toolbar-row,
+    .app-header-row,
+    .app-toolbar--filter,
+    .app-toolbar--action,
+    .app-toolbar--header
+  ) {
+  outline: 2px solid #10b981 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.32) !important;
+}

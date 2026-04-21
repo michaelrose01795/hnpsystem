@@ -7,6 +7,12 @@
 //   - DevLayoutOverlay              → fallback detection + per-category
 //                                     visibility thresholds and colours
 //   - globals.css                   → category-gated outline rules
+//   - src/styles/families/*.css     → trace-mode outline colours
+//   - src/components/ui/variants.js → classification family IDs
+//
+// The `family` field links a dev-overlay category to the matching UI family
+// in variants.js. The classification popover reads this mapping to pre-fill
+// the family dropdown when a user tags an element.
 //
 // To add a new category, add a single entry below. Nothing else is required
 // for the filter UI to pick it up.

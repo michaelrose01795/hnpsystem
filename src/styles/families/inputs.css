@@ -1,0 +1,54 @@
+/* file location: src/styles/families/inputs.css
+ *
+ * Canonical home for the Input family.
+ *
+ * Variants: text, textarea, select, search
+ * Component: src/components/ui/InputField.js
+ * Showcase:  /dev/showcase#input
+ *
+ * NOTE (2026-04 audit pass): the base .app-input rule lives in
+ * src/styles/globals.css (~1299-1320). It stays there for this setup pass.
+ * NEW variant modifier classes are defined below so pages can consume them
+ * immediately — they wrap the existing .app-input foundation.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Variant modifiers — layered onto the existing .app-input base. */
+textarea.app-input,
+.app-input--textarea {
+  min-height: 96px;
+  line-height: 1.4;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+select.app-input,
+.app-input--select {
+  padding-right: 38px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--control-icon) 50%),
+    linear-gradient(135deg, var(--control-icon) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  appearance: none;
+}
+
+.app-input--search {
+  padding-left: 36px;
+  background-image: radial-gradient(circle at 14px 50%, transparent 5px, var(--control-icon) 5px, var(--control-icon) 6px, transparent 6px);
+  background-repeat: no-repeat;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud blue outlines on every input-family element. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-input="1"])
+  :where(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+    textarea,
+    [contenteditable="true"],
+    .app-input
+  ) {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.32) !important;
+}

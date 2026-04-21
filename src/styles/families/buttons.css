@@ -1,0 +1,34 @@
+/* file location: src/styles/families/buttons.css
+ *
+ * Canonical home for the Button family.
+ *
+ * Variants: primary, secondary, ghost, danger, control, on-primary
+ * Sizes: md (default), sm, xs
+ * Shapes: default, pill
+ *
+ * Component:  src/components/ui/Button.js
+ * Showcase:   /dev/showcase#button
+ *
+ * NOTE (2026-04 audit pass): the existing .app-btn, .app-btn--primary,
+ * .app-btn--secondary, .app-btn--ghost, .app-btn--danger, .app-btn--control,
+ * .app-btn--on-primary, .app-btn--sm, .app-btn--xs, .app-btn--pill rules
+ * still live in src/styles/globals.css (ranges ~1127-1295 and ~2501-2544).
+ * They intentionally stay there for this setup pass — the next cleanup pass
+ * will migrate them here verbatim. Everything new goes in this file.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud pink outlines on every button-family element when the
+   dev overlay is in "trace" mode. Suppressed if the button category filter
+   is switched off. Skips overlay-internal elements to avoid recursive
+   visual noise. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-button="1"])
+  :where(
+    button:not([data-dev-ignore]):not([data-dev-overlay-internal]),
+    .app-btn,
+    [role="button"]:not(button):not(a)
+  ) {
+  outline: 2px solid #ec4899 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(236, 72, 153, 0.25) !important;
+}

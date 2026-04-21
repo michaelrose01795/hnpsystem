@@ -1,0 +1,80 @@
+/* file location: src/styles/families/toasts.css
+ *
+ * Canonical home for the Toast / Notification family.
+ *
+ * Variants: info, success, warning, error
+ * Driver:    src/context/AlertContext.js, src/lib/notifications/alertBus.js
+ * Showcase:  /dev/showcase#toast
+ *
+ * NOTE (2026-04 audit pass): toasts today are emitted via AlertContext and
+ * rendered ad-hoc. The classes below are the approved visual treatment and
+ * should be adopted by the alert renderer. Do not render toast-like
+ * elements inline from pages — go through the alert bus.
+ */
+
+/* -------------------------------------------------------------------------- */
+.app-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--surfaceMain);
+  color: var(--text-primary);
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  min-width: 240px;
+  max-width: 420px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.app-toast__icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.app-toast--info {
+  border-left: 4px solid var(--accentMain);
+}
+.app-toast--info .app-toast__icon {
+  background: var(--accentSurface);
+  color: var(--accentMain);
+}
+
+.app-toast--success {
+  border-left: 4px solid var(--success-base);
+}
+.app-toast--success .app-toast__icon {
+  background: var(--success-surface);
+  color: var(--success-strong);
+}
+
+.app-toast--warning {
+  border-left: 4px solid var(--warning-base);
+}
+.app-toast--warning .app-toast__icon {
+  background: var(--warning-surface);
+  color: var(--warning-strong);
+}
+
+.app-toast--error {
+  border-left: 4px solid var(--danger-base);
+}
+.app-toast--error .app-toast__icon {
+  background: var(--danger-surface);
+  color: var(--danger-strong);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — amber outlines. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+  :where(.app-toast) {
+  outline: 2px solid #f59e0b !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.32), 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+}

@@ -1,0 +1,30 @@
+/* file location: src/styles/families/dropdowns.css
+ *
+ * Canonical home for the Dropdown family.
+ *
+ * Variants: field, menu, combobox
+ * Component: src/components/ui/dropdownAPI/DropdownField.js,
+ *            src/components/ui/dropdownAPI/MultiSelectDropdown.js
+ * Showcase:  /dev/showcase#dropdown
+ *
+ * NOTE (2026-04 audit pass): the existing dropdown internals live inside
+ * the dropdownAPI folder and lean on control tokens (--control-bg,
+ * --control-menu-radius, --dropdown-trigger-*). This file's job is to
+ * register the family with the audit system and namespace future shared
+ * rules (.app-dropdown, .app-dropdown--menu, etc).
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud magenta outlines on dropdowns and menus. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-select="1"])
+  :where(
+    select,
+    [role="combobox"],
+    [role="listbox"],
+    .app-dropdown,
+    .dropdown-trigger
+  ) {
+  outline: 2px solid #d946ef !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(217, 70, 239, 0.32) !important;
+}

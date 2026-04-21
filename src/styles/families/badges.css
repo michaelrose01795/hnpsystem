@@ -1,0 +1,32 @@
+/* file location: src/styles/families/badges.css
+ *
+ * Canonical home for the Badge family.
+ *
+ * Variants: neutral, primary, success, warning, danger, accent-soft,
+ *           accent-strong
+ * Showcase:  /dev/showcase#badge
+ *
+ * NOTE (2026-04 audit pass): the existing .app-badge and every .app-badge--*
+ * variant rule lives in src/styles/globals.css (~1412-1501). They stay there
+ * for this setup pass — the next cleanup pass will migrate them here
+ * verbatim. Do not define new badge variants elsewhere.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud orange outlines on every badge/chip element. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-badge="1"])
+  :where(
+    .badge,
+    .chip,
+    .pill,
+    .app-badge,
+    .app-chip,
+    [class*="badge-"],
+    [class*="-badge"],
+    [class*="chip-"],
+    [class*="-chip"]
+  ) {
+  outline: 2px solid #f97316 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.32) !important;
+}

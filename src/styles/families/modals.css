@@ -1,0 +1,31 @@
+/* file location: src/styles/families/modals.css
+ *
+ * Canonical home for the Modal / Drawer family.
+ *
+ * Variants: dialog, drawer, sheet, alert
+ * Component: src/components/popups/ModalPortal.js, src/components/popups/Popup.js
+ * Showcase:  /dev/showcase#modal
+ *
+ * NOTE (2026-04 audit pass): today each modal (JobCardModal, NewCustomerPopup,
+ * StatusSidebar, etc) defines its own surface/backdrop inline. The variant
+ * classes below give a shared starting point for every future modal and
+ * should be consumed via ModalPortal. JobCardModal remains intentionally
+ * custom per the variants.js customOnly list — its shell is too specific.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud violet outlines on modal-family elements. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-modal="1"])
+  :where(
+    [role="dialog"],
+    [role="alertdialog"],
+    .modal-panel,
+    .popup-panel,
+    .drawer-panel,
+    .app-modal,
+    .app-popup
+  ) {
+  outline: 3px solid #a855f7 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.42) !important;
+}

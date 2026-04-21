@@ -1,0 +1,26 @@
+/* file location: src/styles/families/loaders.css
+ *
+ * Canonical home for the Loader / Skeleton family.
+ *
+ * Variants: block, inline, row, card, page
+ * Component: src/components/ui/LoadingSkeleton.js
+ * Showcase:  /dev/showcase#loader
+ *
+ * NOTE (2026-04 audit pass): the .skeleton-block base + @keyframes live in
+ * src/styles/globals.css today. They stay there for this setup pass — the
+ * keyframe rule is load-bearing and moving it requires checking every
+ * consumer.  Skeleton variants used by LoadingSkeleton.js are declared
+ * inline (CSS-in-JS) in that file; when they migrate they land here.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — lavender outlines on every skeleton element. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+  :where(
+    .skeleton-block,
+    [data-skeleton="1"]
+  ) {
+  outline: 2px solid #a78bfa !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.32) !important;
+}

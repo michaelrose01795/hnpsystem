@@ -1,0 +1,47 @@
+/* file location: src/styles/families/tables.css
+ *
+ * Canonical home for the Table family.
+ *
+ * Variants: standard, compact, workflow
+ * Showcase:  /dev/showcase#table
+ *
+ * NOTE (2026-04 audit pass): the existing .app-data-table, thead, and tbody
+ * rules still live in src/styles/globals.css (~1385-1410). They stay there
+ * for this setup pass — the next cleanup pass will move them here verbatim.
+ * NEW variants (compact, workflow) are defined below so pages can consume
+ * them immediately.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* New variants */
+.app-data-table--compact th,
+.app-data-table--compact td {
+  padding: 6px 10px !important;
+  font-size: 0.85rem;
+  line-height: 1.25;
+}
+
+.app-data-table--workflow tbody tr {
+  transition: background-color 0.18s ease;
+}
+
+.app-data-table--workflow tbody tr[data-row-state="active"] {
+  background: var(--accentSurface);
+}
+
+.app-data-table--workflow tbody tr[data-row-state="muted"] {
+  opacity: 0.62;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud grey outlines on every table-family element. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-table="1"])
+  :where(
+    table:not([data-dev-overlay-internal] table),
+    .app-data-table,
+    .table-api
+  ) {
+  outline: 2px solid #6b7280 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(107, 114, 128, 0.32) !important;
+}

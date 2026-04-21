@@ -1,0 +1,178 @@
+/* file location: src/styles/features/vhc.css
+ *
+ * VHC (Vehicle Health Check) feature styles.
+ *
+ * Migrated out of globals.css during the 2026 UI audit pass so feature-level
+ * styles live alongside other feature folders and globals.css stays focused
+ * on base layout + shared families. Classes here are still loaded by
+ * globals.css via @import so selector specificity and cascade order match
+ * what the app had before the move.
+ *
+ * Everything in this file should be prefixed with .vhc- and must not leak
+ * into non-VHC pages. If a rule here starts being reused elsewhere, promote
+ * it to src/styles/families/ instead of aliasing it.
+ */
+
+.vhc-section-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+  height: 100%;
+}
+
+.vhc-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--section-card-padding);
+  background: var(--section-card-bg);
+  border-radius: var(--section-card-radius);
+  border: none;
+}
+
+.vhc-toolbar__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.vhc-toolbar__subtitle {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.vhc-content-card {
+  background: var(--section-card-bg);
+  border: none;
+  border-radius: var(--section-card-radius);
+  padding: var(--section-card-padding);
+}
+
+.vhc-content-card--bordered {
+  border: none;
+}
+
+.vhc-section-heading {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--primary);
+}
+
+.vhc-section-heading--secondary {
+  color: var(--text-secondary);
+}
+
+.vhc-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.vhc-card {
+  background: var(--control-bg);
+  border: none;
+  border-radius: var(--section-card-radius);
+  padding: var(--section-card-padding);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  position: relative;
+  z-index: 0;
+}
+
+.vhc-card:hover {
+  z-index: var(--hover-surface-z, 80);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.vhc-card--mandatory {
+  border: none;
+}
+
+.vhc-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.vhc-card__title {
+  margin: 0;
+  color: var(--accent-strong);
+  font-size: var(--text-h3);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+}
+
+.vhc-card__description {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.vhc-btn {
+  min-height: var(--control-height);
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  border: none;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+  background: var(--accent-purple-surface);
+  color: var(--accent-purple);
+}
+
+.vhc-btn:hover {
+  background: var(--accent-purple);
+  color: var(--surface);
+}
+
+.vhc-btn--active {
+  background: var(--accent-purple);
+  color: var(--surface);
+}
+
+.vhc-btn--active:hover {
+  background: var(--primary-dark, var(--accent-purple));
+}
+
+.vhc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vhc-summary-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-xs);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.vhc-summary-item {
+  padding: 12px 16px;
+  background: var(--surface);
+  border-radius: var(--radius-xs);
+  margin-bottom: 8px;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+
+.vhc-summary-item__section {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.vhc-summary-item__text {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

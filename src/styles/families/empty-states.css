@@ -1,0 +1,64 @@
+/* file location: src/styles/families/empty-states.css
+ *
+ * Canonical home for the Empty-state family.
+ *
+ * Variants: inline, page
+ * Showcase:  /dev/showcase#empty-state
+ *
+ * NOTE (2026-04 audit pass): empty states today are ad-hoc text blocks on
+ * most pages. The base + variants below are the approved replacement. Every
+ * new list/query should render one of these instead of a bare "No results".
+ */
+
+/* -------------------------------------------------------------------------- */
+.app-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.app-empty-state__title {
+  font-size: var(--text-h4);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.app-empty-state__description {
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 46ch;
+}
+
+.app-empty-state__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.app-empty-state--inline {
+  padding: 20px 16px;
+  background: var(--layer-section-level-1);
+  border-radius: var(--radius-sm);
+}
+
+.app-empty-state--page {
+  padding: 56px 24px;
+  background: var(--section-card-bg);
+  border-radius: var(--section-card-radius);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — slate outlines. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+  :where(.app-empty-state) {
+  outline: 2px solid #475569 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(71, 85, 105, 0.32) !important;
+}

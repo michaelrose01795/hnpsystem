@@ -1,0 +1,40 @@
+/* file location: src/styles/families/cards.css
+ *
+ * Canonical home for the Card / Section-shell family.
+ *
+ * Variants: page, section, subtle, accent, stat
+ * Components: src/components/ui/layout-system/SectionShell.js,
+ *             src/components/ui/layout-system/PageShell.js,
+ *             src/components/ui/layout-system/StatCard.js
+ * Showcase:   /dev/showcase#card
+ *
+ * NOTE (2026-04 audit pass): every card/surface class (.app-page-card,
+ * .app-section-card, .app-layout-section-shell, .app-layout-card,
+ * .app-layout-surface-subtle, .app-layout-surface-accent,
+ * .app-layout-stat-card) lives in src/styles/globals.css (~158-279).
+ * They stay there for this setup pass — the .app-page-shell hierarchy is
+ * load-bearing and will migrate in a dedicated pass.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud green outlines on every card/surface element. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-section="1"])
+  :where(
+    .app-page-card,
+    .app-section-card,
+    .app-layout-section-shell,
+    .app-layout-card,
+    .app-layout-surface-subtle,
+    .app-layout-surface-accent,
+    .customer-portal-card
+  ) {
+  outline: 2px solid #22c55e !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.32) !important;
+}
+
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-stat-card="1"])
+  :where(.app-layout-stat-card, [class*="stat-card"], [class*="metric-card"]) {
+  outline: 2px solid #16a34a !important;
+  outline-offset: 2px;
+}

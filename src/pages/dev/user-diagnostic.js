@@ -646,6 +646,12 @@ const USAGE_REGISTRY = {
     { label: ".login-error", file: "src/pages/login.js", route: "/login" },
     { label: ".releasePromptBox", file: "src/features/invoices/styles/invoice.module.css" },
   ],
+  "global-cards": [
+    { label: ".app-page-shell / .app-page-card / .app-page-stack / .app-section-card", file: "src/styles/globals.css" },
+    { label: "Section component", file: "src/components/Section.js" },
+    { label: "Card / SectionCard component", file: "src/components/ui/Card.js" },
+    { label: "--page-card-bg / --section-card-bg tokens", file: "src/styles/theme.css" },
+  ],
   "non-global-cards": [
     { label: ".vhc-card — VHC inspection", file: "src/components/VHC/VhcDetailsPanel.js" },
     { label: ".customer-portal-card", file: "src/features/customerPortal/components/CustomerLayout.js" },
@@ -1552,6 +1558,7 @@ const SHOWCASE_CATALOG = {
   "popup-unified-proposal":    { category: "Popups & Modals", scope: "global",     terms: "popup unified proposal replace consolidate modal dialog" },
   "confirm-dialogs":           { category: "Popups & Modals", scope: "global",     terms: "confirmation dialog confirm cancel action destructive preview" },
   // ── Cards & Sections ──
+  "global-cards":              { category: "Cards & Sections", scope: "global",     terms: "card section panel app-page-card app-section-card app-page-stack app-page-shell Section global canonical hierarchy" },
   "non-global-cards":          { category: "Cards & Sections", scope: "non-global", terms: "card section panel container box per-module custom" },
   // ── Feedback & Status ──
   "status-message":            { category: "Feedback & Status", scope: "global",     terms: "status message alert info warning error success notification" },
@@ -3100,6 +3107,29 @@ function GlobalUiShowcase() {
       )}
 
       <ShowcaseCategoryHeader category="Cards & Sections" visible={visibleCategorySet.has("Cards & Sections")} />
+      {isSectionVisible("global-cards") && (
+      <ShowcaseSection title="Global Cards / Sections" itemKey="global-cards" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+        <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginBottom: "10px", lineHeight: 1.5 }}>
+          Canonical card hierarchy from globals.css. Every page should nest these in order: <strong>.app-page-shell</strong> → <strong>.app-page-card</strong> → <strong>.app-page-stack</strong> → <strong>.app-section-card</strong>. Use <strong>Section</strong> for titled cards and <strong>Card / SectionCard</strong> for bare wrappers. Do not flatten or invent new wrappers.
+        </div>
+        <div className="app-page-shell" style={{ padding: "8px" }}>
+          <div style={{ fontSize: "10px", color: "var(--text-secondary)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>.app-page-shell</div>
+          <div className="app-page-card">
+            <div style={{ fontSize: "10px", color: "var(--text-secondary)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>.app-page-card</div>
+            <div className="app-page-stack">
+              <div className="app-section-card">
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accentText)", marginBottom: "4px" }}>.app-section-card</div>
+                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Inner section — equivalent to the Section / Card component.</div>
+              </div>
+              <div className="app-section-card">
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--accentText)", marginBottom: "4px" }}>.app-section-card</div>
+                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>Stacked siblings use var(--page-stack-gap).</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ShowcaseSection>
+      )}
       {isSectionVisible("non-global-cards") && (
       <ShowcaseSection title="Non-Global Cards / Sections" itemKey="non-global-cards" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>

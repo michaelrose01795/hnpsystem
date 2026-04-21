@@ -1,0 +1,101 @@
+/* file location: src/styles/families/tabs.css
+ *
+ * Canonical home for the Tabs family.
+ *
+ * Variants: page, inner, pill, segmented
+ * Component: src/components/ui/layout-system/TabRow.js
+ * Showcase:  /dev/showcase#tabs
+ *
+ * NOTE (2026-04 audit pass): the existing .app-layout-tab-row container
+ * rule still lives in src/styles/globals.css (~453). Individual tab items
+ * are rendered ad-hoc across feature folders (HrTabsBar, layout nav, etc).
+ * The variants below give every consumer a shared starting point; existing
+ * ad-hoc tab renderers should migrate to these classes as they are touched.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Base tab item — shared across every variant */
+.app-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  line-height: 1;
+  background: var(--tab-item-bg);
+  color: var(--tab-item-text);
+  transition: var(--control-transition);
+  white-space: nowrap;
+}
+
+.app-tab:hover:not([aria-disabled="true"]) {
+  background: var(--tab-item-bg-hover);
+}
+
+.app-tab[aria-selected="true"],
+.app-tab.is-active {
+  background: var(--accentMain);
+  color: var(--onAccentText);
+}
+
+.app-tab[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Variants */
+.app-tab--page {
+  min-height: 40px;
+  padding: 8px 18px;
+  font-size: 0.95rem;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.app-tab--inner {
+  min-height: 32px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  border-radius: var(--radius-xs);
+}
+
+.app-tab--pill {
+  min-height: 32px;
+  padding: 6px 16px;
+  font-size: 0.88rem;
+  border-radius: var(--radius-pill);
+}
+
+.app-tab--segmented {
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  border-radius: 0;
+}
+
+.app-tab--segmented:first-child {
+  border-top-left-radius: var(--radius-xs);
+  border-bottom-left-radius: var(--radius-xs);
+}
+
+.app-tab--segmented:last-child {
+  border-top-right-radius: var(--radius-xs);
+  border-bottom-right-radius: var(--radius-xs);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud yellow outlines on every tab-family element. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-tabs="1"])
+  :where(
+    .app-layout-tab-row,
+    .tab-scroll-row,
+    .tab-api,
+    [role="tablist"],
+    [role="tab"],
+    .app-tab
+  ) {
+  outline: 2px solid #eab308 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.32) !important;
+}

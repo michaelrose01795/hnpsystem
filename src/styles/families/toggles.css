@@ -1,0 +1,119 @@
+/* file location: src/styles/families/toggles.css
+ *
+ * Canonical home for the Toggle family (checkbox, radio, switch).
+ *
+ * Variants: switch, checkbox, radio
+ * Showcase:  /dev/showcase#toggle
+ *
+ * NOTE (2026-04 audit pass): today toggles are bare native <input> elements
+ * scattered across forms. The shared classes below are the approved wrapper
+ * pattern — pages should adopt them as they are touched.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Switch variant — iOS-style on/off switch */
+.app-toggle--switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--control-bg);
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.app-toggle--switch::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--surfaceMain);
+  transition: transform 0.18s ease;
+}
+
+.app-toggle--switch[aria-checked="true"],
+.app-toggle--switch.is-checked {
+  background: var(--accentMain);
+}
+
+.app-toggle--switch[aria-checked="true"]::after,
+.app-toggle--switch.is-checked::after {
+  transform: translateX(20px);
+}
+
+/* Checkbox variant — styled native checkbox */
+.app-toggle--checkbox {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--control-bg-hover);
+  border-radius: var(--radius-xs);
+  background: var(--surfaceMain);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.app-toggle--checkbox:checked {
+  background: var(--accentMain);
+  border-color: var(--accentMain);
+}
+
+.app-toggle--checkbox:checked::after {
+  content: "";
+  width: 5px;
+  height: 9px;
+  border: solid var(--onAccentText);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+/* Radio variant — styled native radio */
+.app-toggle--radio {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--control-bg-hover);
+  border-radius: 50%;
+  background: var(--surfaceMain);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-toggle--radio:checked {
+  border-color: var(--accentMain);
+}
+
+.app-toggle--radio:checked::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accentMain);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Trace mode — loud teal outlines on every toggle/check/radio. */
+:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-toggle="1"])
+  :where(
+    input[type="checkbox"],
+    input[type="radio"],
+    [role="switch"],
+    [role="checkbox"],
+    [role="radio"],
+    .app-toggle--switch,
+    .app-toggle--checkbox,
+    .app-toggle--radio
+  ) {
+  outline: 2px solid #14b8a6 !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.32) !important;
+}

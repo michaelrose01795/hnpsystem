@@ -400,9 +400,14 @@ const getCreateSectionLabel = (section, mode) => {
   );
 };
 
-const scanSections = ({ route, registry }) => {
+const isOverlayInternalNode = (node) =>
+  Boolean(node?.closest?.("[data-dev-overlay-internal='1']"));
+
+const scanSections = ({ route, registry, activeCategoryIds }) => {
   const sectionsByKey = new Map();
-  const explicitNodes = Array.from(document.querySelectorAll("[data-dev-section-key]"));
+  const explicitNodes = Array.from(document.querySelectorAll("[data-dev-section-key]")).filter(
+    (node) => !isOverlayInternalNode(node)
+  );
 
   explicitNodes.forEach((node, index) => {
     const key = sanitizeKey(node.getAttribute("data-dev-section-key"));
@@ -437,6 +442,7 @@ const scanSections = ({ route, registry }) => {
     const key = sanitizeKey(entry?.key);
     const node = entry?.element;
     if (!key || !node || sectionsByKey.has(key) || !node.isConnected) return;
+    if (isOverlayInternalNode(node)) return;
     sectionsByKey.set(
       key,
       buildEntry({
@@ -455,13 +461,17 @@ const scanSections = ({ route, registry }) => {
   });
 
   // Fallback detection for non-registered structures. The selectors + size
-  // thresholds are declared per category in src/lib/dev-layout/categories.js
-  // so new categories can be added in one place.
+  // thresholds are declared per category in src/lib/dev-layout/categories.js.
+  // We only scan categories that are currently active — this prevents runaway
+  // work and, critically, stops the overlay from recursively detecting its
+  // own buttons/inputs/dialogs when those categories are toggled off.
   let fallbackIndex = 0;
-  DEV_OVERLAY_FALLBACK_GROUPS.forEach(({ selector, type, minWidth, minHeight }) => {
+  DEV_OVERLAY_FALLBACK_GROUPS.forEach(({ selector, type, minWidth, minHeight, categoryId }) => {
+    if (activeCategoryIds && categoryId && !activeCategoryIds.has(categoryId)) return;
     Array.from(document.querySelectorAll(selector)).forEach((node) => {
       if (!node || node.getAttribute("data-dev-section-key")) return;
       if (node.closest("[data-dev-disable-fallback='1']")) return;
+      if (isOverlayInternalNode(node)) return;
       const explicitParent = node.closest("[data-dev-section-key]");
       if (explicitParent === node) return;
       const rect = node.getBoundingClientRect();
@@ -639,21 +649,44 @@ export default function DevLayoutOverlay() {
   const { registeredSections, syncComputedSections } = useDevLayoutRegistry();
   const {
     canAccess,
+    hydrated,
     enabled,
+    toggleEnabled,
     mode,
     fullScreen,
     legacyMarkers,
     setMode,
     toggleFullScreen,
     toggleLegacyMarkers,
-    cycleMode,
+    categories,
+    categoryFilters,
+    toggleCategoryFilter,
+    setAllCategoryFilters,
+    resetCategoryFilters,
     isCategoryActive,
+    panelOpen,
+    setPanelOpen,
   } = useDevLayoutOverlay();
   const [sections, setSections] = useState([]);
   const [selectedKey, setSelectedKey] = useState("");
   const [copiedAction, setCopiedAction] = useState("");
-  const [copiedText, setCopiedText] = useState("");
   const rafRef = useRef(null);
+
+  // Stable set of active category ids for the scanner — rebuilt only when
+  // filters change. Prevents scanning categories the user has turned off
+  // (which also prevents the overlay from detecting its own internal DOM
+  // when those element types are disabled).
+  const activeCategoryIds = useMemo(() => {
+    const set = new Set();
+    Object.entries(categoryFilters || {}).forEach(([id, on]) => {
+      if (on) set.add(id);
+    });
+    return set;
+  }, [categoryFilters]);
+  const activeCategorySignature = useMemo(
+    () => Array.from(activeCategoryIds).sort().join("|"),
+    [activeCategoryIds]
+  );
 
   useEffect(() => {
     if (!canAccess || !enabled || typeof window === "undefined") {
@@ -664,7 +697,7 @@ export default function DevLayoutOverlay() {
 
     const update = () => {
       const route = router.asPath || router.pathname || "/";
-      const scanned = scanSections({ route, registry: registeredSections });
+      const scanned = scanSections({ route, registry: registeredSections, activeCategoryIds });
       setSections(scanned);
       syncComputedSections(route, scanned);
     };
@@ -698,7 +731,8 @@ export default function DevLayoutOverlay() {
         rafRef.current = null;
       }
     };
-  }, [canAccess, enabled, router.asPath, router.pathname, registeredSections, syncComputedSections]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canAccess, enabled, router.asPath, router.pathname, registeredSections, syncComputedSections, activeCategorySignature]);
 
   const overlayBounds = useMemo(() => {
     if (fullScreen) {
@@ -755,7 +789,7 @@ export default function DevLayoutOverlay() {
     return () => window.clearTimeout(timer);
   }, [copiedAction]);
 
-  if (!canAccess || !enabled) return null;
+  if (!canAccess || !hydrated) return null;
 
   const currentRoute = router.asPath || router.pathname || "/";
   const isJobCardsCreateRoute = currentRoute.startsWith("/job-cards/create");
@@ -763,10 +797,10 @@ export default function DevLayoutOverlay() {
   const handleCopy = async (type, text) => {
     await copyText(text);
     setCopiedAction(type);
-    setCopiedText(text || "");
   };
   const handleInspectClick = async (sectionKey) => {
     setSelectedKey(sectionKey);
+    setPanelOpen(true);
     const section = scopedSections.find((entry) => entry.key === sectionKey);
     if (!section) return;
     const prompts = buildPrompts(section);
@@ -782,9 +816,271 @@ export default function DevLayoutOverlay() {
       }
     : undefined;
 
+  const activeCategoryCount = categories.reduce(
+    (total, cat) => total + (categoryFilters[cat.id] ? 1 : 0),
+    0
+  );
+
+  const selectedPrompts = scopedSelected ? buildPrompts(scopedSelected) : null;
+
+  const renderUnifiedPanel = () => {
+    if (!panelOpen) return null;
+
+    return (
+      <aside
+        className={`${styles.panel} ${isJobCardsCreateRoute ? styles.panelCreate : ""}`.trim()}
+        data-dev-overlay-internal="1"
+        role="dialog"
+        aria-label="Dev layout inspector"
+      >
+        <div className={styles.panelScroll}>
+          <div className={styles.panelHeader}>
+            <div className={styles.panelTitleBlock}>
+              <p className={styles.kicker}>Dev Layout Inspector</p>
+              <h3 className={styles.title}>
+                {scopedSelected
+                  ? `${scopedSelected.route} :: ${scopedSelected.number} (${scopedSelected.key})`
+                  : enabled
+                  ? "Overlay controls"
+                  : "Overlay disabled"}
+              </h3>
+              <p className={styles.subtitle}>
+                {scopedSelected
+                  ? `${scopedSelected.type} · ${scopedSelected.source}`
+                  : `Route ${currentRoute} · ${stats.total} section${stats.total === 1 ? "" : "s"} detected`}
+              </p>
+            </div>
+            <div className={styles.panelHeaderActions}>
+              <button
+                type="button"
+                className={`${styles.iconBtn}`.trim()}
+                onClick={() => setPanelOpen(false)}
+                aria-label="Minimise dev overlay panel"
+                title="Minimise"
+              >
+                −
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.controlsBlock}>
+            <div className={styles.controlRow}>
+              <label className={styles.controlLabel}>
+                <span>Overlay enabled</span>
+                <span className={styles.controlHint}>
+                  {enabled ? "Rendering on the page" : "Hidden — no boxes or outlines"}
+                </span>
+              </label>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={enabled}
+                aria-label="Toggle overlay master"
+                className={`${styles.switch} ${enabled ? styles.switchOn : ""}`.trim()}
+                onClick={toggleEnabled}
+              />
+            </div>
+
+            <div className={styles.controlRow}>
+              <span className={styles.controlLabel}>
+                <span>Label mode</span>
+              </span>
+              <div className={styles.modeRow}>
+                {["labels", "details", "inspect"].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`${styles.modeBtn} ${mode === value ? styles.modeBtnActive : ""}`.trim()}
+                    onClick={() => setMode(value)}
+                    aria-pressed={mode === value}
+                    disabled={!enabled}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.controlRow}>
+              <span className={styles.controlLabel}>
+                <span>Full-screen scope</span>
+                <span className={styles.controlHint}>Extend overlay over the sidebar/topbar</span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={fullScreen}
+                aria-label="Toggle full-screen overlay"
+                className={`${styles.switch} ${fullScreen ? styles.switchOn : ""}`.trim()}
+                onClick={toggleFullScreen}
+                disabled={!enabled}
+              />
+            </div>
+
+            <div className={styles.controlRow}>
+              <span className={styles.controlLabel}>
+                <span>Dotted markers</span>
+                <span className={styles.controlHint}>Extra dashed lines for nested/fallback</span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={legacyMarkers}
+                aria-label="Toggle dotted markers"
+                className={`${styles.switch} ${legacyMarkers ? styles.switchOn : ""}`.trim()}
+                onClick={toggleLegacyMarkers}
+                disabled={!enabled}
+              />
+            </div>
+          </div>
+
+          <div className={styles.controlsBlock}>
+            <div className={styles.controlsHead}>
+              <p className={styles.blockTitle}>
+                Categories <span className={styles.countChip}>{activeCategoryCount}/{categories.length}</span>
+              </p>
+              <div className={styles.bulkRow}>
+                <button
+                  type="button"
+                  className={styles.bulkBtn}
+                  onClick={() => setAllCategoryFilters(true)}
+                  disabled={!enabled}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  className={styles.bulkBtn}
+                  onClick={() => setAllCategoryFilters(false)}
+                  disabled={!enabled}
+                >
+                  None
+                </button>
+                <button
+                  type="button"
+                  className={styles.bulkBtn}
+                  onClick={resetCategoryFilters}
+                  disabled={!enabled}
+                  title="Reset to defaults"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+            <div className={styles.categoryGrid}>
+              {categories.map((cat) => {
+                const active = Boolean(categoryFilters[cat.id]);
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    role="switch"
+                    aria-checked={active}
+                    className={`${styles.categoryPill} ${active ? styles.categoryPillActive : ""}`.trim()}
+                    onClick={() => toggleCategoryFilter(cat.id)}
+                    disabled={!enabled}
+                    title={cat.description || cat.label}
+                  >
+                    <span
+                      className={`${styles.categoryCheck} ${active ? styles.categoryCheckOn : ""}`.trim()}
+                      aria-hidden="true"
+                    >
+                      ✓
+                    </span>
+                    <span
+                      className={styles.categorySwatch}
+                      style={{ background: cat.color }}
+                      aria-hidden="true"
+                    />
+                    <span className={styles.categoryName}>{cat.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {scopedSelected && selectedPrompts && (
+            <div className={styles.selectedBlock}>
+              <div className={styles.selectedHead}>
+                <p className={styles.blockTitle}>Selected section</p>
+                <button
+                  type="button"
+                  className={styles.ghostBtn}
+                  onClick={() => setSelectedKey("")}
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className={styles.grid}>
+                <span className={styles.labelKey}>Element</span>
+                <span className={styles.value}>{scopedSelected.tagName || "unknown"} · {scopedSelected.wrapperClass}</span>
+                <span className={styles.labelKey}>Parent</span>
+                <span className={styles.value}>{scopedSelected.parentNumber || "none"} ({scopedSelected.parentKey || "none"})</span>
+                <span className={styles.labelKey}>Children</span>
+                <span className={styles.value}>{scopedSelected.childNumbers.join(", ") || "none"}</span>
+                <span className={styles.labelKey}>Padding</span>
+                <span className={styles.value}>{scopedSelected.padding}</span>
+                <span className={styles.labelKey}>Radius</span>
+                <span className={styles.value}>{scopedSelected.radius}</span>
+                <span className={styles.labelKey}>Bounds</span>
+                <span className={styles.value}>{scopedSelected.width}×{scopedSelected.height} at ({scopedSelected.left}, {scopedSelected.top})</span>
+                <span className={styles.labelKey}>Gap / Offset</span>
+                <span className={styles.value}>
+                  gap {scopedSelected.computedGapFromPrevious ?? "n/a"}px · left {scopedSelected.computedLeftOffsetFromParent ?? "n/a"}px
+                </span>
+                <span className={styles.labelKey}>Background</span>
+                <span className={styles.value}>{scopedSelected.backgroundToken}</span>
+              </div>
+
+              {scopedSelected.textPreview ? (
+                <p className={styles.previewText}>{scopedSelected.textPreview}</p>
+              ) : null}
+
+              <div className={styles.row}>
+                {scopedSelected.issueTags.length === 0 && (
+                  <span className={`${styles.tag} ${styles.tagSuccess}`}>no-issues-detected</span>
+                )}
+                {scopedSelected.issueTags.map((tag) => (
+                  <span key={tag} className={`${styles.tag} ${tagToneClass(tag)}`.trim()}>{tag}</span>
+                ))}
+              </div>
+
+              <div className={styles.row}>
+                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("reference", selectedPrompts.reference)}>Copy ref</button>
+                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("debug", selectedPrompts.debug)}>Copy debug</button>
+                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("codex", selectedPrompts.codex)}>Copy Codex prompt</button>
+                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("claude", selectedPrompts.claude)}>Copy Claude prompt</button>
+              </div>
+              <p className={styles.copyStatus}>
+                {copiedAction ? `Copied ${copiedAction}` : "Pick a copy action to export context for this section."}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <p className={styles.footerHint}>
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> toggle ·{" "}
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> cycle mode ·{" "}
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> this panel
+        </p>
+      </aside>
+    );
+  };
+
+  if (!enabled) {
+    return renderUnifiedPanel();
+  }
+
   return (
-    <div className={`${styles.root} ${isJobCardsCreateRoute ? styles.rootCreate : ""}`.trim()} aria-hidden="true" style={overlayStyle}>
-      {scopedSections.map((section) => {
+    <>
+      <div
+        className={`${styles.root} ${isJobCardsCreateRoute ? styles.rootCreate : ""}`.trim()}
+        data-dev-overlay-internal="1"
+        aria-hidden="true"
+        style={overlayStyle}
+      >
+        {scopedSections.map((section) => {
         const selectedClass = scopedSelected?.key === section.key ? styles.boxSelected : "";
         const sidebarSection = fullScreen && isSidebarSection(section);
         const primarySidebarSection = fullScreen && isPrimarySidebarSection(section);
@@ -923,199 +1219,8 @@ export default function DevLayoutOverlay() {
         </>
       )}
 
-      {scopedSelected && (
-        <aside className={`${styles.panel} ${isJobCardsCreateRoute ? styles.panelCreate : ""}`.trim()} role="dialog" aria-label="Dev layout inspector">
-          <div className={styles.panelScroll}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelTitleBlock}>
-                <p className={styles.kicker}>Dev Layout Inspector</p>
-                <h3 className={styles.title}>
-                  Section {scopedSelected.number} · {scopedSelected.key}
-                </h3>
-                <p className={styles.subtitle}>
-                  {scopedSelected.route} · {scopedSelected.type} · {scopedSelected.source}
-                </p>
-              </div>
-              <div className={styles.panelHeaderActions}>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={fullScreen}
-                  aria-label="Toggle full-screen dev layout overlay"
-                  className={`app-btn ${fullScreen ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
-                  onClick={toggleFullScreen}
-                >
-                  Full Screen {fullScreen ? "On" : "Off"}
-                </button>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={legacyMarkers}
-                  aria-label="Toggle extra dotted dev markers"
-                  className={`app-btn ${legacyMarkers ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
-                  onClick={toggleLegacyMarkers}
-                >
-                  Dotted Lines {legacyMarkers ? "On" : "Off"}
-                </button>
-                <button
-                  type="button"
-                  className={`app-btn ${mode === "labels" ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
-                  aria-pressed={mode === "labels"}
-                  onClick={() => setMode("labels")}
-                >
-                  Labels
-                </button>
-                <button
-                  type="button"
-                  className={`app-btn ${mode === "details" ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
-                  aria-pressed={mode === "details"}
-                  onClick={() => setMode("details")}
-                >
-                  Details
-                </button>
-                <button
-                  type="button"
-                  className={`app-btn ${mode === "inspect" ? "app-btn--primary" : "app-btn--secondary"} app-btn--xs app-btn--pill`}
-                  aria-pressed={mode === "inspect"}
-                  onClick={cycleMode}
-                >
-                  Next Mode
-                </button>
-                <button type="button" className="app-btn app-btn--ghost app-btn--xs" onClick={() => setSelectedKey("")}>
-                  Close
-                </button>
-              </div>
-            </div>
-
-            <div className={styles.summaryRow}>
-              <div className={styles.summaryCard}>
-                <span className={styles.summaryLabel}>Sections</span>
-                <span className={styles.summaryValue}>{stats.total}</span>
-              </div>
-              <div className={styles.summaryCard}>
-                <span className={styles.summaryLabel}>Flagged</span>
-                <span className={styles.summaryValue}>{stats.issueCount}</span>
-              </div>
-              <div className={styles.summaryCard}>
-                <span className={styles.summaryLabel}>Shells</span>
-                <span className={styles.summaryValue}>{stats.shellCount}</span>
-              </div>
-              <div className={styles.summaryCard}>
-                <span className={styles.summaryLabel}>Fallback</span>
-                <span className={styles.summaryValue}>{stats.fallbackCount}</span>
-              </div>
-            </div>
-
-            {(() => {
-              const prompts = buildPrompts(scopedSelected);
-              return (
-                <div className={styles.sectionBlock}>
-                  <p className={styles.blockTitle}>Copy Tools</p>
-                  <div className={styles.row}>
-                    <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("reference", prompts.reference)}>Copy section reference</button>
-                    <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("debug", prompts.debug)}>Copy debug summary</button>
-                    <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("codex", prompts.codex)}>Copy Codex prompt</button>
-                    <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("claude", prompts.claude)}>Copy Claude prompt</button>
-                  </div>
-                  <p className={styles.copyStatus}>{copiedAction ? `Copied ${copiedAction}` : "Select any copy action to export context."}</p>
-                  <p className={styles.copyStatus}>{copiedAction === "reference" ? copiedText : "Shortcuts: Ctrl+Shift+D toggles overlay, Ctrl+Shift+M cycles modes. Dotted Lines controls the extra dashed fallback markers across pages."}</p>
-                </div>
-              );
-            })()}
-
-            <div className={styles.sectionBlock}>
-              <p className={styles.blockTitle}>Overlay Colour Guide</p>
-              <div className={styles.row}>
-                <span className={styles.legendItem}>
-                  <span
-                    className={styles.legendSwatch}
-                    style={{ borderColor: "rgba(var(--accent-base-rgb), 0.74)", borderStyle: "dashed" }}
-                    aria-hidden="true"
-                  />
-                  Default section outline
-                </span>
-                <span className={styles.legendItem}>
-                  <span
-                    className={styles.legendSwatch}
-                    style={{ borderColor: "var(--accent-strong)", borderStyle: "solid" }}
-                    aria-hidden="true"
-                  />
-                  Selected section outline
-                </span>
-              </div>
-              <p className={styles.emptyHint}>
-                Dashed accent outlines mark every detected section. The solid accent outline shows the section currently selected in the inspector.
-              </p>
-            </div>
-
-            <div className={styles.sectionBlock}>
-              <p className={styles.blockTitle}>Identity</p>
-              <div className={styles.grid}>
-                <span className={styles.labelKey}>Route</span><span className={styles.value}>{scopedSelected.route}</span>
-                <span className={styles.labelKey}>Section Number</span><span className={styles.value}>{scopedSelected.number}</span>
-                <span className={styles.labelKey}>Stable Key</span><span className={`${styles.value} ${styles.codeValue}`}>{scopedSelected.key}</span>
-                <span className={styles.labelKey}>Element</span><span className={styles.value}>{scopedSelected.tagName || "unknown"}</span>
-                <span className={styles.labelKey}>Section Type</span><span className={styles.value}>{scopedSelected.type}</span>
-                <span className={styles.labelKey}>Wrapper Class</span><span className={styles.value}>{scopedSelected.wrapperClass}</span>
-                <span className={styles.labelKey}>Source</span><span className={styles.value}>{scopedSelected.source}</span>
-              </div>
-            </div>
-
-            <div className={styles.sectionBlock}>
-              <p className={styles.blockTitle}>Content Preview</p>
-              <p className={styles.previewText}>
-                {scopedSelected.textPreview || "No visible text content detected for this section."}
-              </p>
-            </div>
-
-            <div className={styles.sectionBlock}>
-              <p className={styles.blockTitle}>Hierarchy</p>
-              <div className={styles.grid}>
-                <span className={styles.labelKey}>Parent</span><span className={styles.value}>{scopedSelected.parentNumber || "none"} ({scopedSelected.parentKey || "none"})</span>
-                <span className={styles.labelKey}>Children</span><span className={styles.value}>{scopedSelected.childNumbers.join(", ") || "none"} {scopedSelected.childKeys.length ? `(${scopedSelected.childKeys.join(", ")})` : ""}</span>
-              </div>
-            </div>
-
-            <div className={styles.sectionBlock}>
-              <p className={styles.blockTitle}>Layout</p>
-              <div className={styles.grid}>
-                <span className={styles.labelKey}>Padding</span><span className={styles.value}>{scopedSelected.padding}</span>
-                <span className={styles.labelKey}>Margin</span><span className={styles.value}>{scopedSelected.margin}</span>
-                <span className={styles.labelKey}>Radius</span><span className={styles.value}>{scopedSelected.radius}</span>
-                <span className={styles.labelKey}>Width/Bounds</span><span className={styles.value}>{scopedSelected.width}px × {scopedSelected.height}px at x {scopedSelected.left}, y {scopedSelected.top}</span>
-                <span className={styles.labelKey}>Gap from Prev</span><span className={styles.value}>{scopedSelected.computedGapFromPrevious ?? "n/a"} px</span>
-                <span className={styles.labelKey}>Left Offset</span><span className={styles.value}>{scopedSelected.computedLeftOffsetFromParent ?? "n/a"} px</span>
-              </div>
-            </div>
-
-            <div className={styles.sectionBlock}>
-              <p className={styles.blockTitle}>Background</p>
-              <div className={styles.grid}>
-                <span className={styles.labelKey}>Background Token</span><span className={styles.value}>{scopedSelected.backgroundToken}</span>
-                <span className={styles.labelKey}>Background Class</span><span className={styles.value}>{scopedSelected.backgroundClass || "none"}</span>
-                <span className={styles.labelKey}>Computed Background</span><span className={styles.value}>{scopedSelected.backgroundColor}</span>
-              </div>
-            </div>
-
-            <div className={styles.sectionBlock}>
-              <p className={styles.blockTitle}>Likely Issues</p>
-              <div className={styles.row}>
-                {scopedSelected.issueTags.length === 0 && <span className={`${styles.tag} ${styles.tagSuccess}`}>no-issues-detected</span>}
-                {scopedSelected.issueTags.map((tag) => (
-                  <span key={tag} className={`${styles.tag} ${tagToneClass(tag)}`.trim()}>{tag}</span>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.sectionBlock}>
-              <p className={styles.blockTitle}>Overlay Usage</p>
-              <p className={styles.emptyHint}>
-                Click any highlighted region to focus it. In Full Screen mode, sidebar sections are pinned and tinted separately so the navigation lane reads more clearly against the main content area.
-              </p>
-            </div>
-          </div>
-        </aside>
-      )}
-    </div>
+      </div>
+      {renderUnifiedPanel()}
+    </>
   );
 }
