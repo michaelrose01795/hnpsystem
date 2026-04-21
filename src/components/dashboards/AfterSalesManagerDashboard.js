@@ -246,12 +246,7 @@ export default function AfterSalesManagerDashboard() {
           <Link
             key={action.href}
             href={action.href}
-            className="app-topbar-link"
-            style={{
-              borderRadius: "var(--radius-pill)",
-              fontWeight: 600,
-              fontSize: "0.9rem",
-            }}
+            className="app-btn app-btn--control app-btn--pill"
           >
             {action.label}
           </Link>

@@ -1,7 +1,13 @@
-// file location: /src/components/dropdownAPI/Dropdown.js
+// file location: src/components/ui/dropdownAPI/Dropdown.js
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { dropdownTriggerButtonStyle } from "@/styles/appTheme";
+import {
+  normalizeOptions,
+  filterOptionsBySearch,
+  useOutsideClick,
+  DropdownChevron,
+} from "./_internal";
 
 const pickStyleKeys = (style, keys) => {
   if (!style) return undefined;
@@ -112,56 +118,7 @@ export default function Dropdown({
   const searchInputRef = useRef(null);
 
   const normalizedOptions = useMemo(
-    () =>
-      options.map((option, index) => {
-        if (typeof option === "string" || typeof option === "number") {
-          return {
-            key: String(option),
-            label: String(option),
-            value: option,
-            raw: option,
-            description: "",
-            disabled: false,
-          };
-        }
-
-        if (option && typeof option === "object") {
-          const keyCandidate =
-            option.key ??
-            option.id ??
-            option.value ??
-            option.name ??
-            option.label ??
-            index;
-          const labelCandidate =
-            option.label ??
-            option.name ??
-            option.title ??
-            option.displayName ??
-            option.value ??
-            option.email ??
-            `Option ${index + 1}`;
-
-          return {
-            key: String(keyCandidate),
-            label: labelCandidate,
-            value: option.value ?? option.id ?? option.key ?? option.name ?? "",
-            raw: option.raw ?? option,
-            description: option.description ?? option.subtitle ?? option.email ?? "",
-            meta: option.meta ?? option.tagline ?? "",
-            disabled: Boolean(option.disabled),
-          };
-        }
-
-        return {
-          key: `option-${index}`,
-          label: `Option ${index + 1}`,
-          value: option,
-          raw: option,
-          description: "",
-          disabled: false,
-        };
-      }),
+    () => normalizeOptions(options, { includeDescription: true }),
     [options]
   );
 
@@ -181,16 +138,13 @@ export default function Dropdown({
     );
   }, [value, normalizedOptions]);
 
-  const visibleOptions = useMemo(() => {
-    if (!searchable || !searchTerm.trim()) return normalizedOptions;
-    const needle = searchTerm.trim().toLowerCase();
-    return normalizedOptions.filter((option) => {
-      const label = String(option.label ?? "").toLowerCase();
-      const description = String(option.description ?? "").toLowerCase();
-      const meta = String(option.meta ?? "").toLowerCase();
-      return label.includes(needle) || description.includes(needle) || meta.includes(needle);
-    });
-  }, [normalizedOptions, searchable, searchTerm]);
+  const visibleOptions = useMemo(
+    () =>
+      searchable
+        ? filterOptionsBySearch(normalizedOptions, searchTerm, ["label", "description", "meta"])
+        : normalizedOptions,
+    [normalizedOptions, searchable, searchTerm]
+  );
 
   const toggle = () => {
     if (disabled) return;
@@ -289,19 +243,7 @@ export default function Dropdown({
     }
   }, [activeIndex, isOpen, visibleOptions.length]);
 
-  // Close when clicking outside
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClick = (event) => {
-      if (!dropdownRef.current) return;
-      const menuNode = menuRef.current;
-      if (!dropdownRef.current.contains(event.target) && !(menuNode && menuNode.contains(event.target))) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [isOpen]);
+  useOutsideClick([dropdownRef, menuRef], () => setIsOpen(false), isOpen);
 
   useEffect(() => {
     if (!isOpen) {
@@ -396,16 +338,7 @@ export default function Dropdown({
           {selectedOption?.label || placeholder}
         </span>
         <span className="dropdown-api__chevron" aria-hidden="true" style={mergedChevronStyle}>
-          <svg width="16" height="16" viewBox="0 0 16 16" role="presentation">
-            <path
-              d="M4.5 6l3.5 3.5L11.5 6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <DropdownChevron />
         </span>
       </button>
       {helperText && <p className="dropdown-api__helper">{helperText}</p>}

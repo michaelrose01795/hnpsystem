@@ -994,7 +994,7 @@ export default function Layout({
                       {currentJob?.jobNumber ? (
                         <Link
                           href={`/job-cards/myjobs/${currentJob.jobNumber}`}
-                          className="app-topbar-button app-topbar-button--primary"
+                          className="app-btn app-btn--primary"
                         >
                           {`Open Job ${currentJob.jobNumber}`}
                         </Link>
@@ -1002,7 +1002,7 @@ export default function Layout({
                         <button
                           type="button"
                           disabled
-                          className="app-topbar-button"
+                          className="app-btn app-btn--control"
                         >
                           No Current Job
                         </button>
@@ -1010,7 +1010,7 @@ export default function Layout({
                       <button
                         type="button"
                         onClick={() => setIsModalOpen(true)}
-                        className="app-topbar-button app-topbar-button--secondary"
+                        className="app-btn app-btn--control"
                       >
                         Start Job
                       </button>
@@ -1035,7 +1035,7 @@ export default function Layout({
                           <Link
                             key={action.href}
                             href={action.href}
-                            className={`app-topbar-button app-topbar-button--secondary${active ? " is-active" : ""}`}
+                            className={`app-btn app-btn--control${active ? " is-active" : ""}`}
                           >
                             {action.label}
                           </Link>
@@ -1063,7 +1063,7 @@ export default function Layout({
                           <Link
                             key={action.href}
                             href={action.href}
-                            className={`app-topbar-button app-topbar-button--secondary${active ? " is-active" : ""}`}
+                            className={`app-btn app-btn--control${active ? " is-active" : ""}`}
                           >
                             {action.label}
                           </Link>
@@ -1111,7 +1111,7 @@ export default function Layout({
                   {userRoles.includes("admin manager") && (
                     <Link
                       href="/admin/users"
-                      className="app-topbar-button app-topbar-button--primary"
+                      className="app-btn app-btn--primary"
                     >
                       Create User
                     </Link>

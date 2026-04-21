@@ -2902,7 +2902,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                 disabled={!canEdit || isArrived}
                                 placeholder="Time"
                                 size="sm"
-                                format="24"
                                 minuteStep={15}
                                 className="compact-input"
                               />

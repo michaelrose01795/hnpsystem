@@ -2733,17 +2733,13 @@ export default function TechJobDetailPage() {
             padding: "10px 14px",
             flexShrink: 0
           }}>
-              {/* Status pill uses the global `.app-topbar-button` shape (padding,
-                  radius, height, font) for every status so the badge never drifts
-                  from the surrounding button row. Semantic colour comes from the
-                  STATUS_BADGE_STYLES token map — all values are theme tokens, not
-                  one-offs. `--primary` variant is used for "Complete" so the success
-                  state matches the filled accent treatment. */}
+              {/* Status pill rides the shared .app-btn shape. Semantic colour
+                  for non-complete states comes from STATUS_BADGE_STYLES — those
+                  background/color tokens are applied inline because .app-btn
+                  does not expose a per-status colour variant. */}
               <span
                 className={
-                  isHeaderCompleteStatus
-                    ? "app-topbar-button app-topbar-button--primary"
-                    : "app-topbar-button"
+                  isHeaderCompleteStatus ? "app-btn app-btn--primary" : "app-btn"
                 }
                 style={
                   isHeaderCompleteStatus

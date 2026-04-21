@@ -65,10 +65,7 @@ import {
 import { revalidateJob, revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { useJob } from "@/hooks/useJob"; // SWR-powered job card data with caching and revalidation
 import { resolveJobCardPermissions } from "@/features/jobCards/workflow/permissions";
-import { getWriteUpCompletionState, getInvoiceWorkflowState, getNextBestAction } from "@/features/jobCards/workflow/selectors";
-import JobWorkflowAssistantCard from "@/features/jobCards/components/JobWorkflowAssistantCard";
-import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
-import VhcAssistantPanel from "@/features/vhcAssistant/components/VhcAssistantPanel";
+import { getWriteUpCompletionState, getInvoiceWorkflowState } from "@/features/jobCards/workflow/selectors";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 // Dynamic import loading state renders a structured skeleton that mirrors the
@@ -872,7 +869,6 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     canManageDocuments,
     canUseReleaseAction,
     canViewPartsTab,
-    canViewVhcTab,
     isPartsWriteUpVhcLockedByStatus,
     canEditPartsWriteUpVhc,
     isClockingLockedByStatus,
@@ -3415,47 +3411,6 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     invoicePaymentComplete &&
     !jobReleased;
 
-  const workflowSummary = {
-    writeUpComplete,
-    vhcLabel: !jobData.vhcRequired ? "Not required" : vhcSummaryRowsCompleted ? "Complete" : "Pending",
-    partsLabel: partsReady && partsAllocated ? "Ready" : "Action needed",
-    mileageRecorded,
-    invoiceReady: invoicePrerequisitesMet,
-  };
-
-  const assistantGuidance = getNextBestAction({
-    canEdit,
-    canViewPartsTab,
-    canViewVhcTab,
-    isInvoiceOrBeyondReadOnly,
-    overallStatusId,
-    writeUpComplete,
-    vhcRequired: Boolean(jobData.vhcRequired),
-    vhcSummaryRowsCompleted,
-    partsAllocated,
-    partsReady,
-    mileageRecorded,
-    invoicePrerequisitesMet,
-    invoiceBlockingReasons,
-  });
-
-  const workflowDiagnostics = {
-    overallStatusId,
-    overallStatusLabel,
-    ...workflowSummary,
-    invoiceBlockingReasons,
-    permissions: {
-      canEdit,
-      canEditPartsWriteUpVhc,
-      canManageDocuments,
-      canViewPartsTab,
-      canViewVhcTab,
-      isInvoiceOrBeyondReadOnly,
-      isClockingLockedByStatus,
-      isPartsWriteUpVhcLockedByStatus,
-    },
-  };
-
   const jobVhcChecks = Array.isArray(jobData.vhcChecks) ? jobData.vhcChecks : [];
   const redIssues = jobVhcChecks.filter((check) => resolveVhcSeverity(check) === "red");
   const amberIssues = jobVhcChecks.filter((check) => resolveVhcSeverity(check) === "amber");
@@ -3790,11 +3745,6 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             </p>
           </div>
         </section>
-
-        <JobWorkflowAssistantCard
-          guidance={assistantGuidance}
-          workflowSummary={workflowSummary}
-        />
 
         {/* ✅ Vehicle & Customer Info Bar */}
         <section
@@ -8769,21 +8719,6 @@ function VHCTab({
       return rowView.dotStateKey === "awaiting";
     });
   }, [jobData?.vhcChecks]);
-  const vhcAssistantState = useMemo(
-    () =>
-      buildVhcAssistantState({
-        checks: Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [],
-        partsRows: Array.isArray(jobData?.parts_job_items) ? jobData.parts_job_items : [],
-        sectionStatus: {},
-        vhcRequired: Boolean(jobData?.vhcRequired),
-        vhcCompletedAt: jobData?.vhcCompletedAt || null,
-        sentToCustomer: Boolean(jobData?.vhcSentAt || jobData?.vhc_sent_at),
-        canEdit,
-        context: "service",
-      }),
-    [jobData?.vhcChecks, jobData?.parts_job_items, jobData?.vhcRequired, jobData?.vhcCompletedAt, jobData?.vhcSentAt, jobData?.vhc_sent_at, canEdit]
-  );
-
   const customerViewUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
     return `${window.location.origin}/vhc/customer-preview/${jobNumber}`;
@@ -8962,11 +8897,6 @@ function VHCTab({
       backgroundToken="surface"
       shell
     >
-      <VhcAssistantPanel
-        state={vhcAssistantState}
-        title="VHC Decision Assistant"
-        compact
-      />
       <VhcDetailsPanel
         jobNumber={jobNumber}
         readOnly={!canEdit}

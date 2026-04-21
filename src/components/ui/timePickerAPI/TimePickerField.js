@@ -20,7 +20,6 @@ export default function TimePickerField({
   helperText = "",
   className = "",
   size = "md",
-  format = "24", // "12" or "24" hour format
   minuteStep = 15,
   name,
   id,
@@ -91,7 +90,6 @@ export default function TimePickerField({
       helperText={helperText}
       className={className}
       size={size}
-      format={format}
       minuteStep={minuteStep}
       name={name}
       required={required}

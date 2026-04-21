@@ -132,8 +132,13 @@
   --accent-blue-rgb: var(--accentMainRgb);
   --calendar-selection-border: #facc15;
   --calendar-saturday-row-bg: #fefce8;
-  --calendar-amber-selected-bg: #ffe2c4;
-  --calendar-red-selected-bg: #ffd6d6;
+  /* Amber + Red selection tokens — hex values seeded from the Text-Field
+     helper-text tones (--warning-text #92400e and --danger-text #b91c1c)
+     rather than `var(--warning-text)` so the calendar tone can evolve
+     independently. Same red/green family as the Text-Field error/success
+     messaging. */
+  --calendar-amber-selected-bg: #92400e;
+  --calendar-red-selected-bg: #b91c1c;
   --calendar-today-row-bg: rgba(var(--accent-base-rgb), 0.08);
   --calendar-today-row-border: rgba(var(--accent-base-rgb), 0.35);
   --calendar-today-pill-bg: var(--accent-surface-hover);
@@ -183,7 +188,7 @@
   --section-card-border: none;
 
   /* Input tokens */
-  --input-radius: var(--radius-sm);
+  --input-radius: var(--control-radius);
   --input-padding: var(--control-padding);
   --input-bg: var(--control-bg);
   --input-border: var(--control-border);
@@ -249,8 +254,54 @@
   --control-muted-text: rgba(var(--text-secondary-rgb), 0.78);
   --control-icon: rgba(var(--text-secondary-rgb), 0.82);
   --control-menu-bg: var(--surfaceMain);
-  --control-menu-shadow: none;
+  --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 12px 32px rgba(var(--accentMainRgb), 0.22), 0 4px 12px rgba(0, 0, 0, 0.10);
   --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.12);
+  /* Dropdown family — seeded from the current Primary-button look but
+     dedicated so that later reskins of .app-btn--primary / --input-bg /
+     --control-bg don't ripple into dropdowns, calendars, timepickers. */
+  --dropdown-trigger-bg: var(--accentSurface);
+  --dropdown-trigger-color: var(--text-primary);
+  --dropdown-trigger-hover-bg: var(--accentSurfaceHover);
+  --dropdown-menu-bg: var(--surfaceMain);
+  /* Neutral levitation shadow — no accent ring, no accent glow. Two
+     layered drop shadows read as "floating above the page". */
+  --dropdown-menu-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.10);
+  --dropdown-option-bg: var(--accentSurface);
+  --dropdown-option-color: var(--text-primary);
+  --dropdown-option-hover-bg: var(--accentSurfaceHover);
+  --dropdown-option-selected-bg: var(--accentSurfaceHover);
+  --dropdown-option-selected-color: var(--accentText);
+  /* Calendar day — same copy-not-link pattern: seeded from the Primary
+     (resting/hover) and Secondary (selected) look, but dedicated so the
+     calendar stays stable if those buttons are later reskinned. */
+  --calendar-day-bg: var(--accentSurface);
+  --calendar-day-color: var(--text-primary);
+  --calendar-day-hover-bg: var(--accentSurfaceHover);
+  --calendar-day-selected-bg: var(--accentSurfaceHover);
+  --calendar-day-selected-color: var(--accentText);
+  /* Time picker option — same copy-not-link pattern. Primary at rest,
+     Secondary (accentSurfaceHover + accentText) when selected. */
+  --timepicker-option-bg: var(--accentSurface);
+  --timepicker-option-color: var(--text-primary);
+  --timepicker-option-hover-bg: var(--accentSurfaceHover);
+  --timepicker-option-selected-bg: var(--accentSurfaceHover);
+  --timepicker-option-selected-color: var(--accentText);
+  /* Now button — Primary-style via its own tokens (copy-not-link). */
+  --timepicker-now-bg: var(--accentSurface);
+  --timepicker-now-color: var(--text-primary);
+  --timepicker-now-hover-bg: var(--accentSurfaceHover);
+  /* Search bar clear / loading button — copy-not-link Primary. */
+  --searchbar-clear-bg: var(--accentSurface);
+  --searchbar-clear-color: var(--text-primary);
+  --searchbar-clear-hover-bg: var(--accentSurfaceHover);
+  /* Tab-group button — copy-not-link from Primary / Secondary. */
+  --tab-button-bg: var(--accentSurface);
+  --tab-button-color: var(--text-primary);
+  --tab-button-hover-bg: var(--accentSurfaceHover);
+  --tab-button-selected-bg: var(--accentSurfaceHover);
+  --tab-button-selected-color: var(--accentText);
   --control-transition:
     background-color 0.18s ease,
     border-color 0.18s ease,
@@ -471,8 +522,10 @@
   --accent-blue-rgb: var(--accentMainRgb);
   --calendar-selection-border: #c8641a;
   --calendar-saturday-row-bg: #1a1a0e;
-  --calendar-amber-selected-bg: #3a2614;
-  --calendar-red-selected-bg: #321616;
+  /* Dark theme: seeded from dark-mode --warning-text #ffd08a and
+     --danger-text #fecaca — same copy-not-link pattern as light. */
+  --calendar-amber-selected-bg: #ffd08a;
+  --calendar-red-selected-bg: #fecaca;
   --calendar-today-row-bg: rgba(var(--accent-base-rgb), 0.18);
   --calendar-today-row-border: rgba(var(--accent-base-rgb), 0.55);
   --calendar-today-pill-bg: var(--accent-surface-hover);
@@ -513,8 +566,56 @@
   --control-muted-text: rgba(var(--text-secondary-rgb), 0.76);
   --control-icon: rgba(var(--text-secondary-rgb), 0.84);
   --control-menu-bg: var(--surfaceMain);
-  --control-menu-shadow: none;
+  --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 12px 32px rgba(var(--accentMainRgb), 0.22), 0 4px 12px rgba(0, 0, 0, 0.10);
   --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.18);
+  /* Dropdown family — same token set as light, tuned a little stronger so
+     the glow still reads on the dark surface. */
+  --dropdown-trigger-bg: var(--accentSurface);
+  --dropdown-trigger-color: var(--text-primary);
+  --dropdown-trigger-hover-bg: var(--accentSurfaceHover);
+  --dropdown-menu-bg: var(--surfaceMain);
+  /* Dark mode: pure black shadows need to be stronger to register against
+     a dark surface. A subtle top highlight (1px white at 4%) adds a
+     barely-there edge so the menu still has a defined top even without
+     the accent ring. */
+  --dropdown-menu-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.65),
+    0 6px 16px rgba(0, 0, 0, 0.45),
+    0 -1px 0 rgba(255, 255, 255, 0.04) inset;
+  --dropdown-option-bg: var(--accentSurface);
+  --dropdown-option-color: var(--text-primary);
+  --dropdown-option-hover-bg: var(--accentSurfaceHover);
+  --dropdown-option-selected-bg: var(--accentSurfaceHover);
+  --dropdown-option-selected-color: var(--accentText);
+  /* Calendar day — same copy-not-link pattern: seeded from the Primary
+     (resting/hover) and Secondary (selected) look, but dedicated so the
+     calendar stays stable if those buttons are later reskinned. */
+  --calendar-day-bg: var(--accentSurface);
+  --calendar-day-color: var(--text-primary);
+  --calendar-day-hover-bg: var(--accentSurfaceHover);
+  --calendar-day-selected-bg: var(--accentSurfaceHover);
+  --calendar-day-selected-color: var(--accentText);
+  /* Time picker option — same copy-not-link pattern. Primary at rest,
+     Secondary (accentSurfaceHover + accentText) when selected. */
+  --timepicker-option-bg: var(--accentSurface);
+  --timepicker-option-color: var(--text-primary);
+  --timepicker-option-hover-bg: var(--accentSurfaceHover);
+  --timepicker-option-selected-bg: var(--accentSurfaceHover);
+  --timepicker-option-selected-color: var(--accentText);
+  /* Now button — Primary-style via its own tokens (copy-not-link). */
+  --timepicker-now-bg: var(--accentSurface);
+  --timepicker-now-color: var(--text-primary);
+  --timepicker-now-hover-bg: var(--accentSurfaceHover);
+  /* Search bar clear / loading button — copy-not-link Primary. */
+  --searchbar-clear-bg: var(--accentSurface);
+  --searchbar-clear-color: var(--text-primary);
+  --searchbar-clear-hover-bg: var(--accentSurfaceHover);
+  /* Tab-group button — copy-not-link from Primary / Secondary. */
+  --tab-button-bg: var(--accentSurface);
+  --tab-button-color: var(--text-primary);
+  --tab-button-hover-bg: var(--accentSurfaceHover);
+  --tab-button-selected-bg: var(--accentSurfaceHover);
+  --tab-button-selected-color: var(--accentText);
   --page-card-border: none;
   --page-card-bg: var(--surfaceMain);
   --page-card-bg-alt: var(--accentSurfaceSubtle);

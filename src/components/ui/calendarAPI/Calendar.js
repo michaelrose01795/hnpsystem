@@ -43,6 +43,7 @@ export default function Calendar({
   maxDate, // Date object, string, or timestamp
   disabledDates = [], // Array of dates to disable
   highlightedDates = [], // Array of dates to highlight (e.g., today)
+  bankHolidays = [], // Array of bank-holiday dates — styled in the danger-text tone
   showWeekNumbers = false,
   firstDayOfWeek = 1, // 0 = Sunday, 1 = Monday, etc.
   id,
@@ -60,9 +61,12 @@ export default function Calendar({
   const controlId = id || generatedId;
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [pickerMode, setPickerMode] = useState("days"); // "days" | "month-year"
   const calendarRef = useRef(null);
   const menuRef = useRef(null);
   const controlRef = useRef(null);
+  const yearScrollRef = useRef(null);
+  const selectedYearRef = useRef(null);
 
   // Normalize date value to Date object
   const normalizedValue = useMemo(() => {
@@ -166,6 +170,15 @@ export default function Calendar({
     });
   };
 
+  // Check if a date is a bank holiday
+  const isBankHoliday = (date) => {
+    if (!date) return false;
+    return bankHolidays.some((holiday) => {
+      const normalized = new Date(holiday);
+      return date.toDateString() === normalized.toDateString();
+    });
+  };
+
   // Check if a date is selected
   const isDateSelected = (date) => {
     if (!date || !normalizedValue) return false;
@@ -231,6 +244,43 @@ export default function Calendar({
   const monthYearDisplay = useMemo(() => {
     return currentMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   }, [currentMonth]);
+
+  // Month/year picker data
+  const pickerMonths = useMemo(
+    () => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    []
+  );
+  const pickerYears = useMemo(() => {
+    const out = [];
+    for (let y = 2000; y <= 3000; y += 1) out.push(y);
+    return out;
+  }, []);
+
+  // Reset picker to day view whenever the calendar is closed, and scroll
+  // the year list to the currently-selected year whenever the picker opens.
+  useEffect(() => {
+    if (!isOpen) {
+      setPickerMode("days");
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (pickerMode === "month-year" && selectedYearRef.current && yearScrollRef.current) {
+      selectedYearRef.current.scrollIntoView({ block: "center" });
+    }
+  }, [pickerMode]);
+
+  const handleMonthYearHeaderClick = () => {
+    setPickerMode((mode) => (mode === "days" ? "month-year" : "days"));
+  };
+
+  const handlePickMonth = (monthIndex) => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), monthIndex, 1));
+  };
+
+  const handlePickYear = (year) => {
+    setCurrentMonth(new Date(year, currentMonth.getMonth(), 1));
+  };
 
   // Get weekday names
   const weekDays = useMemo(() => {
@@ -315,9 +365,15 @@ export default function Calendar({
               </svg>
             </button>
 
-            <div className="calendar-api__month-year">
+            <button
+              type="button"
+              className="calendar-api__month-year"
+              onClick={handleMonthYearHeaderClick}
+              aria-expanded={pickerMode === "month-year"}
+              aria-label="Select month and year"
+            >
               {monthYearDisplay}
-            </div>
+            </button>
 
             <button
               type="button"
@@ -345,50 +401,112 @@ export default function Calendar({
             Today
           </button>
 
-          <div className="calendar-api__weekdays">
-            {weekDays.map((day, index) => (
-              <div key={index} className="calendar-api__weekday">
-                {day}
+          {pickerMode === "month-year" ? (
+            <div className="calendar-api__month-year-picker">
+              <div className="calendar-api__month-grid">
+                {pickerMonths.map((m, i) => {
+                  const isSelected = currentMonth.getMonth() === i;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      className={`calendar-api__picker-cell${isSelected ? " is-selected" : ""}`}
+                      onClick={() => handlePickMonth(i)}
+                    >
+                      {m}
+                    </button>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+              <div
+                className="calendar-api__year-scroll"
+                ref={yearScrollRef}
+                role="listbox"
+                aria-label="Year"
+              >
+                {pickerYears.map((y) => {
+                  const isSelected = currentMonth.getFullYear() === y;
+                  return (
+                    <button
+                      key={y}
+                      type="button"
+                      ref={isSelected ? selectedYearRef : null}
+                      className={`calendar-api__picker-cell${isSelected ? " is-selected" : ""}`}
+                      onClick={() => handlePickYear(y)}
+                      role="option"
+                      aria-selected={isSelected}
+                    >
+                      {y}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="calendar-api__weekdays">
+                {weekDays.map((day, index) => {
+                  // Match the header label to the actual weekday it represents,
+                  // accounting for firstDayOfWeek rotation, so Sun/Sat tint.
+                  const realWeekday = (firstDayOfWeek + index) % 7;
+                  const weekdayClass = [
+                    "calendar-api__weekday",
+                    realWeekday === 0 && "is-sunday",
+                    realWeekday === 6 && "is-saturday",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+                  return (
+                    <div key={index} className={weekdayClass}>
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
 
-          <div className="calendar-api__days">
-            {calendarDays.map((date, index) => {
-              if (!date) {
-                return <div key={`empty-${index}`} className="calendar-api__day calendar-api__day--empty" />;
-              }
+              <div className="calendar-api__days">
+                {calendarDays.map((date, index) => {
+                  if (!date) {
+                    return <div key={`empty-${index}`} className="calendar-api__day calendar-api__day--empty" />;
+                  }
 
-              const disabled = isDateDisabled(date);
-              const selected = isDateSelected(date);
-              const highlighted = isDateHighlighted(date);
-              const today = isToday(date);
+                  const disabled = isDateDisabled(date);
+                  const selected = isDateSelected(date);
+                  const highlighted = isDateHighlighted(date);
+                  const today = isToday(date);
+                  const weekday = date.getDay(); // 0=Sun, 6=Sat
+                  const holiday = isBankHoliday(date);
 
-              const dayClassName = [
-                "calendar-api__day",
-                disabled && "is-disabled",
-                selected && "is-selected",
-                highlighted && "is-highlighted",
-                today && "is-today",
-              ]
-                .filter(Boolean)
-                .join(" ");
+                  const dayClassName = [
+                    "calendar-api__day",
+                    disabled && "is-disabled",
+                    selected && "is-selected",
+                    highlighted && "is-highlighted",
+                    today && "is-today",
+                    weekday === 0 && "is-sunday",
+                    weekday === 6 && "is-saturday",
+                    holiday && "is-bank-holiday",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
 
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  className={dayClassName}
-                  onClick={() => handleDateSelect(date)}
-                  disabled={disabled}
-                  aria-label={formatDate(date)}
-                  aria-selected={selected}
-                >
-                  {date.getDate()}
-                </button>
-              );
-            })}
-          </div>
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      className={dayClassName}
+                      onClick={() => handleDateSelect(date)}
+                      disabled={disabled}
+                      aria-label={formatDate(date)}
+                      aria-selected={selected}
+                    >
+                      {date.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
 

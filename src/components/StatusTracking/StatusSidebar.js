@@ -1,7 +1,7 @@
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/components/StatusTracking/StatusSidebar.js
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import JobProgressTracker from '@/components/StatusTracking/JobProgressTracker';
 import SmartSummaryBlock from '@/components/StatusTracking/SmartSummaryBlock'; // Smart Summary panel
 import { SearchBar } from '@/components/ui/searchBarAPI';
@@ -472,10 +472,14 @@ export default function StatusSidebar({
       <div style={panelStyle}>
         {/* Header */}
         <div style={{
-          background: 'var(--primary)',
-          color: 'var(--text-inverse)',
-          padding: compactMode ? 'var(--page-gutter-y-mobile, 14px) var(--page-gutter-x-mobile, 12px)' : '20px',
-          borderRadius: '0',
+          background: 'rgba(var(--surface-rgb), 0.92)',
+          color: 'var(--text-primary)',
+          padding: compactMode ? '10px 12px' : '0 16px',
+          borderRadius: isDocked ? 'var(--radius-md) var(--radius-md) 0 0' : '0',
+          borderBottom: '1px solid var(--surface-light)',
+          minHeight: compactMode ? '64px' : '75px',
+          display: 'flex',
+          alignItems: 'center',
           position: 'relative'
         }}>
           {canClose && onToggle && (
@@ -485,20 +489,46 @@ export default function StatusSidebar({
                 e.stopPropagation();
                 onToggle();
               }}
-              className="app-btn app-btn--xs app-btn--on-primary"
-              style={{ position: 'absolute', top: '16px', right: '16px' }}
+              className="app-btn app-btn--xs app-btn--secondary"
+              style={{ position: 'absolute', top: compactMode ? '10px' : '14px', right: '16px', zIndex: 2 }}
             >
               Close
             </button>
           )}
-          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-inverse)' }}>
-            Job Progress Tracker
-          </h2>
-          
-          {/* Show search bar if no job ID from URL */}
-          {!hasUrlJobId && !jobId && (
-            <form onSubmit={handleSearch} style={{ marginTop: '12px' }}>
-              <div style={{ display: 'flex', gap: '8px' }}>
+          <div
+            style={{
+              width: '100%',
+              display: 'grid',
+              gridTemplateColumns: compactMode ? '1fr' : 'auto minmax(260px, 1fr)',
+              alignItems: 'center',
+              gap: compactMode ? '10px' : '16px',
+              paddingRight: canClose && onToggle ? (compactMode ? '76px' : '86px') : 0,
+            }}
+          >
+            <h2
+              style={{
+                fontSize: compactMode ? '18px' : '20px',
+                fontWeight: 800,
+                margin: 0,
+                color: 'var(--text-primary)',
+                lineHeight: 1.15,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Job Tracker
+            </h2>
+
+            {/* Show search bar if no job ID from URL */}
+            {!hasUrlJobId && !jobId && (
+              <form
+                onSubmit={handleSearch}
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  maxWidth: compactMode ? '100%' : '460px',
+                  justifySelf: compactMode ? 'stretch' : 'end',
+                }}
+              >
                 <SearchBar
                   value={searchInput}
                   onChange={(e) => {
@@ -513,19 +543,69 @@ export default function StatusSidebar({
                   placeholder="Enter job number..."
                   className="status-sidebar__searchbar"
                   inputClassName="status-sidebar__searchbar-input"
-                  style={{ flex: 1 }}
+                  style={{ width: '100%' }}
                 />
-                <button type="submit" className="app-btn app-btn--secondary app-btn--sm">
-                  Search
+                <button
+                  type="submit"
+                  className="status-sidebar__search-submit"
+                  aria-label="Search jobs"
+                  title="Search jobs"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                    <path d="M10.5 4a6.5 6.5 0 0 1 5.12 10.5l4.44 4.44-1.42 1.42-4.44-4.44A6.5 6.5 0 1 1 10.5 4Zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Z" />
+                  </svg>
                 </button>
+              </form>
+            )}
+
+            {/* Show job info with clear button for searched jobs */}
+            {jobId && (
+              <div
+                style={{
+                  fontSize: '14px',
+                  display: 'grid',
+                  gridTemplateColumns: compactMode ? '1fr' : isWideLayout ? 'minmax(0, 1fr) auto' : '1fr',
+                  gap: '12px',
+                  alignItems: 'center',
+                  justifySelf: compactMode ? 'stretch' : 'end',
+                  width: '100%',
+                  maxWidth: compactMode ? '100%' : '560px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                  <span style={{ fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    Job ID: {snapshot?.job?.id || jobId}
+                  </span>
+                  <button
+                    onClick={handleClearJob}
+                    className="app-btn app-btn--xs app-btn--secondary"
+                  >
+                    Clear Job
+                  </button>
+                </div>
+                <div id="job-progress-total-time" style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                  Total Time: {formatTime(liveClockingSeconds)}
+                </div>
               </div>
-              {searchInput.trim() && (
+            )}
+          </div>
+
+          {!hasUrlJobId && !jobId && (
+            <>
+              {searchInput.trim() && !searchError && (
                 <div
                   style={{
-                    marginTop: '10px',
+                    position: 'absolute',
+                    top: compactMode ? 'calc(100% - 8px)' : 'calc(50% + 24px)',
+                    right: canClose && onToggle ? (compactMode ? '88px' : '102px') : '16px',
+                    left: compactMode ? '12px' : 'auto',
+                    width: compactMode ? 'auto' : '460px',
                     borderRadius: 'var(--radius-sm)',
-                    backgroundColor: 'rgba(var(--surface-rgb), 0.14)',
+                    backgroundColor: 'var(--surface)',
+                    border: '1px solid var(--surface-light)',
+                    boxShadow: 'var(--dropdown-menu-shadow)',
                     overflow: 'hidden',
+                    zIndex: 6,
                   }}
                 >
                   {isSearchLoading ? (
@@ -533,7 +613,7 @@ export default function StatusSidebar({
                       style={{
                         padding: '10px 12px',
                         fontSize: '12px',
-                        color: 'rgba(var(--surface-rgb), 0.92)',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       Searching jobs...
@@ -567,7 +647,7 @@ export default function StatusSidebar({
                       style={{
                         padding: '10px 12px',
                         fontSize: '12px',
-                        color: 'rgba(var(--surface-rgb), 0.92)',
+                        color: 'var(--text-secondary)',
                       }}
                     >
                       No jobs match that search yet.
@@ -577,48 +657,22 @@ export default function StatusSidebar({
               )}
               {searchError && (
                 <div style={{
-                  marginTop: '8px',
+                  position: 'absolute',
+                  top: compactMode ? 'calc(100% + 8px)' : 'calc(50% + 34px)',
+                  right: canClose && onToggle ? (compactMode ? '88px' : '102px') : '16px',
+                  left: compactMode ? '12px' : 'auto',
+                  width: compactMode ? 'auto' : '460px',
                   fontSize: '12px',
-                  color: 'var(--text-inverse)',
-                  backgroundColor: 'rgba(var(--surface-rgb), 0.15)',
+                  color: 'var(--danger)',
+                  backgroundColor: 'var(--danger-surface)',
                   padding: '6px 10px',
                   borderRadius: 'var(--radius-xs)',
+                  zIndex: 7,
                 }}>
                   {searchError}
                 </div>
               )}
-            </form>
-          )}
-
-          {/* Show job info with clear button for searched jobs */}
-          {jobId && (
-            <div
-              style={{
-                fontSize: '14px',
-                opacity: 0.95,
-                display: 'grid',
-                gridTemplateColumns: compactMode ? '1fr' : isWideLayout ? 'minmax(0, 1fr) auto' : '1fr',
-                gap: '12px',
-                alignItems: 'center',
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontWeight: '600' }}>
-                    Job ID: {snapshot?.job?.id || jobId}
-                  </span>
-                  <button
-                    onClick={handleClearJob}
-                    className="app-btn app-btn--xs app-btn--on-primary"
-                  >
-                    Clear Job
-                  </button>
-                </div>
-              </div>
-              <div id="job-progress-total-time" style={{ fontWeight: '600', fontSize: '16px' }}>
-                Total Time: {formatTime(liveClockingSeconds)}
-              </div>
-            </div>
+            </>
           )}
         </div>
 

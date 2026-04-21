@@ -178,6 +178,7 @@ export default function Sidebar({
           alignItems: "center",
           justifyContent: "space-between",
           gap: "8px",
+          flex: 1,
         }}
       >
         <span>{label}</span>
@@ -299,16 +300,10 @@ export default function Sidebar({
               </div>
               {onToggle && (
                 <button
-                  className="app-topbar-button app-topbar-button--secondary"
+                  className="app-btn app-btn--control app-btn--xs"
                   type="button"
                   onClick={onToggle}
                   aria-label="Close sidebar"
-                  style={{
-                    fontSize: "0.75rem",
-                    boxShadow: "none",
-                    minHeight: "32px",
-                    padding: "4px 10px",
-                  }}
                 >
                   Close
                 </button>
@@ -319,7 +314,7 @@ export default function Sidebar({
                 pathname === shortcut.href || (pathname && pathname.startsWith(`${shortcut.href}/`));
               return (
                 <Link
-                  className={`app-sidebar__link${isActive ? " is-active" : ""}`}
+                  className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
                   key={shortcut.href}
                   href={shortcut.href}
                   title={shortcut.description}
@@ -342,7 +337,7 @@ export default function Sidebar({
               const isActive = pathname === item.href;
               return (
                 <Link
-                  className={`app-sidebar__link${isActive ? " is-active" : ""}`}
+                  className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
                 >
@@ -364,7 +359,7 @@ export default function Sidebar({
               const isActive = pathname === item.href;
               return (
                 <Link
-                  className={`app-sidebar__link${isActive ? " is-active" : ""}`}
+                  className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
                 >
@@ -387,31 +382,35 @@ export default function Sidebar({
                   <Fragment key="clock-logout-row">
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
                       <button
-                        className="app-topbar-button"
+                        className={
+                          isClockedIn
+                            ? "app-btn app-btn--danger"
+                            : "app-btn"
+                        }
                         type="button"
                         onClick={handleClockToggle}
                         disabled={clockLoading}
-                        style={{
-                          flex: 1,
-                          background: isClockedIn ? "var(--danger)" : "var(--success)",
-                          color: "var(--onAccentText)",
-                          fontWeight: 700,
-                          fontSize: "0.82rem",
-                          opacity: clockLoading ? 0.6 : 1,
-                          transition: "background 0.2s, opacity 0.2s",
-                        }}
+                        style={
+                          isClockedIn
+                            ? { flex: 1, opacity: clockLoading ? 0.6 : 1 }
+                            : {
+                                flex: 1,
+                                // no --success variant exists in the button family;
+                                // the green clock-in state is the one documented
+                                // exception that paints colour inline.
+                                background: "var(--success)",
+                                color: "var(--onAccentText)",
+                                opacity: clockLoading ? 0.6 : 1,
+                              }
+                        }
                       >
                         {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
                       </button>
                       <button
-                        className="app-topbar-button app-topbar-button--primary"
+                        className="app-btn app-btn--primary"
                         type="button"
                         onClick={handleLogout}
-                        style={{
-                          flex: 1,
-                          fontWeight: 700,
-                          fontSize: "0.82rem",
-                        }}
+                        style={{ flex: 1 }}
                       >
                         Logout
                       </button>
@@ -427,16 +426,9 @@ export default function Sidebar({
                       >
                         {canShowDevPagesLink && (
                           <Link
-                            className="app-sidebar__link"
+                            className="app-btn app-btn--ghost"
                             href="/dev/user-diagnostic"
-                            style={{
-                              flex: 1,
-                              marginBottom: 0,
-                              background: "transparent",
-                              color: "var(--text-secondary)",
-                              fontSize: "0.78rem",
-                              textAlign: "center",
-                            }}
+                            style={{ flex: 1 }}
                           >
                             Diagnostics
                           </Link>
@@ -447,21 +439,15 @@ export default function Sidebar({
                             role="switch"
                             aria-checked={devOverlayEnabled}
                             aria-label="Toggle dev layout overlay"
-                            className="app-sidebar__link"
+                            className={
+                              devOverlayEnabled
+                                ? "app-btn app-btn--success"
+                                : "app-btn app-btn--danger"
+                            }
                             onClick={toggleDevOverlay}
-                            style={{
-                              flex: 1,
-                              marginBottom: 0,
-                              border: "none",
-                              background: devOverlayEnabled ? "var(--accent-strong)" : "var(--accent-base)",
-                              color: devOverlayEnabled ? "var(--onAccentText)" : "var(--accentText)",
-                              fontSize: "0.78rem",
-                              fontWeight: 700,
-                              textAlign: "center",
-                              justifyContent: "center",
-                            }}
+                            style={{ flex: 1 }}
                           >
-                            Dev Overlay {devOverlayEnabled ? "ON" : "OFF"}
+                            Dev Overlay
                           </button>
                         )}
                       </div>
@@ -474,7 +460,7 @@ export default function Sidebar({
                 const isActive = pathname === item.href;
                 return (
                 <Link
-                  className={`app-sidebar__link${isActive ? " is-active" : ""}`}
+                  className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
                     style={{

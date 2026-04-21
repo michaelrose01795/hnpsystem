@@ -1,6 +1,12 @@
-// file location: /src/components/dropdownAPI/MultiSelectDropdown.js
+// file location: src/components/ui/dropdownAPI/MultiSelectDropdown.js
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { dropdownTriggerButtonStyle } from "@/styles/appTheme";
+import {
+  normalizeOptions,
+  filterOptionsBySearch,
+  useOutsideClick,
+  DropdownChevron,
+} from "./_internal";
 
 /**
  * MultiSelectDropdownAPI
@@ -45,51 +51,7 @@ export default function MultiSelectDropdown({
   const menuRef = useRef(null);
   const controlInputRef = useRef(null);
 
-  const normalizedOptions = useMemo(
-    () =>
-      options.map((option, index) => {
-        if (typeof option === "string" || typeof option === "number") {
-          return {
-            key: String(option),
-            label: String(option),
-            value: option,
-            raw: option,
-          };
-        }
-
-        if (option && typeof option === "object") {
-          const keyCandidate =
-            option.key ??
-            option.id ??
-            option.value ??
-            option.name ??
-            option.label ??
-            index;
-          const labelCandidate =
-            option.label ??
-            option.name ??
-            option.title ??
-            option.displayName ??
-            option.value ??
-            `Option ${index + 1}`;
-
-          return {
-            key: String(keyCandidate),
-            label: labelCandidate,
-            value: option.value ?? option.id ?? option.key ?? option.name ?? "",
-            raw: option.raw ?? option,
-          };
-        }
-
-        return {
-          key: `option-${index}`,
-          label: `Option ${index + 1}`,
-          value: option,
-          raw: option,
-        };
-      }),
-    [options]
-  );
+  const normalizedOptions = useMemo(() => normalizeOptions(options), [options]);
 
   const selectedOptions = useMemo(() => {
     if (!Array.isArray(value) || value.length === 0) return [];
@@ -106,15 +68,10 @@ export default function MultiSelectDropdown({
     );
   }, [value, normalizedOptions]);
 
-  const visibleOptions = useMemo(() => {
-    if (!searchTerm.trim()) return normalizedOptions;
-    const needle = searchTerm.trim().toLowerCase();
-    return normalizedOptions.filter((option) => {
-      const label = String(option.label || "").toLowerCase();
-      const valueText = String(option.value ?? "").toLowerCase();
-      return label.includes(needle) || valueText.includes(needle);
-    });
-  }, [normalizedOptions, searchTerm]);
+  const visibleOptions = useMemo(
+    () => filterOptionsBySearch(normalizedOptions, searchTerm, ["label", "value"]),
+    [normalizedOptions, searchTerm]
+  );
 
   const toggle = () => {
     if (disabled) return;
@@ -145,28 +102,12 @@ export default function MultiSelectDropdown({
     onChange?.(newValues);
   };
 
-  const handleRemoveOption = (option, event) => {
-    event?.stopPropagation();
-    handleOptionToggle(option);
-  };
-
   const open = () => {
     if (disabled) return;
     setIsOpen(true);
   };
 
-  // Close when clicking outside
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClick = (event) => {
-      if (!dropdownRef.current) return;
-      if (!dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [isOpen]);
+  useOutsideClick(dropdownRef, () => setIsOpen(false), isOpen);
 
   useEffect(() => {
     if (!isOpen) {
@@ -205,28 +146,9 @@ export default function MultiSelectDropdown({
         </label>
       )}
 
-      {/* Selected items display */}
-      {selectedOptions.length > 0 && (
-        <div className="multiselect-dropdown-api__selected-items">
-          {selectedOptions.map((option) => (
-            <span
-              key={option.key}
-              className="multiselect-dropdown-api__tag app-badge app-badge--control app-badge--accent-hover"
-            >
-              {option.label}
-              <button
-                type="button"
-                onClick={(e) => handleRemoveOption(option, e)}
-                className="multiselect-dropdown-api__tag-remove"
-                aria-label={`Remove ${option.label}`}
-                disabled={disabled}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Container = search bar only. Selections are surfaced via the
+          row-level checkmarks in the dropdown list and the "N selected"
+          placeholder text (see controlPlaceholder). */}
 
       {/* Searchable control */}
       <div
@@ -238,14 +160,7 @@ export default function MultiSelectDropdown({
           id={controlId}
           ref={controlInputRef}
           type="search"
-          className="dropdown-api__search-input"
-          style={{
-            border: "none",
-            background: "var(--surface)",
-            padding: 0,
-            boxShadow: "none",
-            flex: 1,
-          }}
+          className="dropdown-api__search-input multiselect-dropdown-api__search-input"
           placeholder={controlPlaceholder}
           value={searchTerm}
           disabled={disabled}
@@ -275,13 +190,7 @@ export default function MultiSelectDropdown({
         />
         <button
           type="button"
-          className="dropdown-api__chevron"
-          style={{
-            border: "none",
-            background: "var(--surface)",
-            padding: 0,
-            cursor: disabled ? "not-allowed" : "pointer",
-          }}
+          className="dropdown-api__chevron multiselect-dropdown-api__chevron"
           aria-label={isOpen ? "Close options" : "Open options"}
           onClick={(event) => {
             event.stopPropagation();
@@ -290,16 +199,7 @@ export default function MultiSelectDropdown({
           }}
           disabled={disabled}
         >
-          <svg width="16" height="16" viewBox="0 0 16 16" role="presentation">
-            <path
-              d="M4.5 6l3.5 3.5L11.5 6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <DropdownChevron />
         </button>
       </div>
       {helperText && <p className="dropdown-api__helper">{helperText}</p>}
@@ -333,7 +233,6 @@ export default function MultiSelectDropdown({
               aria-selected={isSelected}
               onClick={() => handleOptionToggle(option)}
             >
-              <span className="dropdown-api__option-label">{option.label}</span>
               <input
                 type="checkbox"
                 checked={isSelected}
@@ -342,6 +241,7 @@ export default function MultiSelectDropdown({
                 tabIndex={-1}
                 aria-hidden="true"
               />
+              <span className="dropdown-api__option-label">{option.label}</span>
             </button>
           );
         })}

@@ -1629,22 +1629,17 @@ export default function NextJobsPage() {
   return (
     <>
       <div
-        data-dev-section-key="nextjobs-page-shell"
-        data-dev-shell="1"
-        data-dev-section-type="page-shell"
-        data-dev-background-token="none"
         style={{
-          minHeight: "100vh",
+          minHeight: "100%",
           display: "flex",
           flexDirection: "column",
-          padding: "8px 16px",
           gap: "12px"
         }}>
         
         {/* ✅ Outstanding Jobs Section with Drop Zone */}
             <div
               data-dev-section-key="nextjobs-outstanding"
-              data-dev-section-parent="nextjobs-page-shell"
+              data-dev-section-parent="app-layout-page-card"
               data-dev-section-type="content-card"
               data-dev-background-token="layer-section-level-3"
             style={{
@@ -1977,7 +1972,7 @@ export default function NextJobsPage() {
         {/* ✅ Technicians Grid Section */}
             <div
               data-dev-section-key="nextjobs-technicians"
-              data-dev-section-parent="nextjobs-page-shell"
+              data-dev-section-parent="app-layout-page-card"
               data-dev-shell="1"
               data-dev-section-type="content-card"
               data-dev-background-token="layer-section-level-3"

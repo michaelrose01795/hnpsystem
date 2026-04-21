@@ -222,7 +222,7 @@ export const popupOverlayStyles = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  padding: "clamp(10px, 2.5vw, 20px)",
+  padding: "var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px))",
   zIndex: 9999,
   overflowY: "auto",
   overscrollBehavior: "contain",
@@ -230,13 +230,13 @@ export const popupOverlayStyles = {
 
 export const popupCardStyles = {
   width: "min(640px, 100%)",
-  maxWidth: "calc(100vw - clamp(10px, 2.5vw, 20px) * 2)",
-  maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
-  background: palette.modalGradient,
-  borderRadius: radii.xl,
-  border: `1px solid ${palette.border}`,
+  maxWidth: "calc(100vw - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2))",
+  maxHeight: "calc(100dvh - (var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px)) * 2))",
+  background: "var(--surface)",
+  borderRadius: "var(--radius-lg)",
+  border: "none",
   boxShadow: "none",
-  color: palette.textPrimary,
+  color: "var(--text-primary)",
   overflowY: "auto",
   overscrollBehavior: "contain",
 };

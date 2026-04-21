@@ -3,19 +3,196 @@
  * Canonical home for the Button family.
  *
  * Variants: primary, secondary, ghost, danger, control, on-primary
- * Sizes: md (default), sm, xs
- * Shapes: default, pill
+ * Sizes:    md (default), sm, xs    — height is LOCKED to var(--control-height)
+ *                                     across sizes; only padding/font-size vary.
+ * Modifiers: pill, nav, is-active
  *
  * Component:  src/components/ui/Button.js
  * Showcase:   /dev/showcase#button
  *
- * NOTE (2026-04 audit pass): the existing .app-btn, .app-btn--primary,
- * .app-btn--secondary, .app-btn--ghost, .app-btn--danger, .app-btn--control,
- * .app-btn--on-primary, .app-btn--sm, .app-btn--xs, .app-btn--pill rules
- * still live in src/styles/globals.css (ranges ~1127-1295 and ~2501-2544).
- * They intentionally stay there for this setup pass — the next cleanup pass
- * will migrate them here verbatim. Everything new goes in this file.
+ * History: migrated in full from src/styles/globals.css during the
+ * 2026-04 UI audit. There is no longer a second block — all .app-btn*
+ * rules live here. Add new button variants below.
  */
+
+/* ========================================================= */
+/* === Base rule                                           === */
+/* ========================================================= */
+.app-btn {
+  min-height: var(--control-height);
+  padding: var(--control-padding);
+  border-radius: var(--control-radius);
+  font-size: var(--control-font-size);
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  white-space: nowrap;
+  transition: var(--control-transition);
+  line-height: 1;
+  text-decoration: none;
+}
+
+.app-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========================================================= */
+/* === Size modifiers — padding / font-size only           === */
+/* === Height stays locked to --control-height (44px)      === */
+/* === so every button aligns on the same baseline.        === */
+/* ========================================================= */
+.app-btn--sm {
+  padding: var(--control-padding-sm);
+}
+
+.app-btn--xs {
+  padding: var(--control-padding-xs);
+  font-size: 0.82rem;
+}
+
+/* ========================================================= */
+/* === Shape modifier                                      === */
+/* ========================================================= */
+.app-btn--pill {
+  border-radius: var(--radius-pill);
+}
+
+/* ========================================================= */
+/* === Layout modifier                                     === */
+/* === --nav: full-width, left-aligned — used for sidebar  === */
+/* === nav links (Link components wearing .app-btn).       === */
+/* ========================================================= */
+.app-btn--nav {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  margin-bottom: var(--space-sm);
+}
+
+/* ========================================================= */
+/* === Variant treatments                                  === */
+/* === Declared with !important so page-level inline style === */
+/* === cannot drift the palette. Button.js strips visual   === */
+/* === inline keys; Links wearing .app-btn are guarded     === */
+/* === here.                                               === */
+/* ========================================================= */
+.app-btn--primary {
+  /* Primary tracks the text-field background so form surfaces (input + CTA)
+     read as one family. --input-bg resolves to --control-bg (pale accent
+     tint in whichever theme colour the user has chosen). */
+  background: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  border: none !important;
+}
+.app-btn--primary:hover,
+.app-btn--primary:focus-visible {
+  background: var(--control-bg-hover) !important;
+}
+
+.app-btn--secondary {
+  background: var(--control-bg) !important;
+  color: var(--accentText) !important;
+  border: none !important;
+}
+.app-btn--secondary:hover,
+.app-btn--secondary:focus-visible {
+  background: var(--control-bg-hover) !important;
+}
+
+.app-btn--ghost {
+  background: transparent !important;
+  color: var(--accentText) !important;
+  border: 1px solid var(--accentMain) !important;
+}
+.app-btn--ghost:hover,
+.app-btn--ghost:focus-visible {
+  background: var(--control-bg) !important;
+}
+
+.app-btn--control {
+  background: var(--control-bg) !important;
+  color: var(--accentText) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.app-btn--control:hover,
+.app-btn--control:focus-visible {
+  background: var(--control-bg-hover) !important;
+}
+.app-btn--control:focus-visible {
+  outline: none;
+  box-shadow: var(--control-ring) !important;
+}
+
+.app-btn--danger {
+  background: var(--danger) !important;
+  color: #fff !important;
+  border: none !important;
+}
+.app-btn--danger:hover,
+.app-btn--danger:focus-visible {
+  background: var(--danger-dark) !important;
+}
+
+.app-btn--success {
+  background: var(--success) !important;
+  color: #fff !important;
+  border: none !important;
+}
+.app-btn--success:hover,
+.app-btn--success:focus-visible {
+  background: var(--success-dark) !important;
+}
+
+/* --on-primary: for buttons sitting on top of a primary-coloured
+   surface (status sidebar header, accent banners). Translucent white
+   fill so it reads on the accent background without needing a border. */
+.app-btn--on-primary {
+  background: rgba(var(--surface-rgb), 0.18) !important;
+  color: var(--text-inverse) !important;
+  border: none !important;
+}
+.app-btn--on-primary:hover,
+.app-btn--on-primary:focus-visible {
+  background: rgba(var(--surface-rgb), 0.3) !important;
+}
+
+/* ========================================================= */
+/* === Demo-only state paints (diagnostic / showcase only) === */
+/* === Real buttons pick their visual state up from :hover, === */
+/* === :focus-visible, :active. These data-attribute hooks  === */
+/* === exist so the diagnostic page can render static       === */
+/* === Hover/Active/Focus mockups side-by-side for review.  === */
+/* === Not for production code.                             === */
+/* ========================================================= */
+.app-btn[data-demo-state="hover"] {
+  background: var(--accentHover) !important;
+}
+.app-btn[data-demo-state="active"] {
+  background: var(--accentPressed) !important;
+}
+.app-btn[data-demo-state="focus"] {
+  box-shadow: var(--control-ring) !important;
+  outline: none !important;
+}
+
+/* ========================================================= */
+/* === State: is-active                                    === */
+/* === Applied to nav-style .app-btn to mark the current   === */
+/* === route. Wins over --control and --secondary because  === */
+/* === it is declared after them in this file.             === */
+/* ========================================================= */
+.app-btn.is-active {
+  background: var(--accentMain) !important;
+  color: var(--onAccentText) !important;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Trace mode — loud pink outlines on every button-family element when the

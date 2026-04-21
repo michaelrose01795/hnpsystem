@@ -493,97 +493,10 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   flex-wrap: wrap;
 }
 
-.app-topbar-toggle,
-.app-topbar-link,
-.app-topbar-button {
-  min-height: var(--control-height-sm);
-  padding: var(--control-padding-sm);
-  border-radius: var(--control-radius-sm);
-  font-size: 0.86rem;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition:
-    background-color 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease,
-    opacity 0.18s ease;
-  flex-shrink: 0;
-}
-
-.app-topbar-link,
-.app-topbar-button {
-  border: var(--nav-link-border);
-  background: var(--nav-link-bg);
-  color: var(--accentText);
-  cursor: pointer;
-}
-
-.app-topbar-button:hover,
-.app-topbar-button:focus-visible,
-.app-topbar-link:hover,
-.app-topbar-link:focus-visible {
-  outline: none;
-  text-decoration: none;
-}
-
-.app-topbar-toggle {
-  border: none;
-  background: var(--nav-link-bg);
-  color: var(--accentText);
-}
-
-.app-topbar-toggle.is-active {
-  border: none;
-  background: var(--nav-link-bg-active);
-  color: var(--text-inverse);
-}
-
-.app-topbar-button:hover,
-.app-topbar-button:focus-visible,
-.app-topbar-link:hover,
-.app-topbar-link:focus-visible,
-.app-topbar-button--secondary:hover,
-.app-topbar-button--secondary:focus-visible,
-.app-topbar-link.app-topbar-button--secondary:hover,
-.app-topbar-link.app-topbar-button--secondary:focus-visible {
-  background: var(--nav-link-bg-hover);
-  color: var(--accentText);
-}
-
-.app-topbar-link.is-active,
-.app-topbar-button.is-active,
-.app-topbar-button--secondary.is-active {
-  background: var(--accentMain);
-  color: var(--onAccentText);
-}
-
-.app-topbar-button--primary {
-  background: var(--accentMain);
-  color: var(--onAccentText);
-  border: none;
-}
-
-.app-topbar-button--primary:hover,
-.app-topbar-button--primary:focus-visible {
-  background: var(--accentHover);
-  color: var(--onAccentText);
-}
-
-.app-topbar-button--secondary {
-  background: var(--nav-link-bg);
-  color: var(--accentText);
-  border: none;
-}
-
-.app-topbar-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
+/* Topbar / sidebar nav controls now share the .app-btn family — see
+   src/styles/families/buttons.css. The old .app-topbar-button*,
+   .app-topbar-link*, .app-topbar-toggle* rules were removed in the
+   2026-04 UI audit. */
 
 .app-sidebar {
   background: var(--nav-shell-bg);
@@ -611,40 +524,10 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   text-transform: uppercase;
 }
 
-.app-sidebar__link {
-  display: block;
-  min-height: var(--control-height-sm);
-  padding: var(--control-padding-sm);
-  margin-bottom: var(--space-sm);
-  background: var(--nav-link-bg);
-  color: var(--accentText);
-  border-radius: var(--control-radius-sm);
-  font-weight: 600;
-  border: none;
-  text-decoration: none;
-  transition:
-    background-color 0.18s ease,
-    color 0.18s ease;
-}
-
-.app-sidebar__link:hover,
-.app-sidebar__link:focus-visible {
-  outline: none;
-  background: var(--nav-link-bg-hover);
-  text-decoration: none;
-}
-
-.app-sidebar__link.is-active {
-  background: var(--nav-link-bg-active);
-  color: var(--onAccentText);
-  border: none;
-  text-decoration: none;
-}
-
-.app-sidebar .app-topbar-button,
-.app-sidebar .app-topbar-link {
-  border: none;
-}
+/* Sidebar nav links now use .app-btn .app-btn--control .app-btn--nav —
+   the old .app-sidebar__link ruleset was removed during the 2026-04 UI
+   audit. Sidebar link margin-bottom is applied inline because it is a
+   layout property, not a visual one. */
 
 @media (max-width: 1024px) {
   .app-layout-main-column {
@@ -796,11 +679,16 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .themed-scrollbar::-webkit-scrollbar,
 .dropdown-api__menu::-webkit-scrollbar,
 .timepicker-api__options::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
-.timepicker-api__options::-webkit-scrollbar {
-  width: 6px;
+/* Hide the up/down scrollbar buttons — a cleaner overlay bar with no chrome. */
+.themed-scrollbar::-webkit-scrollbar-button,
+.dropdown-api__menu::-webkit-scrollbar-button,
+.timepicker-api__options::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .themed-scrollbar::-webkit-scrollbar-track,
@@ -814,7 +702,9 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .timepicker-api__options::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: var(--radius-pill);
-  border: 2px solid transparent;
+  /* 1px transparent border insets the thumb slightly from the scrollbar
+     edge so it doesn't graze the menu's rounded corners. */
+  border: 1px solid transparent;
   background-clip: padding-box;
 }
 
@@ -835,18 +725,13 @@ input[type="checkbox"] {
   -moz-appearance: none;
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(var(--accent-base-rgb), 0.24);
+  border: 2px solid var(--accent-strong);
   border-radius: 4px;
   background: var(--surface);
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
   flex-shrink: 0;
-}
-
-input[type="checkbox"]:hover:not(:disabled) {
-  border-color: var(--accent-strong);
-  background: var(--accent-surface);
 }
 
 input[type="checkbox"]:checked {
@@ -1057,97 +942,8 @@ textarea::placeholder {
   opacity: 0.45;
 }
 
-/* ========================================================= */
-/* === Shared Button Classes                               === */
-/* === Canonical home: src/styles/families/buttons.css     === */
-/* === (rules queued to migrate during UI cleanup pass)    === */
-/* ========================================================= */
-.app-btn {
-  min-height: var(--control-height);
-  padding: var(--control-padding);
-  border-radius: var(--control-radius);
-  font-size: var(--control-font-size);
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  white-space: nowrap;
-  transition: var(--control-transition);
-  line-height: 1;
-  text-decoration: none;
-}
-.app-btn--primary {
-  background: var(--accentMain);
-  color: var(--onAccentText);
-}
-.app-btn--primary:hover { background: var(--accentHover); }
-.app-btn--secondary {
-  background: var(--control-bg);
-  color: var(--accentText);
-  border: none;
-}
-.app-btn--secondary:hover {
-  background: var(--control-bg-hover);
-}
-.app-btn--control {
-  background: var(--control-bg);
-  color: var(--accentText);
-  border-radius: var(--control-radius);
-  box-shadow: none;
-}
-.app-btn--control:hover {
-  background: var(--control-bg-hover);
-}
-.app-btn--control:focus-visible {
-  outline: none;
-  background: var(--control-bg-hover);
-  box-shadow: var(--control-ring);
-}
-.app-btn--ghost {
-  background: transparent;
-  color: var(--accentText);
-  border: none;
-}
-.app-btn--ghost:hover {
-  background: var(--control-bg);
-}
-.app-btn--danger {
-  background: var(--danger);
-  color: #fff;
-  border: none;
-}
-.app-btn--danger:hover {
-  background: var(--danger-dark);
-}
-.app-btn--pill { border-radius: var(--radius-pill); }
-/* Used when a button sits on top of a primary-coloured surface (status sidebar
-   header, accent banners). Translucent white fill + inverse text so it reads on
-   the accent background without needing a border. */
-.app-btn--on-primary {
-  background: rgba(var(--surface-rgb), 0.18);
-  color: var(--text-inverse);
-  border: none;
-}
-.app-btn--on-primary:hover {
-  background: rgba(var(--surface-rgb), 0.3);
-}
-.app-btn--sm {
-  min-height: var(--control-height-sm);
-  padding: var(--control-padding-sm);
-}
-.app-btn--xs {
-  min-height: var(--control-height-xs);
-  padding: var(--control-padding-xs);
-  font-size: 0.82rem;
-}
-.app-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
+/* Shared Button Classes — canonical home is src/styles/families/buttons.css
+   (migrated out of this file during the 2026-04 UI audit). */
 
 /* ========================================================= */
 /* === Shared Input Class                                  === */
@@ -1163,7 +959,10 @@ textarea::placeholder {
   background: var(--input-bg);
   font-family: inherit;
   font-size: var(--control-font-size);
-  color: var(--text-primary);
+  /* Value text stays in the surface body-text tone (black in light mode,
+     white in dark mode) — never the accent. Locked with !important so no
+     page-level cascade can tint the value red. */
+  color: var(--text-primary) !important;
   outline: none;
   transition: var(--control-transition);
 }
@@ -2322,11 +2121,25 @@ textarea:disabled {
 .calendar-api__control,
 .timepicker-api__control,
 .searchbar-api {
-  background: var(--control-bg) !important;
+  /* Trigger wears the Primary-button look via dropdown-dedicated tokens so
+     the dropdown stays stable if Primary or --input-bg are later reskinned. */
+  background: var(--dropdown-trigger-bg) !important;
   background-image: none !important;
-  color: var(--accentText) !important;
+  color: var(--dropdown-trigger-color) !important;
   border: none !important;
   box-shadow: none !important;
+}
+
+/* Search bar is locked to the standard 44px control height. Width is
+   intentionally NOT constrained here — the consumer controls it via the
+   wrapper's width / flex props, so the search bar fills whatever column
+   it's dropped into.
+   Padding: 6px on the left gives the typed text its breathing room
+   against the container edge; the right edge is flush so the clear
+   button lands at the far right of the search section. */
+.searchbar-api {
+  height: var(--control-height) !important;
+  padding: 0 0 0 6px !important;
 }
 
 .dropdown-api.is-open .dropdown-api__control,
@@ -2336,7 +2149,7 @@ textarea:disabled {
 .timepicker-api__control:focus,
 .timepicker-api__control:focus-visible,
 .searchbar-api:focus-within {
-  background: var(--control-bg-hover) !important;
+  background: var(--dropdown-trigger-hover-bg) !important;
   box-shadow: var(--control-ring) !important;
 }
 
@@ -2344,66 +2157,23 @@ textarea:disabled {
 .calendar-api__control:hover:not(:disabled),
 .timepicker-api__control:hover:not(:disabled),
 .searchbar-api:hover {
-  background: var(--control-bg-hover) !important;
+  background: var(--dropdown-trigger-hover-bg) !important;
 }
 
 .dropdown-api__value,
 .calendar-api__value,
 .timepicker-api__value {
-  color: var(--accentText) !important;
+  color: var(--dropdown-trigger-color) !important;
 }
 
 .dropdown-api__chevron,
 .calendar-api__icon,
 .timepicker-api__icon,
 .searchbar-api__icon {
-  color: var(--accentText) !important;
+  color: var(--dropdown-trigger-color) !important;
 }
 
-/* All `.app-btn` variants lock their visual treatment so page-level inline
-   styles can only affect layout (width/flex/margin), never the look. */
-.app-btn--primary {
-  background: var(--accentMain) !important;
-  color: var(--onAccentText) !important;
-  border: none !important;
-}
-.app-btn--primary:hover { background: var(--accentHover) !important; }
-
-.app-btn--secondary {
-  background: var(--control-bg) !important;
-  color: var(--accentText) !important;
-  border: none !important;
-}
-.app-btn--secondary:hover { background: var(--control-bg-hover) !important; }
-
-.app-btn--ghost {
-  background: transparent !important;
-  color: var(--accentText) !important;
-  border: none !important;
-}
-.app-btn--ghost:hover { background: var(--control-bg) !important; }
-
-.app-btn--control {
-  background: var(--control-bg) !important;
-  color: var(--accentText) !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-.app-btn--control:hover { background: var(--control-bg-hover) !important; }
-
-.app-btn--danger {
-  background: var(--danger) !important;
-  color: var(--onAccentText) !important;
-  border: none !important;
-}
-.app-btn--danger:hover { background: var(--danger-dark) !important; }
-
-.app-btn--on-primary {
-  background: rgba(var(--surface-rgb), 0.18) !important;
-  color: var(--text-inverse) !important;
-  border: none !important;
-}
-.app-btn--on-primary:hover { background: rgba(var(--surface-rgb), 0.3) !important; }
+/* .app-btn variant locks moved to src/styles/families/buttons.css. */
 
 .dropdown-api__value,
 .calendar-api__value,
@@ -2413,7 +2183,7 @@ textarea:disabled {
   align-items: center;
   min-width: 0;
   text-align: left;
-  color: var(--accentText);
+  color: var(--dropdown-trigger-color);
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
@@ -2424,7 +2194,7 @@ textarea:disabled {
 .dropdown-api__value.is-placeholder,
 .calendar-api__value.is-placeholder,
 .timepicker-api__value.is-placeholder {
-  color: var(--accentText);
+  color: var(--dropdown-trigger-color);
   opacity: 0.72;
 }
 
@@ -2436,7 +2206,7 @@ textarea:disabled {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: var(--accentText);
+  color: var(--dropdown-trigger-color);
   transition: transform 0.2s ease, color 0.2s ease;
 }
 
@@ -2499,19 +2269,29 @@ textarea:disabled {
   left: 0;
   border-radius: var(--control-menu-radius);
   border: none;
-  background: var(--control-menu-bg);
-  box-shadow: var(--control-menu-shadow);
+  background: var(--dropdown-menu-bg);
+  box-shadow: var(--dropdown-menu-shadow);
 }
 
 .dropdown-api__menu {
   width: 100%;
+  /* Uniform breathing room: padding on the menu provides the edge gap,
+     flex gap provides the inter-row gap — so the distance around any
+     option is consistent on all four sides. */
   padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   max-height: 260px;
+  overflow-x: hidden;
+  /* `overflow-y: overlay` (Chromium) paints the scrollbar on top of the
+     content instead of reserving a gutter — options stay centred and the
+     right-hand gap stops growing. Non-Chromium browsers fall back to auto. */
   overflow-y: auto;
+  overflow-y: overlay;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  scrollbar-gutter: stable;
   z-index: 1250;
 }
 
@@ -2541,38 +2321,55 @@ textarea:disabled {
   display: none;
 }
 
-.dropdown-api__option {
+/* The `button.` prefix is deliberate — the base reset
+   `button:not(.app-btn) { background: var(--accent-strong) }` at the top of
+   globals.css has higher specificity than a bare .dropdown-api__option
+   selector. Prefixing keeps specificity in parity so these rules win. */
+/* The `button.` prefix is deliberate — the base reset
+   `button:not(.app-btn) { background: var(--accent-strong) }` at the top of
+   globals.css has higher specificity than a bare .dropdown-api__option
+   selector. Prefixing keeps specificity in parity so these rules win. */
+button.dropdown-api__option {
+  /* Inset from the menu edges via the menu's own padding (8px) and the
+     menu's flex-gap (8px between options). Options keep width:100% of the
+     padded content area, so they stop short of the menu edge on every
+     side — matching the "buttons aren't full width" spec. */
   width: 100%;
   min-height: var(--control-height-sm);
   padding: var(--control-padding-sm);
   border: none;
   border-radius: var(--control-radius-sm);
-  background: var(--surface);
+  /* Non-selected row wears the Primary-style look via dropdown-dedicated
+     tokens — decoupled from .app-btn--primary / --input-bg / --control-bg
+     so Primary can be reskinned without changing dropdown rows. */
+  background: var(--dropdown-option-bg);
   text-align: left;
-  color: var(--text-primary);
+  color: var(--dropdown-option-color);
   font-size: 0.9rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 4px;
   line-height: 1.2;
+  flex-shrink: 0;
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-.dropdown-api__option + .dropdown-api__option {
-  margin-top: 2px;
-}
-
-.dropdown-api__option:hover,
-.dropdown-api__option:focus-visible {
-  background: var(--control-bg);
-  color: var(--accentText);
+button.dropdown-api__option:hover,
+button.dropdown-api__option:focus-visible {
+  background: var(--dropdown-option-hover-bg);
+  color: var(--dropdown-option-color);
   outline: none;
 }
 
-.dropdown-api__option.is-selected {
-  background: var(--control-bg-hover);
-  color: var(--accentText);
+button.dropdown-api__option.is-selected,
+button.dropdown-api__option.is-selected:hover,
+button.dropdown-api__option.is-selected:focus-visible {
+  /* Selected row permanently wears the Secondary-style treatment (via
+     dropdown-dedicated tokens), visible without needing to hover. */
+  background: var(--dropdown-option-selected-bg);
+  color: var(--dropdown-option-selected-color);
+  outline: none;
 }
 
 .dropdown-api__option.is-disabled {
@@ -2622,11 +2419,9 @@ select {
   background: rgba(var(--surface-rgb), 0.5);
 }
 
-[data-theme="dark"] .dropdown-api__option.is-selected,
-[data-theme="dark"] .calendar-api__day.is-selected,
-[data-theme="dark"] .timepicker-api__option.is-selected {
-  color: var(--text-primary);
-}
+/* Dropdown, calendar, and timepicker selected rows now consistently
+   render in --accentText via their own dedicated tokens, which reads
+   fine in both themes — no dark-mode override needed. */
 
 [data-theme="dark"] .dropdown-api__option-description {
   color: var(--control-muted-text);
@@ -2638,48 +2433,84 @@ select {
 /* === Multi-Select Dropdown API Styles === */
 /* ========================================================= */
 
-.multiselect-dropdown-api__selected-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: var(--control-radius);
-  background: var(--control-bg);
-  border: none;
-  margin-bottom: 8px;
-  min-height: var(--control-height);
-  align-items: center;
+/* Multi-select search-bar trigger. Paints --control-bg across the full
+   container width. The search input runs edge-to-edge on the left and is
+   bounded only by the independent chevron button on the right. */
+.multiselect-dropdown-api .dropdown-api__control {
+  height: var(--control-height) !important;
+  padding: 0 4px 0 14px !important;
+  background: var(--control-bg) !important;
+  background-image: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
 }
 
-/* Shape + colour now come from .app-badge .app-badge--control
-   .app-badge--accent-hover. This class stays on the span only so the
-   .multiselect-dropdown-api__tag-remove child selector keeps working. */
+/* !important beats the generic `input[type="search"]` rule (0,1,1) and the
+   `input:hover` / `input:focus` rules that would otherwise paint an inner
+   box inside the search-bar control. The input should be invisible chrome
+   — only the parent control paints a background. */
+.multiselect-dropdown-api__search-input,
+.multiselect-dropdown-api__search-input:hover,
+.multiselect-dropdown-api__search-input:focus,
+.multiselect-dropdown-api__search-input:focus-visible {
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  flex: 1;
+  min-width: 0;
+  min-height: 0 !important;
+  height: 100%;
+  color: var(--text-primary) !important;
+  font-size: var(--control-font-size);
+  outline: none !important;
+}
 
-.multiselect-dropdown-api__tag-remove {
-  background: none;
-  border: none;
-  color: currentColor;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
+.multiselect-dropdown-api__search-input::placeholder {
+  color: var(--control-muted-text);
+}
+
+/* Independent chevron button — the `button.` prefix beats the global
+   `button:not(.app-btn)` reset so the chevron doesn't inherit the solid
+   brand button fill. Square hit target, transparent background. */
+button.multiselect-dropdown-api__chevron {
+  width: 32px;
+  height: 32px;
+  min-height: 0;
   padding: 0;
-  margin-left: 2px;
-  transition: opacity 0.2s ease;
+  border: none;
+  border-radius: var(--control-radius-sm);
+  background: transparent;
+  color: var(--dropdown-trigger-color);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.18s ease;
 }
 
-.multiselect-dropdown-api__tag-remove:hover {
-  opacity: 0.8;
+button.multiselect-dropdown-api__chevron:hover:not(:disabled),
+button.multiselect-dropdown-api__chevron:focus-visible {
+  background: var(--dropdown-trigger-hover-bg);
+  outline: none;
 }
 
-.multiselect-dropdown-api__tag-remove:disabled {
+button.multiselect-dropdown-api__chevron:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
+/* Option row — checkbox on the left, label pushed right with a consistent
+   gap. Overrides the parent .dropdown-api__option flex-direction:column. */
 .multiselect-dropdown-api__option {
-  display: flex;
+  flex-direction: row !important;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 12px;
 }
 
 .multiselect-dropdown-api__checkbox {
@@ -2688,7 +2519,7 @@ select {
   cursor: pointer;
   accent-color: var(--accent-strong);
   flex-shrink: 0;
-  margin-left: 12px;
+  margin: 0;
 }
 
 .multiselect-dropdown-api__option:hover .multiselect-dropdown-api__checkbox {
@@ -2736,7 +2567,23 @@ select {
   }
 }
 
-.calendar-api__header,
+/* Calendar header — the whole [prev | Month Year | next] row is one
+   Primary-styled container so it visually matches the Today button width.
+   Uses calendar-day tokens (copy-not-link from Primary/Secondary). */
+.calendar-api__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 2px;
+  height: var(--control-height);
+  background: var(--calendar-day-bg);
+  color: var(--calendar-day-color);
+  border: none;
+  border-radius: var(--control-radius);
+}
+
 .timepicker-api__header {
   display: flex;
   align-items: center;
@@ -2746,25 +2593,33 @@ select {
   border-bottom: none;
 }
 
-.calendar-api__nav-button {
+/* Nav buttons sit inside the Primary-styled header — transparent so the
+   header bg shows through. `button.` prefix beats the global
+   `button:not(.app-btn)` reset. */
+button.calendar-api__nav-button {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 32px;
-  min-height: 32px;
+  height: 100%;
+  min-height: 0;
   padding: 0;
   background: transparent;
   border: none;
   border-radius: var(--control-radius-sm);
-  color: var(--control-icon);
+  color: inherit;
   cursor: pointer;
   transition: background-color 0.18s ease, color 0.18s ease;
+  flex-shrink: 0;
 }
 
-.calendar-api__nav-button:hover {
-  background: var(--control-bg-active);
-  color: var(--accent-strong);
+button.calendar-api__nav-button:hover,
+button.calendar-api__nav-button:focus-visible {
+  /* Secondary-style hover on the nav buttons so the pressed cell is
+     visibly distinct inside the Primary-styled header. */
+  background: var(--calendar-day-selected-bg);
+  color: var(--calendar-day-selected-color);
+  outline: none;
 }
 
 .calendar-api__nav-button:active,
@@ -2773,36 +2628,167 @@ select {
   transform: scale(0.95);
 }
 
-.calendar-api__month-year,
+/* Month-year label is a real button so it can toggle the month-year
+   picker. Styled transparent so it inherits the header's Primary look;
+   `button.` prefix beats the global button reset. */
+button.calendar-api__month-year {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--control-radius-sm);
+  background: transparent;
+  color: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+button.calendar-api__month-year:hover,
+button.calendar-api__month-year:focus-visible,
+button.calendar-api__month-year[aria-expanded="true"] {
+  background: var(--calendar-day-selected-bg);
+  color: var(--calendar-day-selected-color);
+  outline: none;
+}
+
+/* Month-year picker panel — replaces the weekdays/days grid in-place.
+   Two columns: 3×4 month grid on the left, scrollable year list on the
+   right. Stays on the calendar surface (no extra shadow / no popup) so
+   it reads as part of the same panel, not a dropdown. */
+.calendar-api__month-year-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  /* Matches the combined height of weekdays (34px) + days grid so the
+     popover doesn't jump size when switching views. */
+  height: 252px;
+}
+
+.calendar-api__month-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 4px;
+}
+
+.calendar-api__year-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-gutter: auto;
+}
+
+/* Reuse the slim scrollbar styling from the dropdown — same `.themed-scrollbar` family. */
+.calendar-api__year-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+.calendar-api__year-scroll::-webkit-scrollbar { width: 6px; }
+.calendar-api__year-scroll::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.calendar-api__year-scroll::-webkit-scrollbar-track { background: transparent; }
+.calendar-api__year-scroll::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+.calendar-api__year-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+/* Picker cell — shares the calendar-day token set so months/years look
+   identical to day buttons (Primary resting, Secondary when selected).
+   `button.` prefix beats the global button reset. */
+button.calendar-api__picker-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--control-radius-sm);
+  background: var(--calendar-day-bg);
+  color: var(--calendar-day-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+  flex-shrink: 0;
+}
+
+button.calendar-api__picker-cell:hover:not(.is-selected),
+button.calendar-api__picker-cell:focus-visible:not(.is-selected) {
+  background: var(--calendar-day-hover-bg);
+  outline: none;
+}
+
+button.calendar-api__picker-cell.is-selected {
+  background: var(--calendar-day-selected-bg);
+  color: var(--calendar-day-selected-color);
+  font-weight: 600;
+}
+
 .timepicker-api__display {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.calendar-api__today-button,
-.timepicker-api__now-button {
-  min-height: var(--control-height-sm);
+/* Today button — Primary at rest, Secondary on hover / focus / active,
+   all via the calendar-day tokens (copy-not-link). `button.` prefix beats
+   the global button reset. */
+button.calendar-api__today-button {
+  display: block;
+  width: 100%;
+  height: var(--control-height);
+  max-height: var(--control-height);
   padding: var(--control-padding-sm);
-  border-radius: var(--control-radius);
-  background: var(--accent-surface);
+  margin-bottom: 12px;
   border: none;
-  color: var(--accent-strong);
+  border-radius: var(--control-radius);
+  background: var(--calendar-day-bg);
+  color: var(--calendar-day-color);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-.calendar-api__today-button {
-  display: block;
-  width: 100%;
-  margin-bottom: 12px;
+button.calendar-api__today-button:hover,
+button.calendar-api__today-button:focus-visible,
+button.calendar-api__today-button:active {
+  background: var(--calendar-day-selected-bg);
+  color: var(--calendar-day-selected-color);
+  outline: none;
 }
 
-.calendar-api__today-button:hover,
-.timepicker-api__now-button:hover {
-  background: var(--accent-surface-hover);
+/* `button.` prefix beats the global `button:not(.app-btn)` reset so the
+   dedicated --timepicker-now-* tokens win. Locked at 44px. */
+button.timepicker-api__now-button {
+  height: var(--control-height);
+  max-height: var(--control-height);
+  min-height: 0;
+  padding: 0 var(--space-md);
+  border: none;
+  border-radius: var(--control-radius);
+  background: var(--timepicker-now-bg);
+  color: var(--timepicker-now-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+button.timepicker-api__now-button:hover,
+button.timepicker-api__now-button:focus-visible {
+  background: var(--timepicker-now-hover-bg);
+  color: var(--timepicker-now-color);
+  outline: none;
 }
 
 .calendar-api__weekdays {
@@ -2829,59 +2815,104 @@ select {
   gap: 4px;
 }
 
-.calendar-api__day {
+/* The `button.` prefix is deliberate — the base reset
+   `button:not(.app-btn) { background: var(--accent-strong) }` has higher
+   specificity than a bare `.calendar-api__day` selector. Prefixing keeps
+   specificity in parity so the calendar-day tokens win.
+   Each day is independent from the .app-btn family and seats itself
+   inside its grid column via the parent .calendar-api__days 7-col grid. */
+button.calendar-api__day {
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 1;
+  min-height: 0;
   padding: 0;
-  background: transparent;
   border: none;
   border-radius: var(--control-radius-sm);
-  color: var(--text-primary);
+  /* Unselected day wears the current Primary-button look via dedicated
+     tokens. Reskinning Primary later won't ripple in. */
+  background: var(--calendar-day-bg);
+  color: var(--calendar-day-color);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-.calendar-api__day--empty {
+button.calendar-api__day--empty {
   visibility: hidden;
   pointer-events: none;
 }
 
-.calendar-api__day:hover:not(:disabled):not(.is-selected) {
-  background: var(--control-bg-active);
-  color: var(--accent-strong);
+button.calendar-api__day:hover:not(:disabled):not(.is-selected),
+button.calendar-api__day:focus-visible:not(:disabled):not(.is-selected) {
+  background: var(--calendar-day-hover-bg);
+  color: var(--calendar-day-color);
+  outline: none;
 }
 
-.calendar-api__day.is-selected,
-.timepicker-api__option.is-selected,
-.tab-api__item.is-active {
-  background: var(--accent-strong);
-  color: var(--surface);
+button.calendar-api__day.is-selected {
+  /* Selected day wears the current Secondary-button look (stronger tint +
+     accent text) via dedicated tokens. */
+  background: var(--calendar-day-selected-bg);
+  color: var(--calendar-day-selected-color);
   font-weight: 600;
 }
 
-.calendar-api__day.is-today:not(.is-selected) {
-  background: var(--accent-surface);
-  color: var(--accent-strong);
+/* Tab-api active wears the Secondary-button look via dedicated tab
+   tokens. `button.` / `a.` prefix beats the global button/anchor resets. */
+button.tab-api__item.is-active,
+button.tab-api__item.is-active:hover,
+button.tab-api__item.is-active:focus-visible,
+a.tab-api__item.is-active,
+a.tab-api__item.is-active:hover,
+a.tab-api__item.is-active:focus-visible {
+  background: var(--tab-button-selected-bg);
+  color: var(--tab-button-selected-color);
   font-weight: 600;
 }
 
-.calendar-api__day.is-highlighted:not(.is-selected) {
-  background: var(--accent-surface);
+button.calendar-api__day.is-today:not(.is-selected) {
+  /* "Today" at rest has no border or special marker — it looks like any
+     other Primary-styled day. The Secondary treatment kicks in only when
+     the day is actually picked (.is-selected). */
+  font-weight: 600;
 }
 
-.calendar-api__day:disabled,
-.calendar-api__day.is-disabled {
+/* Weekend + bank-holiday colouring. Applied as text colour only so the
+   Primary-styled day cell bg remains consistent; only the numeral shifts
+   into the danger/warning tone. When the cell is selected, Secondary
+   takes over and these text colours step aside via :not(.is-selected). */
+button.calendar-api__day.is-sunday:not(.is-selected):not(:disabled),
+button.calendar-api__day.is-bank-holiday:not(.is-selected):not(:disabled) {
+  color: var(--danger-text);
+}
+
+button.calendar-api__day.is-saturday:not(.is-selected):not(:disabled) {
+  color: var(--warning-text);
+}
+
+/* Weekday-header tint mirrors the column below it. */
+.calendar-api__weekday.is-sunday {
+  color: var(--danger-text);
+}
+.calendar-api__weekday.is-saturday {
+  color: var(--warning-text);
+}
+
+button.calendar-api__day.is-highlighted:not(.is-selected) {
+  background: var(--calendar-day-hover-bg);
+}
+
+button.calendar-api__day:disabled,
+button.calendar-api__day.is-disabled {
   color: var(--text-secondary);
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-[data-theme="dark"] .calendar-api__today-button,
-[data-theme="dark"] .timepicker-api__now-button {
+[data-theme="dark"] .calendar-api__today-button {
   background: var(--accent-surface-hover);
 }
 
@@ -2941,24 +2972,42 @@ select {
   padding: 4px;
 }
 
-.timepicker-api__option {
+/* `button.` prefix keeps specificity in parity with the global
+   `button:not(.app-btn)` reset so the timepicker-option tokens win. */
+button.timepicker-api__option {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
-  background: transparent;
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0 8px;
   border: none;
   border-radius: var(--control-radius-sm);
-  color: var(--text-primary);
+  /* Resting state wears the Primary-button look via dedicated tokens. */
+  background: var(--timepicker-option-bg);
+  color: var(--timepicker-option-color);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
+  flex-shrink: 0;
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-.timepicker-api__option:hover {
-  background: var(--control-bg-active);
-  color: var(--accent-strong);
+button.timepicker-api__option:hover:not(.is-selected),
+button.timepicker-api__option:focus-visible:not(.is-selected) {
+  background: var(--timepicker-option-hover-bg);
+  color: var(--timepicker-option-color);
+  outline: none;
+}
+
+button.timepicker-api__option.is-selected,
+button.timepicker-api__option.is-selected:hover,
+button.timepicker-api__option.is-selected:focus-visible {
+  /* Selected wears the Secondary-button look via dedicated tokens. */
+  background: var(--timepicker-option-selected-bg);
+  color: var(--timepicker-option-selected-color);
+  font-weight: 600;
+  outline: none;
 }
 
 /* ========================================================= */
@@ -2980,21 +3029,34 @@ input[type="search"]::-webkit-search-results-decoration {
 /* === Search Bar API === */
 /* ========================================================= */
 
-.searchbar-api__input {
+/* Covers default, hover, focus, and focus-visible so the generic
+   `input:hover` / `input:focus` rules higher in this file can't paint a
+   background, ring, or rounded inner rectangle over the typed text.
+   `position: relative; z-index: 2` lifts the actual text characters to
+   the top of the local stacking context so nothing in the search bar
+   can render on top of them. */
+.searchbar-api__input,
+.searchbar-api__input:hover,
+.searchbar-api__input:focus,
+.searchbar-api__input:focus-visible {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   min-height: 0 !important;
   padding: 0 !important;
   border: none !important;
+  border-radius: 0 !important;
   background: transparent !important;
-  color: var(--text-primary);
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
   font-size: var(--control-font-size);
   font-weight: var(--control-font-weight);
-  outline: none;
+  outline: none !important;
   box-shadow: none !important;
   -webkit-appearance: none;
   appearance: none;
+  position: relative;
+  z-index: 2;
 }
 
 .searchbar-api__input::-webkit-search-decoration,
@@ -3010,33 +3072,42 @@ input[type="search"]::-webkit-search-results-decoration {
   opacity: 1;
 }
 
-.searchbar-api__clear {
+/* Clear button. Independent from the .app-btn family and intentionally
+   chromeless — no background, no border, no radius, just the × icon
+   sitting at the far right of the search bar. 44px hit target so it's
+   still easy to tap. `button.` prefix beats the global
+   `button:not(.app-btn)` reset that would otherwise paint it brand accent. */
+button.searchbar-api__clear {
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  min-height: 22px;
+  height: var(--control-height);
+  width: var(--control-height);
+  max-height: var(--control-height);
+  min-height: 0;
+  min-width: 0;
   padding: 0;
   border: none;
-  border-radius: var(--radius-pill);
-  background: var(--accent-surface);
+  border-radius: 0;
+  background: transparent;
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 1.15rem;
+  font-weight: 500;
   line-height: 1;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.18s ease, color 0.18s ease;
+  transition: opacity 0.18s ease, color 0.18s ease;
 }
 
-.searchbar-api__clear:disabled {
+button.searchbar-api__clear:disabled {
   visibility: hidden;
   pointer-events: none;
 }
 
-.searchbar-api__clear:hover,
-.searchbar-api__clear:focus-visible {
-  background: var(--accent-surface-hover);
+button.searchbar-api__clear:hover:not(:disabled),
+button.searchbar-api__clear:focus-visible {
+  background: transparent;
+  color: var(--accentText);
   outline: none;
 }
 
@@ -3044,6 +3115,7 @@ input[type="search"]::-webkit-search-results-decoration {
   background: var(--accentSurface);
   color: var(--accentText);
   box-shadow: none;
+  padding-right: 48px;
 }
 
 .status-sidebar__searchbar:hover,
@@ -3055,6 +3127,7 @@ input[type="search"]::-webkit-search-results-decoration {
 .status-sidebar__searchbar .searchbar-api__input,
 .status-sidebar__searchbar-input {
   color: var(--text-primary);
+  padding-right: 58px !important;
 }
 
 .status-sidebar__searchbar .searchbar-api__input::placeholder,
@@ -3063,13 +3136,50 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 .status-sidebar__searchbar .searchbar-api__clear {
-  background: rgba(var(--surface-rgb), 0.18);
-  color: var(--text-inverse);
+  background: var(--surface-light);
+  color: var(--text-secondary);
 }
 
 .status-sidebar__searchbar .searchbar-api__clear:hover,
 .status-sidebar__searchbar .searchbar-api__clear:focus-visible {
-  background: rgba(var(--surface-rgb), 0.3);
+  background: var(--accentSurfaceHover);
+  color: var(--text-primary);
+}
+
+.status-sidebar__search-submit {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--text-inverse);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.status-sidebar__search-submit:hover,
+.status-sidebar__search-submit:focus-visible {
+  background: var(--primary-dark);
+  outline: none;
+}
+
+.status-sidebar__search-submit:active {
+  transform: translateY(-50%) scale(0.96);
+}
+
+.status-sidebar__search-submit svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
 }
 
 /* ========================================================= */
@@ -3107,8 +3217,13 @@ input[type="search"]::-webkit-search-results-decoration {
 .tab-api {
   display: flex;
   flex-wrap: wrap;
+  /* 6px padding + 32px tab + 6px padding = 44px (--control-height). Gap 6px
+     matches the padding so the space *around* a tab is consistent on all
+     four sides. */
   gap: 6px;
   padding: 6px;
+  box-sizing: border-box;
+  height: var(--control-height);
   border-radius: var(--control-radius);
   background: var(--tab-container-bg);
   border: none;
@@ -3161,10 +3276,18 @@ input[type="search"]::-webkit-search-results-decoration {
   flex: 0 0 auto;
 }
 
-.tab-api__item {
-  min-height: var(--control-height-xs);
-  padding: var(--control-padding-xs);
-  border-radius: var(--control-radius-xs);
+/* `button.` / `a.` prefix so the rule beats the global `button:not(.app-btn)`
+   reset and browser anchor defaults — tab items render as either. The
+   height is dedicated to the tab family (32px, independent of the global
+   control-height scale), but corner radius is borrowed from --control-radius
+   so tabs share the button-family shape. */
+button.tab-api__item,
+a.tab-api__item {
+  height: 32px;
+  min-height: 0;
+  padding: 0 var(--space-sm);
+  /* Matches .app-btn's corner radius so tabs share the Primary button shape. */
+  border-radius: var(--control-radius) !important;
   font-size: 0.86rem;
   text-decoration: none;
   display: inline-flex;
@@ -3176,22 +3299,27 @@ input[type="search"]::-webkit-search-results-decoration {
   font-weight: 600;
   line-height: 1;
   border: none;
-  background: var(--tab-item-bg);
-  color: var(--tab-item-text);
+  /* Resting state wears Primary-style via dedicated tab tokens. */
+  background: var(--tab-button-bg);
+  color: var(--tab-button-color);
   box-shadow: none;
+  flex-shrink: 0;
   transition:
     background-color 0.18s ease,
     color 0.18s ease,
     box-shadow 0.18s ease;
 }
 
-.tab-api__item:hover:not(:disabled):not(.is-active) {
-  background: var(--tab-item-bg-hover);
+button.tab-api__item:hover:not(:disabled):not(.is-active),
+a.tab-api__item:hover:not(.is-active) {
+  background: var(--tab-button-hover-bg);
+  color: var(--tab-button-color);
 }
 
-.tab-api__item:focus-visible:not(.is-active) {
+button.tab-api__item:focus-visible:not(.is-active),
+a.tab-api__item:focus-visible:not(.is-active) {
   outline: none;
-  background: var(--tab-item-bg-hover);
+  background: var(--tab-button-hover-bg);
   box-shadow: var(--control-ring);
 }
 

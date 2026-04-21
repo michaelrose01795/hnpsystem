@@ -151,6 +151,24 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
     }
   };
 
+  const fieldLabelStyle = {
+    display: "block",
+    marginBottom: "8px",
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "var(--text-primary)",
+  };
+  const fieldInputStyle = {
+    width: "100%",
+    padding: "12px 16px",
+    borderRadius: "var(--input-radius)",
+    border: "2px solid var(--surface-light)",
+    backgroundColor: "var(--surface-light)",
+    color: "var(--text-primary)",
+    fontSize: "15px",
+    transition: "border-color 0.2s",
+  };
+
   // ✅ UI layout for popup
   return (
     <PopupModal
@@ -161,6 +179,12 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
       ariaLabel="New customer"
     >
       <>
+        <style>{`
+          .new-customer-popup__input::placeholder {
+            color: rgba(var(--text-secondary-rgb), 0.58);
+            opacity: 1;
+          }
+        `}</style>
         {/* Header removed by request */}
 
         {/* Content */}
@@ -181,61 +205,31 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             </h4>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "#666",
-                  }}
-                >
+                <label style={fieldLabelStyle}>
                   First Name
                 </label>
                 <input
+                  className="new-customer-popup__input"
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Enter first name"
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    borderRadius: "var(--input-radius)",
-                    border: "2px solid var(--surface-light)",
-                    backgroundColor: "var(--surface-light)",
-                    fontSize: "15px",
-                    transition: "border-color 0.2s",
-                  }}
+                  style={fieldInputStyle}
                   onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                   onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                 />
               </div>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "#666",
-                  }}
-                >
+                <label style={fieldLabelStyle}>
                   Last Name
                 </label>
                 <input
+                  className="new-customer-popup__input"
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Enter last name"
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    borderRadius: "var(--input-radius)",
-                    border: "2px solid var(--surface-light)",
-                    backgroundColor: "var(--surface-light)",
-                    fontSize: "15px",
-                    transition: "border-color 0.2s",
-                  }}
+                  style={fieldInputStyle}
                   onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                   onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                 />
@@ -260,63 +254,31 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "16px" }}>
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#666",
-                    }}
-                  >
+                  <label style={fieldLabelStyle}>
                     Number
                   </label>
                   <input
+                    className="new-customer-popup__input"
                     type="text"
                     value={number}
                     onChange={(e) => setNumber(e.target.value)}
                     placeholder="No."
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "var(--input-radius)",
-                      border: "2px solid var(--surface-light)",
-                      backgroundColor: "var(--surface-light)",
-                      color: "#000",
-                      fontSize: "15px",
-                      transition: "border-color 0.2s",
-                    }}
+                    style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                     onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                   />
                 </div>
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#666",
-                    }}
-                  >
+                  <label style={fieldLabelStyle}>
                     Street
                   </label>
                   <input
+                    className="new-customer-popup__input"
                     type="text"
                     value={street}
                     onChange={(e) => setStreet(e.target.value)}
                     placeholder="Street name"
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "var(--input-radius)",
-                      border: "2px solid var(--surface-light)",
-                      backgroundColor: "var(--surface-light)",
-                      color: "#000",
-                      fontSize: "15px",
-                      transition: "border-color 0.2s",
-                    }}
+                    style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                     onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                   />
@@ -324,146 +286,88 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#666",
-                    }}
-                  >
+                  <label style={fieldLabelStyle}>
                     Town/City
                   </label>
                   <input
+                    className="new-customer-popup__input"
                     type="text"
                     value={town}
                     onChange={(e) => setTown(e.target.value)}
                     placeholder="Town or city"
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "var(--input-radius)",
-                      border: "2px solid var(--surface-light)",
-                      backgroundColor: "var(--surface-light)",
-                      fontSize: "15px",
-                      transition: "border-color 0.2s",
-                    }}
+                    style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                     onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                   />
                 </div>
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#666",
-                    }}
-                  >
+                  <label style={fieldLabelStyle}>
                     County
                   </label>
                   <input
+                    className="new-customer-popup__input"
                     type="text"
                     value={county}
                     onChange={(e) => setCounty(e.target.value)}
                     placeholder="County"
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "var(--input-radius)",
-                      border: "2px solid var(--surface-light)",
-                      backgroundColor: "var(--surface-light)",
-                      fontSize: "15px",
-                      transition: "border-color 0.2s",
-                    }}
+                    style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                     onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                   />
                 </div>
               </div>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "#666",
-                  }}
-                >
-                  Country
-                </label>
-                <input
-                  type="text"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  placeholder="Country"
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    borderRadius: "var(--input-radius)",
-                    border: "2px solid var(--surface-light)",
-                    backgroundColor: "var(--surface-light)",
-                    fontSize: "15px",
-                    transition: "border-color 0.2s",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "#666",
-                  }}
-                >
-                  Postcode
-                </label>
-                <div style={{ display: "flex", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "end" }}>
+                <div>
+                  <label style={fieldLabelStyle}>
+                    Postcode
+                  </label>
+                  <div style={{ display: "flex", gap: "12px" }}>
+                    <input
+                      className="new-customer-popup__input"
+                      type="text"
+                      value={postcode}
+                      onChange={(e) => handlePostcodeChange(e.target.value)}
+                      placeholder="Enter postcode"
+                      style={{ ...fieldInputStyle, flex: 1, minWidth: 0 }}
+                      onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
+                      onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddressLookup}
+                      disabled={lookupState.loading}
+                      style={{
+                        padding: "12px 24px",
+                        borderRadius: "var(--input-radius)",
+                        border: "2px solid var(--primary)",
+                        backgroundColor: "var(--primary)",
+                        color: "white",
+                        fontSize: "14px",
+                        fontWeight: "bold",
+                        cursor: lookupState.loading ? "not-allowed" : "pointer",
+                        opacity: lookupState.loading ? 0.6 : 1,
+                        transition: "all 0.2s",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {lookupState.loading ? "Searching…" : "Lookup"}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label style={fieldLabelStyle}>
+                    Country
+                  </label>
                   <input
+                    className="new-customer-popup__input"
                     type="text"
-                    value={postcode}
-                    onChange={(e) => handlePostcodeChange(e.target.value)}
-                    placeholder="Enter postcode"
-                    style={{
-                      flex: 1,
-                      padding: "12px 16px",
-                      borderRadius: "var(--input-radius)",
-                      border: "2px solid var(--surface-light)",
-                      backgroundColor: "var(--surface-light)",
-                      fontSize: "15px",
-                      transition: "border-color 0.2s",
-                    }}
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    placeholder="Country"
+                    style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                     onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                   />
-                  <button
-                    type="button"
-                    onClick={handleAddressLookup}
-                    disabled={lookupState.loading}
-                    style={{
-                      padding: "12px 24px",
-                      borderRadius: "var(--input-radius)",
-                      border: "2px solid var(--primary)",
-                      backgroundColor: "var(--primary)",
-                      color: "white",
-                      fontSize: "14px",
-                      fontWeight: "bold",
-                      cursor: lookupState.loading ? "not-allowed" : "pointer",
-                      opacity: lookupState.loading ? 0.6 : 1,
-                      transition: "all 0.2s",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {lookupState.loading ? "Searching…" : "Lookup"}
-                  </button>
                 </div>
               </div>
 
@@ -536,92 +440,47 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    color: "#666",
-                  }}
-                >
+                <label style={fieldLabelStyle}>
                   Email
                 </label>
                 <input
+                  className="new-customer-popup__input"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="customer@example.com"
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    borderRadius: "var(--input-radius)",
-                    border: "2px solid var(--surface-light)",
-                    backgroundColor: "var(--surface-light)",
-                    fontSize: "15px",
-                    transition: "border-color 0.2s",
-                  }}
+                  style={fieldInputStyle}
                   onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                   onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                 />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#666",
-                    }}
-                  >
+                  <label style={fieldLabelStyle}>
                     Mobile
                   </label>
                   <input
+                    className="new-customer-popup__input"
                     type="text"
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
                     placeholder="Mobile number"
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "var(--input-radius)",
-                      border: "2px solid var(--surface-light)",
-                      backgroundColor: "var(--surface-light)",
-                      fontSize: "15px",
-                      transition: "border-color 0.2s",
-                    }}
+                    style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                     onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                   />
                 </div>
                 <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#666",
-                    }}
-                  >
+                  <label style={fieldLabelStyle}>
                     Telephone
                   </label>
                   <input
+                    className="new-customer-popup__input"
                     type="text"
                     value={telephone}
                     onChange={(e) => setTelephone(e.target.value)}
                     placeholder="Telephone number"
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "var(--input-radius)",
-                      border: "2px solid var(--surface-light)",
-                      backgroundColor: "var(--surface-light)",
-                      fontSize: "15px",
-                      transition: "border-color 0.2s",
-                    }}
+                    style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
                     onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
                   />
