@@ -1,9 +1,9 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: /src/components/ProtectedRoute.js
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
+import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const router = useRouter();
@@ -14,7 +14,6 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   useEffect(() => {
     if (loading) return;
 
-    // ✅ Case 1: dev user exists
     if (user) {
       if (allowedRoles) {
         const hasRole = (user.roles || []).some((r) =>
@@ -26,7 +25,6 @@ export default function ProtectedRoute({ children, allowedRoles }) {
       return;
     }
 
-    // ✅ Case 2: fallback to next-auth session
     if (status === "authenticated" && session?.user) {
       if (allowedRoles) {
         const hasRole = (session.user.roles || []).some((r) =>
@@ -38,18 +36,18 @@ export default function ProtectedRoute({ children, allowedRoles }) {
       return;
     }
 
-    // ✅ Case 3: definitely no user
     if (status === "unauthenticated") {
       router.replace("/login");
     }
   }, [loading, status, session, user, allowedRoles, router]);
 
-  // While auth is resolving we return null — the persistent <Layout> detects
-  // `!user` and overlays the structured PageContentSkeleton over the content area,
-  // so the sidebar/topbar stay mounted and the first visible loading frame is
-  // already the proper skeleton (not a flat text stage).
+  // While auth is resolving, render the same PageSkeleton the rest of the app
+  // uses. Layout's own pre-auth skeleton already covers the case where the
+  // page hasn't mounted yet; this ensures the skeleton stays until role checks
+  // also resolve, without a flash of empty content between Layout's skeleton
+  // and the real page render.
   if (loading || status === "loading" || !checked) {
-    return null;
+    return <PageSkeleton />;
   }
 
   return <>{children}</>;

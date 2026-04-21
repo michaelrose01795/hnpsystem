@@ -23,6 +23,8 @@ import NewCustomerPopup from "@/components/popups/NewCustomerPopup"; // import n
 import ExistingCustomerPopup from "@/components/popups/ExistingCustomerPopup"; // import existing customer popup
 import DocumentsUploadPopup from "@/components/popups/DocumentsUploadPopup";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
+import QuestionPromptsPopup from "@/components/JobCards/QuestionPromptsPopup";
+import MobileMechanicEligibility from "@/components/JobCards/MobileMechanicEligibility";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
@@ -93,6 +95,12 @@ export default function CreateJobCardPage() {
     reg: "", // vehicle registration number
     colour: "", // vehicle colour
     makeModel: "", // vehicle make and model combined
+    // Separate make and year are populated alongside makeModel from the DVLA
+    // lookup + Supabase hydrate. They drive the Mobile Mechanic eligibility
+    // rules (Suzuki-only, ≤ 3 years old) — keep them in sync whenever the
+    // vehicle is loaded so the rules never see stale data.
+    make: "", // vehicle make (e.g. "Suzuki") used for eligibility
+    year: null, // year of manufacture used for eligibility
     chassis: "", // chassis/VIN number
     engine: "", // engine number
     mileage: "", // current mileage
@@ -222,6 +230,14 @@ export default function CreateJobCardPage() {
   const [showExistingCustomer, setShowExistingCustomer] = useState(false); // toggle existing customer popup
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false); // toggle documents popup
   const [showDetectedRequestsPopup, setShowDetectedRequestsPopup] = useState(false); // toggle detected requests popup
+  // Mobile Mechanic selection — Yes/No choice, gated by the eligibility
+  // engine so advisors can't force-enable it on jobs that don't meet the
+  // rules. Included in the save payload when true.
+  const [isMobileMechanic, setIsMobileMechanic] = useState(false);
+  // Which request row (if any) is currently showing the Question Prompts popup.
+  // Stores the index of the request so the popup can read the correct text;
+  // null means the popup is closed.
+  const [questionPromptsIndex, setQuestionPromptsIndex] = useState(null);
   const [newCustomerPrefill, setNewCustomerPrefill] = useState({ firstName: "", lastName: "" });
 
   // ✅ Tab management functions
@@ -558,17 +574,19 @@ export default function CreateJobCardPage() {
     transition: "all 0.2s",
   });
 
+  // 2-column grid so buttons sit in rows of two with a true 50/50 split:
+  //   [Waiting | Loan Car]
+  //   [Collection | Neither]
+  //   [Retail | Warranty]
   const jobInfoOptionGroupStyle = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
     gap: "10px",
     width: "100%",
   };
 
   const getJobInfoOptionStyle = (isSelected) => ({
     width: "100%",
-    maxWidth: "320px",
     minHeight: "var(--control-height)",
     display: "flex",
     alignItems: "center",
@@ -631,6 +649,9 @@ export default function CreateJobCardPage() {
         ...prev,
         reg: normalizedReg || prev.reg,
         makeModel: combinedMakeModel || prev.makeModel,
+        // Capture make + year for the Mobile Mechanic eligibility rules.
+        make: storedVehicle.make || prev.make,
+        year: storedVehicle.year != null ? Number(storedVehicle.year) : prev.year,
         colour: storedVehicle.colour || prev.colour,
         chassis: storedVehicle.chassis || storedVehicle.vin || prev.chassis,
         engine: storedVehicle.engine || storedVehicle.engine_number || prev.engine,
@@ -1147,9 +1168,24 @@ export default function CreateJobCardPage() {
       const combinedMakeModel = `${detectedMake} ${detectedModel}`.trim(); // combine make and model into single label
       const fallbackMakeModel = combinedMakeModel.length > 0 ? combinedMakeModel : detectedMake || "Unknown"; // ensure fallback value
 
+      // DVLA returns yearOfManufacture as an integer and monthOfFirstRegistration
+      // as "YYYY-MM". Either is a valid source — prefer yearOfManufacture, then
+      // fall back to the first-registration year. Needed for the Mobile
+      // Mechanic age rule.
+      const firstRegYear = (() => {
+        const rawFirstReg = data.monthOfFirstRegistration || data.dateOfFirstRegistration || "";
+        const parsedFirstRegYear = Number(String(rawFirstReg).slice(0, 4));
+        return Number.isFinite(parsedFirstRegYear) && parsedFirstRegYear > 1900 ? parsedFirstRegYear : null;
+      })();
+      const detectedYear =
+        (Number.isFinite(Number(data.yearOfManufacture)) ? Number(data.yearOfManufacture) : null) ||
+        firstRegYear;
+
       const vehicleData = { // build vehicle object for state update
         reg: normalizedRegistration,
         makeModel: fallbackMakeModel,
+        make: detectedMake || "", // explicit make for eligibility checks
+        year: detectedYear, // year of manufacture for eligibility checks
         colour: data.colour || data.vehicleColour || data.bodyColour || "Not provided",
         chassis: data.vin || data.chassisNumber || data.vehicleIdentificationNumber || "Not provided",
         engine: data.engineNumber || data.engineCapacity || data.engine || "Not provided",
@@ -1225,6 +1261,21 @@ export default function CreateJobCardPage() {
           isSubJobMode, // sub-job mode from query param
           primeJobData, // prime job data when in sub-job mode
           asPrimeJob, // create as prime job checkbox
+          // Mobile Mechanic — only passed when the advisor ticked "Yes" on
+          // an eligible job. createFullJobBatch will patch the primary job
+          // with service_mode='mobile' and the on-site contact fields.
+          mobileDetails: isMobileMechanic
+            ? {
+                address: customerForm.address || "",
+                postcode: customerForm.postcode || "",
+                contactName: `${customerForm.firstName || ""} ${customerForm.lastName || ""}`.trim(),
+                contactPhone: customerForm.mobile || customerForm.telephone || "",
+                windowStart: null,
+                windowEnd: null,
+                accessNotes: "",
+              }
+            : null,
+          mobileUserId: dbUserId || null,
         },
       });
 
@@ -1669,6 +1720,22 @@ export default function CreateJobCardPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Mobile Mechanic eligibility — evaluates the current
+                    customer + vehicle + detected job types and exposes a
+                    Yes/No toggle gated by the eligibility verdict.
+                    Customer postcode drives a drive-time lookup inside the
+                    component; no extra API wiring is needed here. */}
+                <MobileMechanicEligibility
+                  customer={customerForm}
+                  vehicle={vehicle}
+                  jobDetections={jobDetections}
+                  jobCategories={jobCategories}
+                  isMobileMechanic={isMobileMechanic}
+                  onSelectionChange={setIsMobileMechanic}
+                  toggleGroupStyle={binaryToggleGroupStyle}
+                  getToggleButtonStyle={getBinaryToggleButtonStyle}
+                />
               </div>
             </DevLayoutSection>
 
@@ -2496,17 +2563,20 @@ export default function CreateJobCardPage() {
                       options={PAYMENT_TYPE_OPTIONS}
                       className="job-request-payment-dropdown"
                     />
-                    {(() => {
-                      const det = visibleJobDetections.find(
-                        (d) => Number(d.requestIndex) === i
-                      );
-                      if (!det) return null;
-                      return (
-                        <span className="app-btn app-btn--secondary app-btn--sm app-btn--pill" style={{ pointerEvents: "none" }}>
-                          {det.jobType}
-                        </span>
-                      );
-                    })()}
+                    {/* Open the Question Prompts helper for this specific
+                        request row. Disabled when the request text is empty
+                        so advisors don't hit it by mistake — an empty
+                        request falls back to generic questions which aren't
+                        as useful on a live call. */}
+                    <button
+                      type="button"
+                      onClick={() => setQuestionPromptsIndex(i)}
+                      className="app-btn app-btn--secondary app-btn--sm"
+                      disabled={!String(req.text || "").trim()}
+                      title="Show suggested questions to ask the customer"
+                    >
+                      Question Prompts
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleRemoveRequest(i)}
@@ -2769,6 +2839,18 @@ export default function CreateJobCardPage() {
             type: f.contentType,
             url: f.url || "",
           }))}
+        />
+        {/* Question Prompts popup — rendered once per page, opens for the
+            request row whose index is stored in questionPromptsIndex. */}
+        <QuestionPromptsPopup
+          open={questionPromptsIndex !== null}
+          onClose={() => setQuestionPromptsIndex(null)}
+          requestText={
+            questionPromptsIndex !== null
+              ? String(requests?.[questionPromptsIndex]?.text || "")
+              : ""
+          }
+          requestIndex={questionPromptsIndex}
         />
         {showDetectedRequestsPopup && (
           <div

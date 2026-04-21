@@ -4,7 +4,7 @@
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useState, useEffect, useMemo, useCallback } from "react"; // import React and hooks
-import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
+import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useNextAction } from "@/context/NextActionContext"; // import next action context
 import { useRouter } from "next/router"; // for navigation
 import { getAllJobs, updateJobStatus } from "@/lib/database/jobs"; // import database functions
@@ -582,11 +582,7 @@ export default function ViewJobCards() {
      Loading State
   ================================ */
   if (loading) {
-    return (
-      <>
-        <PageContentSkeleton route={router.asPath || "/job-cards/view"} />
-      </>
-    );
+    return <PageSkeleton />;
   }
 
   /* ================================

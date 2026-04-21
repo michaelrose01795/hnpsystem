@@ -207,6 +207,12 @@
   --nav-shell-bg: var(--accentSurface);
   --nav-shell-border: none;
   --tab-container-bg: var(--accentSurface);
+  /* Tab item tokens — intentionally kept on a light, neutral palette in both
+     light and dark modes so tab strips read as a secondary-button treatment
+     separate from the main button/control system. */
+  --tab-item-bg: #f3f3f3;
+  --tab-item-bg-hover: #e5e7eb;
+  --tab-item-text: #0f0f0f;
   --nav-link-bg: var(--accentSurface);
   --nav-link-bg-hover: var(--accentSurfaceHover);
   --nav-link-bg-active: var(--accentMain);
@@ -516,6 +522,11 @@
   --nav-shell-bg: var(--accentSurface);
   --nav-shell-border: none;
   --tab-container-bg: var(--accentSurface);
+  /* Tab items stay on the same light palette in dark mode — tabs intentionally
+     read as a separate, lighter surface than the main button/control system. */
+  --tab-item-bg: #f3f3f3;
+  --tab-item-bg-hover: #e5e7eb;
+  --tab-item-text: #0f0f0f;
   --nav-link-bg: var(--accentSurface);
   --nav-link-bg-hover: var(--accentSurfaceHover);
   --nav-link-bg-active: var(--accentMain);

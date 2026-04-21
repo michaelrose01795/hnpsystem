@@ -4403,6 +4403,15 @@ export default function VhcDetailsPanel({
                   : quoteLabourHours !== null
                     ? String(quoteLabourHours)
                     : resolveLabourHoursValue(item.id, entry);
+                // Display value: only show the field populated when the user has
+                // actively entered something locally, OR there's a persisted
+                // non-zero value. A stored 0 (from default/seed data) renders blank.
+                const labourInputDisplayValue = hasLocalLabourHoursValue
+                  ? String(entry.laborHours)
+                  : (() => {
+                      const num = Number(resolvedLabourHours);
+                      return Number.isFinite(num) && num > 0 ? String(resolvedLabourHours) : "";
+                    })();
                 const labourCost =
                   quoteLabourHours !== null
                     ? quoteLabourHours * quoteLabourRate
@@ -4433,12 +4442,6 @@ export default function VhcDetailsPanel({
                               : entry.labourComplete,
                       }
                     : entry;
-                const hasResolvedLabourHours =
-                  resolvedLabourHours !== "" && resolvedLabourHours !== null && resolvedLabourHours !== undefined;
-                const labourCheckboxChecked =
-                  severity === "authorized" || severity === "declined"
-                    ? resolveLabourCompleteValue(effectiveEntry, resolvedLabourHours) || hasResolvedLabourHours
-                    : resolveLabourCompleteValue(effectiveEntry, resolvedLabourHours);
                 const statusState = resolveVhcRowStatusView(item, effectiveEntry, resolvedPartsCost, resolvedLabourHours);
                 const locationLabel = item.location
                   ? LOCATION_LABELS[item.location] || item.location.replace(/_/g, " ")
@@ -4696,12 +4699,6 @@ export default function VhcDetailsPanel({
                     </td>
                     <td style={{ padding: "12px 8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                        <input
-                          type="checkbox"
-                          checked={effectiveEntry.partsComplete || false}
-                          disabled={true}
-                          title={effectiveEntry.partsComplete ? "Parts added or marked as not required" : "Add parts or mark as not required"}
-                        />
                         <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--primary)" }}>
                           {partsDisplayValue ? `£${partsDisplayValue}` : "—"}
                         </div>
@@ -4710,34 +4707,11 @@ export default function VhcDetailsPanel({
                     <td style={{ padding: "12px 8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", position: "relative" }}>
                         <input
-                          type="checkbox"
-                          checked={labourCheckboxChecked}
-                          onChange={(event) => event.preventDefault()}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            if (
-                              readOnly ||
-                              severity === "authorized" ||
-                              severity === "declined"
-                            ) {
-                              return;
-                            }
-                            openLabourCostModal(item.id, resolvedLabourHours);
-                          }}
-                          disabled={
-                            readOnly ||
-                            severity === "authorized" ||
-                            severity === "declined"
-                          }
-                          style={{ cursor: "pointer" }}
-                          title="Open labour cost editor"
-                        />
-                        <input
                           className="labour-hours-input"
                           type="number"
                           min="0"
                           step="0.1"
-                          value={resolvedLabourHours ?? ""}
+                          value={labourInputDisplayValue}
                           onChange={(event) => {
                             // Don't allow changes in authorized/declined sections
                             if (

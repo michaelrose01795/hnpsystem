@@ -11,7 +11,7 @@ import RetailManagersDashboard from "@/components/dashboards/RetailManagersDashb
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, PageShell, SectionShell } from "@/components/ui";
-import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
+import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // import role category definitions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 
@@ -88,11 +88,7 @@ export default function Dashboard() {
   }
 
   if (!user || isRedirecting) {
-    return (
-      <>
-        <PageContentSkeleton route={router.asPath || "/dashboard"} />
-      </>
-    );
+    return <PageSkeleton />;
   } // do not render until user data exists or when redirecting
 
   const normalizedRoles = user?.roles?.map((r) => r.toLowerCase()) || []; // normalize roles for checks

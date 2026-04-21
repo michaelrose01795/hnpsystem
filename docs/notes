@@ -1,13 +1,5 @@
-
-TODO
-Have it so the dropdown and everything else linked follows the style of the what the buttons look like when hover is active, make this change to the global setting so they all change. 
-
-
-Remove "/job-cards/myjobs/00076 :: 1.2.2.1.1 (myjob-page-shell)" card and put all of the contents which as in that card into "/job-cards/myjobs/00076 :: 1.2.2.1 (app-layout-page-card)" section. 
-
-
-"/tech/efficiency :: 1.2.2.1.1 (tech-efficiency-page)" remove this card. 
-
+delete 
+abour field not emplty when nothing has been enetered, showing "0" inisd field een thoug it should be empty until something is manually entered, override anythign stopping this change. 
 
 
 
@@ -18,13 +10,11 @@ look into "Review Media" section after editing photo
 TODO DEEP ONE
 with camera for concerns, hgave ir link rto vhc photo and vedio section  in catagory of wipers etc
 
-TODO
-have it so customers wihci are wihtin a 40min drdaius drive of a humphries and parks in west malling are eligeible for mobiule mechanic, add this secton within /job-cards/create :: 1.2.1.1.1.2.1.1 (job-cards-create-job-information), so if the addresss entered, cars 3 years old or newer and is a suzuki and the job detected is a service then the status of the job can be set for mobile mechanic. add this seciton adn then have it if yes is selected within the eligible section then have it show for the mobile mechanic. 
 
 
 FIX playwritght still
 
-
+- Mileage to show within the customer page inside previous job section. 
 
 /dashboard/service
 

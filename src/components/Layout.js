@@ -5,7 +5,7 @@
 //       - Sidebar toggle button shrunk and edge-aligned on mobile/tablet
 //       - All page sections optimized for vertical phone mode
 // ✅ Imports converted to use absolute alias "@/"
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"; // import React hooks
+import React, { useCallback, useEffect, useMemo, useState } from "react"; // import React hooks
 import dynamic from "next/dynamic"; // code-split heavy Layout children out of the shell bundle
 import useSWR from "swr"; // SWR for deduped, cache-backed data fetching
 // usePolling removed — SWR + slot-keyed caching covers the welcome-quote refresh.
@@ -33,10 +33,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
 import BrandLogo from "@/components/BrandLogo";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
-import { useLoadingState } from "@/context/LoadingStateContext";
-import useCaptureLayoutFingerprint from "@/hooks/useCaptureLayoutFingerprint";
-import { clearAllLayoutFingerprints } from "@/lib/loading/layoutFingerprint";
+import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 
 const SERVICE_ACTION_ROLES = new Set([
   "service",
@@ -409,41 +406,11 @@ export default function Layout({
 
   const colors = appShellTheme.light;
   const [contentKey, setContentKey] = useState(() => router.asPath || "initial");
-  const { isLoading: isGlobalLoading } = useLoadingState();
-  const contentRef = useRef(null);
-  // Treat "no user yet on a protected route" as a loading state so the sidebar/topbar
-  // stay mounted and only the content area shows the skeleton.
-  const isContentLoading = !hideSidebar && (isGlobalLoading || userLoading || !user);
-
-  // Shell-first skeleton contract:
-  // The overlay renders IMMEDIATELY when isContentLoading is true — no useEffect
-  // race, no 1-frame delay. `exitingSkeleton` keeps the overlay mounted for a
-  // 250ms fade after loading ends so pages that return null mid-fetch don't
-  // flash a solid-colour background. The sidebar/topbar stay mounted throughout.
-  const [exitingSkeleton, setExitingSkeleton] = useState(false);
-  const skeletonOverlayRouteRef = useRef(router.asPath || router.pathname);
-  const skeletonExitTimerRef = useRef(null);
-  useEffect(() => {
-    if (skeletonExitTimerRef.current) {
-      clearTimeout(skeletonExitTimerRef.current);
-      skeletonExitTimerRef.current = null;
-    }
-    if (isContentLoading) {
-      skeletonOverlayRouteRef.current = router.asPath || router.pathname;
-      setExitingSkeleton(false);
-    } else {
-      // Keep overlay mounted long enough for the 0.2s CSS fade-out to complete.
-      setExitingSkeleton(true);
-      skeletonExitTimerRef.current = setTimeout(() => {
-        setExitingSkeleton(false);
-        skeletonExitTimerRef.current = null;
-      }, 250);
-    }
-    return () => {
-      if (skeletonExitTimerRef.current) clearTimeout(skeletonExitTimerRef.current);
-    };
-  }, [isContentLoading, router.asPath, router.pathname]);
-  const skeletonOverlayActive = isContentLoading || exitingSkeleton;
+  // While the session is resolving on a protected route, render a PageSkeleton
+  // in place of children. Only ONE skeleton is ever visible — no overlay, no
+  // stacking, no fade. Pages handle their own data-loading skeletons inside
+  // their own render once auth is resolved.
+  const isPreAuthLoading = !hideSidebar && (userLoading || !user);
 
   useEffect(() => {
     if (isTablet) {
@@ -467,29 +434,6 @@ export default function Layout({
   useEffect(() => {
     setContentKey(router.asPath || `${router.pathname}-${Date.now()}`);
   }, [router.asPath, router.pathname]);
-
-  // Capture a layout fingerprint of the current page after the skeleton overlay has
-  // fully exited. Waiting until skeletonOverlayActive=false ensures the overlay div
-  // is unmounted so it cannot appear in the captured candidates. Delegated to the
-  // shared hook so CustomerLayout can reuse identical logic.
-  // Derive a viewport-bucket string so the fingerprint recaptures when the user
-  // rotates / resizes across a breakpoint (the cache also keys by bucket, so a
-  // desktop fingerprint is never replayed at mobile width).
-  const viewportBucket = isMobile ? "mobile" : isTablet ? "tablet" : "desktop";
-  useCaptureLayoutFingerprint(
-    contentRef,
-    router.asPath || router.pathname,
-    skeletonOverlayActive,
-    `${contentKey}::${viewportBucket}`
-  );
-
-  // When the viewport bucket flips (mobile ↔ tablet ↔ desktop), flush every
-  // cached fingerprint — geometry at the old bucket is irrelevant and would
-  // paint misshapen shimmer rectangles on the next route change until the new
-  // page gets a chance to re-capture.
-  useEffect(() => {
-    clearAllLayoutFingerprints();
-  }, [viewportBucket]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
@@ -520,9 +464,9 @@ export default function Layout({
     };
   }, [router]);
 
-  // The full Layout (sidebar + topbar) always mounts. When the user is missing or
-  // a route/data load is in flight, only the inner content area is replaced with
-  // <PageContentSkeleton /> below — so the shell never blinks out.
+  // The full Layout (sidebar + topbar) always mounts. When the session is still
+  // resolving, the inner content area renders a <PageSkeleton /> in place of
+  // {children} — one skeleton, one transition, no overlay stacking.
 
   const accountsRoleCandidates = (roleCategories?.Sales || []).filter((roleName) =>
     roleName.toLowerCase().includes("accounts")
@@ -1221,28 +1165,11 @@ export default function Layout({
                     : undefined
               }
             >
-              <div ref={contentRef} style={{ width: "100%", minHeight: "100%", position: "relative" }}>
-                {/* Content always renders so it mounts and fetches data during skeleton phase */}
+              <div style={{ width: "100%", minHeight: "100%", position: "relative" }}>
                 <div className="app-page-stack">
                   {showHrTabs && <HrTabsBar />}
-                  {children}
+                  {isPreAuthLoading ? <PageSkeleton /> : children}
                 </div>
-                {/* Skeleton overlays on top and fades out when loading ends.
-                    Theme-aware: `--page-card-bg` resolves to the current theme's
-                    card surface so the overlay never flashes white in dark mode.
-                    `.app-page-skeleton-overlay` in globals.css scopes the fade
-                    under a `prefers-reduced-motion: reduce` media query. */}
-                {skeletonOverlayActive && (
-                  <div
-                    data-loading-overlay="true"
-                    className={`app-page-skeleton-overlay${isContentLoading ? "" : " app-page-skeleton-overlay--exiting"}`}
-                    style={{
-                      borderRadius: "var(--page-card-radius)",
-                    }}
-                  >
-                    <PageContentSkeleton route={skeletonOverlayRouteRef.current} />
-                  </div>
-                )}
               </div>
             </DevLayoutSection>
           </div>

@@ -1,14 +1,24 @@
-﻿// file location: src/context/DevLayoutOverlayContext.js
+// file location: src/context/DevLayoutOverlayContext.js
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { canUseDevLayoutOverlay } from "@/lib/dev-layout/access";
+import {
+  DEV_OVERLAY_CATEGORIES,
+  DEV_OVERLAY_CATEGORY_IDS,
+  getDefaultCategoryFilters,
+  normalizeCategoryFilters,
+} from "@/lib/dev-layout/categories";
 
 const STORAGE_ENABLED_KEY = "hnp-dev-layout-overlay-enabled";
 const STORAGE_MODE_KEY = "hnp-dev-layout-overlay-mode";
 const STORAGE_FULL_SCREEN_KEY = "hnp-dev-layout-overlay-full-screen";
 const STORAGE_LEGACY_MARKERS_KEY = "hnp-dev-layout-overlay-legacy-markers";
+const STORAGE_CATEGORY_FILTERS_KEY = "hnp-dev-layout-overlay-category-filters";
+const STORAGE_PANEL_OPEN_KEY = "hnp-dev-layout-overlay-panel-open";
 
 const MODES = ["labels", "details", "inspect"];
+
+const defaultFilters = getDefaultCategoryFilters();
 
 const DevLayoutOverlayContext = createContext({
   canAccess: false,
@@ -17,6 +27,9 @@ const DevLayoutOverlayContext = createContext({
   fullScreen: false,
   legacyMarkers: true,
   hydrated: false,
+  categoryFilters: defaultFilters,
+  categories: DEV_OVERLAY_CATEGORIES,
+  panelOpen: false,
   setEnabled: () => {},
   toggleEnabled: () => {},
   setMode: () => {},
@@ -25,6 +38,13 @@ const DevLayoutOverlayContext = createContext({
   toggleFullScreen: () => {},
   setLegacyMarkers: () => {},
   toggleLegacyMarkers: () => {},
+  setCategoryFilter: () => {},
+  toggleCategoryFilter: () => {},
+  setAllCategoryFilters: () => {},
+  resetCategoryFilters: () => {},
+  isCategoryActive: () => true,
+  setPanelOpen: () => {},
+  togglePanelOpen: () => {},
 });
 
 const isTextInputTarget = (target) => {
@@ -35,6 +55,15 @@ const isTextInputTarget = (target) => {
   return Boolean(target.closest("[contenteditable='true']"));
 };
 
+const readJson = (raw) => {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 export function DevLayoutOverlayProvider({ children }) {
   const { user } = useUser();
   const canAccess = canUseDevLayoutOverlay(user);
@@ -42,6 +71,8 @@ export function DevLayoutOverlayProvider({ children }) {
   const [mode, setModeState] = useState("labels");
   const [fullScreen, setFullScreen] = useState(false);
   const [legacyMarkers, setLegacyMarkers] = useState(true);
+  const [categoryFilters, setCategoryFilters] = useState(defaultFilters);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -52,6 +83,8 @@ export function DevLayoutOverlayProvider({ children }) {
       setModeState("labels");
       setFullScreen(false);
       setLegacyMarkers(true);
+      setCategoryFilters(defaultFilters);
+      setPanelOpen(false);
       setHydrated(true);
       return;
     }
@@ -60,13 +93,15 @@ export function DevLayoutOverlayProvider({ children }) {
     const storedMode = window.localStorage.getItem(STORAGE_MODE_KEY);
     const storedFullScreen = window.localStorage.getItem(STORAGE_FULL_SCREEN_KEY) === "1";
     const storedLegacyMarkers = window.localStorage.getItem(STORAGE_LEGACY_MARKERS_KEY);
+    const storedFilters = readJson(window.localStorage.getItem(STORAGE_CATEGORY_FILTERS_KEY));
+    const storedPanelOpen = window.localStorage.getItem(STORAGE_PANEL_OPEN_KEY) === "1";
 
     setEnabled(storedEnabled);
-    if (MODES.includes(storedMode)) {
-      setModeState(storedMode);
-    }
+    if (MODES.includes(storedMode)) setModeState(storedMode);
     setFullScreen(storedFullScreen);
     setLegacyMarkers(storedLegacyMarkers !== "0");
+    setCategoryFilters(normalizeCategoryFilters(storedFilters));
+    setPanelOpen(storedPanelOpen);
     setHydrated(true);
   }, [canAccess]);
 
@@ -91,6 +126,16 @@ export function DevLayoutOverlayProvider({ children }) {
   }, [legacyMarkers, canAccess, hydrated]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !canAccess || !hydrated) return;
+    window.localStorage.setItem(STORAGE_CATEGORY_FILTERS_KEY, JSON.stringify(categoryFilters));
+  }, [categoryFilters, canAccess, hydrated]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !canAccess || !hydrated) return;
+    window.localStorage.setItem(STORAGE_PANEL_OPEN_KEY, panelOpen ? "1" : "0");
+  }, [panelOpen, canAccess, hydrated]);
+
+  useEffect(() => {
     if (typeof document === "undefined") return;
     const root = document.documentElement;
 
@@ -99,6 +144,9 @@ export function DevLayoutOverlayProvider({ children }) {
       root.removeAttribute("data-dev-overlay-mode");
       root.removeAttribute("data-dev-overlay-scope");
       root.removeAttribute("data-dev-overlay-legacy-markers");
+      DEV_OVERLAY_CATEGORY_IDS.forEach((id) => {
+        root.removeAttribute(`data-dev-overlay-hide-${id}`);
+      });
       return;
     }
 
@@ -107,13 +155,24 @@ export function DevLayoutOverlayProvider({ children }) {
     root.setAttribute("data-dev-overlay-scope", fullScreen ? "full-screen" : "page-shell");
     root.setAttribute("data-dev-overlay-legacy-markers", legacyMarkers ? "true" : "false");
 
+    DEV_OVERLAY_CATEGORY_IDS.forEach((id) => {
+      if (categoryFilters[id]) {
+        root.removeAttribute(`data-dev-overlay-hide-${id}`);
+      } else {
+        root.setAttribute(`data-dev-overlay-hide-${id}`, "1");
+      }
+    });
+
     return () => {
       root.removeAttribute("data-dev-overlay-enabled");
       root.removeAttribute("data-dev-overlay-mode");
       root.removeAttribute("data-dev-overlay-scope");
       root.removeAttribute("data-dev-overlay-legacy-markers");
+      DEV_OVERLAY_CATEGORY_IDS.forEach((id) => {
+        root.removeAttribute(`data-dev-overlay-hide-${id}`);
+      });
     };
-  }, [canAccess, enabled, mode, fullScreen, legacyMarkers]);
+  }, [canAccess, enabled, mode, fullScreen, legacyMarkers, categoryFilters]);
 
   const setMode = useCallback((nextMode) => {
     if (!MODES.includes(nextMode)) return;
@@ -139,6 +198,44 @@ export function DevLayoutOverlayProvider({ children }) {
     setLegacyMarkers((current) => !current);
   }, []);
 
+  const setCategoryFilter = useCallback((id, value) => {
+    if (!id) return;
+    setCategoryFilters((current) => {
+      if (current[id] === Boolean(value)) return current;
+      return { ...current, [id]: Boolean(value) };
+    });
+  }, []);
+
+  const toggleCategoryFilter = useCallback((id) => {
+    if (!id) return;
+    setCategoryFilters((current) => ({ ...current, [id]: !current[id] }));
+  }, []);
+
+  const setAllCategoryFilters = useCallback((value) => {
+    const next = {};
+    DEV_OVERLAY_CATEGORY_IDS.forEach((id) => {
+      next[id] = Boolean(value);
+    });
+    setCategoryFilters(next);
+  }, []);
+
+  const resetCategoryFilters = useCallback(() => {
+    setCategoryFilters(getDefaultCategoryFilters());
+  }, []);
+
+  const togglePanelOpen = useCallback(() => {
+    setPanelOpen((current) => !current);
+  }, []);
+
+  const isCategoryActive = useCallback(
+    (id) => {
+      if (!id) return false;
+      if (!(id in categoryFilters)) return true;
+      return Boolean(categoryFilters[id]);
+    },
+    [categoryFilters]
+  );
+
   useEffect(() => {
     if (typeof window === "undefined" || !canAccess) return;
 
@@ -155,11 +252,16 @@ export function DevLayoutOverlayProvider({ children }) {
         event.preventDefault();
         cycleMode();
       }
+
+      if (event.code === "KeyP") {
+        event.preventDefault();
+        togglePanelOpen();
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [canAccess, toggleEnabled, cycleMode]);
+  }, [canAccess, toggleEnabled, cycleMode, togglePanelOpen]);
 
   const value = useMemo(
     () => ({
@@ -169,6 +271,9 @@ export function DevLayoutOverlayProvider({ children }) {
       fullScreen: canAccess ? fullScreen : false,
       legacyMarkers: canAccess ? legacyMarkers : true,
       hydrated,
+      categoryFilters: canAccess ? categoryFilters : defaultFilters,
+      categories: DEV_OVERLAY_CATEGORIES,
+      panelOpen: canAccess ? panelOpen : false,
       setEnabled,
       toggleEnabled,
       setMode,
@@ -177,8 +282,35 @@ export function DevLayoutOverlayProvider({ children }) {
       toggleFullScreen,
       setLegacyMarkers,
       toggleLegacyMarkers,
+      setCategoryFilter,
+      toggleCategoryFilter,
+      setAllCategoryFilters,
+      resetCategoryFilters,
+      isCategoryActive,
+      setPanelOpen,
+      togglePanelOpen,
     }),
-    [canAccess, enabled, mode, fullScreen, legacyMarkers, hydrated, toggleEnabled, setMode, cycleMode, toggleFullScreen, toggleLegacyMarkers]
+    [
+      canAccess,
+      enabled,
+      mode,
+      fullScreen,
+      legacyMarkers,
+      categoryFilters,
+      panelOpen,
+      hydrated,
+      toggleEnabled,
+      setMode,
+      cycleMode,
+      toggleFullScreen,
+      toggleLegacyMarkers,
+      setCategoryFilter,
+      toggleCategoryFilter,
+      setAllCategoryFilters,
+      resetCategoryFilters,
+      isCategoryActive,
+      togglePanelOpen,
+    ]
   );
 
   return <DevLayoutOverlayContext.Provider value={value}>{children}</DevLayoutOverlayContext.Provider>;

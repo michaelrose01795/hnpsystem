@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SectionShell, StatCard } from "@/components/ui";
-import { PageContentSkeleton, InlineLoading } from "@/components/ui/LoadingSkeleton";
+import { PageSkeleton, InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useRoster } from "@/context/RosterContext";
 import { getAllJobs } from "@/lib/database/jobs";
@@ -265,11 +265,7 @@ export default function TechsDashboard() {
   }
 
   if (loading) {
-    return (
-      <>
-        <PageContentSkeleton route={router.asPath || "/tech/dashboard"} />
-      </>
-    );
+    return <PageSkeleton />;
   }
 
   return (

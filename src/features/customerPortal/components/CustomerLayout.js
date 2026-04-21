@@ -1,35 +1,37 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/features/customerPortal/components/CustomerLayout.js
-import React, { useRef } from "react";
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import CustomerSidebar from "@/features/customerPortal/components/CustomerSidebar";
-import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
-import { useLoadingState } from "@/context/LoadingStateContext";
-import useCaptureLayoutFingerprint from "@/hooks/useCaptureLayoutFingerprint";
+import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 
 const CUSTOMER_ROLE_ALLOWLIST = ["CUSTOMER"];
 
 export default function CustomerLayout({ children }) {
   const router = useRouter();
   const { user, loading: userLoading, logout } = useUser();
-  const { isLoading: isGlobalLoading } = useLoadingState();
-  const contentRef = useRef(null);
 
   const roleList = []
     .concat(user?.roles || [])
     .concat(user?.role ? [user.role] : [])
     .map((role) => (role || "").toString().toUpperCase());
   const isCustomer = roleList.some((role) => CUSTOMER_ROLE_ALLOWLIST.includes(role));
-  const isContentLoading = isGlobalLoading || userLoading || !user;
 
-  // Shared hook with Layout.js so both shells capture fingerprints identically.
-  useCaptureLayoutFingerprint(
-    contentRef,
-    router.asPath || router.pathname,
-    isContentLoading
-  );
+  if (userLoading) {
+    return (
+      <div className="customer-portal-shell">
+        <div className="customer-portal-layout">
+          <CustomerSidebar />
+          <div className="customer-portal-stack">
+            <main className="customer-portal-stack">
+              <PageSkeleton />
+            </main>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -133,12 +135,8 @@ export default function CustomerLayout({ children }) {
             </div>
           </header>
 
-          <main className="customer-portal-stack" ref={contentRef}>
-            {isContentLoading ? (
-              <PageContentSkeleton route={router.asPath || router.pathname} />
-            ) : (
-              children
-            )}
+          <main className="customer-portal-stack">
+            {children}
           </main>
         </div>
       </div>

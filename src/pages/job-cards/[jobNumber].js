@@ -48,7 +48,6 @@ import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
 import VideoEditorModal from "@/components/VHC/VideoEditorModal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SearchBar } from "@/components/ui/searchBarAPI";
-import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
 import { JobCardPageShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";

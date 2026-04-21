@@ -11,6 +11,7 @@ import {
   updateCustomer,
 } from "@/lib/database/customers"; // customer helpers
 import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection"; // AI job-type detection
+import { attachMobileFieldsToJob } from "@/lib/mobile/mobileJobs"; // mobile service_mode extension
 
 const supabase = getDatabaseClient(); // server-side database client
 
@@ -400,6 +401,13 @@ export const createFullJobBatch = async ({ customer, vehicle, tabs, sharedOption
     isSubJobMode = false, // sub-job mode flag
     primeJobData = null, // prime job data when in sub-job mode
     asPrimeJob = false, // create as prime job flag
+    // Mobile Mechanic extension — when the create page marks a job as
+    // eligible+selected for mobile mechanic, it passes a mobileDetails
+    // object here. We patch the primary job with service_mode='mobile'
+    // and the on-site contact fields after it's been inserted, reusing
+    // the existing attachMobileFieldsToJob helper.
+    mobileDetails = null,
+    mobileUserId = null,
   } = sharedOptions;
 
   const createdJobs = []; // accumulator for created job results
@@ -440,11 +448,32 @@ export const createFullJobBatch = async ({ customer, vehicle, tabs, sharedOption
     }
   }
 
+  // Apply Mobile Mechanic fields to the primary (first) job after creation.
+  // Skipped entirely for workshop jobs so the existing flow is untouched.
+  const primaryJob = createdJobs[0]?.job || null;
+  if (mobileDetails && primaryJob) {
+    const primaryJobId = primaryJob.id || primaryJob.jobId || primaryJob.job_id;
+    if (primaryJobId) {
+      try {
+        await attachMobileFieldsToJob({
+          jobId: primaryJobId,
+          mobileDetails,
+          userId: mobileUserId,
+        });
+      } catch (mobileErr) {
+        // Surface as a console warning rather than aborting — the job itself
+        // was created successfully. The caller can retry the mobile-mode
+        // patch from the job page if needed.
+        console.warn("Failed to attach mobile fields to job:", mobileErr?.message || mobileErr);
+      }
+    }
+  }
+
   return { // return batch result
     success: true, // success flag
     data: { // payload
       createdJobs, // array of { job, insertedRequests, vehicleId }
-      primaryJob: createdJobs[0]?.job || null, // first job for redirect
+      primaryJob, // first job for redirect
     },
   };
 };

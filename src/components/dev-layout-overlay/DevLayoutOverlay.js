@@ -3,24 +3,18 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import { useDevLayoutRegistry } from "@/context/DevLayoutRegistryContext";
+import {
+  DEV_OVERLAY_FALLBACK_GROUPS,
+  getCategoryById,
+  getCategoryIdForSectionType,
+} from "@/lib/dev-layout/categories";
 import styles from "@/components/dev-layout-overlay/DevLayoutOverlay.module.css";
 
-const FALLBACK_SELECTORS = [
-  { selector: ".app-layout-page-shell,.app-page-shell", type: "page-shell" },
-  { selector: ".app-page-card", type: "page-shell" },
-  {
-    selector:
-      ".app-section-card,.app-layout-section-shell,.app-layout-card,.app-layout-surface-subtle,.app-layout-surface-accent,.customer-portal-card",
-    type: "content-card",
-  },
-  { selector: ".app-toolbar-row,.app-layout-toolbar-row", type: "toolbar" },
-  { selector: ".tab-scroll-row,.tab-api,.app-layout-tab-row", type: "tab-row" },
-  { selector: ".table-api,table", type: "data-table" },
-  { selector: "[class*='stat'],[class*='metric'],.app-layout-stat-card", type: "stat-card" },
-];
-
-const MIN_WIDTH = 110;
-const MIN_HEIGHT = 30;
+// Default visibility thresholds (match the original overlay behaviour). Small
+// UI categories (buttons, toggles, badges) override these via their category
+// entry so they don't get culled.
+const DEFAULT_MIN_WIDTH = 110;
+const DEFAULT_MIN_HEIGHT = 30;
 const KNOWN_RADIUS = new Set([8, 10, 12, 14, 16, 20, 24, 999]);
 
 const px = (value) => {
@@ -36,13 +30,22 @@ const sanitizeKey = (value) =>
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 
-const isVisibleRect = (rect) =>
-  rect.width >= MIN_WIDTH &&
-  rect.height >= MIN_HEIGHT &&
+const isVisibleRect = (rect, minWidth = DEFAULT_MIN_WIDTH, minHeight = DEFAULT_MIN_HEIGHT) =>
+  rect.width >= minWidth &&
+  rect.height >= minHeight &&
   rect.bottom > 0 &&
   rect.right > 0 &&
   rect.top < window.innerHeight &&
   rect.left < window.innerWidth;
+
+const getThresholdsForType = (type) => {
+  const categoryId = getCategoryIdForSectionType(type);
+  const category = categoryId ? getCategoryById(categoryId) : null;
+  return {
+    minWidth: category?.minWidth ?? DEFAULT_MIN_WIDTH,
+    minHeight: category?.minHeight ?? DEFAULT_MIN_HEIGHT,
+  };
+};
 
 const getBackgroundToken = (node, computed) => {
   const explicitToken = node.getAttribute("data-dev-background-token");
@@ -451,16 +454,18 @@ const scanSections = ({ route, registry }) => {
     );
   });
 
-  // fallback detection for non-registered structures
+  // Fallback detection for non-registered structures. The selectors + size
+  // thresholds are declared per category in src/lib/dev-layout/categories.js
+  // so new categories can be added in one place.
   let fallbackIndex = 0;
-  FALLBACK_SELECTORS.forEach(({ selector, type }) => {
+  DEV_OVERLAY_FALLBACK_GROUPS.forEach(({ selector, type, minWidth, minHeight }) => {
     Array.from(document.querySelectorAll(selector)).forEach((node) => {
       if (!node || node.getAttribute("data-dev-section-key")) return;
       if (node.closest("[data-dev-disable-fallback='1']")) return;
       const explicitParent = node.closest("[data-dev-section-key]");
       if (explicitParent === node) return;
       const rect = node.getBoundingClientRect();
-      if (!isVisibleRect(rect)) return;
+      if (!isVisibleRect(rect, minWidth, minHeight)) return;
       fallbackIndex += 1;
       const key = sanitizeKey(`${route.replace(/\//g, "-")}-auto-${type}-${fallbackIndex}`);
       if (sectionsByKey.has(key)) return;
@@ -486,7 +491,10 @@ const scanSections = ({ route, registry }) => {
 
   addTableSubSections({ sectionsByKey, route });
 
-  const sections = Array.from(sectionsByKey.values()).filter((section) => isVisibleRect(section.rect));
+  const sections = Array.from(sectionsByKey.values()).filter((section) => {
+    const { minWidth, minHeight } = getThresholdsForType(section.type);
+    return isVisibleRect(section.rect, minWidth, minHeight);
+  });
   sections.sort((a, b) => compareNodeOrder(a.node, b.node));
   sections.forEach((section, index) => {
     section.order = index;
@@ -639,6 +647,7 @@ export default function DevLayoutOverlay() {
     toggleFullScreen,
     toggleLegacyMarkers,
     cycleMode,
+    isCategoryActive,
   } = useDevLayoutOverlay();
   const [sections, setSections] = useState([]);
   const [selectedKey, setSelectedKey] = useState("");
@@ -698,15 +707,24 @@ export default function DevLayoutOverlay() {
     return resolveOverlayBounds(sections, selectedKey);
   }, [fullScreen, sections, selectedKey]);
   const scopedSections = useMemo(() => {
-    if (!overlayBounds) return sections;
-    return sections.filter((section) => {
+    const withinBounds = (section) => {
+      if (!overlayBounds) return true;
       if (!isRectWithinBounds(section.rect, overlayBounds)) return false;
       if (!fullScreen && (isSidebarSection(section) || isTopbarSection(section))) {
         return false;
       }
       return true;
+    };
+
+    return sections.filter((section) => {
+      if (!withinBounds(section)) return false;
+      const categoryId = getCategoryIdForSectionType(section.type);
+      // Sections without a known category default to visible so new/unmapped
+      // types never silently disappear from the overlay.
+      if (categoryId && !isCategoryActive(categoryId)) return false;
+      return true;
     });
-  }, [sections, overlayBounds, fullScreen]);
+  }, [sections, overlayBounds, fullScreen, isCategoryActive]);
   const scopedSelected = useMemo(
     () => scopedSections.find((section) => section.key === selectedKey) || null,
     [scopedSections, selectedKey]

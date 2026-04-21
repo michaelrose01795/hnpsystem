@@ -759,7 +759,7 @@ const USAGE_REGISTRY = {
   "loading-states-expanded": [
     { label: "LoadingSkeleton primitive (current)", file: "src/components/ui/LoadingSkeleton.js" },
     { label: "Proposed: <Spinner size /> + <ButtonLoading />", file: "src/components/ui/" },
-    { label: "Full-page loader — layout fingerprint system", file: "src/lib/loading/layoutFingerprint.js" },
+    { label: "Canonical page skeleton — PageSkeleton export", file: "src/components/ui/LoadingSkeleton.js" },
   ],
   "navigation-states": [
     { label: "--nav-link-bg / --nav-link-bg-hover / --nav-link-bg-active", file: "src/styles/theme.css" },

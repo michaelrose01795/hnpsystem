@@ -6,7 +6,7 @@ import React, { useCallback, useEffect, useState, useRef, useMemo } from "react"
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
-import { PageContentSkeleton, InlineLoading } from "@/components/ui/LoadingSkeleton";
+import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { MyJobCardShellSkeleton } from "@/components/ui/JobCardShellSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useNextAction } from "@/context/NextActionContext";

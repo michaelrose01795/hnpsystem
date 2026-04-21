@@ -8,7 +8,7 @@ import { useRoster } from "@/context/RosterContext";
 import { useRouter } from "next/router";
 import LoginDropdown from "@/components/LoginDropdown";
 import BrandLogo from "@/components/BrandLogo";
-import { PageContentSkeleton } from "@/components/ui/LoadingSkeleton";
+import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
@@ -495,11 +495,7 @@ export default function LoginPage() {
   }, [router.isReady, router.query]);
 
   if (isRedirecting) {
-    return (
-      <>
-        <PageContentSkeleton route={router.asPath || "/login"} />
-      </>
-    );
+    return <PageSkeleton />;
   }
 
   return (
