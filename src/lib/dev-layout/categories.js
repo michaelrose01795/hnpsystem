@@ -20,6 +20,7 @@
 export const DEV_OVERLAY_CATEGORIES = [
   {
     id: "page-shell",
+    family: "card",
     label: "Page shells",
     description: "Outer page wrappers and main surfaces",
     color: "#00e5ff",
@@ -36,6 +37,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "section",
+    family: "card",
     label: "Sections & cards",
     description: "Section cards, content cards, structural wrappers",
     color: "var(--accent-base)",
@@ -55,6 +57,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "stat-card",
+    family: "card",
     label: "Stat cards",
     description: "KPI, metric and stat tiles",
     color: "#facc15",
@@ -71,6 +74,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "toolbar",
+    family: "toolbar",
     label: "Toolbars & filters",
     description: "Action bars, filter strips, control rows",
     color: "#4ade80",
@@ -83,6 +87,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "tabs",
+    family: "tabs",
     label: "Tabs",
     description: "Tab rows, tab containers, individual tab buttons",
     color: "#ff6b6b",
@@ -101,6 +106,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "table",
+    family: "table",
     label: "Tables",
     description: "Tables, table headers, and rows",
     color: "#c084fc",
@@ -113,6 +119,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "button",
+    family: "button",
     label: "Buttons",
     description: "Clickable buttons and action triggers",
     color: "#38bdf8",
@@ -129,6 +136,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "input",
+    family: "input",
     label: "Inputs & text fields",
     description: "Text inputs, textareas, editable fields",
     color: "#a78bfa",
@@ -145,6 +153,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "select",
+    family: "dropdown",
     label: "Dropdowns & selects",
     description: "Native selects, comboboxes, listboxes",
     color: "#f472b6",
@@ -161,6 +170,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "toggle",
+    family: "toggle",
     label: "Toggles, checks & radios",
     description: "Checkboxes, radios, and switches",
     color: "#34d399",
@@ -179,6 +189,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "badge",
+    family: "badge",
     label: "Badges & chips",
     description: "Pills, tags, status badges",
     color: "#fb923c",
@@ -201,6 +212,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "nav-item",
+    family: null,
     label: "Navigation items",
     description: "Sidebar links, nav items",
     color: "#fde047",
@@ -219,6 +231,7 @@ export const DEV_OVERLAY_CATEGORIES = [
   },
   {
     id: "modal",
+    family: "modal",
     label: "Modals, popups & drawers",
     description: "Dialogs, drawers, popovers",
     color: "#e879f9",
@@ -261,6 +274,17 @@ export function getCategoryById(id) {
 export function getCategoryIdForSectionType(type) {
   if (!type) return null;
   return CATEGORY_BY_SECTION_TYPE.get(type) || null;
+}
+
+export function getFamilyForCategoryId(id) {
+  const cat = CATEGORY_BY_ID.get(id);
+  return cat?.family || null;
+}
+
+export function getCategoryIdForFamily(familyId) {
+  if (!familyId) return null;
+  const hit = DEV_OVERLAY_CATEGORIES.find((cat) => cat.family === familyId);
+  return hit?.id || null;
 }
 
 export function getDefaultCategoryFilters() {

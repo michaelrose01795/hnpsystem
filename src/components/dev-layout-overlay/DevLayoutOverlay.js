@@ -7,7 +7,19 @@ import {
   DEV_OVERLAY_FALLBACK_GROUPS,
   getCategoryById,
   getCategoryIdForSectionType,
+  getFamilyForCategoryId,
 } from "@/lib/dev-layout/categories";
+import {
+  UI_FAMILIES,
+  AUDIT_STATUS_OPTIONS,
+  getFamilyById,
+} from "@/components/ui/variants";
+import {
+  buildAuditKey,
+  getAuditTag,
+  setAuditTag,
+  clearAuditTag,
+} from "@/lib/dev-layout/auditTags";
 import styles from "@/components/dev-layout-overlay/DevLayoutOverlay.module.css";
 
 // Default visibility thresholds (match the original overlay behaviour). Small
@@ -663,6 +675,7 @@ export default function DevLayoutOverlay() {
     toggleCategoryFilter,
     setAllCategoryFilters,
     resetCategoryFilters,
+    soloCategory,
     isCategoryActive,
     panelOpen,
     setPanelOpen,
@@ -670,6 +683,9 @@ export default function DevLayoutOverlay() {
   const [sections, setSections] = useState([]);
   const [selectedKey, setSelectedKey] = useState("");
   const [copiedAction, setCopiedAction] = useState("");
+  const [auditDraft, setAuditDraft] = useState({ family: "", variant: "", status: "", notes: "" });
+  const [auditKey, setAuditKeyState] = useState("");
+  const [auditSavedAt, setAuditSavedAt] = useState(0);
   const rafRef = useRef(null);
 
   // Stable set of active category ids for the scanner — rebuilt only when
@@ -789,6 +805,55 @@ export default function DevLayoutOverlay() {
     return () => window.clearTimeout(timer);
   }, [copiedAction]);
 
+  // Load (or reset) the audit classification draft whenever the selected
+  // section changes. The draft is pre-filled from the persisted tag, falling
+  // back to the family the dev-overlay has already inferred from the
+  // section's category.
+  const scopedSelectedForAudit = useMemo(
+    () => scopedSections.find((section) => section.key === selectedKey) || null,
+    [scopedSections, selectedKey]
+  );
+
+  useEffect(() => {
+    if (!scopedSelectedForAudit?.node) {
+      setAuditDraft({ family: "", variant: "", status: "", notes: "" });
+      setAuditKeyState("");
+      return;
+    }
+    const key = buildAuditKey({
+      route: scopedSelectedForAudit.route,
+      node: scopedSelectedForAudit.node,
+    });
+    setAuditKeyState(key);
+    const existing = getAuditTag(key);
+    const categoryId = getCategoryIdForSectionType(scopedSelectedForAudit.type);
+    const defaultFamily = getFamilyForCategoryId(categoryId) || "";
+    setAuditDraft({
+      family: existing?.family || defaultFamily,
+      variant: existing?.variant || "",
+      status: existing?.status || "needs-review",
+      notes: existing?.notes || "",
+    });
+  }, [scopedSelectedForAudit]);
+
+  const applyAuditPatch = (patch) => {
+    setAuditDraft((prev) => {
+      const next = { ...prev, ...patch };
+      if (auditKey) {
+        setAuditTag(auditKey, next);
+        setAuditSavedAt(Date.now());
+      }
+      return next;
+    });
+  };
+
+  const handleClearAuditTag = () => {
+    if (!auditKey) return;
+    clearAuditTag(auditKey);
+    setAuditDraft({ family: "", variant: "", status: "", notes: "" });
+    setAuditSavedAt(Date.now());
+  };
+
   if (!canAccess || !hydrated) return null;
 
   const currentRoute = router.asPath || router.pathname || "/";
@@ -886,7 +951,7 @@ export default function DevLayoutOverlay() {
                 <span>Label mode</span>
               </span>
               <div className={styles.modeRow}>
-                {["labels", "details", "inspect"].map((value) => (
+                {["labels", "details", "inspect", "trace"].map((value) => (
                   <button
                     key={value}
                     type="button"
@@ -977,9 +1042,17 @@ export default function DevLayoutOverlay() {
                     role="switch"
                     aria-checked={active}
                     className={`${styles.categoryPill} ${active ? styles.categoryPillActive : ""}`.trim()}
-                    onClick={() => toggleCategoryFilter(cat.id)}
+                    onClick={(event) => {
+                      // Shift-click → solo this category (isolate it, hide everything else).
+                      // Plain click → regular toggle.
+                      if (event.shiftKey) {
+                        soloCategory(cat.id);
+                      } else {
+                        toggleCategoryFilter(cat.id);
+                      }
+                    }}
                     disabled={!enabled}
-                    title={cat.description || cat.label}
+                    title={`${cat.description || cat.label} — Shift+click to solo this family`}
                   >
                     <span
                       className={`${styles.categoryCheck} ${active ? styles.categoryCheckOn : ""}`.trim()}
@@ -1055,6 +1128,110 @@ export default function DevLayoutOverlay() {
               <p className={styles.copyStatus}>
                 {copiedAction ? `Copied ${copiedAction}` : "Pick a copy action to export context for this section."}
               </p>
+
+              {/* Classification form — persists to localStorage via auditTags.js. */}
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  borderRadius: 10,
+                  background: "rgba(255,255,255,0.04)",
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    Classification
+                  </strong>
+                  <span style={{ fontSize: 10, opacity: 0.7 }}>
+                    {auditSavedAt ? "Saved to localStorage" : "Edits save automatically"}
+                  </span>
+                </div>
+
+                <label style={{ display: "grid", gap: 4 }}>
+                  <span style={{ fontSize: 10, opacity: 0.75 }}>Family</span>
+                  <select
+                    value={auditDraft.family}
+                    onChange={(event) => applyAuditPatch({ family: event.target.value, variant: "" })}
+                    style={{ padding: "6px 8px", fontSize: 12, borderRadius: 6 }}
+                  >
+                    <option value="">—</option>
+                    {UI_FAMILIES.map((fam) => (
+                      <option key={fam.id} value={fam.id}>{fam.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={{ display: "grid", gap: 4 }}>
+                  <span style={{ fontSize: 10, opacity: 0.75 }}>Variant</span>
+                  <select
+                    value={auditDraft.variant}
+                    onChange={(event) => applyAuditPatch({ variant: event.target.value })}
+                    disabled={!auditDraft.family}
+                    style={{ padding: "6px 8px", fontSize: 12, borderRadius: 6 }}
+                  >
+                    <option value="">—</option>
+                    {(getFamilyById(auditDraft.family)?.variants || []).map((variant) => (
+                      <option key={variant.id} value={variant.id}>{variant.id}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label style={{ display: "grid", gap: 4 }}>
+                  <span style={{ fontSize: 10, opacity: 0.75 }}>Status</span>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {AUDIT_STATUS_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => applyAuditPatch({ status: option.id })}
+                        style={{
+                          padding: "4px 8px",
+                          fontSize: 11,
+                          borderRadius: 999,
+                          border: "1px solid rgba(255,255,255,0.18)",
+                          background: auditDraft.status === option.id ? "var(--accentMain)" : "transparent",
+                          color: auditDraft.status === option.id ? "var(--onAccentText)" : "inherit",
+                          cursor: "pointer",
+                        }}
+                        title={option.description}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </label>
+
+                <label style={{ display: "grid", gap: 4 }}>
+                  <span style={{ fontSize: 10, opacity: 0.75 }}>Notes</span>
+                  <textarea
+                    value={auditDraft.notes}
+                    onChange={(event) => applyAuditPatch({ notes: event.target.value })}
+                    placeholder="Optional review notes — what's off, what to keep custom, etc."
+                    rows={2}
+                    style={{ padding: "6px 8px", fontSize: 12, borderRadius: 6, resize: "vertical" }}
+                  />
+                </label>
+
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    type="button"
+                    onClick={handleClearAuditTag}
+                    style={{
+                      padding: "4px 10px",
+                      fontSize: 11,
+                      background: "transparent",
+                      color: "inherit",
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      borderRadius: 6,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Clear tag
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1062,7 +1239,9 @@ export default function DevLayoutOverlay() {
         <p className={styles.footerHint}>
           <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> toggle ·{" "}
           <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> cycle mode ·{" "}
-          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> this panel
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> trace mode ·{" "}
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> this panel ·{" "}
+          <kbd>Shift</kbd>+click a category to solo it
         </p>
       </aside>
     );

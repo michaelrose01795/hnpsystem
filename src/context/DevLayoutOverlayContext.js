@@ -16,7 +16,7 @@ const STORAGE_LEGACY_MARKERS_KEY = "hnp-dev-layout-overlay-legacy-markers";
 const STORAGE_CATEGORY_FILTERS_KEY = "hnp-dev-layout-overlay-category-filters";
 const STORAGE_PANEL_OPEN_KEY = "hnp-dev-layout-overlay-panel-open";
 
-const MODES = ["labels", "details", "inspect"];
+const MODES = ["labels", "details", "inspect", "trace"];
 
 const defaultFilters = getDefaultCategoryFilters();
 
@@ -42,6 +42,7 @@ const DevLayoutOverlayContext = createContext({
   toggleCategoryFilter: () => {},
   setAllCategoryFilters: () => {},
   resetCategoryFilters: () => {},
+  soloCategory: () => {},
   isCategoryActive: () => true,
   setPanelOpen: () => {},
   togglePanelOpen: () => {},
@@ -223,6 +224,17 @@ export function DevLayoutOverlayProvider({ children }) {
     setCategoryFilters(getDefaultCategoryFilters());
   }, []);
 
+  // Isolate a single category — everything else is suppressed. Used by the
+  // "solo" buttons in the control panel for the classification flow.
+  const soloCategory = useCallback((id) => {
+    if (!id) return;
+    const next = {};
+    DEV_OVERLAY_CATEGORY_IDS.forEach((cat) => {
+      next[cat] = cat === id;
+    });
+    setCategoryFilters(next);
+  }, []);
+
   const togglePanelOpen = useCallback(() => {
     setPanelOpen((current) => !current);
   }, []);
@@ -257,6 +269,13 @@ export function DevLayoutOverlayProvider({ children }) {
         event.preventDefault();
         togglePanelOpen();
       }
+
+      if (event.code === "KeyT") {
+        event.preventDefault();
+        // Ctrl+Shift+T — turn the overlay on (if off) and jump into trace mode.
+        setEnabled(true);
+        setModeState("trace");
+      }
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -286,6 +305,7 @@ export function DevLayoutOverlayProvider({ children }) {
       toggleCategoryFilter,
       setAllCategoryFilters,
       resetCategoryFilters,
+      soloCategory,
       isCategoryActive,
       setPanelOpen,
       togglePanelOpen,
@@ -308,6 +328,7 @@ export function DevLayoutOverlayProvider({ children }) {
       toggleCategoryFilter,
       setAllCategoryFilters,
       resetCategoryFilters,
+      soloCategory,
       isCategoryActive,
       togglePanelOpen,
     ]
