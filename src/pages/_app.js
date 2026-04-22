@@ -37,7 +37,7 @@ function AppWrapper({ Component, pageProps }) {
   const pathname = router?.pathname || "";
   const asPath = router?.asPath || "";
   const asPathWithoutQuery = asPath.split("?")[0] || "";
-  const notesHiddenRoutes = new Set(["/", "/login"]);
+  const notesHiddenRoutes = new Set(["/", "/login", "/presentation"]);
   const hideNotesWidget =
     notesHiddenRoutes.has(pathname) || notesHiddenRoutes.has(asPathWithoutQuery);
   const [isRouteLoading, setIsRouteLoading] = useState(false);

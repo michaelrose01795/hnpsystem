@@ -72,8 +72,9 @@ const isInvoiceOverdue = (invoice) => {
   if (Number.isNaN(due.getTime())) return false;
   return due.getTime() < Date.now();
 };
-export default function InvoiceTable({ invoices, filters, onFilterChange, pagination, onPageChange, onExport, loading, accentSurface = false }) {
+export default function InvoiceTable({ invoices, filters, onFilterChange, pagination, onPageChange, onExport, loading, accentSurface = false, navigationDisabled = false }) {
   const router = useRouter();
+  void onPageChange;
   const [hoveredInvoiceId, setHoveredInvoiceId] = React.useState(null);
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -81,11 +82,12 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
   };
   const handleOpenInvoice = React.useCallback(
     (invoice) => {
+      if (navigationDisabled) return;
       const invoiceRouteValue = getInvoiceDisplayValue(invoice);
       if (!invoiceRouteValue || invoiceRouteValue === "—") return;
       router.push(`/accounts/invoices/${encodeURIComponent(invoiceRouteValue)}`);
     },
-    [router]
+    [navigationDisabled, router]
   );
 
   const filteredInvoices = React.useMemo(() => {
@@ -209,10 +211,10 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                   }}
                   onMouseEnter={() => setHoveredInvoiceId(invoice.invoice_id)}
                   onMouseLeave={() => setHoveredInvoiceId((current) => (current === invoice.invoice_id ? null : current))}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Open invoice ${getInvoiceDisplayValue(invoice)}`}
-                  style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", background: hoveredInvoiceId === invoice.invoice_id ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)", transition: "background-color 0.18s ease", cursor: "pointer" }}
+                  tabIndex={navigationDisabled ? undefined : 0}
+                  role={navigationDisabled ? undefined : "button"}
+                  aria-label={navigationDisabled ? undefined : `Open invoice ${getInvoiceDisplayValue(invoice)}`}
+                  style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", background: hoveredInvoiceId === invoice.invoice_id ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)", transition: "background-color 0.18s ease", cursor: navigationDisabled ? "default" : "pointer" }}
                 >
                   <td style={{ padding: "12px", fontWeight: 600 }}>{getInvoiceDisplayValue(invoice)}</td>
                   <td style={{ padding: "12px" }}>{getCustomerDisplayValue(invoice)}</td>
@@ -245,6 +247,7 @@ InvoiceTable.propTypes = {
   onExport: PropTypes.func.isRequired,
   loading: PropTypes.bool,
   accentSurface: PropTypes.bool,
+  navigationDisabled: PropTypes.bool,
 };
 InvoiceTable.defaultProps = {
   invoices: [],
@@ -252,4 +255,5 @@ InvoiceTable.defaultProps = {
   pagination: { page: 1, pageSize: 20, total: 0 },
   loading: false,
   accentSurface: false,
+  navigationDisabled: false,
 };

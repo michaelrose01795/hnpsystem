@@ -17,6 +17,7 @@ import { canShowDevPages, canShowDevSidebarItems } from "@/lib/dev-tools/config"
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const LOGOUT_BARRIER_MS = 8000;
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
+const PRESENTATION_RETURN_TO_STORAGE_KEY = "presentation:returnTo";
 
 const hiddenHrRoutes = new Set([
   "/hr/employees",
@@ -454,19 +455,44 @@ export default function Sidebar({
                     )}
                     <button
                       type="button"
-                      className="app-btn app-btn--control"
-                      style={{ width: "100%", marginTop: "8px", textAlign: "center" }}
+                      className={`app-btn app-btn--control app-btn--nav${
+                        pathname.startsWith("/presentation")
+                          ? " is-active"
+                          : ""
+                      }`}
+                      style={{
+                        width: "100%",
+                        marginTop: "8px",
+                        marginBottom: 0,
+                        textAlign: "left",
+                      }}
+                      aria-current={
+                        pathname.startsWith("/presentation")
+                          ? "page"
+                          : undefined
+                      }
                       onClick={() => {
                         if (typeof window !== "undefined") {
                           const current = router?.asPath || "/";
-                          if (!current.startsWith("/slideshow")) {
-                            window.sessionStorage.setItem("slideshow:returnTo", current);
+                          if (!current.startsWith("/presentation")) {
+                            window.sessionStorage.setItem(PRESENTATION_RETURN_TO_STORAGE_KEY, current);
                           }
                         }
-                        router.push("/slideshow");
+                        router.push("/presentation");
                       }}
                     >
-                      Slideshow
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 0,
+                          height: 0,
+                          borderTop: "5px solid transparent",
+                          borderBottom: "5px solid transparent",
+                          borderLeft: "8px solid currentColor",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span>Presentation</span>
                     </button>
                   </Fragment>
                 );
