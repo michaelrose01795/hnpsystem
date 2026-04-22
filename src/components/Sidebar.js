@@ -452,6 +452,22 @@ export default function Sidebar({
                         )}
                       </div>
                     )}
+                    <button
+                      type="button"
+                      className="app-btn app-btn--control"
+                      style={{ width: "100%", marginTop: "8px", textAlign: "center" }}
+                      onClick={() => {
+                        if (typeof window !== "undefined") {
+                          const current = router?.asPath || "/";
+                          if (!current.startsWith("/slideshow")) {
+                            window.sessionStorage.setItem("slideshow:returnTo", current);
+                          }
+                        }
+                        router.push("/slideshow");
+                      }}
+                    >
+                      Slideshow
+                    </button>
                   </Fragment>
                 );
               }

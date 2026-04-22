@@ -1,0 +1,32 @@
+export const demoCustomers = [
+  {
+    id: "demo-cust-001",
+    first_name: "Alex",
+    last_name: "Morgan",
+    full_name: "Alex Morgan",
+    email: "alex.morgan@demo.invalid",
+    phone: "07700 900001",
+    address: "12 High Street, Exeter",
+    created_at: "2024-09-14T09:12:00.000Z",
+  },
+  {
+    id: "demo-cust-002",
+    first_name: "Priya",
+    last_name: "Shah",
+    full_name: "Priya Shah",
+    email: "priya.shah@demo.invalid",
+    phone: "07700 900002",
+    address: "48 Oak Lane, Taunton",
+    created_at: "2024-11-02T14:30:00.000Z",
+  },
+  {
+    id: "demo-cust-003",
+    first_name: "Tom",
+    last_name: "Reynolds",
+    full_name: "Tom Reynolds",
+    email: "tom.reynolds@demo.invalid",
+    phone: "07700 900003",
+    address: "7 Church Road, Tiverton",
+    created_at: "2025-02-20T11:05:00.000Z",
+  },
+];
