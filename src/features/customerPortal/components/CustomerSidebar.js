@@ -45,7 +45,7 @@ export default function CustomerSidebar() {
                   <span>{link.label}</span>
                   {isMessagesLink && unreadCount > 0 && (
                     <span
-                      className="app-badge app-badge--primary"
+                      className="app-badge app-badge--control app-badge--accent-soft"
                     >
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>

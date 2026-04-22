@@ -577,11 +577,6 @@ const USAGE_REGISTRY = {
     { label: "Dev layout overlay", file: "src/components/dev-layout-overlay/DevLayoutOverlay.js" },
     { label: "VHC modals", file: "src/components/VHC/BrakesHubsDetailsModal.js" },
   ],
-  "typography-app-page": [
-    { label: "Job cards page", file: "src/pages/job-cards/myjobs/[jobNumber].js", route: "/job-cards/myjobs" },
-    { label: "Accounts page", file: "src/pages/accounts/index.js", route: "/accounts" },
-    { label: "HR manager", file: "src/pages/hr/manager/index.js", route: "/hr/manager" },
-  ],
   "tab-api": [
     { label: "TabGroup primitive", file: "src/components/ui/tabAPI/TabGroup.js" },
     { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
@@ -762,15 +757,6 @@ const USAGE_REGISTRY = {
     { label: "Transaction table", file: "src/components/accounts/TransactionTable.js" },
     { label: "Invoice table", file: "src/components/accounts/InvoiceTable.js" },
     { label: "Proposed: <DataTable /> primitive with empty/loading/selected states", file: "src/components/ui/" },
-  ],
-  "badge-unified-proposal": [
-    { label: "Replaces .vhc-badge", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "vhc-badge JSX swapped to .app-badge .app-badge--control .app-badge--uppercase; .vhc-badge CSS deleted from globals.css." },
-    { label: "Replaces .jobcard-tab-badge", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "jobcard-tab-badge JSX swapped to .app-badge .app-badge--control .app-badge--accent-strong (or --danger-strong for notes); .jobcard-tab-badge + active-tab overrides deleted, replaced with scoped .tab-api__item.is-active .app-badge--accent-strong rule." },
-    { label: "Replaces .login-selection-pill", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "Dead CSS — no JSX consumer. .login-selection-pill + its strong/span child rules deleted from globals.css." },
-    { label: "Replaces .hr-employees-row-pill", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "hr-employees-row-pill JSX swapped to .app-badge .app-badge--control .app-badge--neutral / --accent-soft; both CSS rules deleted from globals.css." },
-    { label: "Replaces vhcModalContentStyles.badge", file: "src/styles/appTheme.js", migrated: true, validated: true, suggestion: "4 VHC modal files swapped `style={summaryBadgeBase}` → `className=\"app-badge app-badge--control app-badge--accent-soft\"`; concernBadge helper now returns only tone colour style, shape from class. `badge` export deleted from vhcModalContentStyles." },
-    { label: "Replaces SeverityBadge inline styles", file: "src/components/VHC/VhcSharedComponents.js", migrated: true, validated: true, suggestion: "SeverityBadge rewritten to render <span className='app-badge app-badge--control app-badge--uppercase app-badge--<tone>'>; severity→tone map drives danger/warning/success." },
-    { label: "Replaces .multiselect-dropdown-api__tag", file: "src/styles/globals.css", migrated: true, validated: true, suggestion: "Multiselect tag span JSX now carries .app-badge .app-badge--control .app-badge--accent-hover; per-module rule body collapsed (class retained only as anchor for __tag-remove child selector)." },
   ],
   "popup-unified-proposal": [
     { label: "Merge popupStyleApi.js", file: "src/components/popups/popupStyleApi.js" },
@@ -1490,13 +1476,10 @@ const SHOWCASE_CATALOG = {
   // ── Tabs ──
   "tab-api":                   { category: "Tabs",        scope: "global",     terms: "tab tabs tabgroup navigation switch panel wrap stretch grid" },
   // ── Badges & Labels ──
-  "app-badge":                 { category: "Badges & Labels", scope: "global",     terms: "badge label bubble pill tag status indicator app-badge" },
-  "badge-unified-proposal":    { category: "Badges & Labels", scope: "global",     terms: "badge unified proposal variant replace consolidate" },
-  // ── Typography ──
-  "typography-app-page":       { category: "Typography",  scope: "global",     terms: "typography heading title text font size weight page" },
+  "app-badge":                 { category: "Badges & Labels", scope: "global",     terms: "badge label bubble pill tag status indicator app-badge tone modifier" },
   // ── Colours & Tokens ──
   "colour-tokens":             { category: "Colours & Tokens", scope: "global",     terms: "colour color token swatch palette theme accent surface primary danger success warning" },
-  "section-layers":            { category: "Colours & Tokens", scope: "global",     terms: "section layer level background surface nesting depth token" },
+  "section-layers":            { category: "Colours & Tokens", scope: "global",     terms: "section layer level background surface theme card nesting depth alternation token surfaceMain accentSurfaceSubtle" },
   // ── Spacing & Layout ──
   "spacing-global":            { category: "Spacing & Layout", scope: "global",     terms: "spacing space gap gutter padding margin layout global" },
   "spacing-non-global":        { category: "Spacing & Layout", scope: "non-global", terms: "spacing hardcoded padding margin gap per-module custom" },
@@ -2560,53 +2543,6 @@ function GlobalUiShowcase() {
       <ShowcaseCategoryHeader category="Badges & Labels" visible={visibleCategorySet.has("Badges & Labels")} />
       {isSectionVisible("app-badge") && (
       <ShowcaseSection title="Labels & Bubbles (.app-badge)" itemKey="app-badge" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-          <span className="app-badge">Default</span>
-          <span className="app-badge app-badge--primary">Primary</span>
-          <span
-            style={{
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              background: "var(--success-surface)",
-              color: "var(--success-text)",
-              fontSize: "12px",
-              fontWeight: 600,
-              border: "1px solid var(--success-border)",
-            }}
-          >
-            Success
-          </span>
-          <span
-            style={{
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              background: "var(--warning-surface)",
-              color: "var(--warning-text)",
-              fontSize: "12px",
-              fontWeight: 600,
-              border: "1px solid var(--warning-border)",
-            }}
-          >
-            Warning
-          </span>
-          <span
-            style={{
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              background: "var(--danger-surface)",
-              color: "var(--danger-text)",
-              fontSize: "12px",
-              fontWeight: 600,
-              border: "1px solid var(--danger-border)",
-            }}
-          >
-            Danger
-          </span>
-        </div>
-      </ShowcaseSection>
-      )}
-      {isSectionVisible("badge-unified-proposal") && (
-      <ShowcaseSection title="Badge — Global tone modifiers (.app-badge--*)" itemKey="badge-unified-proposal" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
           <span className="app-badge app-badge--control app-badge--neutral">neutral</span>
           <span className="app-badge app-badge--control app-badge--accent-strong">accent-strong</span>
@@ -2624,26 +2560,23 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       )}
 
-      <ShowcaseCategoryHeader category="Typography" visible={visibleCategorySet.has("Typography")} />
-      {isSectionVisible("typography-app-page") && (
-      <ShowcaseSection title="Typography (.app-page-*)" itemKey="typography-app-page" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div className="app-page-eyebrow">Eyebrow / kicker</div>
-        <h1 className="app-page-title" style={{ margin: "4px 0" }}>Page title</h1>
-        <p className="app-page-intro" style={{ margin: "4px 0" }}>Page intro paragraph using the global intro class.</p>
-        <p className="app-page-copy" style={{ margin: "4px 0" }}>Body copy using the global page-copy class.</p>
-      </ShowcaseSection>
-      )}
       <ShowcaseCategoryHeader category="Colours & Tokens" visible={visibleCategorySet.has("Colours & Tokens")} />
       {isSectionVisible("section-layers") && (
-      <ShowcaseSection title="Section Layers (--layer-section-level-*)" itemKey="section-layers" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ background: "var(--layer-section-level-3)", padding: "10px", borderRadius: "var(--radius-md)" }}>
-          <div style={{ fontSize: "10px", color: "var(--text-secondary)", marginBottom: "6px" }}>level-3 (outer shell)</div>
-          <div style={{ background: "var(--layer-section-level-2)", padding: "10px", borderRadius: "var(--radius-sm)" }}>
-            <div style={{ fontSize: "10px", color: "var(--text-secondary)", marginBottom: "6px" }}>level-2 (section)</div>
-            <div style={{ background: "var(--layer-section-level-1)", padding: "10px", borderRadius: "var(--radius-xs)" }}>
-              <div style={{ fontSize: "10px", color: "var(--text-secondary)" }}>level-1 (inner card)</div>
+      <ShowcaseSection title="Section Layers (surface / theme alternation)" itemKey="section-layers" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+        <div style={{ background: "var(--surfaceMain)", padding: "10px", borderRadius: "var(--radius-md)", border: "1px solid var(--border)" }}>
+          <div style={{ fontSize: "10px", color: "var(--text-secondary)", marginBottom: "6px" }}>level 1 — surface colour (--surfaceMain)</div>
+          <div style={{ background: "var(--accentSurfaceSubtle)", padding: "10px", borderRadius: "var(--radius-sm)" }}>
+            <div style={{ fontSize: "10px", color: "var(--text-secondary)", marginBottom: "6px" }}>level 2 — card background theme colour (--accentSurfaceSubtle)</div>
+            <div style={{ background: "var(--surfaceMain)", padding: "10px", borderRadius: "var(--radius-xs)" }}>
+              <div style={{ fontSize: "10px", color: "var(--text-secondary)", marginBottom: "6px" }}>level 3 — surface colour (--surfaceMain)</div>
+              <div style={{ background: "var(--accentSurfaceSubtle)", padding: "10px", borderRadius: "var(--radius-xs)" }}>
+                <div style={{ fontSize: "10px", color: "var(--text-secondary)" }}>level 4 — card background theme colour (--accentSurfaceSubtle)</div>
+              </div>
             </div>
           </div>
+        </div>
+        <div style={{ fontSize: "10px", color: "var(--text-secondary)", fontStyle: "italic", marginTop: "10px" }}>
+          Odd levels use surface colour (--surfaceMain); even levels use card background theme colour (--accentSurfaceSubtle). Only two colours — alternating — across all nesting depths.
         </div>
       </ShowcaseSection>
       )}
@@ -2791,9 +2724,9 @@ function GlobalUiShowcase() {
               <tr><th>Name</th><th>Role</th><th>Status</th></tr>
             </thead>
             <tbody>
-              <tr><td>Alice</td><td>Tech</td><td><span className="app-badge app-badge--primary">Active</span></td></tr>
-              <tr><td>Bob</td><td>Service</td><td><span className="app-badge">Idle</span></td></tr>
-              <tr><td>Carol</td><td>Parts</td><td><span className="app-badge">Off</span></td></tr>
+              <tr><td>Alice</td><td>Tech</td><td><span className="app-badge app-badge--control app-badge--success">Active</span></td></tr>
+              <tr><td>Bob</td><td>Service</td><td><span className="app-badge app-badge--control app-badge--neutral">Idle</span></td></tr>
+              <tr><td>Carol</td><td>Parts</td><td><span className="app-badge app-badge--control app-badge--neutral">Off</span></td></tr>
             </tbody>
           </table>
         </div>

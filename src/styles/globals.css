@@ -1012,33 +1012,6 @@ label {
   color: var(--danger-dark);
 }
 
-.app-page-intro {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.app-page-eyebrow {
-  margin: 0;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  font-size: var(--text-label);
-  letter-spacing: var(--tracking-caps);
-}
-
-.app-page-title {
-  margin: 0;
-  color: var(--accent-strong);
-  font-size: clamp(1.75rem, 2vw, 2rem);
-  line-height: var(--leading-tight);
-}
-
-.app-page-copy {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: var(--text-body);
-}
-
 /* Canonical home: src/styles/families/tables.css
  * (rules queued to migrate during UI cleanup pass) */
 .app-data-table {
@@ -1081,11 +1054,6 @@ label {
   font-size: var(--text-caption);
   font-weight: 700;
   line-height: 1;
-}
-
-.app-badge--primary {
-  background: var(--accentMain);
-  color: var(--onAccentText);
 }
 
 /* === Badge size + tone modifiers === */
@@ -3427,8 +3395,6 @@ a.tab-api__item:focus-visible:not(.is-active) {
   flex: 1 1 320px;
 }
 
-/* Aliases onto the global .app-page-eyebrow / .app-page-title tokens so
-   HR directory typography matches the shared page-header system. */
 .hr-employees-kicker {
   margin: 0;
   color: var(--text-secondary);

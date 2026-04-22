@@ -55,12 +55,7 @@ export default function AccountTransactionsPage() {
     <ProtectedRoute allowedRoles={TRANSACTION_ROLES}>
       <>
         <PageSection>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--space-3)" }}>
-            <div className="app-page-intro">
-              <p className="app-page-eyebrow">Account {accountId}</p>
-              <h1 className="app-page-title">Transactions</h1>
-              <p className="app-page-copy">Filter ledger entries, export to CSV, and trace adjustments.</p>
-            </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: "var(--space-3)" }}>
             <ControlGroup>
               <Button type="button" variant="secondary" onClick={() => router.push(`/accounts/view/${accountId}`)}>Account</Button>
               {permissions.canExport && <Button type="button" variant="ghost" onClick={handleExport}>Export</Button>}

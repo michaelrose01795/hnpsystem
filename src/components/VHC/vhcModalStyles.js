@@ -12,8 +12,6 @@ export { palette };
 
 export const STATUS_OPTIONS = ["Red", "Amber", "Green"];
 
-// Mirrors the global .app-page-eyebrow tokens so modal field labels share the
-// shared page-header typography.
 export const fieldLabelStyle = {
   margin: 0,
   color: "var(--text-secondary)",

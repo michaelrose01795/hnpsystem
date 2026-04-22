@@ -343,7 +343,6 @@ export const UI_FAMILIES = [
       "Inline status indicators. Use .app-badge plus a semantic modifier — do not tint inline.",
     variants: [
       { id: "neutral", className: "app-badge app-badge--neutral", description: "Generic tag.", usage: "Filter chips, count pills.", status: "approved" },
-      { id: "primary", className: "app-badge app-badge--primary", description: "Brand-coloured status.", usage: "Priority pills inside nav.", status: "approved" },
       { id: "success", className: "app-badge app-badge--success", description: "Positive status.", usage: "Paid, Passed, Completed.", status: "approved" },
       { id: "warning", className: "app-badge app-badge--warning", description: "Caution status.", usage: "Due soon, Requires attention.", status: "approved" },
       { id: "danger", className: "app-badge app-badge--danger", description: "Negative status.", usage: "Overdue, Failed.", status: "approved" },
