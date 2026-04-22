@@ -376,7 +376,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   style={{
                     padding: "12px 16px",
                     borderRadius: "var(--input-radius)",
-                    border: "2px solid var(--danger-border)",
                     backgroundColor: "var(--danger-surface)",
                     color: "var(--danger)",
                     fontSize: "13px",

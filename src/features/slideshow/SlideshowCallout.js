@@ -148,7 +148,6 @@ export default function SlideshowCallout({ step }) {
           alignItems: "center",
           gap: 8,
           marginTop: 4,
-          borderTop: "1px solid var(--border)",
           paddingTop: 10,
         }}
       >

@@ -1002,13 +1002,11 @@ label {
 
 .app-status-message--success {
   background: rgba(var(--success-rgb), 0.14);
-  border-color: var(--success-border);
   color: var(--success-text);
 }
 
 .app-status-message--danger {
   background: rgba(var(--danger-rgb), 0.12);
-  border-color: var(--danger-border);
   color: var(--danger-dark);
 }
 
@@ -1118,10 +1116,20 @@ label {
   border: 1px solid var(--warning);
 }
 
+.app-badge--warning-strong {
+  background: var(--warning);
+  color: var(--text-inverse);
+}
+
 .app-badge--success {
   background: var(--success-surface);
   color: var(--success);
   border: 1px solid var(--success);
+}
+
+.app-badge--success-strong {
+  background: var(--success);
+  color: var(--text-inverse);
 }
 
 /* Active-tab override — when a jobcard tab badge sits inside an active tab

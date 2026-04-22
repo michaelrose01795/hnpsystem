@@ -344,7 +344,9 @@ export const UI_FAMILIES = [
     variants: [
       { id: "neutral", className: "app-badge app-badge--neutral", description: "Generic tag.", usage: "Filter chips, count pills.", status: "approved" },
       { id: "success", className: "app-badge app-badge--success", description: "Positive status.", usage: "Paid, Passed, Completed.", status: "approved" },
+      { id: "success-strong", className: "app-badge app-badge--success-strong", description: "Filled positive status.", usage: "Emphatic success pills on dense rows.", status: "approved" },
       { id: "warning", className: "app-badge app-badge--warning", description: "Caution status.", usage: "Due soon, Requires attention.", status: "approved" },
+      { id: "warning-strong", className: "app-badge app-badge--warning-strong", description: "Filled caution status.", usage: "Emphatic warning pills on dense rows.", status: "approved" },
       { id: "danger", className: "app-badge app-badge--danger", description: "Negative status.", usage: "Overdue, Failed.", status: "approved" },
       { id: "accent-soft", className: "app-badge app-badge--accent-soft", description: "Soft accent chip.", usage: "Category tags inside lists.", status: "approved" },
       { id: "accent-strong", className: "app-badge app-badge--accent-strong", description: "Filled accent chip.", usage: "Active filter, selected tag.", status: "approved" },

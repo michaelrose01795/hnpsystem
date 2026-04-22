@@ -23,7 +23,6 @@ export default function SlideshowControls({ onExport, exportBusy }) {
         gap: 12,
         padding: "10px 14px",
         boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-        border: "1px solid var(--border)",
         pointerEvents: "auto",
       }}
     >

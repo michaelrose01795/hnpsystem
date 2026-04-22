@@ -2549,7 +2549,9 @@ function GlobalUiShowcase() {
           <span className="app-badge app-badge--control app-badge--accent-soft">accent-soft</span>
           <span className="app-badge app-badge--control app-badge--accent-hover">accent-hover</span>
           <span className="app-badge app-badge--control app-badge--success">success</span>
+          <span className="app-badge app-badge--control app-badge--success-strong">success-strong</span>
           <span className="app-badge app-badge--control app-badge--warning">warning</span>
+          <span className="app-badge app-badge--control app-badge--warning-strong">warning-strong</span>
           <span className="app-badge app-badge--control app-badge--danger">danger</span>
           <span className="app-badge app-badge--control app-badge--danger-strong">danger-strong</span>
           <span className="app-badge app-badge--control app-badge--uppercase app-badge--success">uppercase</span>

@@ -54,7 +54,6 @@ const statCardBaseStyle = {
 const buildToneSurfaceStyle = (surface, border = "var(--accentBorder)") => ({
   ...statCardBaseStyle,
   background: surface,
-  border: `1px solid ${border}`,
 });
 
 const sectionSurfaceStyle = {
@@ -65,7 +64,6 @@ const sectionSurfaceStyle = {
 
 const emphasizedSectionSurfaceStyle = {
   ...sectionSurfaceStyle,
-  border: "1px solid var(--accentBorderStrong)",
 };
 
 const statusBadgeBaseStyle = {
@@ -90,14 +88,12 @@ const getStatusBadgeStyle = (status) => {
         ...statusBadgeBaseStyle,
         backgroundColor: "var(--success-surface)",
         color: "var(--success-text)",
-        border: "1px solid var(--success-border)",
       };
     default:
       return {
         ...statusBadgeBaseStyle,
         backgroundColor: "var(--warning-surface)",
         color: "var(--warning-text)",
-        border: "1px solid var(--warning-border)",
       };
   }
 };

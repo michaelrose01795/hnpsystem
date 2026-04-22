@@ -4,7 +4,6 @@
 
 export const mockCellStyle = {
   padding: "10px 12px",
-  borderBottom: "1px solid var(--border)",
   fontSize: 13,
   color: "var(--text-primary)",
 };
@@ -80,7 +79,6 @@ export function Field({ label, value, full }) {
       <div style={{
         padding: "10px 12px",
         background: "var(--surface, #fff)",
-        border: "1px solid var(--border)",
         borderRadius: 6,
         fontSize: 14,
         color: "var(--text-primary)",

@@ -243,9 +243,6 @@ export default function QuestionPromptsPopup({
                               height: "18px",
                               marginTop: "1px",
                               borderRadius: "var(--radius-xs)",
-                              border: isTicked
-                                ? "none"
-                                : "1.5px solid var(--border)",
                               background: isTicked ? "var(--primary)" : "transparent",
                               color: "var(--onAccentText, #fff)",
                               display: "inline-flex",
