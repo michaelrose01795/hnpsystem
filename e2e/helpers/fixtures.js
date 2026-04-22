@@ -4,6 +4,34 @@
 const { test: base, expect } = require('@playwright/test');
 const dbHelpers = require('./db.js');
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const waitForHealth = async (request, testInfo) => {
+  const maxAttempts = 30;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await request.get('/api/health', { timeout: 5000 });
+      if (response.status() === 200) return;
+      lastError = new Error(`/api/health returned ${response.status()}`);
+    } catch (error) {
+      lastError = error;
+    }
+
+    await delay(Math.min(250 * attempt, 2000));
+  }
+
+  throw new Error(
+    `Server health check failed before ${testInfo.project.name} tests: ${lastError?.message || 'unknown error'}`
+  );
+};
+
+const waitForAppReady = async (page) => {
+  await page.waitForLoadState('domcontentloaded');
+  await expect(page.locator('body')).toBeVisible({ timeout: 15000 });
+};
+
 /**
  * Extended test fixture with DB access and common actions.
  *
@@ -21,7 +49,7 @@ const test = base.extend({
   openJobCard: async ({ page }, use) => {
     const open = async (jobNumber) => {
       await page.goto(`/job-cards/${jobNumber}`);
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
     };
     await use(open);
   },
@@ -30,10 +58,14 @@ const test = base.extend({
   openJobList: async ({ page }, use) => {
     const open = async () => {
       await page.goto('/job-cards/view');
-      await page.waitForLoadState('networkidle');
+      await waitForAppReady(page);
     };
     await use(open);
   },
 });
 
-module.exports = { test, expect };
+test.beforeAll(async ({ request }, testInfo) => {
+  await waitForHealth(request, testInfo);
+});
+
+module.exports = { test, expect, waitForAppReady };

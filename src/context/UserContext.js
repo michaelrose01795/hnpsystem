@@ -9,9 +9,19 @@ const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const LOGOUT_BARRIER_MS = 8000;
 const DEV_AUTH_BYPASS_ENABLED = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
+const PLAYWRIGHT_AUTH_ENABLED = process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH === "1";
+const NETWORK_TIMEOUT_MS = 4000;
 const CAN_USE_DEV_AUTH =
-  process.env.NODE_ENV !== "production" || DEV_AUTH_BYPASS_ENABLED;
+  process.env.NODE_ENV !== "production" || DEV_AUTH_BYPASS_ENABLED || PLAYWRIGHT_AUTH_ENABLED;
 const isBrowser = () => typeof document !== "undefined";
+const withTimeout = (promise, label, timeoutMs = NETWORK_TIMEOUT_MS) => {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+};
 const readLogoutBarrierUntil = () => {
   if (typeof window === "undefined") return 0;
   const raw = window.sessionStorage.getItem(LOGOUT_BARRIER_STORAGE_KEY);
@@ -179,8 +189,18 @@ export function UserProvider({ children }) {
         return;
       }
 
+      if (PLAYWRIGHT_AUTH_ENABLED) {
+        const numericUserId = Number(user.id);
+        setDbUserId(Number.isInteger(numericUserId) && numericUserId > 0 ? numericUserId : 1);
+        setCurrentJob(null);
+        return;
+      }
+
       try {
-        const ensuredId = await ensureDevDbUserAndGetId(user);
+        const ensuredId = await withTimeout(
+          ensureDevDbUserAndGetId(user),
+          "Workshop user id resolution"
+        );
         if (!cancelled) {
           setDbUserId(ensuredId || null);
         }
@@ -205,8 +225,16 @@ export function UserProvider({ children }) {
       return null;
     }
 
+    if (PLAYWRIGHT_AUTH_ENABLED) {
+      setCurrentJob(null);
+      return null;
+    }
+
     try {
-      const active = await getUserActiveJobs(dbUserId);
+      const active = await withTimeout(
+        getUserActiveJobs(dbUserId),
+        "Active job refresh"
+      );
       if (active.success && Array.isArray(active.data) && active.data.length > 0) {
         const nextJob = active.data[0];
         setCurrentJob(nextJob);

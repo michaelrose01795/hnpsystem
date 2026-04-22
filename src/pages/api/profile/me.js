@@ -12,6 +12,7 @@ import dayjs from "dayjs";
 import { calculateLeaveRequestDayTotals, parseLeaveRequestNotes } from "@/lib/hr/leaveRequests";
 import { getOvertimePeriodBounds } from "@/lib/database/hr";
 import { getStaffVehiclePayrollDeductionsForUser } from "@/lib/profile/staffVehiclePayrollDeductions";
+import { buildCiProfilePayload, getCiUserId, isPlaywrightCi } from "@/lib/api/ciMocks";
 
 const adminDb = getDatabaseClient();
 
@@ -463,6 +464,15 @@ export default async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
+  }
+
+  if (isPlaywrightCi()) {
+    const userId = getCiUserId(req.query.userId);
+    return res.status(200).json({
+      success: true,
+      data: buildCiProfilePayload(userId),
+      source: "playwright-ci",
+    });
   }
 
   try {

@@ -297,11 +297,11 @@
   --searchbar-clear-color: var(--text-primary);
   --searchbar-clear-hover-bg: var(--accentSurfaceHover);
   /* Tab-group button — copy-not-link from Primary / Secondary. */
-  --tab-button-bg: var(--accentSurface);
+  --tab-button-bg: var(--accentSurfaceSubtle);
   --tab-button-color: var(--text-primary);
-  --tab-button-hover-bg: var(--accentSurfaceHover);
-  --tab-button-selected-bg: var(--accentSurfaceHover);
-  --tab-button-selected-color: var(--accentText);
+  --tab-button-hover-bg: var(--accentSurface);
+  --tab-button-selected-bg: var(--accentMain);
+  --tab-button-selected-color: var(--onAccentText);
   --control-transition:
     background-color 0.18s ease,
     border-color 0.18s ease,
@@ -611,11 +611,11 @@
   --searchbar-clear-color: var(--text-primary);
   --searchbar-clear-hover-bg: var(--accentSurfaceHover);
   /* Tab-group button — copy-not-link from Primary / Secondary. */
-  --tab-button-bg: var(--accentSurface);
+  --tab-button-bg: var(--accentSurfaceSubtle);
   --tab-button-color: var(--text-primary);
-  --tab-button-hover-bg: var(--accentSurfaceHover);
-  --tab-button-selected-bg: var(--accentSurfaceHover);
-  --tab-button-selected-color: var(--accentText);
+  --tab-button-hover-bg: var(--accentSurface);
+  --tab-button-selected-bg: var(--accentMain);
+  --tab-button-selected-color: var(--onAccentText);
   --page-card-border: none;
   --page-card-bg: var(--surfaceMain);
   --page-card-bg-alt: var(--accentSurfaceSubtle);

@@ -20,6 +20,32 @@ const THEME_COOKIE_KEY = "hp-dms-theme";
 const ACCENT_COOKIE_KEY = "hp-dms-accent";
 const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const THEME_SEQUENCE = ["system", "light", "dark"];
+const NETWORK_TIMEOUT_MS = 4000;
+const IS_PLAYWRIGHT_AUTH = process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH === "1";
+
+const withTimeout = (promise, label, timeoutMs = NETWORK_TIMEOUT_MS) => {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+};
+
+const fetchWithTimeout = async (url, options = {}, timeoutMs = NETWORK_TIMEOUT_MS) => {
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: options.signal || controller?.signal,
+    });
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+};
+
 const getSystemPreferredMode = () => {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return "light";
@@ -239,23 +265,34 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       writePreferenceCookie(ACCENT_COOKIE_KEY, nextAccent);
     };
 
+    const applyLocalPreference = () => {
+      const storedMode = readStoredMode();
+      const storedAccent = readStoredAccent();
+      const nextMode =
+        storedMode === "light" || storedMode === "dark" || storedMode === "system"
+          ? storedMode
+          : normalizedDefault;
+      const { resolved } = applyMode(nextMode);
+      applyAccent(storedAccent, resolved);
+      writePreferenceCookie(THEME_COOKIE_KEY, nextMode);
+      writePreferenceCookie(ACCENT_COOKIE_KEY, storedAccent);
+    };
+
     const fetchPreference = async () => {
       const numericUserId =
         Number.isInteger(Number(dbUserId)) && Number(dbUserId) > 0
           ? Number(dbUserId)
           : Number.isInteger(Number(user?.id)) && Number(user?.id) > 0
-            ? Number(user.id)
-            : null;
+          ? Number(user.id)
+          : null;
 
       if (!user && !numericUserId && !authUserId) {
-        const storedMode = readStoredMode();
-        const storedAccent = readStoredAccent();
-        const nextMode =
-          storedMode === "light" || storedMode === "dark" || storedMode === "system"
-            ? storedMode
-            : normalizedDefault;
-        const { resolved } = applyMode(nextMode);
-        applyAccent(storedAccent, resolved);
+        applyLocalPreference();
+        setLoading(false);
+        return;
+      }
+      if (IS_PLAYWRIGHT_AUTH) {
+        applyLocalPreference();
         setLoading(false);
         return;
       }
@@ -265,25 +302,36 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
 
         if (numericUserId) {
           try {
-            const { data: fullData, error: fullError } = await supabaseClient
-              .from("users")
-              .select("dark_mode, accent_color")
-              .eq("user_id", numericUserId)
-              .maybeSingle();
+            const { data: fullData, error: fullError } = await withTimeout(
+              supabaseClient
+                .from("users")
+                .select("dark_mode, accent_color")
+                .eq("user_id", numericUserId)
+                .maybeSingle(),
+              "Theme preference Supabase load"
+            );
             if (fullError) throw fullError;
             data = fullData;
           } catch (fullErr) {
-            const { data: fallbackData, error: fallbackError } = await supabaseClient
-              .from("users")
-              .select("dark_mode")
-              .eq("user_id", numericUserId)
-              .maybeSingle();
-            if (fallbackError) throw fallbackError;
-            data = fallbackData;
+            try {
+              const { data: fallbackData, error: fallbackError } = await withTimeout(
+                supabaseClient
+                  .from("users")
+                  .select("dark_mode")
+                  .eq("user_id", numericUserId)
+                  .maybeSingle(),
+                "Theme preference fallback Supabase load"
+              );
+              if (fallbackError) throw fallbackError;
+              data = fallbackData;
+            } catch (fallbackErr) {
+              data = null;
+              console.warn("Theme DB preference unavailable, using local preference", fallbackErr?.message || fallbackErr);
+            }
             console.warn("Accent DB column unavailable, using local accent preference", fullErr?.message || fullErr);
           }
         } else if (authUserId) {
-          const response = await fetch("/api/profile/me", {
+          const response = await fetchWithTimeout("/api/profile/me", {
             method: "GET",
             credentials: "include",
           });
@@ -296,9 +344,14 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
 
         if (!cancelled && data) {
           applyPreferencePayload(data);
+        } else if (!cancelled) {
+          applyLocalPreference();
         }
       } catch (err) {
-        console.error("Failed to load theme preference", err.message || err);
+        console.warn("Failed to load theme preference; using local preference", err.message || err);
+        if (!cancelled) {
+          applyLocalPreference();
+        }
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -320,7 +373,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         if (process.env.NODE_ENV !== "production") {
           query.set("userId", String(dbUserId));
         }
-        const response = await fetch(
+        const response = await fetchWithTimeout(
           `/api/profile/theme-preferences${query.toString() ? `?${query.toString()}` : ""}`,
           {
             method: "POST",
@@ -348,7 +401,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         if (process.env.NODE_ENV !== "production") {
           query.set("userId", String(dbUserId));
         }
-        const response = await fetch(
+        const response = await fetchWithTimeout(
           `/api/profile/theme-preferences${query.toString() ? `?${query.toString()}` : ""}`,
           {
             method: "POST",

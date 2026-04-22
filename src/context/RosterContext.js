@@ -8,6 +8,10 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { buildCiRoster } from "@/lib/api/ciMocks";
+
+const NETWORK_TIMEOUT_MS = 4000;
+const PLAYWRIGHT_AUTH_ENABLED = process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH === "1";
 
 const initialState = {
   usersByRole: {},
@@ -20,12 +24,28 @@ const initialState = {
 const RosterContext = createContext(initialState);
 
 async function fetchRoster(signal) {
-  const response = await fetch("/api/users/roster", { signal });
-  const payload = await response.json();
-  if (!response.ok || !payload?.success) {
-    throw new Error(payload?.message || "Failed to load roster");
+  const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timeoutId = controller ? setTimeout(() => controller.abort(), NETWORK_TIMEOUT_MS) : null;
+  const abortFromParent = () => controller?.abort();
+
+  if (signal && controller) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", abortFromParent, { once: true });
   }
-  return payload.data || {};
+
+  try {
+    const response = await fetch("/api/users/roster", {
+      signal: controller?.signal || signal,
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.message || "Failed to load roster");
+    }
+    return payload.data || {};
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (signal && controller) signal.removeEventListener("abort", abortFromParent);
+  }
 }
 
 export function RosterProvider({ children }) {
@@ -45,6 +65,18 @@ export function RosterProvider({ children }) {
       });
       hasLoadedRef.current = true;
     } catch (error) {
+      if (PLAYWRIGHT_AUTH_ENABLED) {
+        const data = buildCiRoster();
+        setState({
+          usersByRole: data.usersByRole || {},
+          usersByRoleDetailed: data.usersByRoleDetailed || {},
+          allUsers: data.allUsers || [],
+          isLoading: false,
+          error: null,
+        });
+        hasLoadedRef.current = true;
+        return;
+      }
       setState((prev) => ({ ...prev, isLoading: false, error }));
     }
   }, []);
@@ -65,6 +97,18 @@ export function RosterProvider({ children }) {
       })
       .catch((error) => {
         if (error.name === "AbortError") return;
+        if (PLAYWRIGHT_AUTH_ENABLED) {
+          const data = buildCiRoster();
+          setState({
+            usersByRole: data.usersByRole || {},
+            usersByRoleDetailed: data.usersByRoleDetailed || {},
+            allUsers: data.allUsers || [],
+            isLoading: false,
+            error: null,
+          });
+          hasLoadedRef.current = true;
+          return;
+        }
         setState((prev) => ({ ...prev, isLoading: false, error }));
       });
 

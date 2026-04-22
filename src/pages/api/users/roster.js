@@ -1,6 +1,7 @@
 // ✅ Connected to Supabase (server-side)
 // file location: src/pages/api/users/roster.js
 import { getAllUsers, getUsersGroupedByRole } from "@/lib/database/users";
+import { buildCiRoster, isPlaywrightCi } from "@/lib/api/ciMocks";
 
 const mapUsersToNameList = (grouped = {}) =>
   Object.fromEntries(
@@ -32,6 +33,14 @@ async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ success: false, message: "Method not allowed" });
+  }
+
+  if (isPlaywrightCi()) {
+    return res.status(200).json({
+      success: true,
+      data: buildCiRoster(),
+      source: "playwright-ci",
+    });
   }
 
   try {

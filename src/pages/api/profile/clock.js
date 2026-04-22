@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
+import { buildCiClockRows, buildCiClockStatus, getCiUserId, isPlaywrightCi } from "@/lib/api/ciMocks";
 
 async function resolveUserId(req, res) {
   const queryUserId = req.query.userId || req.body?.userId;
@@ -67,6 +68,58 @@ async function autoCloseStaleRecord(record) {
 export default async function handler(req, res) {
   try {
     const today = new Date().toISOString().split("T")[0];
+
+    if (isPlaywrightCi()) {
+      if (req.method === "GET") {
+        const userId = getCiUserId(req.query.userId);
+        const hasUserQuery = Number.isInteger(Number.parseInt(req.query.userId, 10));
+
+        return res.status(200).json({
+          success: true,
+          data: hasUserQuery ? buildCiClockStatus(userId) : buildCiClockRows(),
+          source: "playwright-ci",
+        });
+      }
+
+      if (req.method === "POST") {
+        const action = req.body?.action;
+        const userId = getCiUserId(req.query.userId || req.body?.userId);
+        const now = new Date().toISOString();
+
+        if (action === "clock-in") {
+          return res.status(200).json({
+            success: true,
+            message: "CI clock-in accepted.",
+            data: {
+              id: `ci-clock-${userId}`,
+              clockIn: now,
+              date: today,
+            },
+            source: "playwright-ci",
+          });
+        }
+
+        if (action === "clock-out") {
+          return res.status(200).json({
+            success: true,
+            message: "CI clock-out accepted.",
+            data: {
+              id: `ci-clock-${userId}`,
+              clockIn: now,
+              clockOut: now,
+              date: today,
+              hoursWorked: 0,
+            },
+            source: "playwright-ci",
+          });
+        }
+
+        return res.status(400).json({ success: false, message: "Invalid action. Use 'clock-in' or 'clock-out'." });
+      }
+
+      res.setHeader("Allow", ["GET", "POST"]);
+      return res.status(405).json({ success: false, message: "Method not allowed" });
+    }
 
     if (req.method === "GET") {
       const queryUserId = req.query.userId;

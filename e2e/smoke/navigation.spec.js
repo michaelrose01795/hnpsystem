@@ -2,7 +2,7 @@
 // Smoke tests — verify sidebar navigation renders and key links exist.
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { test, expect } = require('../helpers/fixtures.js');
+const { test, expect, waitForAppReady } = require('../helpers/fixtures.js');
 
 test.describe('Smoke — Navigation', () => {
   const selectFirstDropdownOption = async (page, label) => {
