@@ -2,6 +2,7 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AccountsSettingsRedirectPageUi from "@/components/page-ui/accounts/accounts-settings-ui"; // Extracted presentation layer.
 
 const SETTINGS_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
@@ -14,9 +15,9 @@ export default function AccountsSettingsRedirectPage() {
     router.replace({ pathname: "/accounts", query: nextQuery });
   }, [router]);
 
-  return (
-    <ProtectedRoute allowedRoles={SETTINGS_ROLES}>
-      <p style={{ color: "var(--text-secondary)" }}>Redirecting to account settings…</p>
-    </ProtectedRoute>
-  );
+  return <AccountsSettingsRedirectPageUi view="section1" ProtectedRoute={ProtectedRoute} SETTINGS_ROLES={SETTINGS_ROLES} />;
+
+
+
+
 }

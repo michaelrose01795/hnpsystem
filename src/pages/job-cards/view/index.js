@@ -1,5 +1,5 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/job-cards/view/index.js
+// ✅ Imports converted to use absolute alias "@/"
 // Edit: Responsive improvements - optimized mobile/tablet layout with better stacking, reduced padding, and improved grid templates
 "use client"; // enables client-side rendering for Next.js
 
@@ -18,6 +18,7 @@ import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidati
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
+import ViewJobCardsUi from "@/components/page-ui/job-cards/view/job-cards-view-ui"; // Extracted presentation layer.
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 
@@ -37,7 +38,7 @@ const getTodayDate = () => {
 const BASE_STATUS_OPTIONS = {
   today: TODAY_STATUSES,
   carryOver: CARRY_OVER_STATUSES,
-  orders: [],
+  orders: []
 };
 
 const buildStatusOptions = (jobs, baseStatuses) => {
@@ -50,7 +51,7 @@ const buildStatusOptions = (jobs, baseStatuses) => {
 };
 
 const normalizeString = (value) =>
-  typeof value === "string" ? value.trim().toLowerCase() : "";
+typeof value === "string" ? value.trim().toLowerCase() : "";
 
 const formatCustomerStatusLabel = (value) => {
   if (!value) return "Neither";
@@ -80,14 +81,14 @@ const getStatusCounts = (jobs = []) => {
 const matchesSearchTerm = (job, value) => {
   if (!value) return true;
   const haystack = [
-    job.jobNumber,
-    job.reg,
-    job.customer,
-    job.makeModel,
-    job.waitingStatus,
-  ]
-    .filter(Boolean)
-    .map((entry) => entry.toLowerCase());
+  job.jobNumber,
+  job.reg,
+  job.customer,
+  job.makeModel,
+  job.waitingStatus].
+
+  filter(Boolean).
+  map((entry) => entry.toLowerCase());
   return haystack.some((entry) => entry.includes(value));
 };
 const getAppointmentDisplay = (job) => {
@@ -110,13 +111,13 @@ const popupPrimaryActionButtonStyle = {
   cursor: "pointer",
   fontSize: "14px",
   fontWeight: "600",
-  transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+  transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease"
 };
 
 const popupSecondaryActionButtonStyle = {
   ...popupPrimaryActionButtonStyle,
   backgroundColor: "var(--accent-purple-surface)",
-  color: "var(--accent-purple)",
+  color: "var(--accent-purple)"
 };
 
 const popupQuietActionButtonStyle = {
@@ -130,7 +131,7 @@ const popupQuietActionButtonStyle = {
   cursor: "pointer",
   fontSize: "14px",
   fontWeight: "600",
-  transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
+  transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease"
 };
 
 const renderVhcBadge = (job) => {
@@ -142,20 +143,20 @@ const renderVhcBadge = (job) => {
           alignItems: "center",
           gap: "6px",
           fontSize: "12px",
-          color: "var(--info)",
-        }}
-      >
+          color: "var(--info)"
+        }}>
+        
         <span
           style={{
             width: "10px",
             height: "10px",
             borderRadius: "var(--radius-full)",
-            backgroundColor: "var(--info)",
-          }}
-        />
+            backgroundColor: "var(--info)"
+          }} />
+        
         Not required
-      </span>
-    );
+      </span>);
+
   }
   const completed = Boolean(job.vhcCompletedAt);
   return (
@@ -165,20 +166,20 @@ const renderVhcBadge = (job) => {
         alignItems: "center",
         gap: "6px",
         fontSize: "12px",
-        color: completed ? "var(--success-dark)" : "var(--warning)",
-      }}
-    >
+        color: completed ? "var(--success-dark)" : "var(--warning)"
+      }}>
+      
       <span
         style={{
           width: "10px",
           height: "10px",
           borderRadius: "var(--radius-full)",
-    backgroundColor: completed ? "var(--success)" : "var(--primary)",
-        }}
-      />
+          backgroundColor: completed ? "var(--success)" : "var(--primary)"
+        }} />
+      
       {completed ? "VHC complete" : "VHC pending"}
-    </span>
-  );
+    </span>);
+
 };
 
 
@@ -194,12 +195,12 @@ export default function ViewJobCards() {
   const [searchValues, setSearchValues] = useState({
     today: "",
     carryOver: "",
-    orders: "",
+    orders: ""
   });
   const [activeStatusFilters, setActiveStatusFilters] = useState({
     today: "All",
     carryOver: "All",
-    orders: "All",
+    orders: "All"
   });
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
@@ -250,11 +251,11 @@ export default function ViewJobCards() {
 
   const userRoles = useMemo(() => {
     if (!user?.roles) return [];
-    return user.roles
-      .map((role) =>
-        typeof role === "string" ? role.trim().toLowerCase() : ""
-      )
-      .filter(Boolean);
+    return user.roles.
+    map((role) =>
+    typeof role === "string" ? role.trim().toLowerCase() : ""
+    ).
+    filter(Boolean);
   }, [user]);
   const canViewOrdersTab = useMemo(
     () => userRoles.some((role) => role === "parts" || role === "parts manager"),
@@ -338,7 +339,7 @@ export default function ViewJobCards() {
             jobNumber: updatedJob.jobNumber || updatedJob.job_number || "",
             vehicleId: updatedJob.vehicleId || updatedJob.vehicle_id || null,
             vehicleReg: updatedJob.reg || updatedJob.vehicleReg || updatedJob.vehicle_reg || "",
-            triggeredBy: null,
+            triggeredBy: null
           });
         }
       }
@@ -348,17 +349,17 @@ export default function ViewJobCards() {
   };
 
   const normalizedDivisionFilter =
-    divisionFilter !== "All" ? divisionFilter.toLowerCase() : null;
+  divisionFilter !== "All" ? divisionFilter.toLowerCase() : null;
 
   const divisionFilteredJobs = useMemo(
     () =>
+    normalizedDivisionFilter ?
+    jobs.filter(
+      (job) =>
+      (job.jobDivision || "Retail").toLowerCase() ===
       normalizedDivisionFilter
-        ? jobs.filter(
-            (job) =>
-              (job.jobDivision || "Retail").toLowerCase() ===
-              normalizedDivisionFilter
-          )
-        : jobs,
+    ) :
+    jobs,
     [jobs, normalizedDivisionFilter]
   );
 
@@ -374,7 +375,7 @@ export default function ViewJobCards() {
         nextQuery.division = nextFilter.toLowerCase();
       }
       router.replace({ pathname: router.pathname, query: nextQuery }, undefined, {
-        shallow: true,
+        shallow: true
       });
     },
     [divisionFilter, router]
@@ -382,66 +383,66 @@ export default function ViewJobCards() {
 
   const jobDateLookup = useMemo(
     () =>
-      divisionFilteredJobs.reduce((acc, job) => {
-        acc[job.id] = getJobDate(job);
-        return acc;
-      }, {}),
+    divisionFilteredJobs.reduce((acc, job) => {
+      acc[job.id] = getJobDate(job);
+      return acc;
+    }, {}),
     [divisionFilteredJobs]
   );
 
   const todayJobs = useMemo(
     () =>
-      divisionFilteredJobs.filter((job) => {
-        const jobDate = jobDateLookup[job.id];
-        return jobDate === today;
-      }),
+    divisionFilteredJobs.filter((job) => {
+      const jobDate = jobDateLookup[job.id];
+      return jobDate === today;
+    }),
     [divisionFilteredJobs, today, jobDateLookup]
   );
 
   const carryOverJobs = useMemo(
     () =>
-      divisionFilteredJobs.filter((job) => {
-        const jobDate = jobDateLookup[job.id];
-        return jobDate !== today;
-      }),
+    divisionFilteredJobs.filter((job) => {
+      const jobDate = jobDateLookup[job.id];
+      return jobDate !== today;
+    }),
     [divisionFilteredJobs, today, jobDateLookup]
   );
 
   const normalizedOrders = useMemo(() => {
     if (!Array.isArray(orders)) return [];
-    return orders
-      .map((order) => {
-        const makeModel = [order.vehicle_make, order.vehicle_model]
-          .filter(Boolean)
-          .join(" ")
-          .trim();
-        const appointment = order.delivery_eta
-          ? {
-              date: order.delivery_eta,
-              time: order.delivery_window || "",
-            }
-          : null;
-        const fallbackCustomer =
-          order.customer_name ||
-          order.delivery_contact ||
-          order.customer_email ||
-          "Parts order customer";
-        const normalizedNumber = (order.order_number || "").trim().toUpperCase();
+    return orders.
+    map((order) => {
+      const makeModel = [order.vehicle_make, order.vehicle_model].
+      filter(Boolean).
+      join(" ").
+      trim();
+      const appointment = order.delivery_eta ?
+      {
+        date: order.delivery_eta,
+        time: order.delivery_window || ""
+      } :
+      null;
+      const fallbackCustomer =
+      order.customer_name ||
+      order.delivery_contact ||
+      order.customer_email ||
+      "Parts order customer";
+      const normalizedNumber = (order.order_number || "").trim().toUpperCase();
 
-        return {
-          ...order,
-          orderNumber: normalizedNumber,
-          reg: order.vehicle_reg || "",
-          customer: fallbackCustomer,
-          makeModel: makeModel || order.vehicle_make || order.vehicle_model || "",
-          waitingStatus:
-            order.delivery_status || order.delivery_type || order.status || "Order",
-          appointment,
-          createdAt: order.created_at,
-          requests: order.items || [],
-        };
-      })
-      .filter((order) => Boolean(order.orderNumber) && order.orderNumber.startsWith("P"));
+      return {
+        ...order,
+        orderNumber: normalizedNumber,
+        reg: order.vehicle_reg || "",
+        customer: fallbackCustomer,
+        makeModel: makeModel || order.vehicle_make || order.vehicle_model || "",
+        waitingStatus:
+        order.delivery_status || order.delivery_type || order.status || "Order",
+        appointment,
+        createdAt: order.created_at,
+        requests: order.items || []
+      };
+    }).
+    filter((order) => Boolean(order.orderNumber) && order.orderNumber.startsWith("P"));
   }, [orders]);
 
   const orderJobs = normalizedOrders;
@@ -466,7 +467,7 @@ export default function ViewJobCards() {
   const handleStatusFilterChange = (tab, status) => {
     setActiveStatusFilters((prev) => ({
       ...prev,
-      [tab]: status,
+      [tab]: status
     }));
   };
 
@@ -478,42 +479,42 @@ export default function ViewJobCards() {
 
   const isOrdersTab = activeTab === "orders" && canViewOrdersTab;
   const baseJobs =
-    activeTab === "today"
-      ? todayJobs
-      : activeTab === "carryOver"
-      ? carryOverJobs
-      : orderJobs;
+  activeTab === "today" ?
+  todayJobs :
+  activeTab === "carryOver" ?
+  carryOverJobs :
+  orderJobs;
   const statusOptionsMap = useMemo(
     () => ({
       today: buildStatusOptions(todayJobs, BASE_STATUS_OPTIONS.today),
       carryOver: buildStatusOptions(carryOverJobs, BASE_STATUS_OPTIONS.carryOver),
-      orders: buildStatusOptions(orderJobs, BASE_STATUS_OPTIONS.orders),
+      orders: buildStatusOptions(orderJobs, BASE_STATUS_OPTIONS.orders)
     }),
     [todayJobs, carryOverJobs, orderJobs]
   );
   const statusOptions = statusOptionsMap[activeTab] || [];
   const statusTabs = ["All", ...statusOptions];
   const statusCounts =
-    activeTab === "today"
-      ? todayStatusCounts
-      : activeTab === "carryOver"
-      ? carryStatusCounts
-      : orderStatusCounts;
+  activeTab === "today" ?
+  todayStatusCounts :
+  activeTab === "carryOver" ?
+  carryStatusCounts :
+  orderStatusCounts;
   const activeStatusFilter = activeStatusFilters[activeTab];
   const searchValue = searchValues[activeTab]?.trim().toLowerCase() || "";
   const searchPlaceholder = isOrdersTab ? "Search orders..." : "Search jobs...";
-  const emptyStateMessage = searchValue
-    ? isOrdersTab
-      ? "No orders match your search."
-      : "No jobs match your search."
-    : isOrdersTab
-    ? "No orders available."
-    : "No jobs in this status group.";
+  const emptyStateMessage = searchValue ?
+  isOrdersTab ?
+  "No orders match your search." :
+  "No jobs match your search." :
+  isOrdersTab ?
+  "No orders available." :
+  "No jobs in this status group.";
   const tabOptions = useMemo(() => {
     const baseTabs = [
-      { value: "today", label: "Today's workload" },
-      { value: "carryOver", label: "Carry over" },
-    ];
+    { value: "today", label: "Today's workload" },
+    { value: "carryOver", label: "Carry over" }];
+
     if (canViewOrdersTab) {
       baseTabs.push({ value: "orders", label: "Orders" });
     }
@@ -521,18 +522,18 @@ export default function ViewJobCards() {
   }, [canViewOrdersTab]);
 
   // For Orders tab, show all orders regardless of status filter
-  const filteredByStatus = isOrdersTab
-    ? baseJobs
-    : activeStatusFilter === "All"
-    ? baseJobs
-    : baseJobs.filter((job) => {
-        const jobStatus = job.status || "Unknown";
-        return jobStatus === activeStatusFilter;
-      });
+  const filteredByStatus = isOrdersTab ?
+  baseJobs :
+  activeStatusFilter === "All" ?
+  baseJobs :
+  baseJobs.filter((job) => {
+    const jobStatus = job.status || "Unknown";
+    return jobStatus === activeStatusFilter;
+  });
 
-  const filteredJobs = searchValue
-    ? filteredByStatus.filter((job) => matchesSearchTerm(job, searchValue))
-    : filteredByStatus;
+  const filteredJobs = searchValue ?
+  filteredByStatus.filter((job) => matchesSearchTerm(job, searchValue)) :
+  filteredByStatus;
 
   const getSortValue = (job) => {
     if (job?.appointment?.date && job?.appointment?.time) {
@@ -547,14 +548,14 @@ export default function ViewJobCards() {
     return new Date(0);
   };
 
-  const sortedJobs = filteredJobs
-    .slice()
-    .sort((a, b) => {
-      if (isOrdersTab) {
-        return getSortValue(a) - getSortValue(b);
-      }
-      return getSortValue(b) - getSortValue(a);
-    });
+  const sortedJobs = filteredJobs.
+  slice().
+  sort((a, b) => {
+    if (isOrdersTab) {
+      return getSortValue(a) - getSortValue(b);
+    }
+    return getSortValue(b) - getSortValue(a);
+  });
 
   const popupStatusLabel = useMemo(() => {
     if (!popupJob) return "";
@@ -582,716 +583,716 @@ export default function ViewJobCards() {
      Loading State
   ================================ */
   if (loading) {
-    return <PageSkeleton />;
+    return <ViewJobCardsUi view="section1" PageSkeleton={PageSkeleton} />;
   }
 
   /* ================================
      Page Layout
   ================================ */
-  return (
-    <>
-      <style>{`
-        .job-cards-filter.dropdown-api {
-          width: 100%;
-        }
+  return <ViewJobCardsUi view="section2" activeStatusFilter={activeStatusFilter} activeTab={activeTab} baseJobs={baseJobs} combinedStatusOptions={combinedStatusOptions} ContentWidth={ContentWidth} DevLayoutSection={DevLayoutSection} divisionFilter={divisionFilter} DropdownField={DropdownField} emptyStateMessage={emptyStateMessage} FilterToolbarRow={FilterToolbarRow} formatDetectedJobTypeLabel={formatDetectedJobTypeLabel} goToJobCard={goToJobCard} handleCardNavigation={handleCardNavigation} handleDivisionFilterChange={handleDivisionFilterChange} handleSearchValueChange={handleSearchValueChange} handleStatusChange={handleStatusChange} handleStatusFilterChange={handleStatusFilterChange} isOrdersTab={isOrdersTab} JobListCard={JobListCard} OrderListCard={OrderListCard} ordersLoading={ordersLoading} PageShell={PageShell} popupCardStyles={popupCardStyles} popupJob={popupJob} popupOverlayStyles={popupOverlayStyles} popupPrimaryActionButtonStyle={popupPrimaryActionButtonStyle} popupQuietActionButtonStyle={popupQuietActionButtonStyle} popupSecondaryActionButtonStyle={popupSecondaryActionButtonStyle} popupStatusLabel={popupStatusLabel} prefetchJob={prefetchJob} router={router} SearchBar={SearchBar} searchPlaceholder={searchPlaceholder} searchValues={searchValues} SectionShell={SectionShell} setActiveTab={setActiveTab} setPopupJob={setPopupJob} sortedJobs={sortedJobs} statusCounts={statusCounts} statusTabs={statusTabs} TabGroup={TabGroup} tabOptions={tabOptions} />;
 
-        .job-cards-view-toolbar {
-          display: flex;
-          flex-wrap: nowrap;
-          align-items: center;
-          gap: 0.75rem;
-          min-width: 0;
-          justify-content: flex-start;
-        }
 
-        .job-cards-view-tabs {
-          flex: 0 1 auto;
-          width: fit-content;
-          max-width: max-content;
-          min-height: calc(var(--control-height-sm) + 0.7rem);
-          min-width: auto;
-          overflow: visible;
-          padding: 0.35rem 0.5rem;
-        }
 
-        .job-cards-view-tabs .tab-api {
-          padding: 0;
-          gap: 0.375rem;
-          min-height: var(--control-height-sm);
-          flex-wrap: nowrap;
-          overflow: visible;
-          justify-content: flex-start;
-          width: fit-content;
-          max-width: max-content;
-          align-items: center;
-        }
 
-        .job-cards-view-tabs .tab-api__item {
-          min-height: var(--control-height-sm);
-          padding: 0.45rem 0.7rem;
-          font-size: 0.78rem;
-          flex: 0 0 auto;
-        }
 
-        .job-cards-view-search-shell {
-          flex: 1 1 auto;
-          width: auto;
-          max-width: none;
-          min-height: calc(var(--control-height-sm) + 0.7rem);
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(7.2rem, 8.4rem) minmax(7.2rem, 8.4rem);
-          align-items: center;
-          justify-content: stretch;
-          gap: 0.45rem;
-          padding: 0.35rem 0.5rem;
-          min-width: 0;
-        }
 
-        .job-cards-view-searchbar.searchbar-api {
-          width: 100%;
-          min-height: var(--control-height-sm);
-          padding: 0.45rem 0.7rem;
-          min-width: 0;
-          max-width: none;
-        }
 
-        .job-cards-view-searchbar .searchbar-api__input {
-          font-size: 0.85rem;
-        }
 
-        .job-cards-view-filter-controls {
-          display: contents;
-        }
 
-        .job-cards-view-filter-slot {
-          display: flex;
-          align-items: center;
-          min-width: 0;
-        }
 
-        .job-cards-view-filter-control {
-          width: 100%;
-          min-width: 0;
-          flex: 0 0 auto;
-          display: flex;
-          align-items: center;
-        }
 
-        .job-cards-view-filter-control .dropdown-api {
-          width: 100%;
-        }
 
-        .job-cards-view-filter-control .dropdown-api__control {
-          min-height: var(--control-height-sm);
-          padding: 0.45rem 0.65rem;
-        }
 
-        .job-cards-view-filter-control .dropdown-api__value {
-          font-size: 0.8rem;
-        }
 
-        @media (max-width: 900px) {
-          .job-cards-view-toolbar {
-            display: flex;
-            flex-wrap: wrap;
-          }
 
-          .job-cards-view-tabs,
-          .job-cards-view-search-shell {
-            flex: 1 1 100%;
-            display: flex;
-            flex-wrap: wrap;
-          }
 
-          .job-cards-view-searchbar.searchbar-api {
-            flex: 1 1 100%;
-            max-width: none;
-          }
 
-          .job-cards-view-filter-slot {
-            width: 100%;
-          }
 
-          .job-cards-view-filter-controls,
-          .job-cards-view-filter-slot {
-            flex-wrap: wrap;
-            justify-content: stretch;
-          }
 
-          .job-cards-view-filter-control {
-            width: 100%;
-            min-width: 0;
-            flex: 1 1 100%;
-          }
-        }
-      `}</style>
-      <PageShell sectionKey="job-cards-view-shell">
-        <ContentWidth sectionKey="job-cards-view-content" parentKey="job-cards-view-shell" widthMode="content">
-      <div className="app-page-stack">
-          <SectionShell
-            sectionKey="job-cards-view-filter-shell"
-            parentKey="job-cards-view-content"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              background: "rgba(var(--primary-rgb), 0.10)",
-              borderRadius: "var(--radius-lg)",
-              border: "1px solid rgba(var(--primary-rgb), 0.18)",
-              padding: "12px",
-              gap: "12px",
-            }}
-          >
-            <FilterToolbarRow
-              sectionKey="job-cards-view-filter-row"
-              parentKey="job-cards-view-filter-shell"
-              className="job-cards-view-toolbar"
-              style={{
-                gap: "0.75rem",
-              }}
-            >
-              <DevLayoutSection
-                className="page-surface-plain job-cards-view-tabs"
-                sectionKey="job-cards-view-tabs"
-                parentKey="job-cards-view-filter-row"
-                sectionType="tab-row"
-                style={{
-                  borderRadius: "var(--radius-sm)",
-                }}
-              >
-                <TabGroup
-                  items={tabOptions}
-                  value={activeTab}
-                  onChange={setActiveTab}
-                  ariaLabel="Job card tabs"
-                  className="tab-api--wrap"
-                />
-              </DevLayoutSection>
-              <DevLayoutSection
-                className="app-layout-card job-cards-view-search-shell"
-                sectionKey="job-cards-view-search"
-                parentKey="job-cards-view-filter-row"
-                sectionType="search-control"
-              >
-                <SearchBar
-                  className="job-cards-view-searchbar"
-                  placeholder={searchPlaceholder}
-                  value={searchValues[activeTab]}
-                  onChange={(event) =>
-                    handleSearchValueChange(activeTab, event.target.value)
-                  }
-                  onClear={() => handleSearchValueChange(activeTab, "")}
-                  style={{ width: "100%" }}
-                />
-                {!isOrdersTab && (
-                  <DevLayoutSection
-                    className="job-cards-view-filter-controls"
-                    sectionKey="job-cards-view-filter-controls"
-                    parentKey="job-cards-view-search"
-                    sectionType="toolbar"
-                  >
-                    <DevLayoutSection
-                      className="job-cards-view-filter-slot"
-                      sectionKey="job-cards-view-filter-controls-division-slot"
-                      parentKey="job-cards-view-filter-controls"
-                      sectionType="filter-control"
-                    >
-                      <DevLayoutSection
-                        className="job-cards-view-filter-control"
-                        sectionKey="job-cards-view-division-filter"
-                        parentKey="job-cards-view-filter-controls-division-slot"
-                        sectionType="filter-control"
-                      >
-                        <DropdownField
-                          className="job-cards-filter"
-                          value={divisionFilter}
-                          options={[
-                            { value: "All", label: "Division filter: All" },
-                            { value: "Retail", label: "Division filter: Retail" },
-                            { value: "Sales", label: "Division filter: Sales" },
-                          ]}
-                          size="sm"
-                          onValueChange={(value) => handleDivisionFilterChange(value)}
-                        />
-                      </DevLayoutSection>
-                    </DevLayoutSection>
-                    <DevLayoutSection
-                      className="job-cards-view-filter-slot"
-                      sectionKey="job-cards-view-filter-controls-status-slot"
-                      parentKey="job-cards-view-filter-controls"
-                      sectionType="filter-control"
-                    >
-                      <DevLayoutSection
-                        className="job-cards-view-filter-control"
-                        sectionKey="job-cards-view-status-filter"
-                        parentKey="job-cards-view-filter-controls-status-slot"
-                        sectionType="filter-control"
-                      >
-                        <DropdownField
-                          className="job-cards-filter"
-                          value={activeStatusFilter}
-                          options={statusTabs.map((status) => ({
-                            value: status,
-                            label: `Status filter: ${status}`,
-                            description:
-                              status === "All"
-                                ? `${baseJobs.length} total`
-                                : `${statusCounts[status] || 0} jobs`,
-                          }))}
-                          size="sm"
-                          onValueChange={(value) =>
-                            handleStatusFilterChange(activeTab, value)
-                          }
-                        />
-                      </DevLayoutSection>
-                    </DevLayoutSection>
-                  </DevLayoutSection>
-                )}
-              </DevLayoutSection>
-            </FilterToolbarRow>
-          </SectionShell>
 
-          <SectionShell
-            sectionKey="job-cards-view-list-shell"
-            parentKey="job-cards-view-content"
-            style={{
-              flex: 1,
-              overflow: "hidden",
-              borderRadius: "var(--radius-md)",
-              border: "1px solid rgba(var(--primary-rgb), 0.18)",
-              background: "rgba(var(--primary-rgb), 0.10)",
-              padding: "12px",
-              minHeight: "0",
-            }}
-          >
-            <DevLayoutSection
-              sectionKey="job-cards-view-list-viewport"
-              parentKey="job-cards-view-list-shell"
-              sectionType="scroll-region"
-              style={{
-                height: "100%",
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-              }}
-            >
-              {isOrdersTab && ordersLoading ? (
-                <DevLayoutSection
-                  sectionKey="job-cards-view-orders-loading"
-                  parentKey="job-cards-view-list-viewport"
-                  sectionType="state-banner"
-                  style={{
-                    padding: "32px",
-                    textAlign: "center",
-                    color: "var(--info)",
-                    border: "1px dashed var(--accent-purple-surface)",
-                    borderRadius: "var(--radius-sm)",
-                    background: "var(--info-surface)",
-                  }}
-                >
-                  Loading orders...
-                </DevLayoutSection>
-              ) : sortedJobs.length === 0 ? (
-                <DevLayoutSection
-                  sectionKey="job-cards-view-empty-state"
-                  parentKey="job-cards-view-list-viewport"
-                  sectionType="state-banner"
-                  style={{
-                    padding: "32px",
-                    textAlign: "center",
-                    color: "var(--info)",
-                    border: "1px dashed var(--accent-purple-surface)",
-                    borderRadius: "var(--radius-sm)",
-                    background: "var(--info-surface)",
-                  }}
-                >
-                  {emptyStateMessage}
-                </DevLayoutSection>
-              ) : (
-                sortedJobs.map((job, index) =>
-                  isOrdersTab ? (
-                    <OrderListCard
-                      key={job.id || job.orderNumber}
-                      sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`}
-                      parentKey="job-cards-view-list-viewport"
-                      order={job}
-                      index={index}
-                      onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)}
-                    />
-                  ) : (
-                    <JobListCard
-                      key={job.jobNumber}
-                      sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`}
-                      parentKey="job-cards-view-list-viewport"
-                      job={job}
-                      index={index}
-                      onNavigate={() => handleCardNavigation(job.jobNumber)}
-                      onMouseEnter={() => prefetchJob(job.jobNumber)}
-                    />
-                  )
-                )
-              )}
-            </DevLayoutSection>
-          </SectionShell>
 
-          {/* ✅ Job Popup - Enhanced with all new fields */}
-          {popupJob && (
-            <>
-              <DevLayoutSection
-                sectionKey="job-cards-view-quick-view-overlay"
-                parentKey="job-cards-view-shell"
-                sectionType="floating-action"
-                style={{
-                  ...popupOverlayStyles,
-                  zIndex: 1200,
-                }}
-                onClick={() => setPopupJob(null)}
-              >
-              <DevLayoutSection
-                sectionKey="job-cards-view-quick-view-card"
-                parentKey="job-cards-view-quick-view-overlay"
-                sectionType="content-card"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  ...popupCardStyles,
-                  padding: "var(--page-card-padding)",
-                  maxWidth: "700px",
-                  width: "90%",
-                  maxHeight: "85vh",
-                  overflowY: "auto",
-                }}
-              >
-              {/* Popup Header */}
-              <div style={{ marginBottom: "24px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <h2 style={{ fontSize: "24px", fontWeight: "700", color: "var(--text-primary)", marginBottom: "4px" }}>
-                      {popupJob.jobNumber}
-                    </h2>
-                    <p style={{ fontSize: "16px", color: "var(--grey-accent)", margin: 0 }}>
-                      {popupJob.customer}
-                    </p>
-                  </div>
-                  {/* ✅ Job Source Badge */}
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    {popupJob.jobDivision && (
-                      <span
-                        style={{
-                          backgroundColor:
-                            popupJob.jobDivision.toLowerCase() === "sales"
-                              ? "var(--info-surface)"
-                              : "var(--success-surface)",
-                          color:
-                            popupJob.jobDivision.toLowerCase() === "sales"
-                              ? "var(--info)"
-                              : "var(--success-dark)",
-                          padding: "8px 16px",
-                          borderRadius: "var(--control-radius-xs)",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          border: "1px solid currentColor",
-                          letterSpacing: "0.3px",
-                        }}
-                      >
-                        {popupJob.jobDivision}
-                      </span>
-                    )}
-                    <span
-                      style={{
-                        backgroundColor: popupJob.jobSource === "Warranty" ? "var(--warning)" : "var(--success)",
-                        color: "white",
-                        padding: "8px 16px",
-                        borderRadius: "var(--control-radius-xs)",
-                        fontSize: "12px",
-                        fontWeight: "600",
-                        border: "1px solid transparent",
-                        letterSpacing: "0.3px",
-                      }}
-                    >
-                      {popupJob.jobSource || "Retail"}
-                    </span>
-                    {/* ✅ Prime/Sub-job badge */}
-                    {popupJob.primeJobNumber && (
-                      <span
-                        style={{
-                          backgroundColor: "var(--primary-surface)",
-                          color: "var(--primary)",
-                          padding: "8px 16px",
-                          borderRadius: "var(--radius-xs)",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                        }}
-                      >
-                        {popupJob.isPrimeJob ? "🔗 Prime Job" : `Sub-job of #${popupJob.primeJobNumber}`}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              {/* ✅ Job Details - Enhanced */}
-              <div className="app-section-card" style={{
-                marginBottom: "20px"
-              }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
-                    <strong>Registration:</strong> {popupJob.reg}
-                  </div>
-                  {popupJob.makeModel && (
-                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
-                      <strong>Vehicle:</strong> {popupJob.makeModel}
-                    </div>
-                  )}
-                  {popupJob.vin && (
-                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
-                      <strong>VIN:</strong> {popupJob.vin}
-                    </div>
-                  )}
-                  {popupJob.mileage && (
-                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
-                      <strong>Mileage:</strong> {popupJob.mileage.toLocaleString()} miles
-                    </div>
-                  )}
-                  {/* ✅ Waiting Status */}
-                  {popupJob.waitingStatus && popupJob.waitingStatus !== "Neither" && (
-                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
-                      <strong>Customer Status:</strong> {popupJob.waitingStatus}
-                    </div>
-                  )}
-                  {popupJob.appointment && (
-                    <div style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
-                      <strong>Appointment:</strong> {popupJob.appointment.date} at {popupJob.appointment.time}
-                    </div>
-                  )}
-                </div>
 
-                {/* ✅ Job Categories */}
-                {popupJob.jobCategories && popupJob.jobCategories.length > 0 && (
-                  <div style={{ marginTop: "12px" }}>
-                    <strong style={{ fontSize: "14px", color: "var(--grey-accent)" }}>Job Types:</strong>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "6px" }}>
-                      {popupJob.jobCategories.map((category, idx) => (
-                        <span
-                          key={idx}
-                          style={{
-                            backgroundColor: "var(--surface-light)",
-                            color: "var(--text-secondary)",
-                            padding: "4px 10px",
-                            borderRadius: "var(--radius-xs)",
-                            fontSize: "12px",
-                            fontWeight: "600"
-                          }}
-                        >
-                          {formatDetectedJobTypeLabel(category)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
-                {/* ✅ Job Requests */}
-                {popupJob.requests && popupJob.requests.length > 0 && (
-                  <div style={{ marginTop: "12px" }}>
-                    <strong style={{ fontSize: "14px", color: "var(--grey-accent)" }}>Customer Requests:</strong>
-                    <ul style={{ margin: "6px 0 0 0", paddingLeft: "20px" }}>
-                      {popupJob.requests.map((req, idx) => (
-                        <li key={idx} style={{ fontSize: "13px", color: "var(--grey-accent)", marginBottom: "4px" }}>
-                          {req.text || req} 
-                          {req.time && <span style={{ color: "var(--grey-accent-light)" }}> ({req.time}h)</span>}
-                          {req.paymentType && req.paymentType !== "Customer" && (
-                            <span style={{ 
-                              marginLeft: "8px", 
-                              backgroundColor: "var(--warning-surface)", 
-                              padding: "2px 6px", 
-                              borderRadius: "var(--radius-xs)",
-                              fontSize: "11px"
-                            }}>
-                              {req.paymentType}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
 
-                {/* ✅ Cosmetic Notes */}
-                {popupJob.cosmeticNotes && (
-                  <div style={{ marginTop: "12px" }}>
-                    <strong style={{ fontSize: "14px", color: "var(--grey-accent)" }}>Cosmetic Damage:</strong>
-                    <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "4px 0 0 0" }}>
-                      {popupJob.cosmeticNotes}
-                    </p>
-                  </div>
-                )}
-              </div>
 
-              {/* Status Badges */}
-              <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
-                <div style={{
-                  backgroundColor: "var(--info-surface)",
-                  color: "var(--info-dark)",
-                  padding: "8px 16px",
-                  borderRadius: "var(--radius-xs)",
-                  fontSize: "13px",
-                  fontWeight: "600"
-                }}>
-                  VHC Checks: {popupJob.vhcChecks?.length || 0}
-                </div>
-                <div style={{
-                  backgroundColor: "var(--warning-surface)",
-                  color: "var(--accent-purple)",
-                  padding: "8px 16px",
-                  borderRadius: "var(--radius-xs)",
-                  fontSize: "13px",
-                  fontWeight: "600"
-                }}>
-                  Parts Requests: {popupJob.partsRequests?.length || 0}
-                </div>
-                <div style={{
-                  backgroundColor: "var(--success-surface)",
-                  color: "var(--success-dark)",
-                  padding: "8px 16px",
-                  borderRadius: "var(--radius-xs)",
-                  fontSize: "13px",
-                  fontWeight: "600"
-                }}>
-                  Notes: {popupJob.notes?.length || 0}
-                </div>
-                {/* ✅ Files Badge */}
-                {popupJob.files && popupJob.files.length > 0 && (
-                  <div style={{
-                    backgroundColor: "var(--accent-purple-surface)",
-                    color: "var(--accent-purple)",
-                    padding: "8px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    fontSize: "13px",
-                    fontWeight: "600"
-                  }}>
-                    Files: {popupJob.files.length}
-                  </div>
-                )}
-                {/* ✅ VHC Required Badge */}
-                {popupJob.vhcRequired && (
-                  <div style={{
-                    backgroundColor: "var(--surface-light)",
-                    color: "var(--accent-purple)",
-                    padding: "8px 16px",
-                    borderRadius: "var(--radius-xs)",
-                    fontSize: "13px",
-                    fontWeight: "600"
-                  }}>
-                    VHC REQUIRED
-                  </div>
-                )}
-              </div>
 
-              {/* Status Dropdown */}
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ fontSize: "13px", fontWeight: "600", color: "var(--grey-accent)", display: "block", marginBottom: "8px" }}>
-                  Update Status
-                </label>
-                <select
-                  value={popupStatusLabel || ""}
-                  onChange={(e) => handleStatusChange(popupJob.id, e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    fontSize: "14px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    backgroundColor: "var(--surface)",
-                    cursor: "pointer",
-                  }}
-                >
-                  {combinedStatusOptions.map((statusOption) => (
-                    <option key={statusOption} value={statusOption}>
-                      {statusOption}
-                    </option>
-                  ))}
-                </select>
-              </div>
 
-              {/* Action Buttons */}
-              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-                <button
-                  onClick={() => goToJobCard(popupJob.jobNumber)}
-                  style={popupPrimaryActionButtonStyle}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--primary-dark)";
-                    e.currentTarget.style.borderColor = "var(--primary-dark)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--accent-purple)";
-                    e.currentTarget.style.borderColor = "var(--accent-purple)";
-                  }}
-                >
-                  View Full Details
-                </button>
 
-                <button
-                  onClick={() => router.push(`/job-cards/myjobs/${popupJob.jobNumber}?tab=vhc`)}
-                  style={popupSecondaryActionButtonStyle}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
-                    e.currentTarget.style.borderColor = "var(--accent-purple)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
-                    e.currentTarget.style.borderColor = "var(--accent-purple)";
-                  }}
-                >
-                  View VHC
-                </button>
 
-                <button
-                  onClick={() => router.push(`/job-cards/${popupJob.jobNumber}?tab=write-up`)}
-                  style={popupSecondaryActionButtonStyle}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--surface-light)";
-                    e.currentTarget.style.borderColor = "var(--accent-purple)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
-                    e.currentTarget.style.borderColor = "var(--accent-purple)";
-                  }}
-                >
-                  Write-Up
-                </button>
-              </div>
 
-              {/* Close Button */}
-              <button
-                onClick={() => setPopupJob(null)}
-                style={popupQuietActionButtonStyle}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
-                  e.currentTarget.style.borderColor = "var(--accent-purple)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
-                  e.currentTarget.style.borderColor = "var(--accent-purple-surface)";
-                }}
-              >
-                Close
-              </button>
-            </DevLayoutSection>
-          </DevLayoutSection>
-            </>
-        )}
-      </div>
-      </ContentWidth>
-      </PageShell>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) => {
@@ -1301,22 +1302,22 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
   const appointmentLabel = getAppointmentDisplay(job);
   const waitingLabel = formatCustomerStatusLabel(job.waitingStatus);
   const assignedTechName =
-    job.assignedTech?.fullName ||
-    job.assignedTech?.name ||
-    job.technician ||
-    "Unassigned";
+  job.assignedTech?.fullName ||
+  job.assignedTech?.name ||
+  job.technician ||
+  "Unassigned";
   const jobStatus = job.status || "Status pending";
   const jobDivisionLabel = job.jobDivision || "Retail";
   const isSalesDivision = jobDivisionLabel.toLowerCase() === "sales";
   const divisionBadgeStyles = {
     backgroundColor: isSalesDivision ? "var(--info-surface)" : "var(--success-surface)",
-    color: isSalesDivision ? "var(--info)" : "var(--success-dark)",
+    color: isSalesDivision ? "var(--info)" : "var(--success-dark)"
   };
 
   // Extract customer requests text
-  const customerRequests = job.requests && Array.isArray(job.requests)
-    ? job.requests.map(req => typeof req === "string" ? req : req?.text || req?.description || "").filter(Boolean)
-    : [];
+  const customerRequests = job.requests && Array.isArray(job.requests) ?
+  job.requests.map((req) => typeof req === "string" ? req : req?.text || req?.description || "").filter(Boolean) :
+  [];
 
   return (
     <DevLayoutSection
@@ -1333,7 +1334,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
         flexDirection: "column",
         gap: "0.65rem",
         cursor: "pointer",
-        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease"
       }}
       onMouseEnter={(event) => {
         if (onMouseEnter) onMouseEnter(); // prefetch job data on hover
@@ -1348,8 +1349,8 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
         event.currentTarget.style.boxShadow = "none";
         event.currentTarget.style.borderColor = "var(--surface-light)";
         event.currentTarget.style.zIndex = "0";
-      }}
-    >
+      }}>
+      
       {/* Header Row - Job Number, Reg, Status */}
       <div
         style={{
@@ -1357,27 +1358,27 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "10px",
-        }}
-      >
+          gap: "10px"
+        }}>
+        
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--info-dark)" }}>{job.jobNumber}</span>
           {/* ✅ Prime/Sub-job badge */}
-          {job.primeJobNumber && (
-            <span
-              style={{
-                fontSize: "10px",
-                padding: "2px 8px",
-                borderRadius: "var(--radius-xs)",
-                backgroundColor: "var(--primary-surface)",
-                color: "var(--primary)",
-                fontWeight: "600",
-              }}
-              title={job.isPrimeJob ? "Prime Job" : `Sub-job of ${job.primeJobNumber}`}
-            >
+          {job.primeJobNumber &&
+          <span
+            style={{
+              fontSize: "10px",
+              padding: "2px 8px",
+              borderRadius: "var(--radius-xs)",
+              backgroundColor: "var(--primary-surface)",
+              color: "var(--primary)",
+              fontWeight: "600"
+            }}
+            title={job.isPrimeJob ? "Prime Job" : `Sub-job of ${job.primeJobNumber}`}>
+            
               {job.isPrimeJob ? "🔗 Prime" : `↳ ${job.primeJobNumber}`}
             </span>
-          )}
+          }
           <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>{job.reg || "—"}</span>
           <span style={{ fontSize: "13px", color: "var(--info)" }}>{job.makeModel || "Vehicle pending"}</span>
         </div>
@@ -1387,9 +1388,9 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
             gap: "8px",
             alignItems: "center",
             flexWrap: "wrap",
-            justifyContent: "flex-end",
-          }}
-        >
+            justifyContent: "flex-end"
+          }}>
+          
           <span
             style={{
               padding: "4px 12px",
@@ -1399,9 +1400,9 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
               textTransform: "capitalize",
               border: "1px solid currentColor",
               letterSpacing: "0.3px",
-              ...divisionBadgeStyles,
-            }}
-          >
+              ...divisionBadgeStyles
+            }}>
+            
             {jobDivisionLabel}
           </span>
           <span
@@ -1414,9 +1415,9 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
               fontSize: "12px",
               textTransform: "capitalize",
               border: "1px solid currentColor",
-              letterSpacing: "0.3px",
-            }}
-          >
+              letterSpacing: "0.3px"
+            }}>
+            
             {jobStatus}
           </span>
         </div>
@@ -1428,9 +1429,9 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(6.5rem, 1fr))",
           gap: "0.5rem",
-          fontSize: "0.8rem",
-        }}
-      >
+          fontSize: "0.8rem"
+        }}>
+        
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
           <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Customer</span>
           <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{job.customer || "Unknown"}</span>
@@ -1458,15 +1459,15 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
       </div>
 
       {/* Customer Requests Section */}
-      {customerRequests.length > 0 && (
-        <div
-          style={{
-            padding: "8px 10px",
-            borderRadius: "var(--radius-xs)",
-            backgroundColor: "var(--info-surface)",
-            border: "none",
-          }}
-        >
+      {customerRequests.length > 0 &&
+      <div
+        style={{
+          padding: "8px 10px",
+          borderRadius: "var(--radius-xs)",
+          backgroundColor: "var(--info-surface)",
+          border: "none"
+        }}>
+        
           <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
             Customer Requests ({customerRequests.length})
           </div>
@@ -1474,9 +1475,9 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
             {customerRequests.join(" • ")}
           </div>
         </div>
-      )}
-    </DevLayoutSection>
-  );
+      }
+    </DevLayoutSection>);
+
 };
 
 const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
@@ -1485,13 +1486,13 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
   const items = order.requests || order.items || [];
   const totalItems = items.length;
   const deliveryLabel = order.delivery_type === "collection" ? "Collection" : "Delivery";
-  const deliveryWindow = order.appointment
-    ? order.appointment.time
-      ? `${order.appointment.date} · ${order.appointment.time}`
-      : order.appointment.date
-    : "ETA not set";
+  const deliveryWindow = order.appointment ?
+  order.appointment.time ?
+  `${order.appointment.date} · ${order.appointment.time}` :
+  order.appointment.date :
+  "ETA not set";
   const primaryStatus =
-    order.status || order.delivery_status || order.invoice_status || "Draft";
+  order.status || order.delivery_status || order.invoice_status || "Draft";
 
   return (
     <DevLayoutSection
@@ -1508,7 +1509,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
         flexDirection: "column",
         gap: "0.65rem",
         cursor: "pointer",
-        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease"
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.position = "relative";
@@ -1522,17 +1523,17 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
         event.currentTarget.style.boxShadow = "none";
         event.currentTarget.style.borderColor = "var(--surface-light)";
         event.currentTarget.style.zIndex = "0";
-      }}
-    >
+      }}>
+      
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "10px",
-        }}
-      >
+          gap: "10px"
+        }}>
+        
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--info-dark)" }}>
             {order.orderNumber}
@@ -1552,9 +1553,9 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
             color: "var(--accent-purple)",
             fontWeight: 600,
             fontSize: "12px",
-            textTransform: "capitalize",
-          }}
-        >
+            textTransform: "capitalize"
+          }}>
+          
           {primaryStatus}
         </span>
       </div>
@@ -1564,9 +1565,9 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(7.5rem, 1fr))",
           gap: "0.5rem",
-          fontSize: "0.8rem",
-        }}
-      >
+          fontSize: "0.8rem"
+        }}>
+        
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
           <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
             Fulfilment
@@ -1587,8 +1588,8 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
             {totalItems} line{totalItems === 1 ? "" : "s"}
           </span>
         </div>
-        {order.invoice_total !== undefined && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+        {order.invoice_total !== undefined &&
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
               Invoice Value
             </span>
@@ -1596,30 +1597,30 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
               £{Number(order.invoice_total || 0).toFixed(2)}
             </span>
           </div>
-        )}
+        }
       </div>
 
-      {items.length > 0 && (
-        <div
-          style={{
-            padding: "8px 10px",
-            borderRadius: "var(--radius-xs)",
-            backgroundColor: "var(--info-surface)",
-            border: "none",
-          }}
-        >
+      {items.length > 0 &&
+      <div
+        style={{
+          padding: "8px 10px",
+          borderRadius: "var(--radius-xs)",
+          backgroundColor: "var(--info-surface)",
+          border: "none"
+        }}>
+        
           <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
             Parts Summary
           </div>
           <div style={{ fontSize: "12px", color: "var(--info-dark)", lineHeight: "1.4" }}>
-            {items
-              .slice(0, 4)
-              .map((item) => item.part_name || item.part_number || "Part")
-              .join(" • ")}
+            {items.
+          slice(0, 4).
+          map((item) => item.part_name || item.part_number || "Part").
+          join(" • ")}
             {items.length > 4 ? " +" + (items.length - 4) + " more" : ""}
           </div>
         </div>
-      )}
-    </DevLayoutSection>
-  );
+      }
+    </DevLayoutSection>);
+
 };

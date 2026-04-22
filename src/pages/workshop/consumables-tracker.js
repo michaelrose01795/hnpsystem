@@ -1,5 +1,5 @@
-"use client";
 // file location: src/pages/workshop/consumables-tracker.js
+"use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@/context/UserContext";
@@ -12,6 +12,7 @@ import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+import ConsumablesTrackerPageUi from "@/components/page-ui/workshop/workshop-consumables-tracker-ui"; // Extracted presentation layer.
 
 const containerStyle = {
   flex: 1,
@@ -19,7 +20,7 @@ const containerStyle = {
   display: "flex",
   flexDirection: "column",
   padding: "8px 16px",
-  overflow: "hidden",
+  overflow: "hidden"
 };
 
 const workspaceShellStyle = {
@@ -27,7 +28,7 @@ const workspaceShellStyle = {
   display: "flex",
   flexDirection: "column",
   minHeight: 0,
-  overflow: "hidden",
+  overflow: "hidden"
 };
 
 const mainColumnStyle = {
@@ -38,21 +39,21 @@ const mainColumnStyle = {
   minHeight: 0,
   minWidth: 0,
   overflowY: "auto",
-  paddingRight: "8px",
+  paddingRight: "8px"
 };
 
 const cardStyle = {
   backgroundColor: "var(--section-card-bg)",
   borderRadius: "var(--section-card-radius)",
   padding: "var(--section-card-padding)",
-  border: "var(--section-card-border)",
+  border: "var(--section-card-border)"
 };
 
 const sectionTitleStyle = {
   fontSize: "1.1rem",
   fontWeight: 700,
   color: "var(--text-primary)",
-  marginBottom: "12px",
+  marginBottom: "12px"
 };
 
 const badgeBaseStyle = {
@@ -62,7 +63,7 @@ const badgeBaseStyle = {
   padding: "4px 10px",
   borderRadius: "var(--radius-pill)",
   fontSize: "var(--text-caption)",
-  fontWeight: 600,
+  fontWeight: 600
 };
 
 const budgetInputStyle = {
@@ -70,7 +71,7 @@ const budgetInputStyle = {
   padding: "10px 12px",
   borderRadius: "var(--radius-sm)",
   border: "none",
-  fontSize: "0.95rem",
+  fontSize: "0.95rem"
 };
 
 const orderHistoryGridTemplate = "minmax(150px, 2fr) repeat(5, minmax(90px, 1fr))";
@@ -82,12 +83,12 @@ const orderHistoryContainerStyle = {
   background: "var(--surface-light)",
   padding: "12px",
   maxHeight: "190px",
-  overflowY: "auto",
+  overflowY: "auto"
 };
 
 const scheduledTableBodyStyle = {
   maxHeight: "calc(5 * 62px)",
-  overflowY: "auto",
+  overflowY: "auto"
 };
 
 const orderHistoryHeaderStyle = {
@@ -98,7 +99,7 @@ const orderHistoryHeaderStyle = {
   textTransform: "uppercase",
   letterSpacing: "0.1em",
   color: "var(--text-primary)",
-  marginBottom: "8px",
+  marginBottom: "8px"
 };
 
 const orderHistoryRowBorder = "none";
@@ -106,7 +107,7 @@ const orderHistoryRowBorder = "none";
 const orderModalOverlayStyle = {
   ...popupOverlayStyles,
   zIndex: 1200,
-  padding: "16px",
+  padding: "16px"
 };
 
 const orderModalStyle = {
@@ -114,7 +115,7 @@ const orderModalStyle = {
   width: "100%",
   maxWidth: "520px",
   padding: "28px",
-  position: "relative",
+  position: "relative"
 };
 
 const historyModalStyle = {
@@ -122,7 +123,7 @@ const historyModalStyle = {
   width: "100%",
   maxWidth: "860px",
   padding: "24px",
-  position: "relative",
+  position: "relative"
 };
 
 const orderModalCloseButtonStyle = {
@@ -133,7 +134,7 @@ const orderModalCloseButtonStyle = {
   border: "none",
   fontSize: "1rem",
   color: "var(--text-primary)",
-  cursor: "pointer",
+  cursor: "pointer"
 };
 
 const orderModalButtonStyle = {
@@ -142,7 +143,7 @@ const orderModalButtonStyle = {
   border: "none",
   cursor: "pointer",
   fontWeight: 600,
-  boxShadow: "none",
+  boxShadow: "none"
 };
 
 const orderModalSecondaryButtonStyle = {
@@ -150,20 +151,20 @@ const orderModalSecondaryButtonStyle = {
   background: "var(--surface)",
   border: "none",
   color: "var(--text-primary)",
-  boxShadow: "none",
+  boxShadow: "none"
 };
 
 const orderModalFormGroupStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "6px",
-  marginBottom: "12px",
+  marginBottom: "12px"
 };
 
 const orderModalInputStyle = {
   padding: "10px 14px",
   borderRadius: "var(--radius-xs)",
-  border: "none",
+  border: "none"
 };
 
 const orderButtonStyle = {
@@ -174,7 +175,7 @@ const orderButtonStyle = {
   color: "var(--surface)",
   fontWeight: 600,
   cursor: "pointer",
-  boxShadow: "none",
+  boxShadow: "none"
 };
 
 const stockCheckButtonStyle = {
@@ -185,7 +186,7 @@ const stockCheckButtonStyle = {
   color: "var(--text-primary)",
   fontWeight: 600,
   cursor: "pointer",
-  boxShadow: "none",
+  boxShadow: "none"
 };
 
 function normalizeConsumableName(value) {
@@ -216,7 +217,7 @@ function formatCurrency(value) {
 
   return `£${numeric.toLocaleString(undefined, {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 2
   })}`;
 }
 
@@ -233,7 +234,7 @@ function formatDate(value) {
   return parsed.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
-    year: "numeric",
+    year: "numeric"
   });
 }
 
@@ -274,7 +275,7 @@ function toneToStyles(tone) {
       ...badgeBaseStyle,
       backgroundColor: "rgba(var(--primary-rgb),0.12)",
       color: "var(--text-primary)",
-      border: "none",
+      border: "none"
     };
   }
   if (tone === "warning") {
@@ -282,7 +283,7 @@ function toneToStyles(tone) {
       ...badgeBaseStyle,
       backgroundColor: "rgba(var(--warning-rgb), 0.16)",
       color: "var(--warning-dark)",
-      border: "1px solid rgba(var(--warning-rgb), 0.35)",
+      border: "1px solid rgba(var(--warning-rgb), 0.35)"
     };
   }
 
@@ -290,44 +291,44 @@ function toneToStyles(tone) {
     ...badgeBaseStyle,
     backgroundColor: "rgba(var(--success-rgb), 0.12)",
     color: "var(--success-dark)",
-    border: "1px solid rgba(var(--success-rgb), 0.35)",
+    border: "1px solid rgba(var(--success-rgb), 0.35)"
   };
 }
 
 const duplicateOverlayStyle = {
   ...popupOverlayStyles,
   zIndex: 1300,
-  padding: "16px",
+  padding: "16px"
 };
 
 const duplicateModalStyle = {
   ...popupCardStyles,
   padding: "24px",
   maxWidth: "540px",
-  width: "100%",
+  width: "100%"
 };
 
 const statusBadgeStyles = {
   pending: {
     backgroundColor: "rgba(var(--warning-rgb), 0.16)",
     color: "var(--warning-dark)",
-    border: "1px solid rgba(var(--warning-rgb), 0.35)",
+    border: "1px solid rgba(var(--warning-rgb), 0.35)"
   },
   urgent: {
     backgroundColor: "rgba(var(--primary-rgb),0.12)",
     color: "var(--text-primary)",
-    border: "none",
+    border: "none"
   },
   ordered: {
     backgroundColor: "rgba(var(--success-rgb), 0.12)",
     color: "var(--success-dark)",
-    border: "1px solid rgba(var(--success-rgb), 0.35)",
+    border: "1px solid rgba(var(--success-rgb), 0.35)"
   },
   rejected: {
     backgroundColor: "rgba(var(--danger-rgb), 0.12)",
     color: "var(--danger)",
-    border: "1px solid rgba(var(--danger-rgb), 0.35)",
-  },
+    border: "1px solid rgba(var(--danger-rgb), 0.35)"
+  }
 };
 
 function ConsumablesTrackerPage() {
@@ -345,7 +346,7 @@ function ConsumablesTrackerPage() {
     monthSpend: 0,
     projectedSpend: 0,
     monthlyBudget: 0,
-    budgetUpdatedAt: null,
+    budgetUpdatedAt: null
   });
   const [financialLoading, setFinancialLoading] = useState(false);
   const [financialError, setFinancialError] = useState("");
@@ -369,7 +370,7 @@ function ConsumablesTrackerPage() {
     spend: 0,
     quantity: 0,
     orders: 0,
-    suppliers: 0,
+    suppliers: 0
   });
   const [monthlyLogs, setMonthlyLogs] = useState([]);
   const [showStockCheck, setShowStockCheck] = useState(false);
@@ -383,7 +384,7 @@ function ConsumablesTrackerPage() {
     quantity: "",
     unitCost: "",
     supplier: "",
-    orderDate: todayIso,
+    orderDate: todayIso
   });
   const statusNotificationCacheRef = useRef(new Map());
 
@@ -391,25 +392,25 @@ function ConsumablesTrackerPage() {
   const quietLabelColor = "var(--text-secondary)";
   const highlightRowBackground = isDark ? "rgba(var(--accent-purple-rgb),0.22)" : "var(--danger-surface)";
   const tableHeaderColor = "var(--text-secondary)";
-  const accentDashedBorder = isDark
-    ? "1px dashed rgba(var(--accent-purple-rgb),0.35)"
-    : "1px dashed var(--surface-light)";
+  const accentDashedBorder = isDark ?
+  "1px dashed rgba(var(--accent-purple-rgb),0.35)" :
+  "1px dashed var(--surface-light)";
   const themedBudgetInputStyle = useMemo(
     () => ({
       ...budgetInputStyle,
       border: isDark ? "1px solid rgba(var(--accent-purple-rgb),0.45)" : budgetInputStyle.border,
       background: isDark ? "var(--surface-light)" : "var(--surface)",
-      color: "var(--text-primary)",
+      color: "var(--text-primary)"
     }),
     [isDark]
   );
   const themedOrderHistoryContainerStyle = useMemo(
     () => ({
       ...orderHistoryContainerStyle,
-      border: isDark
-        ? "1px solid rgba(var(--accent-purple-rgb),0.25)"
-        : orderHistoryContainerStyle.border,
-      background: isDark ? "var(--surface-light)" : orderHistoryContainerStyle.background,
+      border: isDark ?
+      "1px solid rgba(var(--accent-purple-rgb),0.25)" :
+      orderHistoryContainerStyle.border,
+      background: isDark ? "var(--surface-light)" : orderHistoryContainerStyle.background
     }),
     [isDark]
   );
@@ -422,13 +423,13 @@ function ConsumablesTrackerPage() {
       fontSize: "0.9rem",
       color: mutedTextColor,
       padding: "8px 0",
-      borderBottom: orderHistoryRowBorder,
+      borderBottom: orderHistoryRowBorder
     }),
     [mutedTextColor]
   );
-  const themedOrderHistoryRowBorder = isDark
-    ? "1px solid rgba(var(--accent-purple-rgb),0.2)"
-    : orderHistoryRowBorder;
+  const themedOrderHistoryRowBorder = isDark ?
+  "1px solid rgba(var(--accent-purple-rgb),0.2)" :
+  orderHistoryRowBorder;
   const statusNotificationPendingRef = useRef(new Map());
 
   const closeOrderModal = useCallback(() => {
@@ -445,20 +446,20 @@ function ConsumablesTrackerPage() {
       }
       const lastLog = item.orderHistory?.[0];
       const baseQuantity =
-        lastLog?.quantity ?? item.lastOrderQuantity ?? item.estimatedQuantity ?? "";
+      lastLog?.quantity ?? item.lastOrderQuantity ?? item.estimatedQuantity ?? "";
       const baseUnitCost =
-        lastLog?.unitCost ??
-        (item.unitCost !== undefined && item.unitCost !== null ? item.unitCost : "");
+      lastLog?.unitCost ?? (
+      item.unitCost !== undefined && item.unitCost !== null ? item.unitCost : "");
 
       setOrderModalConsumable(item);
       setOrderForm({
         quantity: baseQuantity !== "" ? String(baseQuantity) : "",
         unitCost:
-          baseUnitCost !== "" && baseUnitCost !== null && baseUnitCost !== undefined
-            ? Number(baseUnitCost).toFixed(2)
-            : "",
+        baseUnitCost !== "" && baseUnitCost !== null && baseUnitCost !== undefined ?
+        Number(baseUnitCost).toFixed(2) :
+        "",
         supplier: lastLog?.supplier ?? item.supplier ?? "",
-        orderDate: todayIso,
+        orderDate: todayIso
       });
       setShowEditForm(false);
       setOrderModalError("");
@@ -528,9 +529,9 @@ function ConsumablesTrackerPage() {
     try {
       const response = await fetch("/api/workshop/consumables/requests");
       if (!response.ok) {
-        const body = await response
-          .json()
-          .catch(() => ({ message: "Unable to load requests." }));
+        const body = await response.
+        json().
+        catch(() => ({ message: "Unable to load requests." }));
         throw new Error(body.message || "Unable to load requests.");
       }
 
@@ -590,13 +591,13 @@ function ConsumablesTrackerPage() {
         const response = await fetch("/api/workshop/consumables/requests", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: requestId, status: "ordered" }),
+          body: JSON.stringify({ id: requestId, status: "ordered" })
         });
 
         if (!response.ok) {
-          const body = await response
-            .json()
-            .catch(() => ({ message: "Unable to update request." }));
+          const body = await response.
+          json().
+          catch(() => ({ message: "Unable to update request." }));
           throw new Error(body.message || "Unable to update request.");
         }
 
@@ -620,16 +621,16 @@ function ConsumablesTrackerPage() {
   const currentYearNumber = useMemo(() => new Date().getFullYear(), []);
   const monthLabel = useMemo(
     () =>
-      new Date(viewYear, viewMonth - 1).toLocaleDateString("en-GB", {
-        month: "long",
-        year: "numeric",
-      }),
+    new Date(viewYear, viewMonth - 1).toLocaleDateString("en-GB", {
+      month: "long",
+      year: "numeric"
+    }),
     [viewMonth, viewYear]
   );
   const canAdvanceToNextMonth = useMemo(
     () =>
-      viewYear < currentYearNumber ||
-      (viewYear === currentYearNumber && viewMonth < currentMonthNumber),
+    viewYear < currentYearNumber ||
+    viewYear === currentYearNumber && viewMonth < currentMonthNumber,
     [viewYear, viewMonth, currentMonthNumber, currentYearNumber]
   );
   const formattedBudgetUpdatedAt = useMemo(() => {
@@ -645,7 +646,7 @@ function ConsumablesTrackerPage() {
       month: "short",
       year: "numeric",
       hour: "2-digit",
-      minute: "2-digit",
+      minute: "2-digit"
     });
   }, [financialSummary.budgetUpdatedAt]);
 
@@ -658,9 +659,9 @@ function ConsumablesTrackerPage() {
         `/api/workshop/consumables/financials?year=${viewYear}&month=${viewMonth}`
       );
       if (!response.ok) {
-        const body = await response
-          .json()
-          .catch(() => ({ message: "Unable to load financial summary." }));
+        const body = await response.
+        json().
+        catch(() => ({ message: "Unable to load financial summary." }));
         throw new Error(body.message || "Unable to load financial summary.");
       }
       const payload = await response.json();
@@ -669,12 +670,12 @@ function ConsumablesTrackerPage() {
       }
 
       const { monthSpend, projectedSpend, monthlyBudget, budgetUpdatedAt } =
-        payload.data || {};
+      payload.data || {};
       setFinancialSummary({
         monthSpend: Number(monthSpend) || 0,
         projectedSpend: Number(projectedSpend) || 0,
         monthlyBudget: Number(monthlyBudget) || 0,
-        budgetUpdatedAt: budgetUpdatedAt || null,
+        budgetUpdatedAt: budgetUpdatedAt || null
       });
     } catch (error) {
       console.error("❌ Failed to load financial summary", error);
@@ -698,9 +699,9 @@ function ConsumablesTrackerPage() {
         `/api/workshop/consumables/logs?year=${viewYear}&month=${viewMonth}`
       );
       if (!response.ok) {
-        const body = await response
-          .json()
-          .catch(() => ({ message: "Unable to load logs." }));
+        const body = await response.
+        json().
+        catch(() => ({ message: "Unable to load logs." }));
         throw new Error(body.message || "Unable to load logs.");
       }
 
@@ -730,11 +731,11 @@ function ConsumablesTrackerPage() {
 
     const channel = supabase.channel("consumables-tracker");
     const tables = [
-      "workshop_consumables",
-      "workshop_consumable_orders",
-      "workshop_consumable_requests",
-      "workshop_consumable_budgets",
-    ];
+    "workshop_consumables",
+    "workshop_consumable_orders",
+    "workshop_consumable_requests",
+    "workshop_consumable_budgets"];
+
     const handleRealtime = () => {
       refreshConsumables();
       fetchTechRequests();
@@ -756,18 +757,18 @@ function ConsumablesTrackerPage() {
       supabase.removeChannel(channel);
     };
   }, [
-    fetchFinancialSummary,
-    fetchMonthlyLogs,
-    fetchTechRequests,
-    isWorkshopManager,
-    refreshConsumables,
-  ]);
+  fetchFinancialSummary,
+  fetchMonthlyLogs,
+  fetchTechRequests,
+  isWorkshopManager,
+  refreshConsumables]
+  );
 
   useEffect(() => {
     if (
-      financialSummary.monthlyBudget !== undefined &&
-      financialSummary.monthlyBudget !== null
-    ) {
+    financialSummary.monthlyBudget !== undefined &&
+    financialSummary.monthlyBudget !== null)
+    {
       setBudgetInput(String(financialSummary.monthlyBudget));
     } else {
       setBudgetInput("");
@@ -804,20 +805,20 @@ function ConsumablesTrackerPage() {
       const response = await fetch("/api/workshop/consumables/financials", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           year: viewYear,
           month: viewMonth,
           budget: parsed,
-          updatedBy: dbUserId,
-        }),
+          updatedBy: dbUserId
+        })
       });
 
       if (!response.ok) {
-        const body = await response
-          .json()
-          .catch(() => ({ message: "Unable to save budget." }));
+        const body = await response.
+        json().
+        catch(() => ({ message: "Unable to save budget." }));
         throw new Error(body.message || "Unable to save budget.");
       }
 
@@ -827,12 +828,12 @@ function ConsumablesTrackerPage() {
       }
 
       const { monthSpend, projectedSpend, monthlyBudget, budgetUpdatedAt } =
-        payload.data || {};
+      payload.data || {};
       setFinancialSummary({
         monthSpend: Number(monthSpend) || 0,
         projectedSpend: Number(projectedSpend) || 0,
         monthlyBudget: Number(monthlyBudget) || 0,
-        budgetUpdatedAt: budgetUpdatedAt || null,
+        budgetUpdatedAt: budgetUpdatedAt || null
       });
       setBudgetSaveMessage("Budget saved.");
     } catch (error) {
@@ -854,14 +855,14 @@ function ConsumablesTrackerPage() {
             name: item.name,
             status: statusLabel,
             nextEstimatedOrderDate: item.nextEstimatedOrderDate,
-            estimatedQuantity: item.estimatedQuantity,
-          }),
+            estimatedQuantity: item.estimatedQuantity
+          })
         });
 
         if (!response.ok) {
-          const errorBody = await response
-            .json()
-            .catch(() => ({ message: "Unable to report status." }));
+          const errorBody = await response.
+          json().
+          catch(() => ({ message: "Unable to report status." }));
           throw new Error(errorBody.message || "Failed to notify the Message Centre.");
         }
       } catch (error) {
@@ -886,13 +887,13 @@ function ConsumablesTrackerPage() {
         }
 
         statusNotificationPendingRef.current.set(item.id, status.label);
-        sendConsumableStatusNotification(item, status.label)
-          .then(() => {
-            statusNotificationCacheRef.current.set(item.id, status.label);
-          })
-          .finally(() => {
-            statusNotificationPendingRef.current.delete(item.id);
-          });
+        sendConsumableStatusNotification(item, status.label).
+        then(() => {
+          statusNotificationCacheRef.current.set(item.id, status.label);
+        }).
+        finally(() => {
+          statusNotificationPendingRef.current.delete(item.id);
+        });
         return;
       }
 
@@ -908,7 +909,7 @@ function ConsumablesTrackerPage() {
       monthSpend,
       projectedSpend,
       monthlyBudget,
-      budgetRemaining: monthlyBudget - monthSpend,
+      budgetRemaining: monthlyBudget - monthSpend
     };
   }, [financialSummary]);
 
@@ -919,15 +920,15 @@ function ConsumablesTrackerPage() {
     }
     return consumables.filter((item) => {
       const candidateValues = [
-        item.name,
-        formatDate(item.lastOrderDate),
-        formatDate(item.nextEstimatedOrderDate),
-        item.supplier,
-        item.unitCost,
-        item.lastOrderTotalValue,
-      ]
-        .filter(Boolean)
-        .map((value) => String(value).toLowerCase());
+      item.name,
+      formatDate(item.lastOrderDate),
+      formatDate(item.nextEstimatedOrderDate),
+      item.supplier,
+      item.unitCost,
+      item.lastOrderTotalValue].
+
+      filter(Boolean).
+      map((value) => String(value).toLowerCase());
 
       return candidateValues.some((value) => value.includes(term));
     });
@@ -948,13 +949,13 @@ function ConsumablesTrackerPage() {
     const lastLog = orderModalConsumable.orderHistory?.[0];
     const payload = {
       quantity:
-        lastLog?.quantity ??
-        orderModalConsumable.lastOrderQuantity ??
-        orderModalConsumable.estimatedQuantity ??
-        0,
+      lastLog?.quantity ??
+      orderModalConsumable.lastOrderQuantity ??
+      orderModalConsumable.estimatedQuantity ??
+      0,
       unitCost: lastLog?.unitCost ?? orderModalConsumable.unitCost ?? 0,
       supplier: lastLog?.supplier ?? orderModalConsumable.supplier ?? "",
-      orderDate: todayIso,
+      orderDate: todayIso
     };
 
     try {
@@ -972,14 +973,14 @@ function ConsumablesTrackerPage() {
       setOrderModalLoading(false);
     }
   }, [
-    closeOrderModal,
-    fetchMonthlyLogs,
-    handleRequestOrdered,
-    orderModalConsumable,
-    pendingRequestOrderId,
-    refreshConsumables,
-    todayIso,
-  ]);
+  closeOrderModal,
+  fetchMonthlyLogs,
+  handleRequestOrdered,
+  orderModalConsumable,
+  pendingRequestOrderId,
+  refreshConsumables,
+  todayIso]
+  );
 
   const handleEditedOrder = useCallback(
     async (event) => {
@@ -995,21 +996,21 @@ function ConsumablesTrackerPage() {
         quantity: Number(orderForm.quantity) || 0,
         unitCost: Number(orderForm.unitCost) || 0,
         supplier: orderForm.supplier?.trim() || "",
-        orderDate: orderForm.orderDate || todayIso,
+        orderDate: orderForm.orderDate || todayIso
       };
 
       try {
-      await addConsumableOrder(orderModalConsumable.id, {
-        ...payload,
-        estimatedQuantityOverride: payload.quantity,
-      });
-      if (pendingRequestOrderId) {
-        await handleRequestOrdered(pendingRequestOrderId);
-        setPendingRequestOrderId(null);
-      }
-      await refreshConsumables();
-      await fetchMonthlyLogs();
-      closeOrderModal();
+        await addConsumableOrder(orderModalConsumable.id, {
+          ...payload,
+          estimatedQuantityOverride: payload.quantity
+        });
+        if (pendingRequestOrderId) {
+          await handleRequestOrdered(pendingRequestOrderId);
+          setPendingRequestOrderId(null);
+        }
+        await refreshConsumables();
+        await fetchMonthlyLogs();
+        closeOrderModal();
       } catch (error) {
         setOrderModalError(error?.message || "Failed to place order.");
       } finally {
@@ -1017,1039 +1018,1039 @@ function ConsumablesTrackerPage() {
       }
     },
     [
-      closeOrderModal,
-      fetchMonthlyLogs,
-      handleRequestOrdered,
-      orderForm,
-      orderModalConsumable,
-      pendingRequestOrderId,
-      refreshConsumables,
-      todayIso,
-    ]
+    closeOrderModal,
+    fetchMonthlyLogs,
+    handleRequestOrdered,
+    orderForm,
+    orderModalConsumable,
+    pendingRequestOrderId,
+    refreshConsumables,
+    todayIso]
+
   );
 
   const previewLogs = orderModalConsumable?.orderHistory?.slice(0, 3) ?? [];
 
   if (!isWorkshopManager) {
-    return (
-      <>
-        <div style={{ padding: "40px", maxWidth: "720px", margin: "0 auto" }}>
-          <div style={{ ...cardStyle, textAlign: "center" }}>
-            <h1 style={{ color: "var(--text-primary)", marginBottom: "16px" }}>
-              Workshop Manager Access Only
-            </h1>
-            <p style={{ marginBottom: "16px", color: mutedTextColor }}>
-              This consumables tracker is limited to workshop management roles. If
-              you believe you should have access please contact the systems
-              administrator.
-            </p>
-            <Link
-              href="/dashboard"
-              style={{
-                display: "inline-block",
-                padding: "10px 18px",
-                borderRadius: "var(--radius-pill)",
-                background: "var(--primary)",
-                color: "var(--surface)",
-                fontWeight: 600,
-                textDecoration: "none",
-              }}
-            >
-              Return to dashboard
-            </Link>
-          </div>
-        </div>
-      </>
-    );
+    return <ConsumablesTrackerPageUi view="section1" cardStyle={cardStyle} Link={Link} mutedTextColor={mutedTextColor} />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   }
 
-  return (
-    <>
-      <div style={containerStyle}>
-        <div style={workspaceShellStyle}>
-          {!orderModalConsumable && showDuplicateModal && potentialDuplicates.length > 0 && (
-            <div style={duplicateOverlayStyle}>
-              <div style={duplicateModalStyle}>
-                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>
-                  Potential Duplicate Consumables
-                </h3>
-                <p style={{ color: mutedTextColor, marginTop: "8px" }}>
-                  We detected items that resolve to the same name when
-                  normalised. They have been grouped into a single record for
-                  this view; please tidy the source data if these should remain
-                  separate.
-                </p>
-                <ul style={{ paddingLeft: "20px", color: mutedTextColor }}>
-                  {potentialDuplicates.map((entry) => (
-                    <li key={entry.normalized} style={{ marginBottom: "6px" }}>
-                      {entry.names.join(" / ")}
-                    </li>
-                  ))}
-                </ul>
-                <div style={{ textAlign: "right" }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowDuplicateModal(false)}
-                    style={{
-                      padding: "10px 16px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "none",
-                      background: "var(--primary)",
-                      color: "var(--surface)",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      boxShadow: "none",
-                    }}
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {showStockCheck && (
-            <StockCheckPopup
-              open={showStockCheck}
-              onClose={() => setShowStockCheck(false)}
-              isManager={isWorkshopManager}
-              technicianId={dbUserId}
-              onRequestsSubmitted={fetchTechRequests}
-            />
-          )}
-          {historyModalConsumable && (
-            <div style={orderModalOverlayStyle}>
-              <div style={historyModalStyle} role="dialog" aria-modal="true">
-                <button
-                  type="button"
-                  onClick={closeHistoryModal}
-                  style={orderModalCloseButtonStyle}
-                  aria-label="Close history modal"
-                >
-                  âœ•
-                </button>
-                <h3 style={{ margin: "0 0 6px", color: "var(--text-primary)" }}>
-                  {historyModalConsumable.name} History
-                </h3>
-                <div style={themedOrderHistoryContainerStyle}>
-                  <div style={orderHistoryHeaderStyle}>
-                    <span>ITEM</span>
-                    <span>QTY</span>
-                    <span>UNIT</span>
-                    <span>TOTAL</span>
-                    <span>SUPPLIER</span>
-                    <span>DATE</span>
-                  </div>
-                  {(historyModalConsumable.orderHistory || []).length === 0 ? (
-                    <p style={{ margin: 0, color: "var(--info)" }}>
-                      No order logs recorded yet.
-                    </p>
-                  ) : (
-                    (historyModalConsumable.orderHistory || []).map((log, logIndex) => {
-                      const isLastLog = logIndex === historyModalConsumable.orderHistory.length - 1;
-                      return (
-                        <div
-                          key={`history-log-${historyModalConsumable.id}-${logIndex}`}
-                          style={{
-                            ...themedOrderHistoryRowStyle,
-                            borderBottom: isLastLog ? "none" : themedOrderHistoryRowBorder,
-                          }}
-                        >
-                          <span>{log.itemName || historyModalConsumable.name}</span>
-                          <span>{log.quantity ? log.quantity.toLocaleString() : "â€”"}</span>
-                          <span>{formatCurrency(log.unitCost)}</span>
-                          <span>{formatCurrency(log.totalCost)}</span>
-                          <span>{log.supplier || "â€”"}</span>
-                          <span>{formatDate(log.date)}</span>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          {orderModalConsumable && (
-            <div style={orderModalOverlayStyle}>
-              <div style={orderModalStyle} role="dialog" aria-modal="true">
-                <button
-                  type="button"
-                  onClick={closeOrderModal}
-                  style={orderModalCloseButtonStyle}
-                  aria-label="Close order modal"
-                >
-                  ✕
-                </button>
-                <h3 style={{ margin: "0 0 6px", color: "var(--text-primary)" }}>
-                  Order {orderModalConsumable.name}
-                </h3>
-                <p style={{ margin: "0 8px 16px", color: mutedTextColor }}>
-                Previous orders (latest three). &ldquo;Same Details&rdquo; will reuse the
-                most recent order, while &ldquo;Edit Details&rdquo; lets you adjust the
-                  quantity, unit cost, supplier, or date before logging a new entry.
-                </p>
-                <div style={themedOrderHistoryContainerStyle}>
-                  <div style={orderHistoryHeaderStyle}>
-                    <span>Item</span>
-                    <span>Qty</span>
-                    <span>Unit</span>
-                    <span>Total</span>
-                    <span>Supplier</span>
-                    <span>Date</span>
-                  </div>
-                  {previewLogs.length === 0 ? (
-                    <p style={{ margin: 0, color: "var(--info)" }}>
-                      No previous orders logged.
-                    </p>
-                  ) : (
-                    previewLogs.map((log, index) => {
-                      const isLastLog = index === previewLogs.length - 1;
-                      return (
-                        <div
-                          key={`modal-log-${index}`}
-                          style={{
-                            ...themedOrderHistoryRowStyle,
-                            borderBottom: isLastLog ? "none" : themedOrderHistoryRowBorder,
-                          }}
-                        >
-                          <span>{log.itemName || orderModalConsumable.name}</span>
-                          <span>
-                            {log.quantity ? log.quantity.toLocaleString() : "—"}
-                          </span>
-                          <span>{formatCurrency(log.unitCost)}</span>
-                          <span>{formatCurrency(log.totalCost)}</span>
-                          <span>{log.supplier || "—"}</span>
-                          <span>{formatDate(log.date)}</span>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "12px",
-                    marginTop: "20px",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={handleSameDetails}
-                    disabled={orderModalLoading}
-                    style={{
-                      ...orderModalButtonStyle,
-                      background: orderModalLoading
-                        ? "rgba(var(--primary-rgb),0.4)"
-                        : "var(--primary)",
-                      color: "var(--surface)",
-                    }}
-                  >
-                    {orderModalLoading ? "Ordering…" : "Same Details"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowEditForm((previous) => !previous)}
-                    style={orderModalSecondaryButtonStyle}
-                  >
-                    {showEditForm ? "Hide Form" : "Edit Details"}
-                  </button>
-                </div>
-                {orderModalError && (
-                  <p style={{ color: "var(--text-primary)", marginTop: "12px" }}>
-                    {orderModalError}
-                  </p>
-                )}
-                {showEditForm && (
-                  <form onSubmit={handleEditedOrder} style={{ marginTop: "16px" }}>
-                    <div style={orderModalFormGroupStyle}>
-                      <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                        Quantity
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={orderForm.quantity}
-                        onChange={handleOrderFormChange("quantity")}
-                        style={orderModalInputStyle}
-                        required
-                      />
-                    </div>
-                    <div style={orderModalFormGroupStyle}>
-                      <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                        Unit Cost (£)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={orderForm.unitCost}
-                        onChange={handleOrderFormChange("unitCost")}
-                        style={orderModalInputStyle}
-                        required
-                      />
-                    </div>
-                    <div style={orderModalFormGroupStyle}>
-                      <label style={{ fontWeight: 600, color: "var(--text-primary)" }}>
-                        Supplier
-                      </label>
-                      <input
-                        type="text"
-                        value={orderForm.supplier}
-                        onChange={handleOrderFormChange("supplier")}
-                        style={orderModalInputStyle}
-                      />
-                    </div>
-                    <div style={orderModalFormGroupStyle}>
-                      <CalendarField
-                        label="Order Date"
-                        value={orderForm.orderDate}
-                        onChange={handleOrderFormChange("orderDate")}
-                        name="orderDate"
-                        id="orderDate"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={orderModalLoading}
-                      style={{
-                        ...orderModalButtonStyle,
-                        width: "100%",
-                        background: orderModalLoading
-                          ? "rgba(var(--primary-rgb),0.4)"
-                          : "var(--primary)",
-                        color: "var(--surface)",
-                      }}
-                    >
-                      {orderModalLoading ? "Submitting…" : "Save Details"}
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
-          )}
-          <div style={mainColumnStyle}>
-            <div style={{ ...cardStyle }}>
-              <div
-                style={{
-                  background: "var(--layer-section-level-1)",
-                  borderRadius: "var(--radius-md)",
-                  border: "none",
-                  padding: "14px",
-                  marginBottom: "12px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "16px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>
-                    <h1 style={{ margin: 0, fontSize: "1.4rem", color: "var(--text-primary)" }}>
-                      Workshop Consumables Tracker
-                    </h1>
-                    <div>
-                      <p style={{ margin: 0, fontSize: "0.8rem", color: quietLabelColor }}>
-                        Budget for {monthLabel}
-                      </p>
-                      <strong style={{ fontSize: "1.4rem", color: "var(--text-primary)" }}>
-                        {financialLoading ? (
-                          <InlineLoading width={90} height={18} label="Loading budget" />
-                        ) : (
-                          formatCurrency(totals.monthlyBudget)
-                        )}
-                      </strong>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowStockCheck(true)}
-                    style={stockCheckButtonStyle}
-                  >
-                    Stock Check
-                  </button>
-                </div>
+  return <ConsumablesTrackerPageUi view="section2" accentDashedBorder={accentDashedBorder} budgetInput={budgetInput} budgetSaveError={budgetSaveError} budgetSaveMessage={budgetSaveMessage} budgetSaving={budgetSaving} CalendarField={CalendarField} canAdvanceToNextMonth={canAdvanceToNextMonth} cardStyle={cardStyle} closeHistoryModal={closeHistoryModal} closeOrderModal={closeOrderModal} consumables={consumables} consumablesError={consumablesError} containerStyle={containerStyle} dbUserId={dbUserId} duplicateModalStyle={duplicateModalStyle} duplicateOverlayStyle={duplicateOverlayStyle} fetchTechRequests={fetchTechRequests} filteredConsumables={filteredConsumables} financialError={financialError} financialLoading={financialLoading} formatCurrency={formatCurrency} formatDate={formatDate} formattedBudgetUpdatedAt={formattedBudgetUpdatedAt} getConsumableStatus={getConsumableStatus} handleBudgetInputChange={handleBudgetInputChange} handleBudgetSave={handleBudgetSave} handleEditedOrder={handleEditedOrder} handleMonthChange={handleMonthChange} handleOrderFormChange={handleOrderFormChange} handleRequestOrder={handleRequestOrder} handleSameDetails={handleSameDetails} highlightRowBackground={highlightRowBackground} historyModalConsumable={historyModalConsumable} historyModalStyle={historyModalStyle} InlineLoading={InlineLoading} isWorkshopManager={isWorkshopManager} loadingConsumables={loadingConsumables} logsError={logsError} logsLoading={logsLoading} logsSummary={logsSummary} mainColumnStyle={mainColumnStyle} monthLabel={monthLabel} monthlyLogs={monthlyLogs} mutedTextColor={mutedTextColor} openHistoryModal={openHistoryModal} openOrderModal={openOrderModal} orderButtonStyle={orderButtonStyle} orderForm={orderForm} orderHistoryHeaderStyle={orderHistoryHeaderStyle} orderingRequestId={orderingRequestId} orderModalButtonStyle={orderModalButtonStyle} orderModalCloseButtonStyle={orderModalCloseButtonStyle} orderModalConsumable={orderModalConsumable} orderModalError={orderModalError} orderModalFormGroupStyle={orderModalFormGroupStyle} orderModalInputStyle={orderModalInputStyle} orderModalLoading={orderModalLoading} orderModalOverlayStyle={orderModalOverlayStyle} orderModalSecondaryButtonStyle={orderModalSecondaryButtonStyle} orderModalStyle={orderModalStyle} potentialDuplicates={potentialDuplicates} previewLogs={previewLogs} quietLabelColor={quietLabelColor} requestsError={requestsError} requestsLoading={requestsLoading} scheduledTableBodyStyle={scheduledTableBodyStyle} SearchBar={SearchBar} searchQuery={searchQuery} sectionTitleStyle={sectionTitleStyle} setSearchQuery={setSearchQuery} setShowDuplicateModal={setShowDuplicateModal} setShowEditForm={setShowEditForm} setShowStockCheck={setShowStockCheck} showDuplicateModal={showDuplicateModal} showEditForm={showEditForm} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} stockCheckButtonStyle={stockCheckButtonStyle} StockCheckPopup={StockCheckPopup} tableHeaderColor={tableHeaderColor} techRequests={techRequests} themedBudgetInputStyle={themedBudgetInputStyle} themedOrderHistoryContainerStyle={themedOrderHistoryContainerStyle} themedOrderHistoryRowBorder={themedOrderHistoryRowBorder} themedOrderHistoryRowStyle={themedOrderHistoryRowStyle} toneToStyles={toneToStyles} totals={totals} workspaceShellStyle={workspaceShellStyle} />;
 
-                <div
-                  style={{
-                    marginTop: "20px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    flexWrap: "wrap",
-                    alignItems: "flex-start",
-                    gap: "12px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleMonthChange(-1)}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: "var(--radius-sm)",
-                        border: "1px solid var(--primary)",
-                        background: "var(--surface)",
-                        color: "var(--text-primary)",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      ← Previous
-                    </button>
-                    <span
-                      style={{
-                        fontWeight: 600,
-                        color: "var(--text-primary)",
-                      }}
-                    >
-                      {monthLabel}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleMonthChange(1)}
-                      disabled={!canAdvanceToNextMonth}
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: "var(--radius-sm)",
-                        border: "1px solid var(--primary)",
-                        background: canAdvanceToNextMonth
-                          ? "var(--surface)"
-                          : "rgba(var(--primary-rgb),0.2)",
-                        color: canAdvanceToNextMonth ? "var(--text-primary)" : "var(--text-primary)",
-                        fontWeight: 600,
-                        cursor: canAdvanceToNextMonth ? "pointer" : "not-allowed",
-                      }}
-                    >
-                      Next →
-                    </button>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                      minWidth: "280px",
-                      flex: "1 1 320px",
-                      maxWidth: "460px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "12px",
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <input
-                        id="monthlyBudget"
-                        type="number"
-                        min="0"
-                        step="50"
-                        value={budgetInput}
-                        onChange={handleBudgetInputChange}
-                        style={{ ...themedBudgetInputStyle, flex: "1 1 180px", minWidth: "160px" }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleBudgetSave}
-                        disabled={budgetSaving || financialLoading}
-                        style={{
-                          ...orderModalButtonStyle,
-                          background: budgetSaving
-                            ? "rgba(var(--primary-rgb),0.4)"
-                            : "var(--primary)",
-                          color: "var(--surface)",
-                          width: "auto",
-                        }}
-                      >
-                        {budgetSaving ? "Saving…" : "Save Budget"}
-                      </button>
-                    </div>
-                    {budgetSaveMessage && (
-                      <p style={{ margin: 0, color: "var(--success-dark)", textAlign: "right" }}>
-                        {budgetSaveMessage}
-                      </p>
-                    )}
-                    {budgetSaveError && (
-                      <p style={{ margin: 0, color: "var(--text-primary)", textAlign: "right" }}>
-                        {budgetSaveError}
-                      </p>
-                    )}
-                    {formattedBudgetUpdatedAt && (
-                      <p style={{ margin: 0, color: mutedTextColor, fontSize: "0.85rem", textAlign: "right" }}>
-                        Last updated {formattedBudgetUpdatedAt}
-                      </p>
-                    )}
-                  </div>
-                  {financialError && (
-                    <p style={{ margin: 0, color: "var(--text-primary)" }}>{financialError}</p>
-                  )}
-                </div>
-              </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  gap: "12px",
-                }}
-              >
-                <h2 style={{ margin: 0, fontSize: "1.3rem", color: "var(--text-primary)" }}>
-                  Monthly Logs
-                </h2>
-              </div>
-              <div
-                style={{
-                  marginTop: "12px",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                  gap: "12px",
-                }}
-              >
-                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
-                  <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Spend</p>
-                  <strong style={{ fontSize: "1.2rem" }}>
-                    {logsLoading ? (
-                      <InlineLoading width={80} height={16} label="Loading spend" />
-                    ) : (
-                      formatCurrency(logsSummary.spend)
-                    )}
-                  </strong>
-                </div>
-                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
-                  <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Quantity</p>
-                  <strong style={{ fontSize: "1.2rem" }}>
-                    {logsLoading ? (
-                      <InlineLoading width={60} height={16} label="Loading quantity" />
-                    ) : (
-                      logsSummary.quantity.toLocaleString()
-                    )}
-                  </strong>
-                </div>
-                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
-                  <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Orders</p>
-                  <strong style={{ fontSize: "1.2rem" }}>
-                    {logsLoading ? (
-                      <InlineLoading width={60} height={16} label="Loading orders" />
-                    ) : (
-                      logsSummary.orders
-                    )}
-                  </strong>
-                </div>
-                <div style={{ ...cardStyle, padding: "12px", boxShadow: "none", border: accentDashedBorder }}>
-                  <p style={{ margin: 0, color: quietLabelColor, fontSize: "0.8rem" }}>Suppliers</p>
-                  <strong style={{ fontSize: "1.2rem" }}>
-                    {logsLoading ? (
-                      <InlineLoading width={60} height={16} label="Loading suppliers" />
-                    ) : (
-                      logsSummary.suppliers
-                    )}
-                  </strong>
-                </div>
-              </div>
-              {logsError && (
-                <p style={{ margin: "12px 0 0", color: "var(--text-primary)" }}>{logsError}</p>
-              )}
-              <div style={{ overflowX: "auto", marginTop: "16px" }}>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "separate",
-                    borderSpacing: "0 12px",
-                  }}
-                >
-                  <thead>
-                    <tr
-                      style={{
-                        textAlign: "left",
-                        color: tableHeaderColor,
-                        fontSize: "0.8rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                      }}
-                    >
-                      <th style={{ padding: "8px" }}>Date</th>
-                      <th style={{ padding: "8px" }}>Item</th>
-                      <th style={{ padding: "8px" }}>Quantity</th>
-                      <th style={{ padding: "8px" }}>Supplier</th>
-                      <th style={{ padding: "8px" }}>Total (£)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {logsLoading ? (
-                      <tr>
-                        <td colSpan={5} style={{ padding: "12px", color: "var(--info)" }}>
-                          Loading logs…
-                        </td>
-                      </tr>
-                    ) : monthlyLogs.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} style={{ padding: "12px", color: "var(--info)" }}>
-                          No log entries recorded for {monthLabel}.
-                        </td>
-                      </tr>
-                    ) : (
-                      monthlyLogs.map((log) => (
-                        <tr
-                          key={`log-${log.id || log.date}-${log.itemName}`}
-                          style={{
-                            background: highlightRowBackground,
-                            borderRadius: "var(--radius-sm)",
-                          }}
-                        >
-                          <td style={{ padding: "12px", color: mutedTextColor }}>
-                            {log.date
-                              ? new Date(log.date).toLocaleDateString("en-GB", {
-                                  day: "2-digit",
-                                  month: "short",
-                                  year: "numeric",
-                                })
-                              : "—"}
-                          </td>
-                          <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)" }}>
-                            {log.itemName || "—"}
-                          </td>
-                          <td style={{ padding: "12px", color: mutedTextColor }}>
-                            {Number(log.quantity || 0).toLocaleString()}
-                          </td>
-                          <td style={{ padding: "12px", color: mutedTextColor }}>
-                            {log.supplier || "—"}
-                          </td>
-                          <td style={{ padding: "12px", color: mutedTextColor }}>
-                            {formatCurrency(log.totalValue)}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
-              <div
-                style={{
-                  marginTop: "20px",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                  gap: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    ...cardStyle,
-                    padding: "16px",
-                    boxShadow: "none",
-                    border: accentDashedBorder,
-                  }}
-                >
-                  <p
-                    style={{ margin: 0, color: quietLabelColor, fontSize: "0.85rem" }}
-                  >
-                    This Month&apos;s Spend
-                  </p>
-                  <h2
-                    style={{
-                      margin: "6px 0 0",
-                      fontSize: "1.4rem",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    {financialLoading ? (
-                      <InlineLoading width={110} height={22} label="Loading month spend" />
-                    ) : (
-                      formatCurrency(totals.monthSpend)
-                    )}
-                  </h2>
-                </div>
-                <div
-                  style={{
-                    ...cardStyle,
-                    padding: "16px",
-                    boxShadow: "none",
-                    border: accentDashedBorder,
-                  }}
-                >
-                  <p
-                    style={{ margin: 0, color: quietLabelColor, fontSize: "0.85rem" }}
-                  >
-                    Projected Spend (All Scheduled Orders)
-                  </p>
-                  <h2
-                    style={{
-                      margin: "6px 0 0",
-                      fontSize: "1.4rem",
-                      color: "var(--text-primary)",
-                    }}
-                  >
-                    {financialLoading ? (
-                      <InlineLoading width={110} height={22} label="Loading projected spend" />
-                    ) : (
-                      formatCurrency(totals.projectedSpend)
-                    )}
-                  </h2>
-                </div>
-                <div
-                  style={{
-                    ...cardStyle,
-                    padding: "16px",
-                    boxShadow: "none",
-                    border: accentDashedBorder,
-                  }}
-                >
-                  <p
-                    style={{ margin: 0, color: quietLabelColor, fontSize: "0.85rem" }}
-                  >
-                    Budget Remaining
-                  </p>
-                  <h2
-                    style={{
-                      margin: "6px 0 0",
-                      fontSize: "1.4rem",
-                      color:
-                        totals.monthSpend > totals.monthlyBudget
-                          ? "var(--text-primary)"
-                          : "var(--success-dark)",
-                    }}
-                  >
-                    {financialLoading ? (
-                      <InlineLoading width={110} height={22} label="Loading budget remaining" />
-                    ) : (
-                      formatCurrency(Math.max(totals.budgetRemaining, -999999))
-                    )}
-                  </h2>
-                </div>
-              </div>
 
-            </div>
 
-            <div style={{ ...cardStyle }}>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  justifyContent: "space-between",
-                  gap: "12px",
-                  alignItems: "center",
-                }}
-              >
-                <h2 style={sectionTitleStyle}>Scheduled Consumables</h2>
-                <div
-                  style={{
-                    minWidth: "220px",
-                    flex: "1 1 auto",
-                    maxWidth: "360px",
-                  }}
-                >
-                  <SearchBar
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    onClear={() => setSearchQuery("")}
-                    placeholder="Search by item, date, cost, supplier…"
-                    style={{
-                      width: "100%",
-                    }}
-                  />
-                </div>
-              </div>
-              <div style={{ overflowX: "auto" }}>
-                <div style={scheduledTableBodyStyle}>
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "separate",
-                      borderSpacing: "0 12px",
-                    }}
-                  >
-                    <thead>
-                    <tr
-                      style={{
-                        textAlign: "left",
-                        color: tableHeaderColor,
-                        fontSize: "0.8rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                      }}
-                    >
-                      <th style={{ padding: "8px" }}>Status</th>
-                      <th style={{ padding: "8px" }}>Item</th>
-                      <th style={{ padding: "8px" }}>Last Ordered</th>
-                      <th style={{ padding: "8px" }}>Next Estimated</th>
-                      <th style={{ padding: "8px" }}>Estimated Qty</th>
-                      <th style={{ padding: "8px" }}>Supplier</th>
-                      <th style={{ padding: "8px" }}>Unit Cost</th>
-                      <th style={{ padding: "8px" }}>Last Order Value</th>
-                      <th style={{ padding: "8px" }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loadingConsumables ? (
-                      <tr>
-                        <td colSpan={8} style={{ padding: "14px", color: "var(--info)" }}>
-                          Loading consumable data…
-                        </td>
-                      </tr>
-                    ) : consumablesError ? (
-                      <tr>
-                        <td colSpan={8} style={{ padding: "14px", color: "var(--text-primary)" }}>
-                          {consumablesError}
-                        </td>
-                      </tr>
-                    ) : consumables.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={8}
-                          style={{ padding: "14px", color: "var(--info)" }}
-                        >
-                          No consumable records found.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredConsumables.map((item) => {
-                        const status = getConsumableStatus(item);
-                        const icon =
-                          status.label === "Overdue"
-                            ? "⚠️"
-                            : status.label === "Not Required"
-                            ? "ℹ️"
-                            : "⏰";
 
-                        return (
-                          <tr
-                            key={`consumable-${item.id}`}
-                            style={{
-                              background: highlightRowBackground,
-                              borderRadius: "var(--radius-sm)",
-                              cursor: "pointer",
-                            }}
-                            onClick={() => openHistoryModal(item)}
-                          >
-                            <td style={{ padding: "12px" }}>
-                              <span style={toneToStyles(status.tone)}>
-                                {icon}
-                                {status.label}
-                              </span>
-                            </td>
-                            <td style={{ padding: "12px" }}>
-                              <strong
-                                style={{ display: "block", color: "var(--text-primary)" }}
-                              >
-                                {item.name}
-                              </strong>
-                            </td>
-                            <td style={{ padding: "12px", color: mutedTextColor }}>
-                              {formatDate(item.lastOrderDate)}
-                            </td>
-                            <td style={{ padding: "12px", color: mutedTextColor }}>
-                              {formatDate(item.nextEstimatedOrderDate)}
-                            </td>
-                            <td style={{ padding: "12px", color: mutedTextColor }}>
-                              {item.estimatedQuantity
-                                ? item.estimatedQuantity.toLocaleString()
-                                : "—"}
-                            </td>
-                            <td style={{ padding: "12px", color: mutedTextColor }}>
-                              {item.supplier || "—"}
-                            </td>
-                            <td style={{ padding: "12px", color: mutedTextColor }}>
-                              {formatCurrency(item.unitCost)}
-                            </td>
-                            <td style={{ padding: "12px", color: mutedTextColor }}>
-                              {formatCurrency(item.lastOrderTotalValue)}
-                            </td>
-                            <td style={{ padding: "12px", color: mutedTextColor }}>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  openOrderModal(item);
-                                }}
-                                style={orderButtonStyle}
-                              >
-                                Order
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
 
-          <div style={{ ...cardStyle, marginTop: "20px" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "12px",
-              }}
-            >
-              <h2 style={{ margin: 0, fontSize: "1.3rem", color: "var(--text-primary)" }}>
-                Requests
-              </h2>
-              <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                {requestsLoading ? (
-                  <InlineLoading width={90} label="Loading requests" />
-                ) : (
-                  `${techRequests.length} requests`
-                )}
-              </span>
-            </div>
-            {requestsError && (
-              <p style={{ margin: "0 0 12px", color: "var(--text-primary)" }}>
-                {requestsError}
-              </p>
-            )}
-            <div style={{ overflowX: "auto" }}>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "separate",
-                  borderSpacing: "0 12px",
-                }}
-              >
-                <thead>
-                  <tr
-                    style={{
-                      textAlign: "left",
-                      color: tableHeaderColor,
-                      fontSize: "0.8rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    <th style={{ padding: "8px" }}>Item</th>
-                    <th style={{ padding: "8px" }}>Quantity</th>
-                    <th style={{ padding: "8px" }}>Technician</th>
-                    <th style={{ padding: "8px" }}>Requested</th>
-                    <th style={{ padding: "8px" }}>Status</th>
-                    <th style={{ padding: "8px" }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {techRequests.map((request) => (
-                    <tr
-                      key={`request-${request.id}`}
-                      style={{
-                        background: highlightRowBackground,
-                        borderRadius: "var(--radius-sm)",
-                      }}
-                    >
-                      <td style={{ padding: "12px", color: mutedTextColor }}>
-                        {request.itemName}
-                      </td>
-                      <td style={{ padding: "12px", color: mutedTextColor }}>
-                        {request.quantity.toLocaleString()}
-                      </td>
-                      <td style={{ padding: "12px", color: mutedTextColor }}>
-                        {request.requestedByName || "—"}
-                      </td>
-                      <td style={{ padding: "12px", color: mutedTextColor }}>
-                        {request.requestedAt
-                          ? new Date(request.requestedAt).toLocaleDateString(
-                              "en-GB",
-                              {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              }
-                            )
-                          : "—"}
-                      </td>
-                      <td style={{ padding: "12px", color: mutedTextColor }}>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "4px 10px",
-                            borderRadius: "var(--radius-pill)",
-                            fontWeight: 600,
-                            fontSize: "var(--text-caption)",
-                            ...(statusBadgeStyles[
-                              request.status === "ordered"
-                                ? "ordered"
-                                : request.status
-                            ] || statusBadgeStyles.pending),
-                          }}
-                        >
-                          {request.status === "ordered"
-                            ? "✅"
-                            : request.status === "urgent"
-                            ? "⏰"
-                            : request.status === "rejected"
-                            ? "✖️"
-                            : "📦"}
-                          {request.status.charAt(0).toUpperCase() +
-                            request.status.slice(1)}
-                        </span>
-                      </td>
-                      <td style={{ padding: "12px" }}>
-                        {request.status === "pending" ? (
-                          <button
-                            type="button"
-                            disabled={orderingRequestId === request.id}
-                            onClick={() => handleRequestOrder(request)}
-                            style={{
-                              ...orderModalButtonStyle,
-                              padding: "6px 14px",
-                              fontSize: "0.9rem",
-                              width: "auto",
-                            }}
-                          >
-                            {orderingRequestId === request.id
-                              ? "Ordering…"
-                              : "Order"}
-                          </button>
-                        ) : request.status === "ordered" ? (
-                          <span style={{ color: "var(--success-dark)", fontWeight: 600 }}>
-                            Ordered
-                          </span>
-                        ) : request.status === "rejected" ? (
-                          <span style={{ color: "var(--danger)", fontWeight: 600 }}>
-                            Rejected
-                          </span>
-                        ) : request.status === "ordered" ? (
-                          <span style={{ color: "var(--success-dark)", fontWeight: 600 }}>
-                            Ordered
-                          </span>
-                        ) : request.status === "rejected" ? (
-                          <span style={{ color: "var(--danger)", fontWeight: 600 }}>
-                            Rejected
-                          </span>
-                        ) : (
-                          <span style={{ color: "var(--success-dark)", fontWeight: 600 }}>
-                            Completed
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 export default ConsumablesTrackerPage;

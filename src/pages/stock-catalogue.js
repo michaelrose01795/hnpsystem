@@ -5,29 +5,30 @@ import { useUser } from "@/context/UserContext";
 import {
   summarizePartsPipeline,
   mapPartStatusToPipelineId,
-  getPipelineStageMeta,
-} from "@/lib/parts/pipeline";
+  getPipelineStageMeta } from
+"@/lib/parts/pipeline";
 import { supabase } from "@/lib/database/supabaseClient";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import StockCataloguePageUi from "@/components/page-ui/stock-catalogue-ui"; // Extracted presentation layer.
 
 const PRE_PICK_OPTIONS = [
-  { value: "", label: "Not assigned" },
-  { value: "service_rack_1", label: "Service Rack 1" },
-  { value: "service_rack_2", label: "Service Rack 2" },
-  { value: "service_rack_3", label: "Service Rack 3" },
-  { value: "service_rack_4", label: "Service Rack 4" },
-  { value: "sales_rack_1", label: "Sales Rack 1 (TODO)" },
-  { value: "sales_rack_2", label: "Sales Rack 2 (TODO)" },
-  { value: "sales_rack_3", label: "Sales Rack 3 (TODO)" },
-  { value: "sales_rack_4", label: "Sales Rack 4 (TODO)" },
-  { value: "stairs_pre_pick", label: "Stairs (Sales Pre-pick)" },
-  { value: "no_pick", label: "No Pick" },
-  { value: "on_order", label: "On Order" },
-];
+{ value: "", label: "Not assigned" },
+{ value: "service_rack_1", label: "Service Rack 1" },
+{ value: "service_rack_2", label: "Service Rack 2" },
+{ value: "service_rack_3", label: "Service Rack 3" },
+{ value: "service_rack_4", label: "Service Rack 4" },
+{ value: "sales_rack_1", label: "Sales Rack 1 (TODO)" },
+{ value: "sales_rack_2", label: "Sales Rack 2 (TODO)" },
+{ value: "sales_rack_3", label: "Sales Rack 3 (TODO)" },
+{ value: "sales_rack_4", label: "Sales Rack 4 (TODO)" },
+{ value: "stairs_pre_pick", label: "Stairs (Sales Pre-pick)" },
+{ value: "no_pick", label: "No Pick" },
+{ value: "on_order", label: "On Order" }];
+
 
 const DEFAULT_DELIVERY_FORM = {
   supplier: "",
@@ -36,7 +37,7 @@ const DEFAULT_DELIVERY_FORM = {
   quantityOrdered: 1,
   quantityReceived: 1,
   unitCost: "",
-  notes: "",
+  notes: ""
 };
 
 const DEFAULT_NEW_PART_FORM = {
@@ -47,23 +48,23 @@ const DEFAULT_NEW_PART_FORM = {
   storageLocation: "",
   unitCost: "",
   unitPrice: "",
-  notes: "",
+  notes: ""
 };
 
-const STORAGE_LOCATION_CODES = Array.from({ length: 26 })
-  .map((_, letterIndex) => {
-    const letter = String.fromCharCode(65 + letterIndex);
-    return Array.from({ length: 10 }).map((__, numberIndex) => `${letter}${numberIndex + 1}`);
-  })
-  .flat();
+const STORAGE_LOCATION_CODES = Array.from({ length: 26 }).
+map((_, letterIndex) => {
+  const letter = String.fromCharCode(65 + letterIndex);
+  return Array.from({ length: 10 }).map((__, numberIndex) => `${letter}${numberIndex + 1}`);
+}).
+flat();
 
 const normaliseLocationInput = (value = "") =>
-  String(value || "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "");
+String(value || "").
+toUpperCase().
+replace(/[^A-Z0-9]/g, "");
 
 const isValidLocationCode = (value = "") =>
-  STORAGE_LOCATION_CODES.includes(normaliseLocationInput(value || ""));
+STORAGE_LOCATION_CODES.includes(normaliseLocationInput(value || ""));
 
 const filterStorageLocations = (search = "") => {
   const term = normaliseLocationInput(search || "");
@@ -74,30 +75,30 @@ const filterStorageLocations = (search = "") => {
 };
 
 const JOB_PART_STATUSES = [
-  "pending",
-  "waiting_authorisation",
-  "awaiting_stock",
-  "on_order",
-  "pre_picked",
-  "stock",
-  "allocated",
-  "picked",
-  "fitted",
-  "cancelled",
-];
+"pending",
+"waiting_authorisation",
+"awaiting_stock",
+"on_order",
+"pre_picked",
+"stock",
+"allocated",
+"picked",
+"fitted",
+"cancelled"];
+
 
 const cardStyle = {
   backgroundColor: "var(--section-card-bg)",
   borderRadius: "var(--section-card-radius)",
   padding: "var(--section-card-padding)",
-  border: "var(--section-card-border)",
+  border: "var(--section-card-border)"
 };
 
 const sectionTitleStyle = {
   fontSize: "var(--text-h3)",
   fontWeight: 600,
   color: "var(--primary)",
-  marginBottom: "12px",
+  marginBottom: "12px"
 };
 
 const buttonStyle = {
@@ -107,19 +108,19 @@ const buttonStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--radius-xs)",
   cursor: "pointer",
-  fontWeight: 600,
+  fontWeight: 600
 };
 
 const secondaryButtonStyle = {
   ...buttonStyle,
   backgroundColor: "var(--surface)",
   color: "var(--primary)",
-  border: "1px solid var(--primary)",
+  border: "1px solid var(--primary)"
 };
 
 const tableStyle = {
   width: "100%",
-  borderCollapse: "collapse",
+  borderCollapse: "collapse"
 };
 
 const STATUS_COLOR_MAP = {
@@ -132,7 +133,7 @@ const STATUS_COLOR_MAP = {
   allocated: { background: "rgba(var(--info-rgb), 0.8)", color: "var(--info-dark)" },
   picked: { background: "rgba(var(--accent-purple-rgb), 0.8)", color: "var(--accent-purple)" },
   fitted: { background: "rgba(var(--success-rgb), 0.8)", color: "var(--info-dark)" },
-  cancelled: { background: "rgba(var(--danger-rgb), 0.8)", color: "var(--danger)" },
+  cancelled: { background: "rgba(var(--danger-rgb), 0.8)", color: "var(--danger)" }
 };
 
 const SOURCE_META = {
@@ -142,11 +143,11 @@ const SOURCE_META = {
   vhc_auto: { label: "VHC Auto-Order", background: "rgba(var(--danger-rgb), 0.15)", color: "var(--danger)" },
   tech_request: { label: "Tech Request", background: "rgba(var(--info-rgb), 0.18)", color: "var(--accent-purple)" },
   parts_workspace: { label: "Manual", background: "rgba(var(--grey-accent-rgb), 0.3)", color: "var(--info-dark)" },
-  manual: { label: "Manual", background: "rgba(var(--grey-accent-rgb), 0.3)", color: "var(--info-dark)" },
+  manual: { label: "Manual", background: "rgba(var(--grey-accent-rgb), 0.3)", color: "var(--info-dark)" }
 };
 
 const formatStatusLabel = (status) =>
-  status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
+status ? status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()) : "Unknown";
 
 const resolveStatusStyles = (status) => STATUS_COLOR_MAP[status] || { background: "rgba(var(--grey-accent-rgb), 0.8)", color: "var(--info-dark)" };
 
@@ -164,22 +165,22 @@ const matchesLinkedJobStatus = (status) => {
   return LINKED_JOB_DISPLAY_STATUSES.has(normalized);
 };
 
-const RequirementBadge = ({ label, background, color }) => (
-  <span
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      padding: "2px 10px",
-      borderRadius: "var(--radius-pill)",
-      fontSize: "var(--text-caption)",
-      fontWeight: 600,
-      background,
-      color,
-    }}
-  >
+const RequirementBadge = ({ label, background, color }) =>
+<span
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "2px 10px",
+    borderRadius: "var(--radius-pill)",
+    fontSize: "var(--text-caption)",
+    fontWeight: 600,
+    background,
+    color
+  }}>
+  
     {label}
-  </span>
-);
+  </span>;
+
 
 function StockCataloguePage() {
   const router = useRouter();
@@ -248,7 +249,7 @@ function StockCataloguePage() {
     part: queryPart,
     search: querySearch,
     newPart: queryNewPart,
-    partName: queryNewPartName,
+    partName: queryNewPartName
   } = router.query || {};
 
   const inventorySearchQueryParam = useMemo(
@@ -264,7 +265,7 @@ function StockCataloguePage() {
     setNewPartForm((prev) => ({
       ...prev,
       partNumber: queryPartNumber ? String(queryPartNumber) : prev.partNumber,
-      name: queryNewPartName ? String(queryNewPartName) : prev.name,
+      name: queryNewPartName ? String(queryNewPartName) : prev.name
     }));
   }, [router.isReady, queryNewPart, queryPartNumber, queryNewPartName]);
 
@@ -279,12 +280,12 @@ function StockCataloguePage() {
     if (!term) {
       return [];
     }
-    return source
-      .filter((part) => {
-        const number = (part.part_number || "").toLowerCase();
-        return number.includes(term);
-      })
-      .slice(0, 3);
+    return source.
+    filter((part) => {
+      const number = (part.part_number || "").toLowerCase();
+      return number.includes(term);
+    }).
+    slice(0, 3);
   }, [deliveryPartSearch, inventory]);
 
   const filteredNewPartLocations = useMemo(() => {
@@ -295,18 +296,18 @@ function StockCataloguePage() {
   const filteredCategories = useMemo(() => {
     if (!categorySearch.trim()) return [];
     const term = categorySearch.trim().toLowerCase();
-    return categories
-      .filter((cat) => cat.name.toLowerCase().includes(term))
-      .slice(0, 3);
+    return categories.
+    filter((cat) => cat.name.toLowerCase().includes(term)).
+    slice(0, 3);
   }, [categorySearch, categories]);
 
 
   const pendingJobParts = useMemo(
     () =>
-      jobParts.filter(
-        (part) =>
-          part.status === "pending" || part.status === "awaiting_stock"
-      ),
+    jobParts.filter(
+      (part) =>
+      part.status === "pending" || part.status === "awaiting_stock"
+    ),
     [jobParts]
   );
 
@@ -322,20 +323,20 @@ function StockCataloguePage() {
   }, [jobParts, partsPipeline.stageMap, selectedPipelineStage]);
 
   const formatCurrency = (value) =>
-    value !== null && value !== undefined
-      ? `£${Number(value).toFixed(2)}`
-      : "£0.00";
+  value !== null && value !== undefined ?
+  `£${Number(value).toFixed(2)}` :
+  "£0.00";
 
   const formatMargin = (cost, price) => {
     const unitCost = Number(cost || 0);
     const unitPrice = Number(price || 0);
     const diff = unitPrice - unitCost;
-    const percent = unitPrice !== 0 ? (diff / unitPrice) * 100 : 0;
+    const percent = unitPrice !== 0 ? diff / unitPrice * 100 : 0;
     return `${formatCurrency(diff)} (${percent.toFixed(0)}%)`;
   };
 
   const formatDateTime = (value) =>
-    value ? new Date(value).toLocaleString(undefined, { hour12: false }) : "—";
+  value ? new Date(value).toLocaleString(undefined, { hour12: false }) : "—";
 
   const fetchInventory = useCallback(async (term = "") => {
     setInventoryLoading(true);
@@ -345,7 +346,7 @@ function StockCataloguePage() {
       if (trimmed.length >= 2) {
         const searchParams = new URLSearchParams({
           search: trimmed,
-          limit: "100",
+          limit: "100"
         });
         const response = await fetch(`/api/parts/catalog?${searchParams.toString()}`);
         const payload = await response.json();
@@ -358,7 +359,7 @@ function StockCataloguePage() {
         const query = new URLSearchParams({
           search: trimmed,
           includeInactive: "false",
-          limit: "100",
+          limit: "100"
         });
         const response = await fetch(`/api/parts/inventory?${query}`);
         const data = await response.json();
@@ -378,10 +379,10 @@ function StockCataloguePage() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("part_categories")
-        .select("id, name, keywords")
-        .order("name", { ascending: true });
+      const { data, error } = await supabase.
+      from("part_categories").
+      select("id, name, keywords").
+      order("name", { ascending: true });
 
       if (error) throw error;
       setCategories(data || []);
@@ -452,18 +453,18 @@ function StockCataloguePage() {
       const query = new URLSearchParams({
         search: String(selectedPart.part_number),
         includeInactive: "true",
-        limit: "25",
+        limit: "25"
       });
       const response = await fetch(`/api/parts/inventory?${query.toString()}`, {
-        signal: controller.signal,
+        signal: controller.signal
       });
       const data = await response.json();
       if (!response.ok || !data?.success || !Array.isArray(data.parts)) return;
 
       const updated = data.parts.find((part) => part.id === selectedPart.id) ||
-        data.parts.find((part) => part.part_number === selectedPart.part_number);
+      data.parts.find((part) => part.part_number === selectedPart.part_number);
       if (updated) {
-        setSelectedPart((prev) => (prev?.id === updated.id ? { ...prev, ...updated } : updated));
+        setSelectedPart((prev) => prev?.id === updated.id ? { ...prev, ...updated } : updated);
       }
     } catch (error) {
       if (error?.name !== "AbortError") {
@@ -529,8 +530,8 @@ function StockCataloguePage() {
           status: "booked",
           origin: "parts_workspace",
           userId: actingUserId,
-          userNumericId: actingUserNumericId,
-        }),
+          userNumericId: actingUserNumericId
+        })
       });
 
       const data = await response.json();
@@ -548,14 +549,14 @@ function StockCataloguePage() {
       setAddToJobSubmitting(false);
     }
   }, [
-    addToJobQuantity,
-    addToJobResult?.id,
-    actingUserId,
-    actingUserNumericId,
-    refreshSelectedPartFromDb,
-    resetAddToJobModal,
-    selectedPart?.id,
-  ]);
+  addToJobQuantity,
+  addToJobResult?.id,
+  actingUserId,
+  actingUserNumericId,
+  refreshSelectedPartFromDb,
+  resetAddToJobModal,
+  selectedPart?.id]
+  );
 
   const refreshJob = useCallback(() => {
     if (jobData?.jobNumber) {
@@ -614,28 +615,28 @@ function StockCataloguePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-useEffect(() => {
-  if (!showDeliveryModal) return;
-  const handler = setTimeout(() => {
-    fetchInventory(deliveryPartSearch.trim());
-  }, 400);
-  return () => clearTimeout(handler);
-}, [deliveryPartSearch, fetchInventory, showDeliveryModal]);
+  useEffect(() => {
+    if (!showDeliveryModal) return;
+    const handler = setTimeout(() => {
+      fetchInventory(deliveryPartSearch.trim());
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [deliveryPartSearch, fetchInventory, showDeliveryModal]);
 
-useEffect(() => {
-  if (!showNewPartForm) return;
-  const detected = detectCategory(newPartForm.name, newPartForm.notes);
-  setDetectedCategory(detected);
-  if (detected && !newPartForm.category) {
-    setNewPartForm((prev) => ({ ...prev, category: detected }));
-  }
-}, [newPartForm.name, newPartForm.notes, detectCategory, showNewPartForm, newPartForm.category]);
+  useEffect(() => {
+    if (!showNewPartForm) return;
+    const detected = detectCategory(newPartForm.name, newPartForm.notes);
+    setDetectedCategory(detected);
+    if (detected && !newPartForm.category) {
+      setNewPartForm((prev) => ({ ...prev, category: detected }));
+    }
+  }, [newPartForm.name, newPartForm.notes, detectCategory, showNewPartForm, newPartForm.category]);
 
-useEffect(() => {
-  if (showNewPartForm) {
-    setNewPartLocationSearch(newPartForm.storageLocation || "");
-  }
-}, [showNewPartForm, newPartForm.storageLocation]);
+  useEffect(() => {
+    if (showNewPartForm) {
+      setNewPartLocationSearch(newPartForm.storageLocation || "");
+    }
+  }, [showNewPartForm, newPartForm.storageLocation]);
 
   const resetDeliveryModal = useCallback(() => {
     setDeliveryForm(DEFAULT_DELIVERY_FORM);
@@ -692,11 +693,11 @@ useEffect(() => {
     if (!trimmed) return;
 
     try {
-      const { data, error } = await supabase
-        .from("part_categories")
-        .insert([{ name: trimmed, keywords: [] }])
-        .select()
-        .single();
+      const { data, error } = await supabase.
+      from("part_categories").
+      insert([{ name: trimmed, keywords: [] }]).
+      select().
+      single();
 
       if (error) throw error;
 
@@ -737,8 +738,8 @@ useEffect(() => {
           category: newPartForm.category || null,
           storageLocation: resolvedLocation,
           unitCost: newPartForm.unitCost ? Number(newPartForm.unitCost) : null,
-          unitPrice: newPartForm.unitPrice ? Number(newPartForm.unitPrice) : null,
-        }),
+          unitPrice: newPartForm.unitPrice ? Number(newPartForm.unitPrice) : null
+        })
       });
 
       const data = await response.json();
@@ -782,14 +783,14 @@ useEffect(() => {
       setNewPartSaving(false);
     }
   }, [
-    actingUserId,
-    actingUserNumericId,
-    fetchInventory,
-    handleDeliveryPartSelection,
-    inventorySearch,
-    newPartForm,
-    newPartLocationSearch,
-  ]);
+  actingUserId,
+  actingUserNumericId,
+  fetchInventory,
+  handleDeliveryPartSelection,
+  inventorySearch,
+  newPartForm,
+  newPartLocationSearch]
+  );
 
   const handleJobPartUpdate = async (jobPartId, updates) => {
     try {
@@ -799,8 +800,8 @@ useEffect(() => {
         body: JSON.stringify({
           ...updates,
           userId: actingUserId,
-          userNumericId: actingUserNumericId,
-        }),
+          userNumericId: actingUserNumericId
+        })
       });
 
       const data = await response.json();
@@ -810,9 +811,9 @@ useEffect(() => {
       }
 
       await Promise.all([
-        refreshJob(),
-        fetchInventory(inventorySearch),
-      ]);
+      refreshJob(),
+      fetchInventory(inventorySearch)]
+      );
     } catch (err) {
       alert(err.message || "Unable to update job part"); // quick feedback
     }
@@ -849,8 +850,8 @@ useEffect(() => {
           reorder_level: parseInt(editedPart.reorder_level) || 0,
           storage_location: editedPart.storage_location,
           service_default_zone: editedPart.service_default_zone,
-          notes: editedPart.notes,
-        }),
+          notes: editedPart.notes
+        })
       });
 
       const data = await response.json();
@@ -862,7 +863,7 @@ useEffect(() => {
       // Update local state
       setSelectedPart(data.part);
       setInventory((prev) =>
-        prev.map((part) => (part.id === data.part.id ? data.part : part))
+      prev.map((part) => part.id === data.part.id ? data.part : part)
       );
       setIsEditMode(false);
       setEditedPart(null);
@@ -896,16 +897,16 @@ useEffect(() => {
           userId: actingUserId,
           userNumericId: actingUserNumericId,
           items: [
-            {
-              partId: deliveryForm.partId,
-              quantityOrdered: deliveryForm.quantityOrdered,
-              quantityReceived: deliveryForm.quantityReceived,
-              unitCost: deliveryForm.unitCost || null,
-              storageLocation: deliveryStorageLocation,
-              notes: deliveryForm.notes || null,
-            },
-          ],
-        }),
+          {
+            partId: deliveryForm.partId,
+            quantityOrdered: deliveryForm.quantityOrdered,
+            quantityReceived: deliveryForm.quantityReceived,
+            unitCost: deliveryForm.unitCost || null,
+            storageLocation: deliveryStorageLocation,
+            notes: deliveryForm.notes || null
+          }]
+
+        })
       });
 
       const data = await response.json();
@@ -917,9 +918,9 @@ useEffect(() => {
       resetDeliveryModal();
 
       await Promise.all([
-        fetchInventory(inventorySearch),
-        refreshJob(),
-      ]);
+      fetchInventory(inventorySearch),
+      refreshJob()]
+      );
     } catch (err) {
       setDeliveryFormError(err.message || "Unable to log delivery");
     }
@@ -932,23 +933,23 @@ useEffect(() => {
       <div
         style={{
           ...popupOverlayStyles,
-          zIndex: 1500,
+          zIndex: 1500
         }}
         onClick={() => {
           setShowAddToJobModal(false);
           resetAddToJobModal();
-        }}
-      >
+        }}>
+        
         <div
           style={{
             ...popupCardStyles,
             width: "min(540px, 92vw)",
             maxHeight: "90vh",
             overflowY: "auto",
-            padding: "24px",
+            padding: "24px"
           }}
-          onClick={(event) => event.stopPropagation()}
-        >
+          onClick={(event) => event.stopPropagation()}>
+          
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
             <h2 style={{ ...sectionTitleStyle, margin: 0 }}>Add part to job</h2>
             <button
@@ -964,9 +965,9 @@ useEffect(() => {
                 fontSize: "var(--text-h3)",
                 cursor: "pointer",
                 color: "var(--text-secondary)",
-                padding: "6px 10px",
-              }}
-            >
+                padding: "6px 10px"
+              }}>
+              
               ×
             </button>
           </div>
@@ -977,9 +978,9 @@ useEffect(() => {
               padding: "12px",
               borderRadius: "var(--radius-sm)",
               border: "none",
-              background: "var(--surface)",
-            }}
-          >
+              background: "var(--surface)"
+            }}>
+            
             <div style={{ fontWeight: 600, color: "var(--primary)" }}>{selectedPart.part_number}</div>
             <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-body)" }}>
               {selectedPart.name || "Unnamed part"}
@@ -1005,9 +1006,9 @@ useEffect(() => {
                     flex: 1,
                     padding: "10px",
                     borderRadius: "var(--radius-xs)",
-                    border: "none",
-                  }}
-                />
+                    border: "none"
+                  }} />
+                
                 <button
                   type="button"
                   onClick={handleAddToJobSearch}
@@ -1016,43 +1017,43 @@ useEffect(() => {
                     ...buttonStyle,
                     padding: "10px 16px",
                     background: addToJobSearching ? "var(--surface-light)" : "var(--primary)",
-                    cursor: addToJobSearching ? "not-allowed" : "pointer",
-                  }}
-                >
+                    cursor: addToJobSearching ? "not-allowed" : "pointer"
+                  }}>
+                  
                   {addToJobSearching ? "Searching..." : "Search"}
                 </button>
               </div>
             </label>
 
-            {addToJobError && (
-              <div style={{ color: "var(--danger)", fontSize: "var(--text-body)", marginBottom: "10px" }}>
+            {addToJobError &&
+            <div style={{ color: "var(--danger)", fontSize: "var(--text-body)", marginBottom: "10px" }}>
                 {addToJobError}
               </div>
-            )}
+            }
 
-            {addToJobResult && (
-              <div
-                style={{
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "12px",
-                  marginBottom: "12px",
-                  background: "var(--surface)",
-                }}
-              >
+            {addToJobResult &&
+            <div
+              style={{
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                padding: "12px",
+                marginBottom: "12px",
+                background: "var(--surface)"
+              }}>
+              
                 <div style={{ fontWeight: 700, color: "var(--primary)" }}>
                   Job #{addToJobResult.jobNumber}
                 </div>
                 <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-body)", marginTop: "4px" }}>
                   {[addToJobResult.reg, addToJobResult.makeModel].filter(Boolean).join(" • ")}
                 </div>
-                {addToJobResult.description && (
-                  <div style={{ color: "var(--info)", fontSize: "var(--text-body-sm)", marginTop: "4px" }}>
+                {addToJobResult.description &&
+              <div style={{ color: "var(--info)", fontSize: "var(--text-body-sm)", marginTop: "4px" }}>
                     {addToJobResult.description}
                   </div>
-                )}
+              }
               </div>
-            )}
+            }
 
             <label style={{ display: "block", marginBottom: "12px" }}>
               <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>Quantity</span>
@@ -1061,15 +1062,15 @@ useEffect(() => {
                 min={1}
                 value={addToJobQuantity}
                 onChange={(event) =>
-                  setAddToJobQuantity(Math.max(1, Number.parseInt(event.target.value, 10) || 1))
+                setAddToJobQuantity(Math.max(1, Number.parseInt(event.target.value, 10) || 1))
                 }
                 style={{
                   width: "120px",
                   padding: "8px",
                   borderRadius: "var(--radius-xs)",
-                  border: "none",
-                }}
-              />
+                  border: "none"
+                }} />
+              
             </label>
 
             <button
@@ -1080,15 +1081,15 @@ useEffect(() => {
                 ...buttonStyle,
                 width: "100%",
                 background: !addToJobResult || addToJobSearching || addToJobSubmitting ? "var(--surface-light)" : "var(--primary)",
-                cursor: !addToJobResult || addToJobSearching || addToJobSubmitting ? "not-allowed" : "pointer",
-              }}
-            >
+                cursor: !addToJobResult || addToJobSearching || addToJobSubmitting ? "not-allowed" : "pointer"
+              }}>
+              
               {addToJobSubmitting ? "Adding..." : "Add part to job"}
             </button>
           </div>
         </div>
-      </div>
-    );
+      </div>);
+
   };
 
   const renderDeliveryModal = () => {
@@ -1098,18 +1099,18 @@ useEffect(() => {
       <div
         style={{
           ...popupOverlayStyles,
-          zIndex: 1500,
-        }}
-      >
+          zIndex: 1500
+        }}>
+        
         <div
           style={{
             ...popupCardStyles,
             width: "min(520px, 90vw)",
             maxHeight: "90vh",
             overflowY: "auto",
-            padding: "28px",
-          }}
-        >
+            padding: "28px"
+          }}>
+          
           <h2 style={{ ...sectionTitleStyle, marginBottom: "16px" }}>Goods In</h2>
 
           <label style={{ display: "block", marginBottom: "12px" }}>
@@ -1120,16 +1121,16 @@ useEffect(() => {
               type="text"
               value={deliveryForm.supplier}
               onChange={(event) =>
-                setDeliveryForm((prev) => ({ ...prev, supplier: event.target.value }))
+              setDeliveryForm((prev) => ({ ...prev, supplier: event.target.value }))
               }
               placeholder="E.g. TPS, Euro Car Parts"
               style={{
                 width: "100%",
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "none",
-              }}
-            />
+                border: "none"
+              }} />
+            
           </label>
 
           <label style={{ display: "block", marginBottom: "12px" }}>
@@ -1140,19 +1141,19 @@ useEffect(() => {
               type="text"
               value={deliveryForm.orderReference}
               onChange={(event) =>
-                setDeliveryForm((prev) => ({
-                  ...prev,
-                  orderReference: event.target.value,
-                }))
+              setDeliveryForm((prev) => ({
+                ...prev,
+                orderReference: event.target.value
+              }))
               }
               placeholder="Supplier order number"
               style={{
                 width: "100%",
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "none",
-              }}
-            />
+                border: "none"
+              }} />
+            
           </label>
 
           <div style={{ marginBottom: "12px" }}>
@@ -1168,71 +1169,71 @@ useEffect(() => {
                 width: "100%",
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
+                border: "none"
+              }} />
+            
+            {deliveryPartSearch.trim() &&
+            <div
+              style={{
                 border: "none",
-              }}
-            />
-            {deliveryPartSearch.trim() && (
-              <div
-                style={{
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  marginTop: "8px",
-                  maxHeight: "180px",
-                  overflowY: "auto",
-                }}
-              >
-                {filteredDeliveryParts.length === 0 ? (
-                  <div style={{ padding: "12px", color: "var(--info)" }}>
+                borderRadius: "var(--radius-sm)",
+                marginTop: "8px",
+                maxHeight: "180px",
+                overflowY: "auto"
+              }}>
+              
+                {filteredDeliveryParts.length === 0 ?
+              <div style={{ padding: "12px", color: "var(--info)" }}>
                     {inventoryLoading ? "Loading inventory…" : "No matching parts"}
-                  </div>
-                ) : (
-                  filteredDeliveryParts.map((part) => {
-                    const isSelected = part.id === deliveryForm.partId;
-                    return (
-                      <button
-                        key={part.id}
-                        type="button"
-                        onClick={() => handleDeliveryPartSelection(part)}
-                        style={{
-                          width: "100%",
-                          textAlign: "left",
-                          padding: "10px 12px",
-                          border: "none",
-                          borderBottom: "1px solid var(--surface-light)",
-                          background: isSelected ? "var(--surface-light)" : "transparent",
-                          cursor: "pointer",
-                        }}
-                      >
+                  </div> :
+
+              filteredDeliveryParts.map((part) => {
+                const isSelected = part.id === deliveryForm.partId;
+                return (
+                  <button
+                    key={part.id}
+                    type="button"
+                    onClick={() => handleDeliveryPartSelection(part)}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "10px 12px",
+                      border: "none",
+                      borderBottom: "1px solid var(--surface-light)",
+                      background: isSelected ? "var(--surface-light)" : "transparent",
+                      cursor: "pointer"
+                    }}>
+                    
                         <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
                           {part.part_number || "—"}
                         </div>
                         <div style={{ fontSize: "var(--text-body-sm)", color: "var(--info-dark)" }}>
                           {part.name || "Unnamed part"}
                         </div>
-                      </button>
-                    );
-                  })
-                )}
+                      </button>);
+
+              })
+              }
               </div>
-            )}
-            {deliveryForm.partId && selectedDeliveryPart && (
-              <div style={{ marginTop: "8px", fontSize: "var(--text-body-sm)", color: "var(--accent-purple)" }}>
+            }
+            {deliveryForm.partId && selectedDeliveryPart &&
+            <div style={{ marginTop: "8px", fontSize: "var(--text-body-sm)", color: "var(--accent-purple)" }}>
                 Selected: {selectedDeliveryPart.part_number} · {selectedDeliveryPart.name}{" "}
                 <button
-                  type="button"
-                  onClick={() => handleDeliveryPartSelection(null)}
-                  style={{
-                    border: "none",
-                    background: "transparent",
-                    color: "var(--danger)",
-                    cursor: "pointer",
-                    fontWeight: 600,
-                  }}
-                >
+                type="button"
+                onClick={() => handleDeliveryPartSelection(null)}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--danger)",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}>
+                
                   Clear
                 </button>
               </div>
-            )}
+            }
           </div>
 
           <button
@@ -1244,22 +1245,22 @@ useEffect(() => {
             style={{
               ...secondaryButtonStyle,
               width: "100%",
-              marginBottom: "12px",
-            }}
-          >
+              marginBottom: "12px"
+            }}>
+            
             {showNewPartForm ? "Close" : "Add New Part"}
           </button>
 
-          {showNewPartForm && (
-            <div
-              style={{
-                border: "none",
-                borderRadius: "var(--radius-sm)",
-                padding: "16px",
-                marginBottom: "12px",
-                background: "var(--surface)",
-              }}
-            >
+          {showNewPartForm &&
+          <div
+            style={{
+              border: "none",
+              borderRadius: "var(--radius-sm)",
+              padding: "16px",
+              marginBottom: "12px",
+              background: "var(--surface)"
+            }}>
+            
               <label style={{ display: "block", marginBottom: "10px" }}>
                 <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                   Paste Bulk Data
@@ -1268,38 +1269,38 @@ useEffect(() => {
                   Paste one part per line with 8 fields: Order Ref, Part Number, Name, Supplier, Location, Cost Price, Sell Price, Quantity
                 </p>
                 <textarea
-                  value={newPartForm.notes}
-                  onChange={(event) => {
-                    const text = event.target.value;
-                    setNewPartForm((prev) => ({ ...prev, notes: text }));
+                value={newPartForm.notes}
+                onChange={(event) => {
+                  const text = event.target.value;
+                  setNewPartForm((prev) => ({ ...prev, notes: text }));
 
-                    // Auto-parse and fill fields from pasted data
-                    const lines = text.trim().split("\n").filter(l => l.trim());
-                    if (lines.length >= 8) {
-                      setNewPartForm((prev) => ({
-                        ...prev,
-                        partNumber: lines[1]?.trim() || prev.partNumber,
-                        name: lines[2]?.trim() || prev.name,
-                        supplier: lines[3]?.trim() || prev.supplier,
-                        storageLocation: lines[4]?.trim() || prev.storageLocation,
-                        unitCost: lines[5]?.replace(/[£$]/g, "").trim() || prev.unitCost,
-                        unitPrice: lines[6]?.replace(/[£$]/g, "").trim() || prev.unitPrice,
-                      }));
-                      setNewPartLocationSearch(lines[4]?.trim() || "");
-                    }
-                  }}
-                  placeholder={`Example:\nORD001\nOILF1\nOil Filter\nEuro Car Parts\nA1\n£4.00\n£9.99\n10`}
-                  rows={8}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    resize: "vertical",
-                    fontFamily: "monospace",
-                    fontSize: "var(--text-caption)",
-                  }}
-                />
+                  // Auto-parse and fill fields from pasted data
+                  const lines = text.trim().split("\n").filter((l) => l.trim());
+                  if (lines.length >= 8) {
+                    setNewPartForm((prev) => ({
+                      ...prev,
+                      partNumber: lines[1]?.trim() || prev.partNumber,
+                      name: lines[2]?.trim() || prev.name,
+                      supplier: lines[3]?.trim() || prev.supplier,
+                      storageLocation: lines[4]?.trim() || prev.storageLocation,
+                      unitCost: lines[5]?.replace(/[£$]/g, "").trim() || prev.unitCost,
+                      unitPrice: lines[6]?.replace(/[£$]/g, "").trim() || prev.unitPrice
+                    }));
+                    setNewPartLocationSearch(lines[4]?.trim() || "");
+                  }
+                }}
+                placeholder={`Example:\nORD001\nOILF1\nOil Filter\nEuro Car Parts\nA1\n£4.00\n£9.99\n10`}
+                rows={8}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: "none",
+                  resize: "vertical",
+                  fontFamily: "monospace",
+                  fontSize: "var(--text-caption)"
+                }} />
+              
               </label>
 
               <label style={{ display: "block", marginBottom: "10px" }}>
@@ -1307,19 +1308,19 @@ useEffect(() => {
                   Part Number
                 </span>
                 <input
-                  type="text"
-                  value={newPartForm.partNumber}
-                  onChange={(event) =>
-                    setNewPartForm((prev) => ({ ...prev, partNumber: event.target.value }))
-                  }
-                  placeholder="e.g. 03C109244"
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                  }}
-                />
+                type="text"
+                value={newPartForm.partNumber}
+                onChange={(event) =>
+                setNewPartForm((prev) => ({ ...prev, partNumber: event.target.value }))
+                }
+                placeholder="e.g. 03C109244"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: "none"
+                }} />
+              
               </label>
 
               <label style={{ display: "block", marginBottom: "10px" }}>
@@ -1327,19 +1328,19 @@ useEffect(() => {
                   Part Name
                 </span>
                 <input
-                  type="text"
-                  value={newPartForm.name}
-                  onChange={(event) =>
-                    setNewPartForm((prev) => ({ ...prev, name: event.target.value }))
-                  }
-                  placeholder="e.g. Timing belt kit"
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                  }}
-                />
+                type="text"
+                value={newPartForm.name}
+                onChange={(event) =>
+                setNewPartForm((prev) => ({ ...prev, name: event.target.value }))
+                }
+                placeholder="e.g. Timing belt kit"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: "none"
+                }} />
+              
               </label>
 
               <div style={{ marginBottom: "10px" }}>
@@ -1347,318 +1348,318 @@ useEffect(() => {
                   Category {detectedCategory && <span style={{ color: "var(--accent-purple)", fontWeight: 500, fontSize: "var(--text-body-sm)" }}>(Auto-detected: {detectedCategory})</span>}
                 </span>
                 <input
-                  type="text"
-                  value={categorySearch || newPartForm.category}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setCategorySearch(value);
-                    if (!value.trim()) {
-                      setNewPartForm((prev) => ({ ...prev, category: "" }));
+                type="text"
+                value={categorySearch || newPartForm.category}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCategorySearch(value);
+                  if (!value.trim()) {
+                    setNewPartForm((prev) => ({ ...prev, category: "" }));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && categorySearch.trim()) {
+                    e.preventDefault();
+                    const exactMatch = categories.find(
+                      (cat) => cat.name.toLowerCase() === categorySearch.trim().toLowerCase()
+                    );
+                    if (exactMatch) {
+                      handleCategorySelect(exactMatch.name);
+                    } else {
+                      const trimmedCat = categorySearch.trim();
+                      setConfirmDialog({
+                        message: `Category "${trimmedCat}" doesn't exist. Create it?`,
+                        onConfirm: () => {
+                          setConfirmDialog(null);
+                          handleCreateCategory(trimmedCat);
+                        }
+                      });
                     }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && categorySearch.trim()) {
-                      e.preventDefault();
-                      const exactMatch = categories.find(
-                        (cat) => cat.name.toLowerCase() === categorySearch.trim().toLowerCase()
-                      );
-                      if (exactMatch) {
-                        handleCategorySelect(exactMatch.name);
-                      } else {
-                        const trimmedCat = categorySearch.trim();
-                        setConfirmDialog({
-                          message: `Category "${trimmedCat}" doesn't exist. Create it?`,
-                          onConfirm: () => {
-                            setConfirmDialog(null);
-                            handleCreateCategory(trimmedCat);
-                          },
-                        });
-                      }
-                    }
-                  }}
-                  placeholder="Type to search or create new category"
+                  }
+                }}
+                placeholder="Type to search or create new category"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  borderRadius: "var(--radius-xs)",
+                  border: "none"
+                }} />
+              
+                {categorySearch.trim() &&
+              <div
+                style={{
+                  border: "none",
+                  borderRadius: "var(--radius-sm)",
+                  marginTop: "6px",
+                  maxHeight: "120px",
+                  overflowY: "auto"
+                }}>
+                
+                    {filteredCategories.length === 0 ?
+                <button
+                  type="button"
+                  onClick={() => handleCreateCategory(categorySearch.trim())}
                   style={{
                     width: "100%",
-                    padding: "10px",
-                    borderRadius: "var(--radius-xs)",
+                    textAlign: "left",
+                    padding: "8px 10px",
                     border: "none",
-                  }}
-                />
-                {categorySearch.trim() && (
-                  <div
-                    style={{
-                      border: "none",
-                      borderRadius: "var(--radius-sm)",
-                      marginTop: "6px",
-                      maxHeight: "120px",
-                      overflowY: "auto",
-                    }}
-                  >
-                    {filteredCategories.length === 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => handleCreateCategory(categorySearch.trim())}
-                        style={{
-                          width: "100%",
-                          textAlign: "left",
-                          padding: "8px 10px",
-                          border: "none",
-                          background: "var(--accent-purple)",
-                          color: "white",
-                          cursor: "pointer",
-                          fontWeight: 600,
-                        }}
-                      >
+                    background: "var(--accent-purple)",
+                    color: "white",
+                    cursor: "pointer",
+                    fontWeight: 600
+                  }}>
+                  
                         + Create "{categorySearch.trim()}"
-                      </button>
-                    ) : (
-                      filteredCategories.map((cat) => (
-                        <button
-                          type="button"
-                          key={cat.id}
-                          onClick={() => handleCategorySelect(cat.name)}
-                          style={{
-                            width: "100%",
-                            textAlign: "left",
-                            padding: "6px 10px",
-                            border: "none",
-                            borderBottom: "1px solid var(--surface-light)",
-                            background: cat.name === newPartForm.category ? "var(--surface-light)" : "transparent",
-                            cursor: "pointer",
-                            fontWeight: cat.name === newPartForm.category ? 700 : 500,
-                          }}
-                        >
+                      </button> :
+
+                filteredCategories.map((cat) =>
+                <button
+                  type="button"
+                  key={cat.id}
+                  onClick={() => handleCategorySelect(cat.name)}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "6px 10px",
+                    border: "none",
+                    borderBottom: "1px solid var(--surface-light)",
+                    background: cat.name === newPartForm.category ? "var(--surface-light)" : "transparent",
+                    cursor: "pointer",
+                    fontWeight: cat.name === newPartForm.category ? 700 : 500
+                  }}>
+                  
                           {cat.name}
                         </button>
-                      ))
-                    )}
+                )
+                }
                   </div>
-                )}
-                {newPartForm.category && (
-                  <p style={{ marginTop: "4px", fontSize: "var(--text-body-sm)", color: "var(--accent-purple)" }}>
+              }
+                {newPartForm.category &&
+              <p style={{ marginTop: "4px", fontSize: "var(--text-body-sm)", color: "var(--accent-purple)" }}>
                     Selected: {newPartForm.category}{" "}
                     <button
-                      type="button"
-                      onClick={() => {
-                        setNewPartForm((prev) => ({ ...prev, category: "" }));
-                        setCategorySearch("");
-                      }}
-                      style={{
-                        border: "none",
-                        background: "transparent",
-                        color: "var(--danger)",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        fontSize: "var(--text-body-sm)",
-                      }}
-                    >
+                  type="button"
+                  onClick={() => {
+                    setNewPartForm((prev) => ({ ...prev, category: "" }));
+                    setCategorySearch("");
+                  }}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--danger)",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    fontSize: "var(--text-body-sm)"
+                  }}>
+                  
                       Clear
                     </button>
                   </p>
-                )}
+              }
               </div>
 
               <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                  gap: "10px",
-                  marginBottom: "10px",
-                }}
-              >
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gap: "10px",
+                marginBottom: "10px"
+              }}>
+              
                 <label style={{ display: "block" }}>
                   <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                     Supplier
                   </span>
                   <input
-                    type="text"
-                    value={newPartForm.supplier}
-                    onChange={(event) =>
-                      setNewPartForm((prev) => ({ ...prev, supplier: event.target.value }))
-                    }
-                    placeholder="Optional"
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                    }}
-                  />
+                  type="text"
+                  value={newPartForm.supplier}
+                  onChange={(event) =>
+                  setNewPartForm((prev) => ({ ...prev, supplier: event.target.value }))
+                  }
+                  placeholder="Optional"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "var(--radius-xs)",
+                    border: "none"
+                  }} />
+                
                 </label>
                 <label style={{ display: "block" }}>
                   <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                     Storage Location
                   </span>
                   <input
-                    type="text"
-                    value={newPartLocationSearch}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setNewPartLocationSearch(value);
-                      const normalised = normaliseLocationInput(value);
-                      if (isValidLocationCode(normalised)) {
-                        setNewPartForm((prev) => ({
-                          ...prev,
-                          storageLocation: normalised,
-                        }));
-                      } else if (!value.trim()) {
-                        setNewPartForm((prev) => ({ ...prev, storageLocation: "" }));
-                      }
-                    }}
-                    placeholder="Search (e.g. B2)"
+                  type="text"
+                  value={newPartLocationSearch}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setNewPartLocationSearch(value);
+                    const normalised = normaliseLocationInput(value);
+                    if (isValidLocationCode(normalised)) {
+                      setNewPartForm((prev) => ({
+                        ...prev,
+                        storageLocation: normalised
+                      }));
+                    } else if (!value.trim()) {
+                      setNewPartForm((prev) => ({ ...prev, storageLocation: "" }));
+                    }
+                  }}
+                  placeholder="Search (e.g. B2)"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "var(--radius-xs)",
+                    border: "none"
+                  }} />
+                
+                  {newPartLocationSearch.trim() &&
+                <div
+                  style={{
+                    border: "none",
+                    borderRadius: "var(--radius-sm)",
+                    marginTop: "6px",
+                    maxHeight: "120px",
+                    overflowY: "auto"
+                  }}>
+                  
+                      {filteredNewPartLocations.length === 0 ?
+                  <div style={{ padding: "8px", color: "var(--info)" }}>No matches</div> :
+
+                  filteredNewPartLocations.map((code) =>
+                  <button
+                    type="button"
+                    key={code}
+                    onClick={() => handleNewPartLocationSelect(code)}
                     style={{
                       width: "100%",
-                      padding: "10px",
-                      borderRadius: "var(--radius-xs)",
+                      textAlign: "left",
+                      padding: "6px 10px",
                       border: "none",
-                    }}
-                  />
-                  {newPartLocationSearch.trim() && (
-                    <div
-                      style={{
-                        border: "none",
-                        borderRadius: "var(--radius-sm)",
-                        marginTop: "6px",
-                        maxHeight: "120px",
-                        overflowY: "auto",
-                      }}
-                    >
-                      {filteredNewPartLocations.length === 0 ? (
-                        <div style={{ padding: "8px", color: "var(--info)" }}>No matches</div>
-                      ) : (
-                        filteredNewPartLocations.map((code) => (
-                          <button
-                            type="button"
-                            key={code}
-                            onClick={() => handleNewPartLocationSelect(code)}
-                            style={{
-                              width: "100%",
-                              textAlign: "left",
-                              padding: "6px 10px",
-                              border: "none",
-                              borderBottom: "1px solid var(--surface-light)",
-                              background:
-                                code === newPartForm.storageLocation
-                                  ? "var(--surface-light)"
-                                  : "transparent",
-                              cursor: "pointer",
-                              fontWeight: code === newPartForm.storageLocation ? 700 : 500,
-                            }}
-                          >
+                      borderBottom: "1px solid var(--surface-light)",
+                      background:
+                      code === newPartForm.storageLocation ?
+                      "var(--surface-light)" :
+                      "transparent",
+                      cursor: "pointer",
+                      fontWeight: code === newPartForm.storageLocation ? 700 : 500
+                    }}>
+                    
                             {code}
                           </button>
-                        ))
-                      )}
+                  )
+                  }
                     </div>
-                  )}
-                  {newPartForm.storageLocation && (
-                    <p style={{ marginTop: "4px", fontSize: "var(--text-body-sm)", color: "var(--accent-purple)" }}>
+                }
+                  {newPartForm.storageLocation &&
+                <p style={{ marginTop: "4px", fontSize: "var(--text-body-sm)", color: "var(--accent-purple)" }}>
                       Selected: {newPartForm.storageLocation}
                     </p>
-                  )}
+                }
                 </label>
               </div>
 
               <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                  gap: "10px",
-                }}
-              >
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gap: "10px"
+              }}>
+              
                 <label style={{ display: "block" }}>
                   <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                     Unit Cost
                   </span>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newPartForm.unitCost}
-                    onChange={(event) =>
-                      setNewPartForm((prev) => ({ ...prev, unitCost: event.target.value }))
-                    }
-                    placeholder="Optional"
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                    }}
-                  />
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newPartForm.unitCost}
+                  onChange={(event) =>
+                  setNewPartForm((prev) => ({ ...prev, unitCost: event.target.value }))
+                  }
+                  placeholder="Optional"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "var(--radius-xs)",
+                    border: "none"
+                  }} />
+                
                 </label>
                 <label style={{ display: "block" }}>
                   <span style={{ display: "block", fontWeight: 600, marginBottom: 4 }}>
                     Unit Price
                   </span>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={newPartForm.unitPrice}
-                    onChange={(event) =>
-                      setNewPartForm((prev) => ({ ...prev, unitPrice: event.target.value }))
-                    }
-                    placeholder="Optional"
-                    style={{
-                      width: "100%",
-                      padding: "10px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                    }}
-                  />
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newPartForm.unitPrice}
+                  onChange={(event) =>
+                  setNewPartForm((prev) => ({ ...prev, unitPrice: event.target.value }))
+                  }
+                  placeholder="Optional"
+                  style={{
+                    width: "100%",
+                    padding: "10px",
+                    borderRadius: "var(--radius-xs)",
+                    border: "none"
+                  }} />
+                
                 </label>
               </div>
 
-              {newPartFormError && (
-                <div
-                  style={{
-                    marginTop: "12px",
-                    padding: "12px",
-                    borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--danger)",
-                    background: "rgba(var(--danger-rgb), 0.08)",
-                    color: "var(--danger)",
-                    fontWeight: 600,
-                  }}
-                >
+              {newPartFormError &&
+            <div
+              style={{
+                marginTop: "12px",
+                padding: "12px",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--danger)",
+                background: "rgba(var(--danger-rgb), 0.08)",
+                color: "var(--danger)",
+                fontWeight: 600
+              }}>
+              
                   {newPartFormError}
                 </div>
-              )}
+            }
 
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "12px" }}>
                 <button
-                  type="button"
-                  onClick={() => {
-                    setShowNewPartForm(false);
-                    setNewPartForm(DEFAULT_NEW_PART_FORM);
-                    setNewPartLocationSearch("");
-                    setNewPartFormError("");
-                  }}
-                  style={secondaryButtonStyle}
-                >
+                type="button"
+                onClick={() => {
+                  setShowNewPartForm(false);
+                  setNewPartForm(DEFAULT_NEW_PART_FORM);
+                  setNewPartLocationSearch("");
+                  setNewPartFormError("");
+                }}
+                style={secondaryButtonStyle}>
+                
                   Close
                 </button>
                 <button
-                  type="button"
-                  onClick={handleCreateNewPart}
-                  style={buttonStyle}
-                  disabled={newPartSaving}
-                >
+                type="button"
+                onClick={handleCreateNewPart}
+                style={buttonStyle}
+                disabled={newPartSaving}>
+                
                   {newPartSaving ? "Saving…" : "Save Part"}
                 </button>
               </div>
             </div>
-          )}
+          }
 
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
               gap: "12px",
-              marginBottom: "12px",
-            }}
-          >
+              marginBottom: "12px"
+            }}>
+            
             <label style={{ display: "block" }}>
               <span style={{ display: "block", fontWeight: 600, marginBottom: 6 }}>
                 Qty Ordered
@@ -1668,18 +1669,18 @@ useEffect(() => {
                 min="0"
                 value={deliveryForm.quantityOrdered}
                 onChange={(event) =>
-                  setDeliveryForm((prev) => ({
-                    ...prev,
-                    quantityOrdered: Math.max(0, Number(event.target.value) || 0),
-                  }))
+                setDeliveryForm((prev) => ({
+                  ...prev,
+                  quantityOrdered: Math.max(0, Number(event.target.value) || 0)
+                }))
                 }
                 style={{
                   width: "100%",
                   padding: "10px",
                   borderRadius: "var(--radius-xs)",
-                  border: "none",
-                }}
-              />
+                  border: "none"
+                }} />
+              
             </label>
 
             <label style={{ display: "block" }}>
@@ -1691,18 +1692,18 @@ useEffect(() => {
                 min="0"
                 value={deliveryForm.quantityReceived}
                 onChange={(event) =>
-                  setDeliveryForm((prev) => ({
-                    ...prev,
-                    quantityReceived: Math.max(0, Number(event.target.value) || 0),
-                  }))
+                setDeliveryForm((prev) => ({
+                  ...prev,
+                  quantityReceived: Math.max(0, Number(event.target.value) || 0)
+                }))
                 }
                 style={{
                   width: "100%",
                   padding: "10px",
                   borderRadius: "var(--radius-xs)",
-                  border: "none",
-                }}
-              />
+                  border: "none"
+                }} />
+              
             </label>
           </div>
 
@@ -1716,19 +1717,19 @@ useEffect(() => {
               step="0.01"
               value={deliveryForm.unitCost}
               onChange={(event) =>
-                setDeliveryForm((prev) => ({
-                  ...prev,
-                  unitCost: event.target.value,
-                }))
+              setDeliveryForm((prev) => ({
+                ...prev,
+                unitCost: event.target.value
+              }))
               }
               placeholder="Enter if known for spending tracking"
               style={{
                 width: "100%",
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
-                border: "none",
-              }}
-            />
+                border: "none"
+              }} />
+            
           </label>
 
           <label style={{ display: "block", marginBottom: "12px" }}>
@@ -1738,7 +1739,7 @@ useEffect(() => {
             <textarea
               value={deliveryForm.notes}
               onChange={(event) =>
-                setDeliveryForm((prev) => ({ ...prev, notes: event.target.value }))
+              setDeliveryForm((prev) => ({ ...prev, notes: event.target.value }))
               }
               rows={3}
               style={{
@@ -1746,16 +1747,16 @@ useEffect(() => {
                 padding: "10px",
                 borderRadius: "var(--radius-xs)",
                 border: "none",
-                resize: "vertical",
-              }}
-            />
+                resize: "vertical"
+              }} />
+            
           </label>
 
-          {deliveryFormError && (
-            <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
+          {deliveryFormError &&
+          <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
               {deliveryFormError}
             </div>
-          )}
+          }
 
           <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
             <button
@@ -1763,8 +1764,8 @@ useEffect(() => {
                 setShowDeliveryModal(false);
                 resetDeliveryModal();
               }}
-              style={secondaryButtonStyle}
-            >
+              style={secondaryButtonStyle}>
+              
               Cancel
             </button>
             <button onClick={handleDeliverySubmit} style={buttonStyle}>
@@ -1772,1338 +1773,1338 @@ useEffect(() => {
             </button>
           </div>
         </div>
-      </div>
-    );
+      </div>);
+
   };
 
-  return (
-    <>
-      <div style={{ padding: "24px", maxWidth: "100%", margin: "0 auto" }}>
-        <div style={{ ...cardStyle, marginBottom: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-            <h2 style={sectionTitleStyle}>Find Job Card</h2>
-            <button
-              onClick={() => setJobCardSectionExpanded(!jobCardSectionExpanded)}
-              style={buttonStyle}
-            >
-              {jobCardSectionExpanded ? "Collapse" : "Search Job"}
-            </button>
-          </div>
+  return <StockCataloguePageUi view="section1" buttonStyle={buttonStyle} cardStyle={cardStyle} ConfirmationDialog={ConfirmationDialog} confirmDialog={confirmDialog} displayedJobParts={displayedJobParts} displayLimit={displayLimit} editedPart={editedPart} filterType={filterType} formatCurrency={formatCurrency} formatDateTime={formatDateTime} formatMargin={formatMargin} formatStatusLabel={formatStatusLabel} getPipelineStageMeta={getPipelineStageMeta} handleCancelEdit={handleCancelEdit} handleEditPart={handleEditPart} handleJobPartUpdate={handleJobPartUpdate} handleSavePart={handleSavePart} inventory={inventory} inventoryError={inventoryError} inventoryLoading={inventoryLoading} inventorySearch={inventorySearch} isEditMode={isEditMode} isPartModalOpen={isPartModalOpen} isSavingPart={isSavingPart} JOB_PART_STATUSES={JOB_PART_STATUSES} jobCardSectionExpanded={jobCardSectionExpanded} jobData={jobData} jobError={jobError} jobLoading={jobLoading} jobParts={jobParts} jobRequests={jobRequests} jobSearch={jobSearch} locationFilter={locationFilter} locationSearchTerm={locationSearchTerm} mapPartStatusToPipelineId={mapPartStatusToPipelineId} matchesLinkedJobStatus={matchesLinkedJobStatus} partsPipeline={partsPipeline} pendingJobParts={pendingJobParts} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} PRE_PICK_OPTIONS={PRE_PICK_OPTIONS} renderAddToJobModal={renderAddToJobModal} renderDeliveryModal={renderDeliveryModal} RequirementBadge={RequirementBadge} resetAddToJobModal={resetAddToJobModal} resolveSourceMeta={resolveSourceMeta} resolveStatusStyles={resolveStatusStyles} SearchBar={SearchBar} searchJob={searchJob} secondaryButtonStyle={secondaryButtonStyle} sectionTitleStyle={sectionTitleStyle} selectedPart={selectedPart} selectedPipelineStage={selectedPipelineStage} setConfirmDialog={setConfirmDialog} setDisplayLimit={setDisplayLimit} setEditedPart={setEditedPart} setFilterType={setFilterType} setInventorySearch={setInventorySearch} setIsEditMode={setIsEditMode} setIsPartModalOpen={setIsPartModalOpen} setJobCardSectionExpanded={setJobCardSectionExpanded} setJobSearch={setJobSearch} setLocationFilter={setLocationFilter} setLocationSearchTerm={setLocationSearchTerm} setSelectedPart={setSelectedPart} setSelectedPipelineStage={setSelectedPipelineStage} setShowAddToJobModal={setShowAddToJobModal} setStatusFilter={setStatusFilter} statusFilter={statusFilter} STORAGE_LOCATION_CODES={STORAGE_LOCATION_CODES} tableStyle={tableStyle} />;
 
-          {jobCardSectionExpanded && (
-            <>
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  searchJob(jobSearch);
-                }}
-                style={{ display: "flex", gap: "12px", marginBottom: "16px" }}
-              >
-                <input
-                  type="text"
-                  placeholder="Job number or registration"
-                  value={jobSearch}
-                  onChange={(event) => setJobSearch(event.target.value)}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                  }}
-                />
-                <button type="submit" style={buttonStyle} disabled={jobLoading}>
-                  {jobLoading ? "Searching..." : "Search"}
-                </button>
-              </form>
 
-              {jobError && (
-                <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
-                  {jobError}
-                </div>
-              )}
 
-              {jobData ? (
-                <>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                      gap: "12px",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        background: "var(--surface-light)",
-                        borderRadius: "var(--radius-sm)",
-                        padding: "14px",
-                        border: "none",
-                      }}
-                    >
-                      <div style={{ fontSize: "var(--text-label)", color: "var(--danger)" }}>JOB</div>
-                      <div style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--primary)" }}>
-                        {jobData.jobNumber}
-                      </div>
-                      <div>{jobData.description || "No description"}</div>
-                    </div>
-                    <div
-                      style={{
-                        background: "var(--surface-light)",
-                        borderRadius: "var(--radius-sm)",
-                        padding: "14px",
-                        border: "none",
-                      }}
-                    >
-                      <div style={{ fontSize: "var(--text-label)", color: "var(--danger)" }}>VEHICLE</div>
-                      <div style={{ fontSize: "var(--text-h3)", fontWeight: 700 }}>{jobData.reg}</div>
-                      <div>{jobData.makeModel || `${jobData.make} ${jobData.model}`}</div>
-                    </div>
-                    <div
-                      style={{
-                        background: "var(--surface-light)",
-                        borderRadius: "var(--radius-sm)",
-                        padding: "14px",
-                        border: "none",
-                      }}
-                    >
-                      <div style={{ fontSize: "var(--text-label)", color: "var(--danger)" }}>STATUS</div>
-                      <div style={{ fontSize: "var(--text-h3)", fontWeight: 700 }}>
-                        {jobData.status}
-                      </div>
-                      <div>{jobData.waitingStatus}</div>
-                    </div>
-                  </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    <h3 style={{ ...sectionTitleStyle, marginBottom: 0 }}>
-                      Parts on this Job
-                    </h3>
-                  </div>
 
-                  {jobParts.length > 0 && (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "10px",
-                        marginBottom: "12px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPipelineStage("all")}
-                        aria-pressed={selectedPipelineStage === "all"}
-                        style={{
-                          borderRadius: "var(--radius-md)",
-                          border: "none",
-                          backgroundColor:
-                            selectedPipelineStage === "all" ? "var(--danger-surface)" : "var(--surface)",
-                          padding: "8px 14px",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-start",
-                          gap: "2px",
-                          cursor: "pointer",
-                          fontWeight: 600,
-                          color: selectedPipelineStage === "all" ? "var(--primary)" : "var(--primary-dark)",
-                        }}
-                      >
-                        <span>All Parts</span>
-                        <small style={{ fontSize: "var(--text-caption)", color: "var(--grey-accent-dark)" }}>
-                          {jobParts.length} line{jobParts.length === 1 ? "" : "s"} total
-                        </small>
-                      </button>
-                      {partsPipeline.stageSummary.map((stage) => (
-                        <button
-                          key={stage.id}
-                          type="button"
-                          onClick={() => setSelectedPipelineStage(stage.id)}
-                          aria-pressed={selectedPipelineStage === stage.id}
-                          style={{
-                            borderRadius: "var(--radius-md)",
-                            border: "none",
-                            backgroundColor:
-                              selectedPipelineStage === stage.id ? "var(--danger-surface)" : "var(--surface)",
-                            padding: "8px 14px",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            gap: "2px",
-                            cursor: "pointer",
-                            fontWeight: 600,
-                            color:
-                              selectedPipelineStage === stage.id ? "var(--primary)" : "var(--primary-dark)",
-                          }}
-                        >
-                          <span>{stage.label}</span>
-                          <small style={{ fontSize: "var(--text-caption)", color: "var(--grey-accent-dark)" }}>
-                            {stage.count} line{stage.count === 1 ? "" : "s"}
-                          </small>
-                        </button>
-                      ))}
-                    </div>
-                  )}
 
-                  {selectedPipelineStage !== "all" && displayedJobParts.length === 0 && (
-                    <div
-                      style={{
-                        background: "var(--warning-surface)",
-                        borderRadius: "var(--radius-sm)",
-                        border: "none",
-                        padding: "10px 14px",
-                        marginBottom: "12px",
-                        color: "var(--danger-dark)",
-                        fontSize: "var(--text-body)",
-                      }}
-                    >
-                      No parts currently staged for{" "}
-                      {getPipelineStageMeta(selectedPipelineStage).label}.
-                    </div>
-                  )}
 
-                  {jobParts.length === 0 ? (
-                    <div
-                      style={{
-                        background: "var(--surface-light)",
-                        border: "1px dashed var(--primary-light)",
-                        borderRadius: "var(--radius-xs)",
-                        padding: "16px",
-                        color: "var(--danger)",
-                        textAlign: "center",
-                      }}
-                    >
-                      No parts linked to this job. Add required parts to get started.
-                    </div>
-                  ) : (
-                    <div style={{ overflowX: "auto" }}>
-                      <table style={tableStyle}>
-                        <thead>
-                          <tr style={{ background: "var(--surface-light)", color: "var(--danger)" }}>
-                            <th style={{ textAlign: "left", padding: "10px" }}>Part</th>
-                            <th style={{ textAlign: "left", padding: "10px" }}>Qty</th>
-                            <th style={{ textAlign: "left", padding: "10px" }}>Stage</th>
-                            <th style={{ textAlign: "left", padding: "10px" }}>Status</th>
-                            <th style={{ textAlign: "left", padding: "10px" }}>Pre-pick</th>
-                            <th style={{ textAlign: "left", padding: "10px" }}>Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {displayedJobParts.map((part) => {
-                            const stageId = mapPartStatusToPipelineId(part.status);
-                            const stageMeta = getPipelineStageMeta(stageId);
-                            return (
-                            <tr key={part.id} style={{ borderBottom: "1px solid var(--surface-light)" }}>
-                              <td style={{ padding: "10px", verticalAlign: "top" }}>
-                                <div style={{ fontWeight: 600 }}>
-                                  {part.part?.part_number} · {part.part?.name}
-                                </div>
-                                <div style={{ fontSize: "var(--text-body-sm)", color: "var(--grey-accent-dark)" }}>
-                                  {part.part?.storage_location || "No bin"} · Stock:{" "}
-                                  {part.part?.qty_in_stock}
-                                </div>
-                                <div style={{ marginTop: "6px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                                  {(() => {
-                                    const meta = resolveSourceMeta(part.origin);
-                                    return (
-                                      <RequirementBadge
-                                        label={meta.label}
-                                        background={meta.background}
-                                        color={meta.color}
-                                      />
-                                    );
-                                  })()}
-                                  {part.vhc_item_id ? (
-                                    <RequirementBadge
-                                      label={`VHC #${part.vhc_item_id}`}
-                                      background="rgba(var(--danger-rgb), 0.18)"
-                                      color="var(--danger)"
-                                    />
-                                  ) : null}
-                                </div>
-                              </td>
-                              <td style={{ padding: "10px", verticalAlign: "top" }}>
-                                <div>Requested: {part.quantity_requested}</div>
-                                <div>Allocated: {part.quantity_allocated}</div>
-                                <div>Fitted: {part.quantity_fitted}</div>
-                                <button
-                                  onClick={() =>
-                                    handleJobPartUpdate(part.id, {
-                                      quantityFitted: part.quantity_allocated,
-                                      status: "fitted",
-                                    })
-                                  }
-                                  style={{
-                                    ...secondaryButtonStyle,
-                                    marginTop: "6px",
-                                    padding: "6px 10px",
-                                    fontSize: "var(--text-label)",
-                                  }}
-                                >
-                                  Mark fitted
-                                </button>
-                              </td>
-                              <td style={{ padding: "10px", verticalAlign: "top" }}>
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "4px 10px",
-                                    borderRadius: "var(--radius-pill)",
-                                    fontSize: "var(--text-label)",
-                                    fontWeight: 600,
-                                    backgroundColor: "var(--surface-light)",
-                                    color: "var(--danger)",
-                                    marginBottom: "6px",
-                                  }}
-                                >
-                                  {stageMeta.label}
-                                </span>
-                                <div style={{ fontSize: "var(--text-caption)", color: "var(--grey-accent-dark)" }}>
-                                  {stageMeta.description}
-                                </div>
-                              </td>
-                              <td style={{ padding: "10px", verticalAlign: "top" }}>
-                                <select
-                                  value={part.status}
-                                  onChange={(event) =>
-                                    handleJobPartUpdate(part.id, {
-                                      status: event.target.value,
-                                    })
-                                  }
-                                  style={{
-                                    width: "170px",
-                                    padding: "8px",
-                                    borderRadius: "var(--radius-xs)",
-                                    border: "none",
-                                  }}
-                                >
-                                  {JOB_PART_STATUSES.map((statusValue) => (
-                                    <option key={statusValue} value={statusValue}>
-                                      {statusValue.replace(/_/g, " ")}
-                                    </option>
-                                  ))}
-                                </select>
-                              </td>
-                              <td style={{ padding: "10px", verticalAlign: "top" }}>
-                                <select
-                                  value={part.pre_pick_location || ""}
-                                  onChange={(event) =>
-                                    handleJobPartUpdate(part.id, {
-                                      prePickLocation: event.target.value,
-                                    })
-                                  }
-                                  style={{
-                                    width: "170px",
-                                    padding: "8px",
-                                    borderRadius: "var(--radius-xs)",
-                                    border: "none",
-                                  }}
-                                >
-                                  {PRE_PICK_OPTIONS.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </select>
-                                <div style={{ marginTop: "8px" }}>
-                                  <button
-                                    onClick={() =>
-                                      handleJobPartUpdate(part.id, { status: "cancelled" })
-                                    }
-                                    style={{
-                                      ...secondaryButtonStyle,
-                                      padding: "6px 10px",
-                                      fontSize: "var(--text-label)",
-                                    }}
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              </td>
-                              <td style={{ padding: "10px", verticalAlign: "top", fontSize: "var(--text-body)" }}>
-                                {part.request_notes || "—"}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
 
-                  {jobRequests.length > 0 && (
-                    <div style={{ marginTop: "20px" }}>
-                      <h4 style={{ ...sectionTitleStyle, marginBottom: "8px" }}>Workshop Requests</h4>
-                      <div style={{ overflowX: "auto" }}>
-                        <table style={{ ...tableStyle, fontSize: "var(--text-body)" }}>
-                          <thead>
-                            <tr style={{ background: "var(--warning-surface)", color: "var(--danger-dark)" }}>
-                              <th style={{ textAlign: "left", padding: "10px" }}>Request</th>
-                              <th style={{ textAlign: "left", padding: "10px" }}>Quantity</th>
-                              <th style={{ textAlign: "left", padding: "10px" }}>Source</th>
-                              <th style={{ textAlign: "left", padding: "10px" }}>Status</th>
-                              <th style={{ textAlign: "left", padding: "10px" }}>Created</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {jobRequests.map((request) => {
-                              const sourceMeta = resolveSourceMeta(request.source);
-                              const statusMeta = resolveStatusStyles(request.status);
-                              return (
-                                <tr key={request.request_id} style={{ borderBottom: "1px solid var(--surface-light)" }}>
-                                  <td style={{ padding: "10px" }}>
-                                    <div style={{ fontWeight: 600 }}>{request.description || "Part request"}</div>
-                                    {request.part ? (
-                                      <div style={{ fontSize: "var(--text-label)", color: "var(--info)" }}>
-                                        Suggested: {request.part.part_number} · {request.part.name}
-                                      </div>
-                                    ) : null}
-                                  </td>
-                                  <td style={{ padding: "10px" }}>{request.quantity || 1}</td>
-                                  <td style={{ padding: "10px" }}>
-                                    <RequirementBadge
-                                      label={sourceMeta.label}
-                                      background={sourceMeta.background}
-                                      color={sourceMeta.color}
-                                    />
-                                  </td>
-                                  <td style={{ padding: "10px" }}>
-                                    <RequirementBadge
-                                      label={formatStatusLabel(request.status)}
-                                      background={statusMeta.background}
-                                      color={statusMeta.color}
-                                    />
-                                  </td>
-                                  <td style={{ padding: "10px" }}>{formatDateTime(request.created_at)}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
 
-                  {pendingJobParts.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: "20px",
-                        padding: "16px",
-                        borderRadius: "var(--radius-xs)",
-                        background: "var(--warning-surface)",
-                        border: "1px solid var(--warning)",
-                        color: "var(--warning-dark)",
-                      }}
-                    >
-                      <strong>{pendingJobParts.length} part(s)</strong> awaiting stock or action for
-                      this VHC. Ensure orders are raised or picked.
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div
-                  style={{
-                    background: "var(--surface-light)",
-                    border: "1px dashed var(--primary-light)",
-                    borderRadius: "var(--radius-xs)",
-                    padding: "16px",
-                    color: "var(--danger)",
-                    textAlign: "center",
-                  }}
-                >
-                  Search a job to view current parts requirements.
-                </div>
-              )}
-            </>
-          )}
-        </div>
 
-        <div style={{ ...cardStyle, marginTop: "20px" }} id="stock-catalogue">
-          <h2 style={sectionTitleStyle}>Stock Catalogue</h2>
 
-          {/* Search and Filter Controls */}
-          <div style={{ display: "flex", gap: "12px", marginBottom: "12px", alignItems: "center" }}>
-            <SearchBar
-              placeholder="Search part number, description, OEM code"
-              value={inventorySearch}
-              onChange={(event) => setInventorySearch(event.target.value)}
-              onClear={() => setInventorySearch("")}
-              style={{
-                flex: 1,
-              }}
-            />
 
-            {/* Two-step filter dropdown */}
-            <div style={{ display: "flex", gap: "8px" }}>
-              <select
-                value={filterType}
-                onChange={(e) => {
-                  setFilterType(e.target.value);
-                  setStatusFilter("all");
-                  setLocationFilter("all");
-                }}
-                style={{
-                  padding: "12px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  background: "var(--layer-section-level-1)",
-                  color: "var(--text-primary)",
-                  fontSize: "var(--text-body)",
-                  minWidth: "140px",
-                }}
-              >
-                <option value="status">Filter by Status</option>
-                <option value="location">Filter by Location</option>
-              </select>
 
-              {filterType === "status" && (
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "var(--radius-xs)",
-                    border: "none",
-                    background: "var(--layer-section-level-1)",
-                    color: "var(--text-primary)",
-                    fontSize: "var(--text-body)",
-                    minWidth: "140px",
-                  }}
-                >
-                  <option value="all">All Status</option>
-                  <option value="low_stock">Low Stock</option>
-                  <option value="in_stock">Good Stock</option>
-                  <option value="high_stock">High Stock</option>
-                  <option value="back_order">Back Order</option>
-                </select>
-              )}
 
-              {filterType === "location" && (
-                <div style={{ position: "relative" }}>
-                  <input
-                    type="text"
-                    placeholder="Search location..."
-                    value={locationSearchTerm}
-                    onChange={(e) => setLocationSearchTerm(e.target.value)}
-                    onFocus={() => { document.getElementById('location-dropdown').style.display = 'block'; }}
-                    style={{
-                      padding: "12px",
-                      borderRadius: "var(--radius-xs)",
-                      border: "none",
-                      background: "var(--layer-section-level-1)",
-                      color: "var(--text-primary)",
-                      fontSize: "var(--text-body)",
-                      minWidth: "140px",
-                      outline: "none",
-                    }}
-                  />
-                  <div
-                    id="location-dropdown"
-                    style={{
-                      display: "none",
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      right: 0,
-                      marginTop: "4px",
-                      background: "var(--surface)",
-                      border: "none",
-                      borderRadius: "var(--radius-xs)",
-                      maxHeight: "300px",
-                      overflowY: "auto",
-                      zIndex: 1000,
-                      boxShadow: "var(--shadow-md)",
-                    }}
-                  >
-                    <div
-                      onClick={() => {
-                        setLocationFilter("all");
-                        setLocationSearchTerm("");
-                        document.getElementById('location-dropdown').style.display = 'none';
-                      }}
-                      style={{
-                        padding: "10px 12px",
-                        cursor: "pointer",
-                        borderBottom: "1px solid var(--surface-light)",
-                        fontWeight: locationFilter === "all" ? 600 : 400,
-                        background: locationFilter === "all" ? "var(--surface-light)" : "transparent",
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-light)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = locationFilter === "all" ? "var(--surface-light)" : "transparent"; }}
-                    >
-                      All Locations
-                    </div>
-                    {STORAGE_LOCATION_CODES
-                      .filter((code) => code.toLowerCase().includes(locationSearchTerm.toLowerCase()))
-                      .map((code) => (
-                        <div
-                          key={code}
-                          onClick={() => {
-                            setLocationFilter(code);
-                            setLocationSearchTerm(code);
-                            document.getElementById('location-dropdown').style.display = 'none';
-                          }}
-                          style={{
-                            padding: "10px 12px",
-                            cursor: "pointer",
-                            fontWeight: locationFilter === code ? 600 : 400,
-                            background: locationFilter === code ? "var(--surface-light)" : "transparent",
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-light)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = locationFilter === code ? "var(--surface-light)" : "transparent"; }}
-                        >
-                          {code}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
 
-          {inventoryError && (
-            <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
-              {inventoryError}
-            </div>
-          )}
 
-          <div style={{ maxHeight: "600px", overflowY: "auto" }}>
-            {inventoryLoading ? (
-              <div style={{ color: "var(--grey-accent-light)" }}>Loading inventory...</div>
-            ) : inventory.length === 0 ? (
-              <div style={{ color: "var(--grey-accent-light)" }}>No parts found. Refine your search.</div>
-            ) : (
-              <>
-                <table style={{ ...tableStyle, fontSize: "var(--text-body)" }}>
-                  <thead>
-                    <tr style={{ background: "var(--surface-light)", color: "var(--danger)" }}>
-                      <th style={{ textAlign: "left", padding: "10px" }}>Part Number</th>
-                      <th style={{ textAlign: "left", padding: "10px" }}>Part Description</th>
-                      <th style={{ textAlign: "left", padding: "10px" }}>Stock Location</th>
-                      <th style={{ textAlign: "right", padding: "10px" }}>In Stock</th>
-                      <th style={{ textAlign: "left", padding: "10px" }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {inventory
-                      .filter((part) => {
-                        // Apply status filter
-                        if (filterType === "status" && statusFilter !== "all") {
-                          if (part.stock_status !== statusFilter) return false;
-                        }
-                        // Apply location filter
-                        if (filterType === "location" && locationFilter !== "all") {
-                          if (part.storage_location !== locationFilter) return false;
-                        }
-                        return true;
-                      })
-                      .slice(0, displayLimit)
-                      .map((part) => (
-                        <tr
-                          key={part.id}
-                          onClick={() => {
-                            setSelectedPart(part);
-                            setIsPartModalOpen(true);
-                          }}
-                          style={{
-                            borderBottom: "1px solid var(--surface-light)",
-                            cursor: "pointer",
-                            transition: "background 0.15s ease",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "var(--surface-light)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "transparent";
-                          }}
-                        >
-                          <td style={{ padding: "10px", fontWeight: 600, color: "var(--primary)" }}>
-                            {part.part_number}
-                          </td>
-                          <td style={{ padding: "10px" }}>{part.name}</td>
-                          <td style={{ padding: "10px", color: "var(--text-secondary)" }}>
-                            {part.storage_location || "—"}
-                          </td>
-                          <td style={{ padding: "10px", textAlign: "right", fontWeight: 600 }}>
-                            {part.qty_in_stock}
-                          </td>
-                          <td style={{ padding: "10px" }}>
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                padding: "4px 10px",
-                                borderRadius: "var(--radius-pill)",
-                                background:
-                                  part.stock_status === "low_stock"
-                                    ? "rgba(var(--warning-rgb), 0.2)"
-                                    : part.stock_status === "back_order"
-                                    ? "rgba(var(--danger-rgb), 0.2)"
-                                    : part.stock_status === "high_stock"
-                                    ? "rgba(var(--success-rgb), 0.2)"
-                                    : "rgba(var(--info-rgb), 0.18)",
-                                color:
-                                  part.stock_status === "low_stock"
-                                    ? "var(--danger-dark)"
-                                    : part.stock_status === "back_order"
-                                    ? "var(--danger)"
-                                    : part.stock_status === "high_stock"
-                                    ? "var(--success-dark)"
-                                    : "var(--info-dark)",
-                                fontSize: "var(--text-caption)",
-                                fontWeight: 600,
-                              }}
-                            >
-                              {(part.stock_status || "in_stock").replace(/_/g, " ")}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
 
-                {/* Load More Button */}
-                {(() => {
-                  const filteredInventory = inventory.filter((part) => {
-                    if (filterType === "status" && statusFilter !== "all") {
-                      if (part.stock_status !== statusFilter) return false;
-                    }
-                    if (filterType === "location" && locationFilter !== "all") {
-                      if (part.storage_location !== locationFilter) return false;
-                    }
-                    return true;
-                  });
-                  return filteredInventory.length > displayLimit && (
-                    <div style={{ textAlign: "center", marginTop: "16px" }}>
-                      <button
-                        onClick={() => setDisplayLimit((prev) => prev + 20)}
-                        style={{
-                          ...buttonStyle,
-                          padding: "10px 24px",
-                        }}
-                      >
-                        Load More ({filteredInventory.length - displayLimit} remaining)
-                      </button>
-                    </div>
-                  );
-                })()}
-              </>
-            )}
-          </div>
-        </div>
 
-        {/* Part Details Modal */}
-        {isPartModalOpen && selectedPart && (
-          <div
-            className="popup-backdrop"
-            role="dialog"
-            aria-modal="true"
-            style={popupOverlayStyles}
-            onClick={() => setIsPartModalOpen(false)}
-          >
-            <div
-              style={{
-                ...popupCardStyles,
-                maxWidth: "1000px",
-                maxHeight: "90vh",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-                padding: "28px",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingBottom: "16px",
-                borderBottom: "1px solid var(--surface-light)",
-                marginBottom: "20px",
-              }}>
-                <div style={{ flex: 1 }}>
-                  <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "var(--text-h2)", fontWeight: 700 }}>
-                    {selectedPart.part_number}
-                  </h2>
-                  <p style={{ margin: "6px 0 0 0", color: "var(--text-secondary)", fontSize: "var(--text-body)" }}>
-                    {selectedPart.name}
-                  </p>
-                </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {!isEditMode ? (
-                    <button
-                      onClick={handleEditPart}
-                      style={{
-                        background: "var(--primary)",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "var(--radius-xs)",
-                        padding: "8px 16px",
-                        cursor: "pointer",
-                        fontWeight: 600,
-                        fontSize: "var(--text-body)",
-                      }}
-                    >
-                      Edit
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={handleSavePart}
-                        disabled={isSavingPart}
-                        style={{
-                          background: isSavingPart ? "var(--surface-light)" : "var(--success)",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "var(--radius-xs)",
-                          padding: "8px 16px",
-                          cursor: isSavingPart ? "not-allowed" : "pointer",
-                          fontWeight: 600,
-                          fontSize: "var(--text-body)",
-                        }}
-                      >
-                        {isSavingPart ? "Saving..." : "Save"}
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        disabled={isSavingPart}
-                        style={{
-                          background: "var(--surface-light)",
-                          color: "var(--text-primary)",
-                          border: "none",
-                          borderRadius: "var(--radius-xs)",
-                          padding: "8px 16px",
-                          cursor: isSavingPart ? "not-allowed" : "pointer",
-                          fontWeight: 600,
-                          fontSize: "var(--text-body)",
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  )}
-                  <button
-                    onClick={() => {
-                      setIsPartModalOpen(false);
-                      setIsEditMode(false);
-                      setEditedPart(null);
-                    }}
-                  style={{
-                    background: "var(--surface-light)",
-                    border: "none",
-                    borderRadius: "var(--radius-xs)",
-                    fontSize: "var(--text-h2)",
-                    cursor: "pointer",
-                    color: "var(--text-secondary)",
-                    padding: "8px",
-                    width: "var(--control-height-xs)",
-                    height: "var(--control-height-xs)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "var(--danger-light)";
-                    e.currentTarget.style.color = "var(--danger)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "var(--surface-light)";
-                    e.currentTarget.style.color = "var(--text-secondary)";
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-              </div>
 
-              {/* Scrollable Content */}
-              <div style={{ flex: 1, overflow: "auto", paddingRight: "12px" }}>
-                {/* Two Column Layout */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-                  {/* Left Column - Stock & Pricing */}
-                  <div>
-                    {/* Stock Overview Card */}
-                    <div style={{
-                      background: "var(--layer-section-level-1)",
-                      borderRadius: "var(--radius-sm)",
-                      padding: "16px",
-                      marginBottom: "16px",
-                      border: "none",
-                    }}>
-                      <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                        Stock Overview
-                      </h3>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px" }}>On Hand</div>
-                          {isEditMode ? (
-                            <input
-                              type="number"
-                              value={editedPart?.qty_in_stock ?? selectedPart.qty_in_stock}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, qty_in_stock: parseInt(e.target.value) || 0 }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <div style={{ fontSize: "var(--text-h2)", fontWeight: 700, color: "var(--primary)" }}>{selectedPart.qty_in_stock}</div>
-                          )}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px" }}>Reserved</div>
-                          {isEditMode ? (
-                            <input
-                              type="number"
-                              value={editedPart?.qty_reserved ?? selectedPart.qty_reserved ?? 0}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, qty_reserved: parseInt(e.target.value) || 0 }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <div style={{ fontSize: "var(--text-h2)", fontWeight: 700 }}>{selectedPart.qty_reserved || 0}</div>
-                          )}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px" }}>On Order</div>
-                          {isEditMode ? (
-                            <input
-                              type="number"
-                              value={editedPart?.qty_on_order ?? selectedPart.qty_on_order ?? 0}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, qty_on_order: parseInt(e.target.value) || 0 }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <div style={{ fontSize: "var(--text-h2)", fontWeight: 700 }}>{selectedPart.qty_on_order || 0}</div>
-                          )}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px" }}>Min Level</div>
-                          {isEditMode ? (
-                            <input
-                              type="number"
-                              value={editedPart?.reorder_level ?? selectedPart.reorder_level ?? 0}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, reorder_level: parseInt(e.target.value) || 0 }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <div style={{ fontSize: "var(--text-h2)", fontWeight: 700 }}>{selectedPart.reorder_level || 0}</div>
-                          )}
-                        </div>
-                      </div>
-                      <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--surface-light)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)" }}>Linked Jobs</div>
-                          <div style={{ fontSize: "var(--text-h3)", fontWeight: 600 }}>{selectedPart.open_job_count || 0}</div>
-                        </div>
-                        <span style={{
-                          padding: "6px 12px",
-                          borderRadius: "var(--radius-pill)",
-                          fontSize: "var(--text-caption)",
-                          fontWeight: 600,
-                          background: selectedPart.stock_status === "low_stock"
-                            ? "rgba(var(--warning-rgb), 0.2)"
-                            : selectedPart.stock_status === "back_order"
-                            ? "rgba(var(--danger-rgb), 0.2)"
-                            : selectedPart.stock_status === "high_stock"
-                            ? "rgba(var(--success-rgb), 0.2)"
-                            : "rgba(var(--info-rgb), 0.18)",
-                          color: selectedPart.stock_status === "low_stock"
-                            ? "var(--danger-dark)"
-                            : selectedPart.stock_status === "back_order"
-                            ? "var(--danger)"
-                            : selectedPart.stock_status === "high_stock"
-                            ? "var(--success-dark)"
-                            : "var(--info-dark)",
-                        }}>
-                          {(selectedPart.stock_status || "in_stock").replace(/_/g, " ")}
-                        </span>
-                      </div>
-                    </div>
 
-                    {/* Pricing Card */}
-                    <div style={{
-                      background: "var(--layer-section-level-1)",
-                      borderRadius: "var(--radius-sm)",
-                      padding: "16px",
-                      border: "none",
-                    }}>
-                      <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                        Pricing
-                      </h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>Cost Price</span>
-                          {isEditMode ? (
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={editedPart?.unit_cost ?? selectedPart.unit_cost}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, unit_cost: parseFloat(e.target.value) || 0 }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <span style={{ fontSize: "var(--text-h3)", fontWeight: 700 }}>{formatCurrency(selectedPart.unit_cost)}</span>
-                          )}
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>Sell Price</span>
-                          {isEditMode ? (
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={editedPart?.unit_price ?? selectedPart.unit_price}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, unit_price: parseFloat(e.target.value) || 0 }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <span style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--primary)" }}>{formatCurrency(selectedPart.unit_price)}</span>
-                          )}
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: "8px", borderTop: "1px solid var(--surface-light)" }}>
-                          <span style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>Margin</span>
-                          <span style={{ fontSize: "var(--text-h3)", fontWeight: 700, color: "var(--success-dark)" }}>
-                            {isEditMode
-                              ? formatMargin(editedPart?.unit_cost ?? selectedPart.unit_cost, editedPart?.unit_price ?? selectedPart.unit_price)
-                              : formatMargin(selectedPart.unit_cost, selectedPart.unit_price)
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Right Column - Part Info */}
-                  <div>
-                    <div style={{
-                      background: "var(--layer-section-level-1)",
-                      borderRadius: "var(--radius-sm)",
-                      padding: "16px",
-                      border: "none",
-                      height: "100%",
-                    }}>
-                      <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                        Part Information
-                      </h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "var(--text-body)" }}>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>DESCRIPTION</div>
-                          {isEditMode ? (
-                            <input
-                              type="text"
-                              value={editedPart?.name ?? selectedPart.name ?? ""}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, name: e.target.value }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <div style={{ color: "var(--text-primary)" }}>{selectedPart.name || "—"}</div>
-                          )}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>STORAGE LOCATION</div>
-                          {isEditMode ? (
-                            <input
-                              type="text"
-                              value={editedPart?.storage_location ?? selectedPart.storage_location ?? ""}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, storage_location: e.target.value }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <div style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: "var(--text-h4)" }}>{selectedPart.storage_location || "—"}</div>
-                          )}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>SERVICE DEFAULT</div>
-                          {isEditMode ? (
-                            <input
-                              type="text"
-                              value={editedPart?.service_default_zone ?? selectedPart.service_default_zone ?? ""}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, service_default_zone: e.target.value }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <div style={{ color: "var(--text-primary)" }}>{selectedPart.service_default_zone || "—"}</div>
-                          )}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>SUPPLIER</div>
-                          {isEditMode ? (
-                            <input
-                              type="text"
-                              value={editedPart?.supplier ?? selectedPart.supplier ?? ""}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, supplier: e.target.value }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <div style={{ color: "var(--text-primary)" }}>{selectedPart.supplier || "Unknown"}</div>
-                          )}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "4px", fontWeight: 600 }}>CATEGORY</div>
-                          {isEditMode ? (
-                            <input
-                              type="text"
-                              value={editedPart?.category ?? selectedPart.category ?? ""}
-                              onChange={(e) => setEditedPart((prev) => ({ ...prev, category: e.target.value }))}
-                              style={{
-                                padding: "8px",
-                                borderRadius: "var(--radius-xs)",
-                                border: "none",
-                                background: "var(--surface)",
-                                color: "var(--text-primary)",
-                                fontSize: "var(--text-h4)",
-                                fontWeight: 600,
-                                width: "100%",
-                              }}
-                            />
-                          ) : (
-                            <div style={{ color: "var(--text-primary)" }}>{selectedPart.category || "Uncategorised"}</div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Linked Jobs Table */}
-                <div style={{
-                  background: "var(--layer-section-level-1)",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "16px",
-                  border: "none",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "12px" }}>
-                    <h3 style={{ fontSize: "var(--text-body)", fontWeight: 600, color: "var(--text-secondary)", margin: 0, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      Linked Jobs {selectedPart.linked_jobs && selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length > 0 && `(${selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length})`}
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddToJobModal(true);
-                        resetAddToJobModal();
-                      }}
-                      style={{
-                        ...secondaryButtonStyle,
-                        padding: "6px 12px",
-                        fontSize: "var(--text-caption)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.04em",
-                      }}
-                    >
-                      Add part to job
-                    </button>
-                  </div>
-                  {selectedPart.linked_jobs && selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length > 0 ? (
-                    <div
-                      style={{
-                        overflowX: "auto",
-                        overflowY:
-                          selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length > 4
-                            ? "auto"
-                            : "visible",
-                        maxHeight:
-                          selectedPart.linked_jobs.filter((link) => matchesLinkedJobStatus(link.status)).length > 4
-                            ? "240px"
-                            : "none",
-                      }}
-                    >
-                      <table style={{ ...tableStyle, fontSize: "var(--text-body-sm)" }}>
-                        <thead>
-                          <tr style={{ background: "var(--surface)", color: "var(--text-secondary)", fontSize: "var(--text-caption)", textTransform: "uppercase" }}>
-                            <th style={{ textAlign: "left", padding: "10px", fontWeight: 600 }}>Job Number</th>
-                            <th style={{ textAlign: "right", padding: "10px", fontWeight: 600 }}>Qty</th>
-                            <th style={{ textAlign: "left", padding: "10px", fontWeight: 600 }}>Source</th>
-                            <th style={{ textAlign: "left", padding: "10px", fontWeight: 600 }}>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedPart.linked_jobs
-                            .filter((link) => matchesLinkedJobStatus(link.status))
-                            .map((link) => {
-                              const sourceMeta = resolveSourceMeta(link.source);
-                              const statusMeta = resolveStatusStyles(link.status);
-                              return (
-                                <tr
-                                  key={`${link.type}-${link.job_id}-${link.request_id || ""}-${link.status}`}
-                                  style={{
-                                    borderBottom: "1px solid var(--surface-light)",
-                                    transition: "background 0.15s ease",
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = "var(--surface)";
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = "transparent";
-                                  }}
-                                >
-                                  <td style={{ padding: "10px", fontWeight: 600 }}>
-                                    <a
-                                      href={`/job-cards/${link.job_number}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      style={{
-                                        color: "var(--primary)",
-                                        textDecoration: "none",
-                                        fontWeight: 700,
-                                        transition: "color 0.2s ease",
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.textDecoration = "underline";
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.textDecoration = "none";
-                                      }}
-                                    >
-                                      {link.job_number}
-                                    </a>
-                                  </td>
-                                  <td style={{ padding: "10px", textAlign: "right", fontWeight: 600 }}>{link.quantity || 1}</td>
-                                  <td style={{ padding: "10px" }}>
-                                    <RequirementBadge
-                                      label={sourceMeta.label}
-                                      background={sourceMeta.background}
-                                      color={sourceMeta.color}
-                                    />
-                                  </td>
-                                  <td style={{ padding: "10px" }}>
-                                    <RequirementBadge
-                                      label={formatStatusLabel(link.status)}
-                                      background={statusMeta.background}
-                                      color={statusMeta.color}
-                                    />
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div style={{
-                      padding: "24px",
-                      textAlign: "center",
-                      color: "var(--text-secondary)",
-                      background: "var(--surface)",
-                      borderRadius: "var(--radius-xs)",
-                      fontSize: "var(--text-body)",
-                    }}>
-                      No linked jobs for this part
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {renderAddToJobModal()}
-        {renderDeliveryModal()}
-      </div>
-      <ConfirmationDialog
-        isOpen={!!confirmDialog}
-        message={confirmDialog?.message}
-        cancelLabel="Cancel"
-        confirmLabel="Yes"
-        onCancel={() => setConfirmDialog(null)}
-        onConfirm={confirmDialog?.onConfirm}
-      />
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 export default StockCataloguePage;

@@ -10,14 +10,14 @@ import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components
 // Skeleton rows that sit inside each SectionCard while performance data loads.
 // Keeping the outer page shell mounted (header, section grids, card chrome) means
 // the first visible frame already matches the final layout.
-function TableRowsSkeleton({ rows = 5, cols = 4 }) {
-  return (
+import HrPerformanceAppraisalsUi from "@/components/page-ui/hr/hr-performance-ui"; // Extracted presentation layer.
+function TableRowsSkeleton({ rows = 5, cols = 4 }) {return (
     <>
-      {Array.from({ length: rows }).map((_, i) => (
-        <SkeletonTableRow key={i} cols={cols} />
-      ))}
-    </>
-  );
+      {Array.from({ length: rows }).map((_, i) =>
+      <SkeletonTableRow key={i} cols={cols} />
+      )}
+    </>);
+
 }
 
 function BulletsSkeleton({ rows = 4 }) {
@@ -29,17 +29,17 @@ function BulletsSkeleton({ rows = 4 }) {
         listStyle: "none",
         display: "flex",
         flexDirection: "column",
-        gap: "var(--space-sm)",
-      }}
-    >
-      {Array.from({ length: rows }).map((_, i) => (
-        <li key={i} style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center" }}>
+        gap: "var(--space-sm)"
+      }}>
+      
+      {Array.from({ length: rows }).map((_, i) =>
+      <li key={i} style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center" }}>
           <SkeletonBlock width="6px" height="6px" borderRadius="999px" />
           <SkeletonBlock width={i % 2 === 0 ? "82%" : "68%"} height="12px" />
         </li>
-      ))}
-    </ul>
-  );
+      )}
+    </ul>);
+
 }
 
 function PerformanceContent() {
@@ -53,13 +53,13 @@ function PerformanceContent() {
         <SectionCard title="Unable to load performance data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
-      </div>
-    );
+      </div>);
+
   }
 
   const employeeOptions = employeeDirectory.map((employee) => ({
     value: employee.id,
-    label: employee.name,
+    label: employee.name
   }));
 
   return (
@@ -75,13 +75,13 @@ function PerformanceContent() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--layout-card-gap)",
-        }}
-      >
+          gap: "var(--layout-card-gap)"
+        }}>
+        
         <SectionCard
           title="Upcoming Reviews"
-          subtitle="Schedule and prepare feedback before the review date"
-        >
+          subtitle="Schedule and prepare feedback before the review date">
+          
           <div style={{ overflowX: "auto" }}>
             <table className="app-data-table">
               <thead>
@@ -93,18 +93,18 @@ function PerformanceContent() {
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
-                  <TableRowsSkeleton rows={4} cols={4} />
-                ) : (
-                  performanceReviews.map((review) => (
-                    <tr key={review.id}>
+                {isLoading ?
+                <TableRowsSkeleton rows={4} cols={4} /> :
+
+                performanceReviews.map((review) =>
+                <tr key={review.id}>
                       <td style={{ fontWeight: 600 }}>{review.employee}</td>
                       <td>{review.period}</td>
                       <td>{review.reviewer}</td>
                       <td>{new Date(review.nextReview).toLocaleDateString()}</td>
                     </tr>
-                  ))
-                )}
+                )
+                }
               </tbody>
             </table>
           </div>
@@ -114,30 +114,30 @@ function PerformanceContent() {
           title="Development To-Do"
           subtitle="Actions to follow up after reviews"
           action={
-            <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm">
               Add reminder
             </Button>
-          }
-        >
-          {isLoading ? (
-            <BulletsSkeleton rows={4} />
-          ) : (
-            <ul
-              style={{
-                margin: 0,
-                paddingLeft: "var(--space-6)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--space-sm)",
-              }}
-            >
-              {performanceReviews.map((review) => (
-                <li key={review.id} style={{ color: "var(--text-primary)" }}>
+          }>
+          
+          {isLoading ?
+          <BulletsSkeleton rows={4} /> :
+
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: "var(--space-6)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-sm)"
+            }}>
+            
+              {performanceReviews.map((review) =>
+            <li key={review.id} style={{ color: "var(--text-primary)" }}>
                   <strong>{review.employee}:</strong> {review.developmentFocus}
                 </li>
-              ))}
+            )}
             </ul>
-          )}
+          }
         </SectionCard>
       </section>
 
@@ -145,11 +145,11 @@ function PerformanceContent() {
         title="Recent Appraisals"
         subtitle="Summary of the last review and ratings"
         action={
-          <Button variant="secondary" size="sm">
+        <Button variant="secondary" size="sm">
             Export PDF
           </Button>
-        }
-      >
+        }>
+        
         <div style={{ overflowX: "auto" }}>
           <table className="app-data-table">
             <thead>
@@ -164,17 +164,17 @@ function PerformanceContent() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
-                <TableRowsSkeleton rows={5} cols={7} />
-              ) : (
-                performanceReviews.map((review) => (
-                  <tr key={review.id}>
+              {isLoading ?
+              <TableRowsSkeleton rows={5} cols={7} /> :
+
+              performanceReviews.map((review) =>
+              <tr key={review.id}>
                     <td style={{ fontWeight: 600 }}>{review.employee}</td>
                     <td>
                       <StatusTag
-                        label={`${review.overall ?? 0}/5`}
-                        tone={(review.overall ?? 0) >= 4 ? "success" : "default"}
-                      />
+                    label={`${review.overall ?? 0}/5`}
+                    tone={(review.overall ?? 0) >= 4 ? "success" : "default"} />
+                  
                     </td>
                     <td>{review.ratings.attendance}/5</td>
                     <td>{review.ratings.productivity}/5</td>
@@ -182,8 +182,8 @@ function PerformanceContent() {
                     <td>{review.ratings.teamwork}/5</td>
                     <td>{review.reviewer}</td>
                   </tr>
-                ))
-              )}
+              )
+              }
             </tbody>
           </table>
         </div>
@@ -191,8 +191,8 @@ function PerformanceContent() {
 
       <SectionCard
         title="Create Performance Review"
-        subtitle="Kick off a new review cycle or log a mid-year check-in."
-      >
+        subtitle="Kick off a new review cycle or log a mid-year check-in.">
+        
         <p style={{ color: "var(--text-primary)", marginBottom: "var(--space-4)" }}>
           Select an employee to start drafting their performance review. You can attach supporting documents and invite
           co-reviewers.
@@ -201,16 +201,16 @@ function PerformanceContent() {
           style={{
             display: "grid",
             gap: "var(--space-md)",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          }}
-        >
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))"
+          }}>
+          
           <DropdownField
             label="Employee"
             name="employee"
             placeholder="Choose employee"
             defaultValue=""
-            options={employeeOptions}
-          />
+            options={employeeOptions} />
+          
           <InputField label="Review Period" type="text" placeholder="e.g., Q2 2024" />
           <InputField label="Reviewer" type="text" placeholder="Name of reviewer" />
           <label style={labelStyle}>
@@ -218,8 +218,8 @@ function PerformanceContent() {
             <textarea
               className="app-input"
               style={{ minHeight: "120px", resize: "vertical" }}
-              placeholder="Enter objectives, observations, and feedback"
-            />
+              placeholder="Enter objectives, observations, and feedback" />
+            
           </label>
           <div style={{ gridColumn: "1 / -1", display: "flex", gap: "var(--space-3)" }}>
             <Button type="button" variant="primary">
@@ -231,12 +231,12 @@ function PerformanceContent() {
           </div>
         </form>
       </SectionCard>
-    </div>
-  );
+    </div>);
+
 }
 
 export default function HrPerformanceAppraisals({ embedded = false } = {}) {
-  return <PerformanceContent />;
+  return <HrPerformanceAppraisalsUi view="section1" PerformanceContent={PerformanceContent} />;
 }
 
 // Local textarea label — InputField covers input/select fields, but no global textarea component exists yet.
@@ -249,5 +249,5 @@ const labelStyle = {
   fontWeight: "var(--control-label-weight)",
   textTransform: "uppercase",
   letterSpacing: "var(--tracking-caps)",
-  gridColumn: "1 / -1",
+  gridColumn: "1 / -1"
 };

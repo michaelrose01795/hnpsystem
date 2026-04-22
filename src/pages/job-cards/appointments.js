@@ -3,6 +3,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import LegacyAppointmentsRedirectPageUi from "@/components/page-ui/job-cards/job-cards-appointments-ui"; // Extracted presentation layer.
 
 export default function LegacyAppointmentsRedirectPage() {
   const router = useRouter();
@@ -15,5 +16,5 @@ export default function LegacyAppointmentsRedirectPage() {
     router.replace("/appointments");
   }, [router]);
 
-  return null;
+  return <LegacyAppointmentsRedirectPageUi view="section1" />;
 }

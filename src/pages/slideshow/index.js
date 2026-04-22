@@ -6,13 +6,14 @@
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { SlideshowProvider } from "@/features/slideshow/SlideshowProvider";
 import SlideshowRunner from "@/features/slideshow/SlideshowRunner";
+import SlideshowPageUi from "@/components/page-ui/slideshow/slideshow-ui"; // Extracted presentation layer.
 
 export default function SlideshowPage() {
-  return (
-    <ProtectedRoute>
-      <SlideshowProvider>
-        <SlideshowRunner />
-      </SlideshowProvider>
-    </ProtectedRoute>
-  );
+  return <SlideshowPageUi view="section1" ProtectedRoute={ProtectedRoute} SlideshowProvider={SlideshowProvider} SlideshowRunner={SlideshowRunner} />;
+
+
+
+
+
+
 }

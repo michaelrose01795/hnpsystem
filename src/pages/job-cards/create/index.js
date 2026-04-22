@@ -1,6 +1,6 @@
+// file location: src/pages/job-cards/create/index.js
 // ✅ Imports converted to use absolute alias "@/"
 // ✅ Database linked through /src/lib/database
-// file location: src/pages/job-cards/create/index.js
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
@@ -13,8 +13,8 @@ import {
   checkCustomerExists,
   getCustomerById,
   getCustomerVehicles,
-  updateCustomer,
-} from "@/lib/database/customers";
+  updateCustomer } from
+"@/lib/database/customers";
 import { getVehicleByReg } from "@/lib/database/vehicles";
 import { getJobByNumber } from "@/lib/database/jobs";
 import { createFullJobBatch } from "@/lib/services/createJobService"; // consolidated job creation service
@@ -30,19 +30,20 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { detectJobTypesForRequests } from "@/lib/ai/jobTypeDetection";
 import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
+import CreateJobCardPageUi from "@/components/page-ui/job-cards/create/job-cards-create-ui"; // Extracted presentation layer.
 
 const PAYMENT_TYPE_OPTIONS = [
-  { value: "Customer", label: "Customer" },
-  { value: "Warranty", label: "Warranty" },
-  { value: "Sales Goodwill", label: "Sales Goodwill" },
-  { value: "Service Goodwill", label: "Service Goodwill" },
-  { value: "Internal", label: "Internal" },
-  { value: "Insurance", label: "Insurance" },
-  { value: "Lease Company", label: "Lease Company" },
-  { value: "Staff", label: "Staff" },
-];
+{ value: "Customer", label: "Customer" },
+{ value: "Warranty", label: "Warranty" },
+{ value: "Sales Goodwill", label: "Sales Goodwill" },
+{ value: "Service Goodwill", label: "Service Goodwill" },
+{ value: "Internal", label: "Internal" },
+{ value: "Insurance", label: "Insurance" },
+{ value: "Lease Company", label: "Lease Company" },
+{ value: "Staff", label: "Staff" }];
 
- 
+
+
 
 const initialCustomerFormState = {
   id: null, // stores currently selected customer's UUID
@@ -53,7 +54,7 @@ const initialCustomerFormState = {
   telephone: "", // stores customer telephone number
   address: "", // stores customer street address
   postcode: "", // stores customer postcode
-  contactPreference: ["email"], // stores customer preferred contact option(s)
+  contactPreference: ["email"] // stores customer preferred contact option(s)
 };
 
 const normalizeCustomerRecord = (record = {}) => ({
@@ -67,21 +68,21 @@ const normalizeCustomerRecord = (record = {}) => ({
   postcode: record?.postcode || initialCustomerFormState.postcode, // normalize postcode field
   contactPreference: (() => {
     const raw =
-      record?.contact_preference ??
-      record?.contactPreference ??
-      initialCustomerFormState.contactPreference;
+    record?.contact_preference ??
+    record?.contactPreference ??
+    initialCustomerFormState.contactPreference;
     if (Array.isArray(raw)) return raw;
     if (typeof raw === "string") {
-      const cleaned = raw
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean)
-        .map((item) => item.toLowerCase());
+      const cleaned = raw.
+      split(",").
+      map((item) => item.trim()).
+      filter(Boolean).
+      map((item) => item.toLowerCase());
       if (cleaned.length) return cleaned;
       return [raw.toLowerCase()];
     }
     return initialCustomerFormState.contactPreference;
-  })(), // normalize contact preference field
+  })() // normalize contact preference field
 });
 
 export default function CreateJobCardPage() {
@@ -103,7 +104,7 @@ export default function CreateJobCardPage() {
     year: null, // year of manufacture used for eligibility
     chassis: "", // chassis/VIN number
     engine: "", // engine number
-    mileage: "", // current mileage
+    mileage: "" // current mileage
   });
 
   const [customer, setCustomer] = useState(null); // selected customer object
@@ -126,7 +127,7 @@ export default function CreateJobCardPage() {
     jobCategories: [],
     jobDetections: [],
     requests: [{ text: "", time: "", paymentType: "Customer", presetId: null }],
-    uploadedFiles: [],
+    uploadedFiles: []
   });
 
   const PENDING_UPLOADS_STORAGE_KEY = "hnp:jobCardCreate:pendingUploads";
@@ -172,9 +173,9 @@ export default function CreateJobCardPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const snapshot = jobTabs
-        .map((tab) => ({ id: tab.id, uploadedFiles: tab.uploadedFiles || [] }))
-        .filter((entry) => entry.uploadedFiles.length > 0);
+      const snapshot = jobTabs.
+      map((tab) => ({ id: tab.id, uploadedFiles: tab.uploadedFiles || [] })).
+      filter((entry) => entry.uploadedFiles.length > 0);
       if (snapshot.length === 0) {
         window.localStorage.removeItem(PENDING_UPLOADS_STORAGE_KEY);
       } else {
@@ -212,12 +213,12 @@ export default function CreateJobCardPage() {
   const uploadedFiles = currentTab.uploadedFiles;
   const setUploadedFiles = (val) => updateCurrentTab({ uploadedFiles: typeof val === "function" ? val(currentTab.uploadedFiles) : val });
   const visibleJobDetections = jobDetections.filter((d) => d.sourceText);
-  const populatedRequests = requests
-    .map((request, index) => ({
-      index,
-      text: String(request?.text || "").trim(),
-    }))
-    .filter((request) => request.text);
+  const populatedRequests = requests.
+  map((request, index) => ({
+    index,
+    text: String(request?.text || "").trim()
+  })).
+  filter((request) => request.text);
 
   // Shared state (same across all tabs)
   const [cosmeticDamagePresent, setCosmeticDamagePresent] = useState(false); // track whether cosmetic damage observed
@@ -269,30 +270,30 @@ export default function CreateJobCardPage() {
   const [primeJobData, setPrimeJobData] = useState(null); // prime job data when in sub-job mode
   const [asPrimeJob, setAsPrimeJob] = useState(false); // checkbox to create this job as a prime job
 
-  useEffect(() => { // sync editable form with whichever customer is selected
-    if (customer) { // when a customer exists use their values
+  useEffect(() => {// sync editable form with whichever customer is selected
+    if (customer) {// when a customer exists use their values
       setCustomerForm(normalizeCustomerRecord(customer)); // copy normalized customer data into the form controls
-    } else { // when customer cleared
+    } else {// when customer cleared
       setCustomerForm({ ...initialCustomerFormState }); // reset the form fields to defaults
     }
     setIsCustomerEditing(false); // always exit edit mode on change
     setIsSavingCustomer(false); // clear any pending loading state
   }, [customer]); // rerun whenever the selected customer reference changes
 
-  useEffect(() => { // fetch stored signature for logged in user
+  useEffect(() => {// fetch stored signature for logged in user
     let cancelled = false; // guard against state updates after unmount
 
     const fetchSignature = async () => {
-      if (!dbUserId) { // if no db user id available
+      if (!dbUserId) {// if no db user id available
         setUserSignature(null); // reset signature state
         return;
       }
 
-      const { data, error } = await supabase
-        .from("users")
-        .select("user_id, signature_file_url, signature_storage_path")
-        .eq("user_id", dbUserId)
-        .maybeSingle();
+      const { data, error } = await supabase.
+      from("users").
+      select("user_id, signature_file_url, signature_storage_path").
+      eq("user_id", dbUserId).
+      maybeSingle();
 
       if (!cancelled) {
         if (error) {
@@ -311,9 +312,9 @@ export default function CreateJobCardPage() {
   }, [dbUserId]);
 
   useEffect(() => {
-    const signature = (requests || [])
-      .map((req) => (req?.text || "").trim())
-      .join("||");
+    const signature = (requests || []).
+    map((req) => (req?.text || "").trim()).
+    join("||");
     if (signature === lastDetectionSignature) return;
     const detections = detectJobTypesForRequests(requests);
     setJobDetections(detections);
@@ -348,26 +349,26 @@ export default function CreateJobCardPage() {
     };
   }, []);
 
-  useEffect(() => () => { // cleanup preview object URLs when component unmounts or url changes
+  useEffect(() => () => {// cleanup preview object URLs when component unmounts or url changes
     if (checkSheetPreviewUrl) {
       URL.revokeObjectURL(checkSheetPreviewUrl);
     }
   }, [checkSheetPreviewUrl]);
 
-  useEffect(() => { // load persisted waiting status for consistent background when revisiting the page
+  useEffect(() => {// load persisted waiting status for consistent background when revisiting the page
     if (typeof window === "undefined") return; // ensure browser environment before accessing localStorage
     const storedStatus = localStorage.getItem(WAITING_STATUS_STORAGE_KEY); // read stored value
-    if (storedStatus && ["Waiting", "Loan Car", "Collection", "Neither"].includes(storedStatus)) { // validate stored option
+    if (storedStatus && ["Waiting", "Loan Car", "Collection", "Neither"].includes(storedStatus)) {// validate stored option
       setWaitingStatus(storedStatus); // apply stored status to restore background colour
     }
   }, []); // run once on mount
 
-  useEffect(() => { // persist waiting status selection for future visits
+  useEffect(() => {// persist waiting status selection for future visits
     if (typeof window === "undefined") return; // guard for SSR
     localStorage.setItem(WAITING_STATUS_STORAGE_KEY, waitingStatus); // store the selection for next visit
   }, [waitingStatus]); // run whenever waiting status changes
 
-  useEffect(() => { // load persisted wash selection when revisiting the page
+  useEffect(() => {// load persisted wash selection when revisiting the page
     if (typeof window === "undefined") return; // ensure browser environment before accessing localStorage
     const storedWashChoice = localStorage.getItem(WASH_REQUIRED_STORAGE_KEY); // restore explicit yes/no choice when present
     if (storedWashChoice === "true" || storedWashChoice === "false") {
@@ -375,7 +376,7 @@ export default function CreateJobCardPage() {
     }
   }, []); // run once on mount
 
-  useEffect(() => { // persist wash selection for future visits
+  useEffect(() => {// persist wash selection for future visits
     if (typeof window === "undefined") return; // guard for SSR
     localStorage.setItem(WASH_REQUIRED_STORAGE_KEY, String(washRequired)); // store the selection for next visit
   }, [washRequired]); // run whenever wash selection changes
@@ -406,7 +407,7 @@ export default function CreateJobCardPage() {
             mobile: result.data.customerPhone || "",
             telephone: "",
             address: result.data.customerAddress || "",
-            postcode: result.data.customerPostcode || "",
+            postcode: result.data.customerPostcode || ""
           };
           setCustomer(normalizedCustomer);
           setCustomerForm(normalizedCustomer);
@@ -420,9 +421,9 @@ export default function CreateJobCardPage() {
             chassis: result.data.vin || result.data.chassis || "",
             engine: result.data.engine || "",
             mileage:
-              result.data.mileage === null || result.data.mileage === undefined
-                ? ""
-                : String(result.data.mileage),
+            result.data.mileage === null || result.data.mileage === undefined ?
+            "" :
+            String(result.data.mileage)
           });
         }
 
@@ -453,7 +454,7 @@ export default function CreateJobCardPage() {
       default:
         baseColor = "var(--info-surface)"; // default background
     }
-    if (source === "Warranty") { // check if job source is warranty
+    if (source === "Warranty") {// check if job source is warranty
       if (baseColor === "var(--info-surface)") return "var(--warning-surface)"; // add orange tint when neutral
       return baseColor; // keep existing tint otherwise
     }
@@ -515,8 +516,8 @@ export default function CreateJobCardPage() {
         body: JSON.stringify({
           presetId: requestEntry?.presetId || null,
           requestText,
-          hours: parsedHours,
-        }),
+          hours: parsedHours
+        })
       });
     } catch (error) {
       console.error("Failed to persist preset default hours", error);
@@ -542,13 +543,13 @@ export default function CreateJobCardPage() {
 
   const sectionCardStyle = {
     background: "var(--layer-section-level-2)",
-    border: "none",
+    border: "none"
   };
 
   const jobCardSelectorOptions = jobTabs.map((tab, index) => ({
     id: tab.id,
     index,
-    label: `Job${index + 1}`,
+    label: `Job${index + 1}`
   }));
   const hasLinkedJobCards = jobCardSelectorOptions.length > 1;
 
@@ -559,7 +560,7 @@ export default function CreateJobCardPage() {
     borderRadius: "var(--control-radius)",
     backgroundColor: "var(--surface)",
     border: "none",
-    width: "fit-content",
+    width: "fit-content"
   };
 
   const getBinaryToggleButtonStyle = (isSelected) => ({
@@ -571,7 +572,7 @@ export default function CreateJobCardPage() {
     fontSize: "12px",
     fontWeight: isSelected ? "600" : "500",
     cursor: "pointer",
-    transition: "all 0.2s",
+    transition: "all 0.2s"
   });
 
   // 2-column grid so buttons sit in rows of two with a true 50/50 split:
@@ -582,7 +583,7 @@ export default function CreateJobCardPage() {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "10px",
-    width: "100%",
+    width: "100%"
   };
 
   const getJobInfoOptionStyle = (isSelected) => ({
@@ -602,18 +603,18 @@ export default function CreateJobCardPage() {
     fontWeight: 600,
     fontSize: "var(--control-font-size)",
     lineHeight: 1,
-    boxSizing: "border-box",
+    boxSizing: "border-box"
   });
 
   const customerFieldDefinitions = [
-    { label: "First Name", field: "firstName", type: "text", placeholder: "" },
-    { label: "Last Name", field: "lastName", type: "text", placeholder: "" },
-    { label: "Email", field: "email", type: "email", placeholder: "" },
-    { label: "Mobile", field: "mobile", type: "tel", placeholder: "" },
-    { label: "Telephone", field: "telephone", type: "tel", placeholder: "" },
-    { label: "Address", field: "address", type: "textarea", placeholder: "" },
-    { label: "Contact Preference", field: "contactPreference", type: "multi-select" },
-  ];
+  { label: "First Name", field: "firstName", type: "text", placeholder: "" },
+  { label: "Last Name", field: "lastName", type: "text", placeholder: "" },
+  { label: "Email", field: "email", type: "email", placeholder: "" },
+  { label: "Mobile", field: "mobile", type: "tel", placeholder: "" },
+  { label: "Telephone", field: "telephone", type: "tel", placeholder: "" },
+  { label: "Address", field: "address", type: "textarea", placeholder: "" },
+  { label: "Contact Preference", field: "contactPreference", type: "multi-select" }];
+
 
   // remove a request from the list by index
   const handleRemoveRequest = (index) => {
@@ -626,24 +627,24 @@ export default function CreateJobCardPage() {
 
   // ✅ Show notification and auto-hide after 5 seconds
   const showNotification = (section, type, message) => {
-    if (section === "customer") { // check if customer section should show notification
+    if (section === "customer") {// check if customer section should show notification
       setCustomerNotification({ type, message }); // set notification
       setTimeout(() => setCustomerNotification(null), 5000); // auto-hide after 5 seconds
-    } else if (section === "vehicle") { // check if vehicle section should show notification
+    } else if (section === "vehicle") {// check if vehicle section should show notification
       setVehicleNotification({ type, message }); // set notification
       setTimeout(() => setVehicleNotification(null), 5000); // auto-hide after 5 seconds
     }
   };
 
   const hydrateVehicleFromRecord = useCallback(
-    (storedVehicle, { notifyCustomer = false } = {}) => { // copy Supabase vehicle into local form state
-      if (!storedVehicle) { // guard when no record provided
+    (storedVehicle, { notifyCustomer = false } = {}) => {// copy Supabase vehicle into local form state
+      if (!storedVehicle) {// guard when no record provided
         return; // nothing to hydrate
       }
 
       const normalizedReg = getVehicleRegistration(storedVehicle); // normalize registration text
-      const combinedMakeModel = (storedVehicle.make_model || `${storedVehicle.make || ""} ${storedVehicle.model || ""}`)
-        .trim(); // build make/model label
+      const combinedMakeModel = (storedVehicle.make_model || `${storedVehicle.make || ""} ${storedVehicle.model || ""}`).
+      trim(); // build make/model label
 
       setVehicle((prev) => ({ // merge values into form state
         ...prev,
@@ -656,19 +657,19 @@ export default function CreateJobCardPage() {
         chassis: storedVehicle.chassis || storedVehicle.vin || prev.chassis,
         engine: storedVehicle.engine || storedVehicle.engine_number || prev.engine,
         mileage:
-          storedVehicle.mileage === null || storedVehicle.mileage === undefined
-            ? prev.mileage
-            : String(storedVehicle.mileage),
+        storedVehicle.mileage === null || storedVehicle.mileage === undefined ?
+        prev.mileage :
+        String(storedVehicle.mileage)
       }));
 
-      if (storedVehicle.mot_due) { // hydrate MOT date when available
+      if (storedVehicle.mot_due) {// hydrate MOT date when available
         const motDate = new Date(storedVehicle.mot_due);
         if (!Number.isNaN(motDate.getTime())) {
           setNextMotDate(motDate.toISOString().split("T")[0]); // store ISO date for preview
         }
       }
 
-      if (storedVehicle.customer) { // auto-link stored customer when present
+      if (storedVehicle.customer) {// auto-link stored customer when present
         setCustomer(normalizeCustomerRecord(storedVehicle.customer));
         if (notifyCustomer) {
           showNotification("customer", "success", "✓ Loaded customer linked to this vehicle");
@@ -678,13 +679,13 @@ export default function CreateJobCardPage() {
     [normalizeCustomerRecord, showNotification]
   );
 
-  useEffect(() => { // auto-fetch vehicle details from Supabase when registration changes
+  useEffect(() => {// auto-fetch vehicle details from Supabase when registration changes
     const regTrimmed = (vehicle.reg || "").trim().toUpperCase(); // normalized registration input
-    if (!regTrimmed || regTrimmed.length < 3) { // skip when not enough characters
+    if (!regTrimmed || regTrimmed.length < 3) {// skip when not enough characters
       return;
     }
 
-    if (lastVehicleLookupRef.current === regTrimmed) { // avoid duplicate lookups
+    if (lastVehicleLookupRef.current === regTrimmed) {// avoid duplicate lookups
       return;
     }
 
@@ -722,7 +723,7 @@ export default function CreateJobCardPage() {
     try {
       setIsSavingCustomer(true);
       const updatePayload = {
-        contact_preference: nextPreferences.length ? nextPreferences.join(", ") : "email",
+        contact_preference: nextPreferences.length ? nextPreferences.join(", ") : "email"
       };
 
       const result = await updateCustomer(customer.id, updatePayload);
@@ -744,13 +745,13 @@ export default function CreateJobCardPage() {
 
   const toggleContactPreference = (value) => {
     setCustomerForm((prev) => {
-      const current = Array.isArray(prev.contactPreference)
-        ? prev.contactPreference
-        : [];
+      const current = Array.isArray(prev.contactPreference) ?
+      prev.contactPreference :
+      [];
       const previous = current;
-      const next = current.includes(value)
-        ? current.filter((item) => item !== value)
-        : [...current, value];
+      const next = current.includes(value) ?
+      current.filter((item) => item !== value) :
+      [...current, value];
 
       if (customer?.id) {
         saveContactPreference(next, previous);
@@ -807,7 +808,7 @@ export default function CreateJobCardPage() {
         telephone: toNullable(customerForm.telephone),
         address: toNullable(customerForm.address),
         postcode: toNullable(customerForm.postcode),
-        contact_preference: toNullable(customerForm.contactPreference) || "email",
+        contact_preference: toNullable(customerForm.contactPreference) || "email"
       };
 
       const result = await updateCustomer(customer.id, updatePayload);
@@ -847,7 +848,7 @@ export default function CreateJobCardPage() {
     });
   }, []);
 
-  const handleCheckSheetFileChange = (file) => { // respond to user selecting a check-sheet file
+  const handleCheckSheetFileChange = (file) => {// respond to user selecting a check-sheet file
     if (!file) {
       setCheckSheetFile(null);
       setCheckSheetPreviewUrl("");
@@ -867,8 +868,8 @@ export default function CreateJobCardPage() {
     setCheckSheetCheckboxes([]); // reset checkbox layout when new file selected
   };
 
-  const handleCheckSheetCanvasClick = (event) => { // add checkbox metadata at click position
-    if (!checkSheetFile || (!checkSheetPreviewUrl && !checkSheetFile.type?.includes("pdf"))) {
+  const handleCheckSheetCanvasClick = (event) => {// add checkbox metadata at click position
+    if (!checkSheetFile || !checkSheetPreviewUrl && !checkSheetFile.type?.includes("pdf")) {
       return; // skip when no sheet ready
     }
 
@@ -883,34 +884,34 @@ export default function CreateJobCardPage() {
     }
 
     setCheckSheetCheckboxes((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        label: `Check Item ${prev.length + 1}`,
-        x: Number(xRatio.toFixed(4)),
-        y: Number(yRatio.toFixed(4)),
-      },
-    ]);
-  };
-
-  const handleCheckboxLabelChange = (checkboxId, value) => { // update checkbox label text
-    setCheckSheetCheckboxes((prev) =>
-      prev.map((box) =>
-        box.id === checkboxId
-          ? {
-              ...box,
-              label: value,
-            }
-          : box
-      )
+    ...prev,
+    {
+      id: Date.now(),
+      label: `Check Item ${prev.length + 1}`,
+      x: Number(xRatio.toFixed(4)),
+      y: Number(yRatio.toFixed(4))
+    }]
     );
   };
 
-  const handleRemoveCheckbox = (checkboxId) => { // delete a checkbox configuration
+  const handleCheckboxLabelChange = (checkboxId, value) => {// update checkbox label text
+    setCheckSheetCheckboxes((prev) =>
+    prev.map((box) =>
+    box.id === checkboxId ?
+    {
+      ...box,
+      label: value
+    } :
+    box
+    )
+    );
+  };
+
+  const handleRemoveCheckbox = (checkboxId) => {// delete a checkbox configuration
     setCheckSheetCheckboxes((prev) => prev.filter((box) => box.id !== checkboxId));
   };
 
-  const handleSignatureUpload = async (file) => { // upload/update the current user's signature asset
+  const handleSignatureUpload = async (file) => {// upload/update the current user's signature asset
     if (!file || !dbUserId) {
       alert("Please log in before uploading a signature");
       return;
@@ -920,12 +921,12 @@ export default function CreateJobCardPage() {
     try {
       const ext = file.name?.split(".").pop() || "png";
       const objectPath = `users/${dbUserId}/signature.${ext}`;
-      const { error: storageError } = await supabase.storage
-        .from("user-signatures")
-        .upload(objectPath, file, {
-          contentType: file.type || "image/png",
-          upsert: true,
-        });
+      const { error: storageError } = await supabase.storage.
+      from("user-signatures").
+      upload(objectPath, file, {
+        contentType: file.type || "image/png",
+        upsert: true
+      });
 
       if (storageError) {
         throw new Error(storageError.message);
@@ -938,7 +939,7 @@ export default function CreateJobCardPage() {
       setUserSignature({
         user_id: dbUserId,
         signature_storage_path: objectPath,
-        signature_file_url: publicUrl,
+        signature_file_url: publicUrl
       });
     } catch (err) {
       console.error("Signature upload failed", err);
@@ -948,7 +949,7 @@ export default function CreateJobCardPage() {
     }
   };
 
-  const saveCheckSheetData = async (jobId) => { // persist check-sheet file + checkbox metadata to DB
+  const saveCheckSheetData = async (jobId) => {// persist check-sheet file + checkbox metadata to DB
     if (!jobId || !checkSheetFile) {
       return; // nothing to save when no sheet selected
     }
@@ -956,12 +957,12 @@ export default function CreateJobCardPage() {
     try {
       const ext = checkSheetFile.name?.split(".").pop() || "png";
       const storagePath = `jobs/${jobId}/checksheets/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: storageError } = await supabase.storage
-        .from("job-documents")
-        .upload(storagePath, checkSheetFile, {
-          contentType: checkSheetFile.type || "application/octet-stream",
-          upsert: false,
-        });
+      const { error: storageError } = await supabase.storage.
+      from("job-documents").
+      upload(storagePath, checkSheetFile, {
+        contentType: checkSheetFile.type || "application/octet-stream",
+        upsert: false
+      });
 
       if (storageError) {
         throw new Error(storageError.message);
@@ -971,21 +972,21 @@ export default function CreateJobCardPage() {
 
       const signatureUrl = userSignature?.signature_file_url || null;
 
-      const { data: sheetRecord, error: sheetError } = await supabase
-        .from("job_check_sheets")
-        .insert([
-          {
-            job_id: jobId,
-            file_name: checkSheetFile.name,
-            file_url: publicUrl,
-            storage_path: storagePath,
-            file_type: checkSheetFile.type || "application/octet-stream",
-            created_by: dbUserId || null,
-            signature_url: signatureUrl,
-          },
-        ])
-        .select()
-        .single();
+      const { data: sheetRecord, error: sheetError } = await supabase.
+      from("job_check_sheets").
+      insert([
+      {
+        job_id: jobId,
+        file_name: checkSheetFile.name,
+        file_url: publicUrl,
+        storage_path: storagePath,
+        file_type: checkSheetFile.type || "application/octet-stream",
+        created_by: dbUserId || null,
+        signature_url: signatureUrl
+      }]
+      ).
+      select().
+      single();
 
       if (sheetError) {
         throw new Error(sheetError.message);
@@ -998,12 +999,12 @@ export default function CreateJobCardPage() {
           sheet_id: sheetId,
           label: box.label || `Item ${index + 1}`,
           position_x: box.x,
-          position_y: box.y,
+          position_y: box.y
         }));
 
-        const { error: checkboxError } = await supabase
-          .from("job_check_sheet_checkboxes")
-          .insert(checkboxPayload);
+        const { error: checkboxError } = await supabase.
+        from("job_check_sheet_checkboxes").
+        insert(checkboxPayload);
 
         if (checkboxError) {
           throw new Error(checkboxError.message);
@@ -1024,7 +1025,7 @@ export default function CreateJobCardPage() {
       const providedId = customerData?.id || customerData?.customer_id || null; // detect if record already exists
       let resolvedCustomer = null; // store whichever record gets hydrated
 
-      if (providedId) { // when popup sent an ID we just hydrate the row
+      if (providedId) {// when popup sent an ID we just hydrate the row
         console.log("Existing customer selected by ID:", providedId);
         const hydratedCustomer = await getCustomerById(providedId);
         const recordToUse = hydratedCustomer || customerData;
@@ -1046,7 +1047,7 @@ export default function CreateJobCardPage() {
           telephone: customerData.telephone || null,
           address: customerData.address || null,
           postcode: customerData.postcode || null,
-          contact_preference: customerData.contactPreference || customerData.contact_preference || "email",
+          contact_preference: customerData.contactPreference || customerData.contact_preference || "email"
         };
 
         const { exists, customer: existingCustomer } = await checkCustomerExists(
@@ -1083,9 +1084,9 @@ export default function CreateJobCardPage() {
             chassis: latestVehicle.vin || latestVehicle.chassis || "",
             engine: latestVehicle.engine_number || latestVehicle.engine || "",
             mileage:
-              latestVehicle.mileage === null || latestVehicle.mileage === undefined
-                ? ""
-                : String(latestVehicle.mileage),
+            latestVehicle.mileage === null || latestVehicle.mileage === undefined ?
+            "" :
+            String(latestVehicle.mileage)
           });
           setError("");
         }
@@ -1102,7 +1103,7 @@ export default function CreateJobCardPage() {
 
   // ✅ Vehicle lookup - prefer existing Supabase vehicle rows before DVLA fallback
   const handleFetchVehicleData = async () => {
-    if (!vehicle.reg.trim()) { // validate that registration number is entered
+    if (!vehicle.reg.trim()) {// validate that registration number is entered
       setError("Please enter a registration number"); // set validation error
       showNotification("vehicle", "error", "✗ Please enter a registration number"); // show notification
       return; // stop execution when missing registration
@@ -1117,7 +1118,7 @@ export default function CreateJobCardPage() {
 
       const storedVehicle = await getVehicleByReg(regUpper); // attempt pulling existing vehicle from Supabase first
 
-      if (storedVehicle) { // if the vehicle already lives in our database
+      if (storedVehicle) {// if the vehicle already lives in our database
         console.log("Vehicle found in Supabase, hydrating from DB:", storedVehicle.vehicle_id);
         hydrateVehicleFromRecord(storedVehicle, { notifyCustomer: true }); // unify hydration logic for stored vehicles
         showNotification("vehicle", "success", "✓ Vehicle details loaded from database!");
@@ -1129,7 +1130,7 @@ export default function CreateJobCardPage() {
       const response = await fetch("/api/vehicles/dvla", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ registration: regUpper }),
+        body: JSON.stringify({ registration: regUpper })
       });
 
       const responseText = await response.text();
@@ -1143,7 +1144,7 @@ export default function CreateJobCardPage() {
           parsed = null;
         }
         const message =
-          parsed?.message || parsed?.error || responseText || `DVLA lookup failed with status ${response.status}`;
+        parsed?.message || parsed?.error || responseText || `DVLA lookup failed with status ${response.status}`;
         throw new Error(message);
       }
 
@@ -1158,7 +1159,7 @@ export default function CreateJobCardPage() {
       }
       console.log("DVLA API response data:", data); // log response payload
 
-      if (!data || Object.keys(data).length === 0) { // if no data returned or empty object
+      if (!data || Object.keys(data).length === 0) {// if no data returned or empty object
         throw new Error("No vehicle data found for that registration from DVLA"); // throw descriptive error
       }
 
@@ -1178,8 +1179,8 @@ export default function CreateJobCardPage() {
         return Number.isFinite(parsedFirstRegYear) && parsedFirstRegYear > 1900 ? parsedFirstRegYear : null;
       })();
       const detectedYear =
-        (Number.isFinite(Number(data.yearOfManufacture)) ? Number(data.yearOfManufacture) : null) ||
-        firstRegYear;
+      (Number.isFinite(Number(data.yearOfManufacture)) ? Number(data.yearOfManufacture) : null) ||
+      firstRegYear;
 
       const vehicleData = { // build vehicle object for state update
         reg: normalizedRegistration,
@@ -1189,7 +1190,7 @@ export default function CreateJobCardPage() {
         colour: data.colour || data.vehicleColour || data.bodyColour || "Not provided",
         chassis: data.vin || data.chassisNumber || data.vehicleIdentificationNumber || "Not provided",
         engine: data.engineNumber || data.engineCapacity || data.engine || "Not provided",
-        mileage: data.mileage || data.currentMileage || (data.motTests && data.motTests[0]?.odometerValue) || vehicle.mileage || "",
+        mileage: data.mileage || data.currentMileage || data.motTests && data.motTests[0]?.odometerValue || vehicle.mileage || ""
       };
 
       console.log("Setting vehicle data from DVLA:", vehicleData); // log normalized vehicle data
@@ -1214,7 +1215,7 @@ export default function CreateJobCardPage() {
         return;
       }
 
-      if (isCustomerEditing) { // prevent saving while customer edits are unsaved
+      if (isCustomerEditing) {// prevent saving while customer edits are unsaved
         alert("Please save customer edits before creating the job card.");
         return;
       }
@@ -1226,9 +1227,9 @@ export default function CreateJobCardPage() {
 
       // Validate all tabs have at least one request
       for (let i = 0; i < jobTabs.length; i++) {
-        const tabRequests = jobTabs[i].requests
-          .map((req) => ({ ...req, text: (req.text || "").trim() }))
-          .filter((req) => req.text.length > 0);
+        const tabRequests = jobTabs[i].requests.
+        map((req) => ({ ...req, text: (req.text || "").trim() })).
+        filter((req) => req.text.length > 0);
         if (tabRequests.length === 0) {
           alert(`Please add at least one job request in Job ${i + 1} before saving.`);
           setActiveTabIndex(i);
@@ -1249,7 +1250,7 @@ export default function CreateJobCardPage() {
           mobile: customerForm.mobile,
           telephone: customerForm.telephone,
           address: customerForm.address,
-          postcode: customerForm.postcode,
+          postcode: customerForm.postcode
         },
         vehicle, // vehicle state object { reg, makeModel, colour, chassis, engine, mileage }
         tabs: jobTabs, // array of tab objects with requests, waitingStatus, jobSource, etc.
@@ -1264,19 +1265,19 @@ export default function CreateJobCardPage() {
           // Mobile Mechanic — only passed when the advisor ticked "Yes" on
           // an eligible job. createFullJobBatch will patch the primary job
           // with service_mode='mobile' and the on-site contact fields.
-          mobileDetails: isMobileMechanic
-            ? {
-                address: customerForm.address || "",
-                postcode: customerForm.postcode || "",
-                contactName: `${customerForm.firstName || ""} ${customerForm.lastName || ""}`.trim(),
-                contactPhone: customerForm.mobile || customerForm.telephone || "",
-                windowStart: null,
-                windowEnd: null,
-                accessNotes: "",
-              }
-            : null,
-          mobileUserId: dbUserId || null,
-        },
+          mobileDetails: isMobileMechanic ?
+          {
+            address: customerForm.address || "",
+            postcode: customerForm.postcode || "",
+            contactName: `${customerForm.firstName || ""} ${customerForm.lastName || ""}`.trim(),
+            contactPhone: customerForm.mobile || customerForm.telephone || "",
+            windowStart: null,
+            windowEnd: null,
+            accessNotes: ""
+          } :
+          null,
+          mobileUserId: dbUserId || null
+        }
       });
 
       if (!batchResult.success) {
@@ -1313,9 +1314,9 @@ export default function CreateJobCardPage() {
       // Update UI and redirect
       const finalJobNumber = primaryJob?.jobNumber || primaryJob?.job_number || primaryJob?.id;
       const regUpper = vehicle.reg.trim().toUpperCase();
-      const jobsCreatedMessage = createdJobs.length > 1
-        ? `${createdJobs.length} linked jobs created: ${createdJobs.map((j) => j.job?.jobNumber || j.job?.job_number).join(", ")}`
-        : `Job created: ${finalJobNumber}`;
+      const jobsCreatedMessage = createdJobs.length > 1 ?
+      `${createdJobs.length} linked jobs created: ${createdJobs.map((j) => j.job?.jobNumber || j.job?.job_number).join(", ")}` :
+      `Job created: ${finalJobNumber}`;
 
       alert(
         `${jobsCreatedMessage}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
@@ -1348,1630 +1349,1630 @@ export default function CreateJobCardPage() {
     }
   };
 
-  return (
-    <>
-      <DevLayoutSection
-        sectionKey="job-cards-create-page-shell"
-        sectionType="page-shell"
-        shell
-        widthMode="page"
-        style={{
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          padding: 0,
-          overflow: "hidden",
-          transition: "background 0.3s ease",
-          background: "transparent",
-        }}
-      >
-        {/* ✅ Header Section - Modern Design */}
-        <DevLayoutSection
-          sectionKey="job-cards-create-header"
-          sectionType="toolbar"
-          parentKey="job-cards-create-page-shell"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "12px",
-            flexShrink: 0,
-            gap: "12px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div
-            className="job-cards-create-header-left"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "wrap",
-              minWidth: 0,
-              flex: "1 1 420px",
-            }}
-          >
-            <div
-              className="job-cards-create-selector-wrap"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                flexWrap: "wrap",
-                minWidth: 0,
-              }}
-            >
-              <div
-                className="tab-api job-cards-create-selector"
-                role="tablist"
-                aria-label="Linked job cards"
-              >
-                {jobCardSelectorOptions.map((option) => {
-                  const isActive = activeTabIndex === option.index;
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      role="tab"
-                      onClick={() => setActiveTabIndex(option.index)}
-                      aria-selected={isActive}
-                      aria-pressed={isActive}
-                      data-tone="default"
-                      className={`tab-api__item${isActive ? " is-active" : ""}`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-                {!isSubJobMode && (
-                  <button
-                    type="button"
-                    onClick={addNewJobTab}
-                    data-tone="default"
-                    className="tab-api__item job-cards-create-add-linked-button"
-                    title="Add another linked job"
-                    style={{ fontWeight: 700, fontSize: "1.1rem", lineHeight: 1, padding: "0 10px" }}
-                  >
-                    +
-                  </button>
-                )}
-              </div>
+  return <CreateJobCardPageUi view="section1" activeTabIndex={activeTabIndex} addNewJobTab={addNewJobTab} binaryToggleGroupStyle={binaryToggleGroupStyle} captureTempUploadMetadata={captureTempUploadMetadata} cosmeticDamagePresent={cosmeticDamagePresent} cosmeticNotes={cosmeticNotes} customer={customer} customerFieldDefinitions={customerFieldDefinitions} customerForm={customerForm} customerNotification={customerNotification} dbUserId={dbUserId} detectJobTypesForRequests={detectJobTypesForRequests} DevLayoutSection={DevLayoutSection} DocumentsUploadPopup={DocumentsUploadPopup} DropdownField={DropdownField} error={error} ExistingCustomerPopup={ExistingCustomerPopup} getBinaryToggleButtonStyle={getBinaryToggleButtonStyle} getJobInfoOptionStyle={getJobInfoOptionStyle} handleAddRequest={handleAddRequest} handleCancelCustomerEdit={handleCancelCustomerEdit} handleCustomerFieldChange={handleCustomerFieldChange} handleCustomerSelect={handleCustomerSelect} handleFetchVehicleData={handleFetchVehicleData} handlePaymentTypeChange={handlePaymentTypeChange} handleRemoveRequest={handleRemoveRequest} handleRequestChange={handleRequestChange} handleSaveCustomerEdits={handleSaveCustomerEdits} handleSaveJob={handleSaveJob} handleStartCustomerEdit={handleStartCustomerEdit} handleTimeChange={handleTimeChange} hasLinkedJobCards={hasLinkedJobCards} isCustomerEditing={isCustomerEditing} isLoadingVehicle={isLoadingVehicle} isMobileMechanic={isMobileMechanic} isSavingCustomer={isSavingCustomer} isSubJobMode={isSubJobMode} jobCardSelectorOptions={jobCardSelectorOptions} jobCategories={jobCategories} jobDetections={jobDetections} jobInfoOptionGroupStyle={jobInfoOptionGroupStyle} jobSource={jobSource} jobTabs={jobTabs} MobileMechanicEligibility={MobileMechanicEligibility} NewCustomerPopup={NewCustomerPopup} newCustomerPrefill={newCustomerPrefill} normalizeHoursToTwoDecimals={normalizeHoursToTwoDecimals} PAYMENT_TYPE_OPTIONS={PAYMENT_TYPE_OPTIONS} persistPresetDefaultHours={persistPresetDefaultHours} populatedRequests={populatedRequests} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} primeJobData={primeJobData} questionPromptsIndex={questionPromptsIndex} QuestionPromptsPopup={QuestionPromptsPopup} removeJobTab={removeJobTab} RequestPresetAutosuggestInput={RequestPresetAutosuggestInput} requests={requests} router={router} sectionCardStyle={sectionCardStyle} setActiveTabIndex={setActiveTabIndex} setCosmeticDamagePresent={setCosmeticDamagePresent} setCosmeticNotes={setCosmeticNotes} setCustomer={setCustomer} setCustomerNotification={setCustomerNotification} setIsMobileMechanic={setIsMobileMechanic} setJobCategories={setJobCategories} setJobDetections={setJobDetections} setJobSource={setJobSource} setNewCustomerPrefill={setNewCustomerPrefill} setQuestionPromptsIndex={setQuestionPromptsIndex} setRequests={setRequests} setShowDetectedRequestsPopup={setShowDetectedRequestsPopup} setShowDocumentsPopup={setShowDocumentsPopup} setShowExistingCustomer={setShowExistingCustomer} setShowNewCustomer={setShowNewCustomer} setVehicle={setVehicle} setVehicleNotification={setVehicleNotification} setVhcRequired={setVhcRequired} setWaitingStatus={setWaitingStatus} setWashRequired={setWashRequired} showDetectedRequestsPopup={showDetectedRequestsPopup} showDocumentsPopup={showDocumentsPopup} showExistingCustomer={showExistingCustomer} showNewCustomer={showNewCustomer} toggleContactPreference={toggleContactPreference} uploadedFiles={uploadedFiles} vehicle={vehicle} vehicleNotification={vehicleNotification} vehicleSectionRef={vehicleSectionRef} vhcRequired={vhcRequired} visibleJobDetections={visibleJobDetections} waitingStatus={waitingStatus} washRequired={washRequired} />;
 
-              {!isSubJobMode && hasLinkedJobCards && (
-                <button
-                  type="button"
-                  onClick={() => removeJobTab(activeTabIndex)}
-                  className="app-btn app-btn--ghost app-btn--sm app-btn--pill job-cards-create-remove-linked-button"
-                >
-                  Remove selected
-                </button>
-              )}
-            </div>
-          </div>
-          <div
-            style={{
-              flex: "1 1 280px",
-              minWidth: 0,
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              className="tab-api"
-              style={{
-                width: "100%",
-                maxWidth: "520px",
-                justifyContent: "center",
-              }}
-            >
-              {populatedRequests.length === 0 ? (
-                <span
-                  data-tone="default"
-                  className="tab-api__item"
-                  style={{
-                    opacity: 0.55,
-                    pointerEvents: "none",
-                    cursor: "default",
-                  }}
-                >
-                  No detected requests yet
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowDetectedRequestsPopup(true)}
-                  className="app-btn app-btn--secondary app-btn--sm app-btn--pill"
-                  style={{ width: "100%", justifyContent: "center" }}
-                >
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "700",
-                      color: "var(--accent-strong)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Request 1
-                  </span>
-                  <span
-                    style={{
-                      minWidth: 0,
-                      flex: "0 1 auto",
-                      fontSize: "12px",
-                      color: "var(--text-secondary)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {populatedRequests[0]?.text}
-                  </span>
-                  {populatedRequests.length > 1 ? (
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        fontSize: "11px",
-                        fontWeight: "700",
-                        color: "var(--accent-strong)",
-                        background: "var(--accent-surface)",
-                        borderRadius: "999px",
-                        padding: "4px 8px",
-                      }}
-                    >
-                      +{populatedRequests.length - 1} more
-                    </span>
-                  ) : null}
-                </button>
-              )}
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            {/* Job Source Badge */}
-            <span
-              style={{
-                minHeight: "var(--control-height)",
-                padding: "var(--control-padding)",
-                borderRadius: "var(--control-radius)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxSizing: "border-box",
-                backgroundColor: jobSource === "Warranty" ? "var(--warning-surface)" : "var(--success-surface)",
-                color: jobSource === "Warranty" ? "var(--warning-dark)" : "var(--success-dark)",
-                fontSize: "var(--control-font-size)",
-                fontWeight: 600,
-                letterSpacing: "0.3px",
-              }}
-            >
-              {jobSource}
-            </span>
-            <button
-              type="button"
-              onClick={handleSaveJob}
-              className="app-btn app-btn--primary"
-            >
-              {jobTabs.length > 1 ? `Save ${jobTabs.length} Jobs` : "Save Job Card"}
-            </button>
-          </div>
-        </DevLayoutSection>
 
-        {/* ✅ Sub-job Mode Banner */}
-        {isSubJobMode && primeJobData && (
-          <DevLayoutSection
-            sectionKey="job-cards-create-subjob-banner"
-            sectionType="status-banner"
-            parentKey="job-cards-create-page-shell"
-            style={{
-              padding: "12px 16px",
-              backgroundColor: "var(--primary-surface)",
-              borderRadius: "var(--radius-xs)",
-              marginBottom: "8px",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              border: "1px solid var(--primary-light)",
-            }}
-          >
-            <span style={{ fontSize: "18px" }}>🔗</span>
-            <div style={{ flex: 1 }}>
-              <span style={{ fontWeight: 600, color: "var(--primary)" }}>
-                Creating sub-job linked to Job {primeJobData.jobNumber}
-              </span>
-              <span style={{ marginLeft: "12px", color: "var(--text-secondary)", fontSize: "13px" }}>
-                Customer and vehicle details are inherited from the prime job
-              </span>
-            </div>
-            <button
-              onClick={() => router.push(`/job-cards/${primeJobData.jobNumber}`)}
-              style={{
-                padding: "6px 12px",
-                fontSize: "12px",
-                backgroundColor: "var(--primary)",
-                color: "white",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                cursor: "pointer",
-              }}
-            >
-              View Prime Job
-            </button>
-          </DevLayoutSection>
-        )}
 
-        {/* ✅ Content Area */}
-        <DevLayoutSection
-          sectionKey="job-cards-create-content"
-          sectionType="section-shell"
-          parentKey="job-cards-create-page-shell"
-          shell
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
-          {/* ✅ NEW LAYOUT: Top Row - Job Information, Vehicle Details, Customer Details (all 33% width) */}
-          <DevLayoutSection
-            sectionKey="job-cards-create-top-row"
-            sectionType="section-shell"
-            parentKey="job-cards-create-content"
-            shell
-            style={{ display: "flex", flexWrap: "wrap", gap: "16px", width: "100%" }}
-          >
-            {/* Job Information Section - responsive, min 260px */}
-            <DevLayoutSection
-              sectionKey="job-cards-create-job-information"
-              sectionType="content-card"
-              parentKey="job-cards-create-top-row"
-              style={{
-                flex: "1 1 260px",
-                minWidth: 0,
-                padding: "var(--section-card-padding)",
-                borderRadius: "var(--radius-md)",
-                ...sectionCardStyle,
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-                minHeight: "420px",
-                boxSizing: "border-box",
-                overflowY: "auto",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "flex-start",
-                  gap: "12px",
-                  paddingBottom: "12px",
-                  borderBottom: "1px solid var(--accent-border)",
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <h3
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color: "var(--text-primary)",
-                      margin: 0,
-                    }}
-                  >
-                    Job Information
-                  </h3>
-                </div>
-              </div>
 
-              <div style={{ display: "grid", gap: "12px" }}>
-                <div>
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "var(--text-secondary)",
-                      display: "block",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    Customer Status
-                  </label>
-                  <div style={jobInfoOptionGroupStyle}>
-                    {["Waiting", "Loan Car", "Collection", "Neither"].map((status) => (
-                      <label key={status} style={getJobInfoOptionStyle(waitingStatus === status)}>
-                        <input
-                          type="radio"
-                          name="waiting"
-                          value={status}
-                          checked={waitingStatus === status}
-                          onChange={() => setWaitingStatus(status)}
-                          style={{ display: "none" }}
-                        />
-                        <span style={{ fontSize: "13px", textAlign: "center" }}>{status}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
-                <div>
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "var(--text-secondary)",
-                      display: "block",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    Job Source
-                  </label>
-                  <div style={jobInfoOptionGroupStyle}>
-                    {["Retail", "Warranty"].map((src) => (
-                      <label key={src} style={getJobInfoOptionStyle(jobSource === src)}>
-                        <input
-                          type="radio"
-                          name="source"
-                          value={src}
-                          checked={jobSource === src}
-                          onChange={() => setJobSource(src)}
-                          style={{ display: "none" }}
-                        />
-                        <span style={{ fontSize: "13px", textAlign: "center" }}>{src}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Mobile Mechanic eligibility — evaluates the current
-                    customer + vehicle + detected job types and exposes a
-                    Yes/No toggle gated by the eligibility verdict.
-                    Customer postcode drives a drive-time lookup inside the
-                    component; no extra API wiring is needed here. */}
-                <MobileMechanicEligibility
-                  customer={customerForm}
-                  vehicle={vehicle}
-                  jobDetections={jobDetections}
-                  jobCategories={jobCategories}
-                  isMobileMechanic={isMobileMechanic}
-                  onSelectionChange={setIsMobileMechanic}
-                  toggleGroupStyle={binaryToggleGroupStyle}
-                  getToggleButtonStyle={getBinaryToggleButtonStyle}
-                />
-              </div>
-            </DevLayoutSection>
 
-            {/* Vehicle Details Section - responsive, min 260px */}
-            <DevLayoutSection
-              sectionKey="job-cards-create-vehicle-details"
-              sectionType="content-card"
-              parentKey="job-cards-create-top-row"
-              style={{
-                flex: "1 1 260px",
-                minWidth: 0,
-                padding: "var(--section-card-padding)",
-                borderRadius: "var(--radius-md)",
-                ...sectionCardStyle,
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-                minHeight: "420px",
-                boxSizing: "border-box",
-                overflowY: "auto",
-              }}
-              ref={vehicleSectionRef}
-            >
-              <h3
-                style={{
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  color: "var(--text-primary)",
-                  marginTop: 0,
-                  marginBottom: "16px",
-                }}
-              >
-                Vehicle Details
-                {isSubJobMode && (
-                  <span
-                    style={{
-                      marginLeft: "8px",
-                      fontSize: "11px",
-                      fontWeight: "500",
-                      padding: "2px 8px",
-                      borderRadius: "var(--radius-xs)",
-                      backgroundColor: "var(--primary-surface)",
-                      color: "var(--primary)",
-                    }}
-                  >
-                    Inherited
-                  </span>
-                )}
-              </h3>
 
-              {vehicleNotification && (
-                <div
-                  style={{
-                    padding: "12px 16px",
-                    marginBottom: "16px",
-                    borderRadius: "var(--radius-xs)",
-                    backgroundColor: vehicleNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
-                    border: `1px solid ${vehicleNotification.type === "success" ? "var(--success)" : "var(--danger)"}`,
-                    color: vehicleNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <span>{vehicleNotification.message}</span>
-                  <button
-                    onClick={() => setVehicleNotification(null)}
-                    style={{
-                      marginLeft: "auto",
-                      background: "none",
-                      border: "none",
-                      fontSize: "20px",
-                      cursor: "pointer",
-                      color: "inherit",
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
 
-              <div style={{ marginBottom: "16px" }}>
-                <label
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    color: "var(--text-secondary)",
-                    display: "block",
-                    marginBottom: "6px",
-                  }}
-                >
-                  Registration Number
-                </label>
-                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                  <input
-                    type="text"
-                    value={vehicle.reg}
-                    onChange={(e) => setVehicle({ ...vehicle, reg: e.target.value })}
-                    placeholder="e.g. AB12 CDE"
-                    style={{
-                      flex: 1,
-                      padding: "10px 12px",
-                      border: "none",
-                      borderRadius: "var(--radius-xs)",
-                      backgroundColor: "var(--surface)",
-                      fontSize: "14px",
-                      textTransform: "uppercase",
-                      outline: "none",
-                      transition: "border-color 0.2s",
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = "var(--primary)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = "var(--surface-light)";
-                    }}
-                  />
-                  <button
-                    onClick={handleFetchVehicleData}
-                    disabled={isLoadingVehicle}
-                    style={{
-                      padding: "10px 20px",
-                      backgroundColor: isLoadingVehicle ? "var(--background)" : "var(--primary)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "var(--radius-xs)",
-                      fontWeight: "600",
-                      fontSize: "13px",
-                      cursor: isLoadingVehicle ? "not-allowed" : "pointer",
-                      transition: "all 0.2s",
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary-dark)";
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary)";
-                    }}
-                  >
-                    {isLoadingVehicle ? "Loading..." : "Search"}
-                  </button>
-                </div>
-              </div>
 
-              {error && (
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "var(--danger)",
-                    marginBottom: "12px",
-                    padding: "10px 12px",
-                    backgroundColor: "var(--danger-surface)",
-                    borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--danger)",
-                  }}
-                >
-                  {error}
-                </div>
-              )}
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {["colour", "makeModel", "chassis", "engine"].map((key, idx) => {
-                  const labelMap = {
-                    colour: "Colour",
-                    makeModel: "Make & Model",
-                    chassis: "Chassis Number",
-                    engine: "Engine Number",
-                  };
-                  return (
-                    <div key={`${key}-${idx}`}>
-                      <label
-                        style={{
-                          fontSize: "13px",
-                          fontWeight: "500",
-                          color: "var(--text-secondary)",
-                          display: "block",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        {labelMap[key]}
-                      </label>
-                      <div
-                        style={{
-                          padding: "10px 12px",
-                          backgroundColor: "var(--surface)",
-                          borderRadius: "var(--radius-xs)",
-                          fontSize: "14px",
-                          color: vehicle[key] ? "var(--text-primary)" : "var(--grey-accent-light)",
-                        }}
-                      >
-                        {vehicle[key] || "Not available"}
-                      </div>
-                    </div>
-                  );
-                })}
 
-                <div>
-                  <label
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: "500",
-                      color: "var(--text-secondary)",
-                      display: "block",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Current Mileage
-                  </label>
-                  <input
-                    type="number"
-                    value={vehicle.mileage}
-                    onChange={(e) => setVehicle({ ...vehicle, mileage: e.target.value })}
-                    placeholder="Enter mileage"
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      border: "none",
-                      borderRadius: "var(--radius-xs)",
-                      backgroundColor: "var(--surface)",
-                      fontSize: "14px",
-                      outline: "none",
-                      transition: "border-color 0.2s",
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = "var(--primary)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = "var(--surface-light)";
-                    }}
-                  />
-                </div>
-              </div>
-            </DevLayoutSection>
 
-            {/* Customer Details Section - responsive, min 260px */}
-            <DevLayoutSection
-              sectionKey="job-cards-create-customer-details"
-              sectionType="content-card"
-              parentKey="job-cards-create-top-row"
-              style={{
-                flex: "1 1 260px",
-                minWidth: 0,
-                padding: "var(--section-card-padding)",
-                borderRadius: "var(--radius-md)",
-                ...sectionCardStyle,
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-                minHeight: "420px",
-                boxSizing: "border-box",
-                overflowY: "auto",
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  color: "var(--text-primary)",
-                  marginTop: 0,
-                  marginBottom: "16px",
-                }}
-              >
-                Customer Details
-                {isSubJobMode && (
-                  <span
-                    style={{
-                      marginLeft: "8px",
-                      fontSize: "11px",
-                      fontWeight: "500",
-                      padding: "2px 8px",
-                      borderRadius: "var(--radius-xs)",
-                      backgroundColor: "var(--primary-surface)",
-                      color: "var(--primary)",
-                    }}
-                  >
-                    Inherited
-                  </span>
-                )}
-              </h3>
 
-              {customerNotification && (
-                <div
-                  style={{
-                    padding: "12px 16px",
-                    marginBottom: "16px",
-                    borderRadius: "var(--radius-xs)",
-                    backgroundColor: customerNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
-                    border: `1px solid ${customerNotification.type === "success" ? "var(--success)" : "var(--danger)"}`,
-                    color: customerNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <span>{customerNotification.message}</span>
-                  <button
-                    onClick={() => setCustomerNotification(null)}
-                    style={{
-                      marginLeft: "auto",
-                      background: "none",
-                      border: "none",
-                      fontSize: "20px",
-                      cursor: "pointer",
-                      color: "inherit",
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
 
-              {customer ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {isCustomerEditing ? (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                        gap: "12px",
-                      }}
-                    >
-                      {customerFieldDefinitions.map((input) => (
-                        <div
-                          key={input.field}
-                          style={{
-                            gridColumn:
-                              input.field === "email" ||
-                              input.field === "address" ||
-                              input.field === "contactPreference"
-                                ? "1 / -1"
-                                : "auto",
-                          }}
-                        >
-                          <label
-                            style={{
-                              fontSize: "13px",
-                              fontWeight: "500",
-                              color: "var(--text-secondary)",
-                              display: "block",
-                              marginBottom: "6px",
-                            }}
-                          >
-                            {input.label}
-                          </label>
-                          {input.type === "textarea" ? (
-                            <textarea
-                              value={customerForm[input.field] || ""}
-                              onChange={(e) => handleCustomerFieldChange(input.field, e.target.value)}
-                              onInput={(e) => {
-                                if (input.field !== "address") return;
-                                e.target.style.height = "auto";
-                                e.target.style.height = `${e.target.scrollHeight}px`;
-                              }}
-                              disabled={!isCustomerEditing || isSavingCustomer}
-                              placeholder={input.placeholder}
-                              rows={input.field === "address" ? 1 : 3}
-                              style={{
-                                width: "100%",
-                                padding: "10px 12px",
-                                border: "none",
-                                borderRadius: "var(--radius-xs)",
-                                fontSize: "14px",
-                                outline: "none",
-                                transition: "border-color 0.2s",
-                                backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "transparent",
-                                resize: input.field === "address" ? "none" : "vertical",
-                                minHeight: input.field === "address" ? "40px" : "unset",
-                                overflow: "hidden",
-                                lineHeight: 1.45,
-                              }}
-                              onFocus={(e) => {
-                                e.target.style.borderColor = "var(--primary)";
-                              }}
-                              onBlur={(e) => {
-                                e.target.style.borderColor = "var(--surface-light)";
-                              }}
-                            />
-                          ) : input.type === "multi-select" ? (
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: "8px",
-                                flexWrap: "wrap",
-                                padding: "6px",
-                                borderRadius: "var(--control-radius)",
-                                backgroundColor: isCustomerEditing ? "var(--surface-light)" : "transparent",
-                                border: "none",
-                                width: "100%",
-                              }}
-                            >
-                              {["phone", "email", "sms"].map((pref) => {
-                                const active = Array.isArray(customerForm.contactPreference) &&
-                                  customerForm.contactPreference.includes(pref);
-                                return (
-                                  <button
-                                    key={pref}
-                                    type="button"
-                                    onClick={() => toggleContactPreference(pref)}
-                                    style={{
-                                      padding: "8px 14px",
-                                      borderRadius: "var(--control-radius)",
-                                      border: active ? "1px solid var(--primary)" : "1px solid transparent",
-                                      backgroundColor: active ? "var(--surface)" : "transparent",
-                                      color: active ? "var(--text-primary)" : "var(--text-secondary)",
-                                      fontSize: "13px",
-                                      fontWeight: active ? "600" : "500",
-                                      cursor: "pointer",
-                                      transition: "all 0.2s",
-                                      textTransform: "none",
-                                      letterSpacing: "0",
-                                    }}
-                                  >
-                                    {pref === "sms" ? "SMS" : pref.charAt(0).toUpperCase() + pref.slice(1)}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <input
-                              type={input.type}
-                              value={customerForm[input.field] || ""}
-                              onChange={(e) => handleCustomerFieldChange(input.field, e.target.value)}
-                              disabled={!isCustomerEditing || isSavingCustomer}
-                              placeholder={input.placeholder}
-                              style={{
-                                width: "100%",
-                                padding: "10px 12px",
-                                border: "none",
-                                borderRadius: "var(--radius-xs)",
-                                fontSize: "14px",
-                                outline: "none",
-                                transition: "border-color 0.2s",
-                                backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "transparent",
-                                color: input.type === "tel" ? "#000" : "inherit",
-                              }}
-                              onFocus={(e) => {
-                                e.target.style.borderColor = "var(--primary)";
-                              }}
-                              onBlur={(e) => {
-                                e.target.style.borderColor = "var(--surface-light)";
-                              }}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                        gap: "8px",
-                      }}
-                    >
-                      {customerFieldDefinitions
-                        .filter((input) => input.field !== "contactPreference")
-                        .map((input) => (
-                          <div
-                            key={input.field}
-                            style={{
-                              gridColumn:
-                                input.field === "email" || input.field === "address"
-                                  ? "1 / -1"
-                                  : "auto",
-                              padding:
-                                input.field === "email"
-                                  ? "12px 14px"
-                                  : input.field === "mobile" || input.field === "telephone"
-                                    ? "12px 14px"
-                                    : "10px 12px",
-                              borderRadius: "var(--radius-sm)",
-                              background: "var(--surface)",
-                              border: "1px solid var(--accent-border)",
-                              minWidth: 0,
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: "11px",
-                                fontWeight: "700",
-                                color: "var(--text-secondary)",
-                                textTransform: "uppercase",
-                                letterSpacing: "0.04em",
-                                marginBottom: "4px",
-                              }}
-                            >
-                              {input.label}
-                            </div>
-                            <div
-                              style={{
-                                fontSize:
-                                  input.field === "email"
-                                    ? "14px"
-                                    : "13px",
-                                fontWeight: "600",
-                                color: "var(--text-primary)",
-                                lineHeight: 1.4,
-                                wordBreak: "break-word",
-                              }}
-                            >
-                              {customerForm[input.field] || "Not provided"}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  )}
 
-                  <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
-                    {isCustomerEditing ? (
-                      <>
-                        <button
-                          onClick={handleSaveCustomerEdits}
-                          disabled={isSavingCustomer}
-                          style={{
-                            flex: 1,
-                            padding: "12px",
-                            fontSize: "14px",
-                            backgroundColor: "var(--primary)",
-                            color: "var(--text-inverse)",
-                            border: "none",
-                            borderRadius: "var(--radius-xs)",
-                            cursor: isSavingCustomer ? "not-allowed" : "pointer",
-                            fontWeight: "600",
-                            transition: "all 0.2s",
-                            opacity: isSavingCustomer ? 0.7 : 1,
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSavingCustomer) {
-                              e.target.style.backgroundColor = "var(--primary-dark)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "var(--primary)";
-                          }}
-                        >
-                          {isSavingCustomer ? "Saving..." : "Save Changes"}
-                        </button>
-                        <button
-                          onClick={handleCancelCustomerEdit}
-                          disabled={isSavingCustomer}
-                          style={{
-                            flex: 1,
-                            padding: "12px",
-                            fontSize: "14px",
-                            backgroundColor: "var(--surface-light)",
-                            color: "var(--text-primary)",
-                            border: "none",
-                            borderRadius: "var(--radius-xs)",
-                            cursor: isSavingCustomer ? "not-allowed" : "pointer",
-                            fontWeight: "600",
-                            transition: "all 0.2s",
-                            opacity: isSavingCustomer ? 0.7 : 1,
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSavingCustomer) {
-                              e.target.style.backgroundColor = "var(--surface-muted)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "var(--surface-light)";
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={handleStartCustomerEdit}
-                          style={{
-                            width: "100%",
-                            maxWidth: "320px",
-                            padding: "14px",
-                            fontSize: "14px",
-                            backgroundColor: "var(--primary)",
-                            color: "var(--text-inverse)",
-                            border: "none",
-                            borderRadius: "var(--radius-xs)",
-                            cursor: "pointer",
-                            fontWeight: "600",
-                            transition: "all 0.2s",
-                            alignSelf: "center",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = "var(--primary-dark)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "var(--primary)";
-                          }}
-                        >
-                          Edit Customer
-                        </button>
-                        <button
-                          onClick={() => setCustomer(null)}
-                          disabled={isSavingCustomer}
-                          style={{
-                            width: "100%",
-                            maxWidth: "320px",
-                            padding: "12px 16px",
-                            fontSize: "14px",
-                            backgroundColor: "var(--accent-purple-surface)",
-                            color: "var(--accent-purple)",
-                            border: "1px solid var(--accent-purple)",
-                            borderRadius: "var(--radius-xs)",
-                            cursor: isSavingCustomer ? "not-allowed" : "pointer",
-                            fontWeight: "600",
-                            transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
-                            opacity: isSavingCustomer ? 0.7 : 1,
-                            alignSelf: "center",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSavingCustomer) {
-                              e.target.style.backgroundColor = "var(--accent-purple)";
-                              e.target.style.color = "var(--text-inverse)";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = "var(--accent-purple-surface)";
-                            e.target.style.color = "var(--accent-purple)";
-                          }}
-                        >
-                          Clear Customer
-                        </button>
-                      </>
-                    )}
-                  </div>
 
-                  {isCustomerEditing && (
-                    <button
-                      onClick={() => setCustomer(null)}
-                      disabled={isSavingCustomer}
-                      style={{
-                        width: "100%",
-                        maxWidth: "320px",
-                        padding: "12px",
-                        fontSize: "14px",
-                        backgroundColor: "var(--surface-light)",
-                        color: "var(--text-primary)",
-                        border: "none",
-                        borderRadius: "var(--radius-xs)",
-                        cursor: isSavingCustomer ? "not-allowed" : "pointer",
-                        fontWeight: "600",
-                        transition: "all 0.2s",
-                        opacity: isSavingCustomer ? 0.7 : 1,
-                        alignSelf: "center",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSavingCustomer) {
-                          e.target.style.backgroundColor = "var(--surface-muted)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = "var(--surface-light)";
-                      }}
-                    >
-                      Clear Customer
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
-                  <button
-                    onClick={() => setShowNewCustomer(true)}
-                    style={{
-                      width: "100%",
-                      maxWidth: "320px",
-                      padding: "14px",
-                      fontSize: "14px",
-                      backgroundColor: "var(--primary)",
-                      color: "var(--text-inverse)",
-                      border: "none",
-                      borderRadius: "var(--radius-xs)",
-                      cursor: "pointer",
-                      fontWeight: "600",
-                      transition: "all 0.2s",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "var(--primary-dark)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "var(--primary)";
-                    }}
-                  >
-                    New Customer
-                  </button>
-                  <button
-                    onClick={() => setShowExistingCustomer(true)}
-                    style={{
-                      width: "100%",
-                      maxWidth: "320px",
-                      padding: "12px 16px",
-                      fontSize: "14px",
-                      backgroundColor: "var(--accent-purple-surface)",
-                      color: "var(--accent-purple)",
-                      border: "1px solid var(--accent-purple)",
-                      borderRadius: "var(--radius-xs)",
-                      cursor: "pointer",
-                      fontWeight: "600",
-                      transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = "var(--accent-purple)";
-                      e.target.style.color = "var(--text-inverse)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = "var(--accent-purple-surface)";
-                      e.target.style.color = "var(--accent-purple)";
-                    }}
-                  >
-                    Search Existing Customer
-                  </button>
-                </div>
-              )}
-            </DevLayoutSection>
-          </DevLayoutSection>
 
-          {/* ✅ Job Requests Section - Full Width */}
-          <DevLayoutSection
-            sectionKey="job-cards-create-job-requests"
-            sectionType="section-shell"
-            parentKey="job-cards-create-content"
-            style={{
-              padding: "var(--section-card-padding)",
-              borderRadius: "var(--radius-md)",
-              ...sectionCardStyle,
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "16px",
-                fontWeight: "600",
-                color: "var(--text-primary)",
-                marginTop: 0,
-                marginBottom: "16px",
-              }}
-            >
-              Job Requests
-            </h3>
-            <div style={{ maxHeight: "360px", overflowY: "auto", paddingRight: "4px", marginBottom: "12px" }}>
-              {requests.map((req, i) => (
-                <DevLayoutSection
-                  key={`job-request-row-${i}`}
-                  sectionKey={`job-cards-create-job-request-${i + 1}`}
-                  sectionType="content-card"
-                  parentKey="job-cards-create-job-requests"
-                  style={{
-                    border: "none",
-                    borderRadius: "var(--radius-sm)",
-                    marginBottom: "12px",
-                    padding: "16px",
-                    backgroundColor: "var(--surface)",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "var(--text-secondary)",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    Request {i + 1}
-                  </div>
-                  <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                    <RequestPresetAutosuggestInput
-                      value={req.text || ""}
-                      onChange={(nextValue) => handleRequestChange(i, nextValue)}
-                      onPresetSelect={(preset) => {
-                        const updated = [...requests];
-                        updated[i] = {
-                          ...updated[i],
-                          text: preset.label,
-                          time: normalizeHoursToTwoDecimals(preset.defaultHours),
-                          presetId: preset.id,
-                          selectedPresetLabel: preset.label,
-                        };
-                        const detections = detectJobTypesForRequests(updated);
-                        setRequests(updated);
-                        setJobDetections(detections);
-                        setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
-                      }}
-                      placeholder="Enter job request (MOT, Service, Diagnostic)"
-                      containerStyle={{ flex: 2, minWidth: "250px" }}
-                      inputStyle={{
-                        width: "100%",
-                        padding: "10px 12px",
-                        border: "none",
-                        borderRadius: "var(--radius-xs)",
-                        fontSize: "14px",
-                        outline: "none",
-                        transition: "border-color 0.2s",
-                        backgroundColor: "var(--accent-surface)",
-                      }}
-                    />
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <input
-                        type="number"
-                        min="0.00"
-                        step="0.01"
-                        value={req.time || ""}
-                        onChange={(e) => handleTimeChange(i, e.target.value)}
-                        placeholder="0.00"
-                        className="app-input"
-                        style={{ width: "90px" }}
-                        onBlur={(e) => {
-                          const updated = [...requests];
-                          updated[i].time = normalizeHoursToTwoDecimals(updated[i]?.time);
-                          setRequests(updated);
-                          persistPresetDefaultHours(updated[i]);
-                        }}
-                      />
-                      <span
-                        className="app-btn app-btn--secondary app-btn--sm"
-                        style={{ pointerEvents: "none", minWidth: 0, padding: "0 10px" }}
-                      >
-                        h
-                      </span>
-                    </div>
-                    <DropdownField
-                      value={req.paymentType || "Customer"}
-                      onChange={(e) => handlePaymentTypeChange(i, e.target.value)}
-                      options={PAYMENT_TYPE_OPTIONS}
-                      className="job-request-payment-dropdown"
-                    />
-                    {/* Open the Question Prompts helper for this specific
-                        request row. Disabled when the request text is empty
-                        so advisors don't hit it by mistake — an empty
-                        request falls back to generic questions which aren't
-                        as useful on a live call. */}
-                    <button
-                      type="button"
-                      onClick={() => setQuestionPromptsIndex(i)}
-                      className="app-btn app-btn--secondary app-btn--sm"
-                      disabled={!String(req.text || "").trim()}
-                      title="Show suggested questions to ask the customer"
-                    >
-                      Question Prompts
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveRequest(i)}
-                      className="app-btn app-btn--danger app-btn--sm"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </DevLayoutSection>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={handleAddRequest}
-              className="app-btn app-btn--primary"
-            >
-              + Add Request
-            </button>
-          </DevLayoutSection>
 
-          {/* ✅ Bottom Row: Cosmetic Damage, Add VHC, Full Car Details */}
-          <DevLayoutSection
-            sectionKey="job-cards-create-bottom-row"
-            sectionType="section-shell"
-            parentKey="job-cards-create-content"
-            shell
-            className="job-cards-create-bottom-row"
-          >
-            <DevLayoutSection
-              sectionKey="job-cards-create-cosmetic-damage"
-              sectionType="content-card"
-              parentKey="job-cards-create-bottom-row"
-              className="job-cards-create-bottom-card"
-              style={{
-                padding: "var(--section-card-padding)",
-                borderRadius: "var(--radius-md)",
-                ...sectionCardStyle,
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-              }}
-            >
-              <div className="job-cards-create-bottom-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
-                <h4
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "var(--text-primary)",
-                    margin: 0,
-                  }}
-                >
-                  Cosmetic Damage
-                </h4>
-                <div style={binaryToggleGroupStyle}>
-                  {[true, false].map((choice) => (
-                    <button
-                      key={choice ? "yes" : "no"}
-                      onClick={() => setCosmeticDamagePresent(choice)}
-                      type="button"
-                      style={getBinaryToggleButtonStyle(cosmeticDamagePresent === choice)}
-                    >
-                      {choice ? "Yes" : "No"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {cosmeticDamagePresent && (
-                <textarea
-                  value={cosmeticNotes}
-                  onChange={(e) => setCosmeticNotes(e.target.value)}
-                  placeholder="Describe any scratches, dents, or cosmetic damage..."
-                  className="cosmetic-notes-active"
-                  style={{
-                    width: "100%",
-                    height: "80px",
-                    padding: "10px 12px",
-                    border: "none",
-                    borderRadius: "var(--radius-xs)",
-                    resize: "none",
-                    fontFamily: "inherit",
-                    fontSize: "13px",
-                    outline: "none",
-                    transition: "border-color 0.2s",
-                    backgroundColor: "var(--background)",
-                    color: "var(--text-primary)",
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = "var(--primary)";
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = "var(--surface-light)";
-                  }}
-                />
-              )}
-            </DevLayoutSection>
-            <DevLayoutSection
-              sectionKey="job-cards-create-wash"
-              sectionType="content-card"
-              parentKey="job-cards-create-bottom-row"
-              className="job-cards-create-bottom-card"
-              style={{
-                padding: "var(--section-card-padding)",
-                borderRadius: "var(--radius-md)",
-                ...sectionCardStyle,
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                justifyContent: "space-between",
-              }}
-            >
-              <div className="job-cards-create-bottom-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                <h4
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "var(--text-primary)",
-                    margin: 0,
-                  }}
-                >
-                  Wash
-                </h4>
-                <div style={binaryToggleGroupStyle}>
-                  {[true, false].map((choice) => (
-                    <button
-                      key={`wash-${choice ? "yes" : "no"}`}
-                      type="button"
-                      onClick={() => setWashRequired(choice)}
-                      style={getBinaryToggleButtonStyle(washRequired === choice)}
-                    >
-                      {choice ? "Yes" : "No"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </DevLayoutSection>
-            <DevLayoutSection
-              sectionKey="job-cards-create-vhc-required"
-              sectionType="content-card"
-              parentKey="job-cards-create-bottom-row"
-              className="job-cards-create-bottom-card"
-              style={{
-                padding: "var(--section-card-padding)",
-                borderRadius: "var(--radius-md)",
-                ...sectionCardStyle,
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-              }}
-            >
-              <div className="job-cards-create-bottom-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                <h4
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "var(--text-primary)",
-                    margin: 0,
-                  }}
-                >
-                  VHC Required?
-                </h4>
-                <div style={binaryToggleGroupStyle}>
-                  {[true, false].map((choice) => (
-                    <button
-                      key={`vhc-${choice ? "yes" : "no"}`}
-                      type="button"
-                      onClick={() => setVhcRequired(choice)}
-                      style={getBinaryToggleButtonStyle(vhcRequired === choice)}
-                    >
-                      {choice ? "Yes" : "No"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </DevLayoutSection>
-            <DevLayoutSection
-              sectionKey="job-cards-create-documents"
-              sectionType="content-card"
-              parentKey="job-cards-create-bottom-row"
-              className="job-cards-create-bottom-card"
-              style={{
-                padding: "var(--section-card-padding)",
-                borderRadius: "var(--radius-md)",
-                ...sectionCardStyle,
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                justifyContent: "space-between",
-              }}
-            >
-              <div className="job-cards-create-bottom-card-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-                <h4
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "var(--text-primary)",
-                    margin: 0,
-                  }}
-                >
-                  Documents
-                </h4>
-                <button
-                  type="button"
-                  onClick={() => setShowDocumentsPopup(true)}
-                  style={{
-                    padding: "10px 18px",
-                    borderRadius: "var(--radius-sm)",
-                    border: "none",
-                    backgroundColor: "var(--primary)",
-                    color: "white",
-                    fontWeight: "600",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                    transition: "background-color 0.2s, transform 0.2s",
-                      }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--primary-dark)";
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "var(--primary)";
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.zIndex = "0";
-                  }}
-                >
-                  Manage Documents
-                </button>
-              </div>
-            </DevLayoutSection>
-          </DevLayoutSection>
-        </DevLayoutSection>
 
-        {showNewCustomer && (
-          <NewCustomerPopup
-            onClose={() => setShowNewCustomer(false)}
-            onSelect={(c) => handleCustomerSelect(c)}
-            initialName={newCustomerPrefill}
-          />
-        )}
-        {showExistingCustomer && (
-          <ExistingCustomerPopup
-            onClose={() => setShowExistingCustomer(false)}
-            onSelect={(c) => handleCustomerSelect(c)}
-            onCreateNew={(prefill) => {
-              setNewCustomerPrefill(prefill);
-              setShowExistingCustomer(false);
-              setShowNewCustomer(true);
-            }}
-          />
-        )}
 
-        <DocumentsUploadPopup
-          open={showDocumentsPopup}
-          onClose={() => setShowDocumentsPopup(false)}
-          jobId={null}
-          userId={dbUserId || null}
-          onTempFilesQueued={captureTempUploadMetadata}
-          existingDocuments={uploadedFiles.map((f) => ({
-            name: f.fileName,
-            type: f.contentType,
-            url: f.url || "",
-          }))}
-        />
-        {/* Question Prompts popup — rendered once per page, opens for the
-            request row whose index is stored in questionPromptsIndex. */}
-        <QuestionPromptsPopup
-          open={questionPromptsIndex !== null}
-          onClose={() => setQuestionPromptsIndex(null)}
-          requestText={
-            questionPromptsIndex !== null
-              ? String(requests?.[questionPromptsIndex]?.text || "")
-              : ""
-          }
-          requestIndex={questionPromptsIndex}
-        />
-        {showDetectedRequestsPopup && (
-          <div
-            style={popupOverlayStyles}
-            onClick={(event) => {
-              if (event.target === event.currentTarget) {
-                setShowDetectedRequestsPopup(false);
-              }
-            }}
-          >
-            <div
-              style={{
-                ...popupCardStyles,
-                width: "100%",
-                maxWidth: "620px",
-                maxHeight: "88vh",
-                overflowY: "auto",
-                border: "none",
-              }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div style={{ padding: "28px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <h3
-                    style={{
-                      margin: 0,
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "var(--primary)",
-                      letterSpacing: "0.02em",
-                    }}
-                  >
-                    Job Requests
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowDetectedRequestsPopup(false)}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      fontSize: "22px",
-                      lineHeight: 1,
-                      color: "var(--info)",
-                    }}
-                    aria-label="Close job requests popup"
-                  >
-                    ×
-                  </button>
-                </div>
 
-                <div style={{ display: "grid", gap: "10px" }}>
-                  {populatedRequests.map((request) => {
-                    const requestDetections = visibleJobDetections.filter(
-                      (detection) => Number(detection.requestIndex) === request.index
-                    );
 
-                    return (
-                      <div
-                        key={`detected-request-popup-${request.index}`}
-                        style={{
-                          border: "none",
-                          borderRadius: "var(--radius-sm)",
-                          backgroundColor: "var(--surface-light)",
-                          padding: "14px 16px",
-                          display: "grid",
-                          gap: "10px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            gap: "12px",
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
-                            Request {request.index + 1}
-                          </span>
-                          {requestDetections.length > 0 ? (
-                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                              {requestDetections.map((detection, index) => (
-                                <span
-                                  key={`request-detection-${request.index}-${index}`}
-                                  className="app-btn app-btn--secondary app-btn--xs app-btn--pill"
-                                  style={{ pointerEvents: "none" }}
-                                >
-                                  {detection.jobType}
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: "13px",
-                            lineHeight: 1.5,
-                            color: "var(--text-primary)",
-                            whiteSpace: "pre-wrap",
-                          }}
-                        >
-                          {request.text}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </DevLayoutSection>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

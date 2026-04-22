@@ -1,3 +1,4 @@
+// file location: src/pages/parts/deliveries.js
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { supabase } from "@/lib/database/supabaseClient";
@@ -5,32 +6,33 @@ import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import PartsDeliveriesPageUi from "@/components/page-ui/parts/parts-deliveries-ui"; // Extracted presentation layer.
 
 const pageStyles = {
   container: {
     padding: "20px",
     display: "flex",
     flexDirection: "column",
-    gap: "20px",
+    gap: "20px"
   },
   headerCard: {
-    gap: "16px",
+    gap: "16px"
   },
   listCard: {
-    gap: "14px",
+    gap: "14px"
   },
   controls: {
     display: "flex",
     flexWrap: "wrap",
     gap: "12px",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "space-between"
   },
   dateControls: {
     display: "flex",
     flexWrap: "wrap",
     gap: "10px",
-    alignItems: "center",
+    alignItems: "center"
   },
   jobRow: (isCompleted) => ({
     border: "none",
@@ -40,7 +42,7 @@ const pageStyles = {
     flexDirection: "column",
     gap: "12px",
     background: isCompleted ? "rgba(var(--success-rgb,34,139,34),0.08)" : "var(--surface)",
-    width: "100%",
+    width: "100%"
   }),
   jobInfoButton: {
     border: "none",
@@ -51,28 +53,28 @@ const pageStyles = {
     display: "flex",
     flexDirection: "column",
     gap: "8px",
-    cursor: "pointer",
+    cursor: "pointer"
   },
   jobActions: {
     display: "flex",
     flexWrap: "wrap",
     gap: "10px",
     alignItems: "stretch",
-    justifyContent: "space-between",
+    justifyContent: "space-between"
   },
   reorderGroup: {
     display: "flex",
     flexDirection: "column",
     gap: "6px",
-    minWidth: "160px",
-  },
+    minWidth: "160px"
+  }
 };
 
 const statusChipStyle = (status) => {
   const variants = {
     scheduled: { background: "rgba(var(--warning-rgb),0.15)", color: "var(--danger-dark)" },
     en_route: { background: "rgba(var(--info-rgb),0.2)", color: "var(--accent-purple)" },
-    completed: { background: "rgba(var(--success-rgb,34,139,34),0.25)", color: "var(--success, #297C3B)" },
+    completed: { background: "rgba(var(--success-rgb,34,139,34),0.25)", color: "var(--success, #297C3B)" }
   };
   return {
     padding: "4px 12px",
@@ -81,7 +83,7 @@ const statusChipStyle = (status) => {
     fontWeight: 600,
     letterSpacing: "0.04em",
     textTransform: "uppercase",
-    ...(variants[status] || variants.scheduled),
+    ...(variants[status] || variants.scheduled)
   };
 };
 
@@ -94,7 +96,7 @@ const markButtonStyle = (isCompleted) => ({
   background: isCompleted ? "rgba(var(--success-rgb,34,139,34),0.2)" : "var(--primary)",
   color: isCompleted ? "var(--success, #297C3B)" : "var(--surface)",
   flex: "1 1 180px",
-  textAlign: "center",
+  textAlign: "center"
 });
 
 const arrowButtonStyle = {
@@ -103,7 +105,7 @@ const arrowButtonStyle = {
   background: "var(--danger-surface)",
   padding: "6px 10px",
   fontWeight: 700,
-  cursor: "pointer",
+  cursor: "pointer"
 };
 
 const modalOverlayStyle = {
@@ -114,7 +116,7 @@ const modalOverlayStyle = {
   alignItems: "center",
   justifyContent: "center",
   padding: "16px",
-  zIndex: 90,
+  zIndex: 90
 };
 
 const modalContentStyle = {
@@ -127,13 +129,13 @@ const modalContentStyle = {
   border: "none",
   display: "flex",
   flexDirection: "column",
-  gap: "16px",
+  gap: "16px"
 };
 
 const statusWeight = {
   scheduled: 0,
   en_route: 1,
-  completed: 2,
+  completed: 2
 };
 
 const formatCurrency = (value) => {
@@ -142,7 +144,7 @@ const formatCurrency = (value) => {
     style: "currency",
     currency: "GBP",
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(Number(value));
 };
 
@@ -153,7 +155,7 @@ const formatIsoDate = (value) => {
       weekday: "short",
       month: "short",
       day: "numeric",
-      year: "numeric",
+      year: "numeric"
     }).format(date);
   } catch {
     return "—";
@@ -172,7 +174,7 @@ const normalizeJobRecord = (job = {}) => ({
   ...job,
   delivery_date: job.delivery_date || todayIso(),
   items: Array.isArray(job.items) ? job.items : [],
-  status: job.status || "scheduled",
+  status: job.status || "scheduled"
 });
 
 export default function PartsDeliveriesPage() {
@@ -192,12 +194,12 @@ export default function PartsDeliveriesPage() {
     setLoading(true);
     setError("");
     try {
-      let query = supabase
-        .from("parts_delivery_jobs")
-        .select("*")
-        .order("status", { ascending: true })
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true });
+      let query = supabase.
+      from("parts_delivery_jobs").
+      select("*").
+      order("status", { ascending: true }).
+      order("sort_order", { ascending: true }).
+      order("created_at", { ascending: true });
 
       if (selectedDate) {
         query = query.eq("delivery_date", selectedDate);
@@ -236,21 +238,21 @@ export default function PartsDeliveriesPage() {
     setError("");
     try {
       const completedSort = (sortedJobs.length + 1) * 100 + (job.sort_order ?? 0);
-      const { error: updateError } = await supabase
-        .from("parts_delivery_jobs")
-        .update({
-          status: "completed",
-          completed_at: new Date().toISOString(),
-          sort_order: completedSort,
-        })
-        .eq("id", job.id);
+      const { error: updateError } = await supabase.
+      from("parts_delivery_jobs").
+      update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        sort_order: completedSort
+      }).
+      eq("id", job.id);
       if (updateError) throw updateError;
       setJobs((prev) =>
-        prev.map((item) =>
-          item.id === job.id
-            ? { ...item, status: "completed", completed_at: new Date().toISOString(), sort_order: completedSort }
-            : item
-        )
+      prev.map((item) =>
+      item.id === job.id ?
+      { ...item, status: "completed", completed_at: new Date().toISOString(), sort_order: completedSort } :
+      item
+      )
       );
     } catch (actionError) {
       console.error("Failed to mark delivered:", actionError);
@@ -271,27 +273,27 @@ export default function PartsDeliveriesPage() {
     setError("");
     try {
       const [firstResult, secondResult] = await Promise.all([
-        supabase
-          .from("parts_delivery_jobs")
-          .update({ sort_order: targetJob.sort_order ?? targetIndex })
-          .eq("id", currentJob.id),
-        supabase
-          .from("parts_delivery_jobs")
-          .update({ sort_order: currentJob.sort_order ?? currentIndex })
-          .eq("id", targetJob.id),
-      ]);
+      supabase.
+      from("parts_delivery_jobs").
+      update({ sort_order: targetJob.sort_order ?? targetIndex }).
+      eq("id", currentJob.id),
+      supabase.
+      from("parts_delivery_jobs").
+      update({ sort_order: currentJob.sort_order ?? currentIndex }).
+      eq("id", targetJob.id)]
+      );
       if (firstResult.error) throw firstResult.error;
       if (secondResult.error) throw secondResult.error;
       setJobs((prev) =>
-        prev.map((job) => {
-          if (job.id === currentJob.id) {
-            return { ...job, sort_order: targetJob.sort_order ?? targetIndex };
-          }
-          if (job.id === targetJob.id) {
-            return { ...job, sort_order: currentJob.sort_order ?? currentIndex };
-          }
-          return job;
-        })
+      prev.map((job) => {
+        if (job.id === currentJob.id) {
+          return { ...job, sort_order: targetJob.sort_order ?? targetIndex };
+        }
+        if (job.id === targetJob.id) {
+          return { ...job, sort_order: currentJob.sort_order ?? currentIndex };
+        }
+        return job;
+      })
       );
     } catch (moveError) {
       console.error("Failed to reorder deliveries:", moveError);
@@ -302,157 +304,157 @@ export default function PartsDeliveriesPage() {
   };
 
   if (!hasAccess) {
-    return (
-      <>
-        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
-          You do not have access to delivery planning.
-        </div>
-      </>
-    );
+    return <PartsDeliveriesPageUi view="section1" />;
+
+
+
+
+
+
   }
 
-  return (
-    <>
-      <div style={pageStyles.container}>
-        <section className="app-section-card" style={pageStyles.headerCard}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <p
-              style={{
-                margin: 0,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                color: "var(--primary-dark)",
-                fontSize: "0.85rem",
-              }}
-            >
-              Driver view
-            </p>
-            <h1 style={{ margin: 0, color: "var(--primary)" }}>Parts deliveries</h1>
-            <p style={{ margin: 0, color: "var(--info)" }}>
-              Quickly review today&rsquo;s drop offs, mark jobs as delivered, and reorder the list for the van.
-            </p>
-          </div>
+  return <PartsDeliveriesPageUi view="section2" adjustIsoDate={adjustIsoDate} CalendarField={CalendarField} completedCount={completedCount} DeliveryJobRow={DeliveryJobRow} DeliveryJobViewModal={DeliveryJobViewModal} error={error} formatIsoDate={formatIsoDate} handleMarkDelivered={handleMarkDelivered} handleMoveJob={handleMoveJob} loading={loading} pageStyles={pageStyles} pendingCount={pendingCount} rowActionId={rowActionId} selectedDate={selectedDate} setSelectedDate={setSelectedDate} setViewJob={setViewJob} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} sortedJobs={sortedJobs} viewJob={viewJob} />;
 
-          <div style={pageStyles.controls}>
-            <div>
-              <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--primary-dark)" }}>Selected day</div>
-              <div style={{ fontSize: "1.1rem", fontWeight: 600 }}>{formatIsoDate(selectedDate)}</div>
-            </div>
-            <div style={pageStyles.dateControls}>
-              <button
-                type="button"
-                onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, -1))}
-                style={{
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  background: "var(--surface)",
-                  color: "var(--primary-dark)",
-                  padding: "var(--control-padding)",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Previous day
-              </button>
-              <CalendarField
-                value={selectedDate}
-                onChange={(value) => setSelectedDate(value)}
-                name="selectedDate"
-              />
-              <button
-                type="button"
-                onClick={() => setSelectedDate((prev) => adjustIsoDate(prev, 1))}
-                style={{
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  background: "var(--primary-dark)",
-                  color: "var(--surface)",
-                  padding: "var(--control-padding)",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Next day
-              </button>
-            </div>
-          </div>
 
-          <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-            <div>
-              <div style={{ fontSize: "0.8rem", color: "var(--info)" }}>Queued jobs</div>
-              <strong style={{ fontSize: "1.6rem" }}>{pendingCount}</strong>
-            </div>
-            <div>
-              <div style={{ fontSize: "0.8rem", color: "var(--info)" }}>Completed</div>
-              <strong style={{ fontSize: "1.6rem" }}>{completedCount}</strong>
-            </div>
-          </div>
-        </section>
 
-        <section className="app-section-card" style={pageStyles.listCard}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <h2 style={{ margin: 0, color: "var(--primary-dark)" }}>Delivery list</h2>
-            <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
-              Tap a job to view invoice details. Use the arrows to change the drive order.
-            </p>
-          </div>
-          {error && <div style={{ color: "var(--danger)", fontWeight: 600 }}>{error}</div>}
-          {loading && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <SkeletonKeyframes />
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "36px 1fr auto",
-                    gap: 12,
-                    padding: 12,
-                    borderRadius: "var(--radius-md)",
-                    background: "var(--surface)",
-                  }}
-                >
-                  <SkeletonBlock width="28px" height="28px" borderRadius="999px" />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <SkeletonBlock width="55%" height="12px" />
-                    <SkeletonBlock width="75%" height="10px" />
-                  </div>
-                  <SkeletonBlock width="56px" height="18px" />
-                </div>
-              ))}
-            </div>
-          )}
-          {!loading && sortedJobs.length === 0 && (
-            <div style={{ color: "var(--info)" }}>No deliveries queued for this day.</div>
-          )}
-          {!loading &&
-            sortedJobs.map((job, index) => (
-              <DeliveryJobRow
-                key={job.id}
-                job={job}
-                index={index}
-                total={sortedJobs.length}
-                onView={setViewJob}
-                onMove={handleMoveJob}
-                onMarkDelivered={handleMarkDelivered}
-                actionDisabled={rowActionId === job.id}
-              />
-            ))}
-        </section>
-      </div>
-      {viewJob && <DeliveryJobViewModal job={viewJob} onClose={() => setViewJob(null)} />}
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, actionDisabled }) {
   const isCompleted = job.status === "completed";
   const qty =
-    job.quantity ||
-    (Array.isArray(job.items)
-      ? job.items.reduce((totalQty, item) => totalQty + (Number(item.quantity) || 0), 0)
-      : 0) ||
-    1;
+  job.quantity || (
+  Array.isArray(job.items) ?
+  job.items.reduce((totalQty, item) => totalQty + (Number(item.quantity) || 0), 0) :
+  0) ||
+  1;
   const paidLabel = job.is_paid ? "Paid" : "Awaiting payment";
 
   return (
@@ -482,9 +484,9 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
             fontWeight: 600,
             alignSelf: "flex-start",
             background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.15)" : "rgba(var(--warning-rgb),0.2)",
-            color: job.is_paid ? "var(--success, #297C3B)" : "var(--danger-dark)",
-          }}
-        >
+            color: job.is_paid ? "var(--success, #297C3B)" : "var(--danger-dark)"
+          }}>
+          
           {paidLabel}
         </span>
       </button>
@@ -499,10 +501,10 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
               style={{
                 ...arrowButtonStyle,
                 opacity: index === 0 || actionDisabled ? 0.5 : 1,
-                cursor: index === 0 || actionDisabled ? "not-allowed" : "pointer",
+                cursor: index === 0 || actionDisabled ? "not-allowed" : "pointer"
               }}
-              aria-label="Move job up"
-            >
+              aria-label="Move job up">
+              
               ↑
             </button>
             <button
@@ -512,10 +514,10 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
               style={{
                 ...arrowButtonStyle,
                 opacity: index === total - 1 || actionDisabled ? 0.5 : 1,
-                cursor: index === total - 1 || actionDisabled ? "not-allowed" : "pointer",
+                cursor: index === total - 1 || actionDisabled ? "not-allowed" : "pointer"
               }}
-              aria-label="Move job down"
-            >
+              aria-label="Move job down">
+              
               ↓
             </button>
           </div>
@@ -526,14 +528,14 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
           disabled={isCompleted || actionDisabled}
           style={{
             ...markButtonStyle(isCompleted),
-            opacity: isCompleted || actionDisabled ? 0.7 : 1,
-          }}
-        >
+            opacity: isCompleted || actionDisabled ? 0.7 : 1
+          }}>
+          
           {isCompleted ? "Delivered" : "Mark as delivered"}
         </button>
       </div>
-    </article>
-  );
+    </article>);
+
 }
 
 function DeliveryJobViewModal({ job, onClose }) {
@@ -547,33 +549,33 @@ function DeliveryJobViewModal({ job, onClose }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>
             <p
-              style={{
-                margin: 0,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontSize: "0.8rem",
-                color: "var(--info-dark)",
-              }}
-            >
+                style={{
+                  margin: 0,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  fontSize: "0.8rem",
+                  color: "var(--info-dark)"
+                }}>
+                
               Delivery details
             </p>
             <h3 style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>{job.invoice_number || "Invoice"}</h3>
           </div>
           <button
-            type="button"
-            onClick={onClose}
-            style={{
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              fontSize: "0.95rem",
-              color: closeButtonColor,
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}
-            aria-label="Close delivery details"
-          >
+              type="button"
+              onClick={onClose}
+              style={{
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                fontSize: "0.95rem",
+                color: closeButtonColor,
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em"
+              }}
+              aria-label="Close delivery details">
+              
             Close
           </button>
         </div>
@@ -615,14 +617,14 @@ function DeliveryJobViewModal({ job, onClose }) {
             <div style={{ fontWeight: 600, display: "flex", gap: "8px", alignItems: "center" }}>
               {job.payment_method || "Not set"}
               <span
-                style={{
-                  padding: "2px 8px",
-                  borderRadius: "var(--radius-pill)",
-                  fontSize: "0.7rem",
-                  background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.18)" : "rgba(var(--warning-rgb),0.2)",
-                  color: job.is_paid ? "var(--success, #297C3B)" : "var(--danger-dark)",
-                }}
-              >
+                  style={{
+                    padding: "2px 8px",
+                    borderRadius: "var(--radius-pill)",
+                    fontSize: "0.7rem",
+                    background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.18)" : "rgba(var(--warning-rgb),0.2)",
+                    color: job.is_paid ? "var(--success, #297C3B)" : "var(--danger-dark)"
+                  }}>
+                  
                 {job.is_paid ? "Paid" : "Unpaid"}
               </span>
             </div>
@@ -636,37 +638,37 @@ function DeliveryJobViewModal({ job, onClose }) {
 
         <div>
           <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Items</span>
-          {items.length === 0 ? (
-            <p style={{ color: "var(--info)", margin: 0 }}>Invoice items not available.</p>
-          ) : (
+          {items.length === 0 ?
+            <p style={{ color: "var(--info)", margin: 0 }}>Invoice items not available.</p> :
+
             <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "var(--primary-dark)" }}>
-              {items.map((item) => (
-                <li key={item.key || `${item.description}-${item.quantity || 1}`}>
+              {items.map((item) =>
+              <li key={item.key || `${item.description}-${item.quantity || 1}`}>
                   {item.description} · Qty {item.quantity || 1} · {formatCurrency(item.total || 0)}
                 </li>
-              ))}
+              )}
             </ul>
-          )}
+            }
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
-            type="button"
-            onClick={onClose}
-            style={{
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              background: "var(--surface)",
-              padding: "var(--control-padding)",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
+              type="button"
+              onClick={onClose}
+              style={{
+                borderRadius: "var(--radius-sm)",
+                border: "none",
+                background: "var(--surface)",
+                padding: "var(--control-padding)",
+                fontWeight: 600,
+                cursor: "pointer"
+              }}>
+              
             Close
           </button>
         </div>
         </div>
       </div>
-    </ModalPortal>
-  );
+    </ModalPortal>);
+
 }

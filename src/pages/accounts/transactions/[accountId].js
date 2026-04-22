@@ -1,4 +1,4 @@
-// file location: src/pages/accounts/transactions/[accountId].js // header comment with file path
+// file location: src/pages/accounts/transactions/[accountId].js
 import React, { useCallback, useEffect, useMemo, useState } from "react"; // import React hooks for state and lifecycle
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -7,6 +7,7 @@ import { Button, ControlGroup, PageSection } from "@/components/ui";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
+import AccountTransactionsPageUi from "@/components/page-ui/accounts/transactions/accounts-transactions-account-id-ui"; // Extracted presentation layer.
 const TRANSACTION_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER", "SALES"];
 export default function AccountTransactionsPage() {
   const router = useRouter();
@@ -51,19 +52,19 @@ export default function AccountTransactionsPage() {
   const handleExport = () => {
     exportToCsv(`account-${accountId}-transactions.csv`, transactions, ["transaction_id", "transaction_date", "type", "amount", "payment_method", "job_number", "created_by"]);
   };
-  return (
-    <ProtectedRoute allowedRoles={TRANSACTION_ROLES}>
-      <>
-        <PageSection>
-          <div style={{ display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: "var(--space-3)" }}>
-            <ControlGroup>
-              <Button type="button" variant="secondary" onClick={() => router.push(`/accounts/view/${accountId}`)}>Account</Button>
-              {permissions.canExport && <Button type="button" variant="ghost" onClick={handleExport}>Export</Button>}
-            </ControlGroup>
-          </div>
-          <TransactionTable transactions={transactions} loading={loading} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} />
-        </PageSection>
-      </>
-    </ProtectedRoute>
-  );
+  return <AccountTransactionsPageUi view="section1" accountId={accountId} Button={Button} ControlGroup={ControlGroup} filters={filters} handleExport={handleExport} handlePageChange={handlePageChange} loading={loading} PageSection={PageSection} pagination={pagination} permissions={permissions} ProtectedRoute={ProtectedRoute} router={router} setFilters={setFilters} TRANSACTION_ROLES={TRANSACTION_ROLES} transactions={transactions} TransactionTable={TransactionTable} />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

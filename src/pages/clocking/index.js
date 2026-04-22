@@ -1,3 +1,4 @@
+// file location: src/pages/clocking/index.js
 "use client";
 
 import Link from "next/link";
@@ -11,6 +12,7 @@ import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/compo
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import dynamic from "next/dynamic";
+import ClockingPageUi from "@/components/page-ui/clocking/clocking-ui"; // Extracted presentation layer.
 const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
 
 const TECH_ROLES = ["Techs", "Technician", "Technician Lead", "Lead Technician"];
@@ -23,61 +25,61 @@ const SUMMARY_CARD_STYLES = {
   total: {
     background: "var(--layer-section-level-2)",
     border: "none",
-    valueColor: "var(--primary-dark)",
+    valueColor: "var(--primary-dark)"
   },
   inProgress: {
     background: "var(--layer-section-level-2)",
     border: "none",
-    valueColor: "var(--primary-dark)",
+    valueColor: "var(--primary-dark)"
   },
   onMot: {
     background: "var(--layer-section-level-2)",
     border: "none",
-    valueColor: "var(--primary-dark)",
+    valueColor: "var(--primary-dark)"
   },
   teaBreak: {
     background: "var(--layer-section-level-2)",
     border: "none",
-    valueColor: "var(--primary-dark)",
+    valueColor: "var(--primary-dark)"
   },
   waiting: {
     background: "var(--layer-section-level-2)",
     border: "none",
-    valueColor: "var(--primary-dark)",
+    valueColor: "var(--primary-dark)"
   },
   notClocked: {
     background: "var(--layer-section-level-2)",
     border: "none",
-    valueColor: "var(--primary-dark)",
-  },
+    valueColor: "var(--primary-dark)"
+  }
 };
 
 const TECH_STATUS_STYLES = {
   "Not Clocked In": {
     background: "rgba(var(--primary-rgb), 0.10)",
     border: "none",
-    color: "var(--primary-dark)",
+    color: "var(--primary-dark)"
   },
   "Waiting for Job": {
     background: "rgba(var(--primary-rgb), 0.10)",
     border: "none",
-    color: "var(--primary-dark)",
+    color: "var(--primary-dark)"
   },
   "Tea Break": {
     background: "rgba(var(--primary-rgb), 0.10)",
     border: "none",
-    color: "var(--primary-dark)",
+    color: "var(--primary-dark)"
   },
   "In Progress": {
     background: "rgba(var(--primary-rgb), 0.10)",
     border: "none",
-    color: "var(--primary-dark)",
+    color: "var(--primary-dark)"
   },
   "On MOT": {
     background: "rgba(var(--primary-rgb), 0.10)",
     border: "none",
-    color: "var(--primary-dark)",
-  },
+    color: "var(--primary-dark)"
+  }
 };
 
 const formatTime = (value) => {
@@ -86,7 +88,7 @@ const formatTime = (value) => {
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleTimeString("en-GB", {
     hour: "2-digit",
-    minute: "2-digit",
+    minute: "2-digit"
   });
 };
 
@@ -110,9 +112,9 @@ const formatDuration = (durationMs) => {
 const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) => {
   if (jobEntry) {
     const jobStatus = (jobEntry.job?.status || "").toString().toLowerCase();
-    const categories = Array.isArray(jobEntry.job?.job_categories)
-      ? jobEntry.job.job_categories.map((item) => (item || "").toString().toLowerCase())
-      : [];
+    const categories = Array.isArray(jobEntry.job?.job_categories) ?
+    jobEntry.job.job_categories.map((item) => (item || "").toString().toLowerCase()) :
+    [];
     const isMotJob = jobStatus.includes("mot") || categories.some((cat) => cat.includes("mot"));
     const clockInMs = jobEntry.clock_in ? new Date(jobEntry.clock_in).getTime() : null;
     const duration = clockInMs ? Math.max(0, referenceTime - clockInMs) : 0;
@@ -122,7 +124,7 @@ const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) =
       jobNumber: jobEntry.job_number || jobEntry.job?.job_number || null,
       jobId: jobEntry.job_id || jobEntry.job?.id || null,
       clockingId: jobEntry.id || null,
-      clockIn: jobEntry.clock_in || null,
+      clockIn: jobEntry.clock_in || null
     };
   }
 
@@ -137,7 +139,7 @@ const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) =
       jobNumber: null,
       jobId: null,
       clockingId: null,
-      clockIn: timeRecord.clock_in || null,
+      clockIn: timeRecord.clock_in || null
     };
   }
 
@@ -147,7 +149,7 @@ const deriveStatus = (jobEntry, timeRecord, referenceTime, hasClocked = false) =
     jobNumber: null,
     jobId: null,
     clockingId: null,
-    clockIn: null,
+    clockIn: null
   };
 };
 
@@ -166,26 +168,26 @@ function ClockingOverviewTab({ onSummaryChange }) {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      const { data: users, error: usersError } = await supabase
-        .from("users")
-        .select("user_id, first_name, last_name, role")
-        .in("role", TARGET_ROLES)
-        .order("first_name", { ascending: true });
+      const { data: users, error: usersError } = await supabase.
+      from("users").
+      select("user_id, first_name, last_name, role").
+      in("role", TARGET_ROLES).
+      order("first_name", { ascending: true });
 
       if (usersError) throw usersError;
 
-      const { data: timeRecords, error: timeError } = await supabase
-        .from("time_records")
-        .select("user_id, clock_in, notes")
-        .eq("date", today)
-        .is("clock_out", null);
+      const { data: timeRecords, error: timeError } = await supabase.
+      from("time_records").
+      select("user_id, clock_in, notes").
+      eq("date", today).
+      is("clock_out", null);
 
       if (timeError) throw timeError;
 
-      const { data: jobClocking, error: jobError } = await supabase
-        .from("job_clocking")
-        .select(
-          `
+      const { data: jobClocking, error: jobError } = await supabase.
+      from("job_clocking").
+      select(
+        `
             id,
             user_id,
             job_id,
@@ -198,19 +200,19 @@ function ClockingOverviewTab({ onSummaryChange }) {
               job_categories
             )
           `
-        )
-        .is("clock_out", null);
+      ).
+      is("clock_out", null);
 
       if (jobError) throw jobError;
 
       const userIds = (users || []).map((user) => user.user_id).filter(Boolean);
       let clockedUserIds = new Set();
       if (userIds.length > 0) {
-        const { data: historyRecords, error: historyError } = await supabase
-          .from("time_records")
-          .select("user_id")
-          .in("user_id", userIds)
-          .eq("date", today);
+        const { data: historyRecords, error: historyError } = await supabase.
+        from("time_records").
+        select("user_id").
+        in("user_id", userIds).
+        eq("date", today);
 
         if (historyError) {
           throw historyError;
@@ -257,7 +259,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           jobId: derived.jobId,
           clockEntryId: derived.clockingId,
           clockIn: derived.clockIn,
-          timeOnActivity: isActiveJob && derived.duration > 0 ? formatDuration(derived.duration) : "—",
+          timeOnActivity: isActiveJob && derived.duration > 0 ? formatDuration(derived.duration) : "—"
         };
       });
 
@@ -275,7 +277,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
         teaBreak: prepared.filter((tech) => tech.status === "Tea Break").length,
         waiting: prepared.filter((tech) => tech.status === "Waiting for Job").length,
         notClocked: prepared.filter((tech) => tech.status === "Not Clocked In").length,
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
       };
 
       setTeamStatus(prepared);
@@ -303,18 +305,18 @@ function ClockingOverviewTab({ onSummaryChange }) {
       fetchClocking();
     };
 
-    channel
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "time_records" },
-        refresh
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "job_clocking" },
-        refresh
-      )
-      .subscribe();
+    channel.
+    on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "time_records" },
+      refresh
+    ).
+    on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "job_clocking" },
+      refresh
+    ).
+    subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -334,11 +336,11 @@ function ClockingOverviewTab({ onSummaryChange }) {
         return prev;
       }
       const unchanged =
-        prev.status === updated.status &&
-        prev.jobNumber === updated.jobNumber &&
-        prev.timeOnActivity === updated.timeOnActivity &&
-        prev.clockEntryId === updated.clockEntryId &&
-        prev.jobId === updated.jobId;
+      prev.status === updated.status &&
+      prev.jobNumber === updated.jobNumber &&
+      prev.timeOnActivity === updated.timeOnActivity &&
+      prev.clockEntryId === updated.clockEntryId &&
+      prev.jobId === updated.jobId;
       if (unchanged) {
         return prev;
       }
@@ -352,11 +354,11 @@ function ClockingOverviewTab({ onSummaryChange }) {
       throw new Error("Enter a job number.");
     }
 
-    const { data, error } = await supabase
-      .from("jobs")
-      .select("id, job_number")
-      .ilike("job_number", normalized)
-      .maybeSingle();
+    const { data, error } = await supabase.
+    from("jobs").
+    select("id, job_number").
+    ilike("job_number", normalized).
+    maybeSingle();
 
     if (error) {
       throw error;
@@ -400,7 +402,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
         userId: selectedTechnician.userId,
         jobId: jobRecord.id,
         jobNumber: jobRecord.job_number || trimmedNumber,
-        workType: "manual",
+        workType: "manual"
       });
 
       if (!result?.success) {
@@ -426,7 +428,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
       const result = await clockOutFromJob({
         userId: selectedTechnician.userId,
         jobId: selectedTechnician.jobId,
-        clockingId: selectedTechnician.clockEntryId,
+        clockingId: selectedTechnician.clockEntryId
       });
 
       if (!result?.success) {
@@ -437,16 +439,16 @@ function ClockingOverviewTab({ onSummaryChange }) {
       setModalError("");
       setModalJobNumber("");
       setSelectedTechnician((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: "Not Clocked In",
-              jobNumber: null,
-              jobId: null,
-              clockEntryId: null,
-              timeOnActivity: "—",
-            }
-          : prev
+      prev ?
+      {
+        ...prev,
+        status: "Not Clocked In",
+        jobNumber: null,
+        jobId: null,
+        clockEntryId: null,
+        timeOnActivity: "—"
+      } :
+      prev
       );
     } catch (err) {
       setModalError(err?.message || "Unable to clock the user off.");
@@ -462,32 +464,32 @@ function ClockingOverviewTab({ onSummaryChange }) {
       onMot: 0,
       teaBreak: 0,
       waiting: 0,
-      notClocked: 0,
+      notClocked: 0
     };
 
     teamStatus.forEach((tech) => {
-      if (tech.status === "In Progress") summary.inProgress += 1;
-      else if (tech.status === "On MOT") summary.onMot += 1;
-      else if (tech.status === "Tea Break") summary.teaBreak += 1;
-      else if (tech.status === "Waiting for Job") summary.waiting += 1;
-      else if (tech.status === "Not Clocked In") summary.notClocked += 1;
+      if (tech.status === "In Progress") summary.inProgress += 1;else
+      if (tech.status === "On MOT") summary.onMot += 1;else
+      if (tech.status === "Tea Break") summary.teaBreak += 1;else
+      if (tech.status === "Waiting for Job") summary.waiting += 1;else
+      if (tech.status === "Not Clocked In") summary.notClocked += 1;
     });
 
     return summary;
   }, [teamStatus]);
 
-  const formattedLastUpdated = lastUpdated
-    ? new Date(lastUpdated).toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "—";
+  const formattedLastUpdated = lastUpdated ?
+  new Date(lastUpdated).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }) :
+  "—";
   const modalOpen = Boolean(selectedTechnician);
   const modalTechClockedIn =
-    selectedTechnician &&
-    (selectedTechnician.status === "In Progress" || selectedTechnician.status === "On MOT");
+  selectedTechnician && (
+  selectedTechnician.status === "In Progress" || selectedTechnician.status === "On MOT");
   const trimmedModalJobNumber = (modalJobNumber || "").trim();
-  const modalActionDisabled = modalSubmitting || (!modalTechClockedIn && !trimmedModalJobNumber);
+  const modalActionDisabled = modalSubmitting || !modalTechClockedIn && !trimmedModalJobNumber;
   const modalActionLabel = modalTechClockedIn ? "Clock off" : "Clock in";
   const jobNumberInputId = "clocking-job-number-input";
   const statusPillBaseStyle = {
@@ -500,7 +502,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
     fontWeight: 600,
     textTransform: "uppercase",
     letterSpacing: "0.05em",
-    minHeight: "auto",
+    minHeight: "auto"
   };
 
   return (
@@ -510,8 +512,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
       parentKey="clocking-page-content"
       sectionType="section-shell"
       shell
-      style={{ display: "flex", flexDirection: "column", gap: "24px" }}
-    >
+      style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      
       {/* Summary Stats Section */}
       <DevLayoutSection
         as="section"
@@ -528,9 +530,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
           boxShadow: "none",
           display: "flex",
           flexDirection: "column",
-          gap: "14px",
-        }}
-      >
+          gap: "14px"
+        }}>
+        
         <div>
           <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>
             Summary Statistics
@@ -540,68 +542,68 @@ function ClockingOverviewTab({ onSummaryChange }) {
           </p>
         </div>
 
-        {loading && teamStatus.length === 0 ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-              gap: "14px",
-            }}
-          >
+        {loading && teamStatus.length === 0 ?
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: "14px"
+          }}>
+          
             <SkeletonKeyframes />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  borderRadius: "var(--radius-md)",
-                  padding: "16px",
-                  background: "var(--section-card-bg, var(--surface))",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
-                }}
-              >
+            {Array.from({ length: 4 }).map((_, i) =>
+          <div
+            key={i}
+            style={{
+              borderRadius: "var(--radius-md)",
+              padding: "16px",
+              background: "var(--section-card-bg, var(--surface))",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px"
+            }}>
+            
                 <SkeletonBlock width="60%" height="10px" />
                 <SkeletonBlock width="40%" height="28px" />
                 <SkeletonBlock width="80%" height="10px" />
               </div>
-            ))}
-          </div>
-        ) : (
+          )}
+          </div> :
+
+        <DevLayoutSection
+          sectionKey="clocking-overview-stats-grid"
+          parentKey="clocking-overview-stats"
+          sectionType="grid-card"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: "14px"
+          }}>
+          
             <DevLayoutSection
-              sectionKey="clocking-overview-stats-grid"
-              parentKey="clocking-overview-stats"
-              sectionType="grid-card"
-              style={{
-                display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-              gap: "14px",
-            }}
-          >
-            <DevLayoutSection
-              sectionKey="clocking-stat-total"
-              parentKey="clocking-overview-stats-grid"
-              sectionType="stat-card"
-              backgroundToken="layer-section-level-2"
-              style={{
-                borderRadius: "var(--radius-md)",
-                padding: "16px",
-                background: SUMMARY_CARD_STYLES.total.background,
-                border: SUMMARY_CARD_STYLES.total.border,
-                boxShadow: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
+            sectionKey="clocking-stat-total"
+            parentKey="clocking-overview-stats-grid"
+            sectionType="stat-card"
+            backgroundToken="layer-section-level-2"
+            style={{
+              borderRadius: "var(--radius-md)",
+              padding: "16px",
+              background: SUMMARY_CARD_STYLES.total.background,
+              border: SUMMARY_CARD_STYLES.total.border,
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px"
+            }}>
+            
               <span
-                style={{
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontSize: "0.78rem",
-                  color: "var(--info)",
-                }}
-              >
+              style={{
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                fontSize: "0.78rem",
+                color: "var(--info)"
+              }}>
+              
                 Technicians Total
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.total.valueColor }}>
@@ -613,29 +615,29 @@ function ClockingOverviewTab({ onSummaryChange }) {
             </DevLayoutSection>
 
             <DevLayoutSection
-              sectionKey="clocking-stat-in-progress"
-              parentKey="clocking-overview-stats-grid"
-              sectionType="stat-card"
-              backgroundToken="layer-section-level-2"
-              style={{
-                borderRadius: "var(--radius-md)",
-                padding: "16px",
-                background: SUMMARY_CARD_STYLES.inProgress.background,
-                border: SUMMARY_CARD_STYLES.inProgress.border,
-                boxShadow: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
+            sectionKey="clocking-stat-in-progress"
+            parentKey="clocking-overview-stats-grid"
+            sectionType="stat-card"
+            backgroundToken="layer-section-level-2"
+            style={{
+              borderRadius: "var(--radius-md)",
+              padding: "16px",
+              background: SUMMARY_CARD_STYLES.inProgress.background,
+              border: SUMMARY_CARD_STYLES.inProgress.border,
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px"
+            }}>
+            
               <span
-                style={{
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontSize: "0.78rem",
-                  color: "var(--info)",
-                }}
-              >
+              style={{
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                fontSize: "0.78rem",
+                color: "var(--info)"
+              }}>
+              
                 In Progress
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.inProgress.valueColor }}>
@@ -647,29 +649,29 @@ function ClockingOverviewTab({ onSummaryChange }) {
             </DevLayoutSection>
 
             <DevLayoutSection
-              sectionKey="clocking-stat-on-mot"
-              parentKey="clocking-overview-stats-grid"
-              sectionType="stat-card"
-              backgroundToken="layer-section-level-2"
-              style={{
-                borderRadius: "var(--radius-md)",
-                padding: "16px",
-                background: SUMMARY_CARD_STYLES.onMot.background,
-                border: SUMMARY_CARD_STYLES.onMot.border,
-                boxShadow: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
+            sectionKey="clocking-stat-on-mot"
+            parentKey="clocking-overview-stats-grid"
+            sectionType="stat-card"
+            backgroundToken="layer-section-level-2"
+            style={{
+              borderRadius: "var(--radius-md)",
+              padding: "16px",
+              background: SUMMARY_CARD_STYLES.onMot.background,
+              border: SUMMARY_CARD_STYLES.onMot.border,
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px"
+            }}>
+            
               <span
-                style={{
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontSize: "0.78rem",
-                  color: "var(--info)",
-                }}
-              >
+              style={{
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                fontSize: "0.78rem",
+                color: "var(--info)"
+              }}>
+              
                 MOT Count
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.onMot.valueColor }}>
@@ -681,29 +683,29 @@ function ClockingOverviewTab({ onSummaryChange }) {
             </DevLayoutSection>
 
             <DevLayoutSection
-              sectionKey="clocking-stat-tea-break"
-              parentKey="clocking-overview-stats-grid"
-              sectionType="stat-card"
-              backgroundToken="layer-section-level-2"
-              style={{
-                borderRadius: "var(--radius-md)",
-                padding: "16px",
-                background: SUMMARY_CARD_STYLES.teaBreak.background,
-                border: SUMMARY_CARD_STYLES.teaBreak.border,
-                boxShadow: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
+            sectionKey="clocking-stat-tea-break"
+            parentKey="clocking-overview-stats-grid"
+            sectionType="stat-card"
+            backgroundToken="layer-section-level-2"
+            style={{
+              borderRadius: "var(--radius-md)",
+              padding: "16px",
+              background: SUMMARY_CARD_STYLES.teaBreak.background,
+              border: SUMMARY_CARD_STYLES.teaBreak.border,
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px"
+            }}>
+            
               <span
-                style={{
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontSize: "0.78rem",
-                  color: "var(--info)",
-                }}
-              >
+              style={{
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                fontSize: "0.78rem",
+                color: "var(--info)"
+              }}>
+              
                 Tea Break
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.teaBreak.valueColor }}>
@@ -715,29 +717,29 @@ function ClockingOverviewTab({ onSummaryChange }) {
             </DevLayoutSection>
 
             <DevLayoutSection
-              sectionKey="clocking-stat-waiting"
-              parentKey="clocking-overview-stats-grid"
-              sectionType="stat-card"
-              backgroundToken="layer-section-level-2"
-              style={{
-                borderRadius: "var(--radius-md)",
-                padding: "16px",
-                background: SUMMARY_CARD_STYLES.waiting.background,
-                border: SUMMARY_CARD_STYLES.waiting.border,
-                boxShadow: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
+            sectionKey="clocking-stat-waiting"
+            parentKey="clocking-overview-stats-grid"
+            sectionType="stat-card"
+            backgroundToken="layer-section-level-2"
+            style={{
+              borderRadius: "var(--radius-md)",
+              padding: "16px",
+              background: SUMMARY_CARD_STYLES.waiting.background,
+              border: SUMMARY_CARD_STYLES.waiting.border,
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px"
+            }}>
+            
               <span
-                style={{
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontSize: "0.78rem",
-                  color: "var(--info)",
-                }}
-              >
+              style={{
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                fontSize: "0.78rem",
+                color: "var(--info)"
+              }}>
+              
                 Waiting
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.waiting.valueColor }}>
@@ -749,29 +751,29 @@ function ClockingOverviewTab({ onSummaryChange }) {
             </DevLayoutSection>
 
             <DevLayoutSection
-              sectionKey="clocking-stat-offline"
-              parentKey="clocking-overview-stats-grid"
-              sectionType="stat-card"
-              backgroundToken="layer-section-level-2"
-              style={{
-                borderRadius: "var(--radius-md)",
-                padding: "16px",
-                background: SUMMARY_CARD_STYLES.notClocked.background,
-                border: SUMMARY_CARD_STYLES.notClocked.border,
-                boxShadow: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-              }}
-            >
+            sectionKey="clocking-stat-offline"
+            parentKey="clocking-overview-stats-grid"
+            sectionType="stat-card"
+            backgroundToken="layer-section-level-2"
+            style={{
+              borderRadius: "var(--radius-md)",
+              padding: "16px",
+              background: SUMMARY_CARD_STYLES.notClocked.background,
+              border: SUMMARY_CARD_STYLES.notClocked.border,
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px"
+            }}>
+            
               <span
-                style={{
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontSize: "0.78rem",
-                  color: "var(--info)",
-                }}
-              >
+              style={{
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                fontSize: "0.78rem",
+                color: "var(--info)"
+              }}>
+              
                 Offline
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.notClocked.valueColor }}>
@@ -782,24 +784,24 @@ function ClockingOverviewTab({ onSummaryChange }) {
               </span>
             </DevLayoutSection>
           </DevLayoutSection>
-        )}
+        }
       </DevLayoutSection>
 
       {/* Error Display */}
-      {error && (
-        <div
-          style={{
-            borderRadius: "var(--radius-md)",
-            padding: "14px 18px",
-            background: "var(--danger-surface)",
-            border: "1px solid var(--danger)",
-            color: "var(--danger)",
-            fontSize: "0.9rem",
-          }}
-        >
+      {error &&
+      <div
+        style={{
+          borderRadius: "var(--radius-md)",
+          padding: "14px 18px",
+          background: "var(--danger-surface)",
+          border: "1px solid var(--danger)",
+          color: "var(--danger)",
+          fontSize: "0.9rem"
+        }}>
+        
           {error}
         </div>
-      )}
+      }
 
       {/* Technician Grid Section */}
       <DevLayoutSection
@@ -817,37 +819,37 @@ function ClockingOverviewTab({ onSummaryChange }) {
           boxShadow: "none",
           display: "flex",
           flexDirection: "column",
-          gap: "16px",
-        }}
-      >
+          gap: "16px"
+        }}>
+        
         <div>
           <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>
             Technician Status
           </h2>
         </div>
 
-        {loading && teamStatus.length === 0 ? (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: "14px",
-            }}
-          >
+        {loading && teamStatus.length === 0 ?
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "14px"
+          }}>
+          
             <SkeletonKeyframes />
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  borderRadius: "var(--radius-md)",
-                  padding: "16px",
-                  background: "var(--section-card-bg, var(--surface))",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "10px",
-                  minHeight: "110px",
-                }}
-              >
+            {Array.from({ length: 6 }).map((_, i) =>
+          <div
+            key={i}
+            style={{
+              borderRadius: "var(--radius-md)",
+              padding: "16px",
+              background: "var(--section-card-bg, var(--surface))",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              minHeight: "110px"
+            }}>
+            
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   <SkeletonBlock width="32px" height="32px" borderRadius="999px" />
                   <SkeletonBlock width="60%" height="14px" />
@@ -855,137 +857,137 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 <SkeletonBlock width="70%" height="12px" />
                 <SkeletonBlock width="45%" height="10px" />
               </div>
-            ))}
-          </div>
-        ) : teamStatus.length === 0 ? (
-          <div
-            style={{
-              borderRadius: "var(--radius-md)",
-              padding: "32px",
-              background: "rgba(var(--grey-accent-rgb), 0.16)",
-              border: "none",
-              textAlign: "center",
-              color: "var(--info)",
-            }}
-          >
+          )}
+          </div> :
+        teamStatus.length === 0 ?
+        <div
+          style={{
+            borderRadius: "var(--radius-md)",
+            padding: "32px",
+            background: "rgba(var(--grey-accent-rgb), 0.16)",
+            border: "none",
+            textAlign: "center",
+            color: "var(--info)"
+          }}>
+          
             No technicians or MOT testers are currently clocked in.
-          </div>
-        ) : (
-          <DevLayoutSection
-            sectionKey="clocking-overview-technician-grid"
-            parentKey="clocking-overview-technician-status"
-            sectionType="grid-card"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "16px",
-            }}
-          >
+          </div> :
+
+        <DevLayoutSection
+          sectionKey="clocking-overview-technician-grid"
+          parentKey="clocking-overview-technician-status"
+          sectionType="grid-card"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "16px"
+          }}>
+          
             {teamStatus.map((tech) => {
-              const showClockButton =
-                tech.status === "Not Clocked In" ||
-                tech.status === "In Progress" ||
-                tech.status === "On MOT";
-              const clockButtonLabel =
-                tech.status === "Not Clocked In" ? "Not clocked in" : "Clocked in";
-              const statusStyle = TECH_STATUS_STYLES[tech.status] || TECH_STATUS_STYLES["Waiting for Job"];
+            const showClockButton =
+            tech.status === "Not Clocked In" ||
+            tech.status === "In Progress" ||
+            tech.status === "On MOT";
+            const clockButtonLabel =
+            tech.status === "Not Clocked In" ? "Not clocked in" : "Clocked in";
+            const statusStyle = TECH_STATUS_STYLES[tech.status] || TECH_STATUS_STYLES["Waiting for Job"];
 
-              const handleClockButtonClick = (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                openClockModal(tech);
-              };
+            const handleClockButtonClick = (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              openClockModal(tech);
+            };
 
-              return (
-                <Link
-                  key={tech.userId}
-                  href={`/clocking/${tech.slug}`}
-                  style={{ textDecoration: "none", color: "inherit" }}
-                  data-dev-section="1"
-                  data-dev-section-key={`clocking-overview-tech-${tech.userId}`}
-                  data-dev-section-type="content-card"
-                  data-dev-section-parent="clocking-overview-technician-grid"
-                >
+            return (
+              <Link
+                key={tech.userId}
+                href={`/clocking/${tech.slug}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+                data-dev-section="1"
+                data-dev-section-key={`clocking-overview-tech-${tech.userId}`}
+                data-dev-section-type="content-card"
+                data-dev-section-parent="clocking-overview-technician-grid">
+                
                   <article
-                    style={{
-                      borderRadius: "var(--radius-md)",
-                      padding: "20px",
-                      background: "var(--background)",
-                      border: "none",
-                      boxShadow: "none",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "14px",
-                      height: "100%",
-                      transition: "all 0.2s ease",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.position = "relative";
-                      e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-                      e.currentTarget.style.transform = "translateY(-2px)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "translateY(0)";
-                      e.currentTarget.style.boxShadow = "none";
-                      e.currentTarget.style.zIndex = "0";
-                    }}
-                  >
+                  style={{
+                    borderRadius: "var(--radius-md)",
+                    padding: "20px",
+                    background: "var(--background)",
+                    border: "none",
+                    boxShadow: "none",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "14px",
+                    height: "100%",
+                    transition: "all 0.2s ease",
+                    cursor: "pointer"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.position = "relative";
+                    e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.zIndex = "0";
+                  }}>
+                  
                     <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-start",
-                        gap: "12px",
-                      }}
-                    >
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-start",
+                      gap: "12px"
+                    }}>
+                    
                       <div style={{ flex: 1 }}>
                         <h3
-                          style={{
-                            margin: 0,
-                            fontSize: "1.1rem",
-                            fontWeight: 600,
-                            color: "var(--primary-dark)",
-                          }}
-                        >
+                        style={{
+                          margin: 0,
+                          fontSize: "1.1rem",
+                          fontWeight: 600,
+                          color: "var(--primary-dark)"
+                        }}>
+                        
                           {tech.name}
                         </h3>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
-                        {showClockButton ? (
-                          <>
+                        {showClockButton ?
+                      <>
                             <button
-                              type="button"
-                              className="clocking-status-pill"
-                              onClick={handleClockButtonClick}
-                              style={{
-                                ...statusPillBaseStyle,
-                                background: statusStyle.background,
-                                border: statusStyle.border,
-                                color: statusStyle.color,
-                                cursor: "pointer",
-                              }}
-                            >
+                          type="button"
+                          className="clocking-status-pill"
+                          onClick={handleClockButtonClick}
+                          style={{
+                            ...statusPillBaseStyle,
+                            background: statusStyle.background,
+                            border: statusStyle.border,
+                            color: statusStyle.color,
+                            cursor: "pointer"
+                          }}>
+                          
                               {clockButtonLabel}
                             </button>
-                            {tech.status !== "Not Clocked In" && (
-                              <span style={{ fontSize: "0.7rem", color: "var(--info)" }}>{tech.status}</span>
-                            )}
-                          </>
-                        ) : (
-                          <span
-                            style={{
-                              ...statusPillBaseStyle,
-                              padding: "6px 12px",
-                              background: statusStyle.background,
-                              border: statusStyle.border,
-                              color: statusStyle.color,
-                            }}
-                          >
+                            {tech.status !== "Not Clocked In" &&
+                        <span style={{ fontSize: "0.7rem", color: "var(--info)" }}>{tech.status}</span>
+                        }
+                          </> :
+
+                      <span
+                        style={{
+                          ...statusPillBaseStyle,
+                          padding: "6px 12px",
+                          background: statusStyle.background,
+                          border: statusStyle.border,
+                          color: statusStyle.color
+                        }}>
+                        
                             {tech.status}
                           </span>
-                        )}
+                      }
                       </div>
                     </div>
 
@@ -993,26 +995,26 @@ function ClockingOverviewTab({ onSummaryChange }) {
                     style={{
                       display: "grid",
                       gridTemplateColumns: "1fr 1fr",
-                      gap: "12px",
-                    }}
-                  >
+                      gap: "12px"
+                    }}>
+                    
                     <div
                       style={{
                         borderRadius: "var(--radius-sm)",
                         padding: "12px",
                         background: "var(--surface)",
-                        border: "none",
-                      }}
-                    >
+                        border: "none"
+                      }}>
+                      
                       <p
                         style={{
                           margin: 0,
                           fontSize: "0.7rem",
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
-                          color: "var(--info)",
-                        }}
-                      >
+                          color: "var(--info)"
+                        }}>
+                        
                         Current Job
                       </p>
                       <p
@@ -1020,12 +1022,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           margin: "6px 0 0",
                           fontSize: "1rem",
                           fontWeight: 600,
-                          color: "var(--primary-dark)",
-                        }}
-                      >
-                        {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber
-                          ? tech.jobNumber
-                          : "—"}
+                          color: "var(--primary-dark)"
+                        }}>
+                        
+                        {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber ?
+                        tech.jobNumber :
+                        "—"}
                       </p>
                     </div>
 
@@ -1034,18 +1036,18 @@ function ClockingOverviewTab({ onSummaryChange }) {
                         borderRadius: "var(--radius-sm)",
                         padding: "12px",
                         background: "var(--surface)",
-                        border: "none",
-                      }}
-                    >
+                        border: "none"
+                      }}>
+                      
                       <p
                         style={{
                           margin: 0,
                           fontSize: "0.7rem",
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
-                          color: "var(--info)",
-                        }}
-                      >
+                          color: "var(--info)"
+                        }}>
+                        
                         Time
                       </p>
                       <p
@@ -1053,9 +1055,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           margin: "6px 0 0",
                           fontSize: "1rem",
                           fontWeight: 600,
-                          color: "var(--primary-dark)",
-                        }}
-                      >
+                          color: "var(--primary-dark)"
+                        }}>
+                        
                         {tech.timeOnActivity}
                       </p>
                     </div>
@@ -1067,20 +1069,20 @@ function ClockingOverviewTab({ onSummaryChange }) {
                       justifyContent: "space-between",
                       alignItems: "center",
                       marginTop: "auto",
-                      paddingTop: "8px",
-                    }}
-                  >
+                      paddingTop: "8px"
+                    }}>
+                    
                     <span
                       style={{
                         fontSize: "0.7rem",
                         textTransform: "uppercase",
                         letterSpacing: "0.05em",
-                        color: "var(--info)",
-                      }}
-                    >
-                      {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber
-                        ? "Active assignment"
-                        : "Awaiting assignment"}
+                        color: "var(--info)"
+                      }}>
+                      
+                      {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber ?
+                      "Active assignment" :
+                      "Awaiting assignment"}
                     </span>
                     <span
                       style={{
@@ -1093,52 +1095,52 @@ function ClockingOverviewTab({ onSummaryChange }) {
                         color: "var(--text-inverse)",
                         fontSize: "var(--control-font-size)",
                         fontWeight: 600,
-                        minHeight: "var(--control-height)",
-                      }}
-                    >
+                        minHeight: "var(--control-height)"
+                      }}>
+                      
                       View details
                       <span style={{ fontSize: "0.9rem" }}>&gt;</span>
                     </span>
                   </div>
                 </article>
-              </Link>
-              );
-            })}
+              </Link>);
+
+          })}
           </DevLayoutSection>
-        )}
+        }
       </DevLayoutSection>
 
-      {modalOpen && selectedTechnician && (
-        <ModalPortal>
+      {modalOpen && selectedTechnician &&
+      <ModalPortal>
           <div
-            className="clocking-modal-overlay"
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px",
-              zIndex: 9999,
-            }}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="clocking-modal-title"
-          >
+          className="clocking-modal-overlay"
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            zIndex: 9999
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clocking-modal-title">
+          
             <div
-              style={{
-                width: "min(460px, 100%)",
-                borderRadius: "var(--radius-lg)",
-                background: "var(--surface)",
-                border: "none",
-                boxShadow: "var(--shadow-xl)",
-                padding: "24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-              }}
-            >
+            style={{
+              width: "min(460px, 100%)",
+              borderRadius: "var(--radius-lg)",
+              background: "var(--surface)",
+              border: "none",
+              boxShadow: "var(--shadow-xl)",
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px"
+            }}>
+            
             <div>
               <p style={{ margin: 0, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                 {selectedTechnician.name} · {selectedTechnician.role}
@@ -1149,32 +1151,32 @@ function ClockingOverviewTab({ onSummaryChange }) {
               {!modalTechClockedIn && <div style={{ height: "8px" }} />}
             </div>
 
-            {modalError && (
-              <div
-                style={{
-                  borderRadius: "var(--radius-md)",
-                  padding: "10px 14px",
-                  border: "1px solid var(--danger)",
-                  background: "var(--danger-surface)",
-                  color: "var(--danger-dark)",
-                  fontSize: "0.85rem",
-                }}
-              >
+            {modalError &&
+            <div
+              style={{
+                borderRadius: "var(--radius-md)",
+                padding: "10px 14px",
+                border: "1px solid var(--danger)",
+                background: "var(--danger-surface)",
+                color: "var(--danger-dark)",
+                fontSize: "0.85rem"
+              }}>
+              
                 {modalError}
               </div>
-            )}
+            }
 
-            {modalTechClockedIn ? (
-              <div
-                style={{
-                  borderRadius: "var(--radius-md)",
-                  border: "none",
-                  background: "var(--surface-light)",
-                  padding: "16px",
-                  display: "grid",
-                  gap: "10px",
-                }}
-              >
+            {modalTechClockedIn ?
+            <div
+              style={{
+                borderRadius: "var(--radius-md)",
+                border: "none",
+                background: "var(--surface-light)",
+                padding: "16px",
+                display: "grid",
+                gap: "10px"
+              }}>
+              
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--info)" }}>
                   <span style={{ fontWeight: 600 }}>Job number</span>
                   <span>{selectedTechnician.jobNumber || "—"}</span>
@@ -1187,31 +1189,31 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   <span style={{ fontWeight: 600 }}>Status</span>
                   <span>{selectedTechnician.status}</span>
                 </div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              </div> :
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <label htmlFor={jobNumberInputId} style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--info)" }}>
                   Job number
                 </label>
                 <input
-                  id={jobNumberInputId}
-                  type="text"
-                  value={modalJobNumber}
-                  onChange={(event) => setModalJobNumber(event.target.value)}
-                  placeholder="job number"
-                  style={{
-                    width: "100%",
-                    borderRadius: "var(--control-radius)",
-                    border: "none",
-                    background: "var(--control-bg)",
-                    padding: "var(--control-padding)",
-                    fontSize: "var(--control-font-size)",
-                    color: "var(--text-primary)",
-                    minHeight: "var(--control-height)",
-                  }}
-                />
+                id={jobNumberInputId}
+                type="text"
+                value={modalJobNumber}
+                onChange={(event) => setModalJobNumber(event.target.value)}
+                placeholder="job number"
+                style={{
+                  width: "100%",
+                  borderRadius: "var(--control-radius)",
+                  border: "none",
+                  background: "var(--control-bg)",
+                  padding: "var(--control-padding)",
+                  fontSize: "var(--control-font-size)",
+                  color: "var(--text-primary)",
+                  minHeight: "var(--control-height)"
+                }} />
+              
               </div>
-            )}
+            }
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
               <button
@@ -1226,9 +1228,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   color: "var(--primary-dark)",
                   fontSize: "var(--control-font-size)",
                   fontWeight: 600,
-                  minHeight: "var(--control-height)",
-                }}
-              >
+                  minHeight: "var(--control-height)"
+                }}>
+                
                 Close
               </button>
               <button
@@ -1246,16 +1248,16 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   fontWeight: 600,
                   minHeight: "var(--control-height)",
                   cursor: modalActionDisabled ? "not-allowed" : "pointer",
-                  opacity: modalActionDisabled ? 0.7 : 1,
-                }}
-              >
+                  opacity: modalActionDisabled ? 0.7 : 1
+                }}>
+                
                 {modalActionLabel}
               </button>
             </div>
             </div>
           </div>
         </ModalPortal>
-      )}
+      }
       <style jsx>{`
         #${jobNumberInputId}::placeholder {
           color: var(--grey-accent);
@@ -1293,43 +1295,43 @@ function ClockingOverviewTab({ onSummaryChange }) {
           background: var(--primary-light) !important;
         }
       `}</style>
-    </DevLayoutSection>
-  );
+    </DevLayoutSection>);
+
 }
 
 export default function ClockingPage() {
   const [pageTab, setPageTab] = useState("overview");
 
-  return (
-    <>
-      <PageShell sectionKey="clocking-page-shell" style={{ background: "transparent", minHeight: "100vh", padding: "24px 0" }}>
-        <ContentWidth sectionKey="clocking-page-content" parentKey="clocking-page-shell" widthMode="content" className="mx-auto w-full max-w-none space-y-6 px-4 sm:px-6 lg:px-10">
-          <FilterToolbarRow sectionKey="clocking-toolbar-row" parentKey="clocking-page-content">
-            <TabGroup
-              items={[
-                { label: "Overview", value: "overview" },
-                { label: "Efficiency", value: "efficiency" },
-              ]}
-              value={pageTab}
-              onChange={setPageTab}
-              ariaLabel="Clocking tabs"
-            />
-          </FilterToolbarRow>
+  return <ClockingPageUi view="section1" ClockingOverviewTab={ClockingOverviewTab} ContentWidth={ContentWidth} DevLayoutSection={DevLayoutSection} EfficiencyTab={EfficiencyTab} FilterToolbarRow={FilterToolbarRow} PageShell={PageShell} pageTab={pageTab} SectionShell={SectionShell} setPageTab={setPageTab} TabGroup={TabGroup} />;
 
-          {pageTab === "overview" && <ClockingOverviewTab />}
-          {pageTab === "efficiency" && (
-            <SectionShell sectionKey="clocking-efficiency-shell" parentKey="clocking-page-content">
-              <DevLayoutSection
-                sectionKey="clocking-efficiency-content"
-                parentKey="clocking-efficiency-shell"
-                sectionType="content-card"
-              >
-                <EfficiencyTab editable={false} />
-              </DevLayoutSection>
-            </SectionShell>
-          )}
-        </ContentWidth>
-      </PageShell>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

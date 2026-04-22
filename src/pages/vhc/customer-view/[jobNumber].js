@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import { useUser } from "@/context/UserContext";
+import VhcCustomerViewPageUi from "@/components/page-ui/vhc/customer-view/vhc-customer-view-job-number-ui"; // Extracted presentation layer.
 
 const CUSTOMER_ROLE_ALLOWLIST = ["CUSTOMER"];
 
@@ -14,7 +15,7 @@ export default function VhcCustomerViewPage() {
   const { jobNumber, returnTo } = router.query;
   const { user } = useUser();
   const isCustomer = user?.roles?.some((role) =>
-    CUSTOMER_ROLE_ALLOWLIST.includes((role || "").toUpperCase())
+  CUSTOMER_ROLE_ALLOWLIST.includes((role || "").toUpperCase())
   );
 
   const resolveReturnTarget = () => {
@@ -35,48 +36,48 @@ export default function VhcCustomerViewPage() {
     }
   };
 
-  return (
-    <>
-      <div
-        style={{
-          padding: "24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "12px",
-          }}
-        >
-          {!isCustomer ? (
-            <button
-              type="button"
-              onClick={handleBack}
-              style={{
-                border: "1px solid var(--accent-purple-surface)",
-                borderRadius: "var(--radius-sm)",
-                padding: "8px 16px",
-                background: "var(--surface)",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              ← Back to workshop view
-            </button>
-          ) : null}
-          <div style={{ fontSize: "14px", color: "var(--info)" }}>Customer authorisation view</div>
-        </div>
+  return <VhcCustomerViewPageUi view="section1" handleBack={handleBack} isCustomer={isCustomer} jobNumber={jobNumber} VhcDetailsPanel={VhcDetailsPanel} />;
 
-        <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} viewMode="customer" />
-      </div>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 VhcCustomerViewPage.getLayout = (page) => <Layout requiresLandscape>{page}</Layout>;

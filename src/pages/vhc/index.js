@@ -1,12 +1,13 @@
-export async function getServerSideProps() {
-  return {
+// file location: src/pages/vhc/index.js
+import VhcIndexRedirectUi from "@/components/page-ui/vhc/vhc-ui"; // Extracted presentation layer.
+export async function getServerSideProps() {return {
     redirect: {
       destination: "/job-cards/view",
-      permanent: false,
-    },
+      permanent: false
+    }
   };
 }
 
 export default function VhcIndexRedirect() {
-  return null;
+  return <VhcIndexRedirectUi view="section1" />;
 }

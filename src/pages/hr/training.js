@@ -11,14 +11,14 @@ import { SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkel
 // Skeleton rows shown inside the Upcoming Expiries table while training data
 // loads. Keeps the outer page shell + header + assign-training form mounted so
 // the first visible frame matches the final layout.
-function TableRowsSkeleton({ rows = 5, cols = 4 }) {
-  return (
+import HrTrainingQualificationsUi from "@/components/page-ui/hr/hr-training-ui"; // Extracted presentation layer.
+function TableRowsSkeleton({ rows = 5, cols = 4 }) {return (
     <>
-      {Array.from({ length: rows }).map((_, i) => (
-        <SkeletonTableRow key={i} cols={cols} />
-      ))}
-    </>
-  );
+      {Array.from({ length: rows }).map((_, i) =>
+      <SkeletonTableRow key={i} cols={cols} />
+      )}
+    </>);
+
 }
 
 function TrainingContent() {
@@ -32,13 +32,13 @@ function TrainingContent() {
         <SectionCard title="Unable to load training data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
-      </div>
-    );
+      </div>);
+
   }
 
   const employeeOptions = employeeDirectory.map((employee) => ({
     value: employee.id,
-    label: employee.name,
+    label: employee.name
   }));
 
   return (
@@ -54,18 +54,18 @@ function TrainingContent() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--layout-card-gap)",
-        }}
-      >
+          gap: "var(--layout-card-gap)"
+        }}>
+        
         <SectionCard
           title="Upcoming Expiries"
           subtitle="Renew before certificates lapse"
           action={
-            <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm">
               Notify employees
             </Button>
-          }
-        >
+          }>
+          
           <div style={{ overflowX: "auto" }}>
             <table className="app-data-table">
               <thead>
@@ -77,24 +77,24 @@ function TrainingContent() {
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
-                  <TableRowsSkeleton rows={5} cols={4} />
-                ) : (
-                  trainingRenewals.map((record) => {
-                    const tone =
-                      record.status === "Overdue" ? "danger" : record.status === "Due Soon" ? "warning" : "default";
-                    return (
-                      <tr key={record.id}>
+                {isLoading ?
+                <TableRowsSkeleton rows={5} cols={4} /> :
+
+                trainingRenewals.map((record) => {
+                  const tone =
+                  record.status === "Overdue" ? "danger" : record.status === "Due Soon" ? "warning" : "default";
+                  return (
+                    <tr key={record.id}>
                         <td style={{ fontWeight: 600 }}>{record.course}</td>
                         <td>{record.employee}</td>
                         <td>{new Date(record.dueDate).toLocaleDateString()}</td>
                         <td>
                           <StatusTag label={record.status} tone={tone} />
                         </td>
-                      </tr>
-                    );
-                  })
-                )}
+                      </tr>);
+
+                })
+                }
               </tbody>
             </table>
           </div>
@@ -102,8 +102,8 @@ function TrainingContent() {
 
         <SectionCard
           title="Training Catalogue"
-          subtitle="Courses available to assign"
-        >
+          subtitle="Courses available to assign">
+          
           <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
             TODO: Fetch course catalogue from LMS/Supabase. Display course name, duration, mandatory flag, and an "Add course" action.
           </p>
@@ -115,16 +115,16 @@ function TrainingContent() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "var(--space-md)",
-          }}
-        >
+            gap: "var(--space-md)"
+          }}>
+          
           <DropdownField
             label="Employee"
             name="employee"
             placeholder="Choose employee"
             defaultValue=""
-            options={employeeOptions}
-          />
+            options={employeeOptions} />
+          
           <DropdownField
             label="Training Course"
             name="course"
@@ -132,16 +132,16 @@ function TrainingContent() {
             defaultValue=""
             disabled
             options={[]}
-            helperText="Populate course options from the training catalogue database table."
-          />
+            helperText="Populate course options from the training catalogue database table." />
+          
           <CalendarField label="Due Date" name="dueDate" id="dueDate" />
           <label style={labelStyle}>
             <span>Notes for employee</span>
             <textarea
               className="app-input"
               style={{ minHeight: "120px", resize: "vertical" }}
-              placeholder="Provide additional guidance or pre-reading"
-            />
+              placeholder="Provide additional guidance or pre-reading" />
+            
           </label>
           <div style={{ gridColumn: "1 / -1", display: "flex", gap: "var(--space-3)" }}>
             <Button type="button" variant="primary">
@@ -159,12 +159,12 @@ function TrainingContent() {
           TODO: Calculate compliance percentages per department from Supabase training records. Show percentage cards for each department with on-track/behind status.
         </p>
       </SectionCard>
-    </div>
-  );
+    </div>);
+
 }
 
 export default function HrTrainingQualifications({ embedded = false } = {}) {
-  return <TrainingContent />;
+  return <HrTrainingQualificationsUi view="section1" TrainingContent={TrainingContent} />;
 }
 
 // Local textarea label — InputField covers input/select fields, but no global textarea component exists yet.
@@ -177,5 +177,5 @@ const labelStyle = {
   fontWeight: "var(--control-label-weight)",
   textTransform: "uppercase",
   letterSpacing: "var(--tracking-caps)",
-  gridColumn: "1 / -1",
+  gridColumn: "1 / -1"
 };

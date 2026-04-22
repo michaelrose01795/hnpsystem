@@ -10,44 +10,44 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 // Structured job-row skeleton shaped like the real JobRow (title + time stamp + body).
 // Kept local to this file because the mobile dashboard cards use a compact two-column
 // grid that differs from the main app table layout.
-function MobileJobRowsSkeleton({ count = 2 }) {
-  return (
+import MobileDashboardPageUi from "@/components/page-ui/mobile/mobile-dashboard-ui"; // Extracted presentation layer.
+function MobileJobRowsSkeleton({ count = 2 }) {return (
     <div>
       <SkeletonKeyframes />
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto",
-            gap: "10px",
-            padding: "12px 0",
-            borderBottom: "1px solid var(--border-subtle, rgba(15,23,42,0.08))",
-          }}
-        >
+      {Array.from({ length: count }).map((_, i) =>
+      <div
+        key={i}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto",
+          gap: "10px",
+          padding: "12px 0",
+          borderBottom: "1px solid var(--border-subtle, rgba(15,23,42,0.08))"
+        }}>
+        
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <SkeletonBlock width="60%" height="14px" />
             <SkeletonBlock width="80%" height="10px" />
           </div>
           <SkeletonBlock width="80px" height="12px" />
         </div>
-      ))}
-    </div>
-  );
+      )}
+    </div>);
+
 }
 
 const pageStyle = {
   padding: "16px",
   display: "flex",
   flexDirection: "column",
-  gap: "18px",
+  gap: "18px"
 };
 
 const cardStyle = {
   backgroundColor: "var(--section-card-bg, #fff)",
   borderRadius: "var(--section-card-radius, 12px)",
   padding: "16px",
-  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))",
+  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))"
 };
 
 const jobRowStyle = {
@@ -55,7 +55,7 @@ const jobRowStyle = {
   gridTemplateColumns: "1fr auto",
   gap: "10px",
   padding: "12px 0",
-  borderBottom: "1px solid var(--border-subtle, rgba(15,23,42,0.08))",
+  borderBottom: "1px solid var(--border-subtle, rgba(15,23,42,0.08))"
 };
 
 function formatWindow(startIso, endIso) {
@@ -86,7 +86,7 @@ function MobileDashboardInner() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {cancelled = true;};
   }, []);
 
   const today = useMemo(() => {
@@ -112,32 +112,32 @@ function MobileDashboardInner() {
         </p>
       </header>
 
-      {error && (
-        <div style={{ ...cardStyle, borderColor: "var(--danger, #dc2626)", color: "var(--danger, #dc2626)" }}>
+      {error &&
+      <div style={{ ...cardStyle, borderColor: "var(--danger, #dc2626)", color: "var(--danger, #dc2626)" }}>
           {error}
         </div>
-      )}
+      }
 
       <section style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Today ({today.length})</h2>
-        {loading ? (
-          <MobileJobRowsSkeleton count={2} />
-        ) : today.length === 0 ? (
-          <p>No mobile visits scheduled today.</p>
-        ) : (
-          today.map((j) => <JobRow key={j.id} job={j} />)
-        )}
+        {loading ?
+        <MobileJobRowsSkeleton count={2} /> :
+        today.length === 0 ?
+        <p>No mobile visits scheduled today.</p> :
+
+        today.map((j) => <JobRow key={j.id} job={j} />)
+        }
       </section>
 
       <section style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Upcoming ({upcoming.length})</h2>
-        {loading ? (
-          <MobileJobRowsSkeleton count={3} />
-        ) : upcoming.length === 0 ? (
-          <p>Nothing upcoming.</p>
-        ) : (
-          upcoming.map((j) => <JobRow key={j.id} job={j} />)
-        )}
+        {loading ?
+        <MobileJobRowsSkeleton count={3} /> :
+        upcoming.length === 0 ?
+        <p>Nothing upcoming.</p> :
+
+        upcoming.map((j) => <JobRow key={j.id} job={j} />)
+        }
       </section>
 
       <section style={cardStyle}>
@@ -148,8 +148,8 @@ function MobileDashboardInner() {
           <li><Link href="/tech/consumables-request">Request consumables</Link></li>
         </ul>
       </section>
-    </div>
-  );
+    </div>);
+
 }
 
 function JobRow({ job }) {
@@ -173,14 +173,14 @@ function JobRow({ job }) {
           Open →
         </Link>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 export default function MobileDashboardPage() {
-  return (
-    <ProtectedRoute allowedRoles={["MOBILE TECHNICIAN", "ADMIN", "ADMIN MANAGER", "OWNER", "SERVICE MANAGER", "WORKSHOP MANAGER"]}>
-      <MobileDashboardInner />
-    </ProtectedRoute>
-  );
+  return <MobileDashboardPageUi view="section1" MobileDashboardInner={MobileDashboardInner} ProtectedRoute={ProtectedRoute} />;
+
+
+
+
 }

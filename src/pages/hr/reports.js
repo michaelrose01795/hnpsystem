@@ -1,6 +1,7 @@
 // file location: src/pages/hr/reports.js
 import React from "react";
 import { SectionCard } from "@/components/Section";
+import HrReportsExportsUi from "@/components/page-ui/hr/hr-reports-ui"; // Extracted presentation layer.
 
 function ReportsContent() {
   return (
@@ -19,8 +20,8 @@ function ReportsContent() {
 
       <SectionCard
         title="Quick Export"
-        subtitle="Choose a report and export format."
-      >
+        subtitle="Choose a report and export format.">
+        
         <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
           TODO: Fetch available report types from Supabase. Build export form with report type dropdown, format selection (CSV/Excel/PDF), date range picker, and generate/schedule actions.
         </p>
@@ -28,16 +29,16 @@ function ReportsContent() {
 
       <SectionCard
         title="Report Catalogue"
-        subtitle="Available HR reporting templates."
-      >
+        subtitle="Available HR reporting templates.">
+        
         <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
           TODO: Fetch report templates from Supabase. Display each report with title, description, supported formats, and a "View definition" action.
         </p>
       </SectionCard>
-    </div>
-  );
+    </div>);
+
 }
 
 export default function HrReportsExports({ embedded = false } = {}) {
-  return <ReportsContent />;
+  return <HrReportsExportsUi view="section1" ReportsContent={ReportsContent} />;
 }

@@ -17,8 +17,8 @@ import {
   updateJob,
   updateJobStatus,
   deleteJobFile,
-  summarizeWriteUpTasks,
-} from "@/lib/database/jobs";
+  summarizeWriteUpTasks } from
+"@/lib/database/jobs";
 import { getVHCChecksByJob } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
@@ -34,8 +34,8 @@ import {
   getMainStatusMetadata,
   normalizeStatusId,
   resolveMainStatusId,
-  resolveSubStatusId,
-} from "@/lib/status/statusFlow";
+  resolveSubStatusId } from
+"@/lib/status/statusFlow";
 import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
@@ -56,11 +56,12 @@ import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
 import VideoEditorModal from "@/components/VHC/VideoEditorModal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import themeConfig, {
-  vhcCardStates, // VHC section state colours — still comes from appTheme
+  vhcCardStates // VHC section state colours — still comes from appTheme
 } from "@/styles/appTheme";
 
 // Page layout styles — moved inline from appTheme.js (this was the only consumer).
 // Uses thin CSS variable wrapper aliases to keep the same token references.
+import TechJobDetailPageUi from "@/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui"; // Extracted presentation layer.
 const _p = { // CSS variable token aliases for this layout (matches appTheme palette)
   accent: "var(--primary)", // primary brand colour
   accentSoft: "var(--surface-light)", // light accent surface
@@ -70,12 +71,11 @@ const _p = { // CSS variable token aliases for this layout (matches appTheme pal
   surface: "var(--surface)", // default surface
   border: "var(--border)", // border colour
   textPrimary: "var(--text-primary)", // primary text colour
-  textMuted: "var(--text-secondary)", // muted/secondary text colour
-};
-const _r = { // CSS variable border radius aliases (matches appTheme radii)
+  textMuted: "var(--text-secondary)" // muted/secondary text colour
+};const _r = { // CSS variable border radius aliases (matches appTheme radii)
   lg: "var(--radius-lg)", // large radius
   xl: "var(--radius-xl)", // extra large radius
-  pill: "var(--control-radius)", // button-style radius
+  pill: "var(--control-radius)" // button-style radius
 };
 const vhcLayoutStyles = { // page layout style map — only used on this page
   page: { height: "100%", display: "flex", flexDirection: "column", padding: "var(--space-3) var(--space-md)", gap: "var(--space-md)", background: _p.backgroundGradient },
@@ -102,7 +102,7 @@ const vhcLayoutStyles = { // page layout style map — only used on this page
   cardTitle: { fontSize: "16px", fontWeight: "700", color: _p.textPrimary, margin: 0 },
   cardSubtitle: { fontSize: "13px", color: _p.textMuted, margin: 0, lineHeight: 1.4 },
   badge: { alignSelf: "flex-start", padding: "var(--space-xs) var(--space-3)", borderRadius: _r.pill, fontSize: "11px", fontWeight: "700", letterSpacing: "0.4px", textTransform: "uppercase", border: "1px solid transparent" },
-  actionBar: { display: "flex", flexWrap: "wrap", gap: "var(--space-3)", justifyContent: "flex-end", paddingTop: "var(--space-3)" },
+  actionBar: { display: "flex", flexWrap: "wrap", gap: "var(--space-3)", justifyContent: "flex-end", paddingTop: "var(--space-3)" }
 };
 
 // VHC Section titles and constants
@@ -112,7 +112,7 @@ const SECTION_TITLES = {
   serviceIndicator: "Service Indicator & Under Bonnet",
   externalInspection: "External",
   internalElectrics: "Internal",
-  underside: "Underside",
+  underside: "Underside"
 };
 
 const MANDATORY_SECTION_KEYS = ["wheelsTyres", "brakesHubs", "serviceIndicator"];
@@ -122,15 +122,15 @@ const VHC_REOPENED_SUB_STATUS = "VHC Reopened";
 const VHC_COMPLETED_SUB_STATUS = "VHC Completed";
 
 const createDefaultSectionStatus = () =>
-  MANDATORY_SECTION_KEYS.reduce((acc, key) => {
-    acc[key] = "pending";
-    return acc;
-  }, {});
+MANDATORY_SECTION_KEYS.reduce((acc, key) => {
+  acc[key] = "pending";
+  return acc;
+}, {});
 
 const hasServiceIndicatorEntries = (indicator = {}) =>
-  Boolean(indicator?.serviceChoice) ||
-  Boolean(indicator?.oilStatus) ||
-  (Array.isArray(indicator?.concerns) && indicator.concerns.length > 0);
+Boolean(indicator?.serviceChoice) ||
+Boolean(indicator?.oilStatus) ||
+Array.isArray(indicator?.concerns) && indicator.concerns.length > 0;
 
 const deriveSectionStatusFromSavedData = (savedData = {}) => {
   // If we have explicit section status saved, use it
@@ -152,9 +152,9 @@ const deriveSectionStatusFromSavedData = (savedData = {}) => {
   }
   const brakesData = savedData.brakesHubs;
   const hasBrakesContent =
-    brakesData &&
-    typeof brakesData === "object" &&
-    Object.keys(brakesData).length > 0;
+  brakesData &&
+  typeof brakesData === "object" &&
+  Object.keys(brakesData).length > 0;
   if (hasBrakesContent) {
     derived.brakesHubs = "complete";
   }
@@ -190,7 +190,7 @@ const STATUS_COLORS = {
   "Carry Over": "var(--danger)",
   "Complete": "var(--info)",
   "Sent": "var(--accent-purple)",
-  "Viewed": "var(--info)",
+  "Viewed": "var(--info)"
 };
 
 const STATUS_BADGE_STYLES = {
@@ -200,11 +200,11 @@ const STATUS_BADGE_STYLES = {
   "VHC Reopened": { background: "var(--warning-surface)", color: "var(--warning)" },
   "Write Up Complete": { background: "var(--info-surface)", color: "var(--accent-purple)" },
   "Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
-  "Started": { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  "Started": { background: "var(--info-surface)", color: "var(--accent-purple)" }
 };
 
 const getStatusBadgeStyle = (status, fallbackColor) =>
-  STATUS_BADGE_STYLES[status] || { background: fallbackColor, color: "white" };
+STATUS_BADGE_STYLES[status] || { background: fallbackColor, color: "white" };
 
 const IN_PROGRESS_STATUS = "In Progress";
 
@@ -216,7 +216,7 @@ const formatDateTime = (date) => {
       day: "2-digit",
       month: "short",
       hour: "2-digit",
-      minute: "2-digit",
+      minute: "2-digit"
     });
   } catch {
     return "N/A";
@@ -250,9 +250,9 @@ const deriveStoragePathFromUrl = (url = "") => {
       }
     }
   } catch (_err) {
+
     // fallback to string parsing
-  }
-  const fallbackMarker = "/job-documents/";
+  }const fallbackMarker = "/job-documents/";
   const fallbackIdx = url.indexOf(fallbackMarker);
   if (fallbackIdx >= 0) {
     return decodeURIComponent(url.substring(fallbackIdx + fallbackMarker.length));
@@ -273,7 +273,7 @@ const PARTS_STATUS_STYLES = {
   allocated: { background: "var(--success-surface)", color: "var(--success-dark)" },
   picked: { background: "var(--success-surface)", color: "var(--success-dark)" },
   fitted: { background: "var(--info-surface)", color: "var(--accent-purple)" },
-  cancelled: { background: "var(--info-surface)", color: "var(--info)" },
+  cancelled: { background: "var(--info-surface)", color: "var(--info)" }
 };
 
 const getPartsStatusStyle = (status) => {
@@ -305,32 +305,32 @@ const getVhcActionButtonStyle = ({ active = false, disabled = false } = {}) => (
   color: active ? "var(--surface)" : "var(--accent-purple)",
   cursor: disabled ? "not-allowed" : "pointer",
   opacity: disabled ? 0.5 : 1,
-  transition: "all 0.18s ease",
+  transition: "all 0.18s ease"
 });
 
 const resolveTechStatusLabel = (jobCard, { hasActiveClocking = false } = {}) => {
   const rawStatus = normalizeStatusId(jobCard?.rawStatus || jobCard?.status || "");
   const completionStatus = normalizeStatusId(jobCard?.techCompletionStatus || "");
   if (
-    rawStatus?.includes("tech_complete") ||
-    rawStatus?.includes("technician_work_completed") ||
-    rawStatus?.includes("invoiced") ||
-    rawStatus === "complete" ||
-    rawStatus === "completed" ||
-    completionStatus === "tech_complete" ||
-    completionStatus === "complete"
-  ) {
+  rawStatus?.includes("tech_complete") ||
+  rawStatus?.includes("technician_work_completed") ||
+  rawStatus?.includes("invoiced") ||
+  rawStatus === "complete" ||
+  rawStatus === "completed" ||
+  completionStatus === "tech_complete" ||
+  completionStatus === "complete")
+  {
     return "Complete";
   }
   if (hasActiveClocking) {
     return "In Progress";
   }
   if (
-    rawStatus?.includes("booked") ||
-    rawStatus?.includes("checked_in") ||
-    rawStatus?.includes("waiting") ||
-    rawStatus?.includes("pending")
-  ) {
+  rawStatus?.includes("booked") ||
+  rawStatus?.includes("checked_in") ||
+  rawStatus?.includes("waiting") ||
+  rawStatus?.includes("pending"))
+  {
     return "Waiting";
   }
   if (rawStatus?.includes("in_progress")) {
@@ -349,8 +349,8 @@ const isTechTaskComplete = (jobCard = {}) => {
     rawStatus === "complete" ||
     rawStatus === "completed" ||
     completionStatus === "tech_complete" ||
-    completionStatus === "complete"
-  );
+    completionStatus === "complete");
+
 };
 
 const calculateClockingMinutesTotal = (rows = [], now = Date.now()) => {
@@ -407,16 +407,16 @@ export default function TechJobDetailPage() {
   const formatPrePickLabel = useCallback((value = "") => {
     const trimmed = String(value || "").trim();
     if (!trimmed) return "";
-    return trimmed
-      .split("_")
-      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-      .join(" ");
+    return trimmed.
+    split("_").
+    map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1)).
+    join(" ");
   }, []);
   const prePickByVhcId = useMemo(() => {
     const map = new Map();
-    const items = Array.isArray(jobData?.jobCard?.parts_job_items)
-      ? jobData.jobCard.parts_job_items
-      : [];
+    const items = Array.isArray(jobData?.jobCard?.parts_job_items) ?
+    jobData.jobCard.parts_job_items :
+    [];
     items.forEach((part) => {
       const vhcId = part?.vhc_item_id ?? part?.vhcItemId ?? part?.vhcId;
       const prePick = part?.pre_pick_location || part?.prePickLocation;
@@ -455,7 +455,7 @@ export default function TechJobDetailPage() {
       "Air Con/Heating/Ventilation": { concerns: [] },
       "Warning Lamps": { concerns: [] },
       Seatbelt: { concerns: [] },
-      Miscellaneous: { concerns: [] },
+      Miscellaneous: { concerns: [] }
     },
     underside: {
       "Exhaust System/Catalyst": { concerns: [] },
@@ -463,8 +463,8 @@ export default function TechJobDetailPage() {
       "Front Suspension": { concerns: [] },
       "Rear Suspension": { concerns: [] },
       "Driveshafts/Oil Leaks": { concerns: [] },
-      Miscellaneous: { concerns: [] },
-    },
+      Miscellaneous: { concerns: [] }
+    }
   });
   const [sectionStatus, setSectionStatus] = useState(createDefaultSectionStatus);
   const [activeSection, setActiveSection] = useState(null);
@@ -500,27 +500,27 @@ export default function TechJobDetailPage() {
   useEffect(() => {
     if (activeTab === "parts" && jobCardId) {
       setAuthorizedVhcRowsLoading(true);
-      supabase
-        .from("vhc_checks")
-        .select("vhc_id, job_id, section, issue_title, issue_description, approval_status, authorization_state, labour_hours, parts_cost, pre_pick_location, note_text, severity, approved_at, approved_by, Complete, request_id")
-        .eq("job_id", jobCardId)
-        .eq("approval_status", "authorized")
-        .then(({ data, error }) => {
-          if (error) {
-            console.error("Failed to refresh authorised VHC rows:", error);
-          } else {
-            setAuthorizedVhcRows(data || []);
-          }
-          setAuthorizedVhcRowsLoading(false);
-        });
+      supabase.
+      from("vhc_checks").
+      select("vhc_id, job_id, section, issue_title, issue_description, approval_status, authorization_state, labour_hours, parts_cost, pre_pick_location, note_text, severity, approved_at, approved_by, Complete, request_id").
+      eq("job_id", jobCardId).
+      eq("approval_status", "authorized").
+      then(({ data, error }) => {
+        if (error) {
+          console.error("Failed to refresh authorised VHC rows:", error);
+        } else {
+          setAuthorizedVhcRows(data || []);
+        }
+        setAuthorizedVhcRowsLoading(false);
+      });
     }
   }, [activeTab, jobCardId]);
 
   const jobNumberForStatusFlow =
-    jobNumber ||
-    jobData?.jobCard?.jobNumber ||
-    jobData?.job?.jobNumber ||
-    null;
+  jobNumber ||
+  jobData?.jobCard?.jobNumber ||
+  jobData?.job?.jobNumber ||
+  null;
   const jobCardNumber = jobData?.jobCard?.jobNumber ?? jobNumber;
   const username = user?.username?.trim();
 
@@ -535,9 +535,9 @@ export default function TechJobDetailPage() {
       setPartsRequestsLoading(true);
 
       try {
-        const { data, error } = await supabase
-          .from("parts_requests")
-          .select(`
+        const { data, error } = await supabase.
+        from("parts_requests").
+        select(`
             request_id,
             job_id,
             quantity,
@@ -554,9 +554,9 @@ export default function TechJobDetailPage() {
               first_name,
               last_name
             )
-          `)
-          .eq("job_id", targetJobId)
-          .order("created_at", { ascending: false });
+          `).
+        eq("job_id", targetJobId).
+        order("created_at", { ascending: false });
 
         if (error) {
           throw error;
@@ -605,10 +605,10 @@ export default function TechJobDetailPage() {
 
       setAuthorizedPartsLoading(true);
       try {
-        const { data: partsData, error: partsError } = await supabase
-          .from("parts_job_items")
-          .select(
-            `
+        const { data: partsData, error: partsError } = await supabase.
+        from("parts_job_items").
+        select(
+          `
             id,
             job_id,
             part_id,
@@ -623,19 +623,19 @@ export default function TechJobDetailPage() {
               name
             )
           `
-          )
-          .eq("job_id", targetJobId)
-          .order("created_at", { ascending: false });
+        ).
+        eq("job_id", targetJobId).
+        order("created_at", { ascending: false });
 
         if (partsError) {
           throw partsError;
         }
 
-        const { data: vhcChecksData, error: vhcChecksError } = await supabase
-          .from("vhc_checks")
-          .select("vhc_id, job_id, section, issue_title, issue_description, approval_status, authorization_state, labour_hours, parts_cost, pre_pick_location, note_text, severity, approved_at, approved_by, Complete, request_id")
-          .eq("job_id", targetJobId)
-          .eq("approval_status", "authorized");
+        const { data: vhcChecksData, error: vhcChecksError } = await supabase.
+        from("vhc_checks").
+        select("vhc_id, job_id, section, issue_title, issue_description, approval_status, authorization_state, labour_hours, parts_cost, pre_pick_location, note_text, severity, approved_at, approved_by, Complete, request_id").
+        eq("job_id", targetJobId).
+        eq("approval_status", "authorized");
 
         if (vhcChecksError) {
           throw vhcChecksError;
@@ -719,10 +719,10 @@ export default function TechJobDetailPage() {
           }
           if (subStatusUpdates.status) {
             subStatusUpdates.status_updated_at =
-              status_updated_at || subStatusUpdates.status_updated_at || new Date().toISOString();
+            status_updated_at || subStatusUpdates.status_updated_at || new Date().toISOString();
             if (dbUserId) {
               subStatusUpdates.status_updated_by =
-                status_updated_by || subStatusUpdates.status_updated_by || dbUserId;
+              status_updated_by || subStatusUpdates.status_updated_by || dbUserId;
             } else if (status_updated_by) {
               subStatusUpdates.status_updated_by = status_updated_by;
             }
@@ -742,8 +742,8 @@ export default function TechJobDetailPage() {
                   ...prev,
                   jobCard: {
                     ...prev.jobCard,
-                    ...response.data,
-                  },
+                    ...response.data
+                  }
                 };
               });
             }
@@ -768,18 +768,18 @@ export default function TechJobDetailPage() {
           statusAuditUpdates.status_updated_at = new Date().toISOString();
         }
         if (
-          dbUserId &&
-          !Object.prototype.hasOwnProperty.call(statusAuditUpdates, "status_updated_by")
-        ) {
+        dbUserId &&
+        !Object.prototype.hasOwnProperty.call(statusAuditUpdates, "status_updated_by"))
+        {
           statusAuditUpdates.status_updated_by = dbUserId;
         }
 
         const targetMeta = getMainStatusMetadata(targetStatus);
         const targetLabel = targetMeta?.label || targetStatus;
         const response =
-          statusAuditUpdates && Object.keys(statusAuditUpdates).length > 0
-            ? await updateJob(jobCardId, { status: targetLabel, ...statusAuditUpdates })
-            : await updateJobStatus(jobCardId, targetLabel);
+        statusAuditUpdates && Object.keys(statusAuditUpdates).length > 0 ?
+        await updateJob(jobCardId, { status: targetLabel, ...statusAuditUpdates }) :
+        await updateJobStatus(jobCardId, targetLabel);
         if (response?.success && response.data) {
           setJobData((prev) => {
             if (!prev?.jobCard) return prev;
@@ -787,8 +787,8 @@ export default function TechJobDetailPage() {
               ...prev,
               jobCard: {
                 ...prev.jobCard,
-                ...response.data,
-              },
+                ...response.data
+              }
             };
           });
           revalidateAllJobs(); // sync status change to other pages
@@ -834,9 +834,9 @@ export default function TechJobDetailPage() {
     }
 
     try {
-      let query = supabase
-        .from("job_clocking")
-        .select("id, user_id, request_id, work_type, clock_in, clock_out");
+      let query = supabase.
+      from("job_clocking").
+      select("id, user_id, request_id, work_type, clock_in, clock_out");
       if (jobCardId) {
         query = query.eq("job_id", jobCardId);
       } else {
@@ -867,7 +867,7 @@ export default function TechJobDetailPage() {
 
       setJobData(job);
       setLiveWriteUpTasks(null);
-      const mappedFiles = ((job?.jobCard?.files || job?.files || [])).map(mapJobFileRecord);
+      const mappedFiles = (job?.jobCard?.files || job?.files || []).map(mapJobFileRecord);
       setJobDocuments(mappedFiles);
 
       const jobCardIdForFetch = job?.jobCard?.id;
@@ -895,15 +895,15 @@ export default function TechJobDetailPage() {
       setLoading(false);
     }
   }, [
-    jobNumber,
-    router,
-    refreshClockingStatus,
-    loadPartsRequests,
-    loadAuthorizedParts,
-    loadNotes,
-    loadStatusSnapshot,
-    fetchClockedHoursTotal,
-  ]);
+  jobNumber,
+  router,
+  refreshClockingStatus,
+  loadPartsRequests,
+  loadAuthorizedParts,
+  loadNotes,
+  loadStatusSnapshot,
+  fetchClockedHoursTotal]
+  );
 
   useEffect(() => {
     fetchJobData();
@@ -932,16 +932,16 @@ export default function TechJobDetailPage() {
   const workshopUserId = dbUserId ?? user?.id ?? null;
   const motWorkClaim = useMemo(
     () =>
-      activeClockingRows.find(
-        (row) => String(row?.work_type || "").trim().toLowerCase() === "mot"
-      ) || null,
+    activeClockingRows.find(
+      (row) => String(row?.work_type || "").trim().toLowerCase() === "mot"
+    ) || null,
     [activeClockingRows]
   );
   const technicianWorkClocking = useMemo(
     () =>
-      activeClockingRows.find(
-        (row) => String(row?.work_type || "").trim().toLowerCase() !== "mot"
-      ) || null,
+    activeClockingRows.find(
+      (row) => String(row?.work_type || "").trim().toLowerCase() !== "mot"
+    ) || null,
     [activeClockingRows]
   );
 
@@ -973,7 +973,7 @@ export default function TechJobDetailPage() {
         event: "*",
         schema: "public",
         table: "job_clocking",
-        filter: `job_id=eq.${jobCardId}`,
+        filter: `job_id=eq.${jobCardId}`
       },
       handleClockingChange
     );
@@ -998,7 +998,7 @@ export default function TechJobDetailPage() {
         event: "*",
         schema: "public",
         table: "jobs",
-        filter: `id=eq.${jobCardId}`,
+        filter: `id=eq.${jobCardId}`
       },
       handleJobRefresh
     );
@@ -1009,7 +1009,7 @@ export default function TechJobDetailPage() {
         event: "*",
         schema: "public",
         table: "job_writeups",
-        filter: `job_id=eq.${jobCardId}`,
+        filter: `job_id=eq.${jobCardId}`
       },
       handleJobRefresh
     );
@@ -1020,7 +1020,7 @@ export default function TechJobDetailPage() {
         event: "*",
         schema: "public",
         table: "job_requests",
-        filter: `job_id=eq.${jobCardId}`,
+        filter: `job_id=eq.${jobCardId}`
       },
       handleJobRefresh
     );
@@ -1045,7 +1045,7 @@ export default function TechJobDetailPage() {
         event: "*",
         schema: "public",
         table: "job_notes",
-        filter: `job_id=eq.${jobCardId}`,
+        filter: `job_id=eq.${jobCardId}`
       },
       handleChange
     );
@@ -1099,20 +1099,20 @@ export default function TechJobDetailPage() {
       setClockOutLoading(false);
     }
   }, [
-    dbUserId,
-    user?.id,
-    jobClocking,
-    jobCardId,
-    jobCardNumber,
-    setCurrentJob,
-    refreshCurrentJob,
-    setStatus,
-    refreshJobClocking,
-    refreshClockingStatus,
-    syncJobStatus,
-    jobData?.jobCard?.status,
-    confirm,
-  ]);
+  dbUserId,
+  user?.id,
+  jobClocking,
+  jobCardId,
+  jobCardNumber,
+  setCurrentJob,
+  refreshCurrentJob,
+  setStatus,
+  refreshJobClocking,
+  refreshClockingStatus,
+  syncJobStatus,
+  jobData?.jobCard?.status,
+  confirm]
+  );
 
   const handlePartsRequestSubmit = useCallback(async () => {
     if (!jobCardId) {
@@ -1144,9 +1144,9 @@ export default function TechJobDetailPage() {
         status: "waiting_authorisation",
         source: "tech_request",
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
-      if (partRequestVhcItemId) { // Attach VHC item link if tech selected one.
+      if (partRequestVhcItemId) {// Attach VHC item link if tech selected one.
         insertPayload.vhc_item_id = partRequestVhcItemId;
       }
 
@@ -1168,14 +1168,14 @@ export default function TechJobDetailPage() {
       setPartsSubmitting(false);
     }
   }, [
-    jobCardId,
-    dbUserId,
-    user?.id,
-    partRequestDescription,
-    partRequestQuantity,
-    partRequestVhcItemId,
-    fetchJobData,
-  ]);
+  jobCardId,
+  dbUserId,
+  user?.id,
+  partRequestDescription,
+  partRequestQuantity,
+  partRequestVhcItemId,
+  fetchJobData]
+  );
 
   // VHC Callbacks
   const markSectionState = useCallback((sectionKey, nextState) => {
@@ -1213,7 +1213,7 @@ export default function TechJobDetailPage() {
         // Use updatedStatus if provided, otherwise use current sectionStatus
         const payloadWithStatus = {
           ...payload,
-          _sectionStatus: updatedStatus || sectionStatus,
+          _sectionStatus: updatedStatus || sectionStatus
         };
 
         const result = await saveChecksheet(jobNumber, payloadWithStatus);
@@ -1293,7 +1293,7 @@ export default function TechJobDetailPage() {
   }, [vhcData]);
 
   const getBadgeState = useCallback((stateKey) =>
-    vhcCardStates[stateKey] || vhcCardStates.pending, []);
+  vhcCardStates[stateKey] || vhcCardStates.pending, []);
 
   // Extract and categorize all VHC items
   const extractVhcSummary = useCallback(() => {
@@ -1302,16 +1302,16 @@ export default function TechJobDetailPage() {
     // 1. WHEELS & TYRES - Extract from wheelsTyres structure
     if (vhcData.wheelsTyres && typeof vhcData.wheelsTyres === "object") {
       const wheels = ["NSF", "OSF", "NSR", "OSR"];
-      wheels.forEach(wheel => {
+      wheels.forEach((wheel) => {
         const wheelData = vhcData.wheelsTyres[wheel];
         if (wheelData && Array.isArray(wheelData.concerns)) {
-          wheelData.concerns.forEach(concern => {
+          wheelData.concerns.forEach((concern) => {
             const status = normalizeVhcStatus(concern.status);
             if (status === "na") return;
             items.push({
               section: `Wheels & Tyres - ${wheel}`,
               status,
-              text: concern.text || concern.description || concern.issue || "No description",
+              text: concern.text || concern.description || concern.issue || "No description"
             });
           });
         }
@@ -1327,16 +1327,16 @@ export default function TechJobDetailPage() {
 
         // Extract pad concerns
         if (axleData.pad) {
-          sides.forEach(side => {
+          sides.forEach((side) => {
             const padData = axleData.pad[side];
             if (padData && Array.isArray(padData.concerns)) {
-              padData.concerns.forEach(concern => {
+              padData.concerns.forEach((concern) => {
                 const status = normalizeVhcStatus(concern.status);
                 if (status === "na") return;
                 items.push({
                   section: `Brakes & Hubs - ${side} Pad`,
                   status,
-                  text: concern.text || concern.description || concern.issue || "No description",
+                  text: concern.text || concern.description || concern.issue || "No description"
                 });
               });
             }
@@ -1345,16 +1345,16 @@ export default function TechJobDetailPage() {
 
         // Extract disc concerns
         if (axleData.disc) {
-          sides.forEach(side => {
+          sides.forEach((side) => {
             const discData = axleData.disc[side];
             if (discData && Array.isArray(discData.concerns)) {
-              discData.concerns.forEach(concern => {
+              discData.concerns.forEach((concern) => {
                 const status = normalizeVhcStatus(concern.status);
                 if (status === "na") return;
                 items.push({
                   section: `Brakes & Hubs - ${side} Disc`,
                   status,
-                  text: concern.text || concern.description || concern.issue || "No description",
+                  text: concern.text || concern.description || concern.issue || "No description"
                 });
               });
             }
@@ -1370,27 +1370,27 @@ export default function TechJobDetailPage() {
         reset: "Service Reminder Reset",
         not_required: "Service Reminder Not Required",
         no_reminder: "Doesn't Have a Service Reminder",
-        indicator_on: "Service Indicator On",
+        indicator_on: "Service Indicator On"
       };
       const serviceChoiceKey = serviceIndicator.serviceChoice || "";
       const hasServiceChoice = Boolean(serviceChoiceKey);
       const normaliseServiceSource = (value = "") =>
-        value
-          .toString()
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
+      value.
+      toString().
+      toLowerCase().
+      replace(/[^a-z0-9]+/g, " ").
+      replace(/\s+/g, " ").
+      trim();
 
       if (hasServiceChoice) {
         const normalizedChoice = serviceChoiceKey.toString().trim();
         items.push({
           section: "Service Reminder",
           status:
-            normalizedChoice === "indicator_on" || normalizedChoice === "no_reminder"
-              ? "amber"
-              : "green",
-          text: serviceChoiceLabels[normalizedChoice] || normalizedChoice,
+          normalizedChoice === "indicator_on" || normalizedChoice === "no_reminder" ?
+          "amber" :
+          "green",
+          text: serviceChoiceLabels[normalizedChoice] || normalizedChoice
         });
       }
 
@@ -1401,20 +1401,20 @@ export default function TechJobDetailPage() {
           const source = concern.source || "Under Bonnet";
           const normalizedSource = normaliseServiceSource(source);
           const isServiceReminderOil =
-            normalizedSource.includes("service reminder") &&
-            normalizedSource.includes("oil");
+          normalizedSource.includes("service reminder") &&
+          normalizedSource.includes("oil");
           if (hasServiceChoice && isServiceReminderOil) {
             return;
           }
           items.push({
             section:
-              normalizedSource === "service"
-                ? "Service Reminder"
-                : normalizedSource === "oil"
-                ? "Oil Level"
-                : `Service Indicator - ${source}`,
+            normalizedSource === "service" ?
+            "Service Reminder" :
+            normalizedSource === "oil" ?
+            "Oil Level" :
+            `Service Indicator - ${source}`,
             status,
-            text: concern.text || concern.description || concern.issue || "No description",
+            text: concern.text || concern.description || concern.issue || "No description"
           });
         });
       }
@@ -1422,15 +1422,15 @@ export default function TechJobDetailPage() {
 
     // 4. EXTERNAL INSPECTION - Extract from externalInspection array
     if (Array.isArray(vhcData.externalInspection)) {
-      vhcData.externalInspection.forEach(category => {
+      vhcData.externalInspection.forEach((category) => {
         if (category && Array.isArray(category.concerns)) {
-          category.concerns.forEach(concern => {
+          category.concerns.forEach((concern) => {
             const status = normalizeVhcStatus(concern.status);
             if (status === "na") return;
             items.push({
               section: `External - ${category.name || "General"}`,
               status,
-              text: concern.text || concern.description || concern.issue || "No description",
+              text: concern.text || concern.description || concern.issue || "No description"
             });
           });
         }
@@ -1438,13 +1438,13 @@ export default function TechJobDetailPage() {
     } else if (vhcData.externalInspection && typeof vhcData.externalInspection === "object") {
       Object.entries(vhcData.externalInspection).forEach(([categoryName, categoryData]) => {
         if (categoryData && Array.isArray(categoryData.concerns)) {
-          categoryData.concerns.forEach(concern => {
+          categoryData.concerns.forEach((concern) => {
             const status = normalizeVhcStatus(concern.status);
             if (status === "na") return;
             items.push({
               section: `External - ${categoryName || "General"}`,
               status,
-              text: concern.text || concern.description || concern.issue || "No description",
+              text: concern.text || concern.description || concern.issue || "No description"
             });
           });
         }
@@ -1455,13 +1455,13 @@ export default function TechJobDetailPage() {
     if (vhcData.internalElectrics && typeof vhcData.internalElectrics === "object") {
       Object.entries(vhcData.internalElectrics).forEach(([subsystem, subsystemData]) => {
         if (subsystemData && Array.isArray(subsystemData.concerns)) {
-          subsystemData.concerns.forEach(concern => {
+          subsystemData.concerns.forEach((concern) => {
             const status = normalizeVhcStatus(concern.status);
             if (status === "na") return;
             items.push({
               section: `Internal & Electrics - ${subsystem}`,
               status,
-              text: concern.text || concern.description || concern.issue || "No description",
+              text: concern.text || concern.description || concern.issue || "No description"
             });
           });
         }
@@ -1472,13 +1472,13 @@ export default function TechJobDetailPage() {
     if (vhcData.underside && typeof vhcData.underside === "object") {
       Object.entries(vhcData.underside).forEach(([subsystem, subsystemData]) => {
         if (subsystemData && Array.isArray(subsystemData.concerns)) {
-          subsystemData.concerns.forEach(concern => {
+          subsystemData.concerns.forEach((concern) => {
             const status = normalizeVhcStatus(concern.status);
             if (status === "na") return;
             items.push({
               section: `Underside - ${subsystem}`,
               status,
-              text: concern.text || concern.description || concern.issue || "No description",
+              text: concern.text || concern.description || concern.issue || "No description"
             });
           });
         }
@@ -1487,7 +1487,7 @@ export default function TechJobDetailPage() {
 
     // Categorize by status
     const buckets = { red: [], amber: [], green: [] };
-    items.forEach(item => {
+    items.forEach((item) => {
       const status = normalizeVhcStatus(item.status);
       if (status === "red") {
         buckets.red.push(item);
@@ -1506,7 +1506,7 @@ export default function TechJobDetailPage() {
   // Check if VHC can be completed (all mandatory sections done)
   const canCompleteVhc = useMemo(() => {
     const mandatoryComplete = MANDATORY_SECTION_KEYS.every(
-      key => sectionStatus[key] === "complete"
+      (key) => sectionStatus[key] === "complete"
     );
     return mandatoryComplete;
   }, [sectionStatus]);
@@ -1528,15 +1528,15 @@ export default function TechJobDetailPage() {
 
     summaryRows.forEach((check) => {
       const decisions = [
-        check?.display_status,
-        check?.approval_status,
-        check?.approvalStatus,
-        check?.authorization_state,
-        check?.authorizationState,
-        check?.status,
-      ]
-        .filter(Boolean)
-        .map((v) => normaliseDecisionStatus(v));
+      check?.display_status,
+      check?.approval_status,
+      check?.approvalStatus,
+      check?.authorization_state,
+      check?.authorizationState,
+      check?.status].
+
+      filter(Boolean).
+      map((v) => normaliseDecisionStatus(v));
 
       const severity = (check?.severity || check?.traffic_light || "").toString().toLowerCase();
       const isRed = severity.includes("red");
@@ -1545,11 +1545,11 @@ export default function TechJobDetailPage() {
       const hasNotApplicable = decisions.includes("n/a");
       const isAuthorised = decisions.includes("authorized");
       const hasCompleted =
-        decisions.includes("completed") ||
-        check?.Complete === true ||
-        check?.complete === true;
+      decisions.includes("completed") ||
+      check?.Complete === true ||
+      check?.complete === true;
 
-      const isResolved = hasDeclined || hasNotApplicable || (isAuthorised && hasCompleted);
+      const isResolved = hasDeclined || hasNotApplicable || isAuthorised && hasCompleted;
 
       if (isResolved) {
         resolved += 1;
@@ -1557,7 +1557,7 @@ export default function TechJobDetailPage() {
         unresolved += 1;
       }
 
-      if (isRed || isAmber || (isAuthorised && !hasCompleted)) {
+      if (isRed || isAmber || isAuthorised && !hasCompleted) {
         if (!isResolved) {
           unresolvedRedAmberOrAuthorised += 1;
         }
@@ -1568,24 +1568,24 @@ export default function TechJobDetailPage() {
 
   const hasRedAmberRepairRows = vhcResolutionSnapshot.unresolvedRedAmberOrAuthorised > 0;
   const vhcTabComplete =
-    vhcResolutionSnapshot.total > 0 &&
-    vhcResolutionSnapshot.unresolvedRedAmberOrAuthorised === 0;
+  vhcResolutionSnapshot.total > 0 &&
+  vhcResolutionSnapshot.unresolvedRedAmberOrAuthorised === 0;
   const vhcTabCompleteInstant = vhcTabComplete || Boolean(jobData?.jobCard?.vhcCompletedAt);
   const vhcTabAmberReady = hasRedAmberRepairRows && !vhcTabCompleteInstant;
 
   const isVhcCompleted =
-    vhcCompleteOverride || vhcTabCompleteInstant;
+  vhcCompleteOverride || vhcTabCompleteInstant;
   const showVhcReopenButton = isVhcCompleted;
 
   const writeUpCompletion = (() => {
     const completionFromWriteUp =
-      typeof jobData?.jobCard?.writeUp?.completion_status === "string"
-        ? jobData.jobCard.writeUp.completion_status.toLowerCase()
-        : "";
+    typeof jobData?.jobCard?.writeUp?.completion_status === "string" ?
+    jobData.jobCard.writeUp.completion_status.toLowerCase() :
+    "";
     if (completionFromWriteUp) return completionFromWriteUp;
-    return typeof jobData?.jobCard?.completionStatus === "string"
-      ? jobData.jobCard.completionStatus.toLowerCase()
-      : "";
+    return typeof jobData?.jobCard?.completionStatus === "string" ?
+    jobData.jobCard.completionStatus.toLowerCase() :
+    "";
   })();
   const writeUpChecklistRowsComplete = (() => {
     const checklistRaw = jobData?.jobCard?.writeUp?.task_checklist;
@@ -1620,61 +1620,61 @@ export default function TechJobDetailPage() {
     });
   })();
   const writeUpComplete =
-    typeof writeUpChecklistRowsComplete === "boolean"
-      ? writeUpChecklistRowsComplete
-      : writeUpCompletion === "complete" || writeUpCompletion === "waiting_additional_work";
+  typeof writeUpChecklistRowsComplete === "boolean" ?
+  writeUpChecklistRowsComplete :
+  writeUpCompletion === "complete" || writeUpCompletion === "waiting_additional_work";
   const writeUpTaskSummary = useMemo(
     () => summarizeWriteUpTasks(liveWriteUpTasks || []),
     [liveWriteUpTasks]
   );
   const effectiveWriteUpTaskSummary =
-    liveWriteUpTasks !== null
-      ? writeUpTaskSummary
-      : jobData?.jobCard?.writeUpTaskSummary || null;
+  liveWriteUpTasks !== null ?
+  writeUpTaskSummary :
+  jobData?.jobCard?.writeUpTaskSummary || null;
   const writeUpTechComplete =
-    effectiveWriteUpTaskSummary?.technicianTasksComplete === true || writeUpComplete;
+  effectiveWriteUpTaskSummary?.technicianTasksComplete === true || writeUpComplete;
   const pendingMotTasks = effectiveWriteUpTaskSummary?.pendingMotTasks || [];
   const hasPendingMotOnly = effectiveWriteUpTaskSummary?.hasPendingMotOnly === true;
   const rectificationsComplete = writeUpTechComplete;
   const vhcAssistantState = useMemo(
     () =>
-      buildVhcAssistantState({
-        checks: vhcChecks,
-        partsRows: jobData?.jobCard?.parts_job_items || [],
-        sectionStatus,
-        vhcRequired: jobRequiresVhc,
-        vhcCompletedAt: jobData?.jobCard?.vhcCompletedAt || null,
-        sentToCustomer: false,
-        canEdit: true,
-        context: "internal",
-        writeUpComplete: writeUpTechComplete,
-      }),
-    [
-      vhcChecks,
-      jobData?.jobCard?.parts_job_items,
-      jobData?.jobCard?.vhcCompletedAt,
+    buildVhcAssistantState({
+      checks: vhcChecks,
+      partsRows: jobData?.jobCard?.parts_job_items || [],
       sectionStatus,
-      jobRequiresVhc,
-      writeUpTechComplete,
-    ]
+      vhcRequired: jobRequiresVhc,
+      vhcCompletedAt: jobData?.jobCard?.vhcCompletedAt || null,
+      sentToCustomer: false,
+      canEdit: true,
+      context: "internal",
+      writeUpComplete: writeUpTechComplete
+    }),
+    [
+    vhcChecks,
+    jobData?.jobCard?.parts_job_items,
+    jobData?.jobCard?.vhcCompletedAt,
+    sectionStatus,
+    jobRequiresVhc,
+    writeUpTechComplete]
+
   );
 
   const handleCompleteVhcClick = useCallback(async () => {
     if (!jobCardId) return;
     if (!showVhcReopenButton && !canCompleteVhc) return;
 
-    const targetStatus = showVhcReopenButton
-      ? VHC_REOPENED_SUB_STATUS
-      : VHC_COMPLETED_SUB_STATUS;
+    const targetStatus = showVhcReopenButton ?
+    VHC_REOPENED_SUB_STATUS :
+    VHC_COMPLETED_SUB_STATUS;
     const shouldShowCompleteCard = targetStatus === VHC_COMPLETED_SUB_STATUS;
     if (shouldShowCompleteCard) {
       setVhcCompleteOverride(true);
     }
 
     try {
-      const vhcUpdate = shouldShowCompleteCard
-        ? { vhc_completed_at: new Date().toISOString() }
-        : { vhc_completed_at: null };
+      const vhcUpdate = shouldShowCompleteCard ?
+      { vhc_completed_at: new Date().toISOString() } :
+      { vhc_completed_at: null };
       const updated = await syncJobStatus(targetStatus, jobCardStatus, vhcUpdate);
       if (updated) {
         if (shouldShowCompleteCard) {
@@ -1691,8 +1691,8 @@ export default function TechJobDetailPage() {
             new CustomEvent("statusFlowRefresh", {
               detail: {
                 jobNumber: String(jobNumberForStatusFlow),
-                status: targetStatus,
-              },
+                status: targetStatus
+              }
             })
           );
         }
@@ -1709,14 +1709,14 @@ export default function TechJobDetailPage() {
       }
     }
   }, [
-    jobCardId,
-    showVhcReopenButton,
-    canCompleteVhc,
-    syncJobStatus,
-    jobCardStatus,
-    writeUpComplete,
-    jobNumberForStatusFlow,
-  ]);
+  jobCardId,
+  showVhcReopenButton,
+  canCompleteVhc,
+  syncJobStatus,
+  jobCardStatus,
+  writeUpComplete,
+  jobNumberForStatusFlow]
+  );
 
   // NOW all useEffects come AFTER all callbacks are defined
 
@@ -1739,7 +1739,7 @@ export default function TechJobDetailPage() {
           "Air Con/Heating/Ventilation": { concerns: [] },
           "Warning Lamps": { concerns: [] },
           Seatbelt: { concerns: [] },
-          Miscellaneous: { concerns: [] },
+          Miscellaneous: { concerns: [] }
         },
         underside: {
           "Exhaust System/Catalyst": { concerns: [] },
@@ -1747,15 +1747,15 @@ export default function TechJobDetailPage() {
           "Front Suspension": { concerns: [] },
           "Rear Suspension": { concerns: [] },
           "Driveshafts/Oil Leaks": { concerns: [] },
-          Miscellaneous: { concerns: [] },
-        },
+          Miscellaneous: { concerns: [] }
+        }
       });
       setSectionStatus(createDefaultSectionStatus());
       return;
     }
 
     const vhcChecksheet = vhcChecks.find(
-      check => check.section === "VHC_CHECKSHEET" || check.section === "VHC Checksheet"
+      (check) => check.section === "VHC_CHECKSHEET" || check.section === "VHC Checksheet"
     );
 
     if (vhcChecksheet && vhcChecksheet.data) {
@@ -1764,7 +1764,7 @@ export default function TechJobDetailPage() {
         ...prev,
         ...vhcChecksheet.data,
         serviceIndicator:
-          vhcChecksheet.data.serviceIndicator || prev.serviceIndicator,
+        vhcChecksheet.data.serviceIndicator || prev.serviceIndicator
       }));
       setSectionStatus(deriveSectionStatusFromSavedData(vhcChecksheet.data));
 
@@ -1821,7 +1821,7 @@ export default function TechJobDetailPage() {
     if (!confirmed) return;
 
     const result = await updateJobStatus(jobCardId, newStatus);
-    
+
     if (result?.success && result.data) {
       alert("Status updated successfully!");
       setJobData((prev) => {
@@ -1830,8 +1830,8 @@ export default function TechJobDetailPage() {
           ...prev,
           jobCard: {
             ...prev.jobCard,
-            status: result.data.status,
-          },
+            status: result.data.status
+          }
         };
       });
       revalidateAllJobs(); // sync status change to other pages
@@ -1840,16 +1840,16 @@ export default function TechJobDetailPage() {
       if (actionType) {
         const vehicleId = jobData?.vehicle?.vehicleId || jobData?.jobCard?.vehicleId || null;
         const vehicleReg =
-          jobData?.vehicle?.reg ||
-          jobData?.jobCard?.vehicleReg ||
-          jobData?.jobCard?.vehicle?.reg ||
-          "";
+        jobData?.vehicle?.reg ||
+        jobData?.jobCard?.vehicleReg ||
+        jobData?.jobCard?.vehicle?.reg ||
+        "";
         triggerNextAction(actionType, {
           jobId: jobCardId,
           jobNumber: jobData?.jobCard?.jobNumber || jobCardNumber,
           vehicleId,
           vehicleReg,
-          triggeredBy: user?.id || null,
+          triggeredBy: user?.id || null
         });
       }
     } else {
@@ -1876,7 +1876,7 @@ export default function TechJobDetailPage() {
         job_id: jobCardId,
         user_id: dbUserId || null,
         note_text: trimmedNote,
-        hidden_from_customer: true, // Default: hidden from customer
+        hidden_from_customer: true // Default: hidden from customer
       });
 
       if (!result?.success) {
@@ -1903,9 +1903,9 @@ export default function TechJobDetailPage() {
       try {
         const storagePath = deriveStoragePathFromUrl(file.url);
         if (storagePath) {
-          const { error: removeError } = await supabase.storage
-            .from(JOB_DOCUMENT_BUCKET)
-            .remove([storagePath]);
+          const { error: removeError } = await supabase.storage.
+          from(JOB_DOCUMENT_BUCKET).
+          remove([storagePath]);
           if (removeError) {
             console.warn("Failed to remove file from storage:", removeError);
           }
@@ -1927,8 +1927,8 @@ export default function TechJobDetailPage() {
             ...prev,
             jobCard: {
               ...prev.jobCard,
-              files: nextJobCardFiles,
-            },
+              files: nextJobCardFiles
+            }
           };
         });
       } catch (deleteError) {
@@ -1965,7 +1965,7 @@ export default function TechJobDetailPage() {
         file_type: data.file?.mimetype || editedFile.type || "",
         folder: "documents",
         uploaded_by: dbUserId || null,
-        uploaded_at: data.file?.uploadedAt || new Date().toISOString(),
+        uploaded_at: data.file?.uploadedAt || new Date().toISOString()
       });
       setJobDocuments((prev) => prev.map((d) => d.id === oldDoc.id ? newDoc : d));
     } catch (err) {
@@ -1979,17 +1979,17 @@ export default function TechJobDetailPage() {
       await fetch(`/api/jobcards/${encodeURIComponent(jobNumber)}/files`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileId, fileName: newName }),
+        body: JSON.stringify({ fileId, fileName: newName })
       });
       setJobDocuments((prev) =>
-        prev.map((doc) =>
-          (doc.id || doc.file_id) === fileId ? { ...doc, name: newName, file_name: newName } : doc
-        )
+      prev.map((doc) =>
+      (doc.id || doc.file_id) === fileId ? { ...doc, name: newName, file_name: newName } : doc
+      )
       );
     } catch {
+
       // silently ignore — gallery refreshes on next fetch
-    }
-  }, [jobNumber]);
+    }}, [jobNumber]);
 
   // Handler: VHC button click - only navigate if VHC is required
   const handleVhcClick = () => {
@@ -2059,7 +2059,7 @@ export default function TechJobDetailPage() {
 
     // Find the VHC checksheet blob
     const vhcChecksheet = jobData.vhcChecks.find(
-      check => check.section === "VHC_CHECKSHEET" || check.section === "VHC Checksheet"
+      (check) => check.section === "VHC_CHECKSHEET" || check.section === "VHC Checksheet"
     );
 
     if (!vhcChecksheet || !vhcChecksheet.data) {
@@ -2071,7 +2071,7 @@ export default function TechJobDetailPage() {
     // 1. EXTRACT TYRE MEASUREMENTS
     if (data.wheelsTyres) {
       const wheels = ["NSF", "OSF", "NSR", "OSR"];
-      wheels.forEach(wheel => {
+      wheels.forEach((wheel) => {
         const wheelData = data.wheelsTyres[wheel];
         if (wheelData && wheelData.tread) {
           const { outer, middle, inner } = wheelData.tread;
@@ -2080,8 +2080,8 @@ export default function TechJobDetailPage() {
           if (measurements.length > 0) {
             const minTread = Math.min(...measurements);
             let status = "green";
-            if (minTread < 1.6) status = "red";
-            else if (minTread < 3.0) status = "amber";
+            if (minTread < 1.6) status = "red";else
+            if (minTread < 3.0) status = "amber";
 
             items.push({
               section: "Wheels & Tyres",
@@ -2096,7 +2096,7 @@ export default function TechJobDetailPage() {
 
         // Extract tyre concerns
         if (wheelData && Array.isArray(wheelData.concerns)) {
-          wheelData.concerns.forEach(concern => {
+          wheelData.concerns.forEach((concern) => {
             items.push({
               section: "Wheels & Tyres",
               title: `${wheel} - ${concern.title || "Concern"}`,
@@ -2113,18 +2113,18 @@ export default function TechJobDetailPage() {
     if (Array.isArray(data.brakesHubs)) {
       const sides = ["NSF", "OSF", "NSR", "OSR"];
 
-      data.brakesHubs.forEach(axleData => {
+      data.brakesHubs.forEach((axleData) => {
         if (!axleData) return;
 
         // Extract pad measurements
         if (axleData.pad) {
-          sides.forEach(side => {
+          sides.forEach((side) => {
             const padData = axleData.pad[side];
             if (padData && padData.measurement) {
               const measurement = Number(padData.measurement);
               let status = "green";
-              if (measurement < 2) status = "red";
-              else if (measurement < 4) status = "amber";
+              if (measurement < 2) status = "red";else
+              if (measurement < 4) status = "amber";
 
               items.push({
                 section: "Brakes & Hubs",
@@ -2138,7 +2138,7 @@ export default function TechJobDetailPage() {
 
             // Extract pad concerns
             if (padData && Array.isArray(padData.concerns)) {
-              padData.concerns.forEach(concern => {
+              padData.concerns.forEach((concern) => {
                 items.push({
                   section: "Brakes & Hubs",
                   title: `${side} Pad - ${concern.title || "Concern"}`,
@@ -2153,13 +2153,13 @@ export default function TechJobDetailPage() {
 
         // Extract disc measurements
         if (axleData.disc) {
-          sides.forEach(side => {
+          sides.forEach((side) => {
             const discData = axleData.disc[side];
             if (discData && discData.measurement) {
               const measurement = Number(discData.measurement);
               let status = "green";
-              if (measurement < 22) status = "red";
-              else if (measurement < 25) status = "amber";
+              if (measurement < 22) status = "red";else
+              if (measurement < 25) status = "amber";
 
               items.push({
                 section: "Brakes & Hubs",
@@ -2173,7 +2173,7 @@ export default function TechJobDetailPage() {
 
             // Extract disc concerns
             if (discData && Array.isArray(discData.concerns)) {
-              discData.concerns.forEach(concern => {
+              discData.concerns.forEach((concern) => {
                 items.push({
                   section: "Brakes & Hubs",
                   title: `${side} Disc - ${concern.title || "Concern"}`,
@@ -2220,7 +2220,7 @@ export default function TechJobDetailPage() {
       }
 
       if (Array.isArray(si.concerns)) {
-        si.concerns.forEach(concern => {
+        si.concerns.forEach((concern) => {
           items.push({
             section: "Service Indicator",
             title: concern.source || "Under Bonnet",
@@ -2234,19 +2234,19 @@ export default function TechJobDetailPage() {
 
     // 4-6. EXTRACT CONCERNS FROM OTHER SECTIONS
     const sections = [
-      { key: 'externalInspection', name: 'External Inspection' },
-      { key: 'internalElectrics', name: 'Internal & Electrics' },
-      { key: 'underside', name: 'Underside' }
-    ];
+    { key: 'externalInspection', name: 'External Inspection' },
+    { key: 'internalElectrics', name: 'Internal & Electrics' },
+    { key: 'underside', name: 'Underside' }];
+
 
     sections.forEach(({ key, name }) => {
       if (data[key]) {
         const sectionData = data[key];
 
         if (Array.isArray(sectionData)) {
-          sectionData.forEach(category => {
+          sectionData.forEach((category) => {
             if (category && Array.isArray(category.concerns)) {
-              category.concerns.forEach(concern => {
+              category.concerns.forEach((concern) => {
                 items.push({
                   section: name,
                   title: category.name || name,
@@ -2260,7 +2260,7 @@ export default function TechJobDetailPage() {
         } else if (typeof sectionData === "object") {
           Object.entries(sectionData).forEach(([subsystem, subsystemData]) => {
             if (subsystemData && Array.isArray(subsystemData.concerns)) {
-              subsystemData.concerns.forEach(concern => {
+              subsystemData.concerns.forEach((concern) => {
                 items.push({
                   section: name,
                   title: subsystem,
@@ -2277,7 +2277,7 @@ export default function TechJobDetailPage() {
 
     // Categorize by status
     const buckets = { red: [], amber: [], green: [] };
-    items.forEach(item => {
+    items.forEach((item) => {
       const status = (item.status || "green").toLowerCase();
       if (status.includes("red") || status === "danger") {
         buckets.red.push(item);
@@ -2296,22 +2296,22 @@ export default function TechJobDetailPage() {
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
-  const userRoles = Array.isArray(user?.roles)
-    ? user.roles
-    : user?.role
-      ? [user.role]
-      : [];
+  const userRoles = Array.isArray(user?.roles) ?
+  user.roles :
+  user?.role ?
+  [user.role] :
+  [];
   const hasRoleAccess = userRoles.some((roleName) => {
     const normalized = String(roleName).toLowerCase();
     return normalized.includes("tech") || normalized.includes("mot");
   });
   const hasMotRoleAccess = userRoles.some((roleName) =>
-    String(roleName).toLowerCase().includes("mot")
+  String(roleName).toLowerCase().includes("mot")
   );
   const isTech =
-    (username && allowedTechNames.has(username)) || hasRoleAccess;
+  username && allowedTechNames.has(username) || hasRoleAccess;
   const isMotTester =
-    (username && motTestersList.includes(username)) || hasMotRoleAccess;
+  username && motTestersList.includes(username) || hasMotRoleAccess;
   const canManageDocuments = isTech;
 
   useEffect(() => {
@@ -2319,10 +2319,10 @@ export default function TechJobDetailPage() {
     const currentStatusId = normalizeStatusId(jobData.jobCard.status);
     const completionStatusId = normalizeStatusId(jobData.jobCard.techCompletionStatus || "");
     const isMarkedComplete =
-      currentStatusId === "complete" ||
-      currentStatusId === "tech_complete" ||
-      completionStatusId === "complete" ||
-      completionStatusId === "tech_complete";
+    currentStatusId === "complete" ||
+    currentStatusId === "tech_complete" ||
+    completionStatusId === "complete" ||
+    completionStatusId === "tech_complete";
     if (!isMarkedComplete) return;
 
     const requiresVhc = jobData?.jobCard?.vhcRequired === true;
@@ -2337,77 +2337,77 @@ export default function TechJobDetailPage() {
             ...prev,
             jobCard: {
               ...prev.jobCard,
-              ...statusResult.data,
-            },
+              ...statusResult.data
+            }
           };
         });
       }
     });
   }, [
-    jobCardId,
-    jobData?.jobCard?.status,
-    jobData?.jobCard?.techCompletionStatus,
-    jobData?.jobCard?.vhcRequired,
-    isVhcCompleted,
-    writeUpTechComplete,
-  ]);
+  jobCardId,
+  jobData?.jobCard?.status,
+  jobData?.jobCard?.techCompletionStatus,
+  jobData?.jobCard?.vhcRequired,
+  isVhcCompleted,
+  writeUpTechComplete]
+  );
 
 
   // Access check - only technicians can view this page
   if (!isTech) {
-    return (
-      <>
-        <div style={{ padding: "40px", textAlign: "center" }}>
-          <h2 style={{ color: "var(--primary)" }}>Access Denied</h2>
-          <p>This page is only for Technicians.</p>
-        </div>
-      </>
-    );
+    return <TechJobDetailPageUi view="section1" />;
+
+
+
+
+
+
+
   }
 
   // Loading state
   if (loading) {
-    return <MyJobCardShellSkeleton jobNumber={jobNumber} />;
+    return <TechJobDetailPageUi view="section2" jobNumber={jobNumber} MyJobCardShellSkeleton={MyJobCardShellSkeleton} />;
   }
 
   // Handle case where job is not found
   if (!jobData?.jobCard) {
-    return (
-      <>
-        <div style={{ padding: "40px", textAlign: "center" }}>
-          <h2 style={{ color: "var(--primary)" }}>Job Not Found</h2>
-          <button
-            onClick={() => router.push("/job-cards/myjobs")}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "var(--primary)",
-              color: "white",
-              border: "none",
-              borderRadius: "var(--radius-xs)",
-              cursor: "pointer",
-              marginTop: "20px"
-            }}
-          >
-            Back to My Jobs
-          </button>
-        </div>
-      </>
-    );
+    return <TechJobDetailPageUi view="section3" router={router} />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   }
 
   // Extract job data
   const { jobCard, customer, vehicle } = jobData;
   const snapshotTechStatus = statusSnapshot?.tech?.status || null;
   const techStatusDisplay =
-    (snapshotTechStatus && TECH_DISPLAY[snapshotTechStatus]) ||
-    resolveTechStatusLabel(jobCard, { hasActiveClocking: Boolean(jobClocking) });
+  snapshotTechStatus && TECH_DISPLAY[snapshotTechStatus] ||
+  resolveTechStatusLabel(jobCard, { hasActiveClocking: Boolean(jobClocking) });
   const isHeaderCompleteStatus = String(techStatusDisplay || "").trim().toLowerCase() === "complete";
   const jobStatusColor = STATUS_COLORS[techStatusDisplay] || "var(--info)";
   const jobStatusBadgeStyle = getStatusBadgeStyle(techStatusDisplay, jobStatusColor);
   // Count authorised VHC items for the quick stats
-  const vhcSource = Array.isArray(jobData?.vhcChecks) && jobData.vhcChecks.length > 0
-    ? jobData.vhcChecks
-    : vhcChecks;
+  const vhcSource = Array.isArray(jobData?.vhcChecks) && jobData.vhcChecks.length > 0 ?
+  jobData.vhcChecks :
+  vhcChecks;
   const authorisedVhcItems = vhcSource.filter((check) => {
     const status = String(check?.approval_status || check?.approvalStatus || "").toLowerCase();
     return status === "authorized";
@@ -2417,43 +2417,43 @@ export default function TechJobDetailPage() {
   const isWarrantyJob = (jobCard?.jobSource || "").toLowerCase() === "warranty";
   const categories = Array.isArray(jobCard?.jobCategories) ? jobCard.jobCategories : [];
   const detectedJobTypes =
-    categories.length > 0
-      ? categories.map((entry) => {
-          const label = formatDetectedJobTypeLabel(entry);
-          // If the detection returned "Other" but the job clearly involves MOT, show "MOT".
-          if (label === "Other") {
-            const motHaystack = [
-              jobCard?.type, jobCard?.description,
-              ...(Array.isArray(jobCard?.requests) ? jobCard.requests.map((r) => (typeof r === "string" ? r : r?.description || "")) : []),
-            ].join(" ").toLowerCase();
-            if (motHaystack.includes("mot")) return "MOT";
-          }
-          return label;
-        })
-      : [deriveJobTypeLabel(jobCard)];
+  categories.length > 0 ?
+  categories.map((entry) => {
+    const label = formatDetectedJobTypeLabel(entry);
+    // If the detection returned "Other" but the job clearly involves MOT, show "MOT".
+    if (label === "Other") {
+      const motHaystack = [
+      jobCard?.type, jobCard?.description,
+      ...(Array.isArray(jobCard?.requests) ? jobCard.requests.map((r) => typeof r === "string" ? r : r?.description || "") : [])].
+      join(" ").toLowerCase();
+      if (motHaystack.includes("mot")) return "MOT";
+    }
+    return label;
+  }) :
+  [deriveJobTypeLabel(jobCard)];
 
   // Quick stats data for display
   const quickStats = [
-    {
-      label: "Job Requests",
-      value: deriveJobTypeLabel(jobCard),
-      accent: "var(--info-dark)",
-      pill: false,
-      onClick: () => setShowJobTypesPopup(true),
-    },
-    {
-      label: "Parts authorised",
-      value: vhcAuthorisedCount,
-      accent: "var(--danger)",
-      pill: false,
-    },
-    {
-      label: "Clocked Hours",
-      value: clockedHours,
-      accent: "var(--success)",
-      pill: false,
-    },
-  ];
+  {
+    label: "Job Requests",
+    value: deriveJobTypeLabel(jobCard),
+    accent: "var(--info-dark)",
+    pill: false,
+    onClick: () => setShowJobTypesPopup(true)
+  },
+  {
+    label: "Parts authorised",
+    value: vhcAuthorisedCount,
+    accent: "var(--danger)",
+    pill: false
+  },
+  {
+    label: "Clocked Hours",
+    value: clockedHours,
+    accent: "var(--success)",
+    pill: false
+  }];
+
 
   // Check if additional contents are available
   const hasAdditionalContents = () => {
@@ -2467,28 +2467,28 @@ export default function TechJobDetailPage() {
   const additionalAvailable = hasAdditionalContents();
   const writeUp = jobCard?.writeUp || {};
   const faultText =
-    writeUp.fault || "";
+  writeUp.fault || "";
   const causeText =
-    writeUp.caused ||
-    writeUp.cause ||
-    writeUp.task_checklist?.meta?.caused ||
-    writeUp.recommendation ||
-    "";
+  writeUp.caused ||
+  writeUp.cause ||
+  writeUp.task_checklist?.meta?.caused ||
+  writeUp.recommendation ||
+  "";
   const rectificationText =
-    writeUp.rectification ||
-    "";
+  writeUp.rectification ||
+  "";
 
   const isVhcCompleteForTech = !jobRequiresVhc || isVhcCompleted;
   const technicianWorkDone = isTechTaskComplete(jobCard);
   const pendingMotRequest = pendingMotTasks[0] || null;
   const motClockedByAnotherUser =
-    Boolean(motWorkClaim) && Number(motWorkClaim?.user_id) !== Number(workshopUserId);
+  Boolean(motWorkClaim) && Number(motWorkClaim?.user_id) !== Number(workshopUserId);
   const canClockIntoMotHandoff =
-    isMotTester &&
-    technicianWorkDone &&
-    hasPendingMotOnly &&
-    !technicianWorkClocking &&
-    !motClockedByAnotherUser;
+  isMotTester &&
+  technicianWorkDone &&
+  hasPendingMotOnly &&
+  !technicianWorkClocking &&
+  !motClockedByAnotherUser;
   const canCompleteJob = writeUpTechComplete && isVhcCompleteForTech;
   const completeJobLockedReasons = [];
   if (!writeUpTechComplete) {
@@ -2501,11 +2501,11 @@ export default function TechJobDetailPage() {
   if (!isVhcCompleteForTech) {
     completeJobLockedReasons.push("Complete mandatory VHC sections");
   }
-  const completeJobLockedTitle = canCompleteJob
-    ? "Mark job as Technician Work Completed"
-    : completeJobLockedReasons.length > 0
-    ? completeJobLockedReasons.join(" • ")
-    : "Complete the required steps to unlock";
+  const completeJobLockedTitle = canCompleteJob ?
+  "Mark job as Technician Work Completed" :
+  completeJobLockedReasons.length > 0 ?
+  completeJobLockedReasons.join(" • ") :
+  "Complete the required steps to unlock";
 
   // Callback: Handle job clock in
   const handleJobClockIn = async () => {
@@ -2598,14 +2598,14 @@ export default function TechJobDetailPage() {
 
     const statusSyncResult = await syncJobStatus("Technician Work Completed", jobCardStatus, {
       status: "In Progress",
-      status_change_reason: "Technician marked workshop work complete",
+      status_change_reason: "Technician marked workshop work complete"
     });
     if (!statusSyncResult) {
       setCompleteJobFeedback({
         tone: "warning",
         title: "Tech completion saved, but the main job status did not update.",
         detail:
-          'Fix: change the main job status to "In Progress", then press "Complete Job" again.',
+        'Fix: change the main job status to "In Progress", then press "Complete Job" again.'
       });
       await fetchJobData();
       return;
@@ -2622,8 +2622,8 @@ export default function TechJobDetailPage() {
             jobCard: {
               ...prev.jobCard,
               ...statusResult.data,
-              techCompletionStatus: statusResult.data.techCompletionStatus || "tech_complete",
-            },
+              techCompletionStatus: statusResult.data.techCompletionStatus || "tech_complete"
+            }
           };
         });
         revalidateAllJobs(); // sync completion status to other pages
@@ -2639,7 +2639,7 @@ export default function TechJobDetailPage() {
         tone: "warning",
         title: 'Technician work is complete, but the main job status is still "Checked In".',
         detail:
-          'Reason: the technician completion event was logged, but the main job status did not move forward. Fix: use the status control to change the main status to "In Progress", then press "Complete Job" again.',
+        'Reason: the technician completion event was logged, but the main job status did not move forward. Fix: use the status control to change the main status to "In Progress", then press "Complete Job" again.'
       });
       return;
     }
@@ -2648,1977 +2648,1977 @@ export default function TechJobDetailPage() {
   };
 
   if (rosterLoading) {
-    return (
-      <div style={{ padding: "24px", display: "flex", justifyContent: "center" }}>
-        <InlineLoading width={180} label="Loading roster" />
-      </div>
-    );
+    return <TechJobDetailPageUi view="section4" InlineLoading={InlineLoading} />;
+
+
+
+
   }
 
-  return (
-    <>
-      <DevLayoutSection
-        as="div"
-        sectionKey="myjob-page-shell"
-        sectionType="page-shell"
-        shell
-        style={{
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          padding: "8px 16px",
-          overflowY: "auto",
-          gap: "12px",
-        }}
-      >
-        
-        {/* Header Section */}
-        <DevLayoutSection
-          as="div"
-          sectionKey="myjob-header"
-          sectionType="section-header-row"
-          parentKey="myjob-page-shell"
-          style={{
-          display: "flex",
-          gap: "12px",
-          alignItems: "center",
-          marginBottom: "12px",
-          padding: "12px",
-          backgroundColor: "var(--page-card-bg-alt)",
-          borderRadius: "var(--radius-xs)",
-          flexShrink: 0
-        }}
-        >
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            alignSelf: "stretch",
-            backgroundColor: "var(--surface)",
-            border: "none",
-            borderRadius: "var(--radius-sm)",
-            padding: "10px 14px",
-            width: "fit-content",
-            flexShrink: 0,
-          }}>
-            <h1 style={{
-              color: "var(--primary)",
-              fontSize: "28px",
-              fontWeight: "700",
-              margin: "0",
-              lineHeight: 1
-            }}>
-              {jobCard.jobNumber}
-            </h1>
-          </div>
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              gap: "12px",
-            }}
-          >
-            <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-            flexWrap: "wrap",
-            justifyContent: "flex-end",
-            backgroundColor: "var(--surface)",
-            border: "none",
-            borderRadius: "var(--radius-sm)",
-            padding: "10px 14px",
-            flexShrink: 0
-          }}>
-              {/* Status pill rides the shared .app-btn shape. Semantic colour
-                  for non-complete states comes from STATUS_BADGE_STYLES — those
-                  background/color tokens are applied inline because .app-btn
-                  does not expose a per-status colour variant. */}
-              <span
-                className={
-                  isHeaderCompleteStatus ? "app-btn app-btn--primary" : "app-btn"
-                }
-                style={
-                  isHeaderCompleteStatus
-                    ? { cursor: "default", letterSpacing: "0.02em" }
-                    : {
-                        background: jobStatusBadgeStyle.background,
-                        color: jobStatusBadgeStyle.color,
-                        border: "none",
-                        cursor: "default",
-                        letterSpacing: "0.02em",
-                      }
-                }
-              >
-                {techStatusDisplay}
-              </span>
-              <span style={{ fontSize: "12px", color: "var(--info)" }}>
-                Updated {formatDateTime(jobCard.updatedAt)}
-              </span>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                {/* Clock Out / Clock In / Complete Job all use the global `<Button>`
-                    component so they share the canonical `.app-btn` sizing, radius
-                    and hover treatment. Previously each was an inline-styled <button>
-                    with hardcoded padding/border-radius — now visual appearance is
-                    centrally owned by the design system. */}
-                {jobClocking ? (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleJobClockOut}
-                    disabled={clockOutLoading || clockInLoading}
-                  >
-                    {clockOutLoading ? "Clocking Out..." : "Clock Out"}
-                  </Button>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleJobClockIn}
-                    disabled={clockInLoading || clockOutLoading}
-                    title={
-                      canClockIntoMotHandoff
-                        ? "Clock in to complete the remaining MOT request"
-                        : "Clock in to start technician work"
-                    }
-                  >
-                    {clockInLoading
-                      ? "Clocking In..."
-                      : canClockIntoMotHandoff
-                      ? "Clock In to MOT"
-                      : "Clock In"}
-                  </Button>
-                )}
+  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} authorisedVhcItems={authorisedVhcItems} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} ModalPortal={ModalPortal} newNote={newNote} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} WriteUpForm={WriteUpForm} writeUpTechComplete={writeUpTechComplete} />;
 
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleCompleteJob}
-                  disabled={!canCompleteJob || clockInLoading || clockOutLoading}
-                  title={completeJobLockedTitle}
-                >
-                  {canCompleteJob ? "Complete Job" : "Complete Job (locked)"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DevLayoutSection>
 
-        {completeJobFeedback ? (
-          <div
-            style={{
-              padding: "12px 14px",
-              borderRadius: "var(--radius-xs)",
-              backgroundColor: "var(--warning-surface)",
-              border: "1px solid var(--warning)",
-              color: "var(--warning-dark)",
-              marginBottom: "12px",
-            }}
-          >
-            <div style={{ fontSize: "13px", fontWeight: "700", marginBottom: "4px" }}>
-              {completeJobFeedback.title}
-            </div>
-            <div style={{ fontSize: "13px", lineHeight: 1.45 }}>
-              {completeJobFeedback.detail}
-            </div>
-          </div>
-        ) : null}
 
-        {/* Quick Stats Grid */}
-        <DevLayoutSection
-          as="div"
-          sectionKey="myjob-quick-stats"
-          sectionType="section-shell"
-          parentKey="myjob-page-shell"
-          style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-          gap: "12px",
-          marginBottom: "12px",
-          flexShrink: 0
-        }}
-        >
-          {quickStats.map((stat) => {
-            const isClockedHours = stat.label === "Clocked Hours";
-            const isClickable = Boolean(stat.onClick);
-            const CardTag = isClockedHours || isClickable ? "button" : "div";
-            return (
-              <CardTag
-                key={stat.label}
-                type={isClockedHours || isClickable ? "button" : undefined}
-                onClick={() => {
-                  if (isClockedHours) {
-                    const target = document.getElementById("job-progress-total-time");
-                    if (target) {
-                      target.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }
-                    return;
-                  }
-                  if (stat.onClick) {
-                    stat.onClick();
-                  }
-                }}
-                style={{
-                  backgroundColor: "var(--layer-section-level-1)",
-                  border: "none",
-                  borderRadius: "var(--radius-xs)",
-                  padding: "16px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "6px",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: "108px",
-                  cursor: isClockedHours || isClickable ? "pointer" : "default",
-                }}
-              >
-                <div style={{
-                  fontSize: stat.pill ? "15px" : "24px",
-                  fontWeight: "700",
-                  color: stat.accent,
-                  backgroundColor: stat.pill ? `${stat.accent}15` : "transparent",
-                  padding: stat.pill ? "6px 14px" : 0,
-                  borderRadius: stat.pill ? "var(--control-radius)" : 0,
-                  letterSpacing: stat.pill ? "0.04em" : 0,
-                  textTransform: stat.pill ? "uppercase" : "none"
-                }}>
-                  {stat.value}
-                </div>
-                <span style={{ fontSize: "12px", color: "var(--info)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                  {stat.label}
-                </span>
-              </CardTag>
-            );
-          })}
-        </DevLayoutSection>
 
-        {/* Tab Row */}
-        <DevLayoutSection
-          as="div"
-          className="app-layout-tab-row"
-          sectionKey="myjob-tab-row"
-          sectionType="tab-row"
-          parentKey="myjob-page-shell"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginBottom: "12px",
-            overflowX: "auto",
-            flexShrink: 0,
-            scrollbarWidth: "thin",
-            scrollbarColor: "var(--scrollbar-thumb) transparent",
-            scrollBehavior: "smooth",
-            WebkitOverflowScrolling: "touch",
-          }}
-        >
-          {visibleTabs.map((tab) => {
-            const isActive = activeTab === tab;
-            const isVhcTab = tab === "vhc";
-            const isVhcGreen = isVhcTab && isVhcCompleted;
-            const isVhcAmber = isVhcTab && vhcTabAmberReady;
-            const isComplete =
-              isVhcGreen ||
-              (tab === "write-up" && writeUpTechComplete);
-            const labelMap = {
-              overview: "Overview",
-              vhc: "VHC",
-              parts: "Parts",
-              notes: "Notes",
-              "write-up": "Write-Up",
-              documents: "Documents",
-            };
-            const tabTone = isComplete ? "success" : isVhcAmber ? "warning" : "default";
-            const baseBackground = isActive ? "var(--primary)" : "transparent";
-            const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
-            const amberBackground = isActive ? "var(--warning)" : "var(--warning-surface, rgba(245, 158, 11, 0.1))";
-            const background = tabTone === "success"
-              ? completeBackground
-              : tabTone === "warning"
-              ? amberBackground
-              : baseBackground;
-            const color = tabTone === "success"
-              ? isActive
-                ? "var(--text-inverse)"
-                : "var(--success-dark)"
-              : tabTone === "warning"
-              ? isActive
-                ? "var(--text-inverse)"
-                : "var(--warning-dark)"
-              : isActive
-              ? "var(--text-inverse)"
-              : "var(--text-primary)";
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  flex: "0 0 auto",
-                  borderRadius: "var(--control-radius)",
-                  border: "1px solid transparent",
-                  padding: "10px 20px",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  background,
-                  color,
-                  transition: "all 0.15s ease",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  textTransform: "capitalize",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {labelMap[tab] || tab.replace("-", " ")}
-              </button>
-            );
-          })}
-        </DevLayoutSection>
 
-        {/* Main Content Area with Scrolling */}
-        <DevLayoutSection
-          as="div"
-          sectionKey="myjob-main-content"
-          sectionType="section-shell"
-          parentKey="myjob-page-shell"
-          backgroundToken="layer-section-level-1"
-          shell
-          style={{
-            flex: 1,
-            borderRadius: "var(--radius-xs)",
-            border: "none",
-            backgroundColor: "var(--layer-section-level-1)",
-            padding: "24px",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
-          }}
-        >
-          
-          <DevLayoutSection
-            as="div"
-            sectionKey="myjob-main-scroll"
-            sectionType="section-shell"
-            parentKey="myjob-main-content"
-            backgroundToken="none"
-            style={{ flex: 1, overflowY: "auto", paddingRight: "8px", minHeight: 0 }}
-          >
-          
-          {/* OVERVIEW TAB */}
-          {activeTab === "overview" && (
-            <DevLayoutSection
-              as="div"
-              sectionKey="myjob-tab-overview"
-              sectionType="section-shell"
-              parentKey="myjob-main-scroll"
-              backgroundToken="none"
-              shell
-              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-            >
-              {/* Job Details */}
-              <DevLayoutSection
-                as="div"
-                sectionKey="myjob-overview-details"
-                sectionType="content-card"
-                parentKey="myjob-tab-overview"
-                backgroundToken="surface"
-                style={{
-                backgroundColor: "var(--surface)",
-                padding: "24px",
-                borderRadius: "var(--radius-sm)",
-                border: "none"
-              }}
-              >
-                <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
-                  Job Details
-                </h3>
-                {jobCard.requests && jobCard.requests.length > 0 && (
-                  <div style={{ marginBottom: "16px" }}>
-                    <strong style={{ fontSize: "14px", color: "var(--info)", letterSpacing: "0.04em" }}>Customer Requests:</strong>
-                    <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {jobCard.requests.map((req, i) => (
-                        <div key={i} style={{
-                          padding: "14px 16px",
-                          backgroundColor: "var(--surface-light)",
-                          borderLeft: "4px solid var(--primary)",
-                          borderRadius: "var(--control-radius-xs)",
-                          color: "var(--info-dark)",
-                        }}>
-                          <div>{req.text || req}</div>
-                          {notes
-                            .filter((note) =>
-                              Array.isArray(note.linkedRequestIndices)
-                                ? note.linkedRequestIndices.includes(i + 1)
-                                : note.linkedRequestIndex === i + 1
-                            )
-                            .map((note) => (
-                              <div key={note.noteId} style={{ fontSize: "11px", color: "var(--info)", marginTop: "6px" }}>
-                                Note: {note.noteText}
-                              </div>
-                            ))}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {authorisedVhcItems.length > 0 ? (
-                <div style={{ marginTop: "24px" }}>
-                  <div style={{
-                    padding: "16px",
-                    backgroundColor: "var(--info-surface)",
-                    borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--accent-purple-surface)"
-                  }}>
-                    <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--info-dark)", marginBottom: "6px" }}>
-                      Vehicle Health Check
-                    </div>
-                    <div>
-                      <div>
-                        <div style={{ fontSize: "12px", fontWeight: "600", color: "var(--info-dark)", marginBottom: "10px" }}>
-                          Authorised items
-                        </div>
-                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                          {authorisedVhcItems.map((check) => {
-                            const resolvedVhcId = check.vhc_id ?? check.id;
-                            return (
-                              <div
-                                key={resolvedVhcId || check.id}
-                                style={{
-                                  fontSize: "13px",
-                                  color: "var(--info-dark)",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "4px",
-                                  alignItems: "flex-start",
-                                  backgroundColor: "var(--success-surface)",
-                                  border: "1px solid var(--success)",
-                                  borderRadius: "var(--radius-xs)",
-                                  padding: "10px 14px",
-                                }}
-                              >
-                                <span style={{ fontWeight: "600", color: "var(--success)" }}>
-                                  {check.issue_title || check.issueTitle || check.section}
-                                </span>
-                                {notes
-                                  .filter((note) =>
-                                    Array.isArray(note.linkedVhcIds)
-                                      ? note.linkedVhcIds.includes(resolvedVhcId)
-                                      : note.linkedVhcId === resolvedVhcId
-                                  )
-                                  .map((note) => (
-                                    <div key={note.noteId} style={{ fontSize: "11px", color: "var(--info)" }}>
-                                      Note: {note.noteText}
-                                    </div>
-                                  ))}
-                                {(() => {
-                                  const prePickSet = resolvedVhcId
-                                    ? prePickByVhcId.get(String(resolvedVhcId))
-                                    : null;
-                                  if (!prePickSet || prePickSet.size === 0) return null;
-                                  return Array.from(prePickSet).map((location) => (
-                                    <div key={`${resolvedVhcId}-${location}`} style={{ fontSize: "11px", color: "var(--info)" }}>
-                                      Pre pick: {formatPrePickLabel(location)}
-                                    </div>
-                                  ));
-                                })()}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                ) : null}
-                {jobCard.cosmeticNotes && (
-                  <div>
-                    <strong style={{ fontSize: "14px", color: "var(--info)", letterSpacing: "0.04em" }}>Cosmetic Notes:</strong>
-                    <p style={{ marginTop: "10px", color: "var(--info-dark)", lineHeight: 1.6 }}>{jobCard.cosmeticNotes}</p>
-                  </div>
-                )}
-              </DevLayoutSection>
 
-              <DevLayoutSection
-                as="div"
-                sectionKey="myjob-overview-summary-grid"
-                sectionType="section-shell"
-                parentKey="myjob-tab-overview"
-                backgroundToken="none"
-                style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}
-              >
-                {/* Vehicle Info */}
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-overview-vehicle"
-                  sectionType="content-card"
-                  parentKey="myjob-overview-summary-grid"
-                  backgroundToken="surface"
-                  style={{
-                  backgroundColor: "var(--surface)",
-                  padding: "24px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none"
-                }}
-                >
-                  <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
-                    Vehicle Information
-                  </h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
-                    <div>
-                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Registration:</span>
-                      <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--primary)", margin: "4px 0 0 0" }}>
-                        {vehicle?.reg}
-                      </p>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Make & Model:</span>
-                      <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                        {vehicle?.makeModel}
-                      </p>
-                    </div>
-                    {vehicle?.mileage && (
-                      <div>
-                        <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mileage:</span>
-                        <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                          {vehicle?.mileage.toLocaleString()} miles
-                        </p>
-                      </div>
-                    )}
-                    {vehicle?.colour && (
-                      <div>
-                        <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Colour:</span>
-                        <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                          {vehicle?.colour}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </DevLayoutSection>
 
-                {/* Customer Info */}
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-overview-customer"
-                  sectionType="content-card"
-                  parentKey="myjob-overview-summary-grid"
-                  backgroundToken="surface"
-                  style={{
-                  backgroundColor: "var(--surface)",
-                  padding: "24px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none"
-                }}
-                >
-                  <h3 style={{ fontSize: "18px", fontWeight: "600", marginBottom: "16px" }}>
-                    Customer Information
-                  </h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
-                    <div>
-                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Name:</span>
-                      <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                        {customer?.firstName} {customer?.lastName}
-                      </p>
-                    </div>
-                    <div>
-                      <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Mobile:</span>
-                      <p style={{ fontSize: "16px", fontWeight: "600", margin: "4px 0 0 0" }}>
-                        {customer?.mobile}
-                      </p>
-                    </div>
-                    {customer?.email && (
-                      <div>
-                        <span style={{ fontSize: "13px", color: "var(--grey-accent)" }}>Email:</span>
-                        <p style={{ fontSize: "16px", fontWeight: "600", color: "var(--info)", margin: "4px 0 0 0" }}>
-                          {customer?.email}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </DevLayoutSection>
-              </DevLayoutSection>
-            </DevLayoutSection>
-          )}
 
-          {/* VHC TAB */}
-          {activeTab === "vhc" && (
-            <DevLayoutSection
-              as="div"
-              sectionKey="myjob-tab-vhc"
-              sectionType="section-shell"
-              parentKey="myjob-main-scroll"
-              backgroundToken="none"
-              shell
-              className="vhc-section-shell"
-            >
-              {!activeSection && (showVhcReopenButton ? (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-vhc-reopen-banner"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-vhc"
-                  backgroundToken="section-card-bg"
-                  className="vhc-content-card"
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}
-                >
-                  <div>
-                    <h2 className="vhc-toolbar__title">VHC Completed</h2>
-                    <p className="vhc-toolbar__subtitle" style={{ marginTop: "6px" }}>
-                      Vehicle Health Check completed.
-                    </p>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <CustomerVideoButton
-                      jobNumber={jobNumber}
-                      userId={dbUserId || user?.id}
-                      vhcContextLabel={activeSection || "vhc-summary"}
-                      vhcData={vhcData}
-                      onUploadComplete={() => {
-                        fetchJobData();
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="vhc-btn"
-                      onClick={handleCompleteVhcClick}
-                    >
-                      Reopen VHC
-                    </button>
-                  </div>
-                </DevLayoutSection>
-              ) : (
-                <>
-                  {/* VHC Header with Save Status */}
-                  <DevLayoutSection
-                    as="div"
-                    sectionKey="myjob-vhc-header"
-                    sectionType="toolbar"
-                    parentKey="myjob-tab-vhc"
-                    backgroundToken="section-card-bg"
-                    className="vhc-toolbar"
-                  >
-                    <div>
-                      <h2 className="vhc-toolbar__title">Vehicle Health Check</h2>
-                      <p className="vhc-toolbar__subtitle">
-                        Complete mandatory sections to finish VHC
-                      </p>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      {saveStatus === "saving" && (
-                        <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Saving...</span>
-                      )}
-                      {saveStatus === "saved" && (
-                        <span style={{ fontSize: "13px", color: "var(--success)" }}>Saved</span>
-                      )}
-                      {saveStatus === "error" && (
-                        <span style={{ fontSize: "13px", color: "var(--danger)" }}>{saveError || "Save failed"}</span>
-                      )}
-                      <button
-                        type="button"
-                        className={`vhc-btn${showVhcSummary ? " vhc-btn--active" : ""}`}
-                        onClick={() => setShowVhcSummary((prev) => !prev)}
-                      >
-                        {showVhcSummary ? "Close VHC summary" : "Show Summary"}
-                      </button>
 
-                      {(() => {
-                        const isCompleteDisabled = !showVhcReopenButton && !canCompleteVhc;
-                        const isCompleteActive = !showVhcReopenButton && canCompleteVhc;
-                        return (
-                      <button
-                        type="button"
-                        className={`vhc-btn${isCompleteActive ? " vhc-btn--active" : ""}`}
-                        onClick={handleCompleteVhcClick}
-                        disabled={!showVhcReopenButton && !canCompleteVhc}
-                        title={
-                          showVhcReopenButton
-                            ? "Reopen the Vehicle Health Check to make additional changes"
-                            : canCompleteVhc
-                            ? "Mark the Vehicle Health Check as complete"
-                            : "Complete all mandatory sections to finish the VHC"
-                        }
-                      >
-                        {showVhcReopenButton ? "Reopen" : "Complete VHC"}
-                      </button>
-                        );
-                      })()}
 
-                      {/* Camera Button - Always visible for technicians */}
-                      {jobNumber && (
-                        <VhcCameraButton
-                          jobId={jobData?.id}
-                          jobNumber={jobNumber}
-                          userId={dbUserId || user?.id}
-                          buttonStyle={{
-                            minHeight: "var(--control-height)",
-                            padding: "6px 12px",
-                            borderRadius: "var(--radius-xs)",
-                            border: "none",
-                            fontWeight: 600,
-                            fontSize: "12px",
-                            lineHeight: 1,
-                            background: "var(--accent-purple-surface)",
-                            color: "var(--accent-purple)",
-                            transition: "all 0.18s ease",
-                          }}
-                          onUploadComplete={() => {
-                            console.log("VHC media uploaded, refreshing job data...");
-                            fetchJobData();
-                          }}
-                        />
-                      )}
-                    </div>
-                  </DevLayoutSection>
 
-                  <DevLayoutSection
-                    as="div"
-                    sectionKey="myjob-vhc-assistant"
-                    sectionType="content-card"
-                    parentKey="myjob-tab-vhc"
-                    backgroundToken="section-card-bg"
-                    className="vhc-content-card"
-                  >
-                    <VhcAssistantPanel
-                      state={vhcAssistantState}
-                      title="VHC Assistant (Technician)"
-                      chromeless
-                    />
-                  </DevLayoutSection>
 
-                  {!showVhcSummary && (
-                    <>
-                      {/* Mandatory Sections */}
-                      <DevLayoutSection
-                        as="div"
-                        sectionKey="myjob-vhc-mandatory"
-                        sectionType="content-card"
-                        parentKey="myjob-tab-vhc"
-                        backgroundToken="section-card-bg"
-                        className="vhc-content-card"
-                      >
-                    <h3 className="vhc-section-heading">Mandatory Sections</h3>
-                    <div className="vhc-card-grid">
 
-                  {/* Wheels & Tyres */}
-                  <DevLayoutSection
-                    as="div"
-                    sectionKey="myjob-vhc-card-wheels"
-                    sectionType="content-card"
-                    parentKey="myjob-vhc-mandatory"
-                    backgroundToken="control-bg"
-                    className="vhc-card vhc-card--mandatory"
-                    onClick={() => openSection("wheelsTyres")}
-                  >
-                    <div className="vhc-card__header">
-                      <h4 className="vhc-card__title">Wheels & Tyres</h4>
-                      <span className="app-badge app-badge--control app-badge--uppercase" style={getBadgeState(sectionStatus.wheelsTyres)}>
-                        {sectionStatus.wheelsTyres}
-                      </span>
-                    </div>
-                    <p className="vhc-card__description">Check tread depth, pressure, and condition</p>
-                  </DevLayoutSection>
 
-                  {/* Brakes & Hubs */}
-                  <DevLayoutSection
-                    as="div"
-                    sectionKey="myjob-vhc-card-brakes"
-                    sectionType="content-card"
-                    parentKey="myjob-vhc-mandatory"
-                    backgroundToken="control-bg"
-                    className="vhc-card vhc-card--mandatory"
-                    onClick={() => openSection("brakesHubs")}
-                  >
-                    <div className="vhc-card__header">
-                      <h4 className="vhc-card__title">Brakes & Hubs</h4>
-                      <span className="app-badge app-badge--control app-badge--uppercase" style={getBadgeState(sectionStatus.brakesHubs)}>
-                        {sectionStatus.brakesHubs}
-                      </span>
-                    </div>
-                    <p className="vhc-card__description">Check pads, discs, and brake system</p>
-                  </DevLayoutSection>
 
-                  {/* Service Indicator & Under Bonnet */}
-                  <DevLayoutSection
-                    as="div"
-                    sectionKey="myjob-vhc-card-service"
-                    sectionType="content-card"
-                    parentKey="myjob-vhc-mandatory"
-                    backgroundToken="control-bg"
-                    className="vhc-card vhc-card--mandatory"
-                    onClick={() => openSection("serviceIndicator")}
-                  >
-                    <div className="vhc-card__header">
-                      <h4 className="vhc-card__title">Service Indicator & Under Bonnet</h4>
-                      <span className="app-badge app-badge--control app-badge--uppercase" style={getBadgeState(sectionStatus.serviceIndicator)}>
-                        {sectionStatus.serviceIndicator}
-                      </span>
-                    </div>
-                    <p className="vhc-card__description">Service reminder, oil level, under bonnet items</p>
-                  </DevLayoutSection>
-                </div>
-                      </DevLayoutSection>
 
-              {/* Additional Checks (Optional) */}
-              <DevLayoutSection
-                as="div"
-                sectionKey="myjob-vhc-additional"
-                sectionType="content-card"
-                parentKey="myjob-tab-vhc"
-                backgroundToken="section-card-bg"
-                className="vhc-content-card"
-              >
-                <h3 className="vhc-section-heading">
-                  Additional Checks
-                  <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px", color: "var(--text-secondary)" }}>
-                    (Optional)
-                  </span>
-                </h3>
-                <div className="vhc-card-grid">
 
-                  {/* External */}
-                  <DevLayoutSection
-                    as="div"
-                    sectionKey="myjob-vhc-card-external"
-                    sectionType="content-card"
-                    parentKey="myjob-vhc-additional"
-                    backgroundToken="control-bg"
-                    className="vhc-card"
-                    onClick={() => openSection("externalInspection")}
-                  >
-                    <div className="vhc-card__header">
-                      <h4 className="vhc-card__title">External</h4>
-                      {getOptionalCount("externalInspection") > 0 && (
-                        <span className="app-badge app-badge--control app-badge--uppercase" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
-                          {getOptionalCount("externalInspection")} items
-                        </span>
-                      )}
-                    </div>
-                    <p className="vhc-card__description">Body, lights, glass, mirrors</p>
-                  </DevLayoutSection>
 
-                  {/* Internal & Electrics */}
-                  <DevLayoutSection
-                    as="div"
-                    sectionKey="myjob-vhc-card-internal"
-                    sectionType="content-card"
-                    parentKey="myjob-vhc-additional"
-                    backgroundToken="control-bg"
-                    className="vhc-card"
-                    onClick={() => openSection("internalElectrics")}
-                  >
-                    <div className="vhc-card__header">
-                      <h4 className="vhc-card__title">Internal & Electrics</h4>
-                      {getOptionalCount("internalElectrics") > 0 && (
-                        <span className="app-badge app-badge--control app-badge--uppercase" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
-                          {getOptionalCount("internalElectrics")} items
-                        </span>
-                      )}
-                    </div>
-                    <p className="vhc-card__description">Interior, lights, electrics, controls</p>
-                  </DevLayoutSection>
 
-                  {/* Underside */}
-                  <DevLayoutSection
-                    as="div"
-                    sectionKey="myjob-vhc-card-underside"
-                    sectionType="content-card"
-                    parentKey="myjob-vhc-additional"
-                    backgroundToken="control-bg"
-                    className="vhc-card"
-                    onClick={() => openSection("underside")}
-                  >
-                    <div className="vhc-card__header">
-                      <h4 className="vhc-card__title">Underside</h4>
-                      {getOptionalCount("underside") > 0 && (
-                        <span className="app-badge app-badge--control app-badge--uppercase" style={{ backgroundColor: "var(--primary-light)", color: "var(--text-inverse)" }}>
-                          {getOptionalCount("underside")} items
-                        </span>
-                      )}
-                    </div>
-                    <p className="vhc-card__description">Exhaust, suspension, steering, driveshafts</p>
-                  </DevLayoutSection>
-                </div>
-              </DevLayoutSection>
-                </>
-              )}
 
-              {/* VHC Summary */}
-              {showVhcSummary && (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-vhc-summary"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-vhc"
-                  backgroundToken="section-card-bg"
-                  className="vhc-content-card vhc-content-card--bordered"
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <h3 className="vhc-section-heading" style={{ marginBottom: 0 }}>
-                      VHC Summary
-                      <span style={{ fontSize: "12px", fontWeight: "normal", marginLeft: "8px", color: "var(--text-secondary)" }}>
-                        Review all items reported across sections
-                      </span>
-                    </h3>
-                  </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {/* Red Items */}
-                    {vhcSummaryItems.red.length > 0 && (
-                      <div>
-                        <div className="vhc-summary-banner" style={{ backgroundColor: "var(--danger-surface)" }}>
-                          <strong style={{ color: "var(--danger)" }}>
-                            Critical Issues ({vhcSummaryItems.red.length})
-                          </strong>
-                        </div>
-                        {vhcSummaryItems.red.map((item, idx) => (
-                          <div key={idx} className="vhc-summary-item" style={{ borderLeftColor: "var(--danger)" }}>
-                            <div className="vhc-summary-item__section" style={{ color: "var(--danger)" }}>
-                              {item.section}
-                            </div>
-                            <div className="vhc-summary-item__text">{item.text}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
 
-                    {/* Amber Items */}
-                    {vhcSummaryItems.amber.length > 0 && (
-                      <div>
-                        <div className="vhc-summary-banner" style={{ backgroundColor: "var(--warning-surface)" }}>
-                          <strong style={{ color: "var(--warning)" }}>
-                            Advisory Items ({vhcSummaryItems.amber.length})
-                          </strong>
-                        </div>
-                        {vhcSummaryItems.amber.map((item, idx) => (
-                          <div key={idx} className="vhc-summary-item" style={{ borderLeftColor: "var(--warning)" }}>
-                            <div className="vhc-summary-item__section" style={{ color: "var(--warning)" }}>
-                              {item.section}
-                            </div>
-                            <div className="vhc-summary-item__text">{item.text}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
 
-                    {/* Green Items (Toggle) */}
-                    {vhcSummaryItems.green.length > 0 && (
-                      <div>
-                        <div
-                          className="vhc-summary-banner"
-                          style={{ backgroundColor: "var(--success-surface)", cursor: "pointer" }}
-                          onClick={() => setShowGreenItems(!showGreenItems)}
-                        >
-                          <strong style={{ color: "var(--success)" }}>
-                            OK Items ({vhcSummaryItems.green.length})
-                          </strong>
-                          <span style={{ marginLeft: "auto", fontSize: "12px", color: "var(--text-secondary)" }}>
-                            {showGreenItems ? "Hide" : "Show"}
-                          </span>
-                        </div>
-                        {showGreenItems && vhcSummaryItems.green.map((item, idx) => (
-                          <div key={idx} className="vhc-summary-item" style={{ borderLeftColor: "var(--success)" }}>
-                            <div className="vhc-summary-item__section" style={{ color: "var(--success)" }}>
-                              {item.section}
-                            </div>
-                            <div className="vhc-summary-item__text">{item.text}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
 
-                    {vhcSummaryItems.red.length === 0 && vhcSummaryItems.amber.length === 0 && vhcSummaryItems.green.length === 0 && (
-                      <p style={{ margin: 0, fontSize: "14px", color: "var(--text-secondary)", textAlign: "center", padding: "20px" }}>
-                        No items reported yet. Complete the VHC sections to add items.
-                      </p>
-                    )}
-                  </div>
-                </DevLayoutSection>
-              )}
-                </>
-              ))}
 
-              {/* VHC Modals */}
-              {activeSection === "wheelsTyres" && (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-vhc-modal-wheels"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-vhc"
-                  backgroundToken="surface"
-                >
-                  <WheelsTyresDetailsModal
-                    isOpen={true}
-                    inlineMode
-                    onClose={(data) => handleSectionDismiss("wheelsTyres", data)}
-                    onComplete={(data) => handleSectionComplete("wheelsTyres", data)}
-                    initialData={vhcData.wheelsTyres}
-                    isReopenMode={isReopenMode}
-                    jobId={jobData?.id || null}
-                    jobNumber={jobNumber}
-                    userId={dbUserId || user?.id || null}
-                    onSectionMediaUploaded={() => fetchJobData?.()}
-                  />
-                </DevLayoutSection>
-              )}
 
-              {activeSection === "brakesHubs" && (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-vhc-modal-brakes"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-vhc"
-                  backgroundToken="surface"
-                >
-                  <BrakesHubsDetailsModal
-                    isOpen={true}
-                    inlineMode
-                    onClose={(data) => handleSectionDismiss("brakesHubs", data)}
-                    onComplete={(data) => handleSectionComplete("brakesHubs", data)}
-                    initialData={vhcData.brakesHubs}
-                    isReopenMode={isReopenMode}
-                    jobId={jobData?.id || null}
-                    jobNumber={jobNumber}
-                    userId={dbUserId || user?.id || null}
-                    onSectionMediaUploaded={() => fetchJobData?.()}
-                  />
-                </DevLayoutSection>
-              )}
 
-              {activeSection === "serviceIndicator" && (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-vhc-modal-service"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-vhc"
-                  backgroundToken="surface"
-                >
-                  <ServiceIndicatorDetailsModal
-                    isOpen={true}
-                    inlineMode
-                    onClose={(data) => handleSectionDismiss("serviceIndicator", data)}
-                    onComplete={(data) => handleSectionComplete("serviceIndicator", data)}
-                    initialData={vhcData.serviceIndicator}
-                    isReopenMode={isReopenMode}
-                    jobId={jobData?.id || null}
-                    jobNumber={jobNumber}
-                    userId={dbUserId || user?.id || null}
-                    onSectionMediaUploaded={() => fetchJobData?.()}
-                  />
-                </DevLayoutSection>
-              )}
 
-              {activeSection === "externalInspection" && (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-vhc-modal-external"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-vhc"
-                  backgroundToken="surface"
-                >
-                  <ExternalDetailsModal
-                    isOpen={true}
-                    inlineMode
-                    onClose={(data) => handleSectionDismiss("externalInspection", data)}
-                    onComplete={(data) => handleSectionComplete("externalInspection", data)}
-                    initialData={vhcData.externalInspection}
-                    isReopenMode={isReopenMode}
-                    jobId={jobData?.id || null}
-                    jobNumber={jobNumber}
-                    userId={dbUserId || user?.id || null}
-                    onSectionMediaUploaded={() => fetchJobData?.()}
-                  />
-                </DevLayoutSection>
-              )}
 
-              {activeSection === "internalElectrics" && (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-vhc-modal-internal"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-vhc"
-                  backgroundToken="surface"
-                >
-                  <InternalElectricsDetailsModal
-                    isOpen={true}
-                    inlineMode
-                    onClose={(data) => handleSectionDismiss("internalElectrics", data)}
-                    onComplete={(data) => handleSectionComplete("internalElectrics", data)}
-                    initialData={vhcData.internalElectrics}
-                    isReopenMode={isReopenMode}
-                    jobId={jobData?.id || null}
-                    jobNumber={jobNumber}
-                    userId={dbUserId || user?.id || null}
-                    onSectionMediaUploaded={() => fetchJobData?.()}
-                  />
-                </DevLayoutSection>
-              )}
 
-              {activeSection === "underside" && (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-vhc-modal-underside"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-vhc"
-                  backgroundToken="surface"
-                >
-                  <UndersideDetailsModal
-                    isOpen={true}
-                    inlineMode
-                    onClose={(data) => handleSectionDismiss("underside", data)}
-                    onComplete={(data) => handleSectionComplete("underside", data)}
-                    initialData={vhcData.underside}
-                    isReopenMode={isReopenMode}
-                    jobId={jobData?.id || null}
-                    jobNumber={jobNumber}
-                    userId={dbUserId || user?.id || null}
-                    onSectionMediaUploaded={() => fetchJobData?.()}
-                  />
-                </DevLayoutSection>
-              )}
-            </DevLayoutSection>
-          )}
 
-          {/* PARTS TAB */}
-          {activeTab === "parts" && (
-            <DevLayoutSection
-              as="div"
-              sectionKey="myjob-tab-parts"
-              sectionType="section-shell"
-              parentKey="myjob-main-scroll"
-              backgroundToken="none"
-              shell
-              style={{
-              backgroundColor: "transparent",
-              padding: 0,
-              borderRadius: 0,
-              border: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-              alignItems: "stretch"
-            }}
-            >
-              <DevLayoutSection
-                as="div"
-                sectionKey="myjob-parts-request"
-                sectionType="content-card"
-                parentKey="myjob-tab-parts"
-                backgroundToken="surface"
-                style={{
-                backgroundColor: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--warning)" }}>
-                    Request a Part
-                  </h3>
-                  <span style={{ fontSize: "12px", color: "var(--danger-dark)" }}>
-                    Surfaces in the VHC parts queue
-                  </span>
-                </div>
-                <p style={{ margin: 0, color: "var(--info)", fontSize: "14px" }}>
-                  Describe the specific part you need—the parts team will price, approve, and pre-pick it alongside other VHC requests.
-                </p>
-                <textarea
-                  rows={3}
-                  value={partRequestDescription}
-                  onChange={(e) => {
-                    setPartRequestDescription(e.target.value);
-                    if (partsFeedback) {
-                      setPartsFeedback("");
-                    }
-                  }}
-                  placeholder="e.g. Front right brake pad set (OEM) for MK3 1.6 diesel."
-                  style={{
-                    width: "100%",
-                    borderRadius: "var(--control-radius-xs)",
-                    border: "1px solid var(--accent-purple-surface)",
-                    padding: "12px",
-                    fontSize: "14px",
-                    resize: "vertical",
-                    minHeight: "88px",
-                    fontFamily: "inherit",
-                    outline: "none"
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "var(--warning)";
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "var(--accent-purple-surface)";
-                  }}
-                />
-                <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "wrap" }}>
-                  <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", color: "var(--info)" }}>
-                    Quantity
-                    <input
-                      type="number"
-                      min={1}
-                      value={partRequestQuantity}
-                      onChange={(e) => {
-                        let next = Number(e.target.value);
-                        if (Number.isNaN(next) || next < 1) next = 1;
-                        setPartRequestQuantity(next);
-                      }}
-                      style={{
-                        marginTop: "4px",
-                        width: "80px",
-                        padding: "6px 10px",
-                        borderRadius: "var(--radius-xs)",
-                        border: "1px solid var(--accent-purple-surface)",
-                        fontSize: "14px"
-                      }}
-                    />
-                  </label>
-                  {Array.isArray(vhcChecks) && vhcChecks.filter((c) => c.section !== "VHC_CHECKSHEET").length > 0 && (
-                    <label style={{ display: "flex", flexDirection: "column", fontSize: "12px", color: "var(--info)" }}>
-                      Link to VHC item (optional)
-                      <select
-                        value={partRequestVhcItemId || ""}
-                        onChange={(e) => setPartRequestVhcItemId(e.target.value ? Number(e.target.value) : null)}
-                        style={{
-                          marginTop: "4px",
-                          padding: "6px 10px",
-                          borderRadius: "var(--radius-xs)",
-                          border: "1px solid var(--accent-purple-surface)",
-                          fontSize: "14px",
-                          maxWidth: "240px",
-                        }}
-                      >
-                        <option value="">None</option>
-                        {vhcChecks
-                          .filter((c) => c.section !== "VHC_CHECKSHEET")
-                          .map((c) => (
-                            <option key={c.vhc_id} value={c.vhc_id}>
-                              #{c.vhc_id} {(c.issue_title || c.section || "").slice(0, 40)}
-                            </option>
-                          ))}
-                      </select>
-                    </label>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handlePartsRequestSubmit}
-                    disabled={partsSubmitting}
-                    style={{
-                      padding: "10px 22px",
-                      backgroundColor: partsSubmitting ? "var(--border)" : "var(--warning)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "var(--control-radius-xs)",
-                      cursor: partsSubmitting ? "not-allowed" : "pointer",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {partsSubmitting ? "Submitting…" : "Request Part"}
-                  </button>
-                </div>
-                {partsFeedback && (
-                  <div style={{
-                    fontSize: "13px",
-                    color: "var(--info-dark)",
-                    backgroundColor: "var(--success-surface)",
-                    borderRadius: "var(--radius-xs)",
-                    padding: "10px 14px"
-                  }}>
-                    {partsFeedback}
-                  </div>
-                )}
-              </DevLayoutSection>
 
-              <DevLayoutSection
-                as="div"
-                sectionKey="myjob-parts-active-requests"
-                sectionType="content-card"
-                parentKey="myjob-tab-parts"
-                backgroundToken="surface"
-                style={{
-                backgroundColor: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--accent-purple-surface)",
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px" }}>
-                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700" }}>Active Requests</h3>
-                  <span style={{ fontSize: "12px", color: "var(--info)" }}>
-                    {partsRequests.length} request{partsRequests.length === 1 ? "" : "s"}
-                  </span>
-                </div>
-                <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                  These entries are visible to the parts team in the VHC parts tab for pricing, approval, and pre-picks.
-                </p>
-                {partsRequestsLoading ? (
-                  <p style={{ margin: 0, fontSize: "14px", color: "var(--info)" }}>Loading requests…</p>
-                ) : partsRequests.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: "14px", color: "var(--info)" }}>
-                    No parts have been requested yet.
-                  </p>
-                ) : (
-                  <div style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                    maxHeight: "340px",
-                    overflowY: "auto",
-                    paddingRight: "4px"
-                  }}>
-                    {partsRequests.map((request) => {
-                      const statusLabel = (request.status || "pending").replace(/_/g, " ").toUpperCase();
-                      const badgeStyle = getPartsStatusStyle(request.status);
-                      const quantity = request.quantity ?? 1;
-                      const partLabel = request.part
-                        ? `${request.part.partNumber || "#"} • ${request.part.name || "Unnamed part"}`
-                        : `Custom request #${request.request_id}`;
-                      const requesterName = request.requester
-                        ? `${request.requester.first_name || ""} ${request.requester.last_name || ""}`.trim()
-                        : "";
-                      const sourceLabel = request.requested_by
-                        ? `Tech${requesterName ? ` (${requesterName})` : ""}`
-                        : "VHC";
 
-                      return (
-                        <div
-                          key={request.request_id}
-                          style={{
-                            padding: "16px",
-                            border: "1px solid var(--accent-purple-surface)",
-                            borderRadius: "var(--control-radius-xs)",
-                            backgroundColor: "var(--accent-purple-surface)",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "6px"
-                          }}
-                        >
-                          <div style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            gap: "12px"
-                          }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: "15px", fontWeight: "600", color: "var(--accent-purple)" }}>
-                                {partLabel}
-                              </div>
-                              <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
-                                {request.description || "No description provided."}
-                              </div>
-                              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
-                                Requested by {sourceLabel}
-                              </div>
-                              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
-                                Requested {formatDateTime(request.created_at)}
-                              </div>
-                            </div>
-                            <span style={{
-                              ...badgeStyle,
-                              padding: "4px 14px",
-                              borderRadius: "var(--control-radius)",
-                              fontSize: "11px",
-                              fontWeight: "600"
-                            }}>
-                              {statusLabel}
-                            </span>
-                          </div>
-                          <div style={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            alignItems: "center",
-                            gap: "12px",
-                            fontSize: "13px",
-                            color: "var(--info)"
-                          }}>
-                            <span>Qty: {quantity}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </DevLayoutSection>
 
-              {/* Parts Authorised Section */}
-              <DevLayoutSection
-                as="div"
-                sectionKey="myjob-parts-authorised"
-                sectionType="content-card"
-                parentKey="myjob-tab-parts"
-                backgroundToken="surface"
-                style={{
-                backgroundColor: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--success)",
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "10px" }}>
-                  <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "var(--success)" }}>
-                    Parts Authorised
-                  </h3>
-                  <span style={{ fontSize: "12px", color: "var(--info)" }}>
-                    {authorizedVhcRows.length} item{authorizedVhcRows.length === 1 ? "" : "s"}
-                  </span>
-                </div>
-                <p style={{ margin: 0, fontSize: "13px", color: "var(--info)" }}>
-                  VHC items that have been authorised by the customer.
-                </p>
-                {authorizedVhcRowsLoading ? (
-                  <p style={{ margin: 0, fontSize: "14px", color: "var(--info)" }}>Loading authorised items…</p>
-                ) : authorizedVhcRows.length === 0 ? (
-                  <p style={{ margin: 0, fontSize: "14px", color: "var(--info)" }}>
-                    No authorised VHC items yet.
-                  </p>
-                ) : (
-                  <div style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
-                    maxHeight: "400px",
-                    overflowY: "auto",
-                    paddingRight: "4px"
-                  }}>
-                    {authorizedVhcRows.map((row) => {
-                      const title = row.issue_title || row.section || "Authorised item";
-                      const description = row.issue_description || "";
-                      const section = row.section || "";
-                      const hours = row.labour_hours;
-                      const partsCost = row.parts_cost;
-                      const prePick = row.pre_pick_location || "";
-                      const noteText = row.note_text || "";
-                      const isComplete = row.Complete === true;
 
-                      return (
-                        <div
-                          key={row.vhc_id}
-                          style={{
-                            padding: "14px 16px",
-                            border: "1px solid var(--success)",
-                            borderLeft: "4px solid var(--success)",
-                            borderRadius: "var(--control-radius-xs)",
-                            backgroundColor: "var(--success-surface)",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "6px"
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: "15px", fontWeight: "600", color: "var(--success-dark)" }}>
-                                {title}
-                              </div>
-                              {description && description.toLowerCase() !== title.toLowerCase() && (
-                                <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "2px" }}>
-                                  {description}
-                                </div>
-                              )}
-                              {section && section !== title && (
-                                <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "2px" }}>
-                                  Section: {section}
-                                </div>
-                              )}
-                              {noteText && (
-                                <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
-                                  Note: {noteText}
-                                </div>
-                              )}
-                              {prePick && (
-                                <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
-                                  Pre-pick: {formatPrePickLabel(prePick)}
-                                </div>
-                              )}
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-                              <span style={{
-                                padding: "3px 10px",
-                                borderRadius: "var(--control-radius)",
-                                fontSize: "11px",
-                                fontWeight: "600",
-                                backgroundColor: isComplete ? "var(--info-surface)" : "var(--success-surface)",
-                                color: isComplete ? "var(--info)" : "var(--success-dark)",
-                                border: `1px solid ${isComplete ? "var(--info)" : "var(--success)"}`,
-                              }}>
-                                {isComplete ? "Complete" : "Authorised"}
-                              </span>
-                            </div>
-                          </div>
-                          <div style={{
-                            display: "flex",
-                            gap: "16px",
-                            fontSize: "12px",
-                            color: "var(--info)",
-                            marginTop: "4px"
-                          }}>
-                            {hours != null && hours !== "" && (
-                              <span>Labour: {hours}h</span>
-                            )}
-                            {partsCost != null && partsCost !== "" && Number(partsCost) > 0 && (
-                              <span>Parts: £{Number(partsCost).toFixed(2)}</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </DevLayoutSection>
-            </DevLayoutSection>
-          )}
 
-          {/* NOTES TAB */}
-          {activeTab === "notes" && (
-            <DevLayoutSection
-              as="div"
-              sectionKey="myjob-tab-notes"
-              sectionType="content-card"
-              parentKey="myjob-main-scroll"
-              backgroundToken="surface"
-              style={{
-              backgroundColor: "var(--surface)",
-              padding: "24px",
-              borderRadius: "var(--radius-sm)",
-              border: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: "20px"
-            }}
-            >
-              <DevLayoutSection
-                as="div"
-                sectionKey="myjob-notes-toolbar"
-                sectionType="toolbar"
-                parentKey="myjob-tab-notes"
-                backgroundToken="none"
-                style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-              >
-                <h3 style={{ fontSize: "18px", fontWeight: "600", margin: 0 }}>
-                  Technician Notes
-                </h3>
-                <span style={{ fontSize: "13px", color: "var(--info)" }}>
-                  {notes.length} note{notes.length === 1 ? "" : "s"}
-                </span>
-                <button
-                  onClick={() => setShowAddNote(true)}
-                  style={{
-                    padding: "10px 20px",
-                    backgroundColor: "var(--primary)",
-                    color: "var(--text-inverse)",
-                    border: "1px solid var(--primary)",
-                    borderRadius: "var(--radius-xs)",
-                    cursor: "pointer",
-                    fontSize: "14px",
-                    fontWeight: "600"
-                  }}
-                >
-                  + Add Note
-                </button>
-              </DevLayoutSection>
 
-              {showAddNote && (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-notes-compose"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-notes"
-                  backgroundToken="layer-section-level-3"
-                  style={{
-                  padding: "20px",
-                  backgroundColor: "var(--layer-section-level-3)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none"
-                }}>
-                  <textarea
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    placeholder="Add a note about the job..."
-                    style={{
-                      width: "100%",
-                      padding: "12px 14px",
-                      border: "1px solid var(--danger)",
-                      borderRadius: "var(--control-radius-xs)",
-                      resize: "vertical",
-                      minHeight: "110px",
-                      fontSize: "14px",
-                      marginBottom: "12px",
-                      backgroundColor: "var(--surface)"
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-                    <button
-                      onClick={() => setShowAddNote(false)}
-                      style={{
-                        padding: "10px 18px",
-                        backgroundColor: "var(--surface)",
-                        color: "var(--info)",
-                        border: "1px solid var(--info)",
-                        borderRadius: "var(--radius-xs)",
-                        cursor: "pointer",
-                        fontSize: "14px",
-                        fontWeight: "500"
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleAddNote}
-                      disabled={notesSubmitting}
-                      style={{
-                        padding: "10px 18px",
-                        backgroundColor: notesSubmitting ? "var(--border)" : "var(--info)",
-                        color: "white",
-                        border: "1px solid var(--info-dark)",
-                        borderRadius: "var(--radius-xs)",
-                        cursor: notesSubmitting ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {notesSubmitting ? "Saving..." : "Save Note"}
-                    </button>
-                  </div>
-                </DevLayoutSection>
-              )}
 
-              {notesLoading ? (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-notes-loading"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-notes"
-                  backgroundToken="none"
-                  style={{
-                  padding: "32px",
-                  textAlign: "center",
-                  color: "var(--info)"
-                }}>
-                  Loading notes…
-                </DevLayoutSection>
-              ) : notes.length === 0 ? (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-notes-empty"
-                  sectionType="content-card"
-                  parentKey="myjob-tab-notes"
-                  backgroundToken="layer-section-level-3"
-                  style={{
-                  textAlign: "center",
-                  padding: "40px",
-                  color: "var(--info)",
-                  backgroundColor: "var(--layer-section-level-3)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none"
-                }}>
-                  <p style={{ fontSize: "16px", fontWeight: "600", marginBottom: "4px" }}>No notes added yet</p>
-                  <p style={{ fontSize: "14px", color: "var(--info)" }}>
-                    Keep technicians aligned by logging progress, issues and next steps.
-                  </p>
-                </DevLayoutSection>
-              ) : (
-                <DevLayoutSection
-                  as="div"
-                  sectionKey="myjob-notes-list"
-                  sectionType="section-shell"
-                  parentKey="myjob-tab-notes"
-                  backgroundToken="none"
-                  style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-                >
-                  {notes.map((note, index) => {
-                    const noteId = note.noteId || note.note_id || note.id;
-                    const creatorName = note.createdBy || "Unknown";
-                    const createdAt = formatDateTime(note.createdAt || note.created_at);
-                    const updatedLabel =
-                      note.updatedAt && note.updatedAt !== note.createdAt
-                        ? ` • Updated ${formatDateTime(note.updatedAt)}`
-                        : "";
-                    return (
-                      <DevLayoutSection
-                        as="div"
-                        key={noteId}
-                        sectionKey={`myjob-note-${noteId}`}
-                        sectionType="content-card"
-                        parentKey="myjob-notes-list"
-                        backgroundToken="layer-section-level-3"
-                        style={{
-                          border: "none",
-                          borderRadius: "var(--control-radius-xs)",
-                          padding: "16px",
-                          backgroundColor: "var(--layer-section-level-3)"
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "8px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span
-                              style={{
-                                padding: "4px 10px",
-                                borderRadius: "var(--control-radius)",
-                                backgroundColor: "var(--info-surface)",
-                                color: "var(--info)",
-                                fontSize: "11px",
-                                fontWeight: 700,
-                              }}
-                            >
-                              Note {index + 1}
-                            </span>
-                            <span style={{ fontWeight: 600 }}>{creatorName}</span>
-                          </div>
-                          <div style={{ fontSize: "12px", color: "var(--info)" }}>
-                            {createdAt}
-                            {updatedLabel}
-                          </div>
-                        </div>
-                        <p style={{ margin: 0, color: "var(--text-primary)", whiteSpace: "pre-wrap" }}>
-                          {note.noteText || note.note_text}
-                        </p>
-                      </DevLayoutSection>
-                    );
-                  })}
-                </DevLayoutSection>
-              )}
-            </DevLayoutSection>
-          )}
 
-          {/* WRITE-UP TAB */}
-          <DevLayoutSection
-            as="div"
-            sectionKey="myjob-tab-writeup"
-            sectionType="section-shell"
-            parentKey="myjob-main-scroll"
-            backgroundToken="layer-section-level-2"
-            shell
-            style={{
-            height: "100%",
-            overflow: "hidden",
-            display: activeTab === "write-up" ? "flex" : "none",
-            flexDirection: "column",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            backgroundColor: "var(--layer-section-level-2)"
-          }}
-          >
-            <DevLayoutSection
-              as="div"
-              sectionKey="myjob-writeup-form-shell"
-              sectionType="content-card"
-              parentKey="myjob-tab-writeup"
-              backgroundToken="surface"
-              style={{
-                flex: 1,
-                minHeight: 0,
-                borderRadius: "var(--radius-sm)",
-                overflow: "hidden",
-                backgroundColor: "var(--surface)"
-              }}
-            >
-              <WriteUpForm
-                jobNumber={jobNumber}
-                jobCardData={jobData}
-                showHeader={false}
-                onCompletionChange={(nextStatus) => {
-                  setJobData((prev) => {
-                    if (!prev?.jobCard) return prev;
-                    const nextWriteUp = {
-                      ...(prev.jobCard.writeUp || {}),
-                      completion_status: nextStatus,
-                    };
-                    return {
-                      ...prev,
-                      jobCard: {
-                        ...prev.jobCard,
-                        completionStatus: nextStatus,
-                        writeUp: nextWriteUp,
-                      },
-                    };
-                  });
-                }}
-                onTasksSnapshotChange={(nextTasks) => {
-                  setLiveWriteUpTasks(Array.isArray(nextTasks) ? nextTasks : []);
-                }}
-              />
-            </DevLayoutSection>
-          </DevLayoutSection>
 
-          {/* DOCUMENTS TAB */}
-          {activeTab === "documents" && (
-            <DevLayoutSection
-              as="div"
-              sectionKey="myjob-tab-documents"
-              sectionType="section-shell"
-              parentKey="myjob-main-scroll"
-              backgroundToken="none"
-              shell
-              style={{
-              backgroundColor: "transparent",
-              padding: 0,
-              borderRadius: 0,
-              border: "none",
-            }}
-            >
-              <DevLayoutSection
-                as="div"
-                sectionKey="myjob-documents-browser"
-                sectionType="content-card"
-                parentKey="myjob-tab-documents"
-                backgroundToken="surface"
-                style={{
-                  borderRadius: "var(--radius-sm)",
-                  overflow: "hidden",
-                  backgroundColor: "var(--surface)"
-                }}
-              >
-                <DocumentsTab
-                  documents={jobDocuments}
-                  canDelete={canManageDocuments}
-                  onDelete={handleDeleteDocument}
-                  onManageDocuments={canManageDocuments ? () => setShowDocumentsPopup(true) : undefined}
-                  onRenameDocument={handleRenameDocument}
-                  onReplaceDocument={canManageDocuments ? handleReplaceDocument : undefined}
-                />
-              </DevLayoutSection>
-            </DevLayoutSection>
-          )}
-          </DevLayoutSection>
-        </DevLayoutSection>
 
-        {/* Bottom Action Bar */}
-      </DevLayoutSection>
-      <DocumentsUploadPopup
-        open={showDocumentsPopup}
-        onClose={() => setShowDocumentsPopup(false)}
-        jobId={jobData?.jobCard?.id ? String(jobData.jobCard.id) : null}
-        userId={user?.user_id || dbUserId || null}
-        onAfterUpload={fetchJobData}
-        existingDocuments={jobDocuments}
-      />
-      {showJobTypesPopup && (
-        <ModalPortal>
-          <div
-            className="popup-backdrop"
-            onClick={(event) => {
-              if (event.target === event.currentTarget) {
-                setShowJobTypesPopup(false);
-              }
-            }}
-          >
-            <div
-              className="popup-card"
-              style={{
-                borderRadius: "var(--radius-xl)",
-                width: "100%",
-                maxWidth: "560px",
-                maxHeight: "88vh",
-                overflowY: "auto",
-                border: "none",
-              }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div style={{ padding: "28px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <h3
-                    style={{
-                      margin: 0,
-                      fontSize: "18px",
-                      fontWeight: 700,
-                      color: "var(--primary)",
-                      letterSpacing: "0.02em",
-                    }}
-                  >
-                    Job Requests
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowJobTypesPopup(false)}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      fontSize: "22px",
-                      lineHeight: 1,
-                      color: "var(--info)",
-                    }}
-                    aria-label="Close job requests popup"
-                  >
-                    ×
-                  </button>
-                </div>
 
-                <div style={{ display: "grid", gap: "10px" }}>
-                  {detectedJobTypes.map((jobType, index) => (
-                    <div
-                      key={`${jobType}-${index}`}
-                      style={{
-                        border: "none",
-                        borderRadius: "var(--radius-sm)",
-                        backgroundColor: "var(--surface-light)",
-                        padding: "12px 14px",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "12px",
-                      }}
-                    >
-                      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>
-                        {jobType}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: 700,
-                          color: "var(--accent-purple)",
-                          letterSpacing: "0.05em",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        Type {index + 1}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </ModalPortal>
-      )}
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 export async function getServerSideProps() {
   return {
-    props: {},
+    props: {}
   };
 }
 
 const DOC_TYPE_META = {
-  pdf:  { label: "PDF",  bg: "var(--danger-surface)",  color: "var(--danger)"  },
-  png:  { label: "PNG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
-  jpg:  { label: "JPG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
-  jpeg: { label: "JPG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
-  gif:  { label: "GIF",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
-  webp: { label: "WEBP", bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
-  svg:  { label: "SVG",  bg: "var(--accent-surface)",  color: "var(--accent-strong)" },
-  doc:  { label: "DOC",  bg: "var(--warning-surface)", color: "var(--warning)"  },
-  docx: { label: "DOCX", bg: "var(--warning-surface)", color: "var(--warning)"  },
-  xls:  { label: "XLS",  bg: "var(--success-surface)", color: "var(--success)"  },
-  xlsx: { label: "XLSX", bg: "var(--success-surface)", color: "var(--success)"  },
+  pdf: { label: "PDF", bg: "var(--danger-surface)", color: "var(--danger)" },
+  png: { label: "PNG", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
+  jpg: { label: "JPG", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
+  jpeg: { label: "JPG", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
+  gif: { label: "GIF", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
+  webp: { label: "WEBP", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
+  svg: { label: "SVG", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
+  doc: { label: "DOC", bg: "var(--warning-surface)", color: "var(--warning)" },
+  docx: { label: "DOCX", bg: "var(--warning-surface)", color: "var(--warning)" },
+  xls: { label: "XLS", bg: "var(--success-surface)", color: "var(--success)" },
+  xlsx: { label: "XLSX", bg: "var(--success-surface)", color: "var(--success)" }
 };
 
 function getDocTypeMeta(mimeOrExt = "") {
@@ -4640,7 +4640,7 @@ function DocumentsTab({
   onDelete,
   onManageDocuments,
   onRenameDocument,
-  onReplaceDocument,
+  onReplaceDocument
 }) {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [isRenamingPreview, setIsRenamingPreview] = useState(false);
@@ -4669,8 +4669,8 @@ function DocumentsTab({
       sectionType="section-shell"
       parentKey="myjob-tab-documents"
       backgroundToken="layer-section-level-1"
-      style={{ backgroundColor: "var(--layer-section-level-1)" }}
-    >
+      style={{ backgroundColor: "var(--layer-section-level-1)" }}>
+      
       {previewDoc && typeof document !== "undefined" && createPortal(
         <div
           onClick={() => setPreviewDoc(null)}
@@ -4678,9 +4678,9 @@ function DocumentsTab({
             position: "fixed", inset: 0, zIndex: 1400,
             backgroundColor: "var(--overlay)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "24px",
-          }}
-        >
+            padding: "24px"
+          }}>
+          
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -4692,118 +4692,118 @@ function DocumentsTab({
               maxWidth: "min(92vw, 1000px)",
               maxHeight: "90vh",
               width: "100%",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
-            }}
-          >
+              boxShadow: "0 24px 64px rgba(0,0,0,0.4)"
+            }}>
+            
             <div
               style={{
                 display: "flex", alignItems: "center", gap: "10px",
                 padding: "16px 20px",
                 borderBottom: "1px solid var(--surface-light)",
-                flexShrink: 0,
-              }}
-            >
-              {isRenamingPreview ? (
-                <>
+                flexShrink: 0
+              }}>
+              
+              {isRenamingPreview ?
+              <>
                   <input
-                    autoFocus
-                    value={previewRenameValue}
-                    onChange={(e) => setPreviewRenameValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const trimmed = previewRenameValue.trim();
-                        if (trimmed && typeof onRenameDocument === "function") {
-                          onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
-                          setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
-                        }
-                        setIsRenamingPreview(false);
-                      }
-                      if (e.key === "Escape") setIsRenamingPreview(false);
-                    }}
-                    style={{
-                      flex: 1, padding: "6px 10px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--primary)",
-                      fontSize: "14px", fontWeight: 600,
-                      color: "var(--text-primary)",
-                      backgroundColor: "var(--surface)",
-                      outline: "none",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
+                  autoFocus
+                  value={previewRenameValue}
+                  onChange={(e) => setPreviewRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
                       const trimmed = previewRenameValue.trim();
                       if (trimmed && typeof onRenameDocument === "function") {
                         onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
                         setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
                       }
                       setIsRenamingPreview(false);
-                    }}
-                    style={{
-                      padding: "6px 14px", border: "none",
-                      borderRadius: "var(--input-radius)",
-                      backgroundColor: "var(--primary)", color: "var(--text-inverse)",
-                      fontSize: "13px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
-                    }}
-                  >
+                    }
+                    if (e.key === "Escape") setIsRenamingPreview(false);
+                  }}
+                  style={{
+                    flex: 1, padding: "6px 10px",
+                    borderRadius: "var(--input-radius)",
+                    border: "1px solid var(--primary)",
+                    fontSize: "14px", fontWeight: 600,
+                    color: "var(--text-primary)",
+                    backgroundColor: "var(--surface)",
+                    outline: "none"
+                  }} />
+                
+                  <button
+                  type="button"
+                  onClick={() => {
+                    const trimmed = previewRenameValue.trim();
+                    if (trimmed && typeof onRenameDocument === "function") {
+                      onRenameDocument(previewDoc.id || previewDoc.file_id, trimmed);
+                      setPreviewDoc((prev) => ({ ...prev, name: trimmed, file_name: trimmed }));
+                    }
+                    setIsRenamingPreview(false);
+                  }}
+                  style={{
+                    padding: "6px 14px", border: "none",
+                    borderRadius: "var(--input-radius)",
+                    backgroundColor: "var(--primary)", color: "var(--text-inverse)",
+                    fontSize: "13px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap"
+                  }}>
+                  
                     Save
                   </button>
                   <button
-                    type="button"
-                    onClick={() => setIsRenamingPreview(false)}
-                    style={{
-                      padding: "6px 10px", border: "none",
-                      borderRadius: "var(--input-radius)",
-                      backgroundColor: "var(--surface-light)", color: "var(--text-secondary)",
-                      fontSize: "13px", fontWeight: 600, cursor: "pointer",
-                    }}
-                  >
+                  type="button"
+                  onClick={() => setIsRenamingPreview(false)}
+                  style={{
+                    padding: "6px 10px", border: "none",
+                    borderRadius: "var(--input-radius)",
+                    backgroundColor: "var(--surface-light)", color: "var(--text-secondary)",
+                    fontSize: "13px", fontWeight: 600, cursor: "pointer"
+                  }}>
+                  
                     Cancel
                   </button>
-                </>
-              ) : (
-                <>
+                </> :
+
+              <>
                   <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
                     Document Preview
                   </span>
-                  {typeof onReplaceDocument === "function" && (isImageMime(previewDoc.type || previewDoc.file_type || "") || isVideoMime(previewDoc.type || previewDoc.file_type || "")) && (
-                    <button
-                      type="button"
-                      onClick={() => { setEditingDoc(previewDoc); setPreviewDoc(null); }}
-                      style={{
-                        padding: "6px 14px", border: "1px solid var(--surface-light)",
-                        borderRadius: "var(--input-radius)",
-                        backgroundColor: "var(--surface)", color: "var(--text-primary)",
-                        fontSize: "13px", fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
+                  {typeof onReplaceDocument === "function" && (isImageMime(previewDoc.type || previewDoc.file_type || "") || isVideoMime(previewDoc.type || previewDoc.file_type || "")) &&
+                <button
+                  type="button"
+                  onClick={() => {setEditingDoc(previewDoc);setPreviewDoc(null);}}
+                  style={{
+                    padding: "6px 14px", border: "1px solid var(--surface-light)",
+                    borderRadius: "var(--input-radius)",
+                    backgroundColor: "var(--surface)", color: "var(--text-primary)",
+                    fontSize: "13px", fontWeight: 600, cursor: "pointer"
+                  }}>
+                  
                       Edit
                     </button>
-                  )}
-                  {typeof onRenameDocument === "function" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const currentName = previewDoc.name || previewDoc.file_name || "";
-                        setPreviewRenameValue(currentName);
-                        setIsRenamingPreview(true);
-                      }}
-                      style={{
-                        padding: "6px 14px", border: "1px solid var(--surface-light)",
-                        borderRadius: "var(--input-radius)",
-                        backgroundColor: "var(--surface)", color: "var(--text-primary)",
-                        fontSize: "13px", fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
+                }
+                  {typeof onRenameDocument === "function" &&
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentName = previewDoc.name || previewDoc.file_name || "";
+                    setPreviewRenameValue(currentName);
+                    setIsRenamingPreview(true);
+                  }}
+                  style={{
+                    padding: "6px 14px", border: "1px solid var(--surface-light)",
+                    borderRadius: "var(--input-radius)",
+                    backgroundColor: "var(--surface)", color: "var(--text-primary)",
+                    fontSize: "13px", fontWeight: 600, cursor: "pointer"
+                  }}>
+                  
                       Rename
                     </button>
-                  )}
+                }
                 </>
-              )}
+              }
               <button
                 type="button"
-                onClick={() => { setPreviewDoc(null); setIsRenamingPreview(false); }}
+                onClick={() => {setPreviewDoc(null);setIsRenamingPreview(false);}}
                 style={{
                   width: "32px", height: "32px",
                   display: "flex", alignItems: "center", justifyContent: "center",
@@ -4811,10 +4811,10 @@ function DocumentsTab({
                   backgroundColor: "var(--surface-light)",
                   color: "var(--text-primary)",
                   fontSize: "18px", lineHeight: 1,
-                  cursor: "pointer", fontWeight: 400, flexShrink: 0,
+                  cursor: "pointer", fontWeight: 400, flexShrink: 0
                 }}
-                aria-label="Close preview"
-              >
+                aria-label="Close preview">
+                
                 ×
               </button>
             </div>
@@ -4824,25 +4824,25 @@ function DocumentsTab({
                 flex: 1, overflow: "auto",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 backgroundColor: "var(--surface)",
-                minHeight: "300px",
-              }}
-            >
-              {isImageMime(previewDoc.type || previewDoc.file_type || "") ? (
-                <img
-                  src={previewDoc.url || previewDoc.file_url || ""}
-                  alt="Document preview"
-                  style={{
-                    maxWidth: "100%", maxHeight: "80vh",
-                    objectFit: "contain", display: "block",
-                  }}
-                />
-              ) : (
-                <iframe
-                  src={previewDoc.url || previewDoc.file_url || ""}
-                  title="Document preview"
-                  style={{ width: "100%", height: "80vh", border: "none", display: "block" }}
-                />
-              )}
+                minHeight: "300px"
+              }}>
+              
+              {isImageMime(previewDoc.type || previewDoc.file_type || "") ?
+              <img
+                src={previewDoc.url || previewDoc.file_url || ""}
+                alt="Document preview"
+                style={{
+                  maxWidth: "100%", maxHeight: "80vh",
+                  objectFit: "contain", display: "block"
+                }} /> :
+
+
+              <iframe
+                src={previewDoc.url || previewDoc.file_url || ""}
+                title="Document preview"
+                style={{ width: "100%", height: "80vh", border: "none", display: "block" }} />
+
+              }
             </div>
           </div>
         </div>,
@@ -4860,108 +4860,108 @@ function DocumentsTab({
           alignItems: "center",
           gap: "12px",
           marginBottom: "16px",
-          flexWrap: "wrap",
-        }}
-      >
+          flexWrap: "wrap"
+        }}>
+        
         <span style={{ fontSize: "13px", color: "var(--text-secondary)", fontWeight: 500 }}>
           {sortedDocuments.length > 0 ? `${sortedDocuments.length} file${sortedDocuments.length !== 1 ? "s" : ""}` : "No documents yet"}
         </span>
-        {typeof onManageDocuments === "function" && (
-          <button
-            type="button"
-            onClick={onManageDocuments}
-            style={{
-              padding: "9px 18px", borderRadius: "var(--radius-sm)", border: "none",
-              backgroundColor: "var(--primary)", color: "var(--text-inverse)",
-              fontWeight: "600", fontSize: "14px", cursor: "pointer",
-            }}
-          >
+        {typeof onManageDocuments === "function" &&
+        <button
+          type="button"
+          onClick={onManageDocuments}
+          style={{
+            padding: "9px 18px", borderRadius: "var(--radius-sm)", border: "none",
+            backgroundColor: "var(--primary)", color: "var(--text-inverse)",
+            fontWeight: "600", fontSize: "14px", cursor: "pointer"
+          }}>
+          
             Upload Documents
           </button>
-        )}
+        }
       </DevLayoutSection>
 
-      {sortedDocuments.length === 0 ? (
-        <DevLayoutSection
-          as="div"
-          sectionKey="myjob-documents-empty"
-          sectionType="content-card"
-          parentKey="myjob-documents-panel"
-          style={{
-            padding: "48px 24px",
-            borderRadius: "var(--radius-md)",
-            border: "2px dashed var(--surface-light)",
-            textAlign: "center",
-            color: "var(--text-secondary)",
-            fontSize: "14px",
-            lineHeight: 1.6,
-          }}
-        >
+      {sortedDocuments.length === 0 ?
+      <DevLayoutSection
+        as="div"
+        sectionKey="myjob-documents-empty"
+        sectionType="content-card"
+        parentKey="myjob-documents-panel"
+        style={{
+          padding: "48px 24px",
+          borderRadius: "var(--radius-md)",
+          border: "2px dashed var(--surface-light)",
+          textAlign: "center",
+          color: "var(--text-secondary)",
+          fontSize: "14px",
+          lineHeight: 1.6
+        }}>
+        
           <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>📄</div>
           <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-primary)" }}>No documents attached</div>
           Upload check-sheets, signed paperwork, or photos to keep everything in one place.
-        </DevLayoutSection>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-            gap: "14px",
-          }}
-        >
-          {sortedDocuments.map((doc) => {
-            const docName  = doc.name  || doc.file_name  || "Document";
-            const docType  = doc.type  || doc.file_type  || "";
-            const docUrl   = doc.url   || doc.file_url   || "";
-            const isImage  = isImageMime(docType);
-            const typeMeta = getDocTypeMeta(docType || docName);
-            const dateStr  = formatDate(doc.uploadedAt || doc.uploaded_at);
+        </DevLayoutSection> :
 
-            return (
-              <div
-                key={doc.id || doc.file_id || docUrl}
-                style={{
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--surface-light)",
-                  overflow: "hidden",
-                  backgroundColor: "var(--surface)",
-                  display: "flex",
-                  flexDirection: "column",
-                  transition: "box-shadow 0.15s ease",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "none"; }}
-              >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+          gap: "14px"
+        }}>
+        
+          {sortedDocuments.map((doc) => {
+          const docName = doc.name || doc.file_name || "Document";
+          const docType = doc.type || doc.file_type || "";
+          const docUrl = doc.url || doc.file_url || "";
+          const isImage = isImageMime(docType);
+          const typeMeta = getDocTypeMeta(docType || docName);
+          const dateStr = formatDate(doc.uploadedAt || doc.uploaded_at);
+
+          return (
+            <div
+              key={doc.id || doc.file_id || docUrl}
+              style={{
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--surface-light)",
+                overflow: "hidden",
+                backgroundColor: "var(--surface)",
+                display: "flex",
+                flexDirection: "column",
+                transition: "box-shadow 0.15s ease"
+              }}
+              onMouseEnter={(e) => {e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)";}}
+              onMouseLeave={(e) => {e.currentTarget.style.boxShadow = "none";}}>
+              
                 <button
-                  type="button"
-                  onClick={() => docUrl && setPreviewDoc(doc)}
-                  title={`Open ${docName}`}
+                type="button"
+                onClick={() => docUrl && setPreviewDoc(doc)}
+                title={`Open ${docName}`}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  height: "130px",
+                  border: "none",
+                  padding: 0,
+                  cursor: docUrl ? "pointer" : "default",
+                  backgroundColor: isImage ? "var(--surface-dark, #111)" : typeMeta.bg,
+                  flexShrink: 0
+                }}>
+                
+                  {isImage && docUrl ?
+                <img
+                  src={docUrl}
+                  alt={docName}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  loading="lazy" /> :
+
+
+                <div
                   style={{
-                    display: "block",
-                    width: "100%",
-                    height: "130px",
-                    border: "none",
-                    padding: 0,
-                    cursor: docUrl ? "pointer" : "default",
-                    backgroundColor: isImage ? "var(--surface-dark, #111)" : typeMeta.bg,
-                    flexShrink: 0,
-                  }}
-                >
-                  {isImage && docUrl ? (
-                    <img
-                      src={docUrl}
-                      alt={docName}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "100%", height: "100%",
-                        display: "flex", flexDirection: "column",
-                        alignItems: "center", justifyContent: "center", gap: "6px",
-                      }}
-                    >
+                    width: "100%", height: "100%",
+                    display: "flex", flexDirection: "column",
+                    alignItems: "center", justifyContent: "center", gap: "6px"
+                  }}>
+                  
                       <span style={{ fontSize: "36px", lineHeight: 1, opacity: 0.7 }}>
                         {docType.includes("pdf") ? "📕" : docType.includes("sheet") || docName.match(/\.xls/i) ? "📗" : docType.includes("word") || docName.match(/\.doc/i) ? "📘" : "📄"}
                       </span>
@@ -4969,65 +4969,65 @@ function DocumentsTab({
                         {typeMeta.label}
                       </span>
                     </div>
-                  )}
+                }
                 </button>
 
                 <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
                   <div
-                    title={docName}
-                    style={{
-                      fontSize: "13px", fontWeight: 600, color: "var(--text-primary)",
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                    }}
-                  >
+                  title={docName}
+                  style={{
+                    fontSize: "13px", fontWeight: 600, color: "var(--text-primary)",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
+                  }}>
+                  
                     {docName}
                   </div>
-                  {dateStr && (
-                    <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{dateStr}</div>
-                  )}
+                  {dateStr &&
+                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{dateStr}</div>
+                }
                 </div>
 
                 <div
-                  style={{
-                    display: "flex", gap: "6px", padding: "8px 12px",
-                    borderTop: "1px solid var(--surface-light)",
-                    backgroundColor: "var(--surface-light)",
-                  }}
-                >
+                style={{
+                  display: "flex", gap: "6px", padding: "8px 12px",
+                  borderTop: "1px solid var(--surface-light)",
+                  backgroundColor: "var(--surface-light)"
+                }}>
+                
                   <button
-                    type="button"
-                    onClick={() => docUrl && setPreviewDoc(doc)}
-                    disabled={!docUrl}
-                    style={{
-                      flex: 1, padding: "5px 0",
-                      borderRadius: "var(--radius-xs)", border: "none",
-                      backgroundColor: "var(--accent-surface)", color: "var(--accent-strong)",
-                      fontSize: "12px", fontWeight: 600, cursor: docUrl ? "pointer" : "not-allowed",
-                      opacity: docUrl ? 1 : 0.5,
-                    }}
-                  >
+                  type="button"
+                  onClick={() => docUrl && setPreviewDoc(doc)}
+                  disabled={!docUrl}
+                  style={{
+                    flex: 1, padding: "5px 0",
+                    borderRadius: "var(--radius-xs)", border: "none",
+                    backgroundColor: "var(--accent-surface)", color: "var(--accent-strong)",
+                    fontSize: "12px", fontWeight: 600, cursor: docUrl ? "pointer" : "not-allowed",
+                    opacity: docUrl ? 1 : 0.5
+                  }}>
+                  
                     View
                   </button>
-                  {canDelete && (
-                    <button
-                      type="button"
-                      onClick={() => typeof onDelete === "function" && onDelete(doc)}
-                      style={{
-                        flex: 1, padding: "5px 0",
-                        borderRadius: "var(--radius-xs)", border: "none",
-                        backgroundColor: "var(--danger-surface)", color: "var(--danger)",
-                        fontSize: "12px", fontWeight: 600, cursor: "pointer",
-                      }}
-                    >
+                  {canDelete &&
+                <button
+                  type="button"
+                  onClick={() => typeof onDelete === "function" && onDelete(doc)}
+                  style={{
+                    flex: 1, padding: "5px 0",
+                    borderRadius: "var(--radius-xs)", border: "none",
+                    backgroundColor: "var(--danger-surface)", color: "var(--danger)",
+                    fontSize: "12px", fontWeight: 600, cursor: "pointer"
+                  }}>
+                  
                       Delete
                     </button>
-                  )}
+                }
                 </div>
-              </div>
-            );
-          })}
+              </div>);
+
+        })}
         </div>
-      )}
+      }
 
       <PhotoEditorModal
         isOpen={editingDoc !== null && isImageMime(editingDoc?.type || editingDoc?.file_type || "")}
@@ -5036,9 +5036,9 @@ function DocumentsTab({
           if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
           setEditingDoc(null);
         }}
-        onCancel={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
-        onSkip={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
-      />
+        onCancel={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}}
+        onSkip={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}} />
+      
 
       <VideoEditorModal
         isOpen={editingDoc !== null && isVideoMime(editingDoc?.type || editingDoc?.file_type || "")}
@@ -5047,11 +5047,11 @@ function DocumentsTab({
           if (typeof onReplaceDocument === "function") onReplaceDocument(editingDoc, editedFile);
           setEditingDoc(null);
         }}
-        onCancel={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
-        onSkip={() => { setPreviewDoc(editingDoc); setEditingDoc(null); }}
-      />
-    </DevLayoutSection>
-  );
+        onCancel={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}}
+        onSkip={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}} />
+      
+    </DevLayoutSection>);
+
 }
 
 TechJobDetailPage.getLayout = (page) => <Layout requiresLandscape>{page}</Layout>;

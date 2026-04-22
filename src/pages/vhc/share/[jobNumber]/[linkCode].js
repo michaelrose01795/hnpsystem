@@ -10,6 +10,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import PublicSharePreviewPageUi from "@/components/page-ui/vhc/share/[jobNumber]/vhc-share-job-number-link-code-ui"; // Extracted presentation layer.
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -21,40 +22,40 @@ const SEVERITY_THEME = {
   red: {
     background: "var(--danger-surface)",
     border: "var(--danger-surface)",
-    text: "var(--danger)",
+    text: "var(--danger)"
   },
   amber: {
     background: "var(--warning-surface)",
     border: "var(--warning-surface)",
-    text: "var(--warning)",
+    text: "var(--warning)"
   },
   green: {
     background: "var(--success-surface)",
     border: "var(--success)",
-    text: "var(--success)",
+    text: "var(--success)"
   },
   grey: {
     background: "var(--info-surface)",
     border: "var(--info-surface)",
-    text: "var(--info)",
+    text: "var(--info)"
   },
   authorized: {
     background: "var(--success-surface)",
     border: "var(--success)",
-    text: "var(--success)",
+    text: "var(--success)"
   },
   declined: {
     background: "var(--danger-surface)",
     border: "var(--danger)",
-    text: "var(--danger)",
-  },
+    text: "var(--danger)"
+  }
 };
 
 const TAB_OPTIONS = [
-  { id: "summary", label: "Summary" },
-  { id: "photos", label: "Photos" },
-  { id: "videos", label: "Videos" },
-];
+{ id: "summary", label: "Summary" },
+{ id: "photos", label: "Photos" },
+{ id: "videos", label: "Videos" }];
+
 
 const LABOUR_RATE = 85;
 
@@ -75,7 +76,7 @@ export default function PublicSharePreviewPage() {
 
   // For theme-aware logo
   const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => {setIsMounted(true);}, []);
   const { resolvedMode } = useTheme();
 
   // Read-only pill style that switches background for light/dark themes
@@ -87,7 +88,7 @@ export default function PublicSharePreviewPage() {
       border: "1px solid var(--info-surface)",
       borderRadius: "var(--radius-xs)",
       fontSize: "12px",
-      color: "var(--info)",
+      color: "var(--info)"
     };
   }, [resolvedMode, isMounted]);
 
@@ -103,7 +104,7 @@ export default function PublicSharePreviewPage() {
         fontSize: "12px",
         color: "var(--accent-purple)",
         textAlign: "right",
-        fontWeight: 600,
+        fontWeight: 600
       };
     }
 
@@ -115,7 +116,7 @@ export default function PublicSharePreviewPage() {
       fontSize: "12px",
       color: "var(--danger)",
       textAlign: "right",
-      fontWeight: 600,
+      fontWeight: 600
     };
   }, [resolvedMode, isMounted]);
 
@@ -149,7 +150,7 @@ export default function PublicSharePreviewPage() {
             const serverMsg = data && data.error ? data.error : "Failed to load job data";
             const warningMsg = data && data.warnings ? ` (warnings: ${data.warnings.join(", ")})` : "";
             // Append debug details in development
-            const debugDetails = (data && data.details) ? `\nDetails: ${data.details}` : (data && data.debug && process.env.NODE_ENV !== 'production' ? `\nDebug: ${JSON.stringify(data.debug)}` : "");
+            const debugDetails = data && data.details ? `\nDetails: ${data.details}` : data && data.debug && process.env.NODE_ENV !== 'production' ? `\nDebug: ${JSON.stringify(data.debug)}` : "";
             setError(serverMsg + warningMsg + debugDetails);
           }
           return;
@@ -327,7 +328,7 @@ export default function PublicSharePreviewPage() {
     const processedIds = new Set();
 
     // First, process items from checksheet sections
-    const sections = (vhcData && (vhcData.sections || vhcData.sections || [])) || [];
+    const sections = vhcData && (vhcData.sections || vhcData.sections || []) || [];
     sections.forEach((section) => {
       const sectionName = section.name || section.title || "Vehicle Health Check";
       (section.items || []).forEach((item, index) => {
@@ -335,11 +336,11 @@ export default function PublicSharePreviewPage() {
         if (!severity) return;
 
         const legacyId = `${sectionName}-${index}`;
-        const id = item.vhc_id
-          ? String(item.vhc_id)
-          : vhcIdAliases[legacyId]
-          ? legacyId
-          : buildStableDisplayId(sectionName, item, index);
+        const id = item.vhc_id ?
+        String(item.vhc_id) :
+        vhcIdAliases[legacyId] ?
+        legacyId :
+        buildStableDisplayId(sectionName, item, index);
 
         const heading = item.heading || item.label || item.issue_title || item.name || item.title || sectionName;
         const category = resolveCategoryForItem(sectionName, heading);
@@ -364,7 +365,7 @@ export default function PublicSharePreviewPage() {
           severityKey: severity,
           concerns,
           wheelKey: item.wheelKey || null,
-          approvalStatus,
+          approvalStatus
         });
 
         processedIds.add(String(id));
@@ -386,10 +387,10 @@ export default function PublicSharePreviewPage() {
       let severity = normaliseColour(check.severity || check.display_status);
       if (!severity) {
         const combinedText = `${check.section || ""} ${check.issue_title || ""}`.toLowerCase();
-        if (combinedText.includes("red")) severity = "red";
-        else if (combinedText.includes("amber") || combinedText.includes("orange")) severity = "amber";
-        else if (combinedText.includes("green") || combinedText.includes("good")) severity = "green";
-        else severity = "grey";
+        if (combinedText.includes("red")) severity = "red";else
+        if (combinedText.includes("amber") || combinedText.includes("orange")) severity = "amber";else
+        if (combinedText.includes("green") || combinedText.includes("good")) severity = "green";else
+        severity = "grey";
       }
       // Ensure fallback still checks severity first
       severity = severity || normaliseColour(check?.severity || check?.display_status);
@@ -411,7 +412,7 @@ export default function PublicSharePreviewPage() {
         concerns: [],
         wheelKey: null,
         approvalStatus: normaliseDecisionStatus(check.approval_status) || "pending",
-        fromDatabase: true,
+        fromDatabase: true
       });
 
       processedIds.add(String(check.vhc_id));
@@ -471,7 +472,7 @@ export default function PublicSharePreviewPage() {
       const qty = Number(part.quantity_requested) || 1;
       const unitPrice = Number(part.unit_price ?? part.part?.unit_price ?? 0);
       if (Number.isFinite(unitPrice)) {
-        map.set(key, (map.get(key) || 0) + (qty * unitPrice));
+        map.set(key, (map.get(key) || 0) + qty * unitPrice);
       }
     });
 
@@ -486,10 +487,10 @@ export default function PublicSharePreviewPage() {
       return Number(vhcCheck.total_override);
     }
 
-    const labourHours = labourHoursByVhcItem.get(String(itemId)) ||
-                        (vhcCheck?.labour_hours ? Number(vhcCheck.labour_hours) : 0);
-    const partsCost = partsCostByVhcItem.get(String(itemId)) ||
-                      (vhcCheck?.parts_cost ? Number(vhcCheck.parts_cost) : 0);
+    const labourHours = labourHoursByVhcItem.get(String(itemId)) || (
+    vhcCheck?.labour_hours ? Number(vhcCheck.labour_hours) : 0);
+    const partsCost = partsCostByVhcItem.get(String(itemId)) || (
+    vhcCheck?.parts_cost ? Number(vhcCheck.parts_cost) : 0);
 
     const labourCost = Number.isFinite(labourHours) ? labourHours * LABOUR_RATE : 0;
     return labourCost + partsCost;
@@ -527,7 +528,7 @@ export default function PublicSharePreviewPage() {
         labourHours: labourHoursByVhcItem.get(itemId) || (vhcCheck?.labour_hours ? Number(vhcCheck.labour_hours) : 0),
         partsCost: partsCostByVhcItem.get(itemId) || (vhcCheck?.parts_cost ? Number(vhcCheck.parts_cost) : 0),
         totalOverride: vhcCheck?.total_override,
-        total: resolveItemTotal(itemId),
+        total: resolveItemTotal(itemId)
       };
 
       // Categorize by approval status first, then by severity
@@ -556,9 +557,9 @@ export default function PublicSharePreviewPage() {
     let amber = 0;
     summaryItems.forEach((item) => {
       const total = resolveItemTotal(item.id) || 0;
-      const effective = getEffectiveSeverity(item) || normaliseColour((vhcChecksMap.get(String(item.id))?.display_status || vhcChecksMap.get(String(item.id))?.severity)) || item.rawSeverity || item.severityKey || resolveSeverityKey(item.rawSeverity, vhcChecksMap.get(String(item.id))?.display_status);
-      if (effective === "red") red += total;
-      else if (effective === "amber") amber += total;
+      const effective = getEffectiveSeverity(item) || normaliseColour(vhcChecksMap.get(String(item.id))?.display_status || vhcChecksMap.get(String(item.id))?.severity) || item.rawSeverity || item.severityKey || resolveSeverityKey(item.rawSeverity, vhcChecksMap.get(String(item.id))?.display_status);
+      if (effective === "red") red += total;else
+      if (effective === "amber") amber += total;
     });
 
     const calculateListTotal = (list) => list.reduce((sum, item) => sum + (item.total || 0), 0);
@@ -568,7 +569,7 @@ export default function PublicSharePreviewPage() {
       amber,
       green: calculateListTotal(severityLists.green),
       authorized: calculateListTotal(severityLists.authorized),
-      declined: calculateListTotal(severityLists.declined),
+      declined: calculateListTotal(severityLists.declined)
     };
   }, [summaryItems, severityLists, vhcChecksMap, resolveItemTotal]);
 
@@ -592,8 +593,8 @@ export default function PublicSharePreviewPage() {
 
 
   // Render read-only customer row
-  const renderCustomerRow = (item, severity) => {    // Defensive: ensure item exists
-    if (!item) return null;    const isAuthorized = item.approvalStatus === "authorized" || item.approvalStatus === "completed";
+  const renderCustomerRow = (item, severity) => {// Defensive: ensure item exists
+    if (!item) return null;const isAuthorized = item.approvalStatus === "authorized" || item.approvalStatus === "completed";
     const isDeclined = item.approvalStatus === "declined";
 
     const detailLabel = item.label || item.sectionName || "Recorded item";
@@ -611,9 +612,9 @@ export default function PublicSharePreviewPage() {
           const check = vhcChecksMap.get(String(canonical)) || vhcChecksMap.get(String(item.id));
           s = normaliseColour(check?.display_status || check?.severity);
         } catch (err) {
+
           // ignore
-        }
-      }
+        }}
       return s;
     };
 
@@ -628,7 +629,7 @@ export default function PublicSharePreviewPage() {
         }
       }
       return "transparent";
-    }; 
+    };
 
     return (
       <div
@@ -640,9 +641,9 @@ export default function PublicSharePreviewPage() {
           gap: "10px",
           padding: "14px 16px",
           borderBottom: "1px solid var(--info-surface)",
-          background: getRowBackground(),
-        }}
-      >
+          background: getRowBackground()
+        }}>
+        
 
 
         <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
@@ -653,20 +654,20 @@ export default function PublicSharePreviewPage() {
             <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--accent-purple)", marginTop: "4px" }}>
               {detailLabel}
             </div>
-            {detailContent && (
-              <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "4px" }}>{detailContent}</div>
-            )}
-            {measurement && (
-              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{measurement}</div>
-            )}
+            {detailContent &&
+            <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "4px" }}>{detailContent}</div>
+            }
+            {measurement &&
+            <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{measurement}</div>
+            }
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
             <div style={{ fontSize: "14px", fontWeight: 600 }}>{formatCurrency(total)}</div>
           </div>
         </div>
-      </div>
-    );
+      </div>);
+
   };
 
   // Render customer section
@@ -688,7 +689,7 @@ export default function PublicSharePreviewPage() {
     // Ensure Authorized/Declined sections show red items first, then amber
     let displayItems = items;
     if (severity === "authorized" || severity === "declined") {
-      const severityRank = (s) => (s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3);
+      const severityRank = (s) => s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3;
 
       const getEffectiveSeverity = (it) => {
         let s = it.severityKey || it.rawSeverity || null;
@@ -701,9 +702,9 @@ export default function PublicSharePreviewPage() {
             const check = vhcChecksMap.get(String(canonical)) || vhcChecksMap.get(String(it.id));
             s = normaliseColour(check?.display_status || check?.severity);
           } catch (err) {
+
             // swallow
-          }
-        }
+          }}
         return s;
       };
 
@@ -717,11 +718,11 @@ export default function PublicSharePreviewPage() {
         style={{
           border: `1px solid ${theme.border || "var(--info-surface)"}`,
           borderRadius: "var(--radius-md)",
-          background: (severity === "authorized" || severity === "declined") ? "var(--surface)" : (theme.background || "var(--surface)"),
+          background: severity === "authorized" || severity === "declined" ? "var(--surface)" : theme.background || "var(--surface)",
           overflow: "hidden",
-          marginBottom: "18px",
-        }}
-      >
+          marginBottom: "18px"
+        }}>
+        
         <div
           style={{
             padding: "14px 16px",
@@ -730,46 +731,46 @@ export default function PublicSharePreviewPage() {
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             fontSize: "12px",
-            borderBottom: "1px solid var(--info-surface)",
-          }}
-        >
+            borderBottom: "1px solid var(--info-surface)"
+          }}>
+          
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>{title}</span>
-            {(authorizedTotal > 0 || declinedTotal > 0) && (
-              <div style={{ display: "flex", gap: "16px", fontSize: "11px", textTransform: "none", fontWeight: 600 }}>
-                {authorizedTotal > 0 && (
-                  <span style={{ color: "var(--success)" }}>
+            {(authorizedTotal > 0 || declinedTotal > 0) &&
+            <div style={{ display: "flex", gap: "16px", fontSize: "11px", textTransform: "none", fontWeight: 600 }}>
+                {authorizedTotal > 0 &&
+              <span style={{ color: "var(--success)" }}>
                     Authorised: {formatCurrency(authorizedTotal)}
                   </span>
-                )}
-                {declinedTotal > 0 && (
-                  <span style={{ color: "var(--danger)" }}>
+              }
+                {declinedTotal > 0 &&
+              <span style={{ color: "var(--danger)" }}>
                     Declined: {formatCurrency(declinedTotal)}
                   </span>
-                )}
+              }
               </div>
-            )}
+            }
           </div>
         </div>
-        {displayItems.length === 0 ? (
-          <div style={{ padding: "16px", fontSize: "13px", color: "var(--info)" }}>
+        {displayItems.length === 0 ?
+        <div style={{ padding: "16px", fontSize: "13px", color: "var(--info)" }}>
             No items recorded.
-          </div>
-        ) : (
-          displayItems.map((item) => renderCustomerRow(item, severity))
-        )}
-      </div>
-    );
+          </div> :
+
+        displayItems.map((item) => renderCustomerRow(item, severity))
+        }
+      </div>);
+
   };
 
   // Render Financial Totals Grid
   const renderFinancialTotalsGrid = () => {
     const gridItems = [
-      { label: "Red Work", value: customerTotals.red, color: "var(--danger)" },
-      { label: "Amber Work", value: customerTotals.amber, color: "var(--warning)" },
-      { label: "Authorised", value: customerTotals.authorized, color: "var(--success)" },
-      { label: "Declined", value: customerTotals.declined, color: "var(--info)" },
-    ];
+    { label: "Red Work", value: customerTotals.red, color: "var(--danger)" },
+    { label: "Amber Work", value: customerTotals.amber, color: "var(--warning)" },
+    { label: "Authorised", value: customerTotals.authorized, color: "var(--success)" },
+    { label: "Declined", value: customerTotals.declined, color: "var(--info)" }];
+
 
     return (
       <div
@@ -777,19 +778,19 @@ export default function PublicSharePreviewPage() {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: "12px",
-          marginBottom: "16px",
-        }}
-      >
-        {gridItems.map((item) => (
-          <div
-            key={item.label}
-            style={{
-              padding: "12px",
-              border: `1px solid ${item.color}33`,
-              borderRadius: "var(--radius-sm)",
-              background: `${item.color}11`,
-            }}
-          >
+          marginBottom: "16px"
+        }}>
+        
+        {gridItems.map((item) =>
+        <div
+          key={item.label}
+          style={{
+            padding: "12px",
+            border: `1px solid ${item.color}33`,
+            borderRadius: "var(--radius-sm)",
+            background: `${item.color}11`
+          }}>
+          
             <div style={{ fontSize: "12px", color: "var(--info)", marginBottom: "4px" }}>
               {item.label}
             </div>
@@ -797,399 +798,399 @@ export default function PublicSharePreviewPage() {
               {formatCurrency(item.value)}
             </div>
           </div>
-        ))}
-      </div>
-    );
+        )}
+      </div>);
+
   };
 
   // Render Summary Tab
-  const renderSummaryTab = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+  const renderSummaryTab = () =>
+  <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
       {renderFinancialTotalsGrid()}
  
       {severityLists.red && severityLists.red.length > 0 &&
-        renderCustomerSection("Red Items", severityLists.red, "red")}
+    renderCustomerSection("Red Items", severityLists.red, "red")}
 
       {severityLists.amber && severityLists.amber.length > 0 &&
-        renderCustomerSection("Amber Items", severityLists.amber, "amber")}
+    renderCustomerSection("Amber Items", severityLists.amber, "amber")}
 
       {severityLists.authorized && severityLists.authorized.length > 0 &&
-        renderCustomerSection("Authorised", severityLists.authorized, "authorized")}
+    renderCustomerSection("Authorised", severityLists.authorized, "authorized")}
 
       {severityLists.declined && severityLists.declined.length > 0 &&
-        renderCustomerSection("Declined", severityLists.declined, "declined")}
+    renderCustomerSection("Declined", severityLists.declined, "declined")}
 
       {renderCustomerSection("Green Items", severityLists.green || [], "green")}
 
 
 
 
-    </div>
-  );
+    </div>;
+
 
   // Render Photos Tab
-  const renderPhotosTab = () => (
-    <div>
-      {photoFiles.length === 0 ? (
-        <div
-          style={{
-            padding: "18px",
-            border: "1px solid var(--info-surface)",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--info-surface)",
-            color: "var(--info)",
-            fontSize: "13px",
-          }}
-        >
+  const renderPhotosTab = () =>
+  <div>
+      {photoFiles.length === 0 ?
+    <div
+      style={{
+        padding: "18px",
+        border: "1px solid var(--info-surface)",
+        borderRadius: "var(--radius-sm)",
+        background: "var(--info-surface)",
+        color: "var(--info)",
+        fontSize: "13px"
+      }}>
+      
           No photos have been uploaded for this job.
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {photoFiles.map((file) => (
-            <div
-              key={file.file_id}
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--info-surface)",
-                overflow: "hidden",
-              }}
-            >
+        </div> :
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+        gap: "16px"
+      }}>
+      
+          {photoFiles.map((file) =>
+      <div
+        key={file.file_id}
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-sm)",
+          border: "1px solid var(--info-surface)",
+          overflow: "hidden"
+        }}>
+        
               <div style={{ position: "relative", paddingTop: "75%", background: "var(--info-surface)" }}>
                 <img
-                  src={file.file_url}
-                  alt={file.file_name || "Photo"}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                  loading="lazy"
-                />
+            src={file.file_url}
+            alt={file.file_name || "Photo"}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover"
+            }}
+            loading="lazy" />
+          
               </div>
               <div style={{ padding: "12px 16px" }}>
                 <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--accent-purple)", wordBreak: "break-word" }}>
                   {file.file_name || "Unnamed photo"}
                 </div>
-                {file.folder && (
-                  <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
+                {file.folder &&
+          <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
                     {file.folder}
                   </div>
-                )}
+          }
               </div>
             </div>
-          ))}
-        </div>
       )}
-    </div>
-  );
+        </div>
+    }
+    </div>;
+
 
   // Render Videos Tab
-  const renderVideosTab = () => (
-    <div>
-      {videoFiles.length === 0 ? (
-        <div
-          style={{
-            padding: "18px",
-            border: "1px solid var(--info-surface)",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--info-surface)",
-            color: "var(--info)",
-            fontSize: "13px",
-          }}
-        >
+  const renderVideosTab = () =>
+  <div>
+      {videoFiles.length === 0 ?
+    <div
+      style={{
+        padding: "18px",
+        border: "1px solid var(--info-surface)",
+        borderRadius: "var(--radius-sm)",
+        background: "var(--info-surface)",
+        color: "var(--info)",
+        fontSize: "13px"
+      }}>
+      
           No videos have been uploaded for this job.
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {videoFiles.map((file) => (
-            <div
-              key={file.file_id}
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--info-surface)",
-                overflow: "hidden",
-              }}
-            >
+        </div> :
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+        gap: "16px"
+      }}>
+      
+          {videoFiles.map((file) =>
+      <div
+        key={file.file_id}
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-sm)",
+          border: "1px solid var(--info-surface)",
+          overflow: "hidden"
+        }}>
+        
               <div style={{ position: "relative", paddingTop: "56.25%", background: "var(--accent-purple)" }}>
                 <video
-                  src={file.file_url}
-                  controls
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                  }}
-                />
+            src={file.file_url}
+            controls
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "contain"
+            }} />
+          
               </div>
               <div style={{ padding: "12px 16px" }}>
                 <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--accent-purple)", wordBreak: "break-word" }}>
                   {file.file_name || "Unnamed video"}
                 </div>
-                {file.folder && (
-                  <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
+                {file.folder &&
+          <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
                     {file.folder}
                   </div>
-                )}
+          }
               </div>
             </div>
-          ))}
-        </div>
       )}
-    </div>
-  );
+        </div>
+    }
+    </div>;
+
 
   if (loading) {
-    return (
-      <>
-        <Head>
-          <title>Vehicle Health Check</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-        </Head>
-        <div style={{ minHeight: "100vh", background: "var(--surface-light)", padding: "24px 16px" }}>
-          <SkeletonKeyframes />
-          <div style={{ maxWidth: 820, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <SkeletonBlock width="140px" height="40px" />
-              <div style={{ flex: 1 }} />
-              <SkeletonBlock width="120px" height="32px" borderRadius="999px" />
-            </div>
-            <div
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-md)",
-                padding: 20,
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-              }}
-            >
-              <SkeletonBlock width="60%" height="22px" />
-              <SkeletonBlock width="80%" height="12px" />
-              <SkeletonBlock width="50%" height="12px" />
-            </div>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  background: "var(--surface)",
-                  borderRadius: "var(--radius-md)",
-                  padding: 20,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
-                }}
-              >
-                <SkeletonBlock width="40%" height="16px" />
-                <SkeletonBlock width="100%" height="12px" />
-                <SkeletonBlock width="90%" height="12px" />
-                <SkeletonBlock width="70%" height="12px" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </>
-    );
+    return <PublicSharePreviewPageUi view="section1" Head={Head} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   }
 
   // Error state
   if (error) {
-    return (
-      <>
-        <Head>
-          <title>Vehicle Health Check</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-        </Head>
-        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-light)" }}>
-          <div style={{ textAlign: "center", padding: "24px", maxWidth: "400px" }}>
-            <div style={{
-              width: "64px",
-              height: "64px",
-              margin: "0 auto 16px",
-              borderRadius: "var(--radius-full)",
-              background: "var(--warning-surface)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "28px"
-            }}>
-              ⚠️
-            </div>
-            <div style={{ fontSize: "18px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "8px" }}>
-              Unable to Load Report
-            </div>
-            <div style={{ fontSize: "14px", color: "var(--info)", marginBottom: "24px" }}>
-              {error}
-            </div>
+    return <PublicSharePreviewPageUi view="section2" error={error} Head={Head} />;
 
-          </div>
-        </div>
-      </>
-    );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   }
 
   const vehicleInfo = job?.vehicle;
   const customerInfo = job?.customer;
 
-  return (
-    <>
-      <Head>
-        <title>Vehicle Health Check - Job #{jobNumber}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="robots" content="noindex, nofollow" />
-      </Head>
-
-      <div style={{ minHeight: "100vh", background: "var(--surface-light)" }}>
-        {/* Header */}
-        <header
-          style={{
-            background: "var(--surface)",
-            borderBottom: "1px solid var(--info-surface)",
-            padding: "16px 24px",
-            position: "sticky",
-            top: 0,
-            zIndex: 100,
-          }}
-        >
-          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "24px" }}>
-            {/* Logo on the left to match customer-preview */}
-            <div style={{ flexShrink: 0 }}>
-              <BrandLogo
-                alt="HP Logo"
-                width={120}
-                height={50}
-                style={{ objectFit: "contain" }}
-              />
-            </div>
-
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-                <h1 style={{ fontSize: "18px", fontWeight: 700, color: "var(--accent-purple)", margin: 0 }}>
-                  Vehicle Health Check
-                </h1>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", fontSize: "13px", color: "var(--info-dark)" }}>
-                  <span style={{ fontWeight: 600 }}>Job #{jobNumber}</span>
-                  {vehicleInfo?.registration && (
-                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      <span style={{ color: "var(--info)" }}>Reg:</span>
-                      <span style={{ fontWeight: 600 }}>{vehicleInfo.registration}</span>
-                    </span>
-                  )}
-                  {(vehicleInfo?.make || vehicleInfo?.model) && (
-                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      <span style={{ color: "var(--info)" }}>Vehicle:</span>
-                      <span>{[vehicleInfo.make, vehicleInfo.model].filter(Boolean).join(" ")}</span>
-                    </span>
-                  )}
-                  {customerInfo?.name && (
-                    <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      <span style={{ color: "var(--info)" }}>Customer:</span>
-                      <span>{customerInfo.name}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end" }}>
-                {expiresAt && (
-                  <div style={expireBoxStyle}>
-                    <div style={{ fontSize: "12px", textAlign: "right", color: expireBoxStyle.color }}>
-                      <span style={{ fontWeight: 600, color: expireBoxStyle.color }}>Link expires:</span>
-                      <span style={{ marginLeft: "6px", fontWeight: 600 }}>{new Date(expiresAt).toLocaleString()}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Read-only pill - theme aware */}
-                <div style={{ ...readOnlyPillStyle, borderColor: "rgba(var(--accent-purple-rgb), 0.25)", color: "var(--accent-purple)" }}>
-                  Read-only
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+  return <PublicSharePreviewPageUi view="section3" activeTab={activeTab} BrandLogo={BrandLogo} customerInfo={customerInfo} expireBoxStyle={expireBoxStyle} expiresAt={expiresAt} Head={Head} jobNumber={jobNumber} photoFiles={photoFiles} readOnlyPillStyle={readOnlyPillStyle} renderPhotosTab={renderPhotosTab} renderSummaryTab={renderSummaryTab} renderVideosTab={renderVideosTab} setActiveTab={setActiveTab} TAB_OPTIONS={TAB_OPTIONS} vehicleInfo={vehicleInfo} videoFiles={videoFiles} />;
 
 
 
-        {/* Tab Navigation */}
-        <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--info-surface)" }}>
-          <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
-            <div style={{ display: "flex", gap: "8px" }}>
-              {TAB_OPTIONS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    padding: "16px 24px",
-                    background: "transparent",
-                    border: "none",
-                    borderBottom: activeTab === tab.id ? "3px solid var(--primary)" : "3px solid transparent",
-                    fontWeight: activeTab === tab.id ? 700 : 500,
-                    fontSize: "14px",
-                    color: activeTab === tab.id ? "var(--primary)" : "var(--info)",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {tab.label}
-                  {tab.id === "photos" && photoFiles.length > 0 && (
-                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "var(--radius-sm)", fontSize: "12px" }}>
-                      {photoFiles.length}
-                    </span>
-                  )}
-                  {tab.id === "videos" && videoFiles.length > 0 && (
-                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "var(--radius-sm)", fontSize: "12px" }}>
-                      {videoFiles.length}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* Main Content */}
-        <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px" }}>
-          {activeTab === "summary" && renderSummaryTab()}
-          {activeTab === "photos" && renderPhotosTab()}
-          {activeTab === "videos" && renderVideosTab()}
-        </main>
 
-        {/* Footer */}
-        <footer
-          style={{
-            background: "var(--surface)",
-            borderTop: "1px solid var(--info-surface)",
-            padding: "16px 24px",
-            marginTop: "auto",
-          }}
-        >
-          <div style={{ maxWidth: "1200px", margin: "0 auto", textAlign: "center" }}>
-            <div style={{ fontSize: "12px", color: "var(--info)" }}>
-              Vehicle Health Check Report • Job #{jobNumber}
-            </div>
-          </div>
-        </footer>
-      </div>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

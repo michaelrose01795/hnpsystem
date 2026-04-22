@@ -9,13 +9,14 @@ import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
 import RedirectToWorkshopButton from "@/components/mobile/RedirectToWorkshopButton";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { showAlert } from "@/lib/notifications/alertBus";
+import PageUi from "@/components/page-ui/mobile/jobs/mobile-jobs-job-number-ui"; // Extracted presentation layer.
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: "720px" };
 const cardStyle = {
   backgroundColor: "var(--section-card-bg, #fff)",
   borderRadius: "var(--section-card-radius, 12px)",
   padding: "16px",
-  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))",
+  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))"
 };
 
 const primaryButtonStyle = {
@@ -25,12 +26,12 @@ const primaryButtonStyle = {
   background: "var(--success, #16a34a)",
   color: "#fff",
   fontWeight: 600,
-  cursor: "pointer",
+  cursor: "pointer"
 };
 
 const secondaryButtonStyle = {
   ...primaryButtonStyle,
-  background: "var(--info, #3b82f6)",
+  background: "var(--info, #3b82f6)"
 };
 
 function MobileJobCardInner() {
@@ -55,7 +56,7 @@ function MobileJobCardInner() {
     }
   }, [jobNumber]);
 
-  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => {reload();}, [reload]);
 
   async function complete() {
     const notes = window.prompt("Completion notes (optional):", "");
@@ -63,7 +64,7 @@ function MobileJobCardInner() {
     const res = await fetch(`/api/mobile/jobs/${encodeURIComponent(jobNumber)}/complete-onsite`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes }),
+      body: JSON.stringify({ notes })
     });
     if (res.ok) {
       showAlert("Job completed on-site.", "success");
@@ -81,7 +82,7 @@ function MobileJobCardInner() {
     const res = await fetch(`/api/mobile/jobs/${encodeURIComponent(jobNumber)}/unable-to-complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason, followUp }),
+      body: JSON.stringify({ reason, followUp })
     });
     if (res.ok) {
       showAlert("Status recorded.", "success");
@@ -99,10 +100,10 @@ function MobileJobCardInner() {
     const res = await fetch("/api/mobile/parts-request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jobNumber, description, quantity: qty }),
+      body: JSON.stringify({ jobNumber, description, quantity: qty })
     });
-    if (res.ok) showAlert("Parts request submitted.", "success");
-    else {
+    if (res.ok) showAlert("Parts request submitted.", "success");else
+    {
       const b = await res.json().catch(() => ({}));
       showAlert(b.message || "Failed", "error");
     }
@@ -135,8 +136,8 @@ function MobileJobCardInner() {
             <SkeletonBlock width="60%" height="12px" />
           </div>
         </section>
-      </div>
-    );
+      </div>);
+
   }
   if (error) return <div style={pageStyle}><p style={{ color: "var(--danger)" }}>{error}</p></div>;
   if (!job) return <div style={pageStyle}><p>Not found.</p></div>;
@@ -170,9 +171,9 @@ function MobileJobCardInner() {
       <section style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Work</h2>
         <p>{job.description || "No description"}</p>
-        {job.mobile_outcome && (
-          <p><strong>Outcome:</strong> {job.mobile_outcome.replace(/_/g, " ")}</p>
-        )}
+        {job.mobile_outcome &&
+        <p><strong>Outcome:</strong> {job.mobile_outcome.replace(/_/g, " ")}</p>
+        }
       </section>
 
       <section style={cardStyle}>
@@ -192,14 +193,14 @@ function MobileJobCardInner() {
           Open full job card (notes, parts, VHC)
         </Link>
       </section>
-    </div>
-  );
+    </div>);
+
 }
 
 export default function Page() {
-  return (
-    <ProtectedRoute allowedRoles={["MOBILE TECHNICIAN", "ADMIN", "ADMIN MANAGER", "OWNER", "SERVICE MANAGER", "WORKSHOP MANAGER"]}>
-      <MobileJobCardInner />
-    </ProtectedRoute>
-  );
+  return <PageUi view="section1" MobileJobCardInner={MobileJobCardInner} ProtectedRoute={ProtectedRoute} />;
+
+
+
+
 }

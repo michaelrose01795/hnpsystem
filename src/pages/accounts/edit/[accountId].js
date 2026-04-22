@@ -1,7 +1,8 @@
-// file location: src/pages/accounts/edit/[accountId].js // route shim to open the accounts edit popup
+// file location: src/pages/accounts/edit/[accountId].js
 import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import EditAccountRouteShimUi from "@/components/page-ui/accounts/edit/accounts-edit-account-id-ui"; // Extracted presentation layer.
 
 const EDIT_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER"];
 
@@ -16,11 +17,11 @@ export default function EditAccountRouteShim() {
     router.replace({ pathname: "/accounts", query: nextQuery });
   }, [accountId, router, router.isReady, router.query]);
 
-  return (
-    <ProtectedRoute allowedRoles={EDIT_ROLES}>
-      <div style={{ minHeight: "40vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}>
-        Opening account form…
-      </div>
-    </ProtectedRoute>
-  );
+  return <EditAccountRouteShimUi view="section1" EDIT_ROLES={EDIT_ROLES} ProtectedRoute={ProtectedRoute} />;
+
+
+
+
+
+
 }

@@ -19,72 +19,73 @@ import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { addMonths } from "date-fns";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // Extracted presentation layer.
 
 const CAR_LOCATIONS = [
-  { id: "na", label: "N/A" },
-  { id: "service", label: "Service" },
-  { id: "sales-1", label: "Sales 1" },
-  { id: "sales-2", label: "Sales 2" },
-  { id: "sales-3", label: "Sales 3" },
-  { id: "sales-4", label: "Sales 4" },
-  { id: "sales-5", label: "Sales 5" },
-  { id: "sales-6", label: "Sales 6" },
-  { id: "sales-7", label: "Sales 7" },
-  { id: "sales-8", label: "Sales 8" },
-  { id: "sales-9", label: "Sales 9" },
-  { id: "sales-10", label: "Sales 10" },
-  { id: "staff", label: "Staff" },
-  { id: "trade", label: "Trade" },
-];
+{ id: "na", label: "N/A" },
+{ id: "service", label: "Service" },
+{ id: "sales-1", label: "Sales 1" },
+{ id: "sales-2", label: "Sales 2" },
+{ id: "sales-3", label: "Sales 3" },
+{ id: "sales-4", label: "Sales 4" },
+{ id: "sales-5", label: "Sales 5" },
+{ id: "sales-6", label: "Sales 6" },
+{ id: "sales-7", label: "Sales 7" },
+{ id: "sales-8", label: "Sales 8" },
+{ id: "sales-9", label: "Sales 9" },
+{ id: "sales-10", label: "Sales 10" },
+{ id: "staff", label: "Staff" },
+{ id: "trade", label: "Trade" }];
+
 
 const KEY_LOCATION_GROUPS = [
-  {
-    title: "General",
-    options: [{ id: "na", label: "N/A" }],
-  },
-  {
-    title: "Key Locations",
-    options: [
-      { id: "service-showroom", label: "Service showroom" },
-      { id: "sales-show-room", label: "Sales show room" },
-      { id: "red-board", label: "Red board" },
-      { id: "workshop", label: "Workshop" },
-      { id: "valet", label: "Valet" },
-      { id: "paint", label: "Paint" },
-      { id: "sales", label: "Sales" },
-      { id: "prep", label: "Prep" },
-    ],
-  },
-];
+{
+  title: "General",
+  options: [{ id: "na", label: "N/A" }]
+},
+{
+  title: "Key Locations",
+  options: [
+  { id: "service-showroom", label: "Service showroom" },
+  { id: "sales-show-room", label: "Sales show room" },
+  { id: "red-board", label: "Red board" },
+  { id: "workshop", label: "Workshop" },
+  { id: "valet", label: "Valet" },
+  { id: "paint", label: "Paint" },
+  { id: "sales", label: "Sales" },
+  { id: "prep", label: "Prep" }]
+
+}];
+
 
 const KEY_LOCATIONS = KEY_LOCATION_GROUPS.flatMap((group) =>
-  group.options.map((option) => ({
-    id: option.id,
-    label: option.label,
-    group: group.title,
-  }))
+group.options.map((option) => ({
+  id: option.id,
+  label: option.label,
+  group: group.title
+}))
 );
 
 const CAR_LOCATION_OPTIONS = CAR_LOCATIONS.map((location) => ({
   key: location.id,
   value: location.label,
-  label: location.label,
+  label: location.label
 }));
 
 const KEY_LOCATION_OPTIONS = KEY_LOCATIONS.map((location) => ({
   key: location.id,
   value: location.label,
   label: location.label,
-  description: location.group,
+  description: location.group
 }));
 
 const normalizeKeyLocationLabel = (value = "") => {
   const text = String(value || "").trim();
   if (!text) return "";
-  return text
-    .replace(/^Keys (received|hung|updated)\s*[-–]\s*/i, "")
-    .replace(/^Key location\s*[-:–]\s*/i, "")
-    .replace(/^Key locations?\s*[-:–]\s*/i, "");
+  return text.
+  replace(/^Keys (received|hung|updated)\s*[-–]\s*/i, "").
+  replace(/^Key location\s*[-:–]\s*/i, "").
+  replace(/^Key locations?\s*[-:–]\s*/i, "");
 };
 
 const ensureDropdownOption = (options = [], value = "") => {
@@ -96,26 +97,26 @@ const ensureDropdownOption = (options = [], value = "") => {
   });
   if (match) return options;
   return [
-    { key: `current-${normalizedValue}`, value: normalizedValue, label: normalizedValue },
-    ...options,
-  ];
+  { key: `current-${normalizedValue}`, value: normalizedValue, label: normalizedValue },
+  ...options];
+
 };
 
 const AUTO_MOVEMENT_RULES = {
   "workshop in progress": {
     keyLocation: "Workshop Cupboard – Jobs in Progress",
     vehicleLocation: "In Workshop",
-    vehicleStatus: "In Workshop",
+    vehicleStatus: "In Workshop"
   },
   wash: {
     keyLocation: "Workshop Cupboard – Wash",
-    vehicleStatus: "Wash",
+    vehicleStatus: "Wash"
   },
   complete: {
     keyLocation: "Workshop Cupboard – Complete",
     vehicleLocation: "Ready for Release",
-    vehicleStatus: "Ready for Release",
-  },
+    vehicleStatus: "Ready for Release"
+  }
 };
 
 const getAutoMovementRule = (status) => {
@@ -135,24 +136,24 @@ const EQUIPMENT_API_ENDPOINT = "/api/tracking/equipment";
 const OIL_STOCK_API_ENDPOINT = "/api/tracking/oil-stock";
 
 const CHECK_DURATION_OPTIONS = [
-  ...Array.from({ length: 11 }, (_, index) => {
-    const months = index + 1;
-    return {
-      key: `m-${months}`,
-      value: months,
-      label: `${months} month${months === 1 ? "" : "s"}`,
-    };
-  }),
-  ...Array.from({ length: 3 }, (_, index) => {
-    const years = index + 1;
-    const months = years * 12;
-    return {
-      key: `y-${years}`,
-      value: months,
-      label: `${years} year${years === 1 ? "" : "s"}`,
-    };
-  }),
-];
+...Array.from({ length: 11 }, (_, index) => {
+  const months = index + 1;
+  return {
+    key: `m-${months}`,
+    value: months,
+    label: `${months} month${months === 1 ? "" : "s"}`
+  };
+}),
+...Array.from({ length: 3 }, (_, index) => {
+  const years = index + 1;
+  const months = years * 12;
+  return {
+    key: `y-${years}`,
+    value: months,
+    label: `${years} year${years === 1 ? "" : "s"}`
+  };
+})];
+
 
 const parseDateOnly = (value) => {
   if (!value || typeof value !== "string") return null;
@@ -259,7 +260,7 @@ const getDurationDisplay = (item) => {
   if (!item) return "—";
   if (item.intervalLabel) return item.intervalLabel;
   const months =
-    item.intervalMonths || deriveIntervalMonthsFromItem(item) || null;
+  item.intervalMonths || deriveIntervalMonthsFromItem(item) || null;
   if (months) {
     return getDurationLabel(months);
   }
@@ -277,7 +278,7 @@ const formatDateOnlyLabel = (value) => {
   return parsed.toLocaleString("en-GB", {
     day: "2-digit",
     month: "short",
-    year: "numeric",
+    year: "numeric"
   });
 };
 
@@ -293,7 +294,7 @@ const getDueLabel = (value) => {
 
 const nextDueFrom = (reference, intervalDays = 7) => {
   const baseTime =
-    reference instanceof Date ? reference.getTime() : Number(reference || Date.now());
+  reference instanceof Date ? reference.getTime() : Number(reference || Date.now());
   const days = Number.isFinite(Number(intervalDays)) ? Number(intervalDays) : 7;
   return new Date(baseTime + days * MS_PER_DAY).toISOString();
 };
@@ -304,16 +305,16 @@ const TRACKING_FILTER_ALL = "__all__";
 const TRACKING_FILTER_EMPTY = "__empty__";
 
 const getSectionStyle = (isMobileView) => ({
-  padding: isMobileView
-    ? "var(--section-card-padding-sm, 16px)"
-    : "var(--page-card-padding)",
+  padding: isMobileView ?
+  "var(--section-card-padding-sm, 16px)" :
+  "var(--page-card-padding)",
   borderRadius: "var(--radius-xl)",
   background: "var(--section-card-bg)",
   border: "var(--section-card-border)",
   display: "flex",
   flexDirection: "column",
   gap: isMobileView ? "16px" : "18px",
-  minWidth: 0,
+  minWidth: 0
 });
 
 const emptyForm = {
@@ -326,7 +327,7 @@ const emptyForm = {
   keyLocation: "N/A",
   keyTip: "",
   status: "Waiting For Collection",
-  notes: "",
+  notes: ""
 };
 
 const formatRelativeTime = (timestamp) => {
@@ -350,9 +351,9 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
       style={{
         padding: "20px 24px",
         borderRadius: "var(--radius-sm)",
-        border: isHighlighted
-          ? "1px solid rgba(var(--danger-rgb), 0.3)"
-          : "1px solid rgba(var(--accent-base-rgb), 0.18)",
+        border: isHighlighted ?
+        "1px solid rgba(var(--danger-rgb), 0.3)" :
+        "1px solid rgba(var(--accent-base-rgb), 0.18)",
         background: isHighlighted ? "rgba(var(--danger-rgb), 0.08)" : "var(--accent-surface)",
         boxShadow: "none",
         display: "flex",
@@ -364,9 +365,9 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         maxWidth: "100%",
         minWidth: 0,
         height: "160px",
-        overflow: "hidden",
-      }}
-    >
+        overflow: "hidden"
+      }}>
+      
       <div style={{ minWidth: 0 }}>
         <strong
           style={{
@@ -376,9 +377,9 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
             display: "block",
             whiteSpace: "nowrap",
             overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
+            textOverflow: "ellipsis"
+          }}>
+          
           {entry.jobNumber || "Unknown job"} • {entry.reg || "Unknown reg"} • {entry.customer || "Customer pending"}
         </strong>
         <div
@@ -388,9 +389,9 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
             justifyContent: "space-between",
             alignItems: "center",
             gap: "10px",
-            minWidth: 0,
-          }}
-        >
+            minWidth: 0
+          }}>
+          
           <p
             style={{
               margin: 0,
@@ -400,9 +401,9 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
               overflow: "hidden",
               textOverflow: "ellipsis",
               minWidth: 0,
-              flex: 1,
-            }}
-          >
+              flex: 1
+            }}>
+            
             {vehicleMeta || "Make/Model/Colour pending"}
           </p>
           <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -417,9 +418,9 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
           gridTemplateColumns: isMobileView ? "1fr" : "1fr 1fr",
           gap: "8px",
           marginTop: "8px",
-          minWidth: 0,
-        }}
-      >
+          minWidth: 0
+        }}>
+        
         <div style={{ minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Key location</p>
           <strong
@@ -429,9 +430,9 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
               display: "block",
               whiteSpace: "nowrap",
               overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
+              textOverflow: "ellipsis"
+            }}>
+            
             {normalizeKeyLocationLabel(entry.keyLocation) || "Pending"}
           </strong>
         </div>
@@ -444,15 +445,15 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
               display: "block",
               whiteSpace: "nowrap",
               overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
+              textOverflow: "ellipsis"
+            }}>
+            
             {entry.vehicleLocation || "Unallocated"}
           </strong>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
   useBodyModalLock(true);
@@ -467,9 +468,9 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
       aria-modal="true"
       style={{
         ...popupOverlayStyles,
-        zIndex: 200,
-      }}
-    >
+        zIndex: 200
+      }}>
+      
       <div
         style={{
           ...popupCardStyles,
@@ -480,9 +481,9 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
           flexDirection: "column",
           gap: "14px",
           border: "1px solid var(--search-surface-muted)",
-          color: "var(--search-text)",
-        }}
-      >
+          color: "var(--search-text)"
+        }}>
+        
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", letterSpacing: "0.08em" }}>
@@ -499,8 +500,8 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onClear={() => setQuery("")}
-          placeholder={type === "car" ? "Search bays or overflow" : "Search key safes, drawers"}
-        />
+          placeholder={type === "car" ? "Search bays or overflow" : "Search key safes, drawers"} />
+        
 
         <div
           style={{
@@ -508,51 +509,51 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
             overflow: "auto",
             display: "flex",
             flexDirection: "column",
-            gap: "var(--space-2)",
-          }}
-        >
-          {filtered.map((option) => (
-            <div
-              key={option.id}
-              style={{
-                padding: "var(--space-4)",
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--search-surface-muted)",
-                background: "var(--search-surface)",
-                color: "var(--search-text)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "var(--space-3)",
-                flexWrap: "wrap",
-              }}
-            >
+            gap: "var(--space-2)"
+          }}>
+          
+          {filtered.map((option) =>
+          <div
+            key={option.id}
+            style={{
+              padding: "var(--space-4)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--search-surface-muted)",
+              background: "var(--search-surface)",
+              color: "var(--search-text)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "var(--space-3)",
+              flexWrap: "wrap"
+            }}>
+            
               <strong style={{ color: "var(--text-primary)" }}>{option.label}</strong>
               <Button variant="secondary" size="sm" onClick={() => onSelect(option)}>
                 Use location
               </Button>
             </div>
-          ))}
+          )}
 
-          {filtered.length === 0 && (
-            <div
-              style={{
-                padding: "18px",
-                borderRadius: "var(--radius-md)",
-                border: "1px dashed var(--search-surface-muted)",
-                textAlign: "center",
-                color: "var(--search-text)",
-              }}
-            >
+          {filtered.length === 0 &&
+          <div
+            style={{
+              padding: "18px",
+              borderRadius: "var(--radius-md)",
+              border: "1px dashed var(--search-surface-muted)",
+              textAlign: "center",
+              color: "var(--search-text)"
+            }}>
+            
               No locations found.
             </div>
-          )}
+          }
         </div>
 
         {/* TODO: Replace static location lists with DB-driven results */}
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 const buildEquipmentFormState = (data = null) => {
@@ -562,7 +563,7 @@ const buildEquipmentFormState = (data = null) => {
     name: data?.name || "",
     lastCheckedDate: data?.lastChecked ? toDateInputValue(data.lastChecked) : "",
     nextDueDate: data?.nextDue ? toDateInputValue(data.nextDue) : "",
-    intervalMonths: intervalMonths ? Number(intervalMonths) : "",
+    intervalMonths: intervalMonths ? Number(intervalMonths) : ""
   };
 };
 
@@ -575,7 +576,7 @@ const buildOilFormState = (data = null) => {
     lastCheckDate: data?.lastCheck ? toDateInputValue(data.lastCheck) : "",
     nextCheckDate: data?.nextCheck ? toDateInputValue(data.nextCheck) : "",
     lastToppedUpDate: data?.lastToppedUp ? toDateInputValue(data.lastToppedUp) : "",
-    intervalMonths: intervalMonths ? Number(intervalMonths) : "",
+    intervalMonths: intervalMonths ? Number(intervalMonths) : ""
   };
 };
 
@@ -618,16 +619,16 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
     }
 
     // Convert dates to ISO strings
-    const lastChecked = form.lastCheckedDate
-      ? new Date(`${form.lastCheckedDate}T00:00:00`).toISOString()
-      : null;
-    const nextDue = form.nextDueDate
-      ? new Date(`${form.nextDueDate}T00:00:00`).toISOString()
-      : null;
+    const lastChecked = form.lastCheckedDate ?
+    new Date(`${form.lastCheckedDate}T00:00:00`).toISOString() :
+    null;
+    const nextDue = form.nextDueDate ?
+    new Date(`${form.nextDueDate}T00:00:00`).toISOString() :
+    null;
     const intervalMonthsValue = form.intervalMonths ? Number(form.intervalMonths) : null;
     const intervalDays =
-      calculateIntervalDaysFromIso(lastChecked, nextDue) ||
-      convertMonthsToDays(intervalMonthsValue);
+    calculateIntervalDaysFromIso(lastChecked, nextDue) ||
+    convertMonthsToDays(intervalMonthsValue);
 
     onSave({
       id: form.id || initialData?.id || null,
@@ -636,7 +637,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
       nextDue,
       intervalMonths: intervalMonthsValue,
       intervalLabel: getDurationLabel(intervalMonthsValue),
-      intervalDays,
+      intervalDays
     });
   };
 
@@ -650,9 +651,9 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           padding: "28px",
           display: "flex",
           flexDirection: "column",
-          gap: "18px",
-        }}
-      >
+          gap: "18px"
+        }}>
+        
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>{initialData ? "Edit Equipment/Tools" : "Add Equipment/Tools"}</h2>
           <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
@@ -665,16 +666,16 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           required
           value={form.name}
           onChange={(event) => handleChange("name", event.target.value)}
-          placeholder="Equipment name"
-        />
+          placeholder="Equipment name" />
+        
 
         <CalendarField
           label="Last Checked"
           value={form.lastCheckedDate}
           onChange={(e) => handleChange("lastCheckedDate", e.target.value)}
           placeholder="Select date"
-          size="md"
-        />
+          size="md" />
+        
 
         <DropdownField
           label="Duration until next check *"
@@ -682,47 +683,47 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           options={CHECK_DURATION_OPTIONS}
           value={form.intervalMonths}
           onValueChange={(value) =>
-            handleChange("intervalMonths", value ? Number(value) : "")
+          handleChange("intervalMonths", value ? Number(value) : "")
           }
           placeholder="Select duration"
-          size="md"
-        />
+          size="md" />
+        
 
         <CalendarField
           label="Next Due"
           value={form.nextDueDate}
           placeholder="Select date"
           size="md"
-          disabled
-        />
+          disabled />
+        
 
         <div
           style={{
             display: "flex",
             justifyContent: "flex-end",
             gap: "var(--space-2)",
-            marginTop: "var(--space-2)",
-          }}
-        >
+            marginTop: "var(--space-2)"
+          }}>
+          
           <div style={{ display: "flex", gap: "var(--space-2)" }}>
-            {initialData?.id && (
-              <Button
-                type="button"
-                variant="danger"
-                onClick={() => {
-                  if (!initialData?.id) return;
-                  setConfirmDialog({
-                    message: "Delete this equipment entry?",
-                    onConfirm: () => {
-                      setConfirmDialog(null);
-                      onDelete?.(initialData.id);
-                    },
-                  });
-                }}
-              >
+            {initialData?.id &&
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => {
+                if (!initialData?.id) return;
+                setConfirmDialog({
+                  message: "Delete this equipment entry?",
+                  onConfirm: () => {
+                    setConfirmDialog(null);
+                    onDelete?.(initialData.id);
+                  }
+                });
+              }}>
+              
                 Delete
               </Button>
-            )}
+            }
             <Button type="button" variant="secondary" onClick={onClose}>
               Cancel
             </Button>
@@ -738,10 +739,10 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
         cancelLabel="Cancel"
         confirmLabel="Delete"
         onCancel={() => setConfirmDialog(null)}
-        onConfirm={confirmDialog?.onConfirm}
-      />
-    </div>
-  );
+        onConfirm={confirmDialog?.onConfirm} />
+      
+    </div>);
+
 };
 
 const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
@@ -783,19 +784,19 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
     }
 
     // Convert dates to ISO strings
-    const lastCheck = form.lastCheckDate
-      ? new Date(`${form.lastCheckDate}T00:00:00`).toISOString()
-      : null;
-    const nextCheck = form.nextCheckDate
-      ? new Date(`${form.nextCheckDate}T00:00:00`).toISOString()
-      : null;
-    const lastToppedUp = form.lastToppedUpDate
-      ? new Date(`${form.lastToppedUpDate}T00:00:00`).toISOString()
-      : null;
+    const lastCheck = form.lastCheckDate ?
+    new Date(`${form.lastCheckDate}T00:00:00`).toISOString() :
+    null;
+    const nextCheck = form.nextCheckDate ?
+    new Date(`${form.nextCheckDate}T00:00:00`).toISOString() :
+    null;
+    const lastToppedUp = form.lastToppedUpDate ?
+    new Date(`${form.lastToppedUpDate}T00:00:00`).toISOString() :
+    null;
     const intervalMonthsValue = form.intervalMonths ? Number(form.intervalMonths) : null;
     const intervalDays =
-      calculateIntervalDaysFromIso(lastCheck, nextCheck) ||
-      convertMonthsToDays(intervalMonthsValue);
+    calculateIntervalDaysFromIso(lastCheck, nextCheck) ||
+    convertMonthsToDays(intervalMonthsValue);
 
     onSave({
       id: form.id || initialData?.id || null,
@@ -806,7 +807,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
       lastToppedUp,
       intervalMonths: intervalMonthsValue,
       intervalLabel: getDurationLabel(intervalMonthsValue),
-      intervalDays,
+      intervalDays
     });
   };
 
@@ -820,9 +821,9 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           padding: "28px",
           display: "flex",
           flexDirection: "column",
-          gap: "18px",
-        }}
-      >
+          gap: "18px"
+        }}>
+        
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>{initialData ? "Edit Oil / Stock" : "Add Oil / Stock"}</h2>
           <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
@@ -835,23 +836,23 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           required
           value={form.title}
           onChange={(event) => handleChange("title", event.target.value)}
-          placeholder="Oil/Stock title"
-        />
+          placeholder="Oil/Stock title" />
+        
 
         <InputField
           label="Stock"
           value={form.stock}
           onChange={(event) => handleChange("stock", event.target.value)}
-          placeholder="e.g., 18 × 5L cans"
-        />
+          placeholder="e.g., 18 × 5L cans" />
+        
 
         <CalendarField
           label="Last Check"
           value={form.lastCheckDate}
           onChange={(e) => handleChange("lastCheckDate", e.target.value)}
           placeholder="Select date"
-          size="md"
-        />
+          size="md" />
+        
 
         <DropdownField
           label="Duration until next check *"
@@ -859,19 +860,19 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           options={CHECK_DURATION_OPTIONS}
           value={form.intervalMonths}
           onValueChange={(value) =>
-            handleChange("intervalMonths", value ? Number(value) : "")
+          handleChange("intervalMonths", value ? Number(value) : "")
           }
           placeholder="Select duration"
-          size="md"
-        />
+          size="md" />
+        
 
         <CalendarField
           label="Next Check"
           value={form.nextCheckDate}
           placeholder="Select date"
           size="md"
-          disabled
-        />
+          disabled />
+        
 
         <div
           style={{
@@ -879,27 +880,27 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
             justifyContent: "space-between",
             gap: "var(--space-2)",
             marginTop: "var(--space-2)",
-            flexWrap: "wrap",
-          }}
-        >
-          {initialData?.id && (
-            <Button
-              type="button"
-              variant="danger"
-              onClick={() => {
-                if (!initialData?.id) return;
-                setConfirmDialog({
-                  message: "Delete this oil/stock entry?",
-                  onConfirm: () => {
-                    setConfirmDialog(null);
-                    onDelete?.(initialData.id);
-                  },
-                });
-              }}
-            >
+            flexWrap: "wrap"
+          }}>
+          
+          {initialData?.id &&
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() => {
+              if (!initialData?.id) return;
+              setConfirmDialog({
+                message: "Delete this oil/stock entry?",
+                onConfirm: () => {
+                  setConfirmDialog(null);
+                  onDelete?.(initialData.id);
+                }
+              });
+            }}>
+            
               Delete
             </Button>
-          )}
+          }
           <div style={{ display: "flex", gap: "var(--space-2)", marginLeft: "auto" }}>
             <Button type="button" variant="secondary" onClick={onClose}>
               Cancel
@@ -916,10 +917,10 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
         cancelLabel="Cancel"
         confirmLabel="Delete"
         onCancel={() => setConfirmDialog(null)}
-        onConfirm={confirmDialog?.onConfirm}
-      />
-    </div>
-  );
+        onConfirm={confirmDialog?.onConfirm} />
+      
+    </div>);
+
 };
 
 const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
@@ -932,7 +933,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
     makeModel: initialData?.makeModel || "",
     colour: initialData?.colour || "",
     vehicleLocation: initialData?.vehicleLocation || CAR_LOCATIONS[0].label,
-    keyLocation: initialData?.keyLocation || KEY_LOCATIONS[0].label,
+    keyLocation: initialData?.keyLocation || KEY_LOCATIONS[0].label
   }));
   const [showUpdate, setShowUpdate] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -948,20 +949,20 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
     setIsSearching(true);
     try {
       // Try to fetch job details from the database
-      const { data, error } = await supabaseClient
-        .from("jobs")
-        .select(`
+      const { data, error } = await supabaseClient.
+      from("jobs").
+      select(`
           job_number,
           vehicle:vehicle_id(registration, reg, make, model, make_model, colour),
           customer:customer_id(name, firstname, lastname)
-        `)
-        .or(
-          searchField === "jobNumber" ? `job_number.ilike.%${searchValue}%` :
-          searchField === "reg" ? `vehicle_id.registration.ilike.%${searchValue}%,vehicle_id.reg.ilike.%${searchValue}%` :
-          `customer_id.name.ilike.%${searchValue}%,customer_id.firstname.ilike.%${searchValue}%,customer_id.lastname.ilike.%${searchValue}%`
-        )
-        .limit(1)
-        .single();
+        `).
+      or(
+        searchField === "jobNumber" ? `job_number.ilike.%${searchValue}%` :
+        searchField === "reg" ? `vehicle_id.registration.ilike.%${searchValue}%,vehicle_id.reg.ilike.%${searchValue}%` :
+        `customer_id.name.ilike.%${searchValue}%,customer_id.firstname.ilike.%${searchValue}%,customer_id.lastname.ilike.%${searchValue}%`
+      ).
+      limit(1).
+      single();
 
       if (!error && data) {
         setForm((prev) => ({
@@ -970,7 +971,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           reg: data.vehicle?.registration || data.vehicle?.reg || prev.reg,
           customer: data.customer?.name || `${data.customer?.firstname || ""} ${data.customer?.lastname || ""}`.trim() || prev.customer,
           makeModel: data.vehicle?.make_model || `${data.vehicle?.make || ""} ${data.vehicle?.model || ""}`.trim() || prev.makeModel,
-          colour: data.vehicle?.colour || prev.colour,
+          colour: data.vehicle?.colour || prev.colour
         }));
       }
     } catch (err) {
@@ -1013,9 +1014,9 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           padding: "28px",
           display: "flex",
           flexDirection: "column",
-          gap: "20px",
-        }}
-      >
+          gap: "20px"
+        }}>
+        
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h2 style={{ margin: "0 0 var(--space-xs) 0" }}>Vehicle & Key Tracking</h2>
@@ -1036,9 +1037,9 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             padding: "var(--space-md)",
             backgroundColor: "var(--surface-light)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--border)",
-          }}
-        >
+            border: "1px solid var(--border)"
+          }}>
+          
           <div>
             <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Job Number</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.jobNumber || "—"}</div>
@@ -1068,9 +1069,9 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "var(--space-3)",
-            }}
-          >
+              gap: "var(--space-3)"
+            }}>
+            
             <InputField
               label="Job Number / Reg / Customer"
               value={form.jobNumber || form.reg || form.customer}
@@ -1088,8 +1089,8 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
                 }
               }}
               placeholder="Enter job number, reg, or customer name"
-              disabled={isSearching}
-            />
+              disabled={isSearching} />
+            
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
@@ -1099,16 +1100,16 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               value={form.vehicleLocation}
               onValueChange={(value) => handleChange("vehicleLocation", value)}
               placeholder="Select location"
-              size="md"
-            />
+              size="md" />
+            
             <DropdownField
               label="Key Location"
               options={KEY_LOCATION_OPTIONS}
               value={form.keyLocation}
               onValueChange={(value) => handleChange("keyLocation", value)}
               placeholder="Select key location"
-              size="md"
-            />
+              size="md" />
+            
           </div>
 
           <Button type="submit" variant="primary">
@@ -1121,45 +1122,45 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         <Button
           type="button"
           variant={showUpdate ? "primary" : "secondary"}
-          onClick={() => setShowUpdate(!showUpdate)}
-        >
+          onClick={() => setShowUpdate(!showUpdate)}>
+          
           {showUpdate ? "Hide Update Section" : "Update Existing Location"}
         </Button>
 
-        {showUpdate && (
-          <form
-            onSubmit={handleUpdateLocation}
-            style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}
-          >
+        {showUpdate &&
+        <form
+          onSubmit={handleUpdateLocation}
+          style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+          
             <h3 style={{ margin: "0", fontSize: "var(--text-h4)", fontWeight: 600 }}>Update Location</h3>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
               <DropdownField
-                label="Vehicle Location"
-                options={CAR_LOCATION_OPTIONS}
-                value={form.vehicleLocation}
-                onValueChange={(value) => handleChange("vehicleLocation", value)}
-                placeholder="Select location"
-                size="md"
-              />
+              label="Vehicle Location"
+              options={CAR_LOCATION_OPTIONS}
+              value={form.vehicleLocation}
+              onValueChange={(value) => handleChange("vehicleLocation", value)}
+              placeholder="Select location"
+              size="md" />
+            
               <DropdownField
-                label="Key Location"
-                options={KEY_LOCATION_OPTIONS}
-                value={form.keyLocation}
-                onValueChange={(value) => handleChange("keyLocation", value)}
-                placeholder="Select key location"
-                size="md"
-              />
+              label="Key Location"
+              options={KEY_LOCATION_OPTIONS}
+              value={form.keyLocation}
+              onValueChange={(value) => handleChange("keyLocation", value)}
+              placeholder="Select key location"
+              size="md" />
+            
             </div>
 
             <Button type="submit" variant="primary">
               Update
             </Button>
           </form>
-        )}
+        }
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries = [] }) => {
@@ -1170,7 +1171,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
     ...entry,
     vehicleLocation: entry?.vehicleLocation || CAR_LOCATIONS[0].label,
     keyLocation: normalizeKeyLocationLabel(entry?.keyLocation) || KEY_LOCATIONS[0].label,
-    status: entry?.status || "Waiting For Collection",
+    status: entry?.status || "Waiting For Collection"
   }));
   const [matchedExisting, setMatchedExisting] = useState(Boolean(entry)); // tracks whether form auto-filled from existing entry
   const vehicleLocationOptions = useMemo(
@@ -1210,15 +1211,15 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           [field]: value, // keep what user typed for this field
           id: match.id || prev.id,
           jobId: match.jobId || prev.jobId,
-          jobNumber: field === "jobNumber" ? value : (match.jobNumber || prev.jobNumber),
-          reg: field === "reg" ? value : (match.reg || prev.reg),
-          customer: field === "customer" ? value : (match.customer || prev.customer),
+          jobNumber: field === "jobNumber" ? value : match.jobNumber || prev.jobNumber,
+          reg: field === "reg" ? value : match.reg || prev.reg,
+          customer: field === "customer" ? value : match.customer || prev.customer,
           serviceType: match.serviceType || prev.serviceType,
           colour: match.colour || prev.colour,
           vehicleLocation: match.vehicleLocation || prev.vehicleLocation,
           keyLocation: normalizeKeyLocationLabel(match.keyLocation) || prev.keyLocation,
           status: match.status || prev.status,
-          notes: match.notes || prev.notes,
+          notes: match.notes || prev.notes
         }));
         setMatchedExisting(true); // switch heading to "Edit existing"
       } else {
@@ -1259,9 +1260,9 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           padding: "32px",
           display: "flex",
           flexDirection: "column",
-          gap: "18px",
-        }}
-      >
+          gap: "18px"
+        }}>
+        
         <div>
           <h2 style={{ margin: 0 }}>{entry || matchedExisting ? "Edit existing" : "Log new"}</h2>
         </div>
@@ -1270,40 +1271,40 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "10px",
-          }}
-        >
+            gap: "10px"
+          }}>
+          
           {[
-            { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821" },
-            { label: "Registration", field: "reg", placeholder: "GY21 HNP" },
-            { label: "Customer", field: "customer", placeholder: "Customer name" },
-            { label: "Service Type", field: "serviceType", placeholder: "MOT, Service..." },
-          ].map((input) => (
-            <InputField
-              key={input.field}
-              label={input.label}
-              value={form[input.field]}
-              onChange={(event) => handleChange(input.field, event.target.value)}
-              placeholder={input.placeholder}
-            />
-          ))}
+          { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821" },
+          { label: "Registration", field: "reg", placeholder: "GY21 HNP" },
+          { label: "Customer", field: "customer", placeholder: "Customer name" },
+          { label: "Service Type", field: "serviceType", placeholder: "MOT, Service..." }].
+          map((input) =>
+          <InputField
+            key={input.field}
+            label={input.label}
+            value={form[input.field]}
+            onChange={(event) => handleChange(input.field, event.target.value)}
+            placeholder={input.placeholder} />
+
+          )}
         </div>
 
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "var(--space-2)",
-          }}
-        >
+            gap: "var(--space-2)"
+          }}>
+          
           <DropdownField
             label="Vehicle Location"
             options={vehicleLocationOptions}
             value={form.vehicleLocation}
             onValueChange={(value) => handleChange("vehicleLocation", value)}
             placeholder="Select location"
-            size="md"
-          />
+            size="md" />
+          
           <DropdownField
             label="Key Location"
             required
@@ -1311,8 +1312,8 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
             value={form.keyLocation}
             onValueChange={(value) => handleChange("keyLocation", value)}
             placeholder="Select key location"
-            size="md"
-          />
+            size="md" />
+          
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
@@ -1326,8 +1327,8 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
 
         {/* TODO: Persist vehicle/key updates via API endpoint */}
       </form>
-    </div>
-  );
+    </div>);
+
 };
 
 export default function TrackingDashboard() {
@@ -1427,8 +1428,8 @@ export default function TrackingDashboard() {
             reg: reg || "",
             customer: customer || "",
             makeModel: makeModel || "",
-            colour: colour || "",
-          },
+            colour: colour || ""
+          }
         });
         return;
       }
@@ -1436,8 +1437,8 @@ export default function TrackingDashboard() {
       // Check if an existing entry matches the job
       const existingEntry = entries.find(
         (entry) =>
-          (jobNumber && entry.jobNumber?.toLowerCase() === jobNumber.toLowerCase()) ||
-          (reg && entry.reg?.toLowerCase() === reg.toLowerCase())
+        jobNumber && entry.jobNumber?.toLowerCase() === jobNumber.toLowerCase() ||
+        reg && entry.reg?.toLowerCase() === reg.toLowerCase()
       );
 
       // If no existing entry found, auto-open the Log New popup with pre-filled data
@@ -1446,7 +1447,7 @@ export default function TrackingDashboard() {
           ...emptyForm,
           jobNumber: jobNumber || "",
           reg: reg || "",
-          customer: customer || "",
+          customer: customer || ""
         });
       }
     }
@@ -1516,21 +1517,21 @@ export default function TrackingDashboard() {
         id,
         lastChecked: now.toISOString(),
         nextDue: nextDueFrom(now, intervalDays),
-        intervalDays,
+        intervalDays
       };
 
       try {
         const response = await fetch(EQUIPMENT_API_ENDPOINT, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload)
         });
         const result = await response.json();
         if (!response.ok || !result.success) {
           throw new Error(result.message || "Failed to log equipment check");
         }
         const updated = result.data;
-        setEquipmentChecks((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        setEquipmentChecks((prev) => prev.map((item) => item.id === updated.id ? updated : item));
       } catch (error) {
         console.error("Equipment check update failed", error);
         alert(error.message || "Failed to log equipment check");
@@ -1551,21 +1552,21 @@ export default function TrackingDashboard() {
         nextCheck: nextDueFrom(now, intervalDays),
         lastToppedUp: now.toISOString(),
         stock: stockAmount || target.stock,
-        intervalDays,
+        intervalDays
       };
 
       try {
         const response = await fetch(OIL_STOCK_API_ENDPOINT, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload)
         });
         const result = await response.json();
         if (!response.ok || !result.success) {
           throw new Error(result.message || "Failed to mark check");
         }
         const updated = result.data;
-        setOilChecks((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        setOilChecks((prev) => prev.map((item) => item.id === updated.id ? updated : item));
         setActiveTopUpId(null);
         setTopUpValue("");
       } catch (error) {
@@ -1581,9 +1582,9 @@ export default function TrackingDashboard() {
       const now = new Date();
       const resolvedLastChecked = form.lastChecked || now.toISOString();
       const resolvedIntervalDays =
-        (Number(form.intervalDays) > 0 && Number(form.intervalDays)) ||
-        convertMonthsToDays(form.intervalMonths) ||
-        365;
+      Number(form.intervalDays) > 0 && Number(form.intervalDays) ||
+      convertMonthsToDays(form.intervalMonths) ||
+      365;
       const baseDate = form.lastChecked ? new Date(form.lastChecked) : now;
       const resolvedNextDue = form.nextDue || nextDueFrom(baseDate, resolvedIntervalDays);
       const resolvedIntervalLabel = form.intervalLabel || getDurationLabel(form.intervalMonths);
@@ -1596,7 +1597,7 @@ export default function TrackingDashboard() {
         intervalDays: resolvedIntervalDays,
         intervalMonths: form.intervalMonths,
         intervalLabel: resolvedIntervalLabel,
-        createdBy: dbUserId || null,
+        createdBy: dbUserId || null
       };
 
       const method = payload.id ? "PUT" : "POST";
@@ -1605,7 +1606,7 @@ export default function TrackingDashboard() {
         const response = await fetch(EQUIPMENT_API_ENDPOINT, {
           method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload)
         });
         const result = await response.json();
         if (!response.ok || !result.success) {
@@ -1615,7 +1616,7 @@ export default function TrackingDashboard() {
         setEquipmentChecks((prev) => {
           const exists = prev.some((item) => item.id === saved.id);
           if (exists) {
-            return prev.map((item) => (item.id === saved.id ? saved : item));
+            return prev.map((item) => item.id === saved.id ? saved : item);
           }
           return [...prev, saved];
         });
@@ -1633,9 +1634,9 @@ export default function TrackingDashboard() {
       const now = new Date();
       const resolvedLastCheck = form.lastCheck || now.toISOString();
       const resolvedIntervalDays =
-        (Number(form.intervalDays) > 0 && Number(form.intervalDays)) ||
-        convertMonthsToDays(form.intervalMonths) ||
-        30;
+      Number(form.intervalDays) > 0 && Number(form.intervalDays) ||
+      convertMonthsToDays(form.intervalMonths) ||
+      30;
       const baseDate = form.lastCheck ? new Date(form.lastCheck) : now;
       const resolvedNextCheck = form.nextCheck || nextDueFrom(baseDate, resolvedIntervalDays);
       const resolvedIntervalLabel = form.intervalLabel || getDurationLabel(form.intervalMonths);
@@ -1650,7 +1651,7 @@ export default function TrackingDashboard() {
         intervalDays: resolvedIntervalDays,
         intervalMonths: form.intervalMonths,
         intervalLabel: resolvedIntervalLabel,
-        createdBy: dbUserId || null,
+        createdBy: dbUserId || null
       };
 
       const method = payload.id ? "PUT" : "POST";
@@ -1659,7 +1660,7 @@ export default function TrackingDashboard() {
         const response = await fetch(OIL_STOCK_API_ENDPOINT, {
           method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload)
         });
         const result = await response.json();
         if (!response.ok || !result.success) {
@@ -1669,7 +1670,7 @@ export default function TrackingDashboard() {
         setOilChecks((prev) => {
           const exists = prev.some((item) => item.id === saved.id);
           if (exists) {
-            return prev.map((item) => (item.id === saved.id ? saved : item));
+            return prev.map((item) => item.id === saved.id ? saved : item);
           }
           return [...prev, saved];
         });
@@ -1686,7 +1687,7 @@ export default function TrackingDashboard() {
     if (!id) return;
     try {
       const response = await fetch(`${EQUIPMENT_API_ENDPOINT}?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
+        method: "DELETE"
       });
       const payload = await response.json().catch(() => ({ success: response.ok }));
       if (!response.ok || payload?.success === false) {
@@ -1705,7 +1706,7 @@ export default function TrackingDashboard() {
     if (!id) return;
     try {
       const response = await fetch(`${OIL_STOCK_API_ENDPOINT}?id=${encodeURIComponent(id)}`, {
-        method: "DELETE",
+        method: "DELETE"
       });
       const payload = await response.json().catch(() => ({ success: response.ok }));
       if (!response.ok || payload?.success === false) {
@@ -1733,19 +1734,19 @@ export default function TrackingDashboard() {
           vehicleLocation: rule.vehicleLocation,
           vehicleStatus: rule.vehicleStatus,
           notes: `Auto-sync from status "${newStatus}"`,
-          performedBy: dbUserId || null,
+          performedBy: dbUserId || null
         };
 
         const response = await fetch(buildApiUrl(NEXT_ACTION_ENDPOINT), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify(payload)
         });
 
         if (!response.ok) {
-          const errorPayload = await response
-            .json()
-            .catch(() => ({ message: "Failed to auto-sync locations" }));
+          const errorPayload = await response.
+          json().
+          catch(() => ({ message: "Failed to auto-sync locations" }));
           console.error("Auto movement failed", errorPayload?.message || response.statusText);
           return;
         }
@@ -1759,23 +1760,23 @@ export default function TrackingDashboard() {
   );
 
   useEffect(() => {
-    const channel = supabaseClient
-      .channel("tracking-job-status")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "jobs" },
-        (payload) => {
-          const newJob = payload?.new;
-          const oldJob = payload?.old;
-          if (!newJob?.status || newJob.status === oldJob?.status) {
-            return;
-          }
-          const rule = getAutoMovementRule(newJob.status);
-          if (!rule) return;
-          handleAutoMovement(newJob, rule, newJob.status);
+    const channel = supabaseClient.
+    channel("tracking-job-status").
+    on(
+      "postgres_changes",
+      { event: "UPDATE", schema: "public", table: "jobs" },
+      (payload) => {
+        const newJob = payload?.new;
+        const oldJob = payload?.old;
+        if (!newJob?.status || newJob.status === oldJob?.status) {
+          return;
         }
-      )
-      .subscribe();
+        const rule = getAutoMovementRule(newJob.status);
+        if (!rule) return;
+        handleAutoMovement(newJob, rule, newJob.status);
+      }
+    ).
+    subscribe();
 
     return () => {
       supabaseClient.removeChannel(channel);
@@ -1784,32 +1785,32 @@ export default function TrackingDashboard() {
 
   const activeEntries = useMemo(
     () =>
-      entries
-        .filter((entry) => entry.jobId)
-        .sort(
-          (a, b) =>
-            new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
-        ),
+    entries.
+    filter((entry) => entry.jobId).
+    sort(
+      (a, b) =>
+      new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
+    ),
     [entries]
   );
 
   const trackerStatusFilterOptions = useMemo(() => {
     const values = Array.from(
       new Set(
-        activeEntries
-          .map((entry) => String(entry.status || "").trim())
-          .filter(Boolean)
+        activeEntries.
+        map((entry) => String(entry.status || "").trim()).
+        filter(Boolean)
       )
     ).sort((a, b) => a.localeCompare(b));
 
     return [
-      { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All statuses" },
-      ...values.map((value) => ({
-        key: `status-${value.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-        value,
-        label: value,
-      })),
-    ];
+    { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All statuses" },
+    ...values.map((value) => ({
+      key: `status-${value.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      value,
+      label: value
+    }))];
+
   }, [activeEntries]);
 
   const trackerVehicleLocationFilterOptions = useMemo(() => {
@@ -1827,13 +1828,13 @@ export default function TrackingDashboard() {
     });
 
     return [
-      { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All car locations" },
-      ...values.map((value) => ({
-        key: `vehicle-location-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-        value,
-        label: value === TRACKING_FILTER_EMPTY ? "No car location" : value,
-      })),
-    ];
+    { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All car locations" },
+    ...values.map((value) => ({
+      key: `vehicle-location-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+      value,
+      label: value === TRACKING_FILTER_EMPTY ? "No car location" : value
+    }))];
+
   }, [activeEntries]);
 
   const filteredActiveEntries = useMemo(() => {
@@ -1841,20 +1842,20 @@ export default function TrackingDashboard() {
 
     return activeEntries.filter((entry) => {
       const matchesSearch =
-        !query ||
-        [
-          entry.jobNumber,
-          entry.reg,
-          entry.customer,
-          entry.makeModel,
-          entry.colour,
-          entry.serviceType,
-          entry.status,
-          entry.vehicleLocation,
-          normalizeKeyLocationLabel(entry.keyLocation),
-        ]
-          .filter(Boolean)
-          .some((value) => String(value).toLowerCase().includes(query));
+      !query ||
+      [
+      entry.jobNumber,
+      entry.reg,
+      entry.customer,
+      entry.makeModel,
+      entry.colour,
+      entry.serviceType,
+      entry.status,
+      entry.vehicleLocation,
+      normalizeKeyLocationLabel(entry.keyLocation)].
+
+      filter(Boolean).
+      some((value) => String(value).toLowerCase().includes(query));
 
       if (!matchesSearch) {
         return false;
@@ -1867,9 +1868,9 @@ export default function TrackingDashboard() {
 
       const entryVehicleLocation = String(entry.vehicleLocation || "").trim() || TRACKING_FILTER_EMPTY;
       if (
-        trackerVehicleLocationFilter !== TRACKING_FILTER_ALL &&
-        entryVehicleLocation !== trackerVehicleLocationFilter
-      ) {
+      trackerVehicleLocationFilter !== TRACKING_FILTER_ALL &&
+      entryVehicleLocation !== trackerVehicleLocationFilter)
+      {
         return false;
       }
 
@@ -1887,7 +1888,7 @@ export default function TrackingDashboard() {
     openEntryModal(searchModal.type, {
       ...emptyForm,
       vehicleLocation: searchModal.type === "car" ? option.label : CAR_LOCATIONS[0].label,
-      keyLocation: searchModal.type === "key" ? option.label : KEY_LOCATIONS[0].label,
+      keyLocation: searchModal.type === "key" ? option.label : KEY_LOCATIONS[0].label
     });
   };
 
@@ -1899,11 +1900,11 @@ export default function TrackingDashboard() {
       let resolvedJob = null;
 
       if (!form.jobId && jobNumberQuery) {
-        const { data: jobMatches, error: jobLookupError } = await supabaseClient
-          .from("jobs")
-          .select("id, vehicle_id")
-          .ilike("job_number", jobNumberQuery)
-          .limit(1);
+        const { data: jobMatches, error: jobLookupError } = await supabaseClient.
+        from("jobs").
+        select("id, vehicle_id").
+        ilike("job_number", jobNumberQuery).
+        limit(1);
 
         if (jobLookupError) {
           console.warn("Job lookup failed", jobLookupError);
@@ -1913,11 +1914,11 @@ export default function TrackingDashboard() {
       }
 
       if (!resolvedJob && !form.vehicleId && regQuery) {
-        const { data: regMatches, error: regLookupError } = await supabaseClient
-          .from("jobs")
-          .select("id, vehicle_id")
-          .ilike("vehicle_reg", regQuery)
-          .limit(1);
+        const { data: regMatches, error: regLookupError } = await supabaseClient.
+        from("jobs").
+        select("id, vehicle_id").
+        ilike("vehicle_reg", regQuery).
+        limit(1);
 
         if (regLookupError) {
           console.warn("Vehicle lookup failed", regLookupError);
@@ -1935,13 +1936,13 @@ export default function TrackingDashboard() {
         keyLocation: form.keyLocation,
         vehicleLocation: form.vehicleLocation,
         notes: form.notes,
-        performedBy: dbUserId || null,
+        performedBy: dbUserId || null
       };
 
       const response = await fetch(buildApiUrl(NEXT_ACTION_ENDPOINT), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -1958,292 +1959,292 @@ export default function TrackingDashboard() {
     }
   };
 
-  const renderTrackerContent = () => (
-    <>
+  const renderTrackerContent = () =>
+  <>
       <DevLayoutSection
-        sectionKey="tracking-active-jobs-header"
-        parentKey="tracking-page-body"
-        sectionType="toolbar"
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "12px",
-          alignItems: "center",
-        }}
-      >
+      sectionKey="tracking-active-jobs-header"
+      parentKey="tracking-page-body"
+      sectionType="toolbar"
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "12px",
+        alignItems: "center"
+      }}>
+      
         <SearchBar
-          value={trackerSearchTerm}
-          onChange={(event) => setTrackerSearchTerm(event.target.value)}
-          onClear={() => setTrackerSearchTerm("")}
-          placeholder="Search active jobs"
-          ariaLabel="Search active jobs"
-          style={{
-            flex: "1 1 320px",
-            minWidth: "240px",
-          }}
-        />
+        value={trackerSearchTerm}
+        onChange={(event) => setTrackerSearchTerm(event.target.value)}
+        onClear={() => setTrackerSearchTerm("")}
+        placeholder="Search active jobs"
+        ariaLabel="Search active jobs"
+        style={{
+          flex: "1 1 320px",
+          minWidth: "240px"
+        }} />
+      
         <DropdownField
-          options={trackerStatusFilterOptions}
-          value={trackerStatusFilter}
-          onValueChange={(value) => setTrackerStatusFilter(value || TRACKING_FILTER_ALL)}
-          size="md"
-          style={{
-            flex: "0 1 220px",
-            minWidth: "180px",
-          }}
-        />
+        options={trackerStatusFilterOptions}
+        value={trackerStatusFilter}
+        onValueChange={(value) => setTrackerStatusFilter(value || TRACKING_FILTER_ALL)}
+        size="md"
+        style={{
+          flex: "0 1 220px",
+          minWidth: "180px"
+        }} />
+      
         <DropdownField
-          options={trackerVehicleLocationFilterOptions}
-          value={trackerVehicleLocationFilter}
-          onValueChange={(value) => setTrackerVehicleLocationFilter(value || TRACKING_FILTER_ALL)}
-          size="md"
-          style={{
-            flex: "0 1 220px",
-            minWidth: "190px",
-          }}
-        />
+        options={trackerVehicleLocationFilterOptions}
+        value={trackerVehicleLocationFilter}
+        onValueChange={(value) => setTrackerVehicleLocationFilter(value || TRACKING_FILTER_ALL)}
+        size="md"
+        style={{
+          flex: "0 1 220px",
+          minWidth: "190px"
+        }} />
+      
       </DevLayoutSection>
-      {entries.length === 0 && (
-        <DevLayoutSection
-          sectionKey="tracking-active-jobs-empty-state"
-          parentKey="tracking-page-body"
-          sectionType="empty-state"
-          style={{
-            padding: "12px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
-            textAlign: "center",
-            color: "var(--info-dark)",
-          }}
-        >
+      {entries.length === 0 &&
+    <DevLayoutSection
+      sectionKey="tracking-active-jobs-empty-state"
+      parentKey="tracking-page-body"
+      sectionType="empty-state"
+      style={{
+        padding: "12px",
+        borderRadius: "var(--radius-sm)",
+        border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+        textAlign: "center",
+        color: "var(--info-dark)"
+      }}>
+      
           No active job tracking data yet.
         </DevLayoutSection>
-      )}
-      {activeEntries.length === 0 && entries.length > 0 && (
-        <DevLayoutSection
-          sectionKey="tracking-active-jobs-unmapped-state"
-          parentKey="tracking-page-body"
-          sectionType="empty-state"
-          style={{
-            padding: "12px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
-            textAlign: "center",
-            color: "var(--info-dark)",
-          }}
-        >
+    }
+      {activeEntries.length === 0 && entries.length > 0 &&
+    <DevLayoutSection
+      sectionKey="tracking-active-jobs-unmapped-state"
+      parentKey="tracking-page-body"
+      sectionType="empty-state"
+      style={{
+        padding: "12px",
+        borderRadius: "var(--radius-sm)",
+        border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+        textAlign: "center",
+        color: "var(--info-dark)"
+      }}>
+      
           Waiting for job-mapped tracking entries.
         </DevLayoutSection>
-      )}
-      {activeEntries.length > 0 && filteredActiveEntries.length === 0 && (
-        <DevLayoutSection
-          sectionKey="tracking-active-jobs-filter-empty-state"
-          parentKey="tracking-page-body"
-          sectionType="empty-state"
-          style={{
-            padding: "12px",
-            borderRadius: "var(--radius-sm)",
-            border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
-            textAlign: "center",
-            color: "var(--info-dark)",
-          }}
-        >
+    }
+      {activeEntries.length > 0 && filteredActiveEntries.length === 0 &&
+    <DevLayoutSection
+      sectionKey="tracking-active-jobs-filter-empty-state"
+      parentKey="tracking-page-body"
+      sectionType="empty-state"
+      style={{
+        padding: "12px",
+        borderRadius: "var(--radius-sm)",
+        border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+        textAlign: "center",
+        color: "var(--info-dark)"
+      }}>
+      
           No active jobs match your search or filters.
         </DevLayoutSection>
-      )}
+    }
       <DevLayoutSection
-        sectionKey="tracking-active-jobs-list"
-        parentKey="tracking-page-body"
-        sectionType="list"
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            !isMobileView && isWideTrackerView ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
-          gap: "20px",
-          maxHeight: isMobileView ? "none" : "calc(4 * 180px + 3 * 12px)",
-          overflowY: "auto",
-          paddingRight: "4px",
-          width: "100%",
-          maxWidth: "100%",
-          minWidth: 0,
-        }}
-      >
+      sectionKey="tracking-active-jobs-list"
+      parentKey="tracking-page-body"
+      sectionType="list"
+      style={{
+        display: "grid",
+        gridTemplateColumns:
+        !isMobileView && isWideTrackerView ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
+        gap: "20px",
+        maxHeight: isMobileView ? "none" : "calc(4 * 180px + 3 * 12px)",
+        overflowY: "auto",
+        paddingRight: "4px",
+        width: "100%",
+        maxWidth: "100%",
+        minWidth: 0
+      }}>
+      
         {filteredActiveEntries.map((entry, index) => {
-          const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
-          return (
-            <DevLayoutSection
-              key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
-              sectionKey={`tracking-active-jobs-card-${index + 1}`}
-              parentKey="tracking-active-jobs-list"
-              sectionType="content-card"
-            >
-              <CombinedTrackerCard
-                entry={entry}
-                isHighlighted={isHighlighted}
-                isMobileView={isMobileView}
-                onClick={() => openEntryModal("car", {
-                  id: entry.id,
-                  jobId: entry.jobId,
-                  jobNumber: entry.jobNumber,
-                  reg: entry.reg,
-                  customer: entry.customer,
-                  colour: entry.colour,
-                  serviceType: entry.serviceType,
-                  vehicleLocation: entry.vehicleLocation,
-                  keyLocation: entry.keyLocation,
-                  status: entry.status,
-                  keyTip: entry.keyTip,
-                  notes: entry.notes,
-                })}
-              />
-            </DevLayoutSection>
-          );
-        })}
-      </DevLayoutSection>
-    </>
-  );
-
-  const renderEquipmentContent = () => (
-    <>
-      <DevLayoutSection
-        sectionKey="tracking-equipment-header"
-        parentKey="tracking-page-body"
-        sectionType="toolbar"
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "12px",
-          alignItems: "center",
-        }}
-      >
-        <SearchBar
-          value={equipmentSearchTerm}
-          onChange={(event) => setEquipmentSearchTerm(event.target.value)}
-          onClear={() => setEquipmentSearchTerm("")}
-          placeholder="Search equipment"
-          ariaLabel="Search equipment"
-          style={{
-            flex: "1 1 320px",
-            minWidth: "240px",
-          }}
-        />
-        <DropdownField
-          options={[
-            { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
-            { key: "due", value: "due", label: "Due now" },
-            { key: "ok", value: "ok", label: "Not due" },
-          ]}
-          value={equipmentDueFilter}
-          onValueChange={(value) => setEquipmentDueFilter(value || TRACKING_FILTER_ALL)}
-          size="md"
-          style={{
-            flex: "0 1 220px",
-            minWidth: "180px",
-          }}
-        />
-      </DevLayoutSection>
-      <DevLayoutSection
-        sectionKey="tracking-equipment-grid"
-        parentKey="tracking-page-body"
-        sectionType="grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "16px",
-          minWidth: 0,
-        }}
-      >
-        {equipmentChecks.length === 0 && (
+        const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
+        return (
           <DevLayoutSection
-            sectionKey="tracking-equipment-empty-state"
-            parentKey="tracking-equipment-grid"
-            sectionType="empty-state"
-            style={{
-              gridColumn: "1 / -1",
-              padding: "12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
-              textAlign: "center",
-              color: "var(--info-dark)",
-            }}
-          >
+            key={entry.jobId || entry.id || `${entry.jobNumber}-${entry.updatedAt}`}
+            sectionKey={`tracking-active-jobs-card-${index + 1}`}
+            parentKey="tracking-active-jobs-list"
+            sectionType="content-card">
+            
+              <CombinedTrackerCard
+              entry={entry}
+              isHighlighted={isHighlighted}
+              isMobileView={isMobileView}
+              onClick={() => openEntryModal("car", {
+                id: entry.id,
+                jobId: entry.jobId,
+                jobNumber: entry.jobNumber,
+                reg: entry.reg,
+                customer: entry.customer,
+                colour: entry.colour,
+                serviceType: entry.serviceType,
+                vehicleLocation: entry.vehicleLocation,
+                keyLocation: entry.keyLocation,
+                status: entry.status,
+                keyTip: entry.keyTip,
+                notes: entry.notes
+              })} />
+            
+            </DevLayoutSection>);
+
+      })}
+      </DevLayoutSection>
+    </>;
+
+
+  const renderEquipmentContent = () =>
+  <>
+      <DevLayoutSection
+      sectionKey="tracking-equipment-header"
+      parentKey="tracking-page-body"
+      sectionType="toolbar"
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "12px",
+        alignItems: "center"
+      }}>
+      
+        <SearchBar
+        value={equipmentSearchTerm}
+        onChange={(event) => setEquipmentSearchTerm(event.target.value)}
+        onClear={() => setEquipmentSearchTerm("")}
+        placeholder="Search equipment"
+        ariaLabel="Search equipment"
+        style={{
+          flex: "1 1 320px",
+          minWidth: "240px"
+        }} />
+      
+        <DropdownField
+        options={[
+        { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
+        { key: "due", value: "due", label: "Due now" },
+        { key: "ok", value: "ok", label: "Not due" }]
+        }
+        value={equipmentDueFilter}
+        onValueChange={(value) => setEquipmentDueFilter(value || TRACKING_FILTER_ALL)}
+        size="md"
+        style={{
+          flex: "0 1 220px",
+          minWidth: "180px"
+        }} />
+      
+      </DevLayoutSection>
+      <DevLayoutSection
+      sectionKey="tracking-equipment-grid"
+      parentKey="tracking-page-body"
+      sectionType="grid"
+      style={{
+        display: "grid",
+        gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
+        gap: "16px",
+        minWidth: 0
+      }}>
+      
+        {equipmentChecks.length === 0 &&
+      <DevLayoutSection
+        sectionKey="tracking-equipment-empty-state"
+        parentKey="tracking-equipment-grid"
+        sectionType="empty-state"
+        style={{
+          gridColumn: "1 / -1",
+          padding: "12px",
+          borderRadius: "var(--radius-sm)",
+          border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+          textAlign: "center",
+          color: "var(--info-dark)"
+        }}>
+        
             Equipment service list is empty.
           </DevLayoutSection>
-        )}
-        {equipmentChecks
-          .filter((check) => {
-            const term = equipmentSearchTerm.trim().toLowerCase();
-            if (term && ![check.name, check.status].filter(Boolean).some((value) => value.toLowerCase().includes(term))) {
-              return false;
-            }
-            if (equipmentDueFilter !== TRACKING_FILTER_ALL) {
-              const isDue = getDueLabel(check.nextDue) === "Due now" || (check.status || "").toLowerCase().includes("due");
-              if (equipmentDueFilter === "due" && !isDue) return false;
-              if (equipmentDueFilter === "ok" && isDue) return false;
-            }
-            return true;
-          })
-          .map((check, index) => {
-          const dueLabel = getDueLabel(check.nextDue);
-          const isDue = dueLabel === "Due now";
-          const statusLabel = (check.status || "").toLowerCase();
-          const badgeColor = statusLabel.includes("due") || isDue ? "var(--danger)" : "var(--success-dark)";
-          const durationLabel = getDurationDisplay(check);
-          return (
-            <DevLayoutSection
-              key={check.id}
-              sectionKey={`tracking-equipment-card-${index + 1}`}
-              parentKey="tracking-equipment-grid"
-              sectionType="content-card"
-              role="button"
-              tabIndex={0}
-              onClick={() => setEquipmentModal({ open: true, item: check })}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  setEquipmentModal({ open: true, item: check });
-                }
-              }}
-              style={{
-                padding: "20px 24px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-                background: "var(--accent-surface)",
-                boxShadow: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                width: "100%",
-                maxWidth: "100%",
-                minWidth: 0,
-                height: "220px",
-                overflow: "hidden",
-              }}
-            >
+      }
+        {equipmentChecks.
+      filter((check) => {
+        const term = equipmentSearchTerm.trim().toLowerCase();
+        if (term && ![check.name, check.status].filter(Boolean).some((value) => value.toLowerCase().includes(term))) {
+          return false;
+        }
+        if (equipmentDueFilter !== TRACKING_FILTER_ALL) {
+          const isDue = getDueLabel(check.nextDue) === "Due now" || (check.status || "").toLowerCase().includes("due");
+          if (equipmentDueFilter === "due" && !isDue) return false;
+          if (equipmentDueFilter === "ok" && isDue) return false;
+        }
+        return true;
+      }).
+      map((check, index) => {
+        const dueLabel = getDueLabel(check.nextDue);
+        const isDue = dueLabel === "Due now";
+        const statusLabel = (check.status || "").toLowerCase();
+        const badgeColor = statusLabel.includes("due") || isDue ? "var(--danger)" : "var(--success-dark)";
+        const durationLabel = getDurationDisplay(check);
+        return (
+          <DevLayoutSection
+            key={check.id}
+            sectionKey={`tracking-equipment-card-${index + 1}`}
+            parentKey="tracking-equipment-grid"
+            sectionType="content-card"
+            role="button"
+            tabIndex={0}
+            onClick={() => setEquipmentModal({ open: true, item: check })}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setEquipmentModal({ open: true, item: check });
+              }
+            }}
+            style={{
+              padding: "20px 24px",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+              background: "var(--accent-surface)",
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              width: "100%",
+              maxWidth: "100%",
+              minWidth: 0,
+              height: "220px",
+              overflow: "hidden"
+            }}>
+            
               <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: "10px",
-                  minHeight: "28px",
-                  minWidth: 0,
-                }}
-              >
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: "10px",
+                minHeight: "28px",
+                minWidth: 0
+              }}>
+              
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong
-                    style={{
-                      display: "block",
-                      fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
+                  style={{
+                    display: "block",
+                    fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}>
+                  
                     {check.name}
                   </strong>
                 </div>
@@ -2253,199 +2254,199 @@ export default function TrackingDashboard() {
               </div>
               <div style={{ display: "grid", gap: "6px", flex: 1 }}>
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "var(--text-body-sm)",
-                    color: "var(--info-dark)",
-                  }}
-                >
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "var(--text-body-sm)",
+                  color: "var(--info-dark)"
+                }}>
+                
                   <span>Last checked</span>
                   <strong>{formatDateOnlyLabel(check.lastChecked)}</strong>
                 </div>
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "var(--text-body-sm)",
-                    color: "var(--info-dark)",
-                  }}
-                >
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "var(--text-body-sm)",
+                  color: "var(--info-dark)"
+                }}>
+                
                   <span>Next due</span>
                   <strong>{formatDateOnlyLabel(check.nextDue)}</strong>
                 </div>
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "var(--text-body-sm)",
-                    color: "var(--info-dark)",
-                  }}
-                >
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "var(--text-body-sm)",
+                  color: "var(--info-dark)"
+                }}>
+                
                   <span>Check interval</span>
                   <strong>{durationLabel}</strong>
                 </div>
               </div>
               <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  handleEquipmentCheck(check.id);
-                }}
-                style={{ marginTop: "auto", width: "100%" }}
-              >
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleEquipmentCheck(check.id);
+              }}
+              style={{ marginTop: "auto", width: "100%" }}>
+              
                 Log check
               </Button>
-            </DevLayoutSection>
-          );
-        })}
-      </DevLayoutSection>
-    </>
-  );
+            </DevLayoutSection>);
 
-  const renderOilContent = () => (
-    <>
+      })}
+      </DevLayoutSection>
+    </>;
+
+
+  const renderOilContent = () =>
+  <>
       <DevLayoutSection
-        sectionKey="tracking-oil-header"
-        parentKey="tracking-page-body"
-        sectionType="toolbar"
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "12px",
-          alignItems: "center",
-        }}
-      >
+      sectionKey="tracking-oil-header"
+      parentKey="tracking-page-body"
+      sectionType="toolbar"
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "12px",
+        alignItems: "center"
+      }}>
+      
         <SearchBar
-          value={oilSearchTerm}
-          onChange={(event) => setOilSearchTerm(event.target.value)}
-          onClear={() => setOilSearchTerm("")}
-          placeholder="Search oil / stock"
-          ariaLabel="Search oil / stock"
-          style={{
-            flex: "1 1 320px",
-            minWidth: "240px",
-          }}
-        />
+        value={oilSearchTerm}
+        onChange={(event) => setOilSearchTerm(event.target.value)}
+        onClear={() => setOilSearchTerm("")}
+        placeholder="Search oil / stock"
+        ariaLabel="Search oil / stock"
+        style={{
+          flex: "1 1 320px",
+          minWidth: "240px"
+        }} />
+      
         <DropdownField
-          options={[
-            { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
-            { key: "due", value: "due", label: "Due now" },
-            { key: "ok", value: "ok", label: "Not due" },
-          ]}
-          value={oilDueFilter}
-          onValueChange={(value) => setOilDueFilter(value || TRACKING_FILTER_ALL)}
-          size="md"
-          style={{
-            flex: "0 1 220px",
-            minWidth: "180px",
-          }}
-        />
+        options={[
+        { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
+        { key: "due", value: "due", label: "Due now" },
+        { key: "ok", value: "ok", label: "Not due" }]
+        }
+        value={oilDueFilter}
+        onValueChange={(value) => setOilDueFilter(value || TRACKING_FILTER_ALL)}
+        size="md"
+        style={{
+          flex: "0 1 220px",
+          minWidth: "180px"
+        }} />
+      
       </DevLayoutSection>
       <DevLayoutSection
-        sectionKey="tracking-oil-grid"
-        parentKey="tracking-page-body"
-        sectionType="grid"
+      sectionKey="tracking-oil-grid"
+      parentKey="tracking-page-body"
+      sectionType="grid"
+      style={{
+        display: "grid",
+        gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
+        gap: "16px",
+        minWidth: 0
+      }}>
+      
+        {oilChecks.length === 0 &&
+      <DevLayoutSection
+        sectionKey="tracking-oil-empty-state"
+        parentKey="tracking-oil-grid"
+        sectionType="empty-state"
         style={{
-          display: "grid",
-          gridTemplateColumns: isMobileView ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "16px",
-          minWidth: 0,
-        }}
-      >
-        {oilChecks.length === 0 && (
-          <DevLayoutSection
-            sectionKey="tracking-oil-empty-state"
-            parentKey="tracking-oil-grid"
-            sectionType="empty-state"
-            style={{
-              gridColumn: "1 / -1",
-              padding: "12px",
-              borderRadius: "var(--radius-sm)",
-              border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
-              textAlign: "center",
-              color: "var(--info-dark)",
-            }}
-          >
+          gridColumn: "1 / -1",
+          padding: "12px",
+          borderRadius: "var(--radius-sm)",
+          border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
+          textAlign: "center",
+          color: "var(--info-dark)"
+        }}>
+        
             Oil stock checklist is empty.
           </DevLayoutSection>
-        )}
-        {oilChecks
-          .filter((item) => {
-            const term = oilSearchTerm.trim().toLowerCase();
-            if (term && ![item.title, item.stock].filter(Boolean).some((value) => String(value).toLowerCase().includes(term))) {
-              return false;
-            }
-            if (oilDueFilter !== TRACKING_FILTER_ALL) {
-              const isDue = getDueLabel(item.nextCheck) === "Due now";
-              if (oilDueFilter === "due" && !isDue) return false;
-              if (oilDueFilter === "ok" && isDue) return false;
-            }
-            return true;
-          })
-          .map((item, index) => {
-          const dueLabel = getDueLabel(item.nextCheck);
-          const isDue = dueLabel === "Due now";
-          const durationLabel = getDurationDisplay(item);
-          const isTopUpActive = activeTopUpId === item.id;
-          const badgeColor = isDue ? "var(--danger)" : "var(--success-dark)";
-          return (
-            <DevLayoutSection
-              key={item.id}
-              sectionKey={`tracking-oil-card-${index + 1}`}
-              parentKey="tracking-oil-grid"
-              sectionType="content-card"
-              role="button"
-              tabIndex={0}
-              onClick={() => !isTopUpActive && setOilStockModal({ open: true, item })}
-              onKeyDown={(event) => {
-                if (!isTopUpActive && (event.key === "Enter" || event.key === " ")) {
-                  event.preventDefault();
-                  setOilStockModal({ open: true, item });
-                }
-              }}
-              style={{
-                padding: "20px 24px",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-                background: "var(--accent-surface)",
-                boxShadow: "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-                cursor: isTopUpActive ? "default" : "pointer",
-                transition: "all 0.2s ease",
-                width: "100%",
-                maxWidth: "100%",
-                minWidth: 0,
-                height: isTopUpActive ? "auto" : "260px",
-                overflow: "hidden",
-              }}
-            >
+      }
+        {oilChecks.
+      filter((item) => {
+        const term = oilSearchTerm.trim().toLowerCase();
+        if (term && ![item.title, item.stock].filter(Boolean).some((value) => String(value).toLowerCase().includes(term))) {
+          return false;
+        }
+        if (oilDueFilter !== TRACKING_FILTER_ALL) {
+          const isDue = getDueLabel(item.nextCheck) === "Due now";
+          if (oilDueFilter === "due" && !isDue) return false;
+          if (oilDueFilter === "ok" && isDue) return false;
+        }
+        return true;
+      }).
+      map((item, index) => {
+        const dueLabel = getDueLabel(item.nextCheck);
+        const isDue = dueLabel === "Due now";
+        const durationLabel = getDurationDisplay(item);
+        const isTopUpActive = activeTopUpId === item.id;
+        const badgeColor = isDue ? "var(--danger)" : "var(--success-dark)";
+        return (
+          <DevLayoutSection
+            key={item.id}
+            sectionKey={`tracking-oil-card-${index + 1}`}
+            parentKey="tracking-oil-grid"
+            sectionType="content-card"
+            role="button"
+            tabIndex={0}
+            onClick={() => !isTopUpActive && setOilStockModal({ open: true, item })}
+            onKeyDown={(event) => {
+              if (!isTopUpActive && (event.key === "Enter" || event.key === " ")) {
+                event.preventDefault();
+                setOilStockModal({ open: true, item });
+              }
+            }}
+            style={{
+              padding: "20px 24px",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+              background: "var(--accent-surface)",
+              boxShadow: "none",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              cursor: isTopUpActive ? "default" : "pointer",
+              transition: "all 0.2s ease",
+              width: "100%",
+              maxWidth: "100%",
+              minWidth: 0,
+              height: isTopUpActive ? "auto" : "260px",
+              overflow: "hidden"
+            }}>
+            
               <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: "10px",
-                  minHeight: "28px",
-                  minWidth: 0,
-                }}
-              >
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: "10px",
+                minHeight: "28px",
+                minWidth: 0
+              }}>
+              
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong
-                    style={{
-                      display: "block",
-                      fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
-                      fontWeight: 700,
-                      color: "var(--text-primary)",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
+                  style={{
+                    display: "block",
+                    fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
+                    fontWeight: 700,
+                    color: "var(--text-primary)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}>
+                  
                     {item.title}
                   </strong>
                 </div>
@@ -2455,95 +2456,95 @@ export default function TrackingDashboard() {
               </div>
               <div style={{ display: "grid", gap: "6px", flex: 1 }}>
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "var(--text-body-sm)",
-                    color: "var(--info-dark)",
-                  }}
-                >
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "var(--text-body-sm)",
+                  color: "var(--info-dark)"
+                }}>
+                
                   <span>Stock amount</span>
                   <strong>{item.stock || "—"}</strong>
                 </div>
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "var(--text-body-sm)",
-                    color: "var(--info-dark)",
-                  }}
-                >
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "var(--text-body-sm)",
+                  color: "var(--info-dark)"
+                }}>
+                
                   <span>Last check</span>
                   <strong>{formatDateOnlyLabel(item.lastCheck)}</strong>
                 </div>
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "var(--text-body-sm)",
-                    color: "var(--info-dark)",
-                  }}
-                >
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "var(--text-body-sm)",
+                  color: "var(--info-dark)"
+                }}>
+                
                   <span>Next check</span>
                   <strong>{formatDateOnlyLabel(item.nextCheck)}</strong>
                 </div>
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "var(--text-body-sm)",
-                    color: "var(--info-dark)",
-                  }}
-                >
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "var(--text-body-sm)",
+                  color: "var(--info-dark)"
+                }}>
+                
                   <span>Check interval</span>
                   <strong>{durationLabel}</strong>
                 </div>
               </div>
-              {isTopUpActive && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
+              {isTopUpActive &&
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
                   <InputField
-                    label="Top up stock amount"
-                    type="text"
-                    value={topUpValue}
-                    onChange={(e) => setTopUpValue(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="e.g., 18 × 5L cans"
-                  />
+                label="Top up stock amount"
+                type="text"
+                value={topUpValue}
+                onChange={(e) => setTopUpValue(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                placeholder="e.g., 18 × 5L cans" />
+              
                   <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleOilCheck(item.id, topUpValue);
-                    }}
-                    style={{ width: "100%" }}
-                  >
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleOilCheck(item.id, topUpValue);
+                }}
+                style={{ width: "100%" }}>
+                
                     Save
                   </Button>
                 </div>
-              )}
-              {!isTopUpActive && (
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setActiveTopUpId(item.id);
-                    setTopUpValue(item.stock || "");
-                  }}
-                  style={{ marginTop: "auto", width: "100%" }}
-                >
+            }
+              {!isTopUpActive &&
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                setActiveTopUpId(item.id);
+                setTopUpValue(item.stock || "");
+              }}
+              style={{ marginTop: "auto", width: "100%" }}>
+              
                   Mark checked
                 </Button>
-              )}
-            </DevLayoutSection>
-          );
-        })}
+            }
+            </DevLayoutSection>);
+
+      })}
       </DevLayoutSection>
-    </>
-  );
+    </>;
+
 
   const renderActiveTabContent = () => {
     if (activeTab === "equipment") {
@@ -2555,182 +2556,182 @@ export default function TrackingDashboard() {
     return renderTrackerContent();
   };
 
-  return (
-    <>
-      <DevLayoutSection
-        sectionKey="tracking-page"
-        parentKey="app-layout-page-card"
-        sectionType="section-shell"
-        backgroundToken="surface"
-        className="app-page-stack"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px",
-          width: "100%",
-          maxWidth: "100%",
-          minWidth: 0,
-          padding: "8px 0",
-        }}
-      >
-        <DevLayoutSection
-          sectionKey="tracking-page-body"
-          parentKey="tracking-page"
-          sectionType="section-shell"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: isMobileView ? "16px" : "18px",
-            width: "100%",
-            maxWidth: "100%",
-            minWidth: 0,
-          }}
-        >
-          {tabs.length > 1 && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "12px",
-                flexWrap: "wrap",
-                width: "100%",
-              }}
-            >
-              <DevLayoutSection
-                sectionKey="tracking-page-tabs"
-                parentKey="tracking-page-body"
-                sectionType="toolbar"
-                style={{ display: "inline-flex", width: "fit-content", maxWidth: "100%", background: "transparent", padding: 0 }}
-              >
-                <TabGroup
-                  items={tabs.map((tab) => ({ label: tab.label, value: tab.id }))}
-                  value={activeTab}
-                  onChange={setActiveTab}
-                  ariaLabel="Tracker tabs"
-                  className="tab-api--inline"
-                />
-              </DevLayoutSection>
-              {activeTab === "tracker" && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "var(--space-sm)",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    marginLeft: "auto",
-                  }}
-                >
-                  <Button variant="secondary" size="sm" onClick={loadEntries}>
-                    Refresh
-                  </Button>
-                  {loading && <InlineLoading width={100} label="Refreshing" />}
-                  <Button variant="primary" size="sm" onClick={() => openEntryModal("car")}>
-                    Add location
-                  </Button>
-                </div>
-              )}
-              {activeTab === "equipment" && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "var(--space-sm)",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    marginLeft: "auto",
-                  }}
-                >
-                  {equipmentLoading && <InlineLoading width={80} label="Loading" />}
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setEquipmentModal({ open: true, item: null })}
-                  >
-                    Add Equipment/tools
-                  </Button>
-                </div>
-              )}
-              {activeTab === "oil-stock" && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "var(--space-sm)",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    marginLeft: "auto",
-                  }}
-                >
-                  {oilLoading && <InlineLoading width={80} label="Loading" />}
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setOilStockModal({ open: true, item: null })}
-                  >
-                    Add Oil / Stock
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-          {error && (
-            <DevLayoutSection
-              sectionKey="tracking-page-error"
-              parentKey="tracking-page-body"
-              sectionType="banner"
-            >
-              <StatusMessage tone="danger">{error}</StatusMessage>
-            </DevLayoutSection>
-          )}
-          {renderActiveTabContent()}
-        </DevLayoutSection>
-      </DevLayoutSection>
+  return <TrackingDashboardUi view="section1" activeTab={activeTab} Button={Button} CAR_LOCATIONS={CAR_LOCATIONS} closeEntryModal={closeEntryModal} closeSearchModal={closeSearchModal} DevLayoutSection={DevLayoutSection} entries={entries} entryModal={entryModal} equipmentLoading={equipmentLoading} equipmentModal={equipmentModal} EquipmentToolsModal={EquipmentToolsModal} error={error} handleDeleteEquipment={handleDeleteEquipment} handleDeleteOilStock={handleDeleteOilStock} handleLocationSelect={handleLocationSelect} handleSave={handleSave} handleSaveEquipment={handleSaveEquipment} handleSaveOilStock={handleSaveOilStock} InlineLoading={InlineLoading} isMobileView={isMobileView} KEY_LOCATIONS={KEY_LOCATIONS} loadEntries={loadEntries} loading={loading} LocationEntryModal={LocationEntryModal} LocationSearchModal={LocationSearchModal} oilLoading={oilLoading} oilStockModal={oilStockModal} OilStockModal={OilStockModal} openEntryModal={openEntryModal} renderActiveTabContent={renderActiveTabContent} searchModal={searchModal} setActiveTab={setActiveTab} setEquipmentModal={setEquipmentModal} setOilStockModal={setOilStockModal} setSimplifiedModal={setSimplifiedModal} simplifiedModal={simplifiedModal} SimplifiedTrackingModal={SimplifiedTrackingModal} StatusMessage={StatusMessage} TabGroup={TabGroup} tabs={tabs} />;
 
-      {searchModal.open && (
-        <LocationSearchModal
-          type={searchModal.type}
-          options={searchModal.type === "car" ? CAR_LOCATIONS : KEY_LOCATIONS}
-          onClose={closeSearchModal}
-          onSelect={handleLocationSelect}
-        />
-      )}
 
-      {entryModal.open && (
-        <LocationEntryModal
-          context={entryModal.type}
-          entry={entryModal.entry}
-          onClose={closeEntryModal}
-          onSave={handleSave}
-          existingEntries={entries}
-        />
-      )}
 
-      {simplifiedModal.open && (
-        <SimplifiedTrackingModal
-          initialData={simplifiedModal.initialData}
-          onClose={() => setSimplifiedModal({ open: false, initialData: null })}
-          onSave={handleSave}
-        />
-      )}
 
-      {equipmentModal.open && (
-        <EquipmentToolsModal
-          initialData={equipmentModal.item}
-          onClose={() => setEquipmentModal({ open: false, item: null })}
-          onSave={handleSaveEquipment}
-          onDelete={handleDeleteEquipment}
-        />
-      )}
 
-      {oilStockModal.open && (
-        <OilStockModal
-          initialData={oilStockModal.item}
-          onClose={() => setOilStockModal({ open: false, item: null })}
-          onSave={handleSaveOilStock}
-          onDelete={handleDeleteOilStock}
-        />
-      )}
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 TrackingDashboard.getLayout = (page) => <Layout disableContentCardHover>{page}</Layout>;

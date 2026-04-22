@@ -1,4 +1,4 @@
-// file location: src/pages/accounts/invoices/index.js // header comment referencing file path
+// file location: src/pages/accounts/invoices/index.js
 import React, { useCallback, useEffect, useMemo, useState } from "react"; // import React hooks
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
+import InvoicesPageUi from "@/components/page-ui/accounts/invoices/accounts-invoices-ui"; // Extracted presentation layer.
 const INVOICE_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "SALES", "WORKSHOP", "WORKSHOP MANAGER", "PARTS", "PARTS MANAGER"];
 export default function InvoicesPage() {
   const router = useRouter();
@@ -59,40 +60,40 @@ export default function InvoicesPage() {
   const handleExport = () => {
     exportToCsv("invoices.csv", invoices, ["invoice_id", "account_id", "customer_id", "job_number", "grand_total", "payment_status", "due_date"]);
   };
-  return (
-    <ProtectedRoute allowedRoles={INVOICE_ROLES}>
-      <>
-        <DevLayoutSection sectionKey="accounts-invoices-page-shell" sectionType="page-shell" shell>
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            <DevLayoutSection
-              as="div"
-              sectionKey="accounts-invoices-header-actions"
-              sectionType="toolbar"
-              parentKey="accounts-invoices-page-shell"
-              style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap", alignItems: "center" }}
-            >
-              <Button type="button" variant="secondary" onClick={handleExport}>
-                Export
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => router.push("/accounts")}
-                style={{
-                  background: "rgba(var(--primary-rgb), 0.12)",
-                  borderColor: "rgba(var(--primary-rgb), 0.28)",
-                  color: "var(--primary-dark)",
-                }}
-              >
-                Accounts
-              </Button>
-            </DevLayoutSection>
-            <DevLayoutSection sectionKey="accounts-invoices-table" sectionType="data-table" parentKey="accounts-invoices-page-shell">
-              <InvoiceTable invoices={invoices} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} loading={loading} accentSurface />
-            </DevLayoutSection>
-          </div>
-        </DevLayoutSection>
-      </>
-    </ProtectedRoute>
-  );
+  return <InvoicesPageUi view="section1" Button={Button} DevLayoutSection={DevLayoutSection} filters={filters} handleExport={handleExport} handlePageChange={handlePageChange} INVOICE_ROLES={INVOICE_ROLES} invoices={invoices} InvoiceTable={InvoiceTable} loading={loading} pagination={pagination} ProtectedRoute={ProtectedRoute} router={router} setFilters={setFilters} />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

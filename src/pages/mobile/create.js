@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { showAlert } from "@/lib/notifications/alertBus";
+import PageUi from "@/components/page-ui/mobile/mobile-create-ui"; // Extracted presentation layer.
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: "720px" };
 const cardStyle = {
@@ -16,7 +17,7 @@ const cardStyle = {
   border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))",
   display: "flex",
   flexDirection: "column",
-  gap: "10px",
+  gap: "10px"
 };
 
 const labelStyle = { display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.9rem" };
@@ -40,10 +41,10 @@ function MobileCreateInner() {
     hours: "",
     accessNotes: "",
     windowStart: "",
-    windowEnd: "",
+    windowEnd: ""
   });
 
-  function update(k, v) { setForm((f) => ({ ...f, [k]: v })); }
+  function update(k, v) {setForm((f) => ({ ...f, [k]: v }));}
 
   async function submit(e) {
     e.preventDefault();
@@ -58,7 +59,7 @@ function MobileCreateInner() {
           email: form.customerEmail,
           mobile: form.customerMobile,
           address: form.address,
-          postcode: form.postcode,
+          postcode: form.postcode
         },
         requests: [{ description: form.description, time: form.hours, paymentType: "Customer" }],
         jobSource: "Mobile",
@@ -70,13 +71,13 @@ function MobileCreateInner() {
           contactPhone: form.contactPhone || form.customerMobile,
           windowStart: form.windowStart ? new Date(form.windowStart).toISOString() : null,
           windowEnd: form.windowEnd ? new Date(form.windowEnd).toISOString() : null,
-          accessNotes: form.accessNotes,
-        },
+          accessNotes: form.accessNotes
+        }
       };
       const res = await fetch("/api/jobcards/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.message || "Failed");
@@ -136,18 +137,18 @@ function MobileCreateInner() {
       <button
         type="submit"
         disabled={submitting}
-        style={{ padding: "12px", borderRadius: "8px", background: "var(--primary, #2563eb)", color: "#fff", fontWeight: 600, border: "none", cursor: "pointer" }}
-      >
+        style={{ padding: "12px", borderRadius: "8px", background: "var(--primary, #2563eb)", color: "#fff", fontWeight: 600, border: "none", cursor: "pointer" }}>
+        
         {submitting ? "Creating…" : "Create mobile job"}
       </button>
-    </form>
-  );
+    </form>);
+
 }
 
 export default function Page() {
-  return (
-    <ProtectedRoute allowedRoles={["MOBILE TECHNICIAN", "SERVICE", "SERVICE MANAGER", "WORKSHOP MANAGER", "ADMIN", "ADMIN MANAGER", "OWNER", "GENERAL MANAGER"]}>
-      <MobileCreateInner />
-    </ProtectedRoute>
-  );
+  return <PageUi view="section1" MobileCreateInner={MobileCreateInner} ProtectedRoute={ProtectedRoute} />;
+
+
+
+
 }

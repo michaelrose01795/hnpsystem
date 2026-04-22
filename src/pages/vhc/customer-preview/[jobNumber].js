@@ -11,6 +11,7 @@ import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summarySt
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { useTheme } from "@/styles/themeProvider";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import CustomerPreviewPageUi from "@/components/page-ui/vhc/customer-preview/vhc-customer-preview-job-number-ui"; // Extracted presentation layer.
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -22,40 +23,40 @@ const SEVERITY_THEME = {
   red: {
     background: "var(--danger-surface)",
     border: "var(--danger-surface)",
-    text: "var(--danger)",
+    text: "var(--danger)"
   },
   amber: {
     background: "var(--warning-surface)",
     border: "var(--warning-surface)",
-    text: "var(--warning)",
+    text: "var(--warning)"
   },
   green: {
     background: "var(--success-surface)",
     border: "var(--success)",
-    text: "var(--success)",
+    text: "var(--success)"
   },
   grey: {
     background: "var(--info-surface)",
     border: "var(--info-surface)",
-    text: "var(--info)",
+    text: "var(--info)"
   },
   authorized: {
     background: "var(--success-surface)",
     border: "var(--success)",
-    text: "var(--success)",
+    text: "var(--success)"
   },
   declined: {
     background: "var(--danger-surface)",
     border: "var(--danger)",
-    text: "var(--danger)",
-  },
+    text: "var(--danger)"
+  }
 };
 
 const TAB_OPTIONS = [
-  { id: "summary", label: "Summary" },
-  { id: "photos", label: "Photos" },
-  { id: "videos", label: "Videos" },
-];
+{ id: "summary", label: "Summary" },
+{ id: "photos", label: "Photos" },
+{ id: "videos", label: "Videos" }];
+
 
 const LABOUR_RATE = 85;
 
@@ -64,7 +65,7 @@ const TYRE_NEW_DEPTH = 8;
 const calculateTyreWearPercent = (depthMm) => {
   const depth = Number(depthMm);
   if (!Number.isFinite(depth) || depth < 0) return null;
-  const wornPercent = Math.round(((TYRE_NEW_DEPTH - Math.min(depth, TYRE_NEW_DEPTH)) / TYRE_NEW_DEPTH) * 100);
+  const wornPercent = Math.round((TYRE_NEW_DEPTH - Math.min(depth, TYRE_NEW_DEPTH)) / TYRE_NEW_DEPTH * 100);
   return Math.max(0, Math.min(100, wornPercent));
 };
 
@@ -73,7 +74,7 @@ const PAD_NEW_THICKNESS = 10;
 const calculatePadWearPercent = (thicknessMm) => {
   const thickness = Number(thicknessMm);
   if (!Number.isFinite(thickness) || thickness < 0) return null;
-  const wornPercent = Math.round(((PAD_NEW_THICKNESS - Math.min(thickness, PAD_NEW_THICKNESS)) / PAD_NEW_THICKNESS) * 100);
+  const wornPercent = Math.round((PAD_NEW_THICKNESS - Math.min(thickness, PAD_NEW_THICKNESS)) / PAD_NEW_THICKNESS * 100);
   return Math.max(0, Math.min(100, wornPercent));
 };
 
@@ -165,9 +166,9 @@ export default function CustomerPreviewPage() {
 
       try {
         // Fetch job with related data
-        const { data: jobData, error: jobError } = await supabase
-          .from("jobs")
-          .select(`
+        const { data: jobData, error: jobError } = await supabase.
+        from("jobs").
+        select(`
             *,
             customer:customer_id(*),
             vehicle:vehicle_id(*),
@@ -220,9 +221,9 @@ export default function CustomerPreviewPage() {
               uploaded_at,
               uploaded_by
             ),
-          `)
-          .eq("job_number", jobNumber)
-          .maybeSingle();
+          `).
+        eq("job_number", jobNumber).
+        maybeSingle();
 
         if (jobError) throw jobError;
         if (!jobData) {
@@ -269,65 +270,65 @@ export default function CustomerPreviewPage() {
 
     console.log(`[CUSTOMER-PREVIEW] Setting up subscription for job ${job.id}`);
 
-    const channel = supabase
-      .channel(`vhc_checks_job_${job.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "vhc_checks",
-          filter: `job_id=eq.${job.id}`,
-        },
-        (payload) => {
-          console.log("[CUSTOMER-PREVIEW] VHC UPDATE received:", payload);
-          // Immediately update the vhcChecksData with the new values
-          setVhcChecksData((prevData) => {
-            const updated = prevData.map((check) => {
-              if (check.vhc_id === payload.new.vhc_id) {
-                console.log(`[CUSTOMER-PREVIEW] Updating vhc_id ${check.vhc_id}:`, {
-                  old_status: check.display_status,
-                  new_status: payload.new.display_status,
-                });
-                return { ...check, ...payload.new };
-              }
-              return check;
-            });
-            return updated;
+    const channel = supabase.
+    channel(`vhc_checks_job_${job.id}`).
+    on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "vhc_checks",
+        filter: `job_id=eq.${job.id}`
+      },
+      (payload) => {
+        console.log("[CUSTOMER-PREVIEW] VHC UPDATE received:", payload);
+        // Immediately update the vhcChecksData with the new values
+        setVhcChecksData((prevData) => {
+          const updated = prevData.map((check) => {
+            if (check.vhc_id === payload.new.vhc_id) {
+              console.log(`[CUSTOMER-PREVIEW] Updating vhc_id ${check.vhc_id}:`, {
+                old_status: check.display_status,
+                new_status: payload.new.display_status
+              });
+              return { ...check, ...payload.new };
+            }
+            return check;
           });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "vhc_checks",
-          filter: `job_id=eq.${job.id}`,
-        },
-        (payload) => {
-          console.log("[CUSTOMER-PREVIEW] VHC INSERT received:", payload);
-          setVhcChecksData((prevData) => [...prevData, payload.new]);
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "vhc_checks",
-          filter: `job_id=eq.${job.id}`,
-        },
-        (payload) => {
-          console.log("[CUSTOMER-PREVIEW] VHC DELETE received:", payload);
-          setVhcChecksData((prevData) =>
-            prevData.filter((check) => check.vhc_id !== payload.old.vhc_id)
-          );
-        }
-      )
-      .subscribe((status) => {
-        console.log(`[CUSTOMER-PREVIEW] Subscription status: ${status}`);
-      });
+          return updated;
+        });
+      }
+    ).
+    on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "vhc_checks",
+        filter: `job_id=eq.${job.id}`
+      },
+      (payload) => {
+        console.log("[CUSTOMER-PREVIEW] VHC INSERT received:", payload);
+        setVhcChecksData((prevData) => [...prevData, payload.new]);
+      }
+    ).
+    on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "vhc_checks",
+        filter: `job_id=eq.${job.id}`
+      },
+      (payload) => {
+        console.log("[CUSTOMER-PREVIEW] VHC DELETE received:", payload);
+        setVhcChecksData((prevData) =>
+        prevData.filter((check) => check.vhc_id !== payload.old.vhc_id)
+        );
+      }
+    ).
+    subscribe((status) => {
+      console.log(`[CUSTOMER-PREVIEW] Subscription status: ${status}`);
+    });
 
     // Cleanup subscription on unmount or when job changes
     return () => {
@@ -514,7 +515,7 @@ export default function CustomerPreviewPage() {
       const qty = Number(part.quantity_requested) || 1;
       const unitPrice = Number(part.unit_price ?? part.part?.unit_price ?? 0);
       if (Number.isFinite(unitPrice)) {
-        map.set(key, (map.get(key) || 0) + (qty * unitPrice));
+        map.set(key, (map.get(key) || 0) + qty * unitPrice);
       }
     });
 
@@ -531,10 +532,10 @@ export default function CustomerPreviewPage() {
     }
 
     // Calculate from labour + parts
-    const labourHours = labourHoursByVhcItem.get(String(itemId)) ||
-                        (vhcCheck?.labour_hours ? Number(vhcCheck.labour_hours) : 0);
-    const partsCost = partsCostByVhcItem.get(String(itemId)) ||
-                      (vhcCheck?.parts_cost ? Number(vhcCheck.parts_cost) : 0);
+    const labourHours = labourHoursByVhcItem.get(String(itemId)) || (
+    vhcCheck?.labour_hours ? Number(vhcCheck.labour_hours) : 0);
+    const partsCost = partsCostByVhcItem.get(String(itemId)) || (
+    vhcCheck?.parts_cost ? Number(vhcCheck.parts_cost) : 0);
 
     const labourCost = Number.isFinite(labourHours) ? labourHours * LABOUR_RATE : 0;
     return labourCost + partsCost;
@@ -556,11 +557,11 @@ export default function CustomerPreviewPage() {
 
         // Build ID - check for vhc_id first, then legacy formats, then stable display ID
         const legacyId = `${sectionName}-${index}`;
-        const id = item.vhc_id
-          ? String(item.vhc_id)
-          : vhcIdAliases[legacyId]
-          ? legacyId
-          : buildStableDisplayId(sectionName, item, index);
+        const id = item.vhc_id ?
+        String(item.vhc_id) :
+        vhcIdAliases[legacyId] ?
+        legacyId :
+        buildStableDisplayId(sectionName, item, index);
 
         const heading = item.heading || item.label || item.issue_title || item.name || item.title || sectionName;
         const category = resolveCategoryForItem(sectionName, heading);
@@ -586,7 +587,7 @@ export default function CustomerPreviewPage() {
           severityKey: severity,
           concerns,
           wheelKey: item.wheelKey || null,
-          approvalStatus,
+          approvalStatus
         });
 
         processedIds.add(String(id));
@@ -610,14 +611,14 @@ export default function CustomerPreviewPage() {
 
       // Prefer explicit severity column over approval/display status so original red/amber/green is authoritative
       let severity = normaliseColour(check.severity || check.display_status);
-      
+
       // If no severity found, try to infer from section name or issue title
       if (!severity) {
         const combinedText = `${check.section || ""} ${check.issue_title || ""}`.toLowerCase();
-        if (combinedText.includes("red")) severity = "red";
-        else if (combinedText.includes("amber") || combinedText.includes("orange")) severity = "amber";
-        else if (combinedText.includes("green") || combinedText.includes("good")) severity = "green";
-        else severity = "grey"; // Default to grey if no severity can be determined
+        if (combinedText.includes("red")) severity = "red";else
+        if (combinedText.includes("amber") || combinedText.includes("orange")) severity = "amber";else
+        if (combinedText.includes("green") || combinedText.includes("good")) severity = "green";else
+        severity = "grey"; // Default to grey if no severity can be determined
       }
 
       const sectionName = check.section || "Other";
@@ -638,7 +639,7 @@ export default function CustomerPreviewPage() {
         concerns: [],
         wheelKey: null,
         approvalStatus: normaliseDecisionStatus(check.approval_status) || "pending",
-        fromDatabase: true, // Mark as coming from database
+        fromDatabase: true // Mark as coming from database
       });
 
       processedIds.add(String(check.vhc_id));
@@ -683,7 +684,7 @@ export default function CustomerPreviewPage() {
         totalOverride: vhcCheck?.total_override,
         labourComplete: Boolean(vhcCheck?.labour_complete),
         partsComplete: Boolean(vhcCheck?.parts_complete),
-        total: resolveItemTotal(itemId),
+        total: resolveItemTotal(itemId)
       };
 
       // Categorize by approval status first, then by severity
@@ -703,7 +704,7 @@ export default function CustomerPreviewPage() {
     });
 
     // Sort authorized and declined lists so red items appear before amber items
-    const severityRank = (s) => (s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3);
+    const severityRank = (s) => s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3;
 
     const getEffectiveSeverity = (it) => {
       let s = it.severityKey || it.rawSeverity || null;
@@ -717,9 +718,9 @@ export default function CustomerPreviewPage() {
           const check = vhcChecksMap.get(String(canonical)) || vhcChecksMap.get(String(it.id));
           s = normaliseColour(check?.severity || check?.display_status);
         } catch (err) {
+
           // ignore
-        }
-      }
+        }}
       return s;
     };
 
@@ -737,9 +738,9 @@ export default function CustomerPreviewPage() {
     summaryItems.forEach((item) => {
       const total = resolveItemTotal(item.id) || 0;
       const mapRow = vhcChecksMap.get(String(item.id)) || {};
-      const effective = getEffectiveSeverity(item) || normaliseColour((mapRow?.severity || mapRow?.display_status)) || item.rawSeverity || item.severityKey || resolveSeverityKey(item.rawSeverity, mapRow?.severity || mapRow?.display_status);
-      if (effective === "red") red += total;
-      else if (effective === "amber") amber += total;
+      const effective = getEffectiveSeverity(item) || normaliseColour(mapRow?.severity || mapRow?.display_status) || item.rawSeverity || item.severityKey || resolveSeverityKey(item.rawSeverity, mapRow?.severity || mapRow?.display_status);
+      if (effective === "red") red += total;else
+      if (effective === "amber") amber += total;
     });
 
     const calculateListTotal = (list) => list.reduce((sum, item) => sum + (item.total || 0), 0);
@@ -749,7 +750,7 @@ export default function CustomerPreviewPage() {
       amber,
       green: calculateListTotal(severityLists.green),
       authorized: calculateListTotal(severityLists.authorized),
-      declined: calculateListTotal(severityLists.declined),
+      declined: calculateListTotal(severityLists.declined)
     };
   }, [summaryItems, severityLists, vhcChecksMap, resolveItemTotal]);
 
@@ -787,16 +788,16 @@ export default function CustomerPreviewPage() {
 
   const quoteViewModel = useMemo(
     () =>
-      buildVhcQuoteLinesModel({
-        job,
-        sections,
-        vhcChecksData,
-        partsJobItems,
-        vhcIdAliases,
-        authorizedViewRows,
-        labourRate: LABOUR_RATE,
-        mode: "withPlaceholders",
-      }),
+    buildVhcQuoteLinesModel({
+      job,
+      sections,
+      vhcChecksData,
+      partsJobItems,
+      vhcIdAliases,
+      authorizedViewRows,
+      labourRate: LABOUR_RATE,
+      mode: "withPlaceholders"
+    }),
     [job, sections, vhcChecksData, partsJobItems, vhcIdAliases, authorizedViewRows]
   );
   const displaySeverityLists = quoteViewModel.severityLists || {};
@@ -821,8 +822,8 @@ export default function CustomerPreviewPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vhcItemId: itemId,
-          approvalStatus: newStatus || "pending",
-        }),
+          approvalStatus: newStatus || "pending"
+        })
       });
 
       if (!response.ok) {
@@ -831,10 +832,10 @@ export default function CustomerPreviewPage() {
       }
 
       // Refresh VHC checks data
-      const { data: updatedChecks } = await supabase
-        .from("vhc_checks")
-        .select("*")
-        .eq("job_id", job.id);
+      const { data: updatedChecks } = await supabase.
+      from("vhc_checks").
+      select("*").
+      eq("job_id", job.id);
 
       if (updatedChecks) {
         setVhcChecksData(updatedChecks);
@@ -881,14 +882,14 @@ export default function CustomerPreviewPage() {
 
     // Check if this is a tyre item (wheels_tyres category or tyre in label/category)
     const isTyreItem = categoryId === "wheels_tyres" ||
-                       categoryLower.includes("tyre") ||
-                       categoryLower.includes("wheel") ||
-                       labelLower.includes("tyre");
+    categoryLower.includes("tyre") ||
+    categoryLower.includes("wheel") ||
+    labelLower.includes("tyre");
 
     // Check if this is a brake pad item (not disc)
-    const isPadItem = (categoryId === "brakes_hubs" || categoryLower.includes("brake")) &&
-                      (labelLower.includes("pad") || allText.toLowerCase().includes("pad thickness")) &&
-                      !labelLower.includes("disc");
+    const isPadItem = (categoryId === "brakes_hubs" || categoryLower.includes("brake")) && (
+    labelLower.includes("pad") || allText.toLowerCase().includes("pad thickness")) &&
+    !labelLower.includes("disc");
 
     if (isTyreItem) {
       const treadDepth = extractTreadDepth(allText);
@@ -896,8 +897,8 @@ export default function CustomerPreviewPage() {
         wearPercent = calculateTyreWearPercent(treadDepth);
         wearLabel = "Tyre Wear";
       }
-    }
-    else if (isPadItem) {
+    } else
+    if (isPadItem) {
       const padThickness = extractPadThickness(allText);
       if (padThickness !== null) {
         wearPercent = calculatePadWearPercent(padThickness);
@@ -931,9 +932,9 @@ export default function CustomerPreviewPage() {
         style={{
           borderBottom: "1px solid var(--info-surface)",
           background: getRowBackground(),
-          transition: "background 0.2s ease",
-        }}
-      >
+          transition: "background 0.2s ease"
+        }}>
+        
         {/* Item Details Cell */}
         <td style={{ padding: "12px 8px", color: "var(--accent-purple)", wordWrap: "break-word", overflow: "hidden", position: 'relative' }}>
 
@@ -941,44 +942,44 @@ export default function CustomerPreviewPage() {
           </div>
           <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--accent-purple)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
             <span>{detailLabel}</span>
-            {item.rowIdLabel && (
-              <span style={{ fontSize: "11px", color: "var(--info)" }}>{item.rowIdLabel}</span>
-            )}
+            {item.rowIdLabel &&
+            <span style={{ fontSize: "11px", color: "var(--info)" }}>{item.rowIdLabel}</span>
+            }
           </div>
-          {detailContent && (
-            <div style={{ marginTop: "6px", fontWeight: 500, color: "var(--info-dark)" }}>- {detailContent}</div>
-          )}
-          {measurement ? (
-            <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{measurement}</div>
-          ) : null}
+          {detailContent &&
+          <div style={{ marginTop: "6px", fontWeight: 500, color: "var(--info-dark)" }}>- {detailContent}</div>
+          }
+          {measurement ?
+          <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{measurement}</div> :
+          null}
           {/* Wear percentage indicator for tyres and brake pads */}
-          {wearPercent !== null && (
-            <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
+          {wearPercent !== null &&
+          <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={{
-                width: "80px",
-                height: "8px",
-                background: "var(--info-surface)",
-                borderRadius: "var(--radius-xs)",
-                overflow: "hidden"
-              }}>
+              width: "80px",
+              height: "8px",
+              background: "var(--info-surface)",
+              borderRadius: "var(--radius-xs)",
+              overflow: "hidden"
+            }}>
                 <div style={{
-                  width: `${wearPercent}%`,
-                  height: "100%",
-                  background: getWearColor(wearPercent),
-                  borderRadius: "var(--radius-xs)",
-                  transition: "width 0.3s ease"
-                }} />
+                width: `${wearPercent}%`,
+                height: "100%",
+                background: getWearColor(wearPercent),
+                borderRadius: "var(--radius-xs)",
+                transition: "width 0.3s ease"
+              }} />
               </div>
               <span style={{
-                fontSize: "11px",
-                fontWeight: 600,
-                color: getWearColor(wearPercent),
-                minWidth: "45px"
-              }}>
+              fontSize: "11px",
+              fontWeight: 600,
+              color: getWearColor(wearPercent),
+              minWidth: "45px"
+            }}>
                 {wearPercent}% Worn
               </span>
             </div>
-          )}
+          }
         </td>
 
         {/* Parts Cost Cell */}
@@ -993,11 +994,11 @@ export default function CustomerPreviewPage() {
           <div style={{ fontSize: "13px", color: "var(--info-dark)" }}>
             {labourHours > 0 ? `${labourHours}h` : "—"}
           </div>
-          {labourHours > 0 && (
-            <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)", marginTop: "2px" }}>
+          {labourHours > 0 &&
+          <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--accent-purple)", marginTop: "2px" }}>
               {formatCurrency(labourCost)}
             </div>
-          )}
+          }
         </td>
 
         {/* Total Cell */}
@@ -1016,8 +1017,8 @@ export default function CustomerPreviewPage() {
                 checked={isAuthorized}
                 disabled={isUpdating}
                 onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "authorized" : null)}
-                style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer", accentColor: "var(--success)" }}
-              />
+                style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer", accentColor: "var(--success)" }} />
+              
               <span style={{ fontSize: "11px", color: "var(--success)" }}>Authorise</span>
             </label>
             <label style={{ display: "flex", gap: "4px", alignItems: "center", fontSize: "12px", cursor: isUpdating ? "not-allowed" : "pointer" }}>
@@ -1026,14 +1027,14 @@ export default function CustomerPreviewPage() {
                 checked={isDeclined}
                 disabled={isUpdating}
                 onChange={(e) => updateEntryStatus(item.id, e.target.checked ? "declined" : null)}
-                style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer", accentColor: "var(--danger)" }}
-              />
+                style={{ width: "14px", height: "14px", cursor: isUpdating ? "not-allowed" : "pointer", accentColor: "var(--danger)" }} />
+              
               <span style={{ fontSize: "11px", color: "var(--danger)" }}>Decline</span>
             </label>
           </div>
         </td>
-      </tr>
-    );
+      </tr>);
+
   };
 
   // Render customer section - matching VhcDetailsPanel design with table layout
@@ -1058,11 +1059,11 @@ export default function CustomerPreviewPage() {
         style={{
           border: `1px solid ${theme.border || "var(--info-surface)"}`,
           borderRadius: "var(--radius-md)",
-          background: (severity === "authorized" || severity === "declined") ? "var(--surface)" : (theme.background || "var(--surface)"),
+          background: severity === "authorized" || severity === "declined" ? "var(--surface)" : theme.background || "var(--surface)",
           overflow: "hidden",
-          marginBottom: "18px",
-        }}
-      >
+          marginBottom: "18px"
+        }}>
+        
         <div
           style={{
             padding: "14px 16px",
@@ -1071,44 +1072,44 @@ export default function CustomerPreviewPage() {
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             fontSize: "12px",
-            borderBottom: "1px solid var(--info-surface)",
-          }}
-        >
+            borderBottom: "1px solid var(--info-surface)"
+          }}>
+          
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>{title}</span>
-            {(authorizedTotal > 0 || declinedTotal > 0) && (
-              <div style={{ display: "flex", gap: "16px", fontSize: "11px", textTransform: "none", fontWeight: 600 }}>
-                {authorizedTotal > 0 && (
-                  <span style={{ color: "var(--success)" }}>
+            {(authorizedTotal > 0 || declinedTotal > 0) &&
+            <div style={{ display: "flex", gap: "16px", fontSize: "11px", textTransform: "none", fontWeight: 600 }}>
+                {authorizedTotal > 0 &&
+              <span style={{ color: "var(--success)" }}>
                     Authorised: {formatCurrency(authorizedTotal)}
                   </span>
-                )}
-                {declinedTotal > 0 && (
-                  <span style={{ color: "var(--danger)" }}>
+              }
+                {declinedTotal > 0 &&
+              <span style={{ color: "var(--danger)" }}>
                     Declined: {formatCurrency(declinedTotal)}
                   </span>
-                )}
+              }
               </div>
-            )}
+            }
           </div>
         </div>
-        {items.length === 0 ? (
-          <div style={{ padding: "16px", fontSize: "13px", color: "var(--info)" }}>
+        {items.length === 0 ?
+        <div style={{ padding: "16px", fontSize: "13px", color: "var(--info)" }}>
             No items recorded.
-          </div>
-        ) : (
-          <div style={{ overflow: "visible" }}>
+          </div> :
+
+        <div style={{ overflow: "visible" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "fixed" }}>
               <thead>
                 <tr
-                  style={{
-                    background: "var(--info-surface)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.04em",
-                    color: "var(--info)",
-                    fontSize: "11px",
-                  }}
-                >
+                style={{
+                  background: "var(--info-surface)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: "var(--info)",
+                  fontSize: "11px"
+                }}>
+                
                   <th style={{ textAlign: "left", padding: "12px 8px", width: "40%" }}>Item Details</th>
                   <th style={{ textAlign: "left", padding: "12px 8px", width: "15%" }}>Parts</th>
                   <th style={{ textAlign: "left", padding: "12px 8px", width: "18%" }}>Labour</th>
@@ -1125,19 +1126,19 @@ export default function CustomerPreviewPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
-    );
+        }
+      </div>);
+
   };
 
   // Render Financial Totals Grid - matching VhcSharedComponents design
   const renderFinancialTotalsGrid = () => {
     const gridItems = [
-      { label: "Red Work", value: displayTotals.red, color: "var(--danger)" },
-      { label: "Amber Work", value: displayTotals.amber, color: "var(--warning)" },
-      { label: "Authorised", value: displayTotals.authorized, color: "var(--success)" },
-      { label: "Declined", value: displayTotals.declined, color: "var(--info)" },
-    ];
+    { label: "Red Work", value: displayTotals.red, color: "var(--danger)" },
+    { label: "Amber Work", value: displayTotals.amber, color: "var(--warning)" },
+    { label: "Authorised", value: displayTotals.authorized, color: "var(--success)" },
+    { label: "Declined", value: displayTotals.declined, color: "var(--info)" }];
+
 
     return (
       <div
@@ -1145,19 +1146,19 @@ export default function CustomerPreviewPage() {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
           gap: "12px",
-          marginBottom: "16px",
-        }}
-      >
-        {gridItems.map((item) => (
-          <div
-            key={item.label}
-            style={{
-              padding: "12px",
-              border: `1px solid ${item.color}33`,
-              borderRadius: "var(--radius-sm)",
-              background: `${item.color}11`,
-            }}
-          >
+          marginBottom: "16px"
+        }}>
+        
+        {gridItems.map((item) =>
+        <div
+          key={item.label}
+          style={{
+            padding: "12px",
+            border: `1px solid ${item.color}33`,
+            borderRadius: "var(--radius-sm)",
+            background: `${item.color}11`
+          }}>
+          
             <div style={{ fontSize: "12px", color: "var(--info)", marginBottom: "4px" }}>
               {item.label}
             </div>
@@ -1165,388 +1166,387 @@ export default function CustomerPreviewPage() {
               {formatCurrency(item.value)}
             </div>
           </div>
-        ))}
-      </div>
-    );
+        )}
+      </div>);
+
   };
 
   // Render Summary Tab - matching VhcDetailsPanel customer view
-  const renderSummaryTab = () => (
-    <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+  const renderSummaryTab = () =>
+  <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
       {renderFinancialTotalsGrid()}
 
       {/* Red Items section */}
       {displaySeverityLists.red && displaySeverityLists.red.length > 0 &&
-        renderCustomerSection("Red Items", displaySeverityLists.red, "red")}
+    renderCustomerSection("Red Items", displaySeverityLists.red, "red")}
 
       {/* Amber Items section */}
       {displaySeverityLists.amber && displaySeverityLists.amber.length > 0 &&
-        renderCustomerSection("Amber Items", displaySeverityLists.amber, "amber")}
+    renderCustomerSection("Amber Items", displaySeverityLists.amber, "amber")}
 
       {/* Authorised section */}
       {displaySeverityLists.authorized && displaySeverityLists.authorized.length > 0 &&
-        renderCustomerSection("Authorised", displaySeverityLists.authorized, "authorized")}
+    renderCustomerSection("Authorised", displaySeverityLists.authorized, "authorized")}
 
       {/* Declined section */}
       {displaySeverityLists.declined && displaySeverityLists.declined.length > 0 &&
-        renderCustomerSection("Declined", displaySeverityLists.declined, "declined")}
+    renderCustomerSection("Declined", displaySeverityLists.declined, "declined")}
 
       {renderCustomerSection("Green Items", displaySeverityLists.green || [], "green")}
-    </div>
-  );
+    </div>;
+
 
   // Render Photos Tab
-  const renderPhotosTab = () => (
-    <div>
-      {photoFiles.length === 0 ? (
-        <div
-          style={{
-            padding: "18px",
-            border: "1px solid var(--info-surface)",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--info-surface)",
-            color: "var(--info)",
-            fontSize: "13px",
-          }}
-        >
+  const renderPhotosTab = () =>
+  <div>
+      {photoFiles.length === 0 ?
+    <div
+      style={{
+        padding: "18px",
+        border: "1px solid var(--info-surface)",
+        borderRadius: "var(--radius-sm)",
+        background: "var(--info-surface)",
+        color: "var(--info)",
+        fontSize: "13px"
+      }}>
+      
           No photos have been uploaded for this job.
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {photoFiles.map((file) => (
-            <div
-              key={file.file_id}
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--info-surface)",
-                overflow: "hidden",
-              }}
-            >
+        </div> :
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+        gap: "16px"
+      }}>
+      
+          {photoFiles.map((file) =>
+      <div
+        key={file.file_id}
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-sm)",
+          border: "1px solid var(--info-surface)",
+          overflow: "hidden"
+        }}>
+        
               <div style={{ position: "relative", paddingTop: "75%", background: "var(--info-surface)" }}>
                 <img
-                  src={file.file_url}
-                  alt={file.file_name || "Photo"}
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                  loading="lazy"
-                />
+            src={file.file_url}
+            alt={file.file_name || "Photo"}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover"
+            }}
+            loading="lazy" />
+          
               </div>
               <div style={{ padding: "12px 16px" }}>
                 <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--accent-purple)", wordBreak: "break-word" }}>
                   {file.file_name || "Unnamed photo"}
                 </div>
-                {file.folder && (
-                  <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
+                {file.folder &&
+          <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
                     {file.folder}
                   </div>
-                )}
+          }
               </div>
             </div>
-          ))}
-        </div>
       )}
-    </div>
-  );
+        </div>
+    }
+    </div>;
+
 
   // Render Videos Tab
-  const renderVideosTab = () => (
-    <div>
-      {videoFiles.length === 0 ? (
-        <div
-          style={{
-            padding: "18px",
-            border: "1px solid var(--info-surface)",
-            borderRadius: "var(--radius-sm)",
-            background: "var(--info-surface)",
-            color: "var(--info)",
-            fontSize: "13px",
-          }}
-        >
+  const renderVideosTab = () =>
+  <div>
+      {videoFiles.length === 0 ?
+    <div
+      style={{
+        padding: "18px",
+        border: "1px solid var(--info-surface)",
+        borderRadius: "var(--radius-sm)",
+        background: "var(--info-surface)",
+        color: "var(--info)",
+        fontSize: "13px"
+      }}>
+      
           No videos have been uploaded for this job.
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {videoFiles.map((file) => (
-            <div
-              key={file.file_id}
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--info-surface)",
-                overflow: "hidden",
-              }}
-            >
+        </div> :
+
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+        gap: "16px"
+      }}>
+      
+          {videoFiles.map((file) =>
+      <div
+        key={file.file_id}
+        style={{
+          background: "var(--surface)",
+          borderRadius: "var(--radius-sm)",
+          border: "1px solid var(--info-surface)",
+          overflow: "hidden"
+        }}>
+        
               <div style={{ position: "relative", paddingTop: "56.25%", background: "var(--accent-purple)" }}>
                 <video
-                  src={file.file_url}
-                  controls
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                  }}
-                />
+            src={file.file_url}
+            controls
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "contain"
+            }} />
+          
               </div>
               <div style={{ padding: "12px 16px" }}>
                 <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--accent-purple)", wordBreak: "break-word" }}>
                   {file.file_name || "Unnamed video"}
                 </div>
-                {file.folder && (
-                  <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
+                {file.folder &&
+          <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>
                     {file.folder}
                   </div>
-                )}
+          }
               </div>
             </div>
-          ))}
-        </div>
       )}
-    </div>
-  );
+        </div>
+    }
+    </div>;
+
 
   if (loading) {
     // Shell-first skeleton: preserve the customer preview shape (logo header,
     // vehicle summary card, section cards) so the user sees the final layout
     // immediately instead of a blank viewport.
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--surface-light)", padding: "24px 16px" }}>
-        <SkeletonKeyframes />
-        <div style={{ maxWidth: 820, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <SkeletonBlock width="140px" height="40px" />
-            <div style={{ flex: 1 }} />
-            <SkeletonBlock width="120px" height="32px" borderRadius="999px" />
-          </div>
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: "var(--radius-md)",
-              padding: 20,
-              display: "flex",
-              flexDirection: "column",
-              gap: 10,
-            }}
-          >
-            <SkeletonBlock width="60%" height="22px" />
-            <SkeletonBlock width="80%" height="12px" />
-            <SkeletonBlock width="50%" height="12px" />
-          </div>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-md)",
-                padding: 20,
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-              }}
-            >
-              <SkeletonBlock width="40%" height="16px" />
-              <SkeletonBlock width="100%" height="12px" />
-              <SkeletonBlock width="90%" height="12px" />
-              <SkeletonBlock width="70%" height="12px" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <CustomerPreviewPageUi view="section1" SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   }
 
   // Error state
   if (error) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--surface-light)" }}>
-        <div style={{ textAlign: "center", padding: "24px" }}>
-          <div style={{ fontSize: "18px", fontWeight: 600, color: "var(--accent-purple)", marginBottom: "8px" }}>Error Loading Job</div>
-          <div style={{ fontSize: "14px", color: "var(--info)", marginBottom: "24px" }}>{error}</div>
-          <button
-            onClick={handleBack}
-            style={{
-              padding: "12px 24px",
-              background: "var(--primary)",
-              color: "var(--surface)",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
+    return <CustomerPreviewPageUi view="section2" error={error} handleBack={handleBack} />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   }
 
   const vehicleInfo = job?.vehicle;
   const customerInfo = job?.customer;
 
-  return (
-    <>
-      <Head>
-        <title>Vehicle Health Check - Job #{jobNumber}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
+  return <CustomerPreviewPageUi view="section3" activeTab={activeTab} BrandLogo={BrandLogo} customerInfo={customerInfo} handleBack={handleBack} Head={Head} jobNumber={jobNumber} photoFiles={photoFiles} renderPhotosTab={renderPhotosTab} renderSummaryTab={renderSummaryTab} renderVideosTab={renderVideosTab} setActiveTab={setActiveTab} vehicleInfo={vehicleInfo} videoFiles={videoFiles} visibleTabs={visibleTabs} />;
 
-      <div style={{ minHeight: "100vh", background: "var(--surface-light)" }}>
-        {/* Header */}
-        <header
-          style={{
-            background: "var(--surface)",
-            borderBottom: "1px solid var(--info-surface)",
-            padding: "16px 24px",
-            position: "sticky",
-            top: 0,
-            zIndex: 100,
-          }}
-        >
-          <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "24px" }}>
-            {/* Logo on the left */}
-            <div style={{ flexShrink: 0 }}>
-              <BrandLogo
-                alt="HP Logo"
-                width={120}
-                height={50}
-                style={{ objectFit: "contain" }}
-              />
-            </div>
 
-            {/* Vehicle and Customer Details in the middle */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-              <h1 style={{ fontSize: "18px", fontWeight: 700, color: "var(--accent-purple)", margin: 0 }}>
-                Vehicle Health Check
-              </h1>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", fontSize: "13px", color: "var(--info-dark)" }}>
-                <span style={{ fontWeight: 600 }}>Job #{jobNumber}</span>
-                {vehicleInfo?.registration && (
-                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ color: "var(--info)" }}>Reg:</span>
-                    <span style={{ fontWeight: 600 }}>{vehicleInfo.registration}</span>
-                  </span>
-                )}
-                {(vehicleInfo?.make || vehicleInfo?.model) && (
-                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ color: "var(--info)" }}>Vehicle:</span>
-                    <span>{[vehicleInfo.make, vehicleInfo.model].filter(Boolean).join(" ")}</span>
-                  </span>
-                )}
-                {customerInfo?.name && (
-                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ color: "var(--info)" }}>Customer:</span>
-                    <span>{customerInfo.name}</span>
-                  </span>
-                )}
-              </div>
-            </div>
 
-            {/* Back button on the right */}
-            <button
-              onClick={handleBack}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "10px 20px",
-                background: "var(--surface)",
-                color: "var(--accent-purple)",
-                border: "1px solid var(--accent-purple-surface)",
-                borderRadius: "var(--radius-sm)",
-                fontWeight: 600,
-                cursor: "pointer",
-                fontSize: "14px",
-                flexShrink: 0,
-              }}
-            >
-              ← Back
-            </button>
-          </div>
-        </header>
 
-        {/* Tab Navigation */}
-        <div style={{ background: "var(--surface)", borderBottom: "1px solid var(--info-surface)" }}>
-          <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px" }}>
-            <div style={{ display: "flex", gap: "8px" }}>
-              {visibleTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    padding: "16px 24px",
-                    background: "transparent",
-                    border: "none",
-                    borderBottom: activeTab === tab.id ? "3px solid var(--primary)" : "3px solid transparent",
-                    fontWeight: activeTab === tab.id ? 700 : 500,
-                    fontSize: "14px",
-                    color: activeTab === tab.id ? "var(--primary)" : "var(--info)",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                  }}
-                >
-                  {tab.label}
-                  {tab.id === "photos" && photoFiles.length > 0 && (
-                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "var(--radius-sm)", fontSize: "12px" }}>
-                      {photoFiles.length}
-                    </span>
-                  )}
-                  {tab.id === "videos" && videoFiles.length > 0 && (
-                    <span style={{ marginLeft: "8px", background: "var(--info-surface)", padding: "2px 8px", borderRadius: "var(--radius-sm)", fontSize: "12px" }}>
-                      {videoFiles.length}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* Main Content */}
-        <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "24px" }}>
-          {activeTab === "summary" && renderSummaryTab()}
-          {activeTab === "photos" && renderPhotosTab()}
-          {activeTab === "videos" && renderVideosTab()}
-        </main>
 
-        {/* Footer */}
-        <footer
-          style={{
-            background: "var(--surface)",
-            borderTop: "1px solid var(--info-surface)",
-            padding: "16px 24px",
-            marginTop: "auto",
-          }}
-        >
-          <div style={{ maxWidth: "1200px", margin: "0 auto", textAlign: "center" }}>
-            <div style={{ fontSize: "12px", color: "var(--info)" }}>
-              Vehicle Health Check Report • Job #{jobNumber}
-            </div>
-          </div>
-        </footer>
-      </div>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
-

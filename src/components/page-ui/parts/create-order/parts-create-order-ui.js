@@ -1,0 +1,644 @@
+// file location: src/components/page-ui/parts/create-order/parts-create-order-ui.js
+
+export default function PartsJobCardPageUi(props) {
+  const {
+    CalendarField,
+    ExistingCustomerPopup,
+    ModalPortal,
+    NewCustomerPopup,
+    SearchBar,
+    TimePickerField,
+    cardStyle,
+    closePartSearch,
+    customerRecord,
+    deliverySameAsBilling,
+    errorMessage,
+    fieldStyle,
+    form,
+    formatFullName,
+    handleAddPart,
+    handleCancelCustomerEdit,
+    handleClearForm,
+    handleClearPartLink,
+    handleCustomerCleared,
+    handleExistingCustomerSelect,
+    handleFieldChange,
+    handleNewCustomerSaved,
+    handlePartChange,
+    handlePartSelected,
+    handleRemovePart,
+    handleSaveCustomerDetails,
+    handleStartCustomerEdit,
+    handleSubmit,
+    hasCustomerSelected,
+    inputStyle,
+    isCustomerEditing,
+    isDarkMode,
+    loadingVehicle,
+    openPartSearch,
+    partLines,
+    partLookupContentStyle,
+    partLookupOverlayStyle,
+    partSearchLoading,
+    partSearchOpen,
+    partSearchQuery,
+    partSearchResults,
+    saving,
+    savingCustomerDetails,
+    sectionCardStyle,
+    sectionHeaderStyle,
+    setDeliverySameAsBilling,
+    setPartSearchQuery,
+    setShowExistingCustomer,
+    setShowNewCustomer,
+    showExistingCustomer,
+    showNewCustomer,
+    twoColumnGrid,
+  } = props; // receive page logic props.
+
+  switch (props.view) { // choose the page section requested by logic.
+    case "section1":
+      return <>
+        <div style={{
+    padding: "48px",
+    textAlign: "center",
+    color: "var(--primary-dark)"
+  }}>
+          You do not have permission to access parts orders.
+        </div>
+      </>; // render extracted page section.
+
+    case "section2":
+      return <>
+      <>
+        <div style={{
+      padding: "24px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "20px"
+    }}>
+        <section className="app-section-card" style={cardStyle}>
+          {errorMessage && <div style={{
+          padding: "10px",
+          borderRadius: "var(--radius-sm)",
+          background: "var(--danger-surface)",
+          color: "var(--danger)"
+        }}>
+              {errorMessage}
+            </div>}
+          <form onSubmit={handleSubmit} style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "18px"
+        }}>
+            <div style={sectionCardStyle}>
+              <div style={sectionHeaderStyle}>
+                <div>
+                  <strong style={{
+                  fontSize: "1.05rem"
+                }}>Customer details</strong>
+                </div>
+                {hasCustomerSelected && <div style={{
+                display: "flex",
+                gap: "8px",
+                flexWrap: "wrap"
+              }}>
+                    {isCustomerEditing ? <>
+                        <button type="button" onClick={handleSaveCustomerDetails} disabled={savingCustomerDetails} style={{
+                    borderRadius: "var(--radius-sm)",
+                    border: "1px solid var(--primary)",
+                    background: "var(--primary)",
+                    color: "var(--surface)",
+                    padding: "8px 14px",
+                    fontWeight: 600,
+                    cursor: savingCustomerDetails ? "not-allowed" : "pointer",
+                    opacity: savingCustomerDetails ? 0.7 : 1
+                  }}>
+                          {savingCustomerDetails ? "Saving…" : "Save customer details"}
+                        </button>
+                        <button type="button" onClick={handleCancelCustomerEdit} disabled={savingCustomerDetails} style={{
+                    borderRadius: "var(--radius-sm)",
+                    border: "none",
+                    background: "var(--surface)",
+                    color: "var(--primary-dark)",
+                    padding: "8px 14px",
+                    fontWeight: 600,
+                    cursor: savingCustomerDetails ? "not-allowed" : "pointer",
+                    opacity: savingCustomerDetails ? 0.7 : 1
+                  }}>
+                          Cancel
+                        </button>
+                      </> : <button type="button" onClick={handleStartCustomerEdit} style={{
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--primary)",
+                  background: "var(--primary)",
+                  color: "var(--surface)",
+                  padding: "8px 14px",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}>
+                        Edit customer details
+                      </button>}
+                    <button type="button" onClick={handleCustomerCleared} disabled={savingCustomerDetails} style={{
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--danger)",
+                  background: "var(--danger-surface)",
+                  color: "var(--danger)",
+                  padding: "8px 14px",
+                  fontWeight: 600,
+                  cursor: savingCustomerDetails ? "not-allowed" : "pointer",
+                  opacity: savingCustomerDetails ? 0.7 : 1
+                }}>
+                      Clear customer
+                    </button>
+                  </div>}
+              </div>
+              {!hasCustomerSelected ? <div style={{
+              minHeight: "180px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center"
+            }}>
+                  <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                alignItems: "center"
+              }}>
+                    <p style={{
+                  margin: 0,
+                  color: "var(--info)"
+                }}>Search for or add a customer to continue.</p>
+                    <div style={{
+                  display: "flex",
+                  gap: "10px",
+                  flexWrap: "wrap",
+                  justifyContent: "center"
+                }}>
+                      <button type="button" onClick={() => setShowExistingCustomer(true)} style={{
+                    borderRadius: "var(--radius-sm)",
+                    border: "1px solid transparent",
+                    background: isDarkMode ? "#7D3FFF" : "#E53935",
+                    color: "#ffffff",
+                    padding: "10px 18px",
+                    fontWeight: 600,
+                    cursor: "pointer"
+                  }}>
+                        Search existing
+                      </button>
+                      <button type="button" onClick={() => setShowNewCustomer(true)} style={{
+                    borderRadius: "var(--radius-sm)",
+                    border: "1px solid var(--primary)",
+                    background: "var(--primary)",
+                    color: "var(--surface)",
+                    padding: "10px 18px",
+                    fontWeight: 600,
+                    cursor: "pointer"
+                  }}>
+                        Add customer
+                      </button>
+                    </div>
+                  </div>
+                </div> : <>
+                  {customerRecord && <div style={{
+                border: "none",
+                borderRadius: "var(--radius-md)",
+                padding: "12px",
+                background: "var(--surface)"
+              }}>
+                      <strong>{formatFullName(customerRecord)}</strong>
+                      <div style={{
+                  fontSize: "0.85rem",
+                  color: "var(--info-dark)"
+                }}>
+                        {customerRecord.email || "No email"} · {customerRecord.mobile || customerRecord.telephone || "No phone"}
+                      </div>
+                      <div style={{
+                  fontSize: "0.85rem",
+                  color: "var(--info-dark)"
+                }}>
+                        {customerRecord.address || "No saved address"}
+                      </div>
+                    </div>}
+                  <div style={twoColumnGrid}>
+                    <label style={fieldStyle}>
+                      <span style={{
+                    fontWeight: 600
+                  }}>Customer name</span>
+                      <input type="text" required disabled={!isCustomerEditing} value={form.customer_name} onChange={event => handleFieldChange("customer_name", event.target.value)} style={inputStyle} placeholder="Name" />
+                    </label>
+                    <label style={fieldStyle}>
+                      <span style={{
+                    fontWeight: 600
+                  }}>Customer phone</span>
+                      <input type="tel" disabled={!isCustomerEditing} value={form.customer_phone} onChange={event => handleFieldChange("customer_phone", event.target.value)} style={inputStyle} placeholder="Phone" />
+                    </label>
+                    <label style={fieldStyle}>
+                      <span style={{
+                    fontWeight: 600
+                  }}>Customer email</span>
+                      <input type="email" disabled={!isCustomerEditing} value={form.customer_email} onChange={event => handleFieldChange("customer_email", event.target.value)} style={inputStyle} placeholder="Email" />
+                    </label>
+                  </div>
+                  <label style={fieldStyle}>
+                    <span style={{
+                  fontWeight: 600
+                }}>Billing address</span>
+                    <textarea rows={2} disabled={!isCustomerEditing} value={form.customer_address} onChange={event => handleFieldChange("customer_address", event.target.value)} style={{
+                  ...inputStyle,
+                  resize: "vertical"
+                }} placeholder="Billing address" />
+                  </label>
+                  <label style={fieldStyle}>
+                    <span style={{
+                  fontWeight: 600
+                }}>Customer notes</span>
+                    <textarea rows={3} value={form.notes} onChange={event => handleFieldChange("notes", event.target.value)} style={{
+                  ...inputStyle,
+                  resize: "vertical"
+                }} placeholder="Special instructions or payment notes" />
+                  </label>
+                </>}
+            </div>
+
+            <div style={sectionCardStyle}>
+              <div style={sectionHeaderStyle}>
+                <strong style={{
+                fontSize: "1.05rem"
+              }}>Vehicle details</strong>
+                {loadingVehicle && <p style={{
+                margin: 0,
+                color: "var(--info)",
+                fontSize: "0.85rem"
+              }}>Loading recent vehicle data…</p>}
+              </div>
+              <div style={twoColumnGrid}>
+                <label style={fieldStyle}>
+                  <span style={{
+                  fontWeight: 600
+                }}>Vehicle registration</span>
+                  <input type="text" value={form.vehicle_reg} onChange={event => handleFieldChange("vehicle_reg", event.target.value.toUpperCase())} style={inputStyle} placeholder="Vehicle reg" />
+                </label>
+                <label style={fieldStyle}>
+                  <span style={{
+                  fontWeight: 600
+                }}>Vehicle make</span>
+                  <input type="text" value={form.vehicle_make} onChange={event => handleFieldChange("vehicle_make", event.target.value)} style={inputStyle} placeholder="Manufacturer" />
+                </label>
+                <label style={fieldStyle}>
+                  <span style={{
+                  fontWeight: 600
+                }}>Vehicle model</span>
+                  <input type="text" value={form.vehicle_model} onChange={event => handleFieldChange("vehicle_model", event.target.value)} style={inputStyle} placeholder="Model" />
+                </label>
+                <label style={fieldStyle}>
+                  <span style={{
+                  fontWeight: 600
+                }}>Vehicle VIN</span>
+                  <input type="text" value={form.vehicle_vin} onChange={event => handleFieldChange("vehicle_vin", event.target.value.toUpperCase())} style={inputStyle} placeholder="VIN" />
+                </label>
+              </div>
+            </div>
+
+            <div style={sectionCardStyle}>
+              <div style={sectionHeaderStyle}>
+                <strong style={{
+                fontSize: "1.05rem"
+              }}>Delivery / Collection</strong>
+              </div>
+              <label style={fieldStyle}>
+                <span style={{
+                fontWeight: 600
+              }}>Fulfilment type</span>
+                <select value={form.delivery_type} onChange={event => handleFieldChange("delivery_type", event.target.value)} style={{
+                ...inputStyle,
+                cursor: "pointer"
+              }}>
+                  <option value="delivery">Delivery</option>
+                  <option value="collection">Collection</option>
+                </select>
+              </label>
+              <div style={twoColumnGrid}>
+                <CalendarField label={form.delivery_type === "delivery" ? "Delivery date" : "Collection date"} value={form.delivery_eta || ""} onChange={value => handleFieldChange("delivery_eta", value)} name="delivery_eta" />
+                <TimePickerField label={form.delivery_type === "delivery" ? "Delivery window / time" : "Collection time"} value={form.delivery_window || ""} onChange={event => handleFieldChange("delivery_window", event.target.value)} />
+              </div>
+              {form.delivery_type === "delivery" && <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              border: "none",
+              borderRadius: "var(--radius-md)",
+              padding: "12px"
+            }}>
+                  <label style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px"
+              }}>
+                    <input type="checkbox" checked={deliverySameAsBilling} onChange={event => setDeliverySameAsBilling(event.target.checked)} />
+                    <span>Use billing address as delivery address</span>
+                  </label>
+                  {!deliverySameAsBilling && <textarea rows={2} value={form.delivery_address} onChange={event => handleFieldChange("delivery_address", event.target.value)} style={{
+                ...inputStyle,
+                resize: "vertical"
+              }} placeholder="Delivery address" />}
+                </div>}
+              <label style={fieldStyle}>
+                <span style={{
+                fontWeight: 600
+              }}>
+                  {form.delivery_type === "delivery" ? "Delivery notes" : "Collection notes"}
+                </span>
+                <textarea rows={3} value={form.delivery_notes} onChange={event => handleFieldChange("delivery_notes", event.target.value)} style={{
+                ...inputStyle,
+                resize: "vertical"
+              }} placeholder="Access instructions, collection requirements, etc." />
+              </label>
+            </div>
+
+            <div style={sectionCardStyle}>
+              <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "12px"
+            }}>
+                <strong style={{
+                fontSize: "1.05rem"
+              }}>Booked parts</strong>
+                <button type="button" onClick={handleAddPart} style={{
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid transparent",
+                background: "var(--accent-purple)",
+                padding: "8px 14px",
+                fontWeight: 600,
+                cursor: "pointer",
+                color: "var(--surface)"
+              }}>
+                  + Add part
+                </button>
+              </div>
+              <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+              marginTop: "10px"
+            }}>
+                {partLines.map((line, index) => <div key={`part-line-${index}`} style={{
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                padding: "12px",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gap: "10px"
+              }}>
+                    <label style={fieldStyle}>
+                      <span style={{
+                    fontSize: "0.8rem",
+                    fontWeight: 600
+                  }}>Part number</span>
+                      <div style={{
+                    display: "flex",
+                    gap: "8px",
+                    flexWrap: "wrap"
+                  }}>
+                        <input type="text" value={line.part_number} onChange={event => handlePartChange(index, "part_number", event.target.value)} style={{
+                      ...inputStyle,
+                      flex: "1 1 160px"
+                    }} placeholder="e.g. 5Q0129620D" />
+                        <button type="button" onClick={() => openPartSearch(index)} style={{
+                      borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      background: "var(--primary)",
+                      color: "var(--surface)",
+                      padding: "8px 12px",
+                      fontWeight: 600,
+                      cursor: "pointer"
+                    }}>
+                          Search
+                        </button>
+                        {line.part_catalog_id && <button type="button" onClick={() => handleClearPartLink(index)} style={{
+                      borderRadius: "var(--radius-sm)",
+                      border: "none",
+                      background: "var(--danger-surface)",
+                      color: "var(--danger)",
+                      padding: "8px 12px",
+                      fontWeight: 600,
+                      cursor: "pointer"
+                    }}>
+                            Unlink
+                          </button>}
+                      </div>
+                      {line.catalog_snapshot && <span style={{
+                    fontSize: "0.75rem",
+                    color: "var(--info-dark)"
+                  }}>
+                          Linked to stock · {line.catalog_snapshot.supplier || "Supplier unknown"} ·{" "}
+                          {line.catalog_snapshot.storage_location || "No location"} ·{" "}
+                          {(Number(line.catalog_snapshot.qty_in_stock) || 0) - (Number(line.catalog_snapshot.qty_reserved) || 0)}{" "}
+                          available
+                        </span>}
+                    </label>
+                    <label style={fieldStyle}>
+                      <span style={{
+                    fontSize: "0.8rem",
+                    fontWeight: 600
+                  }}>Part name</span>
+                      <input type="text" value={line.part_name} onChange={event => handlePartChange(index, "part_name", event.target.value)} style={inputStyle} placeholder="Item description" />
+                    </label>
+                    <label style={fieldStyle}>
+                      <span style={{
+                    fontSize: "0.8rem",
+                    fontWeight: 600
+                  }}>Quantity</span>
+                      <input type="number" min="1" value={line.quantity} onChange={event => handlePartChange(index, "quantity", event.target.value)} style={inputStyle} />
+                    </label>
+                    <label style={fieldStyle}>
+                      <span style={{
+                    fontSize: "0.8rem",
+                    fontWeight: 600
+                  }}>Unit price (£)</span>
+                      <input type="number" min="0" step="0.01" value={line.unit_price} onChange={event => handlePartChange(index, "unit_price", event.target.value)} style={inputStyle} placeholder="0.00" />
+                    </label>
+                    <label style={{
+                  ...fieldStyle,
+                  gridColumn: "1 / -1"
+                }}>
+                      <span style={{
+                    fontSize: "0.8rem",
+                    fontWeight: 600
+                  }}>Line notes</span>
+                      <textarea rows={2} value={line.notes} onChange={event => handlePartChange(index, "notes", event.target.value)} style={{
+                    ...inputStyle,
+                    resize: "vertical"
+                  }} placeholder="Collection details or supplier reference" />
+                    </label>
+                    {partLines.length > 1 && <button type="button" onClick={() => handleRemovePart(index)} style={{
+                  gridColumn: "1 / -1",
+                  border: "1px solid var(--danger)",
+                  borderRadius: "var(--radius-sm)",
+                  background: "var(--danger-surface)",
+                  color: "var(--danger)",
+                  padding: "8px 12px",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}>
+                        Remove part
+                      </button>}
+                  </div>)}
+              </div>
+            </div>
+
+            <div style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "12px",
+            flexWrap: "wrap"
+          }}>
+              <button type="button" onClick={handleClearForm} disabled={saving} style={{
+              borderRadius: "var(--radius-sm)",
+              border: "none",
+              background: "var(--surface)",
+              padding: "10px 18px",
+              fontWeight: 600,
+              cursor: "pointer",
+              color: isDarkMode ? "#ffffff" : "#000000"
+            }}>
+                Clear
+              </button>
+              <button type="submit" disabled={saving} style={{
+              borderRadius: "var(--radius-sm)",
+              border: "none",
+              background: "var(--primary)",
+              color: "var(--surface)",
+              padding: "10px 18px",
+              fontWeight: 600,
+              cursor: "pointer",
+              opacity: saving ? 0.7 : 1
+            }}>
+                {saving ? "Saving…" : "Create order"}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </>
+    {partSearchOpen && <ModalPortal>
+        <div style={partLookupOverlayStyle}>
+          <div style={partLookupContentStyle}>
+          <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "12px",
+          flexWrap: "wrap"
+        }}>
+            <div>
+              <p style={{
+              margin: 0,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              fontSize: "0.75rem",
+              color: "var(--info-dark)"
+            }}>
+                Parts stock
+              </p>
+              <h3 style={{
+              margin: "4px 0 0",
+              color: "var(--primary-dark)"
+            }}>Search catalog</h3>
+            </div>
+            <div style={{
+            display: "flex",
+            gap: "8px",
+            alignItems: "center",
+            flexWrap: "wrap"
+          }}>
+              <button type="button" onClick={closePartSearch} style={{
+              border: "none",
+              background: "transparent",
+              fontSize: "0.95rem",
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+              textTransform: "uppercase",
+              color: "var(--accent-purple)",
+              cursor: "pointer",
+              padding: "6px 0"
+            }} aria-label="Close part search">
+                Close
+              </button>
+            </div>
+          </div>
+          <SearchBar value={partSearchQuery} onChange={event => setPartSearchQuery(event.target.value)} onClear={() => setPartSearchQuery("")} placeholder="Search by part number or description" style={{
+          width: "100%"
+        }} />
+          {partSearchLoading ? <p style={{
+          margin: 0,
+          color: "var(--info-dark)"
+        }}>Searching catalog…</p> : partSearchQuery.trim().length < 2 ? <p style={{
+          margin: 0,
+          color: "var(--grey-accent-dark)"
+        }}>Enter at least two characters to search.</p> : partSearchResults.length === 0 ? <p style={{
+          margin: 0,
+          color: "var(--grey-accent-dark)"
+        }}>No parts found for that search.</p> : <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          maxHeight: "50vh",
+          overflowY: "auto"
+        }}>
+              {partSearchResults.map(part => {
+            const available = (Number(part.qty_in_stock) || 0) - (Number(part.qty_reserved) || 0);
+            const unitPrice = Number(part.unit_price ?? 0);
+            return <button key={part.id} type="button" onClick={() => handlePartSelected(part)} style={{
+              borderRadius: "var(--radius-sm)",
+              border: "none",
+              padding: "10px 12px",
+              textAlign: "left",
+              cursor: "pointer",
+              background: "var(--surface)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px"
+            }}>
+                    <strong style={{
+                color: "var(--primary-dark)"
+              }}>
+                      {part.part_number} · {part.name}
+                    </strong>
+                    <span style={{
+                fontSize: "0.85rem",
+                color: "var(--info-dark)"
+              }}>
+                      {part.description || "No description"}
+                    </span>
+                    <span style={{
+                fontSize: "0.8rem",
+                color: "var(--grey-accent-dark)"
+              }}>
+                      {available} available · Stored in {part.storage_location || "unspecified"} · Supplier:{" "}
+                      {part.supplier || "Unknown"}
+                    </span>
+                    <span style={{
+                fontSize: "0.85rem",
+                color: "var(--primary-dark)",
+                fontWeight: 600
+              }}>
+                      Unit price: £{unitPrice.toFixed(2)}
+                    </span>
+                  </button>;
+          })}
+            </div>}
+          </div>
+        </div>
+      </ModalPortal>}
+    {showExistingCustomer && <ExistingCustomerPopup onClose={() => setShowExistingCustomer(false)} onSelect={handleExistingCustomerSelect} />}
+    {showNewCustomer && <NewCustomerPopup onClose={() => setShowNewCustomer(false)} onSelect={handleNewCustomerSaved} />}
+    </>; // render extracted page section.
+    default:
+      return null; // keep unknown sections visually empty.
+  }
+}

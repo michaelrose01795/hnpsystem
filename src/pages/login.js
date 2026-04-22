@@ -1,6 +1,6 @@
+// file location: src/pages/login.js
 // ✅ Connected to Supabase (frontend)
 // ✅ Imports converted to use absolute alias "@/"
-// file location: /src/pages/login.js
 import React, { useState, useEffect, useRef } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
@@ -13,6 +13,7 @@ import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
 import Button from "@/components/ui/Button";
+import LoginPageUi from "@/components/page-ui/login-ui"; // Extracted presentation layer.
 
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
@@ -32,16 +33,16 @@ const hasActiveLogoutBarrier = () => {
 };
 
 const isSafeLocalRoute = (value) =>
-  typeof value === "string" &&
-  value.startsWith("/") &&
-  !value.startsWith("//") &&
-  !value.startsWith("/api/");
+typeof value === "string" &&
+value.startsWith("/") &&
+!value.startsWith("//") &&
+!value.startsWith("/api/");
 
 const getDefaultPostLoginRoute = (activeUser) => {
-  const roles = []
-    .concat(activeUser?.roles || [])
-    .concat(activeUser?.role ? [activeUser.role] : [])
-    .map((role) => String(role).toLowerCase());
+  const roles = [].
+  concat(activeUser?.roles || []).
+  concat(activeUser?.role ? [activeUser.role] : []).
+  map((role) => String(role).toLowerCase());
   const isCustomer = roles.some((role) => role.includes("customer"));
   return isCustomer ? DEFAULT_CUSTOMER_POST_LOGIN_ROUTE : DEFAULT_STAFF_POST_LOGIN_ROUTE;
 };
@@ -59,63 +60,63 @@ const LoginCard = ({
   subtitle,
   children,
   contentMaxWidth = FIELD_MAX_WIDTH,
-  className = "",
-}) => (
-  <div
-    className={["login-card", className].filter(Boolean).join(" ")}
-    style={{ width: "100%", display: "flex", justifyContent: "center" }}
-  >
+  className = ""
+}) =>
+<div
+  className={["login-card", className].filter(Boolean).join(" ")}
+  style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+  
     <div
-      style={{
-        borderRadius: "var(--radius-xl)",
-        border: "1px solid rgba(15, 23, 42, 0.08)",
-        background: "var(--surface)",
-        boxShadow: "var(--shadow-xl)",
-        padding: "2.25rem",
-        width: "100%",
-        maxWidth: contentMaxWidth + 72,
-      }}
-    >
+    style={{
+      borderRadius: "var(--radius-xl)",
+      border: "1px solid rgba(15, 23, 42, 0.08)",
+      background: "var(--surface)",
+      boxShadow: "var(--shadow-xl)",
+      padding: "2.25rem",
+      width: "100%",
+      maxWidth: contentMaxWidth + 72
+    }}>
+    
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "6px",
-          textAlign: "center",
-        }}
-      >
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+        textAlign: "center"
+      }}>
+      
         <h2
-          style={{
-            color: "var(--text-primary)",
-            fontSize: "1.5rem",
-            fontWeight: 600,
-            letterSpacing: "-0.01em",
-            margin: 0,
-          }}
-        >
+        style={{
+          color: "var(--text-primary)",
+          fontSize: "1.5rem",
+          fontWeight: 600,
+          letterSpacing: "-0.01em",
+          margin: 0
+        }}>
+        
           {title}
         </h2>
-        {subtitle && (
-          <p
-            style={{
-              color: "var(--text-secondary, #64748b)",
-              fontSize: "0.95rem",
-              margin: 0,
-            }}
-          >
+        {subtitle &&
+      <p
+        style={{
+          color: "var(--text-secondary, #64748b)",
+          fontSize: "0.95rem",
+          margin: 0
+        }}>
+        
             {subtitle}
           </p>
-        )}
+      }
       </div>
       <div
-        className="login-card-inner"
-        style={{ maxWidth: contentMaxWidth, margin: "24px auto 0" }}
-      >
+      className="login-card-inner"
+      style={{ maxWidth: contentMaxWidth, margin: "24px auto 0" }}>
+      
         {children}
       </div>
     </div>
-  </div>
-);
+  </div>;
+
 
 export default function LoginPage() {
   const allowDevUserSelection = canShowDevLogin();
@@ -131,7 +132,7 @@ export default function LoginPage() {
     usersByRole,
     usersByRoleDetailed,
     allUsers,
-    isLoading: rosterLoading,
+    isLoading: rosterLoading
   } = useRoster();
   const { setTemporaryOverride } = useTheme();
 
@@ -219,7 +220,7 @@ export default function LoginPage() {
     }
 
     const userId =
-      selectedUser?.id ?? selectedUser?.user_id ?? selectedUser?.identifier ?? null;
+    selectedUser?.id ?? selectedUser?.user_id ?? selectedUser?.identifier ?? null;
     const numericId = Number(userId);
     const target = getPostLoginRoute(router, selectedUser);
 
@@ -233,7 +234,7 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         userId: String(numericId),
         callbackUrl: target,
-        redirect: false,
+        redirect: false
       });
 
       if (result?.error || !result?.ok) {
@@ -272,7 +273,7 @@ export default function LoginPage() {
         email,
         password,
         callbackUrl: target,
-        redirect: false,
+        redirect: false
       });
 
       if (result?.error) {
@@ -323,8 +324,8 @@ export default function LoginPage() {
         body: JSON.stringify({
           action: "reset",
           email: (resetEmail || email || "").trim(),
-          newPassword: resetPassword,
-        }),
+          newPassword: resetPassword
+        })
       });
       let payload = null;
       try {
@@ -371,8 +372,8 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "revert",
-          token: revertToken,
-        }),
+          token: revertToken
+        })
       });
       let payload = null;
       try {
@@ -410,15 +411,15 @@ export default function LoginPage() {
   useEffect(() => {
     if (logoutInProgress || hasActiveLogoutBarrier()) return;
     const activeUser =
-      user || (sessionStatus === "authenticated" && session?.user ? session.user : null);
+    user || (sessionStatus === "authenticated" && session?.user ? session.user : null);
     if (!activeUser) return;
 
     setIsRedirecting(true);
 
-    const roles = []
-      .concat(activeUser.roles || [])
-      .concat(activeUser.role ? [activeUser.role] : [])
-      .map((role) => String(role).toLowerCase());
+    const roles = [].
+    concat(activeUser.roles || []).
+    concat(activeUser.role ? [activeUser.role] : []).
+    map((role) => String(role).toLowerCase());
     const isCustomer = roles.some((role) => role.includes("customer"));
 
     if (!isCustomer) {
@@ -434,7 +435,7 @@ export default function LoginPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ action: "clock-in" }),
+                body: JSON.stringify({ action: "clock-in" })
               });
             }
           }
@@ -467,7 +468,7 @@ export default function LoginPage() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               credentials: "include",
-              body: JSON.stringify({ action: "clock-out" }),
+              body: JSON.stringify({ action: "clock-out" })
             });
           }
         }
@@ -495,306 +496,306 @@ export default function LoginPage() {
   }, [router.isReady, router.query]);
 
   if (isRedirecting) {
-    return <PageSkeleton />;
+    return <LoginPageUi view="section1" PageSkeleton={PageSkeleton} />;
   }
 
-  return (
-    <>
-      <div className="login-page-wrapper">
-        <div className="login-center-stage">
-          <div className="login-brand">
-            <BrandLogo alt="HP Automotive" className="login-logo" />
-          </div>
-          <LoginCard
-            className="login-card--auth"
-            title="Login"
-          >
-            <form onSubmit={handleDbLogin} className="login-form">
-              <div className="login-field">
-                <label htmlFor="email" className="login-label">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="username"
-                  placeholder="email@humphriesandpark.co.uk"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="app-input"
-                  required
-                />
-              </div>
-
-              <div className="login-field">
-                <label htmlFor="password" className="login-label">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="app-input"
-                  required
-                />
-              </div>
-
-              {errorMessage && (
-                <p className="login-error" role="alert">
-                  {errorMessage}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                variant="primary"
-                style={{ width: "100%" }}
-              >
-                Login
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="xs"
-                onClick={openResetModal}
-                style={{ alignSelf: "center", marginTop: "8px" }}
-              >
-                Reset password
-              </Button>
-            </form>
-          </LoginCard>
-        </div>
-        {allowDevUserSelection && (
-          <div className="login-dev-panel">
-            <LoginCard
-              className="login-card--dev"
-              title="Developer Login"
-            >
-              <div className="login-dev-content">
-                <LoginDropdown
-                  selectedCategory={selectedCategory}
-                  setSelectedCategory={setSelectedCategory}
-                  selectedDepartment={selectedDepartment}
-                  setSelectedDepartment={setSelectedDepartment}
-                  selectedUser={selectedUser}
-                  setSelectedUser={setSelectedUser}
-                  allUsers={allUsers}
-                  usersByRole={usersByRole}
-                  usersByRoleDetailed={usersByRoleDetailed}
-                  roleCategories={loginRoleCategories}
-                />
-
-                <p
-                  className={[
-                    "login-loading-text",
-                    !(loadingDevUsers || rosterLoading) ? "is-hidden" : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  Loading database users for dev login...
-                </p>
+  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handlePasswordReset={handlePasswordReset} handlePasswordRevertDecision={handlePasswordRevertDecision} isResettingPassword={isResettingPassword} isRevertingPassword={isRevertingPassword} loadingDevUsers={loadingDevUsers} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetPassword={resetPassword} resetStatus={resetStatus} resetStatusType={resetStatusType} revertResultMessage={revertResultMessage} revertResultType={revertResultType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setEmail={setEmail} setPassword={setPassword} setResetEmail={setResetEmail} setResetPassword={setResetPassword} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} setShowRevertResult={setShowRevertResult} showResetModal={showResetModal} showRevertPrompt={showRevertPrompt} showRevertResult={showRevertResult} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
 
 
-                <Button
-                  type="button"
-                  onClick={handleDevLogin}
-                  variant="primary"
-                  style={{ width: "100%" }}
-                >
-                  Dev Login
-                </Button>
-              </div>
-            </LoginCard>
-          </div>
-        )}
-      </div>
-      {showResetModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1400,
-            padding: "16px",
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "420px",
-              background: "var(--surface)",
-              borderRadius: "var(--radius-md)",
-              border: "none",
-              padding: "18px",
-              boxShadow: "var(--shadow-xl)",
-            }}
-          >
-            <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-primary)" }}>
-              Reset Password
-            </h3>
-            <p style={{ margin: "8px 0 14px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-              Enter your email and your new password.
-            </p>
-            <form onSubmit={handlePasswordReset} style={{ display: "grid", gap: "10px" }}>
-              <input
-                type="email"
-                value={resetEmail}
-                onChange={(event) => setResetEmail(event.target.value)}
-                placeholder="Email"
-                required
-                className="app-input"
-              />
-              <input
-                type="password"
-                value={resetPassword}
-                onChange={(event) => setResetPassword(event.target.value)}
-                placeholder="New password"
-                required
-                className="app-input"
-              />
-              {resetStatus && (
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.8rem",
-                    color:
-                      resetStatusType === "error"
-                        ? "var(--danger)"
-                        : resetStatusType === "success"
-                        ? "var(--success)"
-                        : "var(--text-secondary)",
-                  }}
-                >
-                  {resetStatus}
-                </p>
-              )}
-              <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", marginTop: "4px" }}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={closeResetModal}
-                >
-                  Close
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  disabled={isResettingPassword}
-                >
-                  {isResettingPassword ? "Resetting..." : "Reset Password"}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      {showRevertPrompt && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1450,
-            padding: "16px",
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "460px",
-              background: "var(--surface)",
-              borderRadius: "var(--radius-md)",
-              border: "none",
-              padding: "18px",
-              boxShadow: "var(--shadow-xl)",
-            }}
-          >
-            <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--text-primary)" }}>
-              Are you sure this wasn't you?
-            </h3>
-            <p style={{ margin: "8px 0 14px", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-              If you click "Yes, it wasn't me", your previous password will be restored.
-            </p>
-            <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => handlePasswordRevertDecision(false)}
-                disabled={isRevertingPassword}
-              >
-                No, this was me
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                size="sm"
-                onClick={() => handlePasswordRevertDecision(true)}
-                disabled={isRevertingPassword}
-              >
-                {isRevertingPassword ? "Reverting..." : "Yes, it wasn't me"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showRevertResult && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1460,
-            padding: "16px",
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "520px",
-              background: "var(--surface)",
-              borderRadius: "var(--radius-md)",
-              border: "none",
-              borderTop: "4px solid #b91c1c",
-              padding: "22px",
-              boxShadow: "var(--shadow-xl)",
-              textAlign: "center",
-            }}
-          >
-            <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--text-primary)" }}>
-              {revertResultType === "success" ? "Password Reverted" : "Password Revert Failed"}
-            </h3>
-            <p style={{ margin: "10px 0 18px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-              {revertResultMessage}
-            </p>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              onClick={() => setShowRevertResult(false)}
-            >
-              Close
-            </Button>
-          </div>
-        </div>
-      )}
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

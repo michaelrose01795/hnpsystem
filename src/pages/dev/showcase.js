@@ -15,12 +15,13 @@ import Head from "next/head";
 import { useUser } from "@/context/UserContext";
 import { canUseDevLayoutOverlay } from "@/lib/dev-layout/access";
 import { UI_FAMILIES } from "@/components/ui/variants";
+import ShowcasePageUi from "@/components/page-ui/dev/dev-showcase-ui"; // Extracted presentation layer.
 
 const sectionStyle = {
   marginBottom: 28,
   padding: "18px 20px",
   background: "var(--section-card-bg)",
-  borderRadius: "var(--section-card-radius)",
+  borderRadius: "var(--section-card-radius)"
 };
 
 const variantRowStyle = {
@@ -29,7 +30,7 @@ const variantRowStyle = {
   gap: 12,
   alignItems: "start",
   padding: "12px 0",
-  borderTop: "1px solid var(--table-border)",
+  borderTop: "1px solid var(--table-border)"
 };
 
 const codeBlockStyle = {
@@ -40,7 +41,7 @@ const codeBlockStyle = {
   borderRadius: 6,
   whiteSpace: "pre-wrap",
   wordBreak: "break-word",
-  margin: 0,
+  margin: 0
 };
 
 // Render a small live example for each variant. We keep this minimal —
@@ -58,22 +59,22 @@ function renderVariantPreview(familyId, variant) {
       return (
         <div {...common}>
           <span style={{ fontSize: 12 }}>Toolbar</span>
-        </div>
-      );
+        </div>);
+
     case "empty-state":
       return (
         <div {...common} style={{ minHeight: 60 }}>
           <p className="app-empty-state__title">No results</p>
           <p className="app-empty-state__description">Try a different filter.</p>
-        </div>
-      );
+        </div>);
+
     case "toast":
       return (
         <div {...common}>
           <span className="app-toast__icon">i</span>
           <span>Example toast message</span>
-        </div>
-      );
+        </div>);
+
     case "input":
       if (variant.id === "textarea") {
         return <textarea {...common} placeholder="Textarea" rows={2} />;
@@ -83,8 +84,8 @@ function renderVariantPreview(familyId, variant) {
           <select {...common}>
             <option>Option A</option>
             <option>Option B</option>
-          </select>
-        );
+          </select>);
+
       }
       return <input type="text" {...common} placeholder={variant.id} />;
     case "toggle":
@@ -96,8 +97,8 @@ function renderVariantPreview(familyId, variant) {
       return (
         <div {...common} style={{ padding: 12, minHeight: 52 }}>
           <span style={{ fontSize: 12 }}>Card surface</span>
-        </div>
-      );
+        </div>);
+
     case "loader":
       return (
         <div
@@ -106,22 +107,22 @@ function renderVariantPreview(familyId, variant) {
             minHeight: 14,
             minWidth: 120,
             background: "var(--skeleton-base)",
-            borderRadius: "var(--skeleton-radius)",
-          }}
-        />
-      );
+            borderRadius: "var(--skeleton-radius)"
+          }} />);
+
+
     default:
       return (
         <span
           style={{
             fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
             fontSize: 11,
-            opacity: 0.7,
-          }}
-        >
+            opacity: 0.7
+          }}>
+          
           (no preview)
-        </span>
-      );
+        </span>);
+
   }
 }
 
@@ -147,9 +148,9 @@ function FamilyBlock({ family }) {
               height: 10,
               background: family.traceColor,
               borderRadius: 2,
-              verticalAlign: "middle",
-            }}
-          />{" "}
+              verticalAlign: "middle"
+            }} />
+          {" "}
           <code>{family.traceColor}</code>
         </p>
       </header>
@@ -164,16 +165,16 @@ function FamilyBlock({ family }) {
           fontWeight: 600,
           textTransform: "uppercase",
           letterSpacing: "0.04em",
-          color: "var(--text-secondary)",
-        }}
-      >
+          color: "var(--text-secondary)"
+        }}>
+        
         <span>Variant</span>
         <span>Preview</span>
         <span>Usage</span>
       </div>
 
-      {family.variants.map((variant) => (
-        <div key={variant.id} style={variantRowStyle}>
+      {family.variants.map((variant) =>
+      <div key={variant.id} style={variantRowStyle}>
           <div>
             <strong style={{ fontSize: 13 }}>{variant.id}</strong>
             <p style={{ margin: "2px 0 6px", fontSize: 12, color: "var(--text-secondary)" }}>
@@ -189,62 +190,62 @@ function FamilyBlock({ family }) {
             </div>
           </div>
         </div>
-      ))}
+      )}
 
-      {family.sizes ? (
-        <div style={{ marginTop: 16 }}>
+      {family.sizes ?
+      <div style={{ marginTop: 16 }}>
           <h3 style={{ fontSize: 13, margin: 0, color: "var(--text-secondary)" }}>Sizes</h3>
           <ul style={{ margin: "6px 0", paddingLeft: 18, fontSize: 12 }}>
-            {family.sizes.map((size) => (
-              <li key={size.id}>
+            {family.sizes.map((size) =>
+          <li key={size.id}>
                 <strong>{size.id}</strong>
                 {size.className ? <> · <code>{size.className}</code></> : null}
                 {" — "}{size.description}
               </li>
-            ))}
+          )}
           </ul>
-        </div>
-      ) : null}
+        </div> :
+      null}
 
-      {family.shapes ? (
-        <div style={{ marginTop: 8 }}>
+      {family.shapes ?
+      <div style={{ marginTop: 8 }}>
           <h3 style={{ fontSize: 13, margin: 0, color: "var(--text-secondary)" }}>Shapes</h3>
           <ul style={{ margin: "6px 0", paddingLeft: 18, fontSize: 12 }}>
-            {family.shapes.map((shape) => (
-              <li key={shape.id}>
+            {family.shapes.map((shape) =>
+          <li key={shape.id}>
                 <strong>{shape.id}</strong>
                 {shape.className ? <> · <code>{shape.className}</code></> : null}
                 {" — "}{shape.description}
               </li>
-            ))}
+          )}
           </ul>
-        </div>
-      ) : null}
+        </div> :
+      null}
 
-      {family.customOnly && family.customOnly.length ? (
-        <div
-          style={{
-            marginTop: 12,
-            padding: 10,
-            background: "var(--warning-surface)",
-            color: "var(--warning-text)",
-            borderRadius: 8,
-            fontSize: 12,
-          }}
-        >
+      {family.customOnly && family.customOnly.length ?
+      <div
+        style={{
+          marginTop: 12,
+          padding: 10,
+          background: "var(--warning-surface)",
+          color: "var(--warning-text)",
+          borderRadius: 8,
+          fontSize: 12
+        }}>
+        
           <strong>Keep custom, do not standardise:</strong>
           <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
-            {family.customOnly.map((item, idx) => (
-              <li key={idx}>
+            {family.customOnly.map((item, idx) =>
+          <li key={idx}>
                 {item.description}
                 {item.reason ? <> — <em>{item.reason}</em></> : null}
               </li>
-            ))}
+          )}
           </ul>
-        </div>
-      ) : null}
-    </section>
-  );
+        </div> :
+      null}
+    </section>);
+
 }
 
 export default function ShowcasePage() {
@@ -252,64 +253,64 @@ export default function ShowcasePage() {
   const canAccess = useMemo(() => canUseDevLayoutOverlay(user), [user]);
 
   if (loading) {
-    return (
-      <main style={{ padding: 24 }}>
-        <p>Loading…</p>
-      </main>
-    );
+    return <ShowcasePageUi view="section1" />;
+
+
+
+
   }
 
   if (!canAccess) {
-    return (
-      <main style={{ padding: 24 }}>
-        <h1 style={{ color: "var(--accentMain)" }}>Design system showcase</h1>
-        <p>
-          This page is restricted to roles that can use the dev overlay. Ask an
-          admin if you need access.
-        </p>
-      </main>
-    );
+    return <ShowcasePageUi view="section2" />;
+
+
+
+
+
+
+
+
   }
 
-  return (
-    <>
-      <Head>
-        <title>Design system showcase · HNPSystem</title>
-      </Head>
-      <main
-        className="app-page-shell"
-        style={{ padding: "16px 20px 40px", minHeight: "100vh" }}
-      >
-        <div className="app-page-card" style={{ padding: 24 }}>
-          <header style={{ marginBottom: 24 }}>
-            <h1 style={{ margin: 0, color: "var(--accentMain)" }}>
-              HNPSystem · Design system showcase
-            </h1>
-            <p style={{ margin: "8px 0 0", color: "var(--text-secondary)", maxWidth: 720 }}>
-              The authoritative reference for every approved UI family and variant.
-              Page-by-page cleanup should use the variants listed here before
-              creating anything new. If a pattern is missing, add it to{" "}
-              <code>src/components/ui/variants.js</code> first.
-            </p>
-            <nav style={{ marginTop: 14, display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {UI_FAMILIES.map((family) => (
-                <a
-                  key={family.id}
-                  href={`#${family.id}`}
-                  className="app-btn app-btn--secondary app-btn--xs app-btn--pill"
-                  style={{ textDecoration: "none" }}
-                >
-                  {family.label}
-                </a>
-              ))}
-            </nav>
-          </header>
+  return <ShowcasePageUi view="section3" FamilyBlock={FamilyBlock} Head={Head} UI_FAMILIES={UI_FAMILIES} />;
 
-          {UI_FAMILIES.map((family) => (
-            <FamilyBlock key={family.id} family={family} />
-          ))}
-        </div>
-      </main>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

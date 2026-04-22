@@ -7,13 +7,14 @@ import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import PageUi from "@/components/page-ui/mobile/mobile-appointments-ui"; // Extracted presentation layer.
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px" };
 const cardStyle = {
   backgroundColor: "var(--section-card-bg, #fff)",
   borderRadius: "var(--section-card-radius, 12px)",
   padding: "16px",
-  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))",
+  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))"
 };
 
 function groupByDay(jobs) {
@@ -42,32 +43,32 @@ function MobileAppointmentsInner() {
   return (
     <div style={pageStyle}>
       <h1 style={{ margin: 0 }}>Mobile Appointments</h1>
-      {loading ? (
-        <>
+      {loading ?
+      <>
           <SkeletonKeyframes />
-          {Array.from({ length: 2 }).map((_, g) => (
-            <section key={g} style={cardStyle}>
+          {Array.from({ length: 2 }).map((_, g) =>
+        <section key={g} style={cardStyle}>
               <SkeletonBlock width="40%" height="16px" />
               <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-                {Array.from({ length: 3 }).map((__, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {Array.from({ length: 3 }).map((__, i) =>
+            <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <SkeletonBlock width="60%" height="12px" />
                     <SkeletonBlock width="80%" height="10px" />
                   </div>
-                ))}
+            )}
               </div>
             </section>
-          ))}
-        </>
-      ) : grouped.length === 0 ? (
-        <p>No mobile appointments scheduled.</p>
-      ) : grouped.map(([day, list]) => (
-        <section key={day} style={cardStyle}>
+        )}
+        </> :
+      grouped.length === 0 ?
+      <p>No mobile appointments scheduled.</p> :
+      grouped.map(([day, list]) =>
+      <section key={day} style={cardStyle}>
           <h2 style={{ marginTop: 0 }}>
             {day === "unscheduled" ? "Unscheduled" : new Date(day).toLocaleDateString([], { weekday: "long", day: "numeric", month: "short" })}
           </h2>
-          {list.map((j) => (
-            <div key={j.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--border-subtle)" }}>
+          {list.map((j) =>
+        <div key={j.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--border-subtle)" }}>
               <Link href={`/mobile/jobs/${encodeURIComponent(j.job_number)}`}>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   <strong>{j.job_number}</strong>
@@ -80,17 +81,17 @@ function MobileAppointmentsInner() {
                 <div style={{ fontSize: "0.9rem" }}>{j.vehicle_reg} · {j.service_address} {j.service_postcode}</div>
               </Link>
             </div>
-          ))}
+        )}
         </section>
-      ))}
-    </div>
-  );
+      )}
+    </div>);
+
 }
 
 export default function Page() {
-  return (
-    <ProtectedRoute allowedRoles={["MOBILE TECHNICIAN", "ADMIN", "ADMIN MANAGER", "OWNER", "SERVICE MANAGER", "WORKSHOP MANAGER"]}>
-      <MobileAppointmentsInner />
-    </ProtectedRoute>
-  );
+  return <PageUi view="section1" MobileAppointmentsInner={MobileAppointmentsInner} ProtectedRoute={ProtectedRoute} />;
+
+
+
+
 }

@@ -1,3 +1,4 @@
+// file location: src/pages/clocking/[technicianSlug].js
 // file: src/pages/clocking/[technicianSlug].js
 "use client";
 
@@ -13,6 +14,7 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
 import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import { STATUSES as JOB_STATUSES } from "@/lib/status/catalog/job";
+import UserClockingHistoryUi from "@/components/page-ui/clocking/clocking-technician-slug-ui"; // Extracted presentation layer.
 
 const STATUS_STATES = ["In Progress", "Tea Break", "Waiting for Job"];
 
@@ -20,18 +22,18 @@ const STATUS_BADGE_STYLES = {
   "In Progress": {
     background: "var(--layer-section-level-1)",
     border: "none",
-    color: "var(--success-dark)",
+    color: "var(--success-dark)"
   },
   "Tea Break": {
     background: "var(--layer-section-level-1)",
     border: "none",
-    color: "var(--warning-dark)",
+    color: "var(--warning-dark)"
   },
   "Waiting for Job": {
     background: "var(--layer-section-level-1)",
     border: "none",
-    color: "var(--info)",
-  },
+    color: "var(--info)"
+  }
 };
 
 const formatTime = (value) => {
@@ -40,7 +42,7 @@ const formatTime = (value) => {
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleTimeString("en-GB", {
     hour: "2-digit",
-    minute: "2-digit",
+    minute: "2-digit"
   });
 };
 
@@ -86,8 +88,8 @@ const isClockingLockedStatus = (statusValue) => {
   return (
     statusId === JOB_STATUSES.INVOICED ||
     statusId === JOB_STATUSES.RELEASED ||
-    String(statusValue || "").trim().toLowerCase() === "archived"
-  );
+    String(statusValue || "").trim().toLowerCase() === "archived");
+
 };
 
 export default function UserClockingHistory() {
@@ -106,14 +108,14 @@ export default function UserClockingHistory() {
   const { user: currentUser } = useUser();
   const managerRoles = useMemo(
     () =>
-      new Set([
-        "workshop manager",
-        "service manager",
-        "after sales manager",
-        "after sales director",
-        "admin manager",
-        "aftersales manager",
-      ]),
+    new Set([
+    "workshop manager",
+    "service manager",
+    "after sales manager",
+    "after sales director",
+    "admin manager",
+    "aftersales manager"]
+    ),
     []
   );
   const userRoles = currentUser?.roles?.map((role) => role.toLowerCase()) || [];
@@ -181,10 +183,10 @@ export default function UserClockingHistory() {
     const fetchUserForSlug = async () => {
       setSlugLookupPending(true);
       try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("user_id, first_name, last_name")
-          .order("user_id", { ascending: true });
+        const { data, error } = await supabase.
+        from("users").
+        select("user_id, first_name, last_name").
+        order("user_id", { ascending: true });
 
         if (error) {
           throw error;
@@ -192,7 +194,7 @@ export default function UserClockingHistory() {
 
         const match = (data || []).find(
           (record) =>
-            generateTechnicianSlug(record.first_name, record.last_name, record.user_id) === slugParam
+          generateTechnicianSlug(record.first_name, record.last_name, record.user_id) === slugParam
         );
 
         if (!cancelled && match?.user_id) {
@@ -201,7 +203,7 @@ export default function UserClockingHistory() {
           if (canonicalSlug && canonicalSlug !== slugParam) {
             router.replace(`/clocking/${canonicalSlug}`, undefined, {
               shallow: true,
-              scroll: false,
+              scroll: false
             });
           }
         } else if (!cancelled && !match) {
@@ -233,22 +235,22 @@ export default function UserClockingHistory() {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      const { data: records, error: recordsError } = await supabase
-        .from("time_records")
-        .select("id, job_number, clock_in, clock_out, notes")
-        .eq("user_id", technicianUserId)
-        .eq("date", today)
-        .order("clock_in", { ascending: false });
+      const { data: records, error: recordsError } = await supabase.
+      from("time_records").
+      select("id, job_number, clock_in, clock_out, notes").
+      eq("user_id", technicianUserId).
+      eq("date", today).
+      order("clock_in", { ascending: false });
 
       if (recordsError) {
         throw recordsError;
       }
 
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("user_id, first_name, last_name, role")
-        .eq("user_id", technicianUserId)
-        .maybeSingle();
+      const { data: userData, error: userError } = await supabase.
+      from("users").
+      select("user_id, first_name, last_name, role").
+      eq("user_id", technicianUserId).
+      maybeSingle();
 
       if (userError) {
         throw userError;
@@ -274,18 +276,18 @@ export default function UserClockingHistory() {
 
     const channel = supabase.channel(`clocking-user-${technicianUserId}`);
 
-    channel
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "time_records",
-          filter: `user_id=eq.${technicianUserId}`,
-        },
-        () => fetchEntries()
-      )
-      .subscribe();
+    channel.
+    on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "time_records",
+        filter: `user_id=eq.${technicianUserId}`
+      },
+      () => fetchEntries()
+    ).
+    subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -295,10 +297,10 @@ export default function UserClockingHistory() {
   const fetchActiveJobs = useCallback(async () => {
     setActiveJobsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("job_clocking")
-        .select("job_id, job_number")
-        .is("clock_out", null);
+      const { data, error } = await supabase.
+      from("job_clocking").
+      select("job_id, job_number").
+      is("clock_out", null);
 
       if (error) {
         throw error;
@@ -328,13 +330,13 @@ export default function UserClockingHistory() {
 
   useEffect(() => {
     const channel = supabase.channel("manual-job-clockings");
-    channel
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "job_clocking" },
-        () => fetchActiveJobs()
-      )
-      .subscribe();
+    channel.
+    on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "job_clocking" },
+      () => fetchActiveJobs()
+    ).
+    subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -345,19 +347,19 @@ export default function UserClockingHistory() {
     setFormJobNumber(value);
     setSelectedJobLockedMessage("");
     const match =
-      activeJobs.find(
-        (job) => job.job_number?.toLowerCase() === (value || "").trim().toLowerCase()
-      ) || null;
+    activeJobs.find(
+      (job) => job.job_number?.toLowerCase() === (value || "").trim().toLowerCase()
+    ) || null;
     setSelectedJobId(match?.job_id ?? null);
 
     // Fetch requests for the selected job
     if (match?.job_id) {
       try {
-        const { data: jobRecord, error: jobRecordError } = await supabase
-          .from("jobs")
-          .select("status")
-          .eq("id", match.job_id)
-          .maybeSingle();
+        const { data: jobRecord, error: jobRecordError } = await supabase.
+        from("jobs").
+        select("status").
+        eq("id", match.job_id).
+        maybeSingle();
 
         if (jobRecordError) {
           throw jobRecordError;
@@ -369,11 +371,11 @@ export default function UserClockingHistory() {
           );
         }
 
-        const { data, error } = await supabase
-          .from("job_requests")
-          .select("request_id, description, hours, job_type, sort_order")
-          .eq("job_id", match.job_id)
-          .order("sort_order", { ascending: true });
+        const { data, error } = await supabase.
+        from("job_requests").
+        select("request_id, description, hours, job_type, sort_order").
+        eq("job_id", match.job_id).
+        order("sort_order", { ascending: true });
 
         if (!error && data) {
           setJobRequests(data);
@@ -401,11 +403,11 @@ export default function UserClockingHistory() {
       );
       if (existing) return existing.job_id;
 
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("id, status, job_number")
-        .ilike("job_number", normalized)
-        .maybeSingle();
+      const { data, error } = await supabase.
+      from("jobs").
+      select("id, status, job_number").
+      ilike("job_number", normalized).
+      maybeSingle();
 
       if (error) {
         throw error;
@@ -424,13 +426,13 @@ export default function UserClockingHistory() {
 
   const requestOptions = useMemo(() => {
     const options = [
-      {
-        key: "job",
-        value: "job",
-        label: formJobNumber ? `Job #${formJobNumber}` : "Job (select job first)",
-        description: "Clock onto the main job"
-      }
-    ];
+    {
+      key: "job",
+      value: "job",
+      label: formJobNumber ? `Job #${formJobNumber}` : "Job (select job first)",
+      description: "Clock onto the main job"
+    }];
+
 
     jobRequests.forEach((req) => {
       const requestKey = `R${req.request_id}`;
@@ -513,7 +515,7 @@ export default function UserClockingHistory() {
 
       try {
         // Build request snapshot for notes field
-        const selectedRequestData = jobRequests.find(r => `R${r.request_id}` === selectedRequest);
+        const selectedRequestData = jobRequests.find((r) => `R${r.request_id}` === selectedRequest);
         let notesPayload = null;
 
         if (selectedRequest && selectedRequest !== "job") {
@@ -532,19 +534,19 @@ export default function UserClockingHistory() {
         }
 
         const { error: insertError } = await supabase.from("time_records").insert([
-          {
-            user_id: technicianUserId,
-            job_id: jobIdForEntry,
-            job_number: jobNumberTrimmed || null,
-            clock_in: startDate.toISOString(),
-            clock_out: finishDate.toISOString(),
-            date: dateString,
-            hours_worked: hoursWorked,
-            notes: notesPayload,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ]);
+        {
+          user_id: technicianUserId,
+          job_id: jobIdForEntry,
+          job_number: jobNumberTrimmed || null,
+          clock_in: startDate.toISOString(),
+          clock_out: finishDate.toISOString(),
+          date: dateString,
+          hours_worked: hoursWorked,
+          notes: notesPayload,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]
+        );
 
         if (insertError) {
           throw insertError;
@@ -552,26 +554,26 @@ export default function UserClockingHistory() {
 
         if (jobNumberTrimmed && jobIdForEntry) {
           const { error: jobClockingError } = await supabase.from("job_clocking").insert([
-            {
-              user_id: technicianUserId,
-              job_id: jobIdForEntry,
-              job_number: jobNumberTrimmed,
-              clock_in: startDate.toISOString(),
-              clock_out: finishDate.toISOString(),
-              work_type: "manual",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            },
-          ]);
+          {
+            user_id: technicianUserId,
+            job_id: jobIdForEntry,
+            job_number: jobNumberTrimmed,
+            clock_in: startDate.toISOString(),
+            clock_out: finishDate.toISOString(),
+            work_type: "manual",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }]
+          );
 
           if (jobClockingError) {
             throw jobClockingError;
           }
 
-          const { error: jobUpdateError } = await supabase
-            .from("jobs")
-            .update({ updated_at: new Date().toISOString() })
-            .eq("id", jobIdForEntry);
+          const { error: jobUpdateError } = await supabase.
+          from("jobs").
+          update({ updated_at: new Date().toISOString() }).
+          eq("id", jobIdForEntry);
 
           if (jobUpdateError) {
             throw jobUpdateError;
@@ -584,11 +586,11 @@ export default function UserClockingHistory() {
 
         // Fetch job details for ClockingHistorySection
         try {
-          const { data: jobData, error: jobError } = await supabase
-            .from("jobs")
-            .select("labour_hours, requests")
-            .eq("id", jobIdForEntry)
-            .single();
+          const { data: jobData, error: jobError } = await supabase.
+          from("jobs").
+          select("labour_hours, requests").
+          eq("id", jobIdForEntry).
+          single();
 
           if (!jobError && jobData) {
             setLastClockedJobAllocatedHours(jobData.labour_hours || null);
@@ -631,19 +633,19 @@ export default function UserClockingHistory() {
       }
     },
     [
-      technicianUserId,
-      clockInDate,
-      clockOutDate,
-      formStartTime,
-      formFinishTime,
-      formJobNumber,
-      selectedRequest,
-      selectedJobId,
-      jobRequests,
-      fetchEntries,
-      fetchActiveJobs,
-      resolveJobIdByNumber,
-    ]
+    technicianUserId,
+    clockInDate,
+    clockOutDate,
+    formStartTime,
+    formFinishTime,
+    formJobNumber,
+    selectedRequest,
+    selectedJobId,
+    jobRequests,
+    fetchEntries,
+    fetchActiveJobs,
+    resolveJobIdByNumber]
+
   );
 
   const liveRecord = entries.find((entry) => !entry.clock_out) || entries[0] || null;
@@ -657,7 +659,7 @@ export default function UserClockingHistory() {
     boxShadow: "none",
     display: "flex",
     flexDirection: "column",
-    gap: "24px",
+    gap: "24px"
   };
 
   const badgeBaseStyle = {
@@ -669,19 +671,19 @@ export default function UserClockingHistory() {
     fontSize: "0.75rem",
     fontWeight: 600,
     letterSpacing: "0.08em",
-    textTransform: "uppercase",
+    textTransform: "uppercase"
   };
 
   const tableWrapperStyle = {
     borderRadius: "var(--radius-xl)",
     border: "none",
-    overflow: "hidden",
+    overflow: "hidden"
   };
 
   const tableStyle = {
     width: "100%",
     borderCollapse: "collapse",
-    fontSize: "0.9rem",
+    fontSize: "0.9rem"
   };
 
   const tableHeaderStyle = {
@@ -692,20 +694,20 @@ export default function UserClockingHistory() {
     color: "var(--grey-accent)",
     background: "var(--surface-light)",
     borderBottom: "1px solid var(--surface-light)",
-    padding: "14px 18px",
+    padding: "14px 18px"
   };
 
   const tableCellStyle = {
     padding: "14px 18px",
     borderBottom: "1px solid var(--surface-light)",
-    color: "var(--text-color)",
+    color: "var(--text-color)"
   };
 
   const managerBadgeStyle = {
     ...badgeBaseStyle,
     background: "var(--layer-section-level-1)",
     border: "none",
-    color: "var(--info)",
+    color: "var(--info)"
   };
 
   const inputStyle = {
@@ -715,7 +717,7 @@ export default function UserClockingHistory() {
     padding: "12px 14px",
     fontSize: "0.95rem",
     color: "var(--text-primary)",
-    outline: "none",
+    outline: "none"
   };
 
   const buttonPrimaryStyle = {
@@ -726,7 +728,7 @@ export default function UserClockingHistory() {
     fontSize: "0.95rem",
     fontWeight: 600,
     padding: "12px 18px",
-    cursor: "pointer",
+    cursor: "pointer"
   };
 
   const buttonSecondaryStyle = {
@@ -737,283 +739,283 @@ export default function UserClockingHistory() {
     fontSize: "0.95rem",
     fontWeight: 600,
     padding: "12px 18px",
-    cursor: "pointer",
+    cursor: "pointer"
   };
 
-  return (
-    <>
-      <PageWrapper>
-        <PageContainer>
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          {error && (
-            <div
-              style={{
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--danger)",
-                background: "var(--layer-section-level-1)",
-                padding: "14px 18px",
-                color: "var(--danger-dark)",
-                fontSize: "0.9rem",
-              }}
-            >
-              {error}
-            </div>
-          )}
+  return <UserClockingHistoryUi view="section1" activeJobs={activeJobs} activeJobsLoading={activeJobsLoading} badgeBaseStyle={badgeBaseStyle} basePanelStyle={basePanelStyle} buttonPrimaryStyle={buttonPrimaryStyle} buttonSecondaryStyle={buttonSecondaryStyle} CalendarField={CalendarField} clockInDate={clockInDate} ClockingHistorySection={ClockingHistorySection} clockOutDate={clockOutDate} deriveStatus={deriveStatus} DropdownField={DropdownField} entries={entries} error={error} formatDuration={formatDuration} formatTime={formatTime} formError={formError} formFinishTime={formFinishTime} formJobNumber={formJobNumber} formStartTime={formStartTime} formSubmitting={formSubmitting} formSuccess={formSuccess} handleJobNumberChange={handleJobNumberChange} handleManualEntrySubmit={handleManualEntrySubmit} historyRefreshSignal={historyRefreshSignal} inputStyle={inputStyle} isManager={isManager} lastClockedJobId={lastClockedJobId} lastClockedJobNumber={lastClockedJobNumber} loading={loading} managerBadgeStyle={managerBadgeStyle} PageContainer={PageContainer} PageWrapper={PageWrapper} requestOptions={requestOptions} selectedJobLockedMessage={selectedJobLockedMessage} selectedRequest={selectedRequest} setClockInDate={setClockInDate} setClockOutDate={setClockOutDate} setFormError={setFormError} setFormFinishTime={setFormFinishTime} setFormJobNumber={setFormJobNumber} setFormStartTime={setFormStartTime} setFormSuccess={setFormSuccess} setJobRequests={setJobRequests} setSelectedJobId={setSelectedJobId} setSelectedJobLockedMessage={setSelectedJobLockedMessage} setSelectedRequest={setSelectedRequest} STATUS_BADGE_STYLES={STATUS_BADGE_STYLES} STATUS_STATES={STATUS_STATES} tableCellStyle={tableCellStyle} tableHeaderStyle={tableHeaderStyle} tableStyle={tableStyle} tableWrapperStyle={tableWrapperStyle} TimePickerField={TimePickerField} />;
 
-          <section id="live-technician-activity" style={basePanelStyle}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
-                gap: "12px",
-                alignItems: "center",
-              }}
-            >
-              <div>
-                <h2 style={{ margin: 0, fontSize: "1.25rem", color: "var(--text-primary)" }}>
-                  Live technician activity
-                </h2>
-              </div>
-              <span style={{ ...badgeBaseStyle, background: "var(--layer-section-level-1)", border: "none", color: "var(--success-dark)" }}>
-                {loading ? "Refreshing…" : "Live"}
-              </span>
-            </div>
 
-            <div style={tableWrapperStyle}>
-              <div style={{ maxHeight: "520px", overflowY: "auto" }}>
-                <table style={tableStyle}>
-                  <thead>
-                    <tr>
-                      <th style={tableHeaderStyle}>Status</th>
-                      <th style={tableHeaderStyle}>Job Number</th>
-                      <th style={tableHeaderStyle}>Start</th>
-                      <th style={tableHeaderStyle}>Finish</th>
-                      <th style={tableHeaderStyle}>Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {entries.length === 0 && !loading ? (
-                      <tr>
-                        <td colSpan={5} style={{ ...tableCellStyle, textAlign: "center", fontSize: "0.85rem", color: "var(--grey-accent)" }}>
-                          No clocking entries recorded yet for today.
-                        </td>
-                      </tr>
-                    ) : (
-                      entries.map((record) => {
-                        const status = deriveStatus(record);
-                        const chipStyle = STATUS_BADGE_STYLES[status];
-                        return (
-                          <tr key={record.id}>
-                            <td style={tableCellStyle}>
-                              <span
-                                style={{
-                                  ...badgeBaseStyle,
-                                  padding: "6px 14px",
-                                  fontSize: "0.7rem",
-                                  ...(chipStyle || {
-                                    background: "var(--surface-light)",
-                                    border: "none",
-                                    color: "var(--grey-accent)",
-                                  }),
-                                }}
-                              >
-                                {STATUS_STATES.includes(status) ? status : "Waiting for Job"}
-                              </span>
-                            </td>
-                            <td style={{ ...tableCellStyle, fontWeight: 600 }}>{record.job_number || "—"}</td>
-                            <td style={tableCellStyle}>{formatTime(record.clock_in)}</td>
-                            <td style={tableCellStyle}>{formatTime(record.clock_out)}</td>
-                            <td style={tableCellStyle}>{formatDuration(record.clock_in, record.clock_out)}</td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
 
-          {isManager && (
-            <section style={basePanelStyle}>
-              <header
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: "12px",
-                  alignItems: "center",
-                }}
-              >
-                <div>
-                  <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-primary)" }}>
-                    Manual clocking entry
-                  </h2>
-                </div>
-                <span style={managerBadgeStyle}>
-                  {activeJobsLoading ? "Fetching jobs…" : `${activeJobs.length} active jobs`}
-                </span>
-              </header>
 
-              {formError && (
-                <div
-                  style={{
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--danger)",
-                    background: "var(--layer-section-level-1)",
-                    padding: "12px 14px",
-                    color: "var(--danger-dark)",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  {formError}
-                </div>
-              )}
-              {selectedJobLockedMessage && !formError && (
-                <div
-                  style={{
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--warning)",
-                    background: "var(--layer-section-level-1)",
-                    padding: "12px 14px",
-                    color: "var(--warning-dark)",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  {selectedJobLockedMessage}
-                </div>
-              )}
-              {formSuccess && (
-                <div
-                  style={{
-                    borderRadius: "var(--radius-md)",
-                    border: "1px solid var(--success)",
-                    background: "var(--layer-section-level-1)",
-                    padding: "12px 14px",
-                    color: "var(--success-dark)",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  {formSuccess}
-                </div>
-              )}
 
-              <form style={{ display: "flex", flexDirection: "column", gap: "18px" }} onSubmit={handleManualEntrySubmit}>
-                {/* Row 1: Clock-in date, Clock-out date, Clock-in time, Clock-out time */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
-                  <CalendarField
-                    id="clockInDate"
-                    label="Clock-in date"
-                    value={clockInDate}
-                    onChange={(event) => {
-                      setClockInDate(event.target.value);
-                      // Auto-set clock-out date to match clock-in date
-                      if (!clockOutDate || clockOutDate < event.target.value) {
-                        setClockOutDate(event.target.value);
-                      }
-                    }}
-                    required
-                  />
-                  <CalendarField
-                    id="clockOutDate"
-                    label="Clock-out date"
-                    value={clockOutDate}
-                    onChange={(event) => setClockOutDate(event.target.value)}
-                    required
-                  />
-                  <TimePickerField
-                    id="startTime"
-                    label="Clock-in time"
-                    value={formStartTime}
-                    onChange={(event) => setFormStartTime(event.target.value)}
-                    required
-                    style={inputStyle}
-                  />
-                  <TimePickerField
-                    id="finishTime"
-                    label="Clock-out time"
-                    value={formFinishTime}
-                    onChange={(event) => setFormFinishTime(event.target.value)}
-                    required
-                    style={inputStyle}
-                  />
-                </div>
 
-                {/* Row 2: Job number, Request selector */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label htmlFor="jobNumber" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}>
-                      Job number
-                    </label>
-                    <input
-                      id="jobNumber"
-                      type="text"
-                      value={formJobNumber}
-                      onChange={(event) => handleJobNumberChange(event.target.value)}
-                      placeholder="Enter job number"
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label htmlFor="requestSelector" style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--grey-accent)" }}>
-                      Job / Request
-                    </label>
-                    <DropdownField
-                      id="requestSelector"
-                      placeholder="Select job or request"
-                      options={requestOptions}
-                      value={selectedRequest}
-                      onChange={(event) => setSelectedRequest(event.target.value)}
-                      disabled={!formJobNumber || Boolean(selectedJobLockedMessage)}
-                      required
-                      style={{ width: "100%" }}
-                    />
-                  </div>
-                </div>
 
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-                  <button type="submit" disabled={formSubmitting || Boolean(selectedJobLockedMessage)} style={{ ...buttonPrimaryStyle, opacity: formSubmitting || selectedJobLockedMessage ? 0.7 : 1, cursor: formSubmitting || selectedJobLockedMessage ? "not-allowed" : "pointer" }}>
-                    {formSubmitting ? "Saving entry…" : "Save clocking entry"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormJobNumber("");
-                      setSelectedJobId(null);
-                      setSelectedJobLockedMessage("");
-                      setSelectedRequest("job");
-                      setJobRequests([]);
-                      setClockInDate(new Date().toISOString().split("T")[0]);
-                      setClockOutDate(new Date().toISOString().split("T")[0]);
-                      setFormStartTime("");
-                      setFormFinishTime("");
-                      setFormError("");
-                      setFormSuccess("");
-                    }}
-                    style={buttonSecondaryStyle}
-                  >
-                    Reset form
-                  </button>
-                </div>
-              </form>
-            </section>
-          )}
 
-          {isManager && lastClockedJobId && lastClockedJobNumber && (
-            <ClockingHistorySection
-              jobId={lastClockedJobId}
-              jobNumber={lastClockedJobNumber}
-              requests={[]}
-              jobAllocatedHours={null}
-              refreshSignal={historyRefreshSignal}
-              enableRequestClick={false}
-              title="Clocking history"
-            />
-          )}
-          </div>
-        </PageContainer>
-      </PageWrapper>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

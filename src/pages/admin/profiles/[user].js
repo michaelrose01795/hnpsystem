@@ -1,26 +1,27 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/admin/profiles/[user].js
+// ✅ Imports converted to use absolute alias "@/"
 import React from "react";
 import { useRouter } from "next/router";
 import { ProfilePage } from "@/pages/profile";
+import AdminProfilePreviewUi from "@/components/page-ui/admin/profiles/admin-profiles-user-ui"; // Extracted presentation layer.
 
 export default function AdminProfilePreview() {
   const router = useRouter();
   const username = typeof router.query.user === "string" ? router.query.user : null;
 
   if (!router.isReady || !username) {
-    return (
-      <div style={{ padding: "16px", fontWeight: 600, color: "var(--info)" }}>
-        Loading profile…
-      </div>
-    );
+    return <AdminProfilePreviewUi view="section1" />;
+
+
+
+
   }
 
-  return (
-    <ProfilePage
-      forcedUserName={username}
-      embeddedOverride
-      adminPreviewOverride
-    />
-  );
+  return <AdminProfilePreviewUi view="section2" ProfilePage={ProfilePage} username={username} />;
+
+
+
+
+
+
 }

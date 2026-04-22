@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import dynamic from "next/dynamic";
+import TechEfficiencyPageUi from "@/components/page-ui/tech/tech-efficiency-ui"; // Extracted presentation layer.
 const EfficiencyTab = dynamic(() => import("@/components/Clocking/EfficiencyTab"), { ssr: false });
 
 export default function TechEfficiencyPage() {
@@ -17,42 +18,42 @@ export default function TechEfficiencyPage() {
 
   const techUserId = dbUserId ? Number(dbUserId) : null;
 
-  return (
-    <>
-      <div className="tech-efficiency-page-shell">
-        {!ready ? (
-          <div
-            style={{
-              background: "var(--surface)",
-              borderRadius: "var(--radius-md)",
-              padding: "32px",
-              border: "none",
-              textAlign: "center",
-              color: "var(--info)",
-            }}
-          >
-            Loading your profile...
-          </div>
-        ) : (
-          <EfficiencyTab
-            editable={true}
-            filterUserId={techUserId}
-            editableUserId={techUserId}
-          />
-        )}
-      </div>
-      <style jsx>{`
-        .tech-efficiency-page-shell {
-          width: 100%;
-          min-width: 0;
-        }
+  return <TechEfficiencyPageUi view="section1" EfficiencyTab={EfficiencyTab} ready={ready} techUserId={techUserId} />;
 
-        @media (max-width: 430px) {
-          .tech-efficiency-page-shell {
-            margin-top: -4px;
-          }
-        }
-      `}</style>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

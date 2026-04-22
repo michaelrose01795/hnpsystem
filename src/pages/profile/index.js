@@ -1,3 +1,4 @@
+// file location: src/pages/profile/index.js
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import ProfileWorkTab from "@/components/profile/ProfileWorkTab";
@@ -8,13 +9,14 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ACCENT_PALETTES, useTheme } from "@/styles/themeProvider";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import Button from "@/components/ui/Button";
+import ProfilePageWrapperUi from "@/components/page-ui/profile/profile-ui"; // Extracted presentation layer.
 
 const SAFE_ACCENT_PALETTES =
-  ACCENT_PALETTES && typeof ACCENT_PALETTES === "object"
-    ? ACCENT_PALETTES
-    : {
-        red: { label: "Red", light: "#dc2626", dark: "#f87171" },
-      };
+ACCENT_PALETTES && typeof ACCENT_PALETTES === "object" ?
+ACCENT_PALETTES :
+{
+  red: { label: "Red", light: "#dc2626", dark: "#f87171" }
+};
 
 function AccentOptionContent({ label, light, dark }) {
   return (
@@ -23,9 +25,9 @@ function AccentOptionContent({ label, light, dark }) {
         display: "inline-flex",
         alignItems: "center",
         gap: "8px",
-        minWidth: 0,
-      }}
-    >
+        minWidth: 0
+      }}>
+      
       <span
         aria-hidden="true"
         style={{
@@ -34,26 +36,26 @@ function AccentOptionContent({ label, light, dark }) {
           borderRadius: "var(--radius-pill)",
           border: "1px solid rgba(var(--text-primary-rgb), 0.2)",
           background: light,
-          flexShrink: 0,
-        }}
-      />
+          flexShrink: 0
+        }} />
+      
       <span
         style={{
           fontWeight: 700,
           color: dark,
-          lineHeight: 1.1,
-        }}
-      >
+          lineHeight: 1.1
+        }}>
+        
         {label}
       </span>
-    </span>
-  );
+    </span>);
+
 }
 
 export function ProfilePage({
   forcedUserName = null,
   embeddedOverride = null,
-  adminPreviewOverride = null,
+  adminPreviewOverride = null
 } = {}) {
   const router = useRouter();
   const isEmbeddedQuery = router.query.embedded === "1";
@@ -90,101 +92,101 @@ export function ProfilePage({
 
   const accentOptions = useMemo(
     () =>
-      Object.entries(SAFE_ACCENT_PALETTES).map(([value, palette]) => ({
-        value,
-        label: <AccentOptionContent label={palette.label} light={palette.light} dark={palette.dark} />,
-      })),
+    Object.entries(SAFE_ACCENT_PALETTES).map(([value, palette]) => ({
+      value,
+      label: <AccentOptionContent label={palette.label} light={palette.light} dark={palette.dark} />
+    })),
     []
   );
 
-  const content = (
-    <div className={isEmbedded ? undefined : "max-w-3xl mx-auto px-6 py-8"} style={isEmbedded ? undefined : { width: "100%" }}>
+  const content =
+  <div className={isEmbedded ? undefined : "max-w-3xl mx-auto px-6 py-8"} style={isEmbedded ? undefined : { width: "100%" }}>
       <DevLayoutSection
-        sectionKey="profile-page-content"
-        sectionType="page-shell"
-        shell
+      sectionKey="profile-page-content"
+      sectionType="page-shell"
+      shell
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: isMobile ? "12px" : "18px",
+        padding: "0"
+      }}>
+      
+        <DevLayoutSection
+        sectionKey="profile-tab-toolbar"
+        parentKey="profile-page-content"
+        sectionType="toolbar"
         style={{
           display: "flex",
-          flexDirection: "column",
-          gap: isMobile ? "12px" : "18px",
-          padding: "0",
-        }}
-      >
-        <DevLayoutSection
-          sectionKey="profile-tab-toolbar"
-          parentKey="profile-page-content"
-          sectionType="toolbar"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "12px",
-            alignItems: "flex-start",
-            flexWrap: "wrap",
-            width: "100%",
-          }}
-        >
+          justifyContent: "space-between",
+          gap: "12px",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          width: "100%"
+        }}>
+        
           <DevLayoutSection sectionKey="profile-tab-switcher" parentKey="profile-tab-toolbar" sectionType="tab-row">
             <TabSwitcher
-              activeTab={activeTab}
-              onChange={(nextTab) => {
-                if (nextTab === "personal" && personalDisabled) return;
-                setActiveTab(nextTab);
-              }}
-              personalDisabled={personalDisabled}
-            />
+            activeTab={activeTab}
+            onChange={(nextTab) => {
+              if (nextTab === "personal" && personalDisabled) return;
+              setActiveTab(nextTab);
+            }}
+            personalDisabled={personalDisabled} />
+          
           </DevLayoutSection>
           <DevLayoutSection sectionKey="profile-tab-actions" parentKey="profile-tab-toolbar" sectionType="toolbar">
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {isWorkTab ? (
-                <div style={{ minWidth: "170px", width: "170px" }}>
+              {isWorkTab ?
+            <div style={{ minWidth: "170px", width: "170px" }}>
                   <DropdownField
-                    value={accent}
-                    onValueChange={setAccent}
-                    options={accentOptions}
-                    className="profile-accent-dropdown"
-                    size="sm"
-                  />
-                </div>
-              ) : null}
-              {isWorkTab ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="app-btn--control"
-                  onClick={toggleTheme}
-                  aria-label="Cycle theme"
-                >
+                value={accent}
+                onValueChange={setAccent}
+                options={accentOptions}
+                className="profile-accent-dropdown"
+                size="sm" />
+              
+                </div> :
+            null}
+              {isWorkTab ?
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="app-btn--control"
+              onClick={toggleTheme}
+              aria-label="Cycle theme">
+              
                   {themeLabel}
-                </Button>
-              ) : null}
+                </Button> :
+            null}
               {headerActions}
             </div>
           </DevLayoutSection>
         </DevLayoutSection>
 
         <DevLayoutSection sectionKey="profile-active-tab-panel" parentKey="profile-page-content" sectionType="section-shell" shell>
-          {activeTab === "work" ? (
-            <ProfileWorkTab
-              forcedUserName={forcedUserName}
-              embeddedOverride
-              adminPreviewOverride={adminPreviewOverride}
-              onHeaderActionsChange={setHeaderActions}
-            />
-          ) : (
-            <ProfilePersonalTab
-              disabled={personalDisabled}
-              onHeaderActionsChange={setHeaderActions}
-            />
-          )}
+          {activeTab === "work" ?
+        <ProfileWorkTab
+          forcedUserName={forcedUserName}
+          embeddedOverride
+          adminPreviewOverride={adminPreviewOverride}
+          onHeaderActionsChange={setHeaderActions} /> :
+
+
+        <ProfilePersonalTab
+          disabled={personalDisabled}
+          onHeaderActionsChange={setHeaderActions} />
+
+        }
         </DevLayoutSection>
       </DevLayoutSection>
-    </div>
-  );
+    </div>;
+
 
   return content;
 }
 
 export default function ProfilePageWrapper(props) {
-  return <ProfilePage {...props} />;
+  return <ProfilePageWrapperUi view="section1" ProfilePage={ProfilePage} props={props} />;
 }

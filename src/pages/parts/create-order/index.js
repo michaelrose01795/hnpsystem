@@ -1,3 +1,4 @@
+// file location: src/pages/parts/create-order/index.js
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
@@ -13,21 +14,22 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { getVehicleRegistration } from "@/lib/canonical/fields";
+import PartsJobCardPageUi from "@/components/page-ui/parts/create-order/parts-create-order-ui"; // Extracted presentation layer.
 
 const cardStyle = {
-  gap: "18px",
+  gap: "18px"
 };
 
 const twoColumnGrid = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: "12px",
+  gap: "12px"
 };
 
 const fieldStyle = {
   display: "flex",
   flexDirection: "column",
-  gap: "4px",
+  gap: "4px"
 };
 
 const inputStyle = {
@@ -35,7 +37,7 @@ const inputStyle = {
   border: "none",
   padding: "var(--control-padding)",
   fontSize: "0.95rem",
-  fontFamily: "inherit",
+  fontFamily: "inherit"
 };
 
 const sectionCardStyle = {
@@ -45,7 +47,7 @@ const sectionCardStyle = {
   padding: "var(--section-card-padding)",
   display: "flex",
   flexDirection: "column",
-  gap: "12px",
+  gap: "12px"
 };
 
 const sectionHeaderStyle = {
@@ -53,7 +55,7 @@ const sectionHeaderStyle = {
   justifyContent: "space-between",
   alignItems: "flex-start",
   flexWrap: "wrap",
-  gap: "12px",
+  gap: "12px"
 };
 
 const partLookupOverlayStyle = {
@@ -64,7 +66,7 @@ const partLookupOverlayStyle = {
   alignItems: "center",
   justifyContent: "center",
   padding: "16px",
-  zIndex: 90,
+  zIndex: 90
 };
 
 const partLookupContentStyle = {
@@ -77,7 +79,7 @@ const partLookupContentStyle = {
   border: "none",
   display: "flex",
   flexDirection: "column",
-  gap: "14px",
+  gap: "14px"
 };
 
 const blankForm = {
@@ -95,7 +97,7 @@ const blankForm = {
   delivery_address: "",
   delivery_eta: "",
   delivery_window: "",
-  delivery_notes: "",
+  delivery_notes: ""
 };
 
 const blankPart = () => ({
@@ -105,27 +107,27 @@ const blankPart = () => ({
   unit_price: "",
   notes: "",
   part_catalog_id: null,
-  catalog_snapshot: null,
+  catalog_snapshot: null
 });
 
 const formatFullName = (record = {}) =>
-  [record.firstname || record.firstName, record.lastname || record.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+[record.firstname || record.firstName, record.lastname || record.lastName].
+filter(Boolean).
+join(" ").
+trim();
 
 const splitFullName = (fullName = "", fallback = {}) => {
   const trimmed = (fullName || "").trim();
   if (!trimmed.length) {
     return {
       firstName: fallback.firstname || fallback.firstName || "",
-      lastName: fallback.lastname || fallback.lastName || "",
+      lastName: fallback.lastname || fallback.lastName || ""
     };
   }
   const [firstName, ...rest] = trimmed.split(/\s+/);
   return {
     firstName: firstName || fallback.firstname || fallback.firstName || "",
-    lastName: rest.join(" ").trim() || fallback.lastname || fallback.lastName || "",
+    lastName: rest.join(" ").trim() || fallback.lastname || fallback.lastName || ""
   };
 };
 
@@ -137,7 +139,7 @@ const normalizeCustomerRecord = (record = {}) => ({
   mobile: record.mobile || "",
   telephone: record.telephone || "",
   address: record.address || "",
-  postcode: record.postcode || "",
+  postcode: record.postcode || ""
 });
 
 export default function PartsJobCardPage() {
@@ -170,7 +172,7 @@ export default function PartsJobCardPage() {
     if (deliverySameAsBilling) {
       setForm((prev) => ({
         ...prev,
-        delivery_address: prev.customer_address,
+        delivery_address: prev.customer_address
       }));
     }
   }, [deliverySameAsBilling, form.customer_address]);
@@ -193,7 +195,7 @@ export default function PartsJobCardPage() {
       try {
         const params = new URLSearchParams({
           search: term,
-          limit: "25",
+          limit: "25"
         });
         const response = await fetch(`/api/parts/catalog?${params.toString()}`);
         const payload = await response.json();
@@ -223,21 +225,21 @@ export default function PartsJobCardPage() {
   const handleFieldChange = (field, value) => {
     setForm((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: value
     }));
   };
 
   const handlePartChange = (index, field, value) => {
     setPartLines((prev) =>
-      prev.map((line, lineIndex) => {
-        if (lineIndex !== index) return line;
-        const next = { ...line, [field]: value };
-        if (field === "part_number" && line.part_catalog_id) {
-          next.part_catalog_id = null;
-          next.catalog_snapshot = null;
-        }
-        return next;
-      })
+    prev.map((line, lineIndex) => {
+      if (lineIndex !== index) return line;
+      const next = { ...line, [field]: value };
+      if (field === "part_number" && line.part_catalog_id) {
+        next.part_catalog_id = null;
+        next.catalog_snapshot = null;
+      }
+      return next;
+    })
     );
   };
 
@@ -269,34 +271,34 @@ export default function PartsJobCardPage() {
       return;
     }
     setPartLines((prev) =>
-      prev.map((line, index) => {
-        if (index !== activePartLine) return line;
-        return {
-          ...line,
-          part_catalog_id: part.id,
-          part_number: part.part_number || line.part_number,
-          part_name: part.name || line.part_name,
-          unit_price:
-            part.unit_price === undefined || part.unit_price === null
-              ? line.unit_price
-              : String(part.unit_price),
-          catalog_snapshot: {
-            qty_in_stock: part.qty_in_stock,
-            qty_reserved: part.qty_reserved,
-            storage_location: part.storage_location,
-            supplier: part.supplier,
-          },
-        };
-      })
+    prev.map((line, index) => {
+      if (index !== activePartLine) return line;
+      return {
+        ...line,
+        part_catalog_id: part.id,
+        part_number: part.part_number || line.part_number,
+        part_name: part.name || line.part_name,
+        unit_price:
+        part.unit_price === undefined || part.unit_price === null ?
+        line.unit_price :
+        String(part.unit_price),
+        catalog_snapshot: {
+          qty_in_stock: part.qty_in_stock,
+          qty_reserved: part.qty_reserved,
+          storage_location: part.storage_location,
+          supplier: part.supplier
+        }
+      };
+    })
     );
     closePartSearch();
   };
 
   const handleClearPartLink = (index) => {
     setPartLines((prev) =>
-      prev.map((line, lineIndex) =>
-        lineIndex === index ? { ...line, part_catalog_id: null, catalog_snapshot: null } : line
-      )
+    prev.map((line, lineIndex) =>
+    lineIndex === index ? { ...line, part_catalog_id: null, catalog_snapshot: null } : line
+    )
     );
   };
 
@@ -304,20 +306,20 @@ export default function PartsJobCardPage() {
     if (!customerId) return;
     setLoadingVehicle(true);
     try {
-      const { data, error } = await supabaseClient
-        .from("vehicles")
-        .select("registration, reg_number, make, model, make_model, chassis, vin")
-        .eq("customer_id", customerId)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data, error } = await supabaseClient.
+      from("vehicles").
+      select("registration, reg_number, make, model, make_model, chassis, vin").
+      eq("customer_id", customerId).
+      order("updated_at", { ascending: false }).
+      limit(1).
+      maybeSingle();
       if (!error && data) {
         setForm((prev) => ({
           ...prev,
           vehicle_reg: getVehicleRegistration(data) || prev.vehicle_reg,
           vehicle_make: data.make || data.make_model || prev.vehicle_make,
           vehicle_model: data.model || prev.vehicle_model,
-          vehicle_vin: data.vin || data.chassis || prev.vehicle_vin,
+          vehicle_vin: data.vin || data.chassis || prev.vehicle_vin
         }));
       }
     } catch (vehicleError) {
@@ -340,7 +342,7 @@ export default function PartsJobCardPage() {
           customer_name: formatFullName(normalized) || prev.customer_name,
           customer_phone: normalized.mobile || normalized.telephone || prev.customer_phone,
           customer_email: normalized.email || prev.customer_email,
-          customer_address: normalized.address || prev.customer_address,
+          customer_address: normalized.address || prev.customer_address
         };
         if (deliverySameAsBilling) {
           nextState.delivery_address = normalized.address || prev.delivery_address;
@@ -364,7 +366,7 @@ export default function PartsJobCardPage() {
       customer_phone: "",
       customer_email: "",
       customer_address: "",
-      delivery_address: deliverySameAsBilling ? "" : prev.delivery_address,
+      delivery_address: deliverySameAsBilling ? "" : prev.delivery_address
     }));
   };
 
@@ -377,7 +379,7 @@ export default function PartsJobCardPage() {
         customer_name: formatFullName(customerRecord),
         customer_phone: customerRecord.mobile || customerRecord.telephone || "",
         customer_email: customerRecord.email || "",
-        customer_address: customerRecord.address || "",
+        customer_address: customerRecord.address || ""
       };
       if (deliverySameAsBilling) {
         nextState.delivery_address = customerRecord.address || "";
@@ -413,7 +415,7 @@ export default function PartsJobCardPage() {
         email: toNullable(form.customer_email),
         mobile: phoneValue,
         telephone: phoneValue,
-        address: toNullable(form.customer_address),
+        address: toNullable(form.customer_address)
       });
       if (!result?.success || !result?.data) {
         throw new Error(result?.error?.message || "Failed to update customer details.");
@@ -427,7 +429,7 @@ export default function PartsJobCardPage() {
           customer_name: formatFullName(normalized),
           customer_phone: normalized.mobile || normalized.telephone || "",
           customer_email: normalized.email || "",
-          customer_address: normalized.address || "",
+          customer_address: normalized.address || ""
         };
         if (deliverySameAsBilling) {
           nextState.delivery_address = normalized.address || "";
@@ -499,25 +501,25 @@ export default function PartsJobCardPage() {
           reg: form.vehicle_reg,
           make: form.vehicle_make,
           model: form.vehicle_model,
-          vin: form.vehicle_vin,
+          vin: form.vehicle_vin
         },
         delivery_type: form.delivery_type,
         delivery_address:
-          form.delivery_type === "delivery"
-            ? deliveryAddressValue.trim() || null
-            : null,
+        form.delivery_type === "delivery" ?
+        deliveryAddressValue.trim() || null :
+        null,
         delivery_contact: trimmedCustomerName || null,
         delivery_phone: trimmedCustomerPhone || null,
         delivery_eta: form.delivery_eta || null,
         delivery_window: form.delivery_window || null,
-        delivery_notes: form.delivery_notes.trim() || null,
+        delivery_notes: form.delivery_notes.trim() || null
       };
 
-      const { data: orderRecord, error: insertError } = await supabaseClient
-        .from("parts_order_cards")
-        .insert([payload])
-        .select("*, items:parts_order_card_items(*)")
-        .maybeSingle();
+      const { data: orderRecord, error: insertError } = await supabaseClient.
+      from("parts_order_cards").
+      insert([payload]).
+      select("*, items:parts_order_card_items(*)").
+      maybeSingle();
       if (insertError) throw insertError;
 
       const partPayload = validParts.map((line) => ({
@@ -527,14 +529,14 @@ export default function PartsJobCardPage() {
         part_name: line.part_name.trim() || null,
         quantity: Number(line.quantity) || 1,
         unit_price: line.unit_price === "" ? 0 : Number(line.unit_price),
-        notes: line.notes.trim() || null,
+        notes: line.notes.trim() || null
       }));
 
       if (partPayload.length > 0) {
-        const { error: itemsError, data: itemsData } = await supabaseClient
-          .from("parts_order_card_items")
-          .insert(partPayload)
-          .select("*");
+        const { error: itemsError, data: itemsData } = await supabaseClient.
+        from("parts_order_card_items").
+        insert(partPayload).
+        select("*");
         if (itemsError) throw itemsError;
         orderRecord.items = itemsData;
       } else {
@@ -555,670 +557,670 @@ export default function PartsJobCardPage() {
   };
 
   if (!hasPartsAccess) {
-    return (
-      <>
-        <div style={{ padding: "48px", textAlign: "center", color: "var(--primary-dark)" }}>
-          You do not have permission to access parts orders.
-        </div>
-      </>
-    );
+    return <PartsJobCardPageUi view="section1" />;
+
+
+
+
+
+
   }
 
-  return (
-    <>
-      <>
-        <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-        <section className="app-section-card" style={cardStyle}>
-          {errorMessage && (
-            <div style={{ padding: "10px", borderRadius: "var(--radius-sm)", background: "var(--danger-surface)", color: "var(--danger)" }}>
-              {errorMessage}
-            </div>
-          )}
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-            <div style={sectionCardStyle}>
-              <div style={sectionHeaderStyle}>
-                <div>
-                  <strong style={{ fontSize: "1.05rem" }}>Customer details</strong>
-                </div>
-                {hasCustomerSelected && (
-                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                    {isCustomerEditing ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={handleSaveCustomerDetails}
-                          disabled={savingCustomerDetails}
-                          style={{
-                            borderRadius: "var(--radius-sm)",
-                            border: "1px solid var(--primary)",
-                            background: "var(--primary)",
-                            color: "var(--surface)",
-                            padding: "8px 14px",
-                            fontWeight: 600,
-                            cursor: savingCustomerDetails ? "not-allowed" : "pointer",
-                            opacity: savingCustomerDetails ? 0.7 : 1,
-                          }}
-                        >
-                          {savingCustomerDetails ? "Saving…" : "Save customer details"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCancelCustomerEdit}
-                          disabled={savingCustomerDetails}
-                          style={{
-                            borderRadius: "var(--radius-sm)",
-                            border: "none",
-                            background: "var(--surface)",
-                            color: "var(--primary-dark)",
-                            padding: "8px 14px",
-                            fontWeight: 600,
-                            cursor: savingCustomerDetails ? "not-allowed" : "pointer",
-                            opacity: savingCustomerDetails ? 0.7 : 1,
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleStartCustomerEdit}
-                        style={{
-                          borderRadius: "var(--radius-sm)",
-                          border: "1px solid var(--primary)",
-                          background: "var(--primary)",
-                          color: "var(--surface)",
-                          padding: "8px 14px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Edit customer details
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleCustomerCleared}
-                      disabled={savingCustomerDetails}
-                      style={{
-                        borderRadius: "var(--radius-sm)",
-                        border: "1px solid var(--danger)",
-                        background: "var(--danger-surface)",
-                        color: "var(--danger)",
-                        padding: "8px 14px",
-                        fontWeight: 600,
-                        cursor: savingCustomerDetails ? "not-allowed" : "pointer",
-                        opacity: savingCustomerDetails ? 0.7 : 1,
-                      }}
-                    >
-                      Clear customer
-                    </button>
-                  </div>
-                )}
-              </div>
-              {!hasCustomerSelected ? (
-                <div
-                  style={{
-                    minHeight: "180px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textAlign: "center",
-                  }}
-                >
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
-                    <p style={{ margin: 0, color: "var(--info)" }}>Search for or add a customer to continue.</p>
-                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
-                      <button
-                        type="button"
-                        onClick={() => setShowExistingCustomer(true)}
-                        style={{
-                          borderRadius: "var(--radius-sm)",
-                          border: "1px solid transparent",
-                          background: isDarkMode ? "#7D3FFF" : "#E53935",
-                          color: "#ffffff",
-                          padding: "10px 18px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Search existing
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowNewCustomer(true)}
-                        style={{
-                          borderRadius: "var(--radius-sm)",
-                          border: "1px solid var(--primary)",
-                          background: "var(--primary)",
-                          color: "var(--surface)",
-                          padding: "10px 18px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Add customer
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {customerRecord && (
-                    <div
-                      style={{
-                        border: "none",
-                        borderRadius: "var(--radius-md)",
-                        padding: "12px",
-                        background: "var(--surface)",
-                      }}
-                    >
-                      <strong>{formatFullName(customerRecord)}</strong>
-                      <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                        {customerRecord.email || "No email"} · {customerRecord.mobile || customerRecord.telephone || "No phone"}
-                      </div>
-                      <div style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                        {customerRecord.address || "No saved address"}
-                      </div>
-                    </div>
-                  )}
-                  <div style={twoColumnGrid}>
-                    <label style={fieldStyle}>
-                      <span style={{ fontWeight: 600 }}>Customer name</span>
-                      <input
-                        type="text"
-                        required
-                        disabled={!isCustomerEditing}
-                        value={form.customer_name}
-                        onChange={(event) => handleFieldChange("customer_name", event.target.value)}
-                        style={inputStyle}
-                        placeholder="Name"
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      <span style={{ fontWeight: 600 }}>Customer phone</span>
-                      <input
-                        type="tel"
-                        disabled={!isCustomerEditing}
-                        value={form.customer_phone}
-                        onChange={(event) => handleFieldChange("customer_phone", event.target.value)}
-                        style={inputStyle}
-                        placeholder="Phone"
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      <span style={{ fontWeight: 600 }}>Customer email</span>
-                      <input
-                        type="email"
-                        disabled={!isCustomerEditing}
-                        value={form.customer_email}
-                        onChange={(event) => handleFieldChange("customer_email", event.target.value)}
-                        style={inputStyle}
-                        placeholder="Email"
-                      />
-                    </label>
-                  </div>
-                  <label style={fieldStyle}>
-                    <span style={{ fontWeight: 600 }}>Billing address</span>
-                    <textarea
-                      rows={2}
-                      disabled={!isCustomerEditing}
-                      value={form.customer_address}
-                      onChange={(event) => handleFieldChange("customer_address", event.target.value)}
-                      style={{ ...inputStyle, resize: "vertical" }}
-                      placeholder="Billing address"
-                    />
-                  </label>
-                  <label style={fieldStyle}>
-                    <span style={{ fontWeight: 600 }}>Customer notes</span>
-                    <textarea
-                      rows={3}
-                      value={form.notes}
-                      onChange={(event) => handleFieldChange("notes", event.target.value)}
-                      style={{ ...inputStyle, resize: "vertical" }}
-                      placeholder="Special instructions or payment notes"
-                    />
-                  </label>
-                </>
-              )}
-            </div>
+  return <PartsJobCardPageUi view="section2" CalendarField={CalendarField} cardStyle={cardStyle} closePartSearch={closePartSearch} customerRecord={customerRecord} deliverySameAsBilling={deliverySameAsBilling} errorMessage={errorMessage} ExistingCustomerPopup={ExistingCustomerPopup} fieldStyle={fieldStyle} form={form} formatFullName={formatFullName} handleAddPart={handleAddPart} handleCancelCustomerEdit={handleCancelCustomerEdit} handleClearForm={handleClearForm} handleClearPartLink={handleClearPartLink} handleCustomerCleared={handleCustomerCleared} handleExistingCustomerSelect={handleExistingCustomerSelect} handleFieldChange={handleFieldChange} handleNewCustomerSaved={handleNewCustomerSaved} handlePartChange={handlePartChange} handlePartSelected={handlePartSelected} handleRemovePart={handleRemovePart} handleSaveCustomerDetails={handleSaveCustomerDetails} handleStartCustomerEdit={handleStartCustomerEdit} handleSubmit={handleSubmit} hasCustomerSelected={hasCustomerSelected} inputStyle={inputStyle} isCustomerEditing={isCustomerEditing} isDarkMode={isDarkMode} loadingVehicle={loadingVehicle} ModalPortal={ModalPortal} NewCustomerPopup={NewCustomerPopup} openPartSearch={openPartSearch} partLines={partLines} partLookupContentStyle={partLookupContentStyle} partLookupOverlayStyle={partLookupOverlayStyle} partSearchLoading={partSearchLoading} partSearchOpen={partSearchOpen} partSearchQuery={partSearchQuery} partSearchResults={partSearchResults} saving={saving} savingCustomerDetails={savingCustomerDetails} SearchBar={SearchBar} sectionCardStyle={sectionCardStyle} sectionHeaderStyle={sectionHeaderStyle} setDeliverySameAsBilling={setDeliverySameAsBilling} setPartSearchQuery={setPartSearchQuery} setShowExistingCustomer={setShowExistingCustomer} setShowNewCustomer={setShowNewCustomer} showExistingCustomer={showExistingCustomer} showNewCustomer={showNewCustomer} TimePickerField={TimePickerField} twoColumnGrid={twoColumnGrid} />;
 
-            <div style={sectionCardStyle}>
-              <div style={sectionHeaderStyle}>
-                <strong style={{ fontSize: "1.05rem" }}>Vehicle details</strong>
-                {loadingVehicle && (
-                  <p style={{ margin: 0, color: "var(--info)", fontSize: "0.85rem" }}>Loading recent vehicle data…</p>
-                )}
-              </div>
-              <div style={twoColumnGrid}>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Vehicle registration</span>
-                  <input
-                    type="text"
-                    value={form.vehicle_reg}
-                    onChange={(event) => handleFieldChange("vehicle_reg", event.target.value.toUpperCase())}
-                    style={inputStyle}
-                    placeholder="Vehicle reg"
-                  />
-                </label>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Vehicle make</span>
-                  <input
-                    type="text"
-                    value={form.vehicle_make}
-                    onChange={(event) => handleFieldChange("vehicle_make", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Manufacturer"
-                  />
-                </label>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Vehicle model</span>
-                  <input
-                    type="text"
-                    value={form.vehicle_model}
-                    onChange={(event) => handleFieldChange("vehicle_model", event.target.value)}
-                    style={inputStyle}
-                    placeholder="Model"
-                  />
-                </label>
-                <label style={fieldStyle}>
-                  <span style={{ fontWeight: 600 }}>Vehicle VIN</span>
-                  <input
-                    type="text"
-                    value={form.vehicle_vin}
-                    onChange={(event) => handleFieldChange("vehicle_vin", event.target.value.toUpperCase())}
-                    style={inputStyle}
-                    placeholder="VIN"
-                  />
-                </label>
-              </div>
-            </div>
 
-            <div style={sectionCardStyle}>
-              <div style={sectionHeaderStyle}>
-                <strong style={{ fontSize: "1.05rem" }}>Delivery / Collection</strong>
-              </div>
-              <label style={fieldStyle}>
-                <span style={{ fontWeight: 600 }}>Fulfilment type</span>
-                <select
-                  value={form.delivery_type}
-                  onChange={(event) => handleFieldChange("delivery_type", event.target.value)}
-                  style={{ ...inputStyle, cursor: "pointer" }}
-                >
-                  <option value="delivery">Delivery</option>
-                  <option value="collection">Collection</option>
-                </select>
-              </label>
-              <div style={twoColumnGrid}>
-                <CalendarField
-                  label={form.delivery_type === "delivery" ? "Delivery date" : "Collection date"}
-                  value={form.delivery_eta || ""}
-                  onChange={(value) => handleFieldChange("delivery_eta", value)}
-                  name="delivery_eta"
-                />
-                <TimePickerField
-                  label={form.delivery_type === "delivery" ? "Delivery window / time" : "Collection time"}
-                  value={form.delivery_window || ""}
-                  onChange={(event) => handleFieldChange("delivery_window", event.target.value)}
-                />
-              </div>
-              {form.delivery_type === "delivery" && (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                    border: "none",
-                    borderRadius: "var(--radius-md)",
-                    padding: "12px",
-                  }}
-                >
-                  <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <input
-                      type="checkbox"
-                      checked={deliverySameAsBilling}
-                      onChange={(event) => setDeliverySameAsBilling(event.target.checked)}
-                    />
-                    <span>Use billing address as delivery address</span>
-                  </label>
-                  {!deliverySameAsBilling && (
-                    <textarea
-                      rows={2}
-                      value={form.delivery_address}
-                      onChange={(event) => handleFieldChange("delivery_address", event.target.value)}
-                      style={{ ...inputStyle, resize: "vertical" }}
-                      placeholder="Delivery address"
-                    />
-                  )}
-                </div>
-              )}
-              <label style={fieldStyle}>
-                <span style={{ fontWeight: 600 }}>
-                  {form.delivery_type === "delivery" ? "Delivery notes" : "Collection notes"}
-                </span>
-                <textarea
-                  rows={3}
-                  value={form.delivery_notes}
-                  onChange={(event) => handleFieldChange("delivery_notes", event.target.value)}
-                  style={{ ...inputStyle, resize: "vertical" }}
-                  placeholder="Access instructions, collection requirements, etc."
-                />
-              </label>
-            </div>
 
-            <div style={sectionCardStyle}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-                <strong style={{ fontSize: "1.05rem" }}>Booked parts</strong>
-                <button
-                  type="button"
-                  onClick={handleAddPart}
-                  style={{
-                    borderRadius: "var(--radius-sm)",
-                    border: "1px solid transparent",
-                    background: "var(--accent-purple)",
-                    padding: "8px 14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    color: "var(--surface)",
-                  }}
-                >
-                  + Add part
-                </button>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
-                {partLines.map((line, index) => (
-                  <div
-                    key={`part-line-${index}`}
-                    style={{
-                      border: "none",
-                      borderRadius: "var(--radius-sm)",
-                      padding: "12px",
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                      gap: "10px",
-                    }}
-                  >
-                    <label style={fieldStyle}>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Part number</span>
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                        <input
-                          type="text"
-                          value={line.part_number}
-                          onChange={(event) => handlePartChange(index, "part_number", event.target.value)}
-                          style={{ ...inputStyle, flex: "1 1 160px" }}
-                          placeholder="e.g. 5Q0129620D"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => openPartSearch(index)}
-                          style={{
-                            borderRadius: "var(--radius-sm)",
-                            border: "none",
-                            background: "var(--primary)",
-                            color: "var(--surface)",
-                            padding: "8px 12px",
-                            fontWeight: 600,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Search
-                        </button>
-                        {line.part_catalog_id && (
-                          <button
-                            type="button"
-                            onClick={() => handleClearPartLink(index)}
-                            style={{
-                              borderRadius: "var(--radius-sm)",
-                              border: "none",
-                              background: "var(--danger-surface)",
-                              color: "var(--danger)",
-                              padding: "8px 12px",
-                              fontWeight: 600,
-                              cursor: "pointer",
-                            }}
-                          >
-                            Unlink
-                          </button>
-                        )}
-                      </div>
-                      {line.catalog_snapshot && (
-                        <span style={{ fontSize: "0.75rem", color: "var(--info-dark)" }}>
-                          Linked to stock · {line.catalog_snapshot.supplier || "Supplier unknown"} ·{" "}
-                          {line.catalog_snapshot.storage_location || "No location"} ·{" "}
-                          {(Number(line.catalog_snapshot.qty_in_stock) || 0) -
-                            (Number(line.catalog_snapshot.qty_reserved) || 0)}{" "}
-                          available
-                        </span>
-                      )}
-                    </label>
-                    <label style={fieldStyle}>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Part name</span>
-                      <input
-                        type="text"
-                        value={line.part_name}
-                        onChange={(event) => handlePartChange(index, "part_name", event.target.value)}
-                        style={inputStyle}
-                        placeholder="Item description"
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Quantity</span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={line.quantity}
-                        onChange={(event) => handlePartChange(index, "quantity", event.target.value)}
-                        style={inputStyle}
-                      />
-                    </label>
-                    <label style={fieldStyle}>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Unit price (£)</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={line.unit_price}
-                        onChange={(event) => handlePartChange(index, "unit_price", event.target.value)}
-                        style={inputStyle}
-                        placeholder="0.00"
-                      />
-                    </label>
-                    <label style={{ ...fieldStyle, gridColumn: "1 / -1" }}>
-                      <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>Line notes</span>
-                      <textarea
-                        rows={2}
-                        value={line.notes}
-                        onChange={(event) => handlePartChange(index, "notes", event.target.value)}
-                        style={{ ...inputStyle, resize: "vertical" }}
-                        placeholder="Collection details or supplier reference"
-                      />
-                    </label>
-                    {partLines.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePart(index)}
-                        style={{
-                          gridColumn: "1 / -1",
-                          border: "1px solid var(--danger)",
-                          borderRadius: "var(--radius-sm)",
-                          background: "var(--danger-surface)",
-                          color: "var(--danger)",
-                          padding: "8px 12px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Remove part
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={handleClearForm}
-                disabled={saving}
-                style={{
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  background: "var(--surface)",
-                  padding: "10px 18px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  color: isDarkMode ? "#ffffff" : "#000000",
-                }}
-              >
-                Clear
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                style={{
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  background: "var(--primary)",
-                  color: "var(--surface)",
-                  padding: "10px 18px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  opacity: saving ? 0.7 : 1,
-                }}
-              >
-                {saving ? "Saving…" : "Create order"}
-              </button>
-            </div>
-          </form>
-        </section>
-      </div>
-    </>
-    {partSearchOpen && (
-      <ModalPortal>
-        <div style={partLookupOverlayStyle}>
-          <div style={partLookupContentStyle}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <p
-                style={{
-                  margin: 0,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                  fontSize: "0.75rem",
-                  color: "var(--info-dark)",
-                }}
-              >
-                Parts stock
-              </p>
-              <h3 style={{ margin: "4px 0 0", color: "var(--primary-dark)" }}>Search catalog</h3>
-            </div>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-              <button
-                type="button"
-                onClick={closePartSearch}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                  fontSize: "0.95rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.05em",
-                  textTransform: "uppercase",
-                  color: "var(--accent-purple)",
-                  cursor: "pointer",
-                  padding: "6px 0",
-                }}
-                aria-label="Close part search"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-          <SearchBar
-            value={partSearchQuery}
-            onChange={(event) => setPartSearchQuery(event.target.value)}
-            onClear={() => setPartSearchQuery("")}
-            placeholder="Search by part number or description"
-            style={{
-              width: "100%",
-            }}
-          />
-          {partSearchLoading ? (
-            <p style={{ margin: 0, color: "var(--info-dark)" }}>Searching catalog…</p>
-          ) : partSearchQuery.trim().length < 2 ? (
-            <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>Enter at least two characters to search.</p>
-          ) : partSearchResults.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>No parts found for that search.</p>
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "10px",
-                maxHeight: "50vh",
-                overflowY: "auto",
-              }}
-            >
-              {partSearchResults.map((part) => {
-                const available =
-                  (Number(part.qty_in_stock) || 0) - (Number(part.qty_reserved) || 0);
-                const unitPrice = Number(part.unit_price ?? 0);
-                return (
-                  <button
-                    key={part.id}
-                    type="button"
-                    onClick={() => handlePartSelected(part)}
-                    style={{
-                      borderRadius: "var(--radius-sm)",
-                      border: "none",
-                      padding: "10px 12px",
-                      textAlign: "left",
-                      cursor: "pointer",
-                      background: "var(--surface)",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
-                    }}
-                  >
-                    <strong style={{ color: "var(--primary-dark)" }}>
-                      {part.part_number} · {part.name}
-                    </strong>
-                    <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-                      {part.description || "No description"}
-                    </span>
-                    <span style={{ fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
-                      {available} available · Stored in {part.storage_location || "unspecified"} · Supplier:{" "}
-                      {part.supplier || "Unknown"}
-                    </span>
-                    <span style={{ fontSize: "0.85rem", color: "var(--primary-dark)", fontWeight: 600 }}>
-                      Unit price: £{unitPrice.toFixed(2)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-          </div>
-        </div>
-      </ModalPortal>
-    )}
-    {showExistingCustomer && (
-      <ExistingCustomerPopup
-        onClose={() => setShowExistingCustomer(false)}
-        onSelect={handleExistingCustomerSelect}
-      />
-    )}
-    {showNewCustomer && (
-      <NewCustomerPopup onClose={() => setShowNewCustomer(false)} onSelect={handleNewCustomerSaved} />
-    )}
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

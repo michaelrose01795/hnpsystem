@@ -1,5 +1,5 @@
-// ✅ Imports converted to use absolute alias "@/"
 // file location: src/pages/appointments/index.js
+// ✅ Imports converted to use absolute alias "@/"
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react"; // Import React hooks
@@ -23,7 +23,7 @@ import { invalidateCache } from "@/lib/database/queryCache"; // clear stale cach
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { useJobsList } from "@/hooks/useJobsList"; // SWR-powered jobs list with auto-refresh
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
-
+import AppointmentsUi from "@/components/page-ui/appointments/appointments-ui"; // Extracted presentation layer.
 const TECH_AVAILABILITY_TABLE = "job_clocking"; // Source table for tech availability data
 
 // Calculate hours worked between two timestamps
@@ -52,7 +52,7 @@ const generateDates = (daysAhead = 60) => {
   let current = new Date(today);
 
   while (count < daysAhead) {
-    if (current.getDay() !== 0) { // Skip Sundays
+    if (current.getDay() !== 0) {// Skip Sundays
       result.push(new Date(current));
       count++;
     }
@@ -64,7 +64,7 @@ const generateDates = (daysAhead = 60) => {
 // Generate time slots from 8:00 AM to 5:00 PM in 30-minute intervals
 const generateTimeSlots = () => {
   const slots = [];
-  for (let hour = 8; hour <= 17; hour++) { // 8 AM to 5 PM
+  for (let hour = 8; hour <= 17; hour++) {// 8 AM to 5 PM
     slots.push(`${hour.toString().padStart(2, "0")}:00`);
     if (hour < 17) slots.push(`${hour.toString().padStart(2, "0")}:30`);
   }
@@ -96,13 +96,13 @@ const deriveAvailableHours = (entry) => {
   }
 
   const fallbackFields = [
-    "available_hours",
-    "scheduled_hours",
-    "max_hours",
-    "assigned_hours",
-    "hours",
-    "hours_worked",
-  ];
+  "available_hours",
+  "scheduled_hours",
+  "max_hours",
+  "assigned_hours",
+  "hours",
+  "hours_worked"];
+
 
   for (const field of fallbackFields) {
     if (Object.prototype.hasOwnProperty.call(entry, field)) {
@@ -127,8 +127,8 @@ const isJobActuallyCheckedIn = (job) => {
     appointmentStatus === "checked_in" ||
     appointmentStatus === "checked in" ||
     jobStatus === "checked_in" ||
-    jobStatus === "checked in"
-  );
+    jobStatus === "checked in");
+
 };
 
 const getCapacityStatus = (booked, available) => {
@@ -169,44 +169,44 @@ const getCapacityStatusLabel = (status) => {
 const DEFAULT_RETAIL_TECH_COUNT = 6;
 const DEFAULT_RETAIL_TECH_HOURS = 6;
 const DEFAULT_RETAIL_TECH_NAMES = [
-  "Retail Tech 1",
-  "Retail Tech 2",
-  "Retail Tech 3",
-  "Retail Tech 4",
-  "Retail Tech 5",
-  "Retail Tech 6",
-];
+"Retail Tech 1",
+"Retail Tech 2",
+"Retail Tech 3",
+"Retail Tech 4",
+"Retail Tech 5",
+"Retail Tech 6"];
+
 const TECH_USER_ROLES = [
-  "Techs",
-  "Technician",
-  "Technician Lead",
-  "Lead Technician",
-];
+"Techs",
+"Technician",
+"Technician Lead",
+"Lead Technician"];
+
 
 const CALENDAR_SEVERITY_STYLES = {
   amber: {
     backgroundColor: "var(--warning-surface)",
     textColor: "var(--warning)",
-    borderColor: "var(--warning)",
+    borderColor: "var(--warning)"
   },
   red: {
     backgroundColor: "var(--danger-surface)",
     textColor: "var(--danger)",
-    borderColor: "var(--danger)",
-  },
+    borderColor: "var(--danger)"
+  }
 };
 
 const SATURDAY_SEVERITY_STYLES = {
   amber: {
     backgroundColor: "var(--warning-surface)",
     textColor: "var(--warning)",
-    borderColor: "var(--warning)",
+    borderColor: "var(--warning)"
   },
   red: {
     backgroundColor: "var(--danger-dark)",
     textColor: "var(--surface)",
-    borderColor: "var(--danger)",
-  },
+    borderColor: "var(--danger)"
+  }
 };
 
 const getBookingSeverity = (percent) => {
@@ -217,17 +217,17 @@ const getBookingSeverity = (percent) => {
 };
 
 const STAFF_ROLES = new Set([
-  "service advisor",
-  "technician",
-  "techs",
-  "technician lead",
-  "lead technician",
-  "mot tester",
-  "tester",
-  "workshop manager",
-  "service manager",
-  "after sales manager",
-]);
+"service advisor",
+"technician",
+"techs",
+"technician lead",
+"lead technician",
+"mot tester",
+"tester",
+"workshop manager",
+"service manager",
+"after sales manager"]
+);
 
 const toMidnightDate = (value) => {
   if (!value) return null;
@@ -239,10 +239,10 @@ const toMidnightDate = (value) => {
 
 const formatRoleLabel = (role) => {
   if (!role || typeof role !== "string") return "Staff";
-  return role
-    .split(/\s+/)
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase())
-    .join(" ");
+  return role.
+  split(/\s+/).
+  map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase()).
+  join(" ");
 };
 
 const formatStaffName = (user) => {
@@ -265,9 +265,9 @@ const getAbsenceUnavailableHours = (absence, currentDate) => {
 
   const dailyHours = getTechDailyHours(absence?.user);
 
-  return noteData.halfDay && noteData.halfDay !== "None" && currentDateKey === absenceEndKey
-    ? dailyHours / 2
-    : dailyHours;
+  return noteData.halfDay && noteData.halfDay !== "None" && currentDateKey === absenceEndKey ?
+  dailyHours / 2 :
+  dailyHours;
 };
 
 const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
@@ -285,9 +285,9 @@ const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
     if (!STAFF_ROLES.has(roleKey)) return;
 
     const absenceStart = toMidnightDate(absence?.start_date);
-    const absenceEnd = absence?.end_date
-      ? toMidnightDate(absence.end_date)
-      : absenceStart;
+    const absenceEnd = absence?.end_date ?
+    toMidnightDate(absence.end_date) :
+    absenceStart;
     if (!absenceStart || !absenceEnd) return;
 
     const effectiveStartMs = Math.max(absenceStart.getTime(), startBoundary.getTime());
@@ -299,7 +299,7 @@ const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
       userId: user?.user_id || null,
       name: formatStaffName(user),
       role: formatRoleLabel(normalizedRole),
-      type: absence?.type || "Holiday",
+      type: absence?.type || "Holiday"
     };
 
     for (let currentMs = effectiveStartMs; currentMs <= effectiveEndMs; currentMs += oneDayMs) {
@@ -311,7 +311,7 @@ const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
 
       map[dateKey].push({
         ...entryBase,
-        unavailableHours: getAbsenceUnavailableHours(absence, currentDate),
+        unavailableHours: getAbsenceUnavailableHours(absence, currentDate)
       });
     }
   });
@@ -324,7 +324,7 @@ const buildStaffAbsenceMap = (records = [], calendarStart, calendarEnd) => {
 const getVehicleDisplay = (job) => {
   // Try makeModel first (combined field), then fall back to make + model
   if (job.makeModel) return job.makeModel;
-  
+
   const make = job.make || "";
   const model = job.model || "";
   const year = job.year || "";
@@ -343,9 +343,9 @@ const buildTechAvailabilityMap = (records = []) => {
     }
 
     const techId = entry.user_id;
-    const techName = entry.user
-      ? `${entry.user.first_name || ""} ${entry.user.last_name || ""}`.trim()
-      : "";
+    const techName = entry.user ?
+    `${entry.user.first_name || ""} ${entry.user.last_name || ""}`.trim() :
+    "";
     const normalizedName = techName || `Tech #${techId}`;
 
     let techRecord = availability[dateKey].techs.find(
@@ -353,7 +353,7 @@ const buildTechAvailabilityMap = (records = []) => {
     );
 
     if (!techRecord) {
-        techRecord = {
+      techRecord = {
         techId,
         name: normalizedName,
         totalHours: 0,
@@ -361,14 +361,14 @@ const buildTechAvailabilityMap = (records = []) => {
         latestClockIn: entry.clock_in,
         latestClockOut: entry.clock_out || null,
         currentlyClockedIn: !entry.clock_out,
-        availableHours: deriveAvailableHours(entry) ?? getTechDailyHours(entry.user),
+        availableHours: deriveAvailableHours(entry) ?? getTechDailyHours(entry.user)
       };
       availability[dateKey].techs.push(techRecord);
     }
 
-    const duration = entry.clock_out
-      ? calculateDurationHours(entry.clock_in, entry.clock_out)
-      : 0;
+    const duration = entry.clock_out ?
+    calculateDurationHours(entry.clock_in, entry.clock_out) :
+    0;
 
     techRecord.totalHours = parseFloat(
       (techRecord.totalHours + duration).toFixed(2)
@@ -376,14 +376,14 @@ const buildTechAvailabilityMap = (records = []) => {
     techRecord.latestClockIn = entry.clock_in;
     techRecord.latestClockOut = entry.clock_out || techRecord.latestClockOut;
     techRecord.currentlyClockedIn =
-      techRecord.currentlyClockedIn || !entry.clock_out;
+    techRecord.currentlyClockedIn || !entry.clock_out;
 
     if (entry.job_number) {
       techRecord.segments.push({
         jobNumber: entry.job_number,
         workType: entry.work_type || "general",
         startedAt: entry.clock_in,
-        endedAt: entry.clock_out,
+        endedAt: entry.clock_out
       });
     }
 
@@ -404,9 +404,9 @@ const buildTechAvailabilityMap = (records = []) => {
 
 export default function Appointments() {
   const router = useRouter();
-  const jobQueryParam = Array.isArray(router.query.jobNumber)
-    ? router.query.jobNumber[0]
-    : router.query.jobNumber;
+  const jobQueryParam = Array.isArray(router.query.jobNumber) ?
+  router.query.jobNumber[0] :
+  router.query.jobNumber;
   const { user, dbUserId } = useUser();
   const { triggerNextAction } = useNextAction();
   const { confirm } = useConfirmation();
@@ -473,10 +473,10 @@ export default function Appointments() {
     const uniqueJobIds = Array.from(new Set(jobIds));
 
     try {
-      const { data, error } = await supabase
-        .from("job_requests")
-        .select("job_id, hours")
-        .in("job_id", uniqueJobIds);
+      const { data, error } = await supabase.
+      from("job_requests").
+      select("job_id, hours").
+      in("job_id", uniqueJobIds);
 
       if (error) throw error;
 
@@ -503,10 +503,10 @@ export default function Appointments() {
     const uniqueJobIds = Array.from(new Set(jobIds));
 
     try {
-      const { data, error } = await supabase
-        .from("vhc_checks")
-        .select("job_id, labour_hours, approval_status")
-        .in("job_id", uniqueJobIds);
+      const { data, error } = await supabase.
+      from("vhc_checks").
+      select("job_id, labour_hours, approval_status").
+      in("job_id", uniqueJobIds);
 
       if (error) throw error;
 
@@ -539,9 +539,9 @@ export default function Appointments() {
     const endDate = dates[dates.length - 1].toISOString().split("T")[0];
 
     try {
-      const { data, error } = await supabase
-        .from(TECH_AVAILABILITY_TABLE)
-        .select(`
+      const { data, error } = await supabase.
+      from(TECH_AVAILABILITY_TABLE).
+      select(`
           id,
           user_id,
           job_id,
@@ -556,9 +556,9 @@ export default function Appointments() {
             last_name,
             contracted_hours
           )
-        `)
-        .gte("clock_in", `${startDate}T00:00:00.000Z`)
-        .lte("clock_in", `${endDate}T23:59:59.999Z`);
+        `).
+      gte("clock_in", `${startDate}T00:00:00.000Z`).
+      lte("clock_in", `${endDate}T23:59:59.999Z`);
 
       if (error) throw error;
 
@@ -574,11 +574,11 @@ export default function Appointments() {
 
   const fetchTechUsers = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("user_id, first_name, last_name, email, role, contracted_hours")
-        .in("role", TECH_USER_ROLES)
-        .order("first_name", { ascending: true });
+      const { data, error } = await supabase.
+      from("users").
+      select("user_id, first_name, last_name, email, role, contracted_hours").
+      in("role", TECH_USER_ROLES).
+      order("first_name", { ascending: true });
 
       if (error) throw error;
       setTechUsers(data || []);
@@ -595,9 +595,9 @@ export default function Appointments() {
     const endDate = dates[dates.length - 1].toISOString().split("T")[0];
 
     try {
-      const { data, error } = await supabase
-        .from("hr_absences")
-        .select(`
+      const { data, error } = await supabase.
+      from("hr_absences").
+      select(`
           absence_id,
           type,
           start_date,
@@ -612,10 +612,10 @@ export default function Appointments() {
             role,
             contracted_hours
           )
-        `)
-        .eq("approval_status", "Approved")
-        .lte("start_date", endDate)
-        .gte("end_date", startDate);
+        `).
+      eq("approval_status", "Approved").
+      lte("start_date", endDate).
+      gte("end_date", startDate);
 
       if (error) throw error;
 
@@ -641,10 +641,10 @@ export default function Appointments() {
   }, [fetchTechUsers]);
 
   useEffect(() => {
-    const jobIdsWithAppointments = jobs
-      .filter((job) => job.appointment?.date)
-      .map((job) => job.id)
-      .filter(Boolean);
+    const jobIdsWithAppointments = jobs.
+    filter((job) => job.appointment?.date).
+    map((job) => job.id).
+    filter(Boolean);
 
     if (jobIdsWithAppointments.length === 0) {
       setJobRequestHours({});
@@ -664,17 +664,17 @@ export default function Appointments() {
   useEffect(() => {
     if (!dates.length) return;
 
-    const channel = supabase
-      .channel("job_clocking_changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
-        () => {
-          fetchTechAvailability();
-        }
-        )
-        .subscribe();
-  
+    const channel = supabase.
+    channel("job_clocking_changes").
+    on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: TECH_AVAILABILITY_TABLE },
+      () => {
+        fetchTechAvailability();
+      }
+    ).
+    subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
@@ -682,21 +682,21 @@ export default function Appointments() {
 
   // Real-time subscription for jobs and appointments tables — revalidate SWR when data changes
   useEffect(() => {
-    const channel = supabase
-      .channel("appointments-page-jobs-sync") // unique channel name for this page
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "jobs" }, // listen for all job changes
-        () => { mutateJobs(); } // trigger SWR revalidation (deduplicated)
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "appointments" }, // listen for appointment changes
-        () => { mutateJobs(); } // trigger SWR revalidation (deduplicated)
-      )
-      .subscribe();
+    const channel = supabase.
+    channel("appointments-page-jobs-sync") // unique channel name for this page
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "jobs" }, // listen for all job changes
+      () => {mutateJobs();} // trigger SWR revalidation (deduplicated)
+    ).
+    on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "appointments" }, // listen for appointment changes
+      () => {mutateJobs();} // trigger SWR revalidation (deduplicated)
+    ).
+    subscribe();
 
-    return () => { supabase.removeChannel(channel); }; // clean up on unmount
+    return () => {supabase.removeChannel(channel);}; // clean up on unmount
   }, [mutateJobs]);
 
   useEffect(() => {
@@ -740,7 +740,7 @@ export default function Appointments() {
 
   // Prefetch job card data on hover so navigation is instant
   const handleJobRowHover = useCallback(
-    (jobNumberValue) => { prefetchJob(jobNumberValue); }, // warm SWR cache ahead of navigation
+    (jobNumberValue) => {prefetchJob(jobNumberValue);}, // warm SWR cache ahead of navigation
     []
   );
 
@@ -784,22 +784,22 @@ export default function Appointments() {
       console.log("Attempting to book appointment for job:", normalizedJobNumber);
 
       // ✅ Look for job in local state first
-      let job = jobs.find((j) => 
-        j.jobNumber?.toString() === normalizedJobNumber || 
-        j.id?.toString() === normalizedJobNumber
+      let job = jobs.find((j) =>
+      j.jobNumber?.toString() === normalizedJobNumber ||
+      j.id?.toString() === normalizedJobNumber
       );
 
       // ✅ If not found locally, fetch from database
       if (!job) {
         console.log(`Job ${normalizedJobNumber} not found locally, fetching from DB...`);
         const fetchedJob = await getJobByNumberOrReg(normalizedJobNumber);
-        
+
         if (!fetchedJob) {
           alert(`Error: Job ${normalizedJobNumber} does not exist in the system.\n\nPlease create the job card first before booking an appointment.`);
           setIsLoading(false);
           return;
         }
-        
+
         job = fetchedJob;
         console.log("Job fetched from database:", job);
       }
@@ -832,9 +832,9 @@ export default function Appointments() {
       // ✅ Update local state with new appointment data
       const updatedJob = {
         ...job,
-        appointment: { 
+        appointment: {
           appointmentId: appointmentResult.data?.appointment?.appointment_id,
-          date: appointmentDate, 
+          date: appointmentDate,
           time: time,
           notes: currentNote || "",
           status: "Scheduled"
@@ -896,10 +896,10 @@ export default function Appointments() {
 
     const confirmed = await confirm(
       `Check in customer?\n\n` +
-        `Job: ${job.jobNumber || job.id}\n` +
-        `Customer: ${job.customer || "N/A"}\n` +
-        `Vehicle: ${job.reg || "N/A"}\n` +
-        `Appointment: ${job.appointment?.time || "N/A"}`
+      `Job: ${job.jobNumber || job.id}\n` +
+      `Customer: ${job.customer || "N/A"}\n` +
+      `Vehicle: ${job.reg || "N/A"}\n` +
+      `Appointment: ${job.appointment?.time || "N/A"}`
     );
 
     if (!confirmed) return;
@@ -915,9 +915,9 @@ export default function Appointments() {
       if (result.success) {
         alert(
           `✅ Customer Checked In!\n\n` +
-            `Job: ${job.jobNumber || job.id}\n` +
-            `Customer: ${job.customer || "N/A"}\n` +
-            `Time: ${new Date().toLocaleTimeString()}`
+          `Job: ${job.jobNumber || job.id}\n` +
+          `Customer: ${job.customer || "N/A"}\n` +
+          `Time: ${new Date().toLocaleTimeString()}`
         );
 
         if (typeof triggerNextAction === "function") {
@@ -926,7 +926,7 @@ export default function Appointments() {
             jobNumber: job.jobNumber || "",
             vehicleId: job.vehicleId || job.vehicle_id || null,
             vehicleReg: job.reg || job.vehicleReg || job.vehicle_reg || "",
-            triggeredBy: user?.id || null,
+            triggeredBy: user?.id || null
           });
         }
 
@@ -934,17 +934,17 @@ export default function Appointments() {
         // Optimistically update SWR cache so UI reflects check-in instantly
         mutateJobs(
           (prevAll) =>
-            (prevAll || []).map((existing) => {
-              if (existing.id !== job.id) return existing; // skip other jobs
-              const nextAppointment = updatedJob.appointment ?? existing.appointment; // preserve appointment data
-              return {
-                ...existing,
-                ...updatedJob,
-                appointment: nextAppointment,
-                status: updatedJob.status || "Checked In", // update status immediately
-                checked_in_at: updatedJob.checked_in_at || new Date().toISOString(), // set check-in timestamp
-              };
-            }),
+          (prevAll || []).map((existing) => {
+            if (existing.id !== job.id) return existing; // skip other jobs
+            const nextAppointment = updatedJob.appointment ?? existing.appointment; // preserve appointment data
+            return {
+              ...existing,
+              ...updatedJob,
+              appointment: nextAppointment,
+              status: updatedJob.status || "Checked In", // update status immediately
+              checked_in_at: updatedJob.checked_in_at || new Date().toISOString() // set check-in timestamp
+            };
+          }),
           { revalidate: true } // also refetch from server in background
         );
         invalidateCache("jobs:"); // clear stale queryCache so job card page gets fresh data
@@ -962,10 +962,10 @@ export default function Appointments() {
 
   // ---------------- Utilities ----------------
   const formatDate = (dateObj) =>
-    dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
   const formatDateNoYear = (dateObj) =>
-    dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  dateObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
   const getDayTechSummary = (date) => {
     if (!date) {
@@ -974,7 +974,7 @@ export default function Appointments() {
         techs: [],
         availableTechs: DEFAULT_RETAIL_TECH_COUNT,
         totalTechs: DEFAULT_RETAIL_TECH_COUNT,
-        totalAvailableHours: DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS,
+        totalAvailableHours: DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS
       };
     }
 
@@ -984,9 +984,9 @@ export default function Appointments() {
     const overridesForDay = techHoursOverrides[dateKey] || {};
     const staffEntries = staffAbsences[dateKey] || [];
     const staffOffByUserId = new Map(
-      staffEntries
-        .filter((entry) => entry?.userId)
-        .map((entry) => [normalizeKey(entry.userId), entry])
+      staffEntries.
+      filter((entry) => entry?.userId).
+      map((entry) => [normalizeKey(entry.userId), entry])
     );
     const roster = Array.isArray(techUsers) ? techUsers : [];
     const expectedTechCount = roster.length > 0 ? roster.length : DEFAULT_RETAIL_TECH_COUNT;
@@ -997,85 +997,85 @@ export default function Appointments() {
       const overrideHours = parseHoursValue(overridesForDay[techId]);
       const baseAvailable = parseHoursValue(tech.availableHours);
       const defaultDailyHours =
-        getTechDailyHours(
-          roster.find((user) => normalizeKey(user.user_id) === techKey) || tech.user || tech
-        );
+      getTechDailyHours(
+        roster.find((user) => normalizeKey(user.user_id) === techKey) || tech.user || tech
+      );
       const staffEntry = staffOffByUserId.get(techKey);
       const isOnHoliday = Boolean(staffEntry);
       const unavailableHours = parseHoursValue(staffEntry?.unavailableHours);
       const adjustedAvailableHours =
-        unavailableHours === null
-          ? isOnHoliday
-            ? 0
-            : baseAvailable ?? defaultDailyHours
-          : Math.max(0, (baseAvailable ?? defaultDailyHours) - unavailableHours);
+      unavailableHours === null ?
+      isOnHoliday ?
+      0 :
+      baseAvailable ?? defaultDailyHours :
+      Math.max(0, (baseAvailable ?? defaultDailyHours) - unavailableHours);
       const availableHours =
-        overrideHours ?? adjustedAvailableHours;
+      overrideHours ?? adjustedAvailableHours;
       return {
         ...tech,
         techId,
         name: techUserNameMap.get(techKey) || tech.name || `Tech #${techId}`,
         availableHours,
         contractedHours:
-          tech.contractedHours ??
-          tech.contracted_hours ??
-          roster.find((user) => normalizeKey(user.user_id) === techKey)?.contracted_hours ??
-          null,
+        tech.contractedHours ??
+        tech.contracted_hours ??
+        roster.find((user) => normalizeKey(user.user_id) === techKey)?.contracted_hours ??
+        null,
         isOnHoliday,
-        absenceType: staffEntry?.type || null,
+        absenceType: staffEntry?.type || null
       };
     });
 
     const normalizedTechIds = new Set(normalizedTechs.map((tech) => normalizeKey(tech.techId)));
-    const placeholders = roster.length
-      ? roster
-          .filter((user) => !normalizedTechIds.has(normalizeKey(user.user_id)))
-          .map((user) => {
-            const techId = user.user_id;
-            const techKey = normalizeKey(techId);
-            const overrideHours = parseHoursValue(overridesForDay[techId]);
-            const defaultDailyHours = getTechDailyHours(user);
-            const staffEntry = staffOffByUserId.get(techKey);
-            const isOnHoliday = Boolean(staffEntry);
-            const unavailableHours = parseHoursValue(staffEntry?.unavailableHours);
-            const adjustedAvailableHours =
-              unavailableHours === null
-                ? isOnHoliday
-                  ? 0
-                  : defaultDailyHours
-                : Math.max(0, defaultDailyHours - unavailableHours);
-            return {
-              techId,
-              name: techUserNameMap.get(techKey) || formatStaffName(user),
-              availableHours: overrideHours ?? adjustedAvailableHours,
-              contractedHours: user.contracted_hours ?? null,
-              totalHours: 0,
-              segments: [],
-              currentlyClockedIn: false,
-              isPlaceholder: true,
-              workType: "retail",
-              isOnHoliday,
-              absenceType: staffEntry?.type || null,
-            };
-          })
-      : Array.from({ length: Math.max(expectedTechCount - normalizedTechs.length, 0) }, (_, idx) => {
-          const placeholderId = `${dateKey}-retail-placeholder-${idx}`;
-          const overrideHours = parseHoursValue(overridesForDay[placeholderId]);
-          return {
-            techId: placeholderId,
-            name: DEFAULT_RETAIL_TECH_NAMES[idx] || `Retail Tech ${idx + 1}`,
-            availableHours: overrideHours ?? DEFAULT_RETAIL_TECH_HOURS,
-            contractedHours: null,
-            totalHours: 0,
-            segments: [],
-            currentlyClockedIn: false,
-            isPlaceholder: true,
-            workType: "retail",
-          };
-        });
+    const placeholders = roster.length ?
+    roster.
+    filter((user) => !normalizedTechIds.has(normalizeKey(user.user_id))).
+    map((user) => {
+      const techId = user.user_id;
+      const techKey = normalizeKey(techId);
+      const overrideHours = parseHoursValue(overridesForDay[techId]);
+      const defaultDailyHours = getTechDailyHours(user);
+      const staffEntry = staffOffByUserId.get(techKey);
+      const isOnHoliday = Boolean(staffEntry);
+      const unavailableHours = parseHoursValue(staffEntry?.unavailableHours);
+      const adjustedAvailableHours =
+      unavailableHours === null ?
+      isOnHoliday ?
+      0 :
+      defaultDailyHours :
+      Math.max(0, defaultDailyHours - unavailableHours);
+      return {
+        techId,
+        name: techUserNameMap.get(techKey) || formatStaffName(user),
+        availableHours: overrideHours ?? adjustedAvailableHours,
+        contractedHours: user.contracted_hours ?? null,
+        totalHours: 0,
+        segments: [],
+        currentlyClockedIn: false,
+        isPlaceholder: true,
+        workType: "retail",
+        isOnHoliday,
+        absenceType: staffEntry?.type || null
+      };
+    }) :
+    Array.from({ length: Math.max(expectedTechCount - normalizedTechs.length, 0) }, (_, idx) => {
+      const placeholderId = `${dateKey}-retail-placeholder-${idx}`;
+      const overrideHours = parseHoursValue(overridesForDay[placeholderId]);
+      return {
+        techId: placeholderId,
+        name: DEFAULT_RETAIL_TECH_NAMES[idx] || `Retail Tech ${idx + 1}`,
+        availableHours: overrideHours ?? DEFAULT_RETAIL_TECH_HOURS,
+        contractedHours: null,
+        totalHours: 0,
+        segments: [],
+        currentlyClockedIn: false,
+        isPlaceholder: true,
+        workType: "retail"
+      };
+    });
 
     const finalTechs = [...normalizedTechs, ...placeholders].sort((a, b) =>
-      (a.name || "").localeCompare(b.name || "")
+    (a.name || "").localeCompare(b.name || "")
     );
     const availableTechs = finalTechs.filter(
       (tech) => (parseHoursValue(tech.availableHours) ?? 0) > 0
@@ -1090,7 +1090,7 @@ export default function Appointments() {
       techs: finalTechs,
       availableTechs,
       totalTechs: Math.max(finalTechs.length, expectedTechCount),
-      totalAvailableHours,
+      totalAvailableHours
     };
   };
 
@@ -1124,7 +1124,7 @@ export default function Appointments() {
     const finish = new Date(start.getTime() + totalHours * 60 * 60 * 1000);
     return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
-  
+
   const handleTechAvailabilityChange = (dateKey, techId, rawValue) => {
     setTechHoursOverrides((prev) => {
       const dayOverrides = { ...(prev[dateKey] || {}) };
@@ -1154,7 +1154,7 @@ export default function Appointments() {
     if (cleaned === "service") return "service";
     if (cleaned === "mot") return "mot";
     if (cleaned === "diagnostic" || cleaned === "diagnostics" || cleaned === "diagnosis")
-      return "diagnosis";
+    return "diagnosis";
     if (cleaned === "other") return "other";
 
     return null;
@@ -1163,9 +1163,9 @@ export default function Appointments() {
   const getDetectedJobTypeLabels = (job) => {
     const categories = Array.isArray(job.jobCategories) ? job.jobCategories : [];
     const normalizedLabels = new Set(
-      categories
-        .map((category) => normalizeJobCategoryLabel(category))
-        .filter(Boolean)
+      categories.
+      map((category) => normalizeJobCategoryLabel(category)).
+      filter(Boolean)
     );
 
     if (normalizedLabels.size === 0) {
@@ -1194,7 +1194,7 @@ export default function Appointments() {
       services: 0,
       mot: 0,
       diagnosis: 0,
-      other: 0,
+      other: 0
     };
 
     let jobHours = 0;
@@ -1219,7 +1219,7 @@ export default function Appointments() {
     return {
       ...totals,
       totalHours: jobHours.toFixed(1),
-      finishTime,
+      finishTime
     };
   };
 
@@ -1230,8 +1230,8 @@ export default function Appointments() {
     return (
       !Number.isNaN(dateA.getTime()) &&
       !Number.isNaN(dateB.getTime()) &&
-      dateA.toDateString() === dateB.toDateString()
-    );
+      dateA.toDateString() === dateB.toDateString());
+
   };
 
   const getCheckinStatsForDate = (date) => {
@@ -1240,9 +1240,9 @@ export default function Appointments() {
     const total = appointmentsForDate.length;
     const checkedIn = appointmentsForDate.filter((job) => isJobActuallyCheckedIn(job)).length;
     const awaiting =
-      isSameDate(date, new Date()) ?
-        appointmentsForDate.filter((job) => !isJobActuallyCheckedIn(job)).length
-        : 0;
+    isSameDate(date, new Date()) ?
+    appointmentsForDate.filter((job) => !isJobActuallyCheckedIn(job)).length :
+    0;
     return { total, checkedIn, awaiting };
   };
 
@@ -1262,7 +1262,7 @@ export default function Appointments() {
       fontSize: "11px",
       fontWeight: "600",
       textTransform: "capitalize",
-      whiteSpace: "nowrap",
+      whiteSpace: "nowrap"
     };
     switch (label) {
       case "service":
@@ -1281,24 +1281,24 @@ export default function Appointments() {
     if (normalized === "waiting") {
       return {
         backgroundColor: "var(--surface-light)",
-        color: "var(--danger)",
+        color: "var(--danger)"
       };
     }
     if (normalized === "loan car") {
       return {
         backgroundColor: "var(--info-surface)",
-        color: "var(--info)",
+        color: "var(--info)"
       };
     }
     if (normalized === "collection") {
       return {
         backgroundColor: "var(--warning-surface)",
-        color: "var(--warning)",
+        color: "var(--warning)"
       };
     }
     return {
       backgroundColor: "var(--success-surface)",
-      color: "var(--success-dark)",
+      color: "var(--success-dark)"
     };
   };
 
@@ -1331,16 +1331,16 @@ export default function Appointments() {
   const totalCapacityStatus = getCapacityStatus(totalBookedTechHours, totalAvailableTechHours);
   const totalCapacityBadgeStyle = getStatusBadgeStyle(totalCapacityStatus);
   const totalCapacityLabel = getCapacityStatusLabel(totalCapacityStatus);
-  
+
   const filteredJobs = jobsForDay.filter((job) => {
     const query = searchQuery.toLowerCase();
     return (
-      job.jobNumber?.toString().includes(query) || 
+      job.jobNumber?.toString().includes(query) ||
       job.id?.toString().includes(query) ||
-      job.customer?.toLowerCase().includes(query) || 
+      job.customer?.toLowerCase().includes(query) ||
       job.reg?.toLowerCase().includes(query) ||
-      job.makeModel?.toLowerCase().includes(query)
-    );
+      job.makeModel?.toLowerCase().includes(query));
+
   });
 
   // ✅ Sort jobs by appointment time, grouping linked jobs together
@@ -1370,1089 +1370,1089 @@ export default function Appointments() {
   }
   const getJobGroupBadge = (job) => {
     const key = job.primeJobNumber || job.jobNumber;
-    const total = key ? (jobGroupSizeMap[key] || 1) : 1;
+    const total = key ? jobGroupSizeMap[key] || 1 : 1;
     if (total <= 1) return null;
     const position = job.isPrimeJob ? 1 : (job.subJobSequence ?? 0) + 1;
     return `${position}/${total}`;
   };
 
   // ---------------- Render ----------------
-  return (
-    <>
-      <div className="app-page-stack" style={{ height: "100%" }}>
+  return <AppointmentsUi view="section1" activeDayTab={activeDayTab} CALENDAR_SEVERITY_STYLES={CALENDAR_SEVERITY_STYLES} checkingInJobId={checkingInJobId} currentNote={currentNote} dates={dates} DEFAULT_RETAIL_TECH_COUNT={DEFAULT_RETAIL_TECH_COUNT} DEFAULT_RETAIL_TECH_HOURS={DEFAULT_RETAIL_TECH_HOURS} DropdownField={DropdownField} formatDate={formatDate} formatDateNoYear={formatDateNoYear} getBookingSeverity={getBookingSeverity} getCustomerStatusBadgeColors={getCustomerStatusBadgeColors} getDayTechSummary={getDayTechSummary} getDetectedJobTypeLabels={getDetectedJobTypeLabels} getEstimatedFinishTime={getEstimatedFinishTime} getJobCounts={getJobCounts} getJobGroupBadge={getJobGroupBadge} getJobTypeBadgeStyle={getJobTypeBadgeStyle} getTechDailyHours={getTechDailyHours} getVehicleDisplay={getVehicleDisplay} handleAddAppointment={handleAddAppointment} handleCheckIn={handleCheckIn} handleJobNumberInputChange={handleJobNumberInputChange} handleJobRowClick={handleJobRowClick} handleJobRowHover={handleJobRowHover} handleShowStaffOff={handleShowStaffOff} handleTechAvailabilityChange={handleTechAvailabilityChange} highlightJob={highlightJob} isCompactMobile={isCompactMobile} isJobActuallyCheckedIn={isJobActuallyCheckedIn} isLoading={isLoading} isSameDate={isSameDate} isTechAvailabilityLoading={isTechAvailabilityLoading} jobNumber={jobNumber} parseHoursValue={parseHoursValue} Popup={Popup} SATURDAY_SEVERITY_STYLES={SATURDAY_SEVERITY_STYLES} saveNote={saveNote} SearchBar={SearchBar} searchQuery={searchQuery} selectedDay={selectedDay} setActiveDayTab={setActiveDayTab} setCurrentNote={setCurrentNote} setSearchQuery={setSearchQuery} setSelectedDay={setSelectedDay} setShowNotePopup={setShowNotePopup} setShowStaffOffPopup={setShowStaffOffPopup} setTime={setTime} showNotePopup={showNotePopup} showStaffOffPopup={showStaffOffPopup} sortedJobs={sortedJobs} staffAbsences={staffAbsences} staffOffPopupDate={staffOffPopupDate} staffOffPopupDetails={staffOffPopupDetails} TECH_AVAILABILITY_TABLE={TECH_AVAILABILITY_TABLE} techAvailabilityError={techAvailabilityError} techsForSelectedDay={techsForSelectedDay} techSummaryForSelectedDay={techSummaryForSelectedDay} time={time} timeSlots={timeSlots} totalAvailableTechHours={totalAvailableTechHours} totalBookedTechHours={totalBookedTechHours} totalCapacityBadgeStyle={totalCapacityBadgeStyle} totalCapacityLabel={totalCapacityLabel} />;
 
-        {/* Top Bar */}
-        <div
-          id="appointments-auto-content-card-2"
-          data-dev-section-key="appointments-auto-content-card-2"
-          data-dev-section-type="content-card"
-          className="app-section-card"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-            gap: "8px",
-            alignItems: "center",
-            overflowX: "hidden",
-            backgroundColor: "rgba(var(--primary-rgb), 0.16)",
-            boxShadow: "none",
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <SearchBar
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onClear={() => setSearchQuery("")}
-              placeholder="Search by Job #, Name, Reg, or Vehicle..."
-              disabled={isLoading}
-              style={{
-                width: "100%",
-                minHeight: "var(--control-height-sm)",
-                padding: "var(--control-padding-sm)",
-                borderRadius: "var(--control-radius-sm)",
-              }}
-            />
-          </div>
-            <input
-              type="text"
-              value={jobNumber}
-              onChange={handleJobNumberInputChange}
-              placeholder="Job Number"
-              disabled={isLoading}
-              style={{
-                width: "100%",
-                minHeight: "var(--control-height-sm)",
-                padding: "var(--control-padding-sm)",
-                borderRadius: "var(--control-radius-sm)",
-              }}
-            />
-            <DropdownField
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              disabled={isLoading}
-              placeholder="Select time"
-              style={{
-                width: "100%",
-              }}
-              size="sm"
-            >
-              {timeSlots.map((slot) => (
-                <option key={slot} value={slot}>
-                  {slot}
-                </option>
-              ))}
-            </DropdownField>
-            <button
-              onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])}
-              disabled={isLoading}
-              style={{
-                width: "100%",
-                minHeight: "var(--control-height-sm)",
-                backgroundColor: isLoading ? "var(--background)" : "var(--primary)",
-                color: "white",
-                border: "none",
-                borderRadius: "var(--control-radius-sm)",
-                cursor: isLoading ? "not-allowed" : "pointer",
-                fontWeight: "600",
-                fontSize: "var(--control-font-size)",
-                whiteSpace: "nowrap",
-                transition: "background-color 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                if (isLoading) return;
-                const isDarkTheme = document?.documentElement?.getAttribute("data-theme") === "dark";
-                e.currentTarget.style.backgroundColor = isDarkTheme
-                  ? "var(--primary-dark)"
-                  : "var(--danger)";
-              }}
-              onMouseLeave={(e) => !isLoading && (e.currentTarget.style.backgroundColor = "var(--primary)")}
-            >
-              {isLoading ? "Booking..." : "Book Appointment"}
-            </button>
-        </div>
 
-        {/* Calendar Table Container */}
-        <div
-          data-dev-section-key="appointments-auto-data-table-2-shell"
-          data-dev-section-type="section-shell"
-          style={{
-            flex: "0 0 auto",
-            marginBottom: "12px",
-            borderRadius: "var(--radius-md)",
-            border: "var(--control-border)",
-            overflow: "hidden",
-            background: "var(--page-card-bg-alt)",
-          }}
-        >
-          {/* Heading — structurally outside scroll, always visible at top */}
-          {/* scrollbarGutter: stable reserves the same gutter as the body scroll div so columns stay aligned */}
-          <div style={{ overflowY: "auto", scrollbarGutter: "stable" }}>
-            <table
-              id="appointments-auto-data-table-2"
-              data-dev-section-key="appointments-auto-data-table-2"
-              data-dev-section-type="data-table"
-              style={{
-                width: "100%",
-                borderCollapse: "separate",
-                borderSpacing: 0,
-                backgroundColor: "transparent",
-                tableLayout: "fixed",
-              }}
-            >
-              <colgroup>
-                <col style={{ width: "15%" }} />
-                <col style={{ width: "19%" }} />
-                <col style={{ width: "8%" }} />
-                <col style={{ width: "7%" }} />
-                <col style={{ width: "9%" }} />
-                <col style={{ width: "9%" }} />
-                <col style={{ width: "7%" }} />
-                <col style={{ width: "10%" }} />
-                <col style={{ width: "8%" }} />
-                <col style={{ width: "8%" }} />
-              </colgroup>
-              <thead
-                data-dev-section-key="appointments-auto-data-table-2-headings"
-                data-dev-section-type="table-headings"
-                data-dev-section-parent="appointments-auto-data-table-2"
-              >
-                <tr>
-                  {[
-                    { label: "Date", align: "left" },
-                    { label: "Availability", align: "left" },
-                    { label: "Hours", align: "center" },
-                    { label: "Jobs", align: "center" },
-                    { label: "Finish", align: "center" },
-                    { label: "Services", align: "center" },
-                    { label: "MOT", align: "center" },
-                    { label: "Diagnosis", align: "center" },
-                    { label: "Other", align: "center" },
-                    { label: "Staff Off", align: "center" },
-                  ].map(({ label, align }) => (
-                    <th
-                      key={label}
-                      style={{
-                        textAlign: align,
-                        padding: "10px 10px",
-                        fontWeight: "700",
-                        fontSize: "11px",
-                        letterSpacing: "0.05em",
-                        textTransform: "uppercase",
-                        color: "var(--text-inverse)",
-                        background: "var(--primary)",
-                        whiteSpace: "nowrap",
-                        borderBottom: "2px solid rgba(var(--shadow-rgb), 0.2)",
-                      }}
-                    >
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-            </table>
-          </div>
 
-          {/* Scrollable body — scrollbarGutter matches header div so columns align */}
-          <div
-            style={{
-              maxHeight: "calc(8 * 42px)",
-              overflowY: "auto",
-              scrollbarGutter: "stable",
-            }}
-          >
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "separate",
-                borderSpacing: 0,
-                backgroundColor: "transparent",
-                tableLayout: "fixed",
-              }}
-            >
-              <colgroup>
-                <col style={{ width: "15%" }} />
-                <col style={{ width: "19%" }} />
-                <col style={{ width: "8%" }} />
-                <col style={{ width: "7%" }} />
-                <col style={{ width: "9%" }} />
-                <col style={{ width: "9%" }} />
-                <col style={{ width: "7%" }} />
-                <col style={{ width: "10%" }} />
-                <col style={{ width: "8%" }} />
-                <col style={{ width: "8%" }} />
-              </colgroup>
-              <tbody
-                data-dev-section-key="appointments-auto-data-table-2-rows"
-                data-dev-section-type="table-rows"
-                data-dev-section-parent="appointments-auto-data-table-2"
-              >
-                {dates.map((date, index) => {
-                const dateKey = date.toDateString();
-                const counts = getJobCounts(date);
-                const staffEntries = staffAbsences[dateKey] || [];
-                const isSelected = selectedDay.toDateString() === dateKey;
-                const dayTechSummary = getDayTechSummary(date);
-                const bookedHours = parseFloat(counts.totalHours) || 0;
-                const totalAvailableHours =
-                  dayTechSummary.totalAvailableHours ?? DEFAULT_RETAIL_TECH_COUNT * DEFAULT_RETAIL_TECH_HOURS;
-                const bookingPercent = totalAvailableHours > 0 ? (bookedHours / totalAvailableHours) * 100 : 0;
-                const severity = getBookingSeverity(bookingPercent);
-                const isWeekendSaturday = date.getDay() === 6;
-                const severityStyleSource = isWeekendSaturday ? SATURDAY_SEVERITY_STYLES : CALENDAR_SEVERITY_STYLES;
-                const severityStyle = severityStyleSource[severity];
-                const isCalmDay = severity === "green" || !severityStyle;
-                const isToday = isSameDate(date, new Date());
-                const defaultRowBackground = isCalmDay
-                  ? "var(--success-surface)"
-                  : severityStyle.backgroundColor || "var(--section-card-bg)";
-                let rowBackground = defaultRowBackground;
 
-                // Selected date (theme primary fill — red light / purple dark)
-                if (isSelected && !isToday) {
-                  rowBackground = "rgba(var(--primary-rgb), 0.25)";
-                }
 
-                // Today's date (really light theme tint — always top row)
-                if (isToday && !isSelected) {
-                  rowBackground = "rgba(var(--primary-rgb), 0.07)";
-                }
 
-                // Both today AND selected (theme primary fill)
-                if (isToday && isSelected) {
-                  rowBackground = "rgba(var(--primary-rgb), 0.25)";
-                }
-                const severityBorderLeft =
-                  !isCalmDay && severityStyle?.borderColor
-                    ? `4px solid ${severityStyle.borderColor}`
-                    : "4px solid var(--success)";
-                const bookingPercentDisplay = Number.isFinite(bookingPercent)
-                  ? bookingPercent.toFixed(0)
-                  : "0";
-                const availabilityLabelColor = isCalmDay
-                  ? "var(--success-dark)"
-                  : severityStyle?.textColor || "var(--text-primary)";
-                const cellBorder = "1px solid rgba(var(--accent-base-rgb), 0.12)";
-                
-                return (
-                  <tr
-                    key={dateKey}
-                    className={isWeekendSaturday ? "appt-sat-row" : undefined}
-                    onClick={() => setSelectedDay(date)}
-                    style={{
-                      cursor: "pointer",
-                      backgroundColor: rowBackground,
-                    }}
-                  >
-                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, borderLeft: severityBorderLeft, fontWeight: isSelected ? "700" : "600", verticalAlign: "middle" }}>
-                      <span style={{ color: "var(--accent-strong)", fontSize: "13px", whiteSpace: "nowrap" }}>{formatDate(date)}</span>
-                    </td>
-                    <td
-                      style={{
-                        padding: "10px 10px",
-                        borderBottom: cellBorder,
-                        verticalAlign: "middle",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
-                        <span style={{ fontSize: "12px", fontWeight: "700", color: availabilityLabelColor }}>
-                          {dayTechSummary.availableTechs} tech{dayTechSummary.availableTechs !== 1 ? "s" : ""}
-                        </span>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            padding: "2px 6px",
-                            borderRadius: "var(--radius-pill)",
-                            background: isCalmDay
-                              ? "rgba(var(--success-rgb), 0.15)"
-                              : severityStyle.backgroundColor,
-                            color: availabilityLabelColor,
-                            fontSize: "11px",
-                            fontWeight: "700",
-                          }}
-                        >
-                          {bookingPercentDisplay}%
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{
-                      padding: "10px 10px",
-                      borderBottom: cellBorder,
-                      color: counts.totalHours > 0 ? "var(--text-primary)" : "var(--grey-accent-light)",
-                      fontWeight: counts.totalHours > 0 ? "700" : "500",
-                      whiteSpace: "nowrap",
-                      textAlign: "center",
-                      fontSize: "13px",
-                    }}>
-                      {counts.totalHours}h
-                    </td>
-                    <td style={{
-                      padding: "10px 10px",
-                      borderBottom: cellBorder,
-                      fontWeight: counts.totalJobs > 0 ? "700" : "500",
-                      textAlign: "center",
-                      fontSize: "13px",
-                    }}>
-                      {counts.totalJobs}
-                    </td>
-                    <td style={{
-                      padding: "10px 10px",
-                      borderBottom: cellBorder,
-                      fontWeight: "600",
-                      whiteSpace: "nowrap",
-                      textAlign: "center",
-                      fontSize: "13px",
-                    }}>
-                      {counts.finishTime || "-"}
-                    </td>
-                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.services > 0 ? "700" : "500", fontSize: "13px" }}>
-                      {counts.services || "-"}
-                    </td>
-                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.mot > 0 ? "700" : "500", fontSize: "13px" }}>
-                      {counts.mot || "-"}
-                    </td>
-                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.diagnosis > 0 ? "700" : "500", fontSize: "13px" }}>
-                      {counts.diagnosis || "-"}
-                    </td>
-                    <td style={{ padding: "10px 10px", borderBottom: cellBorder, textAlign: "center", fontWeight: counts.other > 0 ? "700" : "500", fontSize: "13px" }}>
-                      {counts.other || "-"}
-                    </td>
-                    <td style={{
-                      padding: "10px 10px",
-                      borderBottom: cellBorder,
-                      textAlign: "center",
-                    }}>
-                      {staffEntries.length > 0 ? (
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          onClick={(event) => handleShowStaffOff(event, date, staffEntries)}
-                          onKeyDown={(e) => e.key === "Enter" && handleShowStaffOff(e, date, staffEntries)}
-                          style={{
-                            cursor: "pointer",
-                            fontWeight: "700",
-                            fontSize: "13px",
-                            color: "var(--danger)",
-                          }}
-                        >
-                          {staffEntries.length}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
-        {/* Jobs for Selected Day Section */}
-        <div
-          className="app-page-card"
-          style={{
-            flex: "0 0 40%",
-            marginBottom: "8px",
-            padding: "16px",
-            overflowY: "auto",
-            background: "var(--page-card-bg-alt)",
-          }}
-        >
-          <div style={{ 
-            display: "flex", 
-            justifyContent: "space-between", 
-            alignItems: "center", 
-            marginBottom: "16px" 
-          }}>
-            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600" }}>
-              Jobs for <span style={{ color: "var(--primary)" }}>{formatDateNoYear(selectedDay)}</span>
-            </h3>
-            <span style={{
-              padding: "6px 14px",
-              backgroundColor: "var(--surface)",
-              borderRadius: "var(--radius-md)",
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "var(--text-secondary)"
-            }}>
-              {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''}
-            </span>
-          </div>
 
-          <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-            <button
-              onClick={() => setActiveDayTab("jobs")}
-              style={{
-                padding: "8px 16px",
-                border: activeDayTab === "jobs" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
-                backgroundColor: activeDayTab === "jobs" ? "var(--surface-light)" : "var(--surface)",
-                color: activeDayTab === "jobs" ? "var(--text-primary)" : "var(--grey-accent)",
-                borderRadius: "var(--radius-xs)",
-                cursor: "pointer",
-                fontWeight: activeDayTab === "jobs" ? "600" : "500",
-                fontSize: "13px",
-                transition: "all 0.2s"
-              }}
-              onMouseEnter={(e) => {
-                if (activeDayTab !== "jobs") {
-                  e.currentTarget.style.backgroundColor = "var(--surface)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeDayTab !== "jobs") {
-                  e.currentTarget.style.backgroundColor = "var(--surface)";
-                }
-              }}
-            >
-              All Jobs ({sortedJobs.length})
-            </button>
-            
-            <button
-              onClick={() => setActiveDayTab("tech-hours")}
-              style={{
-                padding: "8px 16px",
-                border: activeDayTab === "tech-hours" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
-                backgroundColor: activeDayTab === "tech-hours" ? "var(--surface-light)" : "var(--surface)",
-                color: activeDayTab === "tech-hours" ? "var(--text-primary)" : "var(--grey-accent)",
-                borderRadius: "var(--radius-xs)",
-                cursor: "pointer",
-                fontWeight: activeDayTab === "tech-hours" ? "600" : "500",
-                fontSize: "13px",
-                transition: "all 0.2s"
-              }}
-              onMouseEnter={(e) => {
-                if (activeDayTab !== "tech-hours") {
-                  e.currentTarget.style.backgroundColor = "var(--surface)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeDayTab !== "tech-hours") {
-                  e.currentTarget.style.backgroundColor = "var(--surface)";
-                }
-              }}
-            >
-              Tech Hours
-            </button>
-          </div>
-          {activeDayTab === "tech-hours" && (
-            <div style={{ 
-              marginBottom: "16px", 
-              padding: "16px", 
-              border: "2px solid var(--primary)", 
-              borderRadius: "var(--radius-xs)", 
-              background: "var(--surface-light)" 
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
-                    Live Tech Availability — {formatDateNoYear(selectedDay)}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
-                    Source: {TECH_AVAILABILITY_TABLE === "tech_hours" ? "tech_hours" : "job_clocking"} table
-                  </div>
-                </div>
-                <span style={{
-                  padding: "4px 12px",
-                  borderRadius: "var(--radius-pill)",
-                  backgroundColor: "var(--surface-light)",
-                  color: "var(--primary)",
-                  fontWeight: "600",
-                  fontSize: "13px"
-                }}>
-                  {techSummaryForSelectedDay.totalTechs} tech{techSummaryForSelectedDay.totalTechs !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <div style={{
-                marginBottom: "12px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "6px"
-              }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)" }}>
-                  Booked {totalBookedTechHours.toFixed(1)}h
-                </div>
-                <div style={{ fontSize: "12px", color: "var(--grey-accent-dark)" }}>
-                  of {totalAvailableTechHours.toFixed(1)}h available
-                </div>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "var(--radius-pill)",
-                    padding: "4px 10px",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    ...totalCapacityBadgeStyle
-                  }}
-                >
-                  {totalCapacityLabel}
-                </span>
-              </div>
-              {techAvailabilityError && (
-                <div style={{
-                  marginBottom: "10px",
-                  padding: "10px 12px",
-                  background: "var(--surface-light)",
-                  borderRadius: "var(--radius-xs)",
-                  color: "var(--danger)",
-                  fontSize: "13px"
-                }}>
-                  {techAvailabilityError}
-                </div>
-              )}
-              {isTechAvailabilityLoading ? (
-                <div style={{ padding: "10px 0", color: "var(--grey-accent)", fontSize: "13px" }}>
-                  Loading live tech availability...
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {techsForSelectedDay.map((tech) => {
-                    const latestSegment = tech.segments[tech.segments.length - 1];
-                    const latestJobDisplay = latestSegment
-                      ? `Job ${latestSegment.jobNumber || "-"} (${latestSegment.workType})`
-                      : "No jobs recorded";
-                    const latestClockIn = tech.latestClockIn
-                      ? new Date(tech.latestClockIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-                      : "-";
-                    const latestClockOut = tech.latestClockOut
-                      ? new Date(tech.latestClockOut).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-                      : "-";
-                    const availableHoursValue = parseHoursValue(tech.availableHours) ?? getTechDailyHours(tech);
-                    const totalLogged = parseHoursValue(tech.totalHours) ?? 0;
-                    const absenceLabel = tech.absenceType || "Holiday";
 
-                    return (
-                      <div
-                        key={tech.techId}
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "10px 12px",
-                          background: "var(--surface)",
-                          borderRadius: "var(--radius-xs)",
-                          border: "none",
-                          boxShadow: "none"
-                        }}
-                      >
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
-                              {tech.name || "Retail Technician"}
-                            </div>
-                            {tech.isOnHoliday && (
-                              <span
-                                style={{
-                                  fontSize: "11px",
-                                  fontWeight: "600",
-                                  padding: "2px 8px",
-                                  borderRadius: "var(--radius-pill)",
-                                  backgroundColor: "var(--warning-surface)",
-                                  color: "var(--warning)"
-                                }}
-                              >
-                                {`On ${absenceLabel}`}
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
-                            {latestJobDisplay}
-                          </div>
-                          <div style={{ fontSize: "12px", color: "var(--grey-accent-light)", marginTop: "4px" }}>
-                            Shift: {latestClockIn} – {tech.currentlyClockedIn ? "Present" : latestClockOut}
-                            {" · "}
-                            {totalLogged > 0 ? `${totalLogged.toFixed(1)}h logged` : "0h recorded"}
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-                          <label style={{ fontSize: "11px", color: "var(--grey-accent)", fontWeight: "600" }}>
-                            Availability
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="6"
-                            step="0.5"
-                            value={availableHoursValue}
-                            onChange={(event) =>
-                              handleTechAvailabilityChange(
-                                techSummaryForSelectedDay.dateKey || selectedDay.toDateString(),
-                                tech.techId,
-                                event.target.value
-                              )
-                            }
-                            style={{
-                              width: "80px",
-                              padding: "6px 8px",
-                              borderRadius: "var(--radius-xs)",
-                              border: "none",
-                              fontSize: "14px",
-                              textAlign: "right",
-                              fontFamily: "inherit",
-                              background: "var(--surface)"
-                            }}
-                          />
-                          <span style={{ fontSize: "11px", color: "var(--grey-accent-dark)" }}>
-                            hours (manual override)
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
 
-          {activeDayTab === "jobs" && (
-            <>
-              {/* ✅ Enhanced Jobs Table */}
-              <div
-                style={{
-                  overflowX: "auto",
-                  border: "var(--control-border)",
-                  borderRadius: "var(--radius-md)",
-                  background: "var(--page-card-bg-alt)",
-                }}
-              >
-                <table
-                  id="appointments-auto-data-table-3"
-                  data-dev-section-key="appointments-auto-data-table-3"
-                  data-dev-section-type="data-table"
-                  style={{
-                    width: "100%",
-                    borderCollapse: "separate",
-                    borderSpacing: 0,
-                    fontSize: "13px",
-                    backgroundColor: "transparent",
-                  }}
-                >
-              <thead
-                data-dev-section-key="appointments-auto-data-table-3-headings"
-                data-dev-section-type="table-headings"
-                data-dev-section-parent="appointments-auto-data-table-3"
-                style={{
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 1,
-                  background: "var(--accent-surface-hover)",
-                }}
-              >
-                <tr>
-                {[
-                  "Time",
-                  "Job #",
-                  "Reg",
-                  "Vehicle",
-                  "Customer",
-                  "Job Type",
-                  "Customer Status",
-                  "EST Time",
-                  "Check-In"
-                ].map(head => (
-                    <th 
-                      key={head} 
-                      style={{ 
-                        textAlign: head === "Check-In" ? "center" : "left", 
-                        padding: "12px 14px",
-                        background: "var(--accent-surface-hover)",
-                        color: "var(--text-primary)",
-                        fontWeight: "700",
-                        fontSize: "11px",
-                        letterSpacing: "0.05em",
-                        textTransform: "uppercase",
-                        borderBottom: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-                        position: "sticky", 
-                        top: 0, 
-                        zIndex: 1,
-                        whiteSpace: "nowrap"
-                      }}
-                    >
-                      {head}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody
-                data-dev-section-key="appointments-auto-data-table-3-rows"
-                data-dev-section-type="table-rows"
-                data-dev-section-parent="appointments-auto-data-table-3"
-              >
-                {sortedJobs.length > 0 ? (
-                  sortedJobs.map((job, idx) => {
-                    const isCheckedIn = isJobActuallyCheckedIn(job);
-                    const isCurrentlyCheckingIn = checkingInJobId === job.id;
-                    const cellBorder = "1px solid rgba(var(--accent-base-rgb), 0.12)";
-                    const rowBackground =
-                      highlightJob === job.jobNumber
-                        ? "var(--success-surface)"
-                        : idx % 2 === 0
-                        ? "var(--section-card-bg)"
-                        : "rgba(var(--accent-base-rgb), 0.035)";
 
-                    return (
-                      <tr 
-                        key={idx} 
-                        style={{ 
-                          backgroundColor: rowBackground, 
-                          transition: "background-color 0.2s ease"
-                        }}
-                        onMouseEnter={(e) => {
-                          if (highlightJob !== job.jobNumber) {
-                            e.currentTarget.style.backgroundColor = "var(--accent-surface-hover)";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (highlightJob !== job.jobNumber) {
-                            e.currentTarget.style.backgroundColor = idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
-                          }
-                        }}
-                      >
-                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, fontWeight: "700", whiteSpace: "nowrap" }}>
-                          {job.appointment?.time || "-"}
-                        </td>
-                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, color: "var(--primary)", fontWeight: "700" }}>
-                          <button
-                            type="button"
-                            onClick={() => handleJobRowClick(job.jobNumber || job.id)}
-                            onMouseEnter={() => handleJobRowHover(job.jobNumber || job.id)}
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "6px",
-                              padding: "4px 8px",
-                              minHeight: 0,
-                              borderRadius: "var(--radius-pill)",
-                              background: "var(--accent-surface)",
-                              border: "none",
-                              color: "var(--primary)",
-                              fontWeight: "700",
-                              fontSize: "inherit",
-                              cursor: "pointer",
-                            }}
-                          >
-                            <span>{job.jobNumber || job.id || "-"}</span>
-                            {(() => {
-                              const badge = getJobGroupBadge(job);
-                              if (!badge) return null;
-                              return (
-                                <span
-                                  style={{
-                                    fontSize: "10px",
-                                    padding: "2px 6px",
-                                    borderRadius: "var(--radius-xs)",
-                                    backgroundColor: "var(--accent-surface)",
-                                    color: "var(--accent-strong)",
-                                    fontWeight: "700",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                  title={job.isPrimeJob ? `Host job (${badge} job cards)` : `Job ${badge} — linked to host #${job.primeJobNumber}`}
-                                >
-                                  {badge} Job Cards
-                                </span>
-                              );
-                            })()}
-                          </button>
-                        </td>
-                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, fontWeight: "600", whiteSpace: "nowrap" }}>
-                          {job.reg || "-"}
-                        </td>
-                        <td style={{ padding: "12px 14px", borderBottom: cellBorder }}>
-                          {getVehicleDisplay(job)}
-                        </td>
-                        <td style={{ padding: "12px 14px", borderBottom: cellBorder }}>
-                          {job.customer || "-"}
-                        </td>
-                        <td style={{ padding: "12px 14px", borderBottom: cellBorder }}>
-                          <div style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "4px",
-                            maxHeight: "52px",
-                            overflowY: "auto",
-                          }}>
-                            {Array.from(getDetectedJobTypeLabels(job)).filter(Boolean).map((label) => (
-                              <span key={label} style={getJobTypeBadgeStyle(label)}>
-                                {label}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                        <td style={{ padding: "12px 14px", borderBottom: cellBorder }}>
-                          <span
-                            style={{
-                              padding: "4px 10px",
-                              borderRadius: "var(--radius-pill)",
-                              fontSize: "11px",
-                              fontWeight: "700",
-                              ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither"),
-                            }}
-                          >
-                            {job.waitingStatus || "Neither"}
-                          </span>
-                        </td>
-                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, fontWeight: "700", whiteSpace: "nowrap" }}>
-                          {getEstimatedFinishTime(job)}
-                        </td>
-                        <td style={{ padding: "12px 14px", borderBottom: cellBorder, textAlign: "center" }}>
-                          {isCheckedIn ? (
-                            <span style={{
-                              padding: isCompactMobile ? "8px 12px" : "8px 16px",
-                              minWidth: isCompactMobile ? "90px" : "110px",
-                              textAlign: "center",
-                              borderRadius: "var(--radius-pill)",
-                              fontSize: "13px",
-                              fontWeight: "700",
-                              lineHeight: "1",
-                              display: "inline-block",
-                              backgroundColor: "var(--success-surface)",
-                              color: "var(--success-dark)"
-                            }}>
-                              {isCompactMobile ? "Checked In" : "✓ Checked In"}
-                            </span>
-                          ) : (
-                            <button
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleCheckIn(job);
-                              }}
-                              disabled={isCurrentlyCheckingIn}
-                              style={{
-                                padding: isCompactMobile ? "8px 12px" : "8px 16px",
-                                minWidth: isCompactMobile ? "90px" : "110px",
-                                minHeight: "unset",
-                                backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--primary)",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "var(--radius-pill)",
-                                cursor: isCurrentlyCheckingIn ? "not-allowed" : "pointer",
-                                fontSize: "13px",
-                                fontWeight: "700",
-                                lineHeight: "1",
-                                transition: "background-color 0.2s"
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!isCurrentlyCheckingIn) {
-                                  e.currentTarget.style.backgroundColor = "var(--primary-dark)";
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!isCurrentlyCheckingIn) {
-                                  e.currentTarget.style.backgroundColor = "var(--primary)";
-                                }
-                              }}
-                            >
-                              {isCurrentlyCheckingIn ? "Checking In..." : "Check In"}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td 
-                      colSpan="9" 
-                      style={{ 
-                        padding: "40px", 
-                        textAlign: "center", 
-                        color: "var(--grey-accent-light)",
-                        fontSize: "14px",
-                        background: "var(--section-card-bg)",
-                      }}
-                    >
-                      No appointments booked for this day
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-            </>
-          )}
-        </div>
-        {/* Add Note Popup */}
-        <Popup isOpen={showNotePopup} onClose={() => setShowNotePopup(false)}>
-          <h3 style={{ marginTop: 0, marginBottom: "16px", fontSize: "20px", fontWeight: "600" }}>
-            Add Note for {formatDateNoYear(selectedDay)}
-          </h3>
-          <textarea 
-            style={{ 
-              width: "100%", 
-              height: "120px", 
-              padding: "12px", 
-              borderRadius: "var(--radius-xs)", 
-              border: "none",
-              fontSize: "14px",
-              fontFamily: "inherit",
-              resize: "vertical",
-              outline: "none"
-            }} 
-            value={currentNote} 
-            onChange={(e) => setCurrentNote(e.target.value)}
-            placeholder="Enter notes about this day's schedule..."
-            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
-          />
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", gap: "10px" }}>
-            <button 
-              onClick={saveNote} 
-              style={{ 
-                flex: 1,
-                padding: "10px 20px", 
-                backgroundColor: "var(--primary)", 
-                color: "white", 
-                border: "none", 
-                borderRadius: "var(--radius-xs)", 
-                cursor: "pointer",
-                fontWeight: "600",
-                fontSize: "14px",
-                transition: "background-color 0.2s"
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--danger)"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--primary)"}
-            >
-              Save Note
-            </button>
-            <button 
-              onClick={() => setShowNotePopup(false)} 
-              style={{ 
-                flex: 1,
-                padding: "10px 20px", 
-                backgroundColor: "var(--grey-accent)", 
-                color: "white", 
-                border: "none", 
-                borderRadius: "var(--radius-xs)", 
-                cursor: "pointer",
-                fontWeight: "600",
-                fontSize: "14px",
-                transition: "background-color 0.2s"
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = "var(--grey-accent-dark)"}
-              onMouseLeave={(e) => e.target.style.backgroundColor = "var(--grey-accent)"}
-            >
-              Cancel
-            </button>
-          </div>
-        </Popup>
-        {/* Staff Off Popup */}
-        <Popup isOpen={showStaffOffPopup} onClose={() => setShowStaffOffPopup(false)}>
-          <div style={{ width: "260px" }}>
-          {/* Header */}
-          <div style={{ marginBottom: "18px", paddingBottom: "14px", borderBottom: "var(--control-border)" }}>
-            <h3 style={{ margin: "0 0 8px", fontSize: "16px", fontWeight: "700", color: "var(--text-primary)" }}>
-              Staff Off
-            </h3>
-            <span style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "3px 10px",
-              borderRadius: "var(--radius-pill)",
-              background: "var(--accent-surface)",
-              color: "var(--accent-strong)",
-              fontSize: "12px",
-              fontWeight: "600",
-            }}>
-              {formatDate(staffOffPopupDate || selectedDay)}
-            </span>
-          </div>
 
-          {/* Entry list */}
-          {staffOffPopupDetails.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "calc(5 * 58px)", overflowY: "auto" }}>
-              {staffOffPopupDetails.map((entry, index) => {
-                const typeLower = (entry.type || "").toLowerCase();
-                const typeColor = typeLower.includes("sick")
-                  ? { bg: "var(--warning-surface)", text: "var(--warning)" }
-                  : typeLower.includes("holiday") || typeLower.includes("annual")
-                  ? { bg: "var(--success-surface)", text: "var(--success-dark)" }
-                  : { bg: "var(--accent-surface)", text: "var(--text-secondary)" };
-                const initial = (entry.name || "?").charAt(0).toUpperCase();
-                return (
-                  <div
-                    key={`${entry.id}-${index}`}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      padding: "10px 12px",
-                      borderRadius: "var(--radius-sm)",
-                      background: "var(--section-card-bg)",
-                      border: "var(--control-border)",
-                    }}
-                  >
-                    {/* Avatar initial */}
-                    <div style={{
-                      flexShrink: 0,
-                      width: "36px",
-                      height: "36px",
-                      borderRadius: "50%",
-                      background: "var(--accent-surface)",
-                      color: "var(--accent-strong)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: "700",
-                      fontSize: "14px",
-                    }}>
-                      {initial}
-                    </div>
 
-                    {/* Name + role */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: "600", fontSize: "14px", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {entry.name}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "2px" }}>
-                        {entry.role}
-                      </div>
-                    </div>
 
-                    {/* Type badge + hours */}
-                    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-                      <span style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        padding: "2px 8px",
-                        borderRadius: "var(--radius-pill)",
-                        background: typeColor.bg,
-                        color: typeColor.text,
-                        fontSize: "11px",
-                        fontWeight: "700",
-                        whiteSpace: "nowrap",
-                      }}>
-                        {entry.type || "Holiday"}
-                      </span>
-                      {entry.unavailableHours != null && (
-                        <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-                          {entry.unavailableHours}h off
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div style={{
-              padding: "32px 16px",
-              textAlign: "center",
-              color: "var(--text-secondary)",
-              fontSize: "13px",
-            }}>
-              <div style={{ fontSize: "20px", marginBottom: "8px", color: "var(--grey-accent-light)", fontWeight: "300" }}>—</div>
-              No approved absences for this day
-            </div>
-          )}
-          </div>
-        </Popup>
-      </div>
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 Appointments.getLayout = (page) => <Layout requiresLandscape>{page}</Layout>;

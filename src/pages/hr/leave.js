@@ -10,37 +10,37 @@ import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components
 // Rendered in place of the table rows / list rows so the outer page shell —
 // header row, action buttons, section grid, card headings — stays mounted and
 // the user sees the final layout from the first frame.
-function TableRowsSkeleton({ rows = 5, cols = 5 }) {
-  return (
+import HrLeaveManagementUi from "@/components/page-ui/hr/hr-leave-ui"; // Extracted presentation layer.
+function TableRowsSkeleton({ rows = 5, cols = 5 }) {return (
     <>
-      {Array.from({ length: rows }).map((_, i) => (
-        <SkeletonTableRow key={i} cols={cols} />
-      ))}
-    </>
-  );
+      {Array.from({ length: rows }).map((_, i) =>
+      <SkeletonTableRow key={i} cols={cols} />
+      )}
+    </>);
+
 }
 
 function ListRowsSkeleton({ rows = 3 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-      {Array.from({ length: rows }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-sm)",
-            padding: "var(--space-3)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-xs)",
-          }}
-        >
+      {Array.from({ length: rows }).map((_, i) =>
+      <div
+        key={i}
+        style={{
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-sm)",
+          padding: "var(--space-3)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-xs)"
+        }}>
+        
           <SkeletonBlock width="58%" height="14px" />
           <SkeletonBlock width="72%" height="12px" />
         </div>
-      ))}
-    </div>
-  );
+      )}
+    </div>);
+
 }
 
 function LeaveContent() {
@@ -56,8 +56,8 @@ function LeaveContent() {
         <SectionCard title="Unable to load leave data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
-      </div>
-    );
+      </div>);
+
   }
 
   return (
@@ -74,14 +74,14 @@ function LeaveContent() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--layout-card-gap)",
-        }}
-      >
+          gap: "var(--layout-card-gap)"
+        }}>
+        
         <SectionCard
           title="Pending & Recent Leave Requests"
           subtitle="Review approval status and history"
           action={
-            <div style={{ display: "flex", gap: "var(--space-2)" }}>
+          <div style={{ display: "flex", gap: "var(--space-2)" }}>
               <Button variant="secondary" size="sm">
                 Export
               </Button>
@@ -89,8 +89,8 @@ function LeaveContent() {
                 Configure approvers
               </Button>
             </div>
-          }
-        >
+          }>
+          
           <div style={{ overflowX: "auto" }}>
             <table className="app-data-table">
               <thead>
@@ -103,11 +103,11 @@ function LeaveContent() {
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
-                  <TableRowsSkeleton rows={5} cols={5} />
-                ) : (
-                  leaveRequests.map((request) => (
-                    <tr key={request.id}>
+                {isLoading ?
+                <TableRowsSkeleton rows={5} cols={5} /> :
+
+                leaveRequests.map((request) =>
+                <tr key={request.id}>
                       <td style={{ fontWeight: 600 }}>{request.employee}</td>
                       <td>{request.type}</td>
                       <td>
@@ -116,42 +116,42 @@ function LeaveContent() {
                       </td>
                       <td>
                         <StatusTag
-                          label={request.status}
-                          tone={
-                            request.status === "Approved"
-                              ? "success"
-                              : request.status === "Pending"
-                              ? "warning"
-                              : "default"
-                          }
-                        />
+                      label={request.status}
+                      tone={
+                      request.status === "Approved" ?
+                      "success" :
+                      request.status === "Pending" ?
+                      "warning" :
+                      "default"
+                      } />
+                    
                       </td>
                       <td>{request.approver}</td>
                     </tr>
-                  ))
-                )}
+                )
+                }
               </tbody>
             </table>
           </div>
         </SectionCard>
 
         <SectionCard title="Team Availability" subtitle="Upcoming leave by date range">
-          {isLoading ? (
-            <ListRowsSkeleton rows={3} />
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-              {upcomingAbsences.map((absence) => (
-                <div
-                  key={absence.id}
-                  style={{
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-sm)",
-                    padding: "var(--space-3)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "var(--space-xs)",
-                  }}
-                >
+          {isLoading ?
+          <ListRowsSkeleton rows={3} /> :
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+              {upcomingAbsences.map((absence) =>
+            <div
+              key={absence.id}
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-sm)",
+                padding: "var(--space-3)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-xs)"
+              }}>
+              
                   <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
                     {absence.employee} • {absence.department}
                   </span>
@@ -160,9 +160,9 @@ function LeaveContent() {
                     {new Date(absence.endDate).toLocaleDateString()}
                   </span>
                 </div>
-              ))}
+            )}
             </div>
-          )}
+          }
         </SectionCard>
       </section>
 
@@ -170,9 +170,9 @@ function LeaveContent() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "var(--layout-card-gap)",
-        }}
-      >
+          gap: "var(--layout-card-gap)"
+        }}>
+        
         <SectionCard title="Leave Balances" subtitle="Entitlement vs. taken time off">
           <div style={{ overflowX: "auto" }}>
             <table className="app-data-table">
@@ -186,19 +186,19 @@ function LeaveContent() {
                 </tr>
               </thead>
               <tbody>
-                {isLoading ? (
-                  <TableRowsSkeleton rows={5} cols={5} />
-                ) : (
-                  leaveBalances.map((balance) => (
-                    <tr key={balance.employeeId}>
+                {isLoading ?
+                <TableRowsSkeleton rows={5} cols={5} /> :
+
+                leaveBalances.map((balance) =>
+                <tr key={balance.employeeId}>
                       <td style={{ fontWeight: 600 }}>{balance.employee}</td>
                       <td>{balance.department}</td>
                       <td>{balance.entitlement} days</td>
                       <td>{balance.taken} days</td>
                       <td>{balance.remaining} days</td>
                     </tr>
-                  ))
-                )}
+                )
+                }
               </tbody>
             </table>
           </div>
@@ -206,17 +206,17 @@ function LeaveContent() {
 
         <SectionCard
           title="Calendar Sync & Notifications"
-          subtitle="Push approved leave to shared calendars and notify relevant managers"
-        >
+          subtitle="Push approved leave to shared calendars and notify relevant managers">
+          
           <ul
             style={{
               margin: 0,
               padding: "0 var(--space-md)",
               display: "flex",
               flexDirection: "column",
-              gap: "var(--space-sm)",
-            }}
-          >
+              gap: "var(--space-sm)"
+            }}>
+            
             <li style={{ color: "var(--text-primary)" }}>
               Enable per-department calendar feeds (Google / Outlook) for leave visibility.
             </li>
@@ -237,10 +237,10 @@ function LeaveContent() {
           </div>
         </SectionCard>
       </section>
-    </div>
-  );
+    </div>);
+
 }
 
 export default function HrLeaveManagement({ embedded = false } = {}) {
-  return <LeaveContent />;
+  return <HrLeaveManagementUi view="section1" LeaveContent={LeaveContent} />;
 }

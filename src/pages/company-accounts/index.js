@@ -1,4 +1,4 @@
-// file location: src/pages/company-accounts/index.js // top-level list for company accounts
+// file location: src/pages/company-accounts/index.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -10,6 +10,7 @@ import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import CompanyAccountsIndexPageUi from "@/components/page-ui/company-accounts/company-accounts-ui"; // Extracted presentation layer.
 
 const ALLOWED_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
@@ -105,13 +106,13 @@ export default function CompanyAccountsIndexPage() {
       setLedgerLoading(false);
     }
   }, [
-    debouncedLedgerSearch,
-    ledgerPagination.page,
-    ledgerPagination.pageSize,
-    ledgerSortState.direction,
-    ledgerSortState.field,
-    permissions.restrictedAccountTypes,
-  ]);
+  debouncedLedgerSearch,
+  ledgerPagination.page,
+  ledgerPagination.pageSize,
+  ledgerSortState.direction,
+  ledgerSortState.field,
+  permissions.restrictedAccountTypes]
+  );
 
   useEffect(() => {
     if (activeTab !== "ledgers") return;
@@ -129,7 +130,7 @@ export default function CompanyAccountsIndexPage() {
       const response = await fetch("/api/company-accounts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(values)
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -154,50 +155,50 @@ export default function CompanyAccountsIndexPage() {
 
   const tabs = useMemo(
     () => [
-      { id: "companies", label: "Company accounts" },
-      { id: "ledgers", label: "Ledgers" },
-    ],
+    { id: "companies", label: "Company accounts" },
+    { id: "ledgers", label: "Ledgers" }],
+
     []
   );
 
-  const renderLedgerTab = () => (
-    <DevLayoutSection
-      as="section"
-      sectionKey="company-accounts-ledger-panel"
-      sectionType="content-card"
-      parentKey="company-accounts-page-shell"
-      className="app-section-card"
-      style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-    >
+  const renderLedgerTab = () =>
+  <DevLayoutSection
+    as="section"
+    sectionKey="company-accounts-ledger-panel"
+    sectionType="content-card"
+    parentKey="company-accounts-page-shell"
+    className="app-section-card"
+    style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    
       <DevLayoutSection sectionKey="company-accounts-ledger-toolbar" sectionType="filter-row" parentKey="company-accounts-ledger-panel">
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <SearchBar
-            placeholder="Search ledger accounts"
-            value={ledgerSearch}
-            onChange={(event) => setLedgerSearch(event.target.value)}
-            onClear={() => setLedgerSearch("")}
-            style={{
-              flex: "1 1 260px",
-            }}
-          />
+          placeholder="Search ledger accounts"
+          value={ledgerSearch}
+          onChange={(event) => setLedgerSearch(event.target.value)}
+          onClear={() => setLedgerSearch("")}
+          style={{
+            flex: "1 1 260px"
+          }} />
+        
         </div>
       </DevLayoutSection>
-      {ledgerFeedback && !ledgerAccounts.length && !ledgerLoading && (
-        <p style={{ margin: 0, color: "var(--text-secondary)" }}>{ledgerFeedback}</p>
-      )}
+      {ledgerFeedback && !ledgerAccounts.length && !ledgerLoading &&
+    <p style={{ margin: 0, color: "var(--text-secondary)" }}>{ledgerFeedback}</p>
+    }
       <DevLayoutSection sectionKey="company-accounts-ledger-table" sectionType="data-table" parentKey="company-accounts-ledger-panel">
         <AccountTable
-          accounts={ledgerAccounts}
-          loading={ledgerLoading}
-          pagination={ledgerPagination}
-          onPageChange={(nextPage) => setLedgerPagination((prev) => ({ ...prev, page: Math.max(1, nextPage) }))}
-          sortState={ledgerSortState}
-          onSortChange={setLedgerSortState}
-          onSelectAccount={handleLedgerAccountSelect}
-        />
+        accounts={ledgerAccounts}
+        loading={ledgerLoading}
+        pagination={ledgerPagination}
+        onPageChange={(nextPage) => setLedgerPagination((prev) => ({ ...prev, page: Math.max(1, nextPage) }))}
+        sortState={ledgerSortState}
+        onSortChange={setLedgerSortState}
+        onSelectAccount={handleLedgerAccountSelect} />
+      
       </DevLayoutSection>
-    </DevLayoutSection>
-  );
+    </DevLayoutSection>;
+
 
   const renderList = () => {
     if (loading) {
@@ -210,15 +211,15 @@ export default function CompanyAccountsIndexPage() {
             style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             role="status"
             aria-live="polite"
-            aria-label="Loading company accounts"
-          >
+            aria-label="Loading company accounts">
+            
             <SkeletonKeyframes />
-            {Array.from({ length: 5 }).map((_, i) => (
-              <SkeletonBlock key={i} width="100%" height="54px" borderRadius="var(--radius-md,12px)" />
-            ))}
+            {Array.from({ length: 5 }).map((_, i) =>
+            <SkeletonBlock key={i} width="100%" height="54px" borderRadius="var(--radius-md,12px)" />
+            )}
           </div>
-        </DevLayoutSection>
-      );
+        </DevLayoutSection>);
+
     }
     if (!accounts.length) {
       return <p>{feedback || "No company accounts to display."}</p>;
@@ -226,7 +227,7 @@ export default function CompanyAccountsIndexPage() {
     return (
       <DevLayoutSection sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        {accounts.map((account) => (
+        {accounts.map((account) =>
           <DevLayoutSection
             key={account.account_number}
             as="button"
@@ -247,202 +248,202 @@ export default function CompanyAccountsIndexPage() {
               textAlign: "left",
               width: "100%",
               boxShadow: "none",
-              transition: "background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease",
-            }}
-          >
+              transition: "background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease"
+            }}>
+            
             <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "12px", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", flex: "1 1 260px", minWidth: 0 }}>
                 <p style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "var(--text-primary)", whiteSpace: "nowrap" }}>
                   {account.company_name || "Unnamed company"}
                 </p>
-                {account.trading_name && account.trading_name !== account.company_name && (
-                  <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
+                {account.trading_name && account.trading_name !== account.company_name &&
+                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
                     {account.trading_name}
                   </span>
-                )}
-                {account.contact_name && (
-                  <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
+                }
+                {account.contact_name &&
+                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
                     Contact · {account.contact_name}
                   </span>
-                )}
-                {account.contact_email && (
-                  <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
+                }
+                {account.contact_email &&
+                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
                     {account.contact_email}
                   </span>
-                )}
-                {account.contact_phone && (
-                  <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
+                }
+                {account.contact_phone &&
+                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
                     {account.contact_phone}
                   </span>
-                )}
-                {account.billing_city && (
-                  <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
+                }
+                {account.billing_city &&
+                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
                     {account.billing_city}
                   </span>
-                )}
+                }
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginLeft: "auto" }}>
                 <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill company-accounts-account-pill">
                   #{account.account_number}
                 </span>
-                {(account.linked_account_label || account.linked_account_id) && (
-                  <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
+                {(account.linked_account_label || account.linked_account_id) &&
+                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
                     Ledger · {account.linked_account_label || account.linked_account_id}
                   </span>
-                )}
+                }
               </div>
             </div>
           </DevLayoutSection>
-        ))}
+          )}
         </div>
-      </DevLayoutSection>
-    );
+      </DevLayoutSection>);
+
   };
 
-  return (
-    <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
-      <>
-        <DevLayoutSection sectionKey="company-accounts-page-shell" sectionType="page-shell" shell>
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <DevLayoutSection sectionKey="company-accounts-page-header" sectionType="content-card" parentKey="company-accounts-page-shell">
-            <div>
-            <h1 style={{ margin: 0 }}>Company Accounts</h1>
-            <p style={{ margin: 0, color: "var(--text-secondary)" }}>Central directory of partner businesses linked to accounts.</p>
-            </div>
-          </DevLayoutSection>
-          <DevLayoutSection sectionKey="company-accounts-tab-row" sectionType="tab-row" parentKey="company-accounts-page-shell">
-            <div
-            className="app-layout-tab-row"
-            style={{
-              display: "flex",
-              gap: "6px",
-              width: "100%",
-              overflowX: "auto",
-              flexShrink: 0,
-              scrollbarWidth: "thin",
-              scrollbarColor: "var(--scrollbar-thumb) transparent",
-              scrollBehavior: "smooth",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            {tabs.map((tab) => {
-              const isActive = tab.id === activeTab;
-              return (
-                <DevLayoutSection
-                  key={tab.id}
-                  as="button"
-                  sectionKey={`company-accounts-tab-${tab.id}`}
-                  sectionType="tab-chip"
-                  parentKey="company-accounts-tab-row"
-                  className={`app-btn ${isActive ? "app-btn--primary" : "app-btn--secondary"} app-btn--pill app-btn--sm`}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    flex: "0 0 auto",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {tab.label}
-                </DevLayoutSection>
-              );
-            })}
-            </div>
-          </DevLayoutSection>
-          {activeTab === "companies" ? (
-            <>
-              {showForm && permissions.canCreateAccount && (
-                <DevLayoutSection sectionKey="company-accounts-form-back-link" sectionType="toolbar" parentKey="company-accounts-page-shell">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setShowForm(false)}
-                    style={{ alignSelf: "flex-start" }}
-                  >
-                    Back to company list
-                  </Button>
-                </DevLayoutSection>
-              )}
-              {showForm ? (
-                <CompanyAccountForm
-                  parentSectionKey="company-accounts-page-shell"
-                  sectionKey="company-accounts-company-form"
-                  autoGenerateAccountNumber
-                  isSubmitting={saving}
-                  onSubmit={async (values) => {
-                    await handleCreate(values);
-                    fetchAccounts();
-                  }}
-                  onCancel={() => setShowForm(false)}
-                />
-              ) : (
-                <>
-                  <DevLayoutSection sectionKey="company-accounts-company-toolbar" sectionType="filter-row" parentKey="company-accounts-page-shell">
-                    <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-                      <SearchBar
-                        placeholder="Search companies A-Z"
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        onClear={() => setSearch("")}
-                        style={{
-                          flex: "1 1 260px",
-                        }}
-                      />
-                      {permissions.canCreateAccount && (
-                        <DevLayoutSection sectionKey="company-accounts-add-account-button" sectionType="floating-action" parentKey="company-accounts-company-toolbar">
-                          <Button
-                            type="button"
-                            variant="primary"
-                            pill
-                            onClick={() => setShowForm(true)}
-                            style={{
-                              flex: "0 0 auto",
-                            }}
-                          >
-                            Add new account
-                          </Button>
-                        </DevLayoutSection>
-                      )}
-                    </div>
-                  </DevLayoutSection>
-                  {feedback && !accounts.length && !loading && (
-                    <p style={{ margin: 0, color: "var(--text-secondary)" }}>{feedback}</p>
-                  )}
-                  {renderList()}
-                </>
-              )}
-            </>
-          ) : (
-            renderLedgerTab()
-          )}
-          </div>
-        </DevLayoutSection>
-        <style jsx>{`
-          .company-accounts-row:hover,
-          .company-accounts-row:focus-visible {
-            background: rgba(var(--primary-rgb), 0.1) !important;
-            box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.16);
-            outline: none;
-          }
+  return <CompanyAccountsIndexPageUi view="section1" accounts={accounts} activeTab={activeTab} ALLOWED_ROLES={ALLOWED_ROLES} Button={Button} CompanyAccountForm={CompanyAccountForm} DevLayoutSection={DevLayoutSection} feedback={feedback} fetchAccounts={fetchAccounts} handleCreate={handleCreate} loading={loading} permissions={permissions} ProtectedRoute={ProtectedRoute} renderLedgerTab={renderLedgerTab} renderList={renderList} saving={saving} search={search} SearchBar={SearchBar} setActiveTab={setActiveTab} setSearch={setSearch} setShowForm={setShowForm} showForm={showForm} tabs={tabs} />;
 
-          .company-accounts-meta-pill {
-            pointer-events: none;
-            max-width: 100%;
-            color: var(--primary);
-            background: var(--control-bg);
-          }
 
-          .company-accounts-account-pill {
-            font-weight: 700;
-          }
 
-          @media (max-width: 900px) {
-            .company-accounts-row {
-              align-items: flex-start !important;
-            }
-          }
-        `}</style>
-      </>
-    </ProtectedRoute>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

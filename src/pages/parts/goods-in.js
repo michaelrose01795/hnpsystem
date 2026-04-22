@@ -1,3 +1,4 @@
+// file location: src/pages/parts/goods-in.js
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
@@ -10,13 +11,14 @@ import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
+import GoodsInPageUi from "@/components/page-ui/parts/parts-goods-in-ui"; // Extracted presentation layer.
 
 const PRICE_LEVEL_OPTIONS = [
-  { value: "stock_order_rate", label: "Stock order rate" },
-  { value: "retail", label: "Retail" },
-  { value: "trade", label: "Trade" },
-  { value: "other", label: "Other" },
-];
+{ value: "stock_order_rate", label: "Stock order rate" },
+{ value: "retail", label: "Retail" },
+{ value: "trade", label: "Trade" },
+{ value: "other", label: "Other" }];
+
 
 const FRANCHISE_OPTIONS = ["Mitsubishi", "Suzuki", "Stock", "Tyre", "Consumables"];
 
@@ -33,45 +35,45 @@ const BIN_LOCATION_OPTIONS = (() => {
 })();
 
 const VAT_RATE_OPTIONS = [
-  { value: "standard", label: "Standard" },
-  { value: "reduced", label: "Reduced" },
-  { value: "zero", label: "Zero" },
-  { value: "custom", label: "Custom" },
-];
+{ value: "standard", label: "Standard" },
+{ value: "reduced", label: "Reduced" },
+{ value: "zero", label: "Zero" },
+{ value: "custom", label: "Custom" }];
+
 
 const ADVANCED_TABS = [
-  { id: "global", label: "Global" },
-  { id: "dealer", label: "Dealer" },
-  { id: "stock", label: "Stock" },
-  { id: "user", label: "User Defined" },
-  { id: "links", label: "Links" },
-  { id: "sales", label: "Sales History" },
-  { id: "audi", label: "Audi" },
-  { id: "additional", label: "Additional Fields" },
-  { id: "online", label: "Online Store" },
-];
+{ id: "global", label: "Global" },
+{ id: "dealer", label: "Dealer" },
+{ id: "stock", label: "Stock" },
+{ id: "user", label: "User Defined" },
+{ id: "links", label: "Links" },
+{ id: "sales", label: "Sales History" },
+{ id: "audi", label: "Audi" },
+{ id: "additional", label: "Additional Fields" },
+{ id: "online", label: "Online Store" }];
+
 
 const sectionCardStyle = {
-  gap: "18px",
+  gap: "18px"
 };
 
 const fieldGridStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: "14px",
+  gap: "14px"
 };
 
 const splitFieldRowStyle = {
   display: "grid",
   gridTemplateColumns: "1fr 1fr",
   gap: "14px",
-  alignItems: "stretch",
+  alignItems: "stretch"
 };
 
 const labelStyle = {
   fontWeight: 600,
   fontSize: "0.9rem",
-  color: "var(--text-secondary)",
+  color: "var(--text-secondary)"
 };
 
 const inputStyle = {
@@ -81,33 +83,33 @@ const inputStyle = {
   fontSize: "0.95rem",
   fontFamily: "inherit",
   background: "var(--layer-section-level-1)",
-  color: "var(--text-primary)",
+  color: "var(--text-primary)"
 };
 
 const addPartInputStyle = {
   ...inputStyle,
   height: "var(--control-height)",
   minHeight: "var(--control-height)",
-  padding: "8px 12px",
+  padding: "8px 12px"
 };
 
 const addPartFieldStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "6px",
-  minWidth: "160px",
+  minWidth: "160px"
 };
 
 const textareaStyle = {
   ...inputStyle,
-  minHeight: "96px",
+  minHeight: "96px"
 };
 
 const notesTextareaStyle = {
   ...textareaStyle,
   minHeight: "56px",
   height: "56px",
-  resize: "vertical",
+  resize: "vertical"
 };
 
 const addressFieldStyle = {
@@ -118,7 +120,7 @@ const addressFieldStyle = {
   color: "var(--text-primary)",
   minHeight: "56px",
   display: "flex",
-  alignItems: "center",
+  alignItems: "center"
 };
 
 const compactFieldWrapStyle = {
@@ -126,13 +128,13 @@ const compactFieldWrapStyle = {
   flexDirection: "column",
   justifySelf: "start",
   alignSelf: "start",
-  width: "fit-content",
+  width: "fit-content"
 };
 
 const wideCompactFieldWrapStyle = {
   ...compactFieldWrapStyle,
   width: "320px",
-  minWidth: "320px",
+  minWidth: "320px"
 };
 
 const primaryButtonStyle = (disabled = false) => ({
@@ -143,7 +145,7 @@ const primaryButtonStyle = (disabled = false) => ({
   fontSize: "0.95rem",
   cursor: disabled ? "not-allowed" : "pointer",
   background: disabled ? "var(--surface-light)" : "var(--primary)",
-  color: disabled ? "var(--text-secondary)" : "white",
+  color: disabled ? "var(--text-secondary)" : "white"
 });
 
 const secondaryButtonStyle = {
@@ -154,7 +156,7 @@ const secondaryButtonStyle = {
   fontSize: "0.9rem",
   background: "transparent",
   color: "var(--primary)",
-  cursor: "pointer",
+  cursor: "pointer"
 };
 
 const dangerButtonStyle = {
@@ -165,14 +167,14 @@ const dangerButtonStyle = {
   fontSize: "0.85rem",
   background: "transparent",
   color: "var(--danger)",
-  cursor: "pointer",
+  cursor: "pointer"
 };
 
 const invoiceTableStyles = {
   width: "100%",
   borderCollapse: "separate",
   borderSpacing: "0 10px",
-  tableLayout: "fixed",
+  tableLayout: "fixed"
 };
 
 const invoiceHeaderCellStyle = {
@@ -181,7 +183,7 @@ const invoiceHeaderCellStyle = {
   letterSpacing: "0.08em",
   textTransform: "uppercase",
   color: "var(--text-secondary)",
-  background: "var(--layer-section-level-2)",
+  background: "var(--layer-section-level-2)"
 };
 
 const invoiceCellStyle = {
@@ -190,13 +192,13 @@ const invoiceCellStyle = {
   color: "var(--text-primary)",
   overflow: "hidden",
   textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
+  whiteSpace: "nowrap"
 };
 
 const invoiceRowStyle = {
   background: "var(--layer-section-level-1)",
   borderRadius: "var(--radius-md)",
-  boxShadow: "var(--shadow-lg)",
+  boxShadow: "var(--shadow-lg)"
 };
 
 const createDefaultInvoiceForm = (invoiceDate) => ({
@@ -209,7 +211,7 @@ const createDefaultInvoiceForm = (invoiceDate) => ({
   deliveryNoteNumber: "",
   invoiceDate,
   notes: "",
-  priceLevel: "stock_order_rate",
+  priceLevel: "stock_order_rate"
 });
 
 const createDefaultPartForm = () => ({
@@ -229,11 +231,11 @@ const createDefaultPartForm = () => ({
   vatRate: "standard",
   vatRateCustomValue: "",
   salePrices: [
-    { label: "Sale 1", price: "" },
-    { label: "Sale 2", price: "" },
-    { label: "Sale 3", price: "" },
-    { label: "Sale 4", price: "" },
-  ],
+  { label: "Sale 1", price: "" },
+  { label: "Sale 2", price: "" },
+  { label: "Sale 3", price: "" },
+  { label: "Sale 4", price: "" }],
+
   purchaseDetails: { stockOrder: "", vorCost: "", localCost: "" },
   dealerDetails: { dealerCode: "", tier: "", notes: "" },
   stockDetails: { reorderPoint: "", binCapacity: "", alternateLocation: "" },
@@ -244,7 +246,7 @@ const createDefaultPartForm = () => ({
   additionalFields: { warranty: "", logistics: "", internalTag: "" },
   onlineStore: { isListed: false, webTitle: "", webDescription: "", onlineSku: "" },
   customAttributes: {},
-  notes: "",
+  notes: ""
 });
 
 const parseDocumentFields = (text = "") => {
@@ -255,13 +257,13 @@ const parseDocumentFields = (text = "") => {
   return {
     invoiceNumber: invoiceMatch?.[1] || "",
     deliveryNoteNumber: deliveryMatch?.[1] || "",
-    invoiceDateGuess: dateMatch?.[1] || "",
+    invoiceDateGuess: dateMatch?.[1] || ""
   };
 };
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
-  currency: "GBP",
+  currency: "GBP"
 });
 
 function GoodsInPage() {
@@ -314,15 +316,15 @@ function GoodsInPage() {
 
   const GOODS_IN_ROLES = useMemo(
     () =>
-      new Set([
-        "parts",
-        "parts manager",
-        "service",
-        "service manager",
-        "workshop manager",
-        "after sales manager",
-        "aftersales manager",
-      ]),
+    new Set([
+    "parts",
+    "parts manager",
+    "service",
+    "service manager",
+    "workshop manager",
+    "after sales manager",
+    "aftersales manager"]
+    ),
     []
   );
   const userRoles = (user?.roles || []).map((role) => role.toLowerCase());
@@ -367,7 +369,7 @@ function GoodsInPage() {
           deliveryNoteNumber: payload.goodsIn?.delivery_note_number || "",
           invoiceDate: payload.goodsIn?.invoice_date || todayIso,
           notes: payload.goodsIn?.notes || "",
-          priceLevel: payload.goodsIn?.price_level || "stock_order_rate",
+          priceLevel: payload.goodsIn?.price_level || "stock_order_rate"
         }));
       } catch (error) {
         console.error(error);
@@ -430,7 +432,7 @@ function GoodsInPage() {
     setPartError("");
     setPartForm((prev) => ({
       ...prev,
-      [group]: { ...prev[group], [field]: value },
+      [group]: { ...prev[group], [field]: value }
     }));
   };
 
@@ -451,9 +453,9 @@ function GoodsInPage() {
       return false;
     }
     if (!invoiceForm.supplierAccountId) {
-      const message = invoiceForm.supplierAccountNumber
-        ? "Supplier account is missing a linked ledger account. Open the supplier and set a linked account."
-        : "Supplier account is required before adding parts";
+      const message = invoiceForm.supplierAccountNumber ?
+      "Supplier account is missing a linked ledger account. Open the supplier and set a linked account." :
+      "Supplier account is required before adding parts";
       setToast({ type: "error", message });
       setPartError(message);
       return false;
@@ -487,8 +489,8 @@ function GoodsInPage() {
           notes: invoiceForm.notes,
           scanPayload: invoiceScanPayload,
           userId: actingUserUuid,
-          userNumericId: actingUserNumeric,
-        }),
+          userNumericId: actingUserNumeric
+        })
       });
       const payload = await response.json();
       if (!response.ok || !payload?.success) {
@@ -518,16 +520,16 @@ function GoodsInPage() {
     claimNumber: partForm.claimNumber,
     packSize: partForm.packSize,
     vatRate:
-      partForm.vatRate === "custom" && partForm.vatRateCustomValue
-        ? partForm.vatRateCustomValue
-        : partForm.vatRate,
+    partForm.vatRate === "custom" && partForm.vatRateCustomValue ?
+    partForm.vatRateCustomValue :
+    partForm.vatRate,
     quantity: partForm.quantity,
-    salePrices: partForm.salePrices
-      .map((entry, index) => ({
-        tier: entry.label || `Sale ${index + 1}`,
-        price: entry.price,
-      }))
-      .filter((entry) => entry.price),
+    salePrices: partForm.salePrices.
+    map((entry, index) => ({
+      tier: entry.label || `Sale ${index + 1}`,
+      price: entry.price
+    })).
+    filter((entry) => entry.price),
     purchaseDetails: partForm.purchaseDetails,
     dealerDetails: partForm.dealerDetails,
     stockDetails: partForm.stockDetails,
@@ -538,7 +540,7 @@ function GoodsInPage() {
     additionalFields: partForm.additionalFields,
     onlineStore: partForm.onlineStore,
     customAttributes: partForm.customAttributes,
-    notes: partForm.notes,
+    notes: partForm.notes
   });
 
   const handleAddPart = async () => {
@@ -565,8 +567,8 @@ function GoodsInPage() {
         body: JSON.stringify({
           ...buildPartPayload(),
           userId: actingUserUuid,
-          userNumericId: actingUserNumeric,
-        }),
+          userNumericId: actingUserNumeric
+        })
       });
       const payload = await response.json();
       if (!response.ok || !payload?.success) {
@@ -591,7 +593,7 @@ function GoodsInPage() {
     try {
       setRemovingItemId(itemId);
       const response = await fetch(`/api/parts/goods-in/items/${itemId}`, {
-        method: "DELETE",
+        method: "DELETE"
       });
       const payload = await response.json();
       if (!response.ok || !payload?.success) {
@@ -618,7 +620,7 @@ function GoodsInPage() {
       onConfirm: () => {
         setConfirmDialog(null);
         doRemoveItem(itemId);
-      },
+      }
     });
   };
 
@@ -635,7 +637,7 @@ function GoodsInPage() {
     try {
       setCompleting(true);
       const response = await fetch(`/api/parts/goods-in/${goodsInRecord.id}/complete`, {
-        method: "POST",
+        method: "POST"
       });
       const payload = await response.json();
       if (!response.ok || !payload?.success) {
@@ -682,13 +684,13 @@ function GoodsInPage() {
           ...prev,
           invoiceNumber: parsed.invoiceNumber || prev.invoiceNumber,
           deliveryNoteNumber: parsed.deliveryNoteNumber || prev.deliveryNoteNumber,
-          invoiceDate: nextDate,
+          invoiceDate: nextDate
         };
       });
       setInvoiceScanPayload({
         fileName: file.name,
         extracted: parsed,
-        preview: text.slice(0, 280),
+        preview: text.slice(0, 280)
       });
       setScanBusy(false);
       setToast({ type: "success", message: "Document scanned" });
@@ -708,14 +710,14 @@ function GoodsInPage() {
       supplierAccountNumber: supplier.account_number || "",
       supplierName: supplier.company_name || supplier.trading_name || supplier.account_number,
       supplierAddress: [
-        supplier.billing_address_line1,
-        supplier.billing_address_line2,
-        supplier.billing_city,
-        supplier.billing_postcode,
-      ]
-        .filter(Boolean)
-        .join(", "),
-      supplierContact: supplier.contact_phone || supplier.contact_email || "",
+      supplier.billing_address_line1,
+      supplier.billing_address_line2,
+      supplier.billing_city,
+      supplier.billing_postcode].
+
+      filter(Boolean).
+      join(", "),
+      supplierContact: supplier.contact_phone || supplier.contact_email || ""
     }));
     setSupplierModalOpen(false);
   };
@@ -730,7 +732,7 @@ function GoodsInPage() {
       description: part.name || part.description || prev.description,
       binLocation: part.storage_location || prev.binLocation,
       retailPrice: part.unit_price ? String(part.unit_price) : prev.retailPrice,
-      costPrice: part.unit_cost ? String(part.unit_cost) : prev.costPrice,
+      costPrice: part.unit_cost ? String(part.unit_cost) : prev.costPrice
     }));
     setPartSearchOpen(false);
   };
@@ -775,897 +777,897 @@ function GoodsInPage() {
   };
 
   if (!hasGoodsInAccess) {
-    return (
-      <>
-        <div style={{ padding: "32px" }}>
-          <h1 style={{ marginBottom: "12px" }}>Goods In</h1>
-          <p>You do not have permission to access this workspace.</p>
-        </div>
-      </>
-    );
+    return <GoodsInPageUi view="section1" />;
+
+
+
+
+
+
+
   }
 
-  return (
-    <>
-      <style jsx>{`
-        .bin-suggestions {
-          border: 1px solid var(--surface-light);
-          background: rgba(var(--surface-rgb), 0.98);
-          box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
-        }
-        .bin-suggestion-button:hover,
-        .bin-suggestion-button:focus-visible {
-          background: rgba(var(--primary-rgb), 0.08);
-          outline: none;
-        }
-        .bin-suggestion-button.is-selected {
-          background: rgba(var(--primary-rgb), 0.15);
-        }
-        [data-theme="dark"] .bin-suggestions {
-          background: rgba(15, 23, 42, 0.95);
-          box-shadow: 0 30px 50px rgba(0, 0, 0, 0.55);
-        }
-        [data-theme="dark"] .bin-suggestion-button {
-          color: var(--text-primary);
-        }
-        .add-part-section {
-          padding: 20px 22px;
-          gap: 16px;
-        }
-        .add-part-toolbar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-        .add-part-fields-shell {
-          border: 1px solid var(--surface-light);
-          background: var(--layer-section-level-2);
-          border-radius: var(--control-radius);
-          padding: 12px;
-          overflow: visible;
-        }
-        .add-part-fields-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(160px, 1fr));
-          gap: 10px;
-        }
-        .add-part-fields-row-span-3 {
-          grid-template-columns: repeat(3, minmax(160px, 1fr));
-          margin-top: 10px;
-        }
-        .no-spinner-number {
-          appearance: textfield;
-          -moz-appearance: textfield;
-        }
-        .no-spinner-number::-webkit-outer-spin-button,
-        .no-spinner-number::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-        .add-part-actions {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        .invoice-details-section {
-          padding: 20px 22px;
-          gap: 16px;
-        }
-        .invoice-details-shell {
-          border: 1px solid var(--surface-light);
-          background: var(--layer-section-level-2);
-          border-radius: var(--control-radius);
-          padding: 12px;
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
-        .invoice-details-toolbar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-          flex-wrap: wrap;
-        }
-        @media (max-width: 900px) {
-          .add-part-section {
-            padding: 16px;
-          }
-          .invoice-details-section {
-            padding: 16px;
-          }
-          .add-part-fields-grid,
-          .add-part-fields-row-span-3 {
-            grid-template-columns: repeat(2, minmax(140px, 1fr));
-          }
-          .add-part-actions {
-            flex-direction: column;
-            align-items: stretch;
-          }
-        }
-      `}</style>
-      <div style={{ display: "flex", flexDirection: "column", gap: "18px", padding: "12px" }}>
-        {toast && (
-          <div
-            style={{
-              padding: "12px 16px",
-              borderRadius: "var(--radius-sm)",
-              background:
-                toast.type === "error"
-                  ? "var(--danger-surface)"
-                  : toast.type === "success"
-                  ? "var(--success-surface)"
-                  : "var(--info-surface)",
-              color:
-                toast.type === "error"
-                  ? "var(--danger)"
-                  : toast.type === "success"
-                  ? "var(--success-dark)"
-                  : "var(--info)",
-            }}
-          >
-            {toast.message}
-          </div>
-        )}
+  return <GoodsInPageUi view="section2" actingUserNumeric={actingUserNumeric} actingUserUuid={actingUserUuid} activeTab={activeTab} addPartFieldStyle={addPartFieldStyle} addPartInputStyle={addPartInputStyle} addressFieldStyle={addressFieldStyle} ADVANCED_TABS={ADVANCED_TABS} CalendarField={CalendarField} compactFieldWrapStyle={compactFieldWrapStyle} completing={completing} CompletionPrompt={CompletionPrompt} completionPromptOpen={completionPromptOpen} ConfirmationDialog={ConfirmationDialog} confirmDialog={confirmDialog} createDefaultPartForm={createDefaultPartForm} currencyFormatter={currencyFormatter} dangerButtonStyle={dangerButtonStyle} DropdownField={DropdownField} fetchGoodsIn={fetchGoodsIn} fieldGridStyle={fieldGridStyle} fileInputRef={fileInputRef} filteredBinLocations={filteredBinLocations} FRANCHISE_OPTIONS={FRANCHISE_OPTIONS} goodsInItems={goodsInItems} GoodsInPartSearchModal={GoodsInPartSearchModal} goodsInRecord={goodsInRecord} handleAddPart={handleAddPart} handleCompleteGoodsIn={handleCompleteGoodsIn} handleCompletionDismiss={handleCompletionDismiss} handleFinishGoodsIn={handleFinishGoodsIn} handleInvoiceChange={handleInvoiceChange} handleJobItemsAssigned={handleJobItemsAssigned} handleNestedPartChange={handleNestedPartChange} handlePartChange={handlePartChange} handlePartSelected={handlePartSelected} handleRemoveItem={handleRemoveItem} handleSalePriceChange={handleSalePriceChange} handleScanDocChange={handleScanDocChange} handleScanDocClick={handleScanDocClick} handleSupplierSelected={handleSupplierSelected} inputStyle={inputStyle} invoiceCellStyle={invoiceCellStyle} invoiceForm={invoiceForm} invoiceHeaderCellStyle={invoiceHeaderCellStyle} invoiceRowStyle={invoiceRowStyle} invoiceScanPayload={invoiceScanPayload} invoiceTableStyles={invoiceTableStyles} isAdvancedPanelOpen={isAdvancedPanelOpen} JobAssignmentModal={JobAssignmentModal} jobModalOpen={jobModalOpen} labelStyle={labelStyle} notesTextareaStyle={notesTextareaStyle} partError={partError} partForm={partForm} partSearchOpen={partSearchOpen} PRICE_LEVEL_OPTIONS={PRICE_LEVEL_OPTIONS} primaryButtonStyle={primaryButtonStyle} removingItemId={removingItemId} savingPart={savingPart} scanBusy={scanBusy} ScrollArea={ScrollArea} secondaryButtonStyle={secondaryButtonStyle} sectionCardStyle={sectionCardStyle} setActiveTab={setActiveTab} setCompletionPromptOpen={setCompletionPromptOpen} setConfirmDialog={setConfirmDialog} setIsAdvancedPanelOpen={setIsAdvancedPanelOpen} setJobModalOpen={setJobModalOpen} setPartForm={setPartForm} setPartSearchOpen={setPartSearchOpen} setShowBinSuggestions={setShowBinSuggestions} setSupplierModalOpen={setSupplierModalOpen} setTimeout={setTimeout} showBinSuggestions={showBinSuggestions} splitFieldRowStyle={splitFieldRowStyle} supplierModalOpen={supplierModalOpen} SupplierSearchModal={SupplierSearchModal} TabGroup={TabGroup} textareaStyle={textareaStyle} toast={toast} VAT_RATE_OPTIONS={VAT_RATE_OPTIONS} wideCompactFieldWrapStyle={wideCompactFieldWrapStyle} />;
 
-        <TabGroup
-          items={ADVANCED_TABS.map((tab) => ({
-            value: tab.id,
-            label: tab.label,
-          }))}
-          value={activeTab}
-          onChange={(value) => {
-            setActiveTab(value);
-            setIsAdvancedPanelOpen(true);
-          }}
-          ariaLabel="Part detail tabs"
-        />
 
-        <section style={sectionCardStyle} className="app-section-card invoice-details-section">
-          <div className="invoice-details-toolbar">
-            <h2 style={{ margin: 0 }}>Invoice details</h2>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button style={secondaryButtonStyle} onClick={() => setSupplierModalOpen(true)}>
-                Supplier search
-              </button>
-              <button style={secondaryButtonStyle} onClick={handleScanDocClick} disabled={scanBusy}>
-                {scanBusy ? "Scanning..." : "Scan doc"}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".txt,.pdf,.csv,.json,.doc,.docx,.jpg,.png"
-                style={{ display: "none" }}
-                onChange={handleScanDocChange}
-              />
-            </div>
-          </div>
-          <div className="invoice-details-shell">
-            <div style={fieldGridStyle}>
-              <div>
-                <label style={labelStyle}>Supplier</label>
-                <input
-                  style={inputStyle}
-                  value={invoiceForm.supplierName}
-                  onChange={(event) => handleInvoiceChange("supplierName", event.target.value)}
-                  placeholder="Supplier name"
-                />
-                {invoiceForm.supplierAccountNumber && (
-                  <small style={{ color: "var(--text-secondary)" }}>
-                    Account #{invoiceForm.supplierAccountNumber}
-                  </small>
-                )}
-              </div>
-              <div>
-                <label style={labelStyle}>Invoice number</label>
-                <input
-                  style={inputStyle}
-                  value={invoiceForm.invoiceNumber}
-                  onChange={(event) => handleInvoiceChange("invoiceNumber", event.target.value)}
-                  placeholder="INV-001"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Delivery note number</label>
-                <input
-                  style={inputStyle}
-                  value={invoiceForm.deliveryNoteNumber}
-                  onChange={(event) => handleInvoiceChange("deliveryNoteNumber", event.target.value)}
-                  placeholder="DN-001"
-                />
-              </div>
-              <div style={compactFieldWrapStyle}>
-                <label style={labelStyle}>Invoice date</label>
-                <div className="compact-calendar">
-                  <CalendarField
-                    value={invoiceForm.invoiceDate}
-                    onChange={(event) => handleInvoiceChange("invoiceDate", event.target.value)}
-                    name="invoiceDate"
-                    helperText=""
-                    style={{ width: "100%" }}
-                  />
-                </div>
-              </div>
-              <div style={compactFieldWrapStyle}>
-                <label style={labelStyle}>Price level</label>
-                <div className="compact-dropdown">
-                  <DropdownField
-                    value={invoiceForm.priceLevel}
-                    onChange={(event) => handleInvoiceChange("priceLevel", event.target.value)}
-                    style={{ width: "100%" }}
-                    placeholder="Select price level"
-                  >
-                    {PRICE_LEVEL_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </DropdownField>
-                </div>
-              </div>
-              <div style={wideCompactFieldWrapStyle}>
-                <label style={labelStyle}>Franchise</label>
-                <div className="compact-dropdown">
-                  <DropdownField
-                    value={partForm.franchise}
-                    onChange={(event) => handlePartChange("franchise", event.target.value)}
-                    style={{ width: "100%" }}
-                    placeholder="Select franchise"
-                  >
-                    {FRANCHISE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </DropdownField>
-                </div>
-              </div>
-            </div>
-            <div style={splitFieldRowStyle}>
-              <div>
-                <label style={labelStyle}>Supplier address</label>
-                <div style={addressFieldStyle}>
-                  {invoiceForm.supplierAddress || "—"}
-                </div>
-              </div>
-              <div>
-                <label style={labelStyle}>Notes</label>
-                <textarea
-                  style={notesTextareaStyle}
-                  value={invoiceForm.notes}
-                  onChange={(event) => handleInvoiceChange("notes", event.target.value)}
-                  placeholder="Internal notes"
-                />
-              </div>
-            </div>
-            {invoiceScanPayload && (
-              <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                Last scan: {invoiceScanPayload.fileName} ·
-                {invoiceScanPayload.extracted.invoiceNumber && ` Invoice ${invoiceScanPayload.extracted.invoiceNumber}`}
-              </div>
-            )}
-          </div>
-        </section>
 
-        <section style={sectionCardStyle} className="app-section-card add-part-section">
-          <div className="add-part-toolbar">
-            <h2 style={{ margin: 0 }}>Add part</h2>
-            <button style={secondaryButtonStyle} onClick={() => setPartSearchOpen(true)}>
-              Search catalogue
-            </button>
-          </div>
-          {partError && (
-            <div
-              style={{
-                border: "1px solid var(--danger)",
-                borderRadius: "var(--radius-sm)",
-                padding: "10px 14px",
-                color: "var(--danger)",
-                background: "var(--danger-surface)",
-              }}
-            >
-              {partError}
-            </div>
-          )}
-          <div className="add-part-fields-shell">
-            <div className="add-part-fields-grid">
-              <div style={addPartFieldStyle}>
-                <label style={labelStyle}>Part number</label>
-                <input
-                  style={addPartInputStyle}
-                  value={partForm.partNumber}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      setPartSearchOpen(true);
-                    }
-                  }}
-                  onChange={(event) => handlePartChange("partNumber", event.target.value)}
-                  placeholder="e.g., FPAD1"
-                />
-              </div>
-              <div style={addPartFieldStyle}>
-                <label style={labelStyle}>Quantity</label>
-                <input
-                  className="no-spinner-number"
-                  type="number"
-                  style={addPartInputStyle}
-                  min="0"
-                  value={partForm.quantity}
-                  onChange={(event) => {
-                    const nextValue = event.target.value;
-                    handlePartChange("quantity", nextValue === "" ? "" : Number(nextValue));
-                  }}
-                />
-              </div>
-              <div style={addPartFieldStyle}>
-                <label style={labelStyle}>Retail price</label>
-                <input
-                  style={addPartInputStyle}
-                  value={partForm.retailPrice}
-                  onChange={(event) => handlePartChange("retailPrice", event.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-              <div style={addPartFieldStyle}>
-                <label style={labelStyle}>Cost price</label>
-                <input
-                  style={addPartInputStyle}
-                  value={partForm.costPrice}
-                  onChange={(event) => handlePartChange("costPrice", event.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-            <div className="add-part-fields-grid add-part-fields-row-span-3">
-              <div style={{ ...addPartFieldStyle, position: "relative", zIndex: showBinSuggestions ? 20 : "auto" }}>
-                <label style={labelStyle}>Bin location</label>
-                <input
-                  type="text"
-                  style={addPartInputStyle}
-                  value={partForm.binLocation}
-                  onChange={(event) => handlePartChange("binLocation", event.target.value)}
-                  onFocus={() => setShowBinSuggestions(true)}
-                  onBlur={() => {
-                    setTimeout(() => setShowBinSuggestions(false), 120);
-                  }}
-                  placeholder="A1"
-                />
-                {showBinSuggestions && partForm.binLocation.trim() !== "" && (
-                  <div
-                    className="bin-suggestions"
-                    style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      width: "100%",
-                      minWidth: "140px",
-                      marginTop: "6px",
-                      maxHeight: "200px",
-                      overflowY: "auto",
-                      borderRadius: "var(--radius-sm)",
-                      zIndex: 1000,
-                    }}
-                    onMouseDown={(event) => event.preventDefault()}
-                  >
-                    {filteredBinLocations.length === 0 ? (
-                      <div style={{ padding: "10px 12px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                        No matches
-                      </div>
-                    ) : (
-                      filteredBinLocations.map((location) => (
-                        <button
-                          key={location}
-                          type="button"
-                          className="bin-suggestion-button"
-                          style={{
-                            width: "100%",
-                            textAlign: "left",
-                            padding: "10px 12px",
-                            border: "1px solid transparent",
-                            background: "transparent",
-                            cursor: "pointer",
-                            fontSize: "0.9rem",
-                            color: "var(--text-primary)",
-                          }}
-                          onClick={() => {
-                            handlePartChange("binLocation", location);
-                            setShowBinSuggestions(false);
-                          }}
-                        >
-                          {location}
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-              <div style={addPartFieldStyle}>
-                <label style={labelStyle}>Discount code</label>
-                <input
-                  style={addPartInputStyle}
-                  value={partForm.discountCode}
-                  onChange={(event) => handlePartChange("discountCode", event.target.value)}
-                />
-              </div>
-              <div style={addPartFieldStyle}>
-                <label style={labelStyle}>Description</label>
-                <input
-                  type="text"
-                  style={addPartInputStyle}
-                  value={partForm.description}
-                  onChange={(event) => handlePartChange("description", event.target.value)}
-                  placeholder="Description"
-                />
-              </div>
-            </div>
-          </div>
 
-          {isAdvancedPanelOpen && (
-            <div style={{ marginTop: "12px" }}>
-              <div style={{ marginTop: "14px" }}>
-                {activeTab === "global" && (
-                  <div style={fieldGridStyle}>
-                    <div>
-                      <label style={labelStyle}>Surcharge</label>
-                      <input
-                        style={inputStyle}
-                        value={partForm.surcharge}
-                        onChange={(event) => handlePartChange("surcharge", event.target.value)}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>VAT rate</label>
-                      <DropdownField
-                        value={partForm.vatRate}
-                        onChange={(event) => handlePartChange("vatRate", event.target.value)}
-                        style={{ width: "100%" }}
-                        placeholder="Select VAT rate"
-                      >
-                        {VAT_RATE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </DropdownField>
-                      {partForm.vatRate === "custom" && (
-                        <input
-                          style={{ ...inputStyle, marginTop: "6px" }}
-                          value={partForm.vatRateCustomValue}
-                          onChange={(event) => handlePartChange("vatRateCustomValue", event.target.value)}
-                          placeholder="Enter custom rate"
-                        />
-                      )}
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Pack size</label>
-                      <input
-                        style={inputStyle}
-                        value={partForm.packSize}
-                        onChange={(event) => handlePartChange("packSize", event.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Sales price tiers</label>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "8px" }}>
-                        {partForm.salePrices.map((entry, index) => (
-                          <input
-                            key={entry.label}
-                            style={inputStyle}
-                            placeholder={entry.label}
-                            value={entry.price}
-                            onChange={(event) => handleSalePriceChange(index, event.target.value)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Purchase details</label>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "8px" }}>
-                        <input
-                          style={inputStyle}
-                          placeholder="Stock order"
-                          value={partForm.purchaseDetails.stockOrder}
-                          onChange={(event) => handleNestedPartChange("purchaseDetails", "stockOrder", event.target.value)}
-                        />
-                        <input
-                          style={inputStyle}
-                          placeholder="VOR cost"
-                          value={partForm.purchaseDetails.vorCost}
-                          onChange={(event) => handleNestedPartChange("purchaseDetails", "vorCost", event.target.value)}
-                        />
-                        <input
-                          style={inputStyle}
-                          placeholder="Local cost"
-                          value={partForm.purchaseDetails.localCost}
-                          onChange={(event) => handleNestedPartChange("purchaseDetails", "localCost", event.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {activeTab === "dealer" && (
-                  <div style={fieldGridStyle}>
-                    <input
-                      style={inputStyle}
-                      placeholder="Dealer code"
-                      value={partForm.dealerDetails.dealerCode}
-                      onChange={(event) => handleNestedPartChange("dealerDetails", "dealerCode", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Tier"
-                      value={partForm.dealerDetails.tier}
-                      onChange={(event) => handleNestedPartChange("dealerDetails", "tier", event.target.value)}
-                    />
-                    <textarea
-                      style={textareaStyle}
-                      placeholder="Dealer notes"
-                      value={partForm.dealerDetails.notes}
-                      onChange={(event) => handleNestedPartChange("dealerDetails", "notes", event.target.value)}
-                    />
-                  </div>
-                )}
-                {activeTab === "stock" && (
-                  <div style={fieldGridStyle}>
-                    <input
-                      style={inputStyle}
-                      placeholder="Reorder point"
-                      value={partForm.stockDetails.reorderPoint}
-                      onChange={(event) => handleNestedPartChange("stockDetails", "reorderPoint", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Bin capacity"
-                      value={partForm.stockDetails.binCapacity}
-                      onChange={(event) => handleNestedPartChange("stockDetails", "binCapacity", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Alternate location"
-                      value={partForm.stockDetails.alternateLocation}
-                      onChange={(event) => handleNestedPartChange("stockDetails", "alternateLocation", event.target.value)}
-                    />
-                  </div>
-                )}
-                {activeTab === "user" && (
-                  <div style={fieldGridStyle}>
-                    <input
-                      style={inputStyle}
-                      placeholder="Field 1"
-                      value={partForm.userDefined.field1}
-                      onChange={(event) => handleNestedPartChange("userDefined", "field1", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Field 2"
-                      value={partForm.userDefined.field2}
-                      onChange={(event) => handleNestedPartChange("userDefined", "field2", event.target.value)}
-                    />
-                  </div>
-                )}
-                {activeTab === "links" && (
-                  <div>
-                    {partForm.linkMetadata.map((link, index) => (
-                      <div key={index} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
-                        <input
-                          style={inputStyle}
-                          placeholder="Label"
-                          value={link.label}
-                          onChange={(event) => {
-                            const next = [...partForm.linkMetadata];
-                            next[index] = { ...next[index], label: event.target.value };
-                            setPartForm((prev) => ({ ...prev, linkMetadata: next }));
-                          }}
-                        />
-                        <input
-                          style={inputStyle}
-                          placeholder="URL"
-                          value={link.url}
-                          onChange={(event) => {
-                            const next = [...partForm.linkMetadata];
-                            next[index] = { ...next[index], url: event.target.value };
-                            setPartForm((prev) => ({ ...prev, linkMetadata: next }));
-                          }}
-                        />
-                      </div>
-                    ))}
-                    <button
-                      style={secondaryButtonStyle}
-                      onClick={() =>
-                        setPartForm((prev) => ({
-                          ...prev,
-                          linkMetadata: [...prev.linkMetadata, { label: "", url: "" }],
-                        }))
-                      }
-                    >
-                      Add link
-                    </button>
-                  </div>
-                )}
-                {activeTab === "sales" && (
-                  <div style={fieldGridStyle}>
-                    <input
-                      type="date"
-                      style={inputStyle}
-                      value={partForm.salesHistory.lastSoldOn}
-                      onChange={(event) => handleNestedPartChange("salesHistory", "lastSoldOn", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Last sold price"
-                      value={partForm.salesHistory.lastSoldPrice}
-                      onChange={(event) => handleNestedPartChange("salesHistory", "lastSoldPrice", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Quantity"
-                      value={partForm.salesHistory.lastSoldQty}
-                      onChange={(event) => handleNestedPartChange("salesHistory", "lastSoldQty", event.target.value)}
-                    />
-                  </div>
-                )}
-                {activeTab === "audi" && (
-                  <div style={fieldGridStyle}>
-                    <input
-                      style={inputStyle}
-                      placeholder="Programme"
-                      value={partForm.audiMetadata.programme}
-                      onChange={(event) => handleNestedPartChange("audiMetadata", "programme", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Reference"
-                      value={partForm.audiMetadata.reference}
-                      onChange={(event) => handleNestedPartChange("audiMetadata", "reference", event.target.value)}
-                    />
-                    <textarea
-                      style={textareaStyle}
-                      placeholder="Audi notes"
-                      value={partForm.audiMetadata.notes}
-                      onChange={(event) => handleNestedPartChange("audiMetadata", "notes", event.target.value)}
-                    />
-                  </div>
-                )}
-                {activeTab === "additional" && (
-                  <div style={fieldGridStyle}>
-                    <input
-                      style={inputStyle}
-                      placeholder="Warranty"
-                      value={partForm.additionalFields.warranty}
-                      onChange={(event) => handleNestedPartChange("additionalFields", "warranty", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Logistics"
-                      value={partForm.additionalFields.logistics}
-                      onChange={(event) => handleNestedPartChange("additionalFields", "logistics", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Internal tag"
-                      value={partForm.additionalFields.internalTag}
-                      onChange={(event) => handleNestedPartChange("additionalFields", "internalTag", event.target.value)}
-                    />
-                  </div>
-                )}
-                {activeTab === "online" && (
-                  <div style={fieldGridStyle}>
-                    <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: "8px" }}>
-                      <input
-                        type="checkbox"
-                        checked={partForm.onlineStore.isListed}
-                        onChange={(event) =>
-                          handleNestedPartChange("onlineStore", "isListed", event.target.checked)
-                        }
-                      />
-                      Visible in online store
-                    </label>
-                    <input
-                      style={inputStyle}
-                      placeholder="Web title"
-                      value={partForm.onlineStore.webTitle}
-                      onChange={(event) => handleNestedPartChange("onlineStore", "webTitle", event.target.value)}
-                    />
-                    <textarea
-                      style={textareaStyle}
-                      placeholder="Web description"
-                      value={partForm.onlineStore.webDescription}
-                      onChange={(event) => handleNestedPartChange("onlineStore", "webDescription", event.target.value)}
-                    />
-                    <input
-                      style={inputStyle}
-                      placeholder="Online SKU"
-                      value={partForm.onlineStore.onlineSku}
-                      onChange={(event) => handleNestedPartChange("onlineStore", "onlineSku", event.target.value)}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
-          <div className="add-part-actions">
-            <button
-              onClick={() => setIsAdvancedPanelOpen((state) => !state)}
-              style={{ ...secondaryButtonStyle, padding: "8px 14px" }}
-            >
-              {isAdvancedPanelOpen ? "Hide details" : "Update details"}
-            </button>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "nowrap" }}>
-              <button
-                onClick={() => setPartForm(createDefaultPartForm())}
-                style={{ ...secondaryButtonStyle, padding: "8px 14px" }}
-                disabled={savingPart}
-              >
-                Clear
-              </button>
-              <button
-                style={{ ...primaryButtonStyle(savingPart), padding: "10px 16px" }}
-                onClick={handleAddPart}
-                disabled={savingPart}
-              >
-                {savingPart ? "Adding..." : "Add part"}
-              </button>
-            </div>
-          </div>
-        </section>
 
-        <section className="app-section-card" style={sectionCardStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <h2 style={{ margin: 0 }}>Invoice lines</h2>
-              {goodsInItems.length > 0 && (() => {
-                const totalCost = goodsInItems.reduce((sum, item) => {
-                  const cost = Number(item.cost_price || 0);
-                  const qty = Number(item.quantity || 0);
-                  return sum + (cost * qty);
-                }, 0);
-                const totalRetail = goodsInItems.reduce((sum, item) => {
-                  const retail = Number(item.retail_price || 0);
-                  const qty = Number(item.quantity || 0);
-                  return sum + (retail * qty);
-                }, 0);
-                return (
-                  <div style={{ display: "flex", gap: "16px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                    <span>Total Cost: <strong style={{ color: "var(--text-primary)" }}>{currencyFormatter.format(totalCost)}</strong></span>
-                    <span>Total Retail: <strong style={{ color: "var(--text-primary)" }}>{currencyFormatter.format(totalRetail)}</strong></span>
-                  </div>
-                );
-              })()}
-            </div>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <button
-                style={secondaryButtonStyle}
-                onClick={() => goodsInRecord && fetchGoodsIn(goodsInRecord.id)}
-                disabled={!goodsInRecord}
-              >
-                Refresh
-              </button>
-              <button
-                style={primaryButtonStyle(completing)}
-                onClick={handleCompleteGoodsIn}
-                disabled={completing}
-              >
-                {completing ? "Completing..." : "Complete"}
-              </button>
-            </div>
-          </div>
-          {goodsInItems.length === 0 ? (
-            <div style={{ padding: "24px", textAlign: "center", color: "var(--text-secondary)" }}>
-              No lines yet. Add a part to populate this invoice.
-            </div>
-          ) : (
-            <ScrollArea
-              maxHeight="420px"
-              style={{
-                borderRadius: "var(--radius-lg)",
-                border: "none",
-                overflowX: "hidden",
-                background: "var(--layer-section-level-2)",
-              }}
-            >
-              <table style={invoiceTableStyles}>
-                <thead>
-                  <tr style={{ textAlign: "left" }}>
-                    <th style={invoiceHeaderCellStyle}>Part number</th>
-                    <th style={invoiceHeaderCellStyle}>Description</th>
-                    <th style={invoiceHeaderCellStyle}>Retail</th>
-                    <th style={invoiceHeaderCellStyle}>Cost</th>
-                    <th style={invoiceHeaderCellStyle}>Surcharge</th>
-                    <th style={invoiceHeaderCellStyle}>Qty</th>
-                    <th style={invoiceHeaderCellStyle}>Cost total</th>
-                    <th style={invoiceHeaderCellStyle}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {goodsInItems.map((item) => {
-                    const cost = Number(item.cost_price || 0);
-                    const qty = Number(item.quantity || 0);
-                    return (
-                      <tr key={item.id} style={invoiceRowStyle}>
-                        <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
-                        <td style={{ ...invoiceCellStyle, color: "var(--text-secondary)" }}>{item.description}</td>
-                        <td style={invoiceCellStyle}>
-                          {item.retail_price ? currencyFormatter.format(item.retail_price) : "--"}
-                        </td>
-                        <td style={invoiceCellStyle}>
-                          {item.cost_price ? currencyFormatter.format(item.cost_price) : "--"}
-                        </td>
-                        <td style={invoiceCellStyle}>{item.surcharge || "--"}</td>
-                        <td style={invoiceCellStyle}>{item.quantity}</td>
-                        <td style={invoiceCellStyle}>{currencyFormatter.format(cost * qty || 0)}</td>
-                        <td style={{ ...invoiceCellStyle, textAlign: "right" }}>
-                          <button
-                            style={{ ...dangerButtonStyle, opacity: removingItemId === item.id ? 0.6 : 1 }}
-                            onClick={() => handleRemoveItem(item.id)}
-                            disabled={removingItemId === item.id}
-                          >
-                            {removingItemId === item.id ? "Removing" : "Remove"}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </ScrollArea>
-          )}
-        </section>
-      </div>
 
-      {supplierModalOpen && (
-        <SupplierSearchModal
-          onClose={() => setSupplierModalOpen(false)}
-          onSelect={handleSupplierSelected}
-          initialQuery={invoiceForm.supplierName}
-        />
-      )}
-      {partSearchOpen && (
-        <GoodsInPartSearchModal
-          onClose={() => setPartSearchOpen(false)}
-          onSelect={handlePartSelected}
-          initialQuery={partForm.partNumber}
-        />
-      )}
-      {jobModalOpen && (
-        <JobAssignmentModal
-          items={goodsInItems}
-          actingUserUuid={actingUserUuid}
-          actingUserNumeric={actingUserNumeric}
-          onClose={() => {
-            setJobModalOpen(false);
-            setCompletionPromptOpen(true);
-          }}
-          onAssigned={handleJobItemsAssigned}
-          onFinish={handleFinishGoodsIn}
-        />
-      )}
-      {completionPromptOpen && (
-        <CompletionPrompt
-          goodsInNumber={goodsInRecord?.goods_in_number}
-          onClose={handleCompletionDismiss}
-          onAddToJob={() => {
-            setCompletionPromptOpen(false);
-            setJobModalOpen(true);
-          }}
-        />
-      )}
-      <ConfirmationDialog
-        isOpen={!!confirmDialog}
-        message={confirmDialog?.message}
-        cancelLabel="Cancel"
-        confirmLabel="Remove"
-        onCancel={() => setConfirmDialog(null)}
-        onConfirm={confirmDialog?.onConfirm}
-      />
-    </>
-  );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
@@ -1723,121 +1725,121 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
   }, [initialQuery, searchSuppliers]);
 
   const renderSupplierResults = () =>
-    results.map((result, index) => {
-      const missingLinkedAccount = !result.linked_account_id;
-      const displayName = result.company_name || result.trading_name || result.account_number;
-      const city = result.billing_city || "Unknown city";
-      const phone = result.phone || result.telephone || result.mobile || "";
-      const restingBorder = missingLinkedAccount
-        ? "1px solid color-mix(in srgb, var(--danger) 30%, var(--surface-light))"
-        : "1px solid var(--surface-light)";
-      const restingBackground =
-        "var(--surface)";
+  results.map((result, index) => {
+    const missingLinkedAccount = !result.linked_account_id;
+    const displayName = result.company_name || result.trading_name || result.account_number;
+    const city = result.billing_city || "Unknown city";
+    const phone = result.phone || result.telephone || result.mobile || "";
+    const restingBorder = missingLinkedAccount ?
+    "1px solid color-mix(in srgb, var(--danger) 30%, var(--surface-light))" :
+    "1px solid var(--surface-light)";
+    const restingBackground =
+    "var(--surface)";
 
-      return (
-        <button
-          key={result.account_number}
-          style={{
-            width: "100%",
-            minHeight: "92px",
-            textAlign: "left",
-            padding: "14px",
-            border: restingBorder,
-            borderRadius: "var(--radius-md)",
-            marginBottom: index === results.length - 1 ? 0 : "10px",
-            cursor: "pointer",
-            background: restingBackground,
-            color: "var(--text-primary)",
-            boxShadow: "var(--shadow-sm)",
-            transition: "background 0.15s ease, border-color 0.15s ease, transform 0.15s ease",
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}
-          onMouseEnter={(event) => {
-            event.currentTarget.style.background = "var(--surface)";
-            event.currentTarget.style.borderColor = missingLinkedAccount ? "var(--danger)" : "var(--primary)";
-            event.currentTarget.style.transform = "translateY(-1px)";
-            event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-          }}
-          onMouseLeave={(event) => {
-            event.currentTarget.style.background = restingBackground;
-            event.currentTarget.style.border = restingBorder;
-            event.currentTarget.style.transform = "translateY(0)";
-            event.currentTarget.style.zIndex = "0";
-          }}
-          onClick={() => {
-            if (missingLinkedAccount) {
-              setError(
-                "Supplier account has no linked ledger account. Open the supplier and set a linked account."
-              );
-              return;
-            }
-            onSelect(result);
-          }}
-        >
+    return (
+      <button
+        key={result.account_number}
+        style={{
+          width: "100%",
+          minHeight: "92px",
+          textAlign: "left",
+          padding: "14px",
+          border: restingBorder,
+          borderRadius: "var(--radius-md)",
+          marginBottom: index === results.length - 1 ? 0 : "10px",
+          cursor: "pointer",
+          background: restingBackground,
+          color: "var(--text-primary)",
+          boxShadow: "var(--shadow-sm)",
+          transition: "background 0.15s ease, border-color 0.15s ease, transform 0.15s ease",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px"
+        }}
+        onMouseEnter={(event) => {
+          event.currentTarget.style.background = "var(--surface)";
+          event.currentTarget.style.borderColor = missingLinkedAccount ? "var(--danger)" : "var(--primary)";
+          event.currentTarget.style.transform = "translateY(-1px)";
+          event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
+        }}
+        onMouseLeave={(event) => {
+          event.currentTarget.style.background = restingBackground;
+          event.currentTarget.style.border = restingBorder;
+          event.currentTarget.style.transform = "translateY(0)";
+          event.currentTarget.style.zIndex = "0";
+        }}
+        onClick={() => {
+          if (missingLinkedAccount) {
+            setError(
+              "Supplier account has no linked ledger account. Open the supplier and set a linked account."
+            );
+            return;
+          }
+          onSelect(result);
+        }}>
+        
           <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
             <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>{displayName}</div>
             <div
-              style={{
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                color: "var(--primary)",
-                background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--primary) 28%, var(--surface-light))",
-                borderRadius: "var(--radius-pill)",
-                padding: "3px 8px",
-                whiteSpace: "nowrap",
-              }}
-            >
+            style={{
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              color: "var(--primary)",
+              background: "color-mix(in srgb, var(--primary) 12%, transparent)",
+              border: "1px solid color-mix(in srgb, var(--primary) 28%, var(--surface-light))",
+              borderRadius: "var(--radius-pill)",
+              padding: "3px 8px",
+              whiteSpace: "nowrap"
+            }}>
+            
               {result.account_number}
             </div>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", fontSize: "0.8rem" }}>
             <span
-              style={{
-                color: "var(--text-secondary)",
-                background: "var(--layer-section-level-1)",
-                border: "none",
-                borderRadius: "var(--radius-pill)",
-                padding: "2px 8px",
-              }}
-            >
+            style={{
+              color: "var(--text-secondary)",
+              background: "var(--layer-section-level-1)",
+              border: "none",
+              borderRadius: "var(--radius-pill)",
+              padding: "2px 8px"
+            }}>
+            
               {city}
             </span>
-            {phone ? (
-              <span
-                style={{
-                  color: "var(--text-secondary)",
-                  background: "var(--layer-section-level-1)",
-                  border: "none",
-                  borderRadius: "var(--radius-pill)",
-                  padding: "2px 8px",
-                }}
-              >
+            {phone ?
+          <span
+            style={{
+              color: "var(--text-secondary)",
+              background: "var(--layer-section-level-1)",
+              border: "none",
+              borderRadius: "var(--radius-pill)",
+              padding: "2px 8px"
+            }}>
+            
                 {phone}
-              </span>
-            ) : null}
+              </span> :
+          null}
             <span
-              style={{
-                color: missingLinkedAccount ? "var(--danger)" : "var(--success)",
-                background: missingLinkedAccount
-                  ? "color-mix(in srgb, var(--danger) 10%, transparent)"
-                  : "color-mix(in srgb, var(--success) 10%, transparent)",
-                border: missingLinkedAccount
-                  ? "1px solid color-mix(in srgb, var(--danger) 28%, var(--surface-light))"
-                  : "1px solid color-mix(in srgb, var(--success) 28%, var(--surface-light))",
-                borderRadius: "var(--radius-pill)",
-                padding: "2px 8px",
-                fontWeight: 600,
-              }}
-            >
+            style={{
+              color: missingLinkedAccount ? "var(--danger)" : "var(--success)",
+              background: missingLinkedAccount ?
+              "color-mix(in srgb, var(--danger) 10%, transparent)" :
+              "color-mix(in srgb, var(--success) 10%, transparent)",
+              border: missingLinkedAccount ?
+              "1px solid color-mix(in srgb, var(--danger) 28%, var(--surface-light))" :
+              "1px solid color-mix(in srgb, var(--success) 28%, var(--surface-light))",
+              borderRadius: "var(--radius-pill)",
+              padding: "2px 8px",
+              fontWeight: 600
+            }}>
+            
               {missingLinkedAccount ? "No linked ledger" : "Linked ledger"}
             </span>
           </div>
-        </button>
-      );
-    });
+        </button>);
+
+  });
 
   return (
     <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
@@ -1855,9 +1857,9 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          gap: "12px",
-        }}
-      >
+          gap: "12px"
+        }}>
+        
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Supplier accounts</h3>
           <button onClick={onClose} style={{ ...secondaryButtonStyle, borderRadius: "var(--radius-sm)" }}>
@@ -1877,8 +1879,8 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
                 return;
               }
               searchSuppliers(nextValue);
-            }}
-          />
+            }} />
+          
         </div>
         <div
           style={{
@@ -1888,32 +1890,32 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
             padding: "10px",
             minHeight: "392px",
             maxHeight: "392px",
-            overflowY: "auto",
-          }}
-        >
-          {!query.trim() ? (
-            loading ? (
-              <div style={{ padding: "24px", textAlign: "center" }}>Loading suppliers...</div>
-            ) : error ? (
-              <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div>
-            ) : results.length ? (
-              renderSupplierResults()
-            ) : (
-              <div style={{ padding: "12px", color: "var(--text-secondary)" }}>
+            overflowY: "auto"
+          }}>
+          
+          {!query.trim() ?
+          loading ?
+          <div style={{ padding: "24px", textAlign: "center" }}>Loading suppliers...</div> :
+          error ?
+          <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div> :
+          results.length ?
+          renderSupplierResults() :
+
+          <div style={{ padding: "12px", color: "var(--text-secondary)" }}>
                 No supplier accounts available.
-              </div>
-            )
-          ) : loading ? (
-            <div style={{ padding: "24px", textAlign: "center" }}>Searching...</div>
-          ) : error ? (
-            <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div>
-          ) : (
-            renderSupplierResults()
-          )}
+              </div> :
+
+          loading ?
+          <div style={{ padding: "24px", textAlign: "center" }}>Searching...</div> :
+          error ?
+          <div style={{ padding: "12px", color: "var(--danger)" }}>{error}</div> :
+
+          renderSupplierResults()
+          }
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
@@ -1987,27 +1989,27 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
           style={inputStyle}
           placeholder="Part number or description"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
+          onChange={(event) => setQuery(event.target.value)} />
+        
         <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "8px" }}>
           {loading ? <InlineLoading width={140} label="Searching" /> : "Results update automatically as you type"}
         </div>
         {error && <div style={{ color: "var(--danger)", marginTop: "10px" }}>{error}</div>}
         <div style={{ maxHeight: "420px", overflowY: "auto", marginTop: "12px" }}>
-          {results.map((part) => (
-            <button
-              key={part.id}
-              style={{
-                width: "100%",
-                textAlign: "left",
-                padding: "12px",
-                border: "none",
-                borderRadius: "var(--radius-sm)",
-                marginBottom: "8px",
-                cursor: "pointer",
-              }}
-              onClick={() => onSelect(part)}
-            >
+          {results.map((part) =>
+          <button
+            key={part.id}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              padding: "12px",
+              border: "none",
+              borderRadius: "var(--radius-sm)",
+              marginBottom: "8px",
+              cursor: "pointer"
+            }}
+            onClick={() => onSelect(part)}>
+            
               <div style={{ fontWeight: 600 }}>
                 {part.part_number} · {part.name}
               </div>
@@ -2016,11 +2018,11 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
                 {part.storage_location || "No bin"} · {part.supplier || "No supplier"}
               </div>
             </button>
-          ))}
+          )}
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUuid, actingUserNumeric }) {
@@ -2071,27 +2073,27 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
 
   const selectedRows = useMemo(
     () =>
-      availableItems
-        .map((item) => {
-          const selectedQty = getSelectedQty(item.id);
-          if (selectedQty <= 0) return null;
-          return { item, selectedQty };
-        })
-        .filter(Boolean),
+    availableItems.
+    map((item) => {
+      const selectedQty = getSelectedQty(item.id);
+      if (selectedQty <= 0) return null;
+      return { item, selectedQty };
+    }).
+    filter(Boolean),
     [availableItems, getSelectedQty]
   );
 
   const remainingRows = useMemo(
     () =>
-      availableItems
-        .map((item) => {
-          const totalQty = Number(item.quantity || 0);
-          const selectedQty = getSelectedQty(item.id);
-          const remainingQty = Math.max(0, totalQty - selectedQty);
-          if (remainingQty <= 0) return null;
-          return { item, remainingQty };
-        })
-        .filter(Boolean),
+    availableItems.
+    map((item) => {
+      const totalQty = Number(item.quantity || 0);
+      const selectedQty = getSelectedQty(item.id);
+      const remainingQty = Math.max(0, totalQty - selectedQty);
+      if (remainingQty <= 0) return null;
+      return { item, remainingQty };
+    }).
+    filter(Boolean),
     [availableItems, getSelectedQty]
   );
 
@@ -2146,7 +2148,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
       setError("");
       const itemsToAssign = selectedRows.map(({ item, selectedQty }) => ({
         item,
-        selectedQty,
+        selectedQty
       }));
       const results = await Promise.allSettled(
         itemsToAssign.map(async ({ item, selectedQty }) => {
@@ -2157,7 +2159,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
             const response = await fetch(`/api/parts/goods-in/items/${itemId}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(body),
+              body: JSON.stringify(body)
             });
             const payload = await response.json();
             if (!response.ok || !payload?.success) {
@@ -2183,9 +2185,9 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                   description: item.description,
                   costPrice: item.cost_price,
                   retailPrice: item.retail_price,
-                  quantity: clampedQty,
-                },
-              },
+                  quantity: clampedQty
+                }
+              }
             });
           }
 
@@ -2223,8 +2225,8 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               customAttributes: item.attributes,
               notes: item.notes,
               userId: actingUserUuid,
-              userNumericId: actingUserNumeric,
-            }),
+              userNumericId: actingUserNumeric
+            })
           });
           const createdPayload = await createResponse.json();
           if (!createResponse.ok || !createdPayload?.success) {
@@ -2244,22 +2246,22 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                 description: createdItem.description,
                 costPrice: createdItem.cost_price,
                 retailPrice: createdItem.retail_price,
-                quantity: clampedQty,
-              },
-            },
+                quantity: clampedQty
+              }
+            }
           });
 
           return [updatedOriginal, patchedCreated];
         })
       );
 
-      const successful = results
-        .filter((result) => result.status === "fulfilled")
-        .flatMap((result) => {
-          const value = result.value;
-          if (!value) return [];
-          return Array.isArray(value) ? value : [value];
-        });
+      const successful = results.
+      filter((result) => result.status === "fulfilled").
+      flatMap((result) => {
+        const value = result.value;
+        if (!value) return [];
+        return Array.isArray(value) ? value : [value];
+      });
       const failed = results.filter((result) => result.status === "rejected");
 
       if (successful.length) {
@@ -2329,7 +2331,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
     padding: "16px",
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "12px"
   };
 
   const jobCardStyle = (isSelected) => ({
@@ -2341,17 +2343,17 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
     marginBottom: "8px",
     cursor: "pointer",
     background: isSelected ? "var(--layer-section-level-2)" : "var(--surface)",
-    color: "var(--text-primary)",
+    color: "var(--text-primary)"
   });
 
   const formatJobType = (value = "") => {
     const text = String(value || "").trim();
     if (!text) return "General";
-    return text
-      .split(/[_\s]+/)
-      .filter(Boolean)
-      .map((token) => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase())
-      .join(" ");
+    return text.
+    split(/[_\s]+/).
+    filter(Boolean).
+    map((token) => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase()).
+    join(" ");
   };
 
   return (
@@ -2362,9 +2364,9 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
           padding: "24px",
           maxWidth: "980px",
           width: "min(98vw, 980px)",
-          overflow: "visible",
-        }}
-      >
+          overflow: "visible"
+        }}>
+        
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
           <h3 style={{ margin: 0 }}>Add goods-in parts to a job</h3>
           <button onClick={onClose} style={secondaryButtonStyle} disabled={submitting}>
@@ -2378,8 +2380,8 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="e.g., GJ12345, AB12CDE, Jane Smith"
-              disabled={submitting}
-            />
+              disabled={submitting} />
+            
             {loading && <InlineLoading width={120} label="Searching" />}
             {error && <div style={{ color: "var(--danger)" }}>{error}</div>}
             <div>
@@ -2393,23 +2395,23 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                       setSelectedJob(job);
                       setError("");
                     }}
-                    disabled={submitting}
-                  >
+                    disabled={submitting}>
+                    
                     <div style={{ fontWeight: 700 }}>
                       {job.job_number || "No job"} · {job.vehicle_reg || "No reg"} · {job.customer || "Unknown customer"}
                     </div>
                     <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
                       Job type: {formatJobType(job.type)}
                     </div>
-                  </button>
-                );
+                  </button>);
+
               })}
             </div>
-            {selectedJob && (
-              <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+            {selectedJob &&
+            <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
                 Selected job: <strong>{selectedJob.job_number}</strong>
               </div>
-            )}
+            }
           </div>
           <div style={modalSectionStyle}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -2418,31 +2420,31 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                 <button
                   style={secondaryButtonStyle}
                   onClick={handleSelectAll}
-                  disabled={availableItems.length === 0 || submitting}
-                >
+                  disabled={availableItems.length === 0 || submitting}>
+                  
                   Select all
                 </button>
                 <button
                   style={secondaryButtonStyle}
                   onClick={handleClearAll}
-                  disabled={selectedRows.length === 0 || submitting}
-                >
+                  disabled={selectedRows.length === 0 || submitting}>
+                  
                   Clear
                 </button>
               </div>
             </div>
-            {availableItems.length === 0 ? (
-              <div style={{ color: "var(--text-secondary)" }}>
+            {availableItems.length === 0 ?
+            <div style={{ color: "var(--text-secondary)" }}>
                 All parts from this goods-in are already linked to a job.
-              </div>
-            ) : selectedRows.length === 0 ? null : (
-              <div
-                style={{
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  overflow: "hidden",
-                }}
-              >
+              </div> :
+            selectedRows.length === 0 ? null :
+            <div
+              style={{
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                overflow: "hidden"
+              }}>
+              
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead style={{ background: "var(--layer-section-level-2)" }}>
                     <tr>
@@ -2453,15 +2455,15 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedRows.map(({ item, selectedQty }) => (
-                      <tr key={item.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                    {selectedRows.map(({ item, selectedQty }) =>
+                  <tr key={item.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
                         <td style={{ ...invoiceCellStyle, width: "90px" }}>
                           <button
-                            type="button"
-                            style={secondaryButtonStyle}
-                            onClick={() => updateSelectedQty(item, 0)}
-                            disabled={submitting}
-                          >
+                        type="button"
+                        style={secondaryButtonStyle}
+                        onClick={() => updateSelectedQty(item, 0)}
+                        disabled={submitting}>
+                        
                             Remove
                           </button>
                         </td>
@@ -2469,32 +2471,32 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                         <td style={{ ...invoiceCellStyle, color: "var(--text-secondary)" }}>{item.description}</td>
                         <td style={{ ...invoiceCellStyle, width: "100px" }}>
                           <input
-                            type="number"
-                            min="0"
-                            max={item.quantity || 0}
-                            style={{ ...inputStyle, width: "6ch" }}
-                            value={selectedQty}
-                            onChange={(event) => updateSelectedQty(item, event.target.value)}
-                            disabled={submitting}
-                          />
+                        type="number"
+                        min="0"
+                        max={item.quantity || 0}
+                        style={{ ...inputStyle, width: "6ch" }}
+                        value={selectedQty}
+                        onChange={(event) => updateSelectedQty(item, event.target.value)}
+                        disabled={submitting} />
+                      
                         </td>
                       </tr>
-                    ))}
+                  )}
                   </tbody>
                 </table>
               </div>
-            )}
+            }
             <div style={{ marginTop: "12px", fontWeight: 600 }}>Available to select</div>
-            {remainingRows.length === 0 ? (
-              <div style={{ color: "var(--text-secondary)" }}>No remaining quantities to select.</div>
-            ) : (
-              <div
-                style={{
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  overflow: "hidden",
-                }}
-              >
+            {remainingRows.length === 0 ?
+            <div style={{ color: "var(--text-secondary)" }}>No remaining quantities to select.</div> :
+
+            <div
+              style={{
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                overflow: "hidden"
+              }}>
+              
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead style={{ background: "var(--layer-section-level-2)" }}>
                     <tr>
@@ -2507,19 +2509,19 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                   </thead>
                   <tbody>
                     {remainingRows.map(({ item, remainingQty }) => {
-                      const pendingValue = pendingQuantities.get(item.id) ?? "1";
-                      return (
-                        <tr key={item.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                    const pendingValue = pendingQuantities.get(item.id) ?? "1";
+                    return (
+                      <tr key={item.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
                           <td style={{ ...invoiceCellStyle, width: "90px" }}>
                             <button
-                              type="button"
-                              style={secondaryButtonStyle}
-                              onClick={() => {
-                                addToSelected(item, pendingValue);
-                                setError("");
-                              }}
-                              disabled={submitting}
-                            >
+                            type="button"
+                            style={secondaryButtonStyle}
+                            onClick={() => {
+                              addToSelected(item, pendingValue);
+                              setError("");
+                            }}
+                            disabled={submitting}>
+                            
                               Add
                             </button>
                           </td>
@@ -2528,28 +2530,28 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                           <td style={{ ...invoiceCellStyle, width: "90px" }}>{remainingQty}</td>
                           <td style={{ ...invoiceCellStyle, width: "110px" }}>
                             <input
-                              type="number"
-                              min="1"
-                              max={remainingQty}
-                              style={{ ...inputStyle, width: "7ch" }}
-                              value={pendingValue}
-                              onChange={(event) => {
-                                setPendingQuantities((prev) => {
-                                  const next = new Map(prev);
-                                  next.set(item.id, event.target.value);
-                                  return next;
-                                });
-                              }}
-                              disabled={submitting}
-                            />
+                            type="number"
+                            min="1"
+                            max={remainingQty}
+                            style={{ ...inputStyle, width: "7ch" }}
+                            value={pendingValue}
+                            onChange={(event) => {
+                              setPendingQuantities((prev) => {
+                                const next = new Map(prev);
+                                next.set(item.id, event.target.value);
+                                return next;
+                              });
+                            }}
+                            disabled={submitting} />
+                          
                           </td>
-                        </tr>
-                      );
-                    })}
+                        </tr>);
+
+                  })}
                   </tbody>
                 </table>
               </div>
-            )}
+            }
           </div>
         </div>
         <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "flex-end" }}>
@@ -2559,14 +2561,14 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
           <button
             style={primaryButtonStyle(submitting)}
             onClick={handleAssign}
-            disabled={submitting || selectedRows.length === 0}
-          >
+            disabled={submitting || selectedRows.length === 0}>
+            
             {submitting ? "Adding..." : "Add selected to job"}
           </button>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 function CompletionPrompt({ goodsInNumber, onAddToJob, onClose }) {
@@ -2589,8 +2591,8 @@ function CompletionPrompt({ goodsInNumber, onAddToJob, onClose }) {
           </button>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }
 
 export default GoodsInPage;

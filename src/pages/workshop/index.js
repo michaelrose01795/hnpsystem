@@ -1,12 +1,13 @@
-export async function getServerSideProps() {
-  return {
+// file location: src/pages/workshop/index.js
+import WorkshopIndexRedirectUi from "@/components/page-ui/workshop/workshop-ui"; // Extracted presentation layer.
+export async function getServerSideProps() {return {
     redirect: {
       destination: "/workshop/consumables-tracker",
-      permanent: false,
-    },
+      permanent: false
+    }
   };
 }
 
 export default function WorkshopIndexRedirect() {
-  return null;
+  return <WorkshopIndexRedirectUi view="section1" />;
 }
