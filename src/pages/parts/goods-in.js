@@ -162,7 +162,7 @@ const secondaryButtonStyle = {
 const dangerButtonStyle = {
   padding: "8px 14px",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--danger)",
+  border: "none",
   fontWeight: 600,
   fontSize: "0.85rem",
   background: "transparent",

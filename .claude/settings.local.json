@@ -100,7 +100,10 @@
       "Bash(awk 'NR>=2663 && NR<=4543' /workspaces/hnpsystem/src/pages/job-cards/myjobs/\\\\[jobNumber\\\\].js)",
       "Bash(awk '/^\\\\s*<Button/,/>/' /workspaces/hnpsystem/src/pages/messages/index.js)",
       "Bash(awk 'NR==1,NR==10' /workspaces/hnpsystem/src/styles/globals.css)",
-      "Bash(awk 'BEGIN{o=c=0} /<[A-Za-z]/{for\\(i=1;i<=length\\($0\\);i++\\){ch=substr\\($0,i,1\\); if\\(ch==\"<\"\\) o++; if\\(ch==\">\"\\) c++}} END{print \"opens\", o, \"closes\", c}' src/components/dev-layout-overlay/DevLayoutOverlay.js)"
+      "Bash(awk 'BEGIN{o=c=0} /<[A-Za-z]/{for\\(i=1;i<=length\\($0\\);i++\\){ch=substr\\($0,i,1\\); if\\(ch==\"<\"\\) o++; if\\(ch==\">\"\\) c++}} END{print \"opens\", o, \"closes\", c}' src/components/dev-layout-overlay/DevLayoutOverlay.js)",
+      "Bash(node -p \"require\\('./package.json'\\).dependencies.next\")",
+      "Bash(node -p \"Object.keys\\(require\\('./package.json'\\).dependencies\\).filter\\(k=>k.includes\\('font'\\)||k==='styled-jsx'\\)\")",
+      "Bash(node -p \"JSON.stringify\\(require\\('./package.json'\\).scripts, null, 2\\)\")"
     ],
     "deny": [],
     "ask": []

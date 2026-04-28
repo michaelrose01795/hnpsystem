@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { useAlerts } from "@/context/AlertContext";
 
 const toneStyles = {
-  success: { bg: "var(--success-surface)", text: "var(--success-strong)", border: "var(--success-border)" },
-  error:   { bg: "var(--danger-surface)",  text: "var(--danger-text)",   border: "var(--danger-border)" },
-  warning: { bg: "var(--warning-surface)", text: "var(--warning-text)",  border: "var(--warning-border)" },
-  info:    { bg: "var(--accent-surface)",  text: "var(--accent-strong)", border: "var(--accent-base)" },
+  success: { bg: "var(--success-surface)", text: "var(--success-strong)" },
+  error:   { bg: "var(--danger-surface)",  text: "var(--danger-text)" },
+  warning: { bg: "var(--warning-surface)", text: "var(--warning-text)" },
+  info:    { bg: "var(--accent-surface)",  text: "var(--accent-strong)" },
 };
 
 const getTone = (type) => toneStyles[type] || toneStyles.info;
@@ -119,7 +119,7 @@ export default function TopbarAlerts() {
               padding: "12px 14px",
               background: tone.bg,
               color: tone.text,
-              border: `1px solid ${tone.border}`,
+              border: "none",
               display: "flex",
               flexDirection: "column",
               gap: "8px",
@@ -162,7 +162,7 @@ export default function TopbarAlerts() {
                   justifyContent: "space-between",
                   gap: "8px",
                   paddingTop: "4px",
-                  borderTop: `1px solid ${tone.border}`,
+                  borderTop: "none",
                 }}
               >
                 <span style={{ fontSize: "0.72rem", opacity: 0.75, fontStyle: "italic" }}>

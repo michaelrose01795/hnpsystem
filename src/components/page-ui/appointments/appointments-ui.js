@@ -129,27 +129,25 @@ export default function AppointmentsUi(props) {
             </button>
         </div>
 
-        {/* Calendar Table Container */}
+        {/* Calendar Table Container — mirrors the .app-table-shell-* visual design inline so this table can be edited freely without fighting global !important rules. data-app-table-shell="off" opts the table out of the GlobalTableShells auto-classifier. */}
         <div data-dev-section-key="appointments-auto-data-table-2-shell" data-dev-section-type="section-shell" style={{
       flex: "0 0 auto",
-      marginBottom: "12px",
-      borderRadius: "var(--radius-md)",
-      border: "var(--control-border)",
-      overflow: "hidden",
-      background: "var(--page-card-bg-alt)"
+      marginBottom: "12px"
     }}>
-          {/* Heading — structurally outside scroll, always visible at top */}
-          {/* scrollbarGutter: stable reserves the same gutter as the body scroll div so columns stay aligned */}
           <div style={{
+        maxHeight: "calc(9 * 44px)",
         overflowY: "auto",
-        scrollbarGutter: "stable"
+        borderRadius: "var(--radius-md)",
+        border: "1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12)",
+        background: "var(--surface)"
       }}>
-            <table id="appointments-auto-data-table-2" data-dev-section-key="appointments-auto-data-table-2" data-dev-section-type="data-table" style={{
+            <table id="appointments-auto-data-table-2" data-dev-section-key="appointments-auto-data-table-2" data-dev-section-type="data-table" data-app-table-shell="off" style={{
           width: "100%",
+          tableLayout: "fixed",
+          color: "var(--text-primary)",
+          background: "var(--surface)",
           borderCollapse: "separate",
-          borderSpacing: 0,
-          backgroundColor: "transparent",
-          tableLayout: "fixed"
+          borderSpacing: 0
         }}>
               <colgroup>
                 <col style={{
@@ -183,7 +181,11 @@ export default function AppointmentsUi(props) {
               width: "8%"
             }} />
               </colgroup>
-              <thead data-dev-section-key="appointments-auto-data-table-2-headings" data-dev-section-type="table-headings" data-dev-section-parent="appointments-auto-data-table-2">
+              <thead data-dev-section-key="appointments-auto-data-table-2-headings" data-dev-section-type="table-headings" data-dev-section-parent="appointments-auto-data-table-2" style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 1
+          }}>
                 <tr>
                   {[{
                 label: "Date",
@@ -218,70 +220,23 @@ export default function AppointmentsUi(props) {
               }].map(({
                 label,
                 align
-              }) => <th key={label} style={{
+              }, idx, arr) => <th key={label} style={{
                 textAlign: align,
-                padding: "10px 10px",
-                fontWeight: "700",
-                fontSize: "11px",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-                color: "var(--text-inverse)",
-                background: "var(--primary)",
                 whiteSpace: "nowrap",
-                borderBottom: "2px solid rgba(var(--shadow-rgb), 0.2)"
+                padding: idx === 0 ? "12px 10px 12px 14px" : idx === arr.length - 1 ? "12px 14px 12px 10px" : "12px 10px",
+                background: "var(--accent-dark, var(--accent-purple))",
+                color: "var(--text-inverse, #ffffff)",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                lineHeight: 1.2,
+                borderBottom: "none"
               }}>
                       {label}
                     </th>)}
                 </tr>
               </thead>
-            </table>
-          </div>
-
-          {/* Scrollable body — scrollbarGutter matches header div so columns align */}
-          <div style={{
-        maxHeight: "calc(8 * 42px)",
-        overflowY: "auto",
-        scrollbarGutter: "stable"
-      }}>
-            <table style={{
-          width: "100%",
-          borderCollapse: "separate",
-          borderSpacing: 0,
-          backgroundColor: "transparent",
-          tableLayout: "fixed"
-        }}>
-              <colgroup>
-                <col style={{
-              width: "15%"
-            }} />
-                <col style={{
-              width: "19%"
-            }} />
-                <col style={{
-              width: "8%"
-            }} />
-                <col style={{
-              width: "7%"
-            }} />
-                <col style={{
-              width: "9%"
-            }} />
-                <col style={{
-              width: "9%"
-            }} />
-                <col style={{
-              width: "7%"
-            }} />
-                <col style={{
-              width: "10%"
-            }} />
-                <col style={{
-              width: "8%"
-            }} />
-                <col style={{
-              width: "8%"
-            }} />
-              </colgroup>
               <tbody data-dev-section-key="appointments-auto-data-table-2-rows" data-dev-section-type="table-rows" data-dev-section-parent="appointments-auto-data-table-2">
                 {dates.map((date, index) => {
               const dateKey = date.toDateString();
@@ -298,49 +253,48 @@ export default function AppointmentsUi(props) {
               const severityStyle = severityStyleSource[severity];
               const isCalmDay = severity === "green" || !severityStyle;
               const isToday = isSameDate(date, new Date());
-              const defaultRowBackground = isCalmDay ? "var(--success-surface)" : severityStyle.backgroundColor || "var(--section-card-bg)";
-              let rowBackground = defaultRowBackground;
-
-              // Selected date (theme primary fill — red light / purple dark)
-              if (isSelected && !isToday) {
-                rowBackground = "rgba(var(--primary-rgb), 0.25)";
-              }
-
-              // Today's date (really light theme tint — always top row)
-              if (isToday && !isSelected) {
-                rowBackground = "rgba(var(--primary-rgb), 0.07)";
-              }
-
-              // Both today AND selected (theme primary fill)
-              if (isToday && isSelected) {
-                rowBackground = "rgba(var(--primary-rgb), 0.25)";
-              }
               const severityBorderLeft = !isCalmDay && severityStyle?.borderColor ? `4px solid ${severityStyle.borderColor}` : "4px solid var(--success)";
               const bookingPercentDisplay = Number.isFinite(bookingPercent) ? bookingPercent.toFixed(0) : "0";
               const availabilityLabelColor = isCalmDay ? "var(--success-dark)" : severityStyle?.textColor || "var(--text-primary)";
-              const cellBorder = "1px solid rgba(var(--accent-base-rgb), 0.12)";
-              return <tr key={dateKey} className={isWeekendSaturday ? "appt-sat-row" : undefined} onClick={() => setSelectedDay(date)} style={{
+
+              // Row background — alternating like the global .app-table-shell--with-headings, with overrides for Saturday / selected / today.
+              const baseRowBg = index % 2 === 0 ? "var(--surface)" : "var(--surface-light, var(--surface))";
+              let rowBg = baseRowBg;
+              if (isWeekendSaturday) rowBg = "var(--warning-surface)";
+              if (isSelected) rowBg = "rgba(var(--primary-rgb), 0.25)";
+              else if (isToday) rowBg = "rgba(var(--primary-rgb), 0.07)";
+
+              // Shared cell padding rhythm (12px 10px, with first/last getting 14px outer padding) — matches global table feel.
+              const tdBase = {
+                padding: "12px 10px",
+                borderTop: index === 0 ? "none" : "1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12)",
+                fontSize: "0.85rem",
+                lineHeight: 1.35,
+                verticalAlign: "middle"
+              };
+              const tdFirst = { ...tdBase, paddingLeft: "14px" };
+              const tdLast = { ...tdBase, paddingRight: "14px" };
+
+              return <tr key={dateKey} className={isWeekendSaturday ? "appt-sat-row" : undefined} onClick={() => setSelectedDay(date)} onMouseEnter={e => {
+                if (isWeekendSaturday) e.currentTarget.style.backgroundColor = "var(--accent-surface-hover)";
+              }} onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = rowBg;
+              }} style={{
                 cursor: "pointer",
-                backgroundColor: rowBackground
+                backgroundColor: rowBg,
+                transition: "background-color 0.2s ease"
               }}>
                     <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
+                  ...tdFirst,
                   borderLeft: severityBorderLeft,
-                  fontWeight: isSelected ? "700" : "600",
-                  verticalAlign: "middle"
+                  fontWeight: isSelected ? "700" : "600"
                 }}>
                       <span style={{
                     color: "var(--accent-strong)",
-                    fontSize: "13px",
                     whiteSpace: "nowrap"
                   }}>{formatDate(date)}</span>
                     </td>
-                    <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
-                  verticalAlign: "middle"
-                }}>
+                    <td style={tdBase}>
                       <div style={{
                     display: "flex",
                     alignItems: "center",
@@ -348,7 +302,6 @@ export default function AppointmentsUi(props) {
                     whiteSpace: "nowrap"
                   }}>
                         <span style={{
-                      fontSize: "12px",
                       fontWeight: "700",
                       color: availabilityLabelColor
                     }}>
@@ -369,80 +322,64 @@ export default function AppointmentsUi(props) {
                       </div>
                     </td>
                     <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
+                  ...tdBase,
                   color: counts.totalHours > 0 ? "var(--text-primary)" : "var(--grey-accent-light)",
                   fontWeight: counts.totalHours > 0 ? "700" : "500",
                   whiteSpace: "nowrap",
-                  textAlign: "center",
-                  fontSize: "13px"
+                  textAlign: "center"
                 }}>
                       {counts.totalHours}h
                     </td>
                     <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
+                  ...tdBase,
                   fontWeight: counts.totalJobs > 0 ? "700" : "500",
-                  textAlign: "center",
-                  fontSize: "13px"
+                  textAlign: "center"
                 }}>
                       {counts.totalJobs}
                     </td>
                     <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
+                  ...tdBase,
                   fontWeight: "600",
                   whiteSpace: "nowrap",
-                  textAlign: "center",
-                  fontSize: "13px"
+                  textAlign: "center"
                 }}>
                       {counts.finishTime || "-"}
                     </td>
                     <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
+                  ...tdBase,
                   textAlign: "center",
-                  fontWeight: counts.services > 0 ? "700" : "500",
-                  fontSize: "13px"
+                  fontWeight: counts.services > 0 ? "700" : "500"
                 }}>
                       {counts.services || "-"}
                     </td>
                     <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
+                  ...tdBase,
                   textAlign: "center",
-                  fontWeight: counts.mot > 0 ? "700" : "500",
-                  fontSize: "13px"
+                  fontWeight: counts.mot > 0 ? "700" : "500"
                 }}>
                       {counts.mot || "-"}
                     </td>
                     <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
+                  ...tdBase,
                   textAlign: "center",
-                  fontWeight: counts.diagnosis > 0 ? "700" : "500",
-                  fontSize: "13px"
+                  fontWeight: counts.diagnosis > 0 ? "700" : "500"
                 }}>
                       {counts.diagnosis || "-"}
                     </td>
                     <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
+                  ...tdBase,
                   textAlign: "center",
-                  fontWeight: counts.other > 0 ? "700" : "500",
-                  fontSize: "13px"
+                  fontWeight: counts.other > 0 ? "700" : "500"
                 }}>
                       {counts.other || "-"}
                     </td>
                     <td style={{
-                  padding: "10px 10px",
-                  borderBottom: cellBorder,
+                  ...tdLast,
                   textAlign: "center"
                 }}>
                       {staffEntries.length > 0 ? <span role="button" tabIndex={0} onClick={event => handleShowStaffOff(event, date, staffEntries)} onKeyDown={e => e.key === "Enter" && handleShowStaffOff(e, date, staffEntries)} style={{
                     cursor: "pointer",
                     fontWeight: "700",
-                    fontSize: "13px",
                     color: "var(--danger)"
                   }}>
                           {staffEntries.length}
@@ -810,11 +747,11 @@ export default function AppointmentsUi(props) {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "6px",
-                      padding: "4px 8px",
+                      padding: "6px 12px",
                       minHeight: 0,
-                      borderRadius: "var(--radius-pill)",
+                      borderRadius: "var(--radius-xs)",
                       background: "var(--accent-surface)",
-                      border: "none",
+                      border: "var(--control-border)",
                       color: "var(--primary)",
                       fontWeight: "700",
                       fontSize: "inherit",
@@ -869,7 +806,15 @@ export default function AppointmentsUi(props) {
                       maxHeight: "52px",
                       overflowY: "auto"
                     }}>
-                            {Array.from(getDetectedJobTypeLabels(job)).filter(Boolean).map(label => <span key={label} style={getJobTypeBadgeStyle(label)}>
+                            {Array.from(getDetectedJobTypeLabels(job)).filter(Boolean).map(label => <span key={label} style={{
+                          ...getJobTypeBadgeStyle(label),
+                          display: "inline-flex",
+                          alignItems: "center",
+                          padding: "6px 12px",
+                          borderRadius: "var(--radius-xs)",
+                          border: "var(--control-border)",
+                          fontWeight: "700"
+                        }}>
                                 {label}
                               </span>)}
                           </div>
@@ -879,8 +824,11 @@ export default function AppointmentsUi(props) {
                     borderBottom: cellBorder
                   }}>
                           <span style={{
-                      padding: "4px 10px",
-                      borderRadius: "var(--radius-pill)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "6px 12px",
+                      borderRadius: "var(--radius-xs)",
+                      border: "var(--control-border)",
                       fontSize: "11px",
                       fontWeight: "700",
                       ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither")
@@ -905,7 +853,8 @@ export default function AppointmentsUi(props) {
                       padding: isCompactMobile ? "8px 12px" : "8px 16px",
                       minWidth: isCompactMobile ? "90px" : "110px",
                       textAlign: "center",
-                      borderRadius: "var(--radius-pill)",
+                      borderRadius: "var(--radius-xs)",
+                      border: "var(--control-border)",
                       fontSize: "13px",
                       fontWeight: "700",
                       lineHeight: "1",
@@ -924,7 +873,7 @@ export default function AppointmentsUi(props) {
                       backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--primary)",
                       color: "white",
                       border: "none",
-                      borderRadius: "var(--radius-pill)",
+                      borderRadius: "var(--radius-xs)",
                       cursor: isCurrentlyCheckingIn ? "not-allowed" : "pointer",
                       fontSize: "13px",
                       fontWeight: "700",

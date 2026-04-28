@@ -1031,7 +1031,7 @@ function Chip({ children, onClick, ariaLabel, disabled = false, highlight = fals
         opacity: disabled ? 0.4 : 1,
         cursor: disabled ? "not-allowed" : "pointer",
         ...(highlight
-          ? { border: "1px solid var(--danger)", background: "rgba(var(--danger-rgb), 0.22)" }
+          ? { border: "none", background: "rgba(var(--danger-rgb), 0.22)" }
           : null),
       }}
     >
@@ -1770,7 +1770,7 @@ export default function FullScreenCapture({
                   height: 48,
                   borderRadius: "var(--radius-pill)",
                   background: isDenied ? "rgba(var(--danger-rgb), 0.18)" : "rgba(var(--accentMainRgb), 0.18)",
-                  border: `1px solid ${isDenied ? "rgba(var(--danger-rgb), 0.45)" : "rgba(var(--accentMainRgb), 0.45)"}`,
+                  border: "none",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

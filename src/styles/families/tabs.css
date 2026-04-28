@@ -4,7 +4,7 @@
  *
  * Variants: page, inner, pill, segmented
  * Component: src/components/ui/layout-system/TabRow.js
- * Showcase:  /dev/showcase#tabs
+ * Showcase:  /dev/user-diagnostic#tabs
  *
  * NOTE (2026-04 audit pass): the existing .app-layout-tab-row container
  * rule still lives in src/styles/globals.css (~453). Individual tab items

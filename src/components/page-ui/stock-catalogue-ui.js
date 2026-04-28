@@ -538,7 +538,7 @@ export default function StockCataloguePageUi(props) {
             padding: "16px",
             borderRadius: "var(--radius-xs)",
             background: "var(--warning-surface)",
-            border: "1px solid var(--warning)",
+            border: "none",
             color: "var(--warning-dark)"
           }}>
                       <strong>{pendingJobParts.length} part(s)</strong> awaiting stock or action for

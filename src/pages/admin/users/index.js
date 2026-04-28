@@ -613,7 +613,7 @@ export default function AdminUserManagement() {
 const refreshButtonStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--info-surface)",
+  border: "none",
   background: "var(--surface)",
   color: "var(--accent-purple)",
   fontWeight: 600,
@@ -623,7 +623,7 @@ const refreshButtonStyle = {
 const dangerButtonStyle = {
   padding: "6px 12px",
   borderRadius: "var(--radius-xs)",
-  border: "1px solid var(--danger-surface)",
+  border: "none",
   background: "var(--danger-surface)",
   color: "var(--danger)",
   fontWeight: 600,

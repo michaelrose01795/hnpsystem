@@ -1,7 +1,11 @@
 // API endpoint to update VHC item approval status and related fields
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
-import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
+// Phase 5 of the VHC refactor: route the cascade through the engine entry
+// point. applyVhcDecision currently wraps syncVhcPartsAuthorisation so
+// behaviour is unchanged, but callers no longer reach into the lib/database
+// layer directly for VHC-decision writes.
+import { applyVhcDecision } from "@/features/vhc/vhcStatusEngine";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 import { normalizeDecision, normalizeSeverity, isSeverityColor, DECISION, buildDecisionUpdatePayload } from "@/lib/vhc/vhcItemState";
 
@@ -304,10 +308,10 @@ async function handler(req, res) {
           }
         }
 
-        await syncVhcPartsAuthorisation({
+        await applyVhcDecision({
           jobId,
           vhcItemId,
-          approvalStatus: normalizedStatus,
+          targetDecision: normalizedStatus,
         });
 
         // Re-read the (now created/updated) job_request row after sync so we

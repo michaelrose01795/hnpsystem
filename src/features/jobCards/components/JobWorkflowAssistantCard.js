@@ -65,7 +65,7 @@ export default function JobWorkflowAssistantCard({
         <div
           style={{
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--warning-surface)",
+            border: "none",
             backgroundColor: "var(--warning-surface)",
             padding: "10px 12px",
           }}

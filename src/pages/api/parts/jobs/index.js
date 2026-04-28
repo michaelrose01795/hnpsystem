@@ -3,7 +3,8 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
 import { resolveAuditIds } from "@/lib/utils/ids";
-import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
+// Phase 6 follow-up: VHC cascades go through the engine entry point.
+import { applyVhcDecision } from "@/features/vhc/vhcStatusEngine";
 import {
   buildVhcRequestLinkRows,
   matchPartToVhcRequestRow,
@@ -525,7 +526,7 @@ async function handler(req, res, session) {
 
       if (finalVhcItemId) {
         try {
-          await syncVhcPartsAuthorisation({
+          await applyVhcDecision({
             jobId,
             vhcItemId: finalVhcItemId,
           });

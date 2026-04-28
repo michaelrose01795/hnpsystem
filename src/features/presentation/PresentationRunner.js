@@ -3,9 +3,7 @@ import { usePresentation } from "./PresentationProvider";
 import PresentationPageFrame from "./PresentationPageFrame";
 import PresentationOverlay from "./PresentationOverlay";
 import PresentationDevOverlay from "./PresentationDevOverlay";
-import PresentationControls from "./PresentationControls";
 import useKeyboardNav from "./useKeyboardNav";
-import usePdfExport from "./usePdfExport";
 
 function EmptyState() {
   return (
@@ -24,7 +22,6 @@ function EmptyState() {
 
 export default function PresentationRunner() {
   const { slides } = usePresentation();
-  const { exportPdf, busy: exportBusy } = usePdfExport();
   useKeyboardNav();
 
   if (!slides || slides.length === 0) return <EmptyState />;
@@ -33,7 +30,6 @@ export default function PresentationRunner() {
     <DemoDataProvider>
       <PresentationPageFrame />
       <PresentationOverlay />
-      <PresentationControls onExport={exportPdf} exportBusy={exportBusy} />
       <PresentationDevOverlay />
     </DemoDataProvider>
   );

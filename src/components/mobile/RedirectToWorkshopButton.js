@@ -8,7 +8,7 @@ import { showAlert } from "@/lib/notifications/alertBus";
 const buttonStyle = {
   padding: "10px 16px",
   borderRadius: "var(--control-radius, 8px)",
-  border: "1px solid var(--warning-dark, #b45309)",
+  border: "none",
   background: "var(--warning, #f59e0b)",
   color: "#fff",
   fontWeight: 600,

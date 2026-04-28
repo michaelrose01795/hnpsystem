@@ -251,6 +251,7 @@ export default function MobileMechanicEligibility({
           Send as Mobile Mechanic?
         </span>
         <div
+          className="tab-api tab-api--inline"
           style={toggleGroupStyle}
           aria-disabled={!verdict.eligible ? "true" : "false"}
         >
@@ -266,6 +267,9 @@ export default function MobileMechanicEligibility({
                   onSelectionChange?.(choice);
                 }}
                 disabled={disabled}
+                aria-pressed={isMobileMechanic === choice}
+                data-tone="default"
+                className={`tab-api__item${isMobileMechanic === choice ? " is-active" : ""}`}
                 style={{
                   ...baseStyle,
                   opacity: disabled ? 0.5 : 1,

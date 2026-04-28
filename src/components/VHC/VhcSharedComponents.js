@@ -6,7 +6,7 @@ export const EmptyStateMessage = ({ message }) => (
   <div
     style={{
       padding: "18px",
-      border: "1px solid var(--info-surface)",
+      border: "none",
       borderRadius: "var(--radius-sm)",
       background: "var(--info-surface)",
       color: "var(--info)",

@@ -4,7 +4,26 @@ import "@/utils/polyfills"; // ensure polyfills load globally
 import "@/utils/quietConsole"; // minimize console noise unless LOG_LEVEL is raised
 import "@/styles/theme.css"; // register CSS variables before globals
 import "../styles/globals.css"; // import global base styles
+import { Inter } from "next/font/google";
 import React, { useEffect, useState } from "react"; // import React helpers
+
+// Self-hosted Inter via next/font (no FOUT, no external request at runtime).
+// We need the resolved font-family string (next/font generates a hashed name
+// like '__Inter_xxxxx, __Inter_Fallback_xxxxx') so we can pin it to :root —
+// putting the className on a wrapper div would only define --font-inter for
+// descendants, leaving body's `font-family: var(--font-family)` invalid.
+const interFont = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+  fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+});
+
+// Bind the resolved font family to a CSS custom property at :root. theme.css
+// consumes this via --font-family, so swapping fonts is still a one-line
+// change there. Rendered as an inline <style> tag so it is present in the
+// initial HTML — no FOUC, no JS dependency, no _document.js changes.
+const FONT_VARIABLE_STYLE = `:root { --font-inter: ${interFont.style.fontFamily}; }`;
 import { SessionProvider } from "next-auth/react"; // import NextAuth session provider
 import { useRouter } from "next/router";
 import { UserProvider } from "@/context/UserContext"; // import user context
@@ -214,6 +233,12 @@ function RouteProgressBar({ isRouteLoading }) {
 // Main app entry with all providers composed
 export default function MyApp({ Component, pageProps }) {
   return (
+    <>
+      {/* Pin --font-inter to :root so var(--font-family) (which references it)
+          resolves correctly on <body> and every form control that inherits.
+          The interFont.className activates next/font's @font-face declaration. */}
+      <style dangerouslySetInnerHTML={{ __html: FONT_VARIABLE_STYLE }} />
+      <span className={interFont.className} style={{ display: "none" }} aria-hidden="true" />
     <SessionProvider session={pageProps.session}>
       <AlertProvider>
         <ConfirmationProvider>
@@ -239,5 +264,6 @@ export default function MyApp({ Component, pageProps }) {
         </ConfirmationProvider>
       </AlertProvider>
     </SessionProvider>
+    </>
   );
 }

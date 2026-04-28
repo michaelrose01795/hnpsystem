@@ -49,11 +49,10 @@ const pickLatestByUpdatedAt = (rows) => {
   return latest;
 };
 
-import { normalizeDecision } from "@/lib/vhc/vhcItemState"; // Canonical decision normalizer.
-
-const normaliseApprovalStatus = (value) => { // Delegates to canonical normalizer.
-  return normalizeDecision(value); // Single source of truth.
-};
+// Phase 5 of the VHC refactor: the local normaliseApprovalStatus wrapper was
+// removed because it just delegated to the engine. Callers now use
+// normalizeDecision directly so there is one normalisation entry point.
+import { normalizeDecision } from "@/features/vhc/vhcStatusEngine";
 
 export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStatus }) => {
   if (!jobId || vhcItemId === null || vhcItemId === undefined) return;
@@ -84,7 +83,7 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
   });
   const hasActiveParts = activeParts.length > 0;
   const hasAuthorisedParts = authorisedParts.length > 0;
-  let normalizedApproval = normaliseApprovalStatus(approvalStatus);
+  let normalizedApproval = normalizeDecision(approvalStatus);
   if (!normalizedApproval) {
     const { data: existingVhcRow, error: existingVhcError } = await supabase
       .from("vhc_checks")
@@ -97,15 +96,25 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
       throw new Error(`Failed to load VHC approval state for sync: ${existingVhcError.message}`);
     }
 
-    normalizedApproval = normaliseApprovalStatus(
+    normalizedApproval = normalizeDecision(
       existingVhcRow?.authorization_state || existingVhcRow?.approval_status
     );
   }
   const hasSummaryApproval =
     normalizedApproval === APPROVAL_AUTHORIZED || normalizedApproval === "completed";
   const isPendingReset = normalizedApproval === "pending";
+  // Preserve "completed" through the cascade. Without this branch the next two
+  // lines collapse "completed" → "authorized" via hasSummaryApproval, which
+  // then overwrites the vhc_checks row that update-item-status.js just set to
+  // "completed" — making the Summary tab revert to the Authorised label on
+  // reload. The engine's projectVhcItem treats `approval_status === "completed"`
+  // as the canonical signal for the Completed workflow state, so we must keep
+  // it intact whenever the caller (or the existing DB row) says completed.
+  const isCompletedDecision = normalizedApproval === "completed";
   const nextApprovalStatus = isPendingReset
     ? "pending"
+    : isCompletedDecision
+    ? "completed"
     : hasAuthorisedParts || hasSummaryApproval
     ? APPROVAL_AUTHORIZED
     : normalizedApproval === APPROVAL_DECLINED
@@ -125,7 +134,14 @@ export const syncVhcPartsAuthorisation = async ({ jobId, vhcItemId, approvalStat
     updated_at: now,
   };
 
-  if (nextApprovalStatus === APPROVAL_AUTHORIZED || nextApprovalStatus === APPROVAL_DECLINED) {
+  if (
+    nextApprovalStatus === APPROVAL_AUTHORIZED ||
+    nextApprovalStatus === APPROVAL_DECLINED ||
+    nextApprovalStatus === "completed"
+  ) {
+    // Mirror the workflow string into display_status so the UI badge stays
+    // in sync (Summary tab reads display_status to pick between
+    // "Authorised" / "Declined" / "Completed" labels).
     vhcUpdatePayload.display_status = nextApprovalStatus;
     vhcUpdatePayload.approved_at = now;
   } else if (isPendingReset) {

@@ -7,6 +7,36 @@ const KIND_LABEL = {
   feature: "Business Value",
 };
 
+const PAGE_FILE_BY_ROUTE = {
+  "/accounts/invoices": "src/pages/accounts/invoices/index.js",
+  "/appointments": "src/pages/appointments/index.js",
+  "/customer": "src/pages/customer/index.js",
+  "/customer/vhc": "src/pages/customer/vhc.js",
+  "/dashboard": "src/pages/dashboard.js",
+  "/hr": "src/pages/hr/index.js",
+  "/job-cards/DEMO-1042": "src/pages/job-cards/[jobNumber].js",
+  "/job-cards/archive": "src/pages/job-cards/archive/index.js",
+  "/job-cards/create": "src/pages/job-cards/create/index.js",
+  "/job-cards/myjobs": "src/pages/job-cards/myjobs/index.js",
+  "/job-cards/view": "src/pages/job-cards/view/index.js",
+  "/messages": "src/pages/messages/index.js",
+  "/parts/create-order": "src/pages/parts/create-order/index.js",
+  "/parts/deliveries": "src/pages/parts/deliveries.js",
+  "/parts/goods-in": "src/pages/parts/goods-in.js",
+  "/valet": "src/pages/valet/index.js",
+};
+
+function formatRouteLabel(route) {
+  return String(route || "")
+    .replace(/^\//, "")
+    .replace(/\/$/, "") || "dashboard";
+}
+
+function getPageFile(slide) {
+  if (!slide?.route) return "src/pages/unknown";
+  return slide.pageFile || PAGE_FILE_BY_ROUTE[slide.route] || `src/pages/${formatRouteLabel(slide.route)}`;
+}
+
 function sideRailPosition(calloutSize, position = "right") {
   if (typeof window === "undefined") return { left: 24, top: 24 };
   const pad = 18;
@@ -110,6 +140,8 @@ export default function PresentationCallout({ step }) {
   const atStart = slideIndex === 0 && stepIndex === 0;
   const atEnd = slideIndex === slideCount - 1 && stepIndex === stepCount - 1;
   const primaryRole = (userRoles?.[0] || "viewer").toLowerCase();
+  const pageRoute = formatRouteLabel(currentSlide?.route);
+  const pageFile = getPageFile(currentSlide);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
@@ -257,6 +289,23 @@ export default function PresentationCallout({ step }) {
         >
           Exit
         </button>
+      </div>
+
+      <div
+        style={{
+          borderTop: "1px solid rgba(var(--primary-rgb), 0.14)",
+          paddingTop: 8,
+          fontSize: 11,
+          color: "var(--text-secondary)",
+          lineHeight: 1.45,
+        }}
+      >
+        <div>
+          Page: <code>{pageRoute}</code>
+        </div>
+        <div>
+          File: <code>{pageFile}</code>
+        </div>
       </div>
     </aside>
   );

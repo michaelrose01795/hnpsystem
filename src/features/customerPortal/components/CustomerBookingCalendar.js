@@ -12,9 +12,9 @@ const STATUS_BADGES = {
 };
 
 const STATUS_CLASSES = {
-  green: "border-[var(--success-border)] bg-[var(--success-surface)] text-[var(--success-text)]",
-  amber: "border-[var(--warning-border)] bg-[var(--warning-surface)] text-[var(--warning-text)]",
-  red: "border-[var(--danger-border)] bg-[var(--danger-surface)] text-[var(--danger-text)]",
+  green: "border-0 bg-[var(--success-surface)] text-[var(--success-text)]",
+  amber: "border-0 bg-[var(--warning-surface)] text-[var(--warning-text)]",
+  red: "border-0 bg-[var(--danger-surface)] text-[var(--danger-text)]",
 };
 
 const STATUS_NOTES = {

@@ -21,7 +21,7 @@ export default function PasswordRevertedPageUi(props) {
   alignItems: "center",
   justifyContent: "center",
   padding: "24px",
-  fontFamily: "Arial, Helvetica, sans-serif"
+  fontFamily: "var(--font-family)"
 }}>
       <section style={{
     width: "100%",
@@ -83,7 +83,7 @@ export default function PasswordRevertedPageUi(props) {
         background: "#030712",
         color: "#f9fafb",
         padding: "10px 12px",
-        fontFamily: "monospace",
+        fontFamily: "var(--font-family-mono)",
         minHeight: "40px",
         boxSizing: "border-box",
         wordBreak: "break-all"

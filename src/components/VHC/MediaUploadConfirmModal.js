@@ -253,7 +253,7 @@ export default function MediaUploadConfirmModal({
                 borderRadius: "var(--radius-sm)",
                 background: "var(--danger-surface)",
                 color: "var(--danger-text)",
-                border: "1px solid var(--danger-border)",
+                border: "none",
                 padding: "var(--space-sm) var(--space-3)",
                 fontSize: "var(--text-body-sm)",
                 fontWeight: 600,

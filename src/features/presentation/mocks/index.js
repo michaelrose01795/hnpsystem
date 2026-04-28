@@ -1051,7 +1051,7 @@ function PartsCreateMock() {
   };
   const clearBtn = {
     borderRadius: "var(--radius-sm)",
-    border: "1px solid var(--danger)",
+    border: "none",
     background: "var(--danger-surface)",
     color: "var(--danger)",
     padding: "8px 14px",
@@ -2260,7 +2260,7 @@ function ArchiveMock() {
                           textDecoration: "none",
                           padding: "8px 14px",
                           borderRadius: "var(--radius-sm)",
-                          border: "1px solid var(--info)",
+                          border: "none",
                           color: "var(--accent-purple)",
                           fontWeight: 600,
                           display: "inline-block",

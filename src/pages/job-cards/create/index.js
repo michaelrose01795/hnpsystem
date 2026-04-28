@@ -4,6 +4,7 @@
 "use client"; // enables client-side rendering for Next.js
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"; // import React hooks including useEffect/useCallback/useRef for syncing customer forms
+import { flushSync } from "react-dom";
 import { useRouter } from "next/router"; // for navigation
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useJobs } from "@/context/JobsContext"; // import jobs context
@@ -83,6 +84,17 @@ const normalizeCustomerRecord = (record = {}) => ({
     }
     return initialCustomerFormState.contactPreference;
   })() // normalize contact preference field
+});
+
+const createInitialVehicleState = () => ({
+  reg: "",
+  colour: "",
+  makeModel: "",
+  make: "",
+  year: null,
+  chassis: "",
+  engine: "",
+  mileage: ""
 });
 
 export default function CreateJobCardPage() {
@@ -270,6 +282,46 @@ export default function CreateJobCardPage() {
   const [primeJobData, setPrimeJobData] = useState(null); // prime job data when in sub-job mode
   const [asPrimeJob, setAsPrimeJob] = useState(false); // checkbox to create this job as a prime job
 
+  const resetCreateJobForm = useCallback(() => {
+    setVehicle(createInitialVehicleState());
+    setCustomer(null);
+    setCustomerForm({ ...initialCustomerFormState });
+    setIsCustomerEditing(false);
+    setIsSavingCustomer(false);
+    setError("");
+    setCustomerNotification(null);
+    setVehicleNotification(null);
+    setJobTabs([createDefaultJobTab(1)]);
+    setActiveTabIndex(0);
+    setLastDetectionSignature("");
+    setCosmeticDamagePresent(false);
+    setCosmeticNotes("");
+    setWashRequired(true);
+    setVhcRequired(true);
+    setShowNewCustomer(false);
+    setShowExistingCustomer(false);
+    setShowDocumentsPopup(false);
+    setShowDetectedRequestsPopup(false);
+    setIsMobileMechanic(false);
+    setQuestionPromptsIndex(null);
+    setNewCustomerPrefill({ firstName: "", lastName: "" });
+    setCheckSheetFile(null);
+    setCheckSheetPreviewUrl("");
+    setCheckSheetCheckboxes([]);
+    setAsPrimeJob(false);
+    lastVehicleLookupRef.current = "";
+    setTopRowHeight(null);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem(PENDING_UPLOADS_STORAGE_KEY);
+        window.localStorage.removeItem(WAITING_STATUS_STORAGE_KEY);
+        window.localStorage.removeItem(WASH_REQUIRED_STORAGE_KEY);
+      } catch (err) {
+        console.warn("Failed to clear persisted create job state:", err);
+      }
+    }
+  }, []);
+
   useEffect(() => {// sync editable form with whichever customer is selected
     if (customer) {// when a customer exists use their values
       setCustomerForm(normalizeCustomerRecord(customer)); // copy normalized customer data into the form controls
@@ -316,10 +368,16 @@ export default function CreateJobCardPage() {
     map((req) => (req?.text || "").trim()).
     join("||");
     if (signature === lastDetectionSignature) return;
-    const detections = detectJobTypesForRequests(requests);
-    setJobDetections(detections);
-    setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
-    setLastDetectionSignature(signature);
+    // Debounce detection so each keystroke doesn't re-scan the full
+    // PHRASE_RULES library across every request — that was causing
+    // visible input lag on multi-request forms.
+    const handle = setTimeout(() => {
+      const detections = detectJobTypesForRequests(requests);
+      setJobDetections(detections);
+      setJobCategories(Array.from(new Set(detections.map((d) => d.jobType))));
+      setLastDetectionSignature(signature);
+    }, 250);
+    return () => clearTimeout(handle);
   }, [requests, lastDetectionSignature, setJobDetections, setJobCategories]);
 
   useLayoutEffect(() => {
@@ -542,7 +600,7 @@ export default function CreateJobCardPage() {
   }; // append new empty request
 
   const sectionCardStyle = {
-    background: "var(--layer-section-level-2)",
+    background: "var(--accent-surface)",
     border: "none"
   };
 
@@ -554,25 +612,11 @@ export default function CreateJobCardPage() {
   const hasLinkedJobCards = jobCardSelectorOptions.length > 1;
 
   const binaryToggleGroupStyle = {
-    display: "flex",
-    gap: "8px",
-    padding: "6px",
-    borderRadius: "var(--control-radius)",
-    backgroundColor: "var(--surface)",
-    border: "none",
     width: "fit-content"
   };
 
-  const getBinaryToggleButtonStyle = (isSelected) => ({
-    padding: "6px 14px",
-    borderRadius: "var(--control-radius)",
-    border: isSelected ? "1px solid var(--primary)" : "1px solid transparent",
-    backgroundColor: isSelected ? "var(--surface)" : "transparent",
-    color: isSelected ? "var(--text-primary)" : "var(--text-secondary)",
-    fontSize: "12px",
-    fontWeight: isSelected ? "600" : "500",
-    cursor: "pointer",
-    transition: "all 0.2s"
+  const getBinaryToggleButtonStyle = () => ({
+    minWidth: "64px"
   });
 
   // 2-column grid so buttons sit in rows of two with a true 50/50 split:
@@ -1322,6 +1366,9 @@ export default function CreateJobCardPage() {
         `${jobsCreatedMessage}\n\nVehicle ${regUpper} has been saved and linked to ${customer.firstName} ${customer.lastName}`
       );
 
+      flushSync(() => {
+        resetCreateJobForm();
+      });
       router.push(`/appointments?jobNumber=${encodeURIComponent(finalJobNumber || "")}`);
 
     } catch (err) {

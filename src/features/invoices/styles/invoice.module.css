@@ -275,7 +275,7 @@
 
 .error { /* // error modifier */
   color: var(--danger-dark); /* // danger text */
-  border-color: var(--danger); /* // highlight border */
+  border-color: transparent; /* // highlight border */
 } /* // end error */
 
 .info { /* // info modifier for fallback notice */
@@ -477,7 +477,7 @@
 
 .releasePromptBox {
   margin-top: 16px;
-  border: 1px solid var(--warning);
+  border: none;
   background: var(--warning-surface);
   border-radius: var(--radius-sm);
   padding: 16px;

@@ -21,7 +21,7 @@ const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSi
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/Sidebar";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
-import TopbarAlerts, { AlertBadge } from "@/components/TopbarAlerts";
+import TopbarAlerts from "@/components/TopbarAlerts";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
@@ -684,7 +684,7 @@ export default function Layout({
     height: "auto",
     minHeight: "100vh",
     width: "100%",
-    fontFamily: 'Inter, "Segoe UI", system-ui, -apple-system, sans-serif',
+    fontFamily: "var(--font-family)",
     background: colors.background || colors.mainBg,
     color: colors.text,
     justifyContent: hideSidebar ? "center" : "flex-start",
@@ -809,7 +809,6 @@ export default function Layout({
                 }}
               >
                 <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
-                <AlertBadge />
               </div>
             )}
 
@@ -1097,7 +1096,6 @@ export default function Layout({
                     }}
                   >
                     <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
-                    <AlertBadge />
                   </div>
 
                   <div
@@ -1243,8 +1241,10 @@ export default function Layout({
               right: 0,
               bottom: 0,
               width: `${STATUS_DRAWER_WIDTH}px`,
-              padding: "12px 12px 12px 0",
+              padding: "16px 16px 16px 0",
               boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
               transform: isStatusSidebarOpen ? "translateX(0)" : "translateX(100%)",
               transition: "transform 0.35s ease",
               zIndex: 130,

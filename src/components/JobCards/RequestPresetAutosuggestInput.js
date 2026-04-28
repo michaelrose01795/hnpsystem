@@ -191,58 +191,74 @@ export default function RequestPresetAutosuggestInput({
           ref={menuRef}
           style={{
             position: "fixed",
-            top: `${menuPosition.top}px`,
+            top: `${menuPosition.top + 6}px`,
             left: `${menuPosition.left}px`,
             width: `${menuPosition.width}px`,
-            backgroundColor: "var(--surface)",
-            border: "1px solid rgba(var(--grey-accent-rgb), 0.35)",
-            borderRadius: "var(--radius-xs)",
-            maxHeight: "220px",
+            backgroundColor: "var(--control-menu-bg)",
+            border: "1px solid var(--surface)",
+            borderRadius: "var(--radius-md)",
+            maxHeight: "280px",
+            overflow: "hidden",
             overflowY: "auto",
             zIndex: 4000,
-            boxShadow: "0 8px 18px rgba(0,0,0,0.12)",
             ...suggestionStyle,
           }}
         >
           {loading ? (
-            <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--text-secondary)" }}>Searching presets...</div>
+            <div style={{ padding: "14px 16px", fontSize: "0.85rem", color: "var(--text-primary)" }}>Searching presets…</div>
           ) : (
-            suggestions.map((suggestion, index) => (
-              <button
-                key={`${suggestion.id}-${index}`}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => selectSuggestion(suggestion)}
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(-1)}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  border: "none",
-                  background:
-                    index === activeIndex
-                      ? "rgba(var(--primary-rgb), 0.22)"
-                      : index === hoveredIndex
-                      ? "rgba(var(--primary-rgb), 0.14)"
-                      : "transparent",
-                  padding: "10px 12px",
-                  cursor: "pointer",
-                  color: "var(--text-primary)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: "10px",
-                }}
-              >
-                <span style={{ fontSize: "13px", fontWeight: 500 }}>
-                  {renderHighlightedLabel(suggestion.label, query)}
-                </span>
-                {showHours ? (
-                  <span style={{ fontSize: "12px", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
-                    {Number(suggestion.defaultHours || 0).toFixed(2)}h
-                  </span>
-                ) : null}
-              </button>
-            ))
+            suggestions.map((suggestion, index) => {
+              const active = index === activeIndex || index === hoveredIndex;
+              return (
+                <button
+                  key={`${suggestion.id}-${index}`}
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectSuggestion(suggestion)}
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(-1)}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    width: "100%",
+                    padding: "14px 16px",
+                    border: "none",
+                    borderBottom:
+                      index === suggestions.length - 1
+                        ? "none"
+                        : "1px solid rgba(var(--primary-rgb), 0.14)",
+                    backgroundColor: active ? "rgba(var(--primary-rgb), 0.14)" : "transparent",
+                    color: active ? "var(--primary)" : "var(--text-primary)",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                    <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                      {renderHighlightedLabel(suggestion.label, query)}
+                    </span>
+                  </div>
+                  {showHours ? (
+                    <span
+                      style={{
+                        fontSize: "0.7rem",
+                        padding: "4px 8px",
+                        borderRadius: "var(--radius-pill)",
+                        backgroundColor: active ? "var(--primary)" : "rgba(var(--primary-rgb), 0.12)",
+                        color: active ? "var(--text-inverse)" : "var(--primary-dark)",
+                        textTransform: "uppercase",
+                        fontWeight: 700,
+                        letterSpacing: "0.05em",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {Number(suggestion.defaultHours || 0).toFixed(2)}h
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })
           )}
         </div>,
         document.body

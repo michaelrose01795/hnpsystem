@@ -5,7 +5,6 @@ export default function ViewJobCardsUi(props) {
     ContentWidth,
     DevLayoutSection,
     DropdownField,
-    FilterToolbarRow,
     JobListCard,
     OrderListCard,
     PageShell,
@@ -71,29 +70,8 @@ export default function ViewJobCardsUi(props) {
           flex: 0 1 auto;
           width: fit-content;
           max-width: max-content;
-          min-height: calc(var(--control-height-sm) + 0.7rem);
           min-width: auto;
           overflow: visible;
-          padding: 0.35rem 0.5rem;
-        }
-
-        .job-cards-view-tabs .tab-api {
-          padding: 0;
-          gap: 0.375rem;
-          min-height: var(--control-height-sm);
-          flex-wrap: nowrap;
-          overflow: visible;
-          justify-content: flex-start;
-          width: fit-content;
-          max-width: max-content;
-          align-items: center;
-        }
-
-        .job-cards-view-tabs .tab-api__item {
-          min-height: var(--control-height-sm);
-          padding: 0.45rem 0.7rem;
-          font-size: 0.78rem;
-          flex: 0 0 auto;
         }
 
         .job-cards-view-search-shell {
@@ -106,7 +84,7 @@ export default function ViewJobCardsUi(props) {
           align-items: center;
           justify-content: stretch;
           gap: 0.45rem;
-          padding: 0.35rem 0.5rem;
+          padding: 0;
           min-width: 0;
         }
 
@@ -194,25 +172,20 @@ export default function ViewJobCardsUi(props) {
           <SectionShell sectionKey="job-cards-view-filter-shell" parentKey="job-cards-view-content" style={{
           display: "flex",
           flexDirection: "column",
-          background: "rgba(var(--primary-rgb), 0.10)",
-          borderRadius: "var(--radius-lg)",
-          border: "1px solid rgba(var(--primary-rgb), 0.18)",
           padding: "12px",
           gap: "12px"
         }}>
-            <FilterToolbarRow sectionKey="job-cards-view-filter-row" parentKey="job-cards-view-filter-shell" className="job-cards-view-toolbar" style={{
+            <div className="job-cards-view-toolbar" style={{
             gap: "0.75rem"
           }}>
-              <DevLayoutSection className="page-surface-plain job-cards-view-tabs" sectionKey="job-cards-view-tabs" parentKey="job-cards-view-filter-row" sectionType="tab-row" style={{
-              borderRadius: "var(--radius-sm)"
-            }}>
+              <div className="job-cards-view-tabs">
                 <TabGroup items={tabOptions} value={activeTab} onChange={setActiveTab} ariaLabel="Job card tabs" className="tab-api--wrap" />
-              </DevLayoutSection>
-              <DevLayoutSection className="app-layout-card job-cards-view-search-shell" sectionKey="job-cards-view-search" parentKey="job-cards-view-filter-row" sectionType="search-control">
+              </div>
+              <div className="job-cards-view-search-shell">
                 <SearchBar className="job-cards-view-searchbar" placeholder={searchPlaceholder} value={searchValues[activeTab]} onChange={event => handleSearchValueChange(activeTab, event.target.value)} onClear={() => handleSearchValueChange(activeTab, "")} style={{
                 width: "100%"
               }} />
-                {!isOrdersTab && <DevLayoutSection className="job-cards-view-filter-controls" sectionKey="job-cards-view-filter-controls" parentKey="job-cards-view-search" sectionType="toolbar">
+                {!isOrdersTab && <DevLayoutSection className="job-cards-view-filter-controls" sectionKey="job-cards-view-filter-controls" parentKey="job-cards-view-filter-shell" sectionType="toolbar">
                     <DevLayoutSection className="job-cards-view-filter-slot" sectionKey="job-cards-view-filter-controls-division-slot" parentKey="job-cards-view-filter-controls" sectionType="filter-control">
                       <DevLayoutSection className="job-cards-view-filter-control" sectionKey="job-cards-view-division-filter" parentKey="job-cards-view-filter-controls-division-slot" sectionType="filter-control">
                         <DropdownField className="job-cards-filter" value={divisionFilter} options={[{
@@ -237,16 +210,13 @@ export default function ViewJobCardsUi(props) {
                       </DevLayoutSection>
                     </DevLayoutSection>
                   </DevLayoutSection>}
-              </DevLayoutSection>
-            </FilterToolbarRow>
+              </div>
+            </div>
           </SectionShell>
 
           <SectionShell sectionKey="job-cards-view-list-shell" parentKey="job-cards-view-content" style={{
           flex: 1,
           overflow: "hidden",
-          borderRadius: "var(--radius-md)",
-          border: "1px solid rgba(var(--primary-rgb), 0.18)",
-          background: "rgba(var(--primary-rgb), 0.10)",
           padding: "12px",
           minHeight: "0"
         }}>

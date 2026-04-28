@@ -124,7 +124,7 @@ export default function PrePickLocationModal({
               width: "100%",
               padding: "12px",
               borderRadius: "var(--radius-xs)",
-              border: `1px solid ${error ? "var(--danger)" : "var(--accent-surface)"}`,
+              border: "none",
               background: "var(--surface)",
               color: "var(--primary)",
               fontWeight: 500,

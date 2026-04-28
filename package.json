@@ -19,6 +19,8 @@
     "seed:job-request-presets": "node tools/scripts/seed-job-request-presets.js",
     "db:seed": "node tools/scripts/db-seed.js",
     "test": "npx playwright test",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "test:smoke": "npx playwright test --project=auth-setup --project=smoke",
     "test:workflows": "npx playwright test --project=auth-setup --project=workflows",
     "test:visual": "npx playwright test --project=auth-setup --project=visual",
@@ -60,6 +62,7 @@
     "eslint-config-next": "^16.1.6",
     "playwright": "^1.58.2",
     "supabase": "^2.84.4",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^4.1.5"
   }
 }

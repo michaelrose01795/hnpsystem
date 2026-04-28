@@ -3,7 +3,11 @@
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
-import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
+// Phase 5 of the VHC refactor: VHC-linked parts updates trigger the cascade
+// through the engine entry point. The engine reads the existing decision from
+// the parts_job_items row when targetDecision is omitted, matching legacy
+// syncVhcPartsAuthorisation behaviour.
+import { applyVhcDecision } from "@/features/vhc/vhcStatusEngine";
 import { syncRequestStatus } from "@/lib/parts/partsRequestAdapter"; // Parts request status sync.
 
 async function handler(req, res, session) {
@@ -131,9 +135,12 @@ async function handler(req, res, session) {
     // Keep VHC approval + vhc_authorised job_requests + rectification in sync when a VHC-linked part is updated.
     if (data?.vhc_item_id) {
       try {
-        await syncVhcPartsAuthorisation({
+        await applyVhcDecision({
           jobId: data.job_id,
           vhcItemId: data.vhc_item_id,
+          // No targetDecision — the cascade re-derives from the current
+          // parts_job_items state (matches prior syncVhcPartsAuthorisation
+          // behaviour when called with no approvalStatus).
         });
       } catch (syncError) {
         // Log the sync error but don't fail the entire request

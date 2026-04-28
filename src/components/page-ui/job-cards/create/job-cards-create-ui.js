@@ -119,12 +119,13 @@ export default function CreateJobCardPageUi(props) {
       flexShrink: 0,
       gap: "12px",
       flexWrap: "wrap"
-    }}>
+      }}>
           <div className="job-cards-create-header-left" style={{
         display: "flex",
         alignItems: "center",
+        justifyContent: "flex-start",
         gap: "12px",
-        flexWrap: "wrap",
+        flexWrap: "nowrap",
         minWidth: 0,
         flex: "1 1 420px"
       }}>
@@ -132,10 +133,20 @@ export default function CreateJobCardPageUi(props) {
           display: "flex",
           alignItems: "center",
           gap: "8px",
-          flexWrap: "wrap",
-          minWidth: 0
+          flexWrap: "nowrap",
+          justifyContent: "flex-start",
+          minWidth: 0,
+          width: "100%",
+          overflow: "hidden"
         }}>
-              <div className="tab-api job-cards-create-selector" role="tablist" aria-label="Linked job cards">
+              <div className="tab-api job-cards-create-selector" role="tablist" aria-label="Linked job cards" style={{
+            maxWidth: "100%",
+            overflowX: "auto",
+            overflowY: "hidden",
+            justifyContent: "flex-start",
+            flexWrap: "nowrap",
+            scrollbarWidth: "thin"
+          }}>
                 {jobCardSelectorOptions.map(option => {
               const isActive = activeTabIndex === option.index;
               return <button key={option.id} type="button" role="tab" onClick={() => setActiveTabIndex(option.index)} aria-selected={isActive} aria-pressed={isActive} data-tone="default" className={`tab-api__item${isActive ? " is-active" : ""}`}>
@@ -161,12 +172,17 @@ export default function CreateJobCardPageUi(props) {
         flex: "1 1 280px",
         minWidth: 0,
         display: "flex",
-        justifyContent: "center"
+        justifyContent: "center",
+        overflow: "hidden"
       }}>
             <div className="tab-api" style={{
           width: "100%",
           maxWidth: "520px",
-          justifyContent: "center"
+          justifyContent: "center",
+          flexWrap: "nowrap",
+          overflowX: "auto",
+          overflowY: "hidden",
+          scrollbarWidth: "thin"
         }}>
               {populatedRequests.length === 0 ? <span data-tone="default" className="tab-api__item" style={{
             opacity: 0.55,
@@ -195,7 +211,15 @@ export default function CreateJobCardPageUi(props) {
               overflow: "hidden",
               textOverflow: "ellipsis"
             }}>
-                    {populatedRequests[0]?.text}
+                    {(() => {
+                const firstIndex = populatedRequests[0]?.index;
+                const detection = visibleJobDetections.find(d => Number(d.requestIndex) === firstIndex);
+                if (!detection) return "Detecting…";
+                return String(detection.jobType || "")
+                  .replace(/_/g, " ")
+                  .toLowerCase()
+                  .replace(/\b\w/g, c => c.toUpperCase());
+              })()}
                   </span>
                   {populatedRequests.length > 1 ? <span style={{
               flexShrink: 0,
@@ -433,7 +457,7 @@ export default function CreateJobCardPageUi(props) {
             marginBottom: "16px",
             borderRadius: "var(--radius-xs)",
             backgroundColor: vehicleNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
-            border: `1px solid ${vehicleNotification.type === "success" ? "var(--success)" : "var(--danger)"}`,
+            border: "none",
             color: vehicleNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
             fontSize: "13px",
             fontWeight: "500",
@@ -516,7 +540,7 @@ export default function CreateJobCardPageUi(props) {
             padding: "10px 12px",
             backgroundColor: "var(--danger-surface)",
             borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--danger)"
+            border: "none"
           }}>
                   {error}
                 </div>}
@@ -548,7 +572,8 @@ export default function CreateJobCardPageUi(props) {
                   backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-xs)",
                   fontSize: "14px",
-                  color: vehicle[key] ? "var(--text-primary)" : "var(--grey-accent-light)"
+                  color: vehicle[key] ? "var(--text-primary)" : "var(--text-secondary)",
+                  fontWeight: vehicle[key] ? 400 : 500
                 }}>
                         {vehicle[key] || "Not available"}
                       </div>
@@ -626,7 +651,7 @@ export default function CreateJobCardPageUi(props) {
             marginBottom: "16px",
             borderRadius: "var(--radius-xs)",
             backgroundColor: customerNotification.type === "success" ? "var(--success)" : "var(--danger-surface)",
-            border: `1px solid ${customerNotification.type === "success" ? "var(--success)" : "var(--danger)"}`,
+            border: "none",
             color: customerNotification.type === "success" ? "var(--success-dark)" : "var(--danger-dark)",
             fontSize: "13px",
             fontWeight: "500",
@@ -736,11 +761,11 @@ export default function CreateJobCardPageUi(props) {
                         </div>)}
                     </div> : <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
               gap: "8px"
             }}>
                       {customerFieldDefinitions.filter(input => input.field !== "contactPreference").map(input => <div key={input.field} style={{
-                gridColumn: input.field === "email" || input.field === "address" ? "1 / -1" : "auto",
+                gridColumn: input.field === "firstName" || input.field === "lastName" || input.field === "mobile" || input.field === "telephone" ? "auto" : "1 / -1",
                 padding: input.field === "email" ? "12px 14px" : input.field === "mobile" || input.field === "telephone" ? "12px 14px" : "10px 12px",
                 borderRadius: "var(--radius-sm)",
                 background: "var(--surface)",
@@ -987,7 +1012,7 @@ export default function CreateJobCardPageUi(props) {
                 updated[i] = {
                   ...updated[i],
                   text: preset.label,
-                  time: normalizeHoursToTwoDecimals(preset.defaultHours),
+                  time: Number(preset.defaultHours) > 0 ? normalizeHoursToTwoDecimals(preset.defaultHours) : "",
                   presetId: preset.id,
                   selectedPresetLabel: preset.label
                 };
@@ -996,8 +1021,8 @@ export default function CreateJobCardPageUi(props) {
                 setJobDetections(detections);
                 setJobCategories(Array.from(new Set(detections.map(d => d.jobType))));
               }} placeholder="Enter job request (MOT, Service, Diagnostic)" containerStyle={{
-                flex: 2,
-                minWidth: "250px"
+                flex: "1 1 520px",
+                minWidth: "320px"
               }} inputStyle={{
                 width: "100%",
                 padding: "10px 12px",
@@ -1009,22 +1034,31 @@ export default function CreateJobCardPageUi(props) {
                 backgroundColor: "var(--accent-surface)"
               }} />
                     <div style={{
+                position: "relative",
                 display: "flex",
                 alignItems: "center",
-                gap: "8px"
+                width: "72px",
+                flexShrink: 0
               }}>
-                      <input type="number" min="0.00" step="0.01" value={req.time || ""} onChange={e => handleTimeChange(i, e.target.value)} placeholder="0.00" className="app-input" style={{
-                  width: "90px"
+                      <input type="number" min="0.00" step="0.01" value={req.time || ""} onChange={e => handleTimeChange(i, e.target.value)} placeholder="" className="app-input" style={{
+                  width: "72px",
+                  paddingRight: "24px"
                 }} onBlur={e => {
                   const updated = [...requests];
                   updated[i].time = normalizeHoursToTwoDecimals(updated[i]?.time);
                   setRequests(updated);
                   persistPresetDefaultHours(updated[i]);
                 }} />
-                      <span className="app-btn app-btn--secondary app-btn--sm" style={{
+                      <span style={{
                   pointerEvents: "none",
-                  minWidth: 0,
-                  padding: "0 10px"
+                  position: "absolute",
+                  right: "9px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--text-secondary)",
+                  fontSize: "var(--control-font-size)",
+                  fontWeight: 700,
+                  lineHeight: 1
                 }}>
                         h
                       </span>
@@ -1074,8 +1108,8 @@ export default function CreateJobCardPageUi(props) {
             }}>
                   Cosmetic Damage
                 </h4>
-                <div style={binaryToggleGroupStyle}>
-                  {[true, false].map(choice => <button key={choice ? "yes" : "no"} onClick={() => setCosmeticDamagePresent(choice)} type="button" style={getBinaryToggleButtonStyle(cosmeticDamagePresent === choice)}>
+                <div className="tab-api tab-api--inline" style={binaryToggleGroupStyle}>
+                  {[true, false].map(choice => <button key={choice ? "yes" : "no"} onClick={() => setCosmeticDamagePresent(choice)} type="button" aria-pressed={cosmeticDamagePresent === choice} data-tone="default" className={`tab-api__item${cosmeticDamagePresent === choice ? " is-active" : ""}`} style={getBinaryToggleButtonStyle(cosmeticDamagePresent === choice)}>
                       {choice ? "Yes" : "No"}
                     </button>)}
                 </div>
@@ -1091,7 +1125,7 @@ export default function CreateJobCardPageUi(props) {
             fontSize: "13px",
             outline: "none",
             transition: "border-color 0.2s",
-            backgroundColor: "var(--background)",
+            backgroundColor: "var(--surface)",
             color: "var(--text-primary)"
           }} onFocus={e => {
             e.target.style.borderColor = "var(--primary)";
@@ -1122,8 +1156,8 @@ export default function CreateJobCardPageUi(props) {
             }}>
                   Wash
                 </h4>
-                <div style={binaryToggleGroupStyle}>
-                  {[true, false].map(choice => <button key={`wash-${choice ? "yes" : "no"}`} type="button" onClick={() => setWashRequired(choice)} style={getBinaryToggleButtonStyle(washRequired === choice)}>
+                <div className="tab-api tab-api--inline" style={binaryToggleGroupStyle}>
+                  {[true, false].map(choice => <button key={`wash-${choice ? "yes" : "no"}`} type="button" onClick={() => setWashRequired(choice)} aria-pressed={washRequired === choice} data-tone="default" className={`tab-api__item${washRequired === choice ? " is-active" : ""}`} style={getBinaryToggleButtonStyle(washRequired === choice)}>
                       {choice ? "Yes" : "No"}
                     </button>)}
                 </div>
@@ -1151,8 +1185,8 @@ export default function CreateJobCardPageUi(props) {
             }}>
                   VHC Required?
                 </h4>
-                <div style={binaryToggleGroupStyle}>
-                  {[true, false].map(choice => <button key={`vhc-${choice ? "yes" : "no"}`} type="button" onClick={() => setVhcRequired(choice)} style={getBinaryToggleButtonStyle(vhcRequired === choice)}>
+                <div className="tab-api tab-api--inline" style={binaryToggleGroupStyle}>
+                  {[true, false].map(choice => <button key={`vhc-${choice ? "yes" : "no"}`} type="button" onClick={() => setVhcRequired(choice)} aria-pressed={vhcRequired === choice} data-tone="default" className={`tab-api__item${vhcRequired === choice ? " is-active" : ""}`} style={getBinaryToggleButtonStyle(vhcRequired === choice)}>
                       {choice ? "Yes" : "No"}
                     </button>)}
                 </div>

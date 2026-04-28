@@ -4,7 +4,7 @@
  *
  * Variants: info, success, warning, error
  * Driver:    src/context/AlertContext.js, src/lib/notifications/alertBus.js
- * Showcase:  /dev/showcase#toast
+ * Showcase:  /dev/user-diagnostic#toast
  *
  * NOTE (2026-04 audit pass): toasts today are emitted via AlertContext and
  * rendered ad-hoc. The classes below are the approved visual treatment and
@@ -25,7 +25,7 @@
   font-weight: 500;
   min-width: 240px;
   max-width: 420px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.12);
 }
 
 .app-toast__icon {
@@ -76,5 +76,5 @@
   :where(.app-toast) {
   outline: 2px solid #f59e0b !important;
   outline-offset: 2px;
-  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.32), 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.32), 0 0 20px rgba(0, 0, 0, 0.12) !important;
 }

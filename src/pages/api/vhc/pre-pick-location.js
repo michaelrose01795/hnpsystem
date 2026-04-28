@@ -3,7 +3,9 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
 import { normalizePrePickLocation } from "@/lib/prePickLocations";
-import { resolveCanonicalVhcId, syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
+import { resolveCanonicalVhcId } from "@/lib/database/vhcPartsSync";
+// Phase 6 follow-up: VHC cascades go through the engine entry point.
+import { applyVhcDecision } from "@/features/vhc/vhcStatusEngine";
 
 const buildPartPrePickUpdates = (prePickLocation, timestamp) => {
   const updates = {
@@ -124,7 +126,7 @@ async function handler(req, res) {
         updatedPartIds = linkedPartIds;
 
         for (const linkedVhcId of linkedVhcItemIdsList) {
-          await syncVhcPartsAuthorisation({
+          await applyVhcDecision({
             jobId,
             vhcItemId: linkedVhcId,
           });

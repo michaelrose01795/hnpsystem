@@ -48,6 +48,11 @@ const LABEL_LAYOUT_STYLE_KEYS = ["display", "margin", "marginTop", "marginBottom
 const VALUE_LAYOUT_STYLE_KEYS = ["display", "alignItems", "justifyContent", "minWidth", "whiteSpace"];
 const CHEVRON_LAYOUT_STYLE_KEYS = ["width", "height"];
 const MENU_LAYOUT_STYLE_KEYS = [
+  "position",
+  "top",
+  "right",
+  "bottom",
+  "left",
   "width",
   "minWidth",
   "maxWidth",

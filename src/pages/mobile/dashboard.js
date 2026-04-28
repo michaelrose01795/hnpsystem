@@ -113,7 +113,7 @@ function MobileDashboardInner() {
       </header>
 
       {error &&
-      <div style={{ ...cardStyle, borderColor: "var(--danger, #dc2626)", color: "var(--danger, #dc2626)" }}>
+      <div style={{ ...cardStyle, borderColor: "transparent", color: "var(--danger, #dc2626)" }}>
           {error}
         </div>
       }

@@ -248,6 +248,16 @@ export const getCustomerJobs = async (customerId) => {
       created_at,
       updated_at,
       appointments(appointment_id, scheduled_time, status, notes, created_at, updated_at),
+      job_notes(
+        note_id,
+        job_id,
+        user_id,
+        note_text,
+        hidden_from_customer,
+        created_at,
+        updated_at,
+        user:user_id(first_name, last_name, email, role)
+      ),
       job_requests(
         request_id,
         job_id,
@@ -278,7 +288,19 @@ export const getCustomerJobs = async (customerId) => {
         updated_at
       ),
       job_files(file_id, file_name, file_url, file_type, folder, uploaded_by, uploaded_at),
-      invoices(invoice_number, payment_status, created_at, invoice_date)
+      invoices(
+        id,
+        invoice_id,
+        invoice_number,
+        payment_status,
+        payment_method,
+        paid,
+        total,
+        invoice_total,
+        created_at,
+        invoice_date,
+        invoice_payments(payment_id, amount, payment_method, reference, payment_date, created_at)
+      )
     `)
     .eq("customer_id", customerId)
     .order('created_at', { ascending: false });
@@ -289,6 +311,24 @@ export const getCustomerJobs = async (customerId) => {
   }
 
   console.log("✅ Customer jobs found:", data?.length || 0); // debug log
+  return data || [];
+};
+
+export const getCustomerPaymentMethods = async (customerId) => {
+  if (!customerId) return [];
+
+  const { data, error } = await supabase
+    .from("customer_payment_methods")
+    .select("method_id, nickname, card_brand, last4, expiry_month, expiry_year, is_default, created_at")
+    .eq("customer_id", customerId)
+    .order("is_default", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("❌ getCustomerPaymentMethods error:", error.message);
+    return [];
+  }
+
   return data || [];
 };
 

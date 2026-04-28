@@ -2549,7 +2549,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                               style={{
                                                 padding: "4px 8px",
                                                 borderRadius: "var(--radius-xs)",
-                                                border: "1px solid var(--danger)",
+                                                border: "none",
                                                 background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
                                                 color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
                                                 fontSize: "var(--text-caption)",
@@ -2743,7 +2743,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                                   style={{
                                                     padding: "4px 8px",
                                                     borderRadius: "var(--radius-xs)",
-                                                    border: "1px solid var(--danger)",
+                                                    border: "none",
                                                     background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
                                                     color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
                                                     fontSize: "var(--text-caption)",
@@ -3162,7 +3162,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   style={{
                     padding: "10px 16px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--danger)",
+                    border: "none",
                     background: "var(--danger-surface)",
                     color: "var(--danger)",
                     fontSize: "var(--text-label)",

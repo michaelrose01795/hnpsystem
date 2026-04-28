@@ -1297,7 +1297,7 @@ function StockCataloguePage() {
                   borderRadius: "var(--radius-xs)",
                   border: "none",
                   resize: "vertical",
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-family-mono)",
                   fontSize: "var(--text-caption)"
                 }} />
               
@@ -1617,7 +1617,7 @@ function StockCataloguePage() {
                 marginTop: "12px",
                 padding: "12px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--danger)",
+                border: "none",
                 background: "rgba(var(--danger-rgb), 0.08)",
                 color: "var(--danger)",
                 fontWeight: 600

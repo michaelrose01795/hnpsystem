@@ -4,7 +4,7 @@
  *
  * Variants: dialog, drawer, sheet, alert
  * Component: src/components/popups/ModalPortal.js, src/components/popups/Popup.js
- * Showcase:  /dev/showcase#modal
+ * Showcase:  /dev/user-diagnostic#modal
  *
  * NOTE (2026-04 audit pass): today each modal (JobCardModal, NewCustomerPopup,
  * StatusSidebar, etc) defines its own surface/backdrop inline. The variant

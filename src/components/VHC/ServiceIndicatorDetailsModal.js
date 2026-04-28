@@ -312,7 +312,7 @@ export default function ServiceIndicatorDetailsModal({
   const missingServiceChoice = !serviceChoice;
   const missingOilStatus = !oilStatus;
   const requiredCardStyle = {
-    border: "2px solid var(--danger)",
+    border: "none",
     background: "var(--danger-surface)",
   };
 

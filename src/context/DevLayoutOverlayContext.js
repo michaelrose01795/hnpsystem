@@ -68,7 +68,7 @@ const readJson = (raw) => {
 export function DevLayoutOverlayProvider({ children }) {
   const { user } = useUser();
   const canAccess = canUseDevLayoutOverlay(user);
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabledState] = useState(false);
   const [mode, setModeState] = useState("labels");
   const [fullScreen, setFullScreen] = useState(false);
   const [legacyMarkers, setLegacyMarkers] = useState(true);
@@ -80,7 +80,7 @@ export function DevLayoutOverlayProvider({ children }) {
     if (typeof window === "undefined") return;
 
     if (!canAccess) {
-      setEnabled(false);
+      setEnabledState(false);
       setModeState("labels");
       setFullScreen(false);
       setLegacyMarkers(true);
@@ -97,7 +97,7 @@ export function DevLayoutOverlayProvider({ children }) {
     const storedFilters = readJson(window.localStorage.getItem(STORAGE_CATEGORY_FILTERS_KEY));
     const storedPanelOpen = window.localStorage.getItem(STORAGE_PANEL_OPEN_KEY) === "1";
 
-    setEnabled(storedEnabled);
+    setEnabledState(storedEnabled);
     if (MODES.includes(storedMode)) setModeState(storedMode);
     setFullScreen(storedFullScreen);
     setLegacyMarkers(storedLegacyMarkers !== "0");
@@ -175,6 +175,16 @@ export function DevLayoutOverlayProvider({ children }) {
     };
   }, [canAccess, enabled, mode, fullScreen, legacyMarkers, categoryFilters]);
 
+  const setEnabled = useCallback((value) => {
+    setEnabledState((current) => {
+      const nextEnabled = typeof value === "function" ? Boolean(value(current)) : Boolean(value);
+      if (!nextEnabled) {
+        setPanelOpen(false);
+      }
+      return nextEnabled;
+    });
+  }, []);
+
   const setMode = useCallback((nextMode) => {
     if (!MODES.includes(nextMode)) return;
     setModeState(nextMode);
@@ -182,7 +192,7 @@ export function DevLayoutOverlayProvider({ children }) {
 
   const toggleEnabled = useCallback(() => {
     setEnabled((current) => !current);
-  }, []);
+  }, [setEnabled]);
 
   const cycleMode = useCallback(() => {
     setModeState((current) => {

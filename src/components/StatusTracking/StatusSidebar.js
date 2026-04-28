@@ -273,6 +273,12 @@ export default function StatusSidebar({
   const currentStatusForDisplay = snapshot?.job?.status || null;
   const currentStatusId = snapshot?.job?.overallStatus || null;
   const currentStatusMeta = snapshot?.job?.statusMeta || null;
+  const displayJobId = useMemo(() => {
+    const rawId = snapshot?.job?.id || jobId;
+    if (rawId === null || rawId === undefined || rawId === '') return '';
+    const text = String(rawId).trim();
+    return /^\d+$/.test(text) ? `#${text.padStart(5, '0')}` : text;
+  }, [snapshot?.job?.id, jobId]);
 
   const timelineStatuses = useMemo(() => {
     if (!Array.isArray(statusHistory)) return [];
@@ -408,12 +414,13 @@ export default function StatusSidebar({
     ? {
         position: 'relative',
         width: '100%',
-        height: '100%',
+        height: 'auto',
         minHeight: '100%',
         backgroundColor: 'var(--surface)',
 
         borderRadius: 'var(--radius-md)',
         border: 'none',
+        boxShadow: '0 18px 42px rgba(var(--accentMainRgb), 0.24), 0 8px 22px rgba(0, 0, 0, 0.12)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden'
@@ -487,12 +494,21 @@ export default function StatusSidebar({
               aria-label="Close status sidebar"
               onClick={(e) => {
                 e.stopPropagation();
-                onToggle();
-              }}
+              onToggle();
+            }}
+              className="app-btn app-btn--xs app-btn--secondary"
+              style={{ position: 'absolute', top: compactMode ? '10px' : '14px', right: jobId ? '104px' : '16px', zIndex: 2 }}
+            >
+              Close
+            </button>
+          )}
+          {jobId && (
+            <button
+              onClick={handleClearJob}
               className="app-btn app-btn--xs app-btn--secondary"
               style={{ position: 'absolute', top: compactMode ? '10px' : '14px', right: '16px', zIndex: 2 }}
             >
-              Close
+              Clear Job
             </button>
           )}
           <div
@@ -502,7 +518,9 @@ export default function StatusSidebar({
               gridTemplateColumns: compactMode ? '1fr' : 'auto minmax(260px, 1fr)',
               alignItems: 'center',
               gap: compactMode ? '10px' : '16px',
-              paddingRight: canClose && onToggle ? (compactMode ? '76px' : '86px') : 0,
+              paddingRight: jobId
+                ? (canClose && onToggle ? (compactMode ? '168px' : '178px') : '96px')
+                : canClose && onToggle ? (compactMode ? '76px' : '86px') : 0,
             }}
           >
             <h2
@@ -574,14 +592,8 @@ export default function StatusSidebar({
               >
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                   <span style={{ fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    Job ID: {snapshot?.job?.id || jobId}
+                    {displayJobId}
                   </span>
-                  <button
-                    onClick={handleClearJob}
-                    className="app-btn app-btn--xs app-btn--secondary"
-                  >
-                    Clear Job
-                  </button>
                 </div>
                 <div id="job-progress-total-time" style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                   Total Time: {formatTime(liveClockingSeconds)}
@@ -676,12 +688,12 @@ export default function StatusSidebar({
           )}
         </div>
 
-        {/* Scrollable content area */}
+        {/* Content area: the overlay panel owns scrolling so page scroll does not move the tracker. */}
         <div style={{
           overflowY: 'auto',
           overflowX: 'hidden',
-          flex: 1, // Fill remaining vertical space so colored section reaches footer
-          minHeight: 0, // Allow flex child to shrink for proper scrolling
+          flex: 1,
+          minHeight: 0,
           padding: compactMode ? 'var(--page-gutter-y-mobile, 14px) var(--page-gutter-x-mobile, 12px)' : '20px',
           background: 'var(--surface)',
           borderRadius: '0 0 var(--radius-md) var(--radius-md)' // Match parent border radius
@@ -708,7 +720,7 @@ export default function StatusSidebar({
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: compactMode ? 'var(--page-stack-gap-mobile, 16px)' : '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: compactMode ? 'var(--page-stack-gap-mobile, 16px)' : '20px', minHeight: 0 }}>
               {/* Smart Summary panel — rendered above the timeline when enabled */}
               {trackerFlags.smart_summary_enabled && smartSummary && (
                 <SmartSummaryBlock

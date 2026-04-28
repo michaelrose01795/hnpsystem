@@ -1,13 +1,13 @@
 // file location: src/pages/vhc/customer-preview/[jobNumber].js
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import BrandLogo from "@/components/BrandLogo";
 import { supabase } from "@/lib/database/supabaseClient";
 import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
-import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
+import { normaliseDecisionStatus, resolveSeverityKey } from "@/features/vhc/vhcStatusEngine";
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { useTheme } from "@/styles/themeProvider";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
@@ -22,32 +22,32 @@ const formatCurrency = (value) => {
 const SEVERITY_THEME = {
   red: {
     background: "var(--danger-surface)",
-    border: "var(--danger-surface)",
+    border: "none",
     text: "var(--danger)"
   },
   amber: {
     background: "var(--warning-surface)",
-    border: "var(--warning-surface)",
+    border: "none",
     text: "var(--warning)"
   },
   green: {
     background: "var(--success-surface)",
-    border: "var(--success)",
+    border: "none",
     text: "var(--success)"
   },
   grey: {
     background: "var(--info-surface)",
-    border: "var(--info-surface)",
+    border: "none",
     text: "var(--info)"
   },
   authorized: {
     background: "var(--success-surface)",
-    border: "var(--success)",
+    border: "none",
     text: "var(--success)"
   },
   declined: {
     background: "var(--danger-surface)",
-    border: "var(--danger)",
+    border: "none",
     text: "var(--danger)"
   }
 };
@@ -156,12 +156,17 @@ export default function CustomerPreviewPage() {
     setIsMounted(true);
   }, []);
 
+  const refetchTimerRef = useRef(null);
+  const fetchJobDataRef = useRef(null);
+
   // Fetch job data
   useEffect(() => {
     if (!jobNumber) return;
 
-    const fetchJobData = async () => {
-      setLoading(true);
+    const fetchJobData = async ({ silent = false } = {}) => {
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
 
       try {
@@ -220,7 +225,7 @@ export default function CustomerPreviewPage() {
               folder,
               uploaded_at,
               uploaded_by
-            ),
+            )
           `).
         eq("job_number", jobNumber).
         maybeSingle();
@@ -253,12 +258,17 @@ export default function CustomerPreviewPage() {
         setAuthorizedViewRows(authorizedRows);
       } catch (err) {
         console.error("Error fetching job data:", err);
-        setError(err.message || "Failed to load job data");
+        if (!silent) {
+          setError(err.message || "Failed to load job data");
+        }
       } finally {
-        setLoading(false);
+        if (!silent) {
+          setLoading(false);
+        }
       }
     };
 
+    fetchJobDataRef.current = fetchJobData;
     fetchJobData();
 
     return () => {};
@@ -330,10 +340,30 @@ export default function CustomerPreviewPage() {
       console.log(`[CUSTOMER-PREVIEW] Subscription status: ${status}`);
     });
 
+    // Parallel subscription: parts_job_items, job_files and jobs all influence
+    // what the customer sees on this page. On any change, schedule a silent
+    // re-fetch of the full payload so totals/files/job status stay live.
+    const scheduleRefetch = () => {
+      if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
+      refetchTimerRef.current = setTimeout(() => {
+        if (typeof fetchJobDataRef.current === "function") {
+          fetchJobDataRef.current({ silent: true });
+        }
+      }, 400);
+    };
+    const sideChannel = supabase
+      .channel(`vhc-customer-preview-side-${job.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "parts_job_items", filter: `job_id=eq.${job.id}` }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "job_files", filter: `job_id=eq.${job.id}` }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jobs", filter: `id=eq.${job.id}` }, scheduleRefetch)
+      .subscribe();
+
     // Cleanup subscription on unmount or when job changes
     return () => {
       console.log(`[CUSTOMER-PREVIEW] Cleaning up subscription for job ${job.id}`);
+      if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
       supabase.removeChannel(channel);
+      supabase.removeChannel(sideChannel);
     };
   }, [job?.id]);
 
@@ -1039,7 +1069,7 @@ export default function CustomerPreviewPage() {
 
   // Render customer section - matching VhcDetailsPanel design with table layout
   const renderCustomerSection = (title, items, severity) => {
-    const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--surface)" };
+    const theme = SEVERITY_THEME[severity] || { border: "none", background: "var(--surface)" };
 
     // Calculate authorized and declined totals for this section
     let authorizedTotal = 0;
@@ -1057,7 +1087,7 @@ export default function CustomerPreviewPage() {
     return (
       <div
         style={{
-          border: `1px solid ${theme.border || "var(--info-surface)"}`,
+          border: "none",
           borderRadius: "var(--radius-md)",
           background: severity === "authorized" || severity === "declined" ? "var(--surface)" : theme.background || "var(--surface)",
           overflow: "hidden",
@@ -1203,7 +1233,7 @@ export default function CustomerPreviewPage() {
     <div
       style={{
         padding: "18px",
-        border: "1px solid var(--info-surface)",
+        border: "none",
         borderRadius: "var(--radius-sm)",
         background: "var(--info-surface)",
         color: "var(--info)",
@@ -1226,7 +1256,7 @@ export default function CustomerPreviewPage() {
         style={{
           background: "var(--surface)",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--info-surface)",
+          border: "none",
           overflow: "hidden"
         }}>
         
@@ -1269,7 +1299,7 @@ export default function CustomerPreviewPage() {
     <div
       style={{
         padding: "18px",
-        border: "1px solid var(--info-surface)",
+        border: "none",
         borderRadius: "var(--radius-sm)",
         background: "var(--info-surface)",
         color: "var(--info)",
@@ -1292,7 +1322,7 @@ export default function CustomerPreviewPage() {
         style={{
           background: "var(--surface)",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--info-surface)",
+          border: "none",
           overflow: "hidden"
         }}>
         

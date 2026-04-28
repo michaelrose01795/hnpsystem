@@ -175,7 +175,7 @@ export default function NextActionPrompt() {
               padding: "16px",
               borderRadius: "var(--radius-md)",
               background: "rgba(var(--danger-rgb), 0.1)",
-              border: "1px solid rgba(var(--danger-rgb), 0.25)",
+              border: "none",
               display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
                 gap: "12px",
@@ -206,7 +206,7 @@ export default function NextActionPrompt() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: "var(--input-radius)",
-                    border: "1px solid rgba(var(--danger-rgb), 0.3)",
+                    border: "none",
                     background: "var(--surface)",
                     color: "var(--info-dark)",
                     fontWeight: 600,
@@ -228,7 +228,7 @@ export default function NextActionPrompt() {
                   style={{
                     padding: "10px 12px",
                     borderRadius: "var(--input-radius)",
-                    border: "1px solid rgba(var(--danger-rgb), 0.3)",
+                    border: "none",
                     background: "var(--surface)",
                     color: "var(--info-dark)",
                     fontWeight: 600,
@@ -280,7 +280,7 @@ export default function NextActionPrompt() {
                   style={{
                     padding: "10px 16px",
                     borderRadius: "var(--input-radius)",
-                    border: "1px solid var(--info)",
+                    border: "none",
                     background: "var(--surface)",
                     color: "var(--info-dark)",
                     fontWeight: 600,

@@ -230,9 +230,9 @@ const concernBadge = (color) => ({
 });
 
 const statusColors = {
-  Amber: { background: "rgba(var(--warning-rgb), 0.16)", text: palette.warning, border: "rgba(var(--warning-rgb), 0.32)" },
-  Red: { background: "rgba(var(--danger-rgb), 0.16)", text: palette.danger, border: "rgba(var(--danger-rgb), 0.32)" },
-  Green: { background: "rgba(var(--success-rgb), 0.16)", text: palette.success, border: "rgba(var(--success-rgb), 0.32)" },
+  Amber: { background: "rgba(var(--warning-rgb), 0.16)", text: palette.warning, border: "none" },
+  Red: { background: "rgba(var(--danger-rgb), 0.16)", text: palette.danger, border: "none" },
+  Green: { background: "rgba(var(--success-rgb), 0.16)", text: palette.success, border: "none" },
 };
 
 const getAverageTreadDepth = (tread = {}) => {

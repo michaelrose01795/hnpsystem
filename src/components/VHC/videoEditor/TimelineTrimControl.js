@@ -148,37 +148,30 @@ export default function TimelineTrimControl({
 
   return (
     <div
+      className="video-editor-timeline"
       style={{
-        background: "var(--surfaceMain)",
-        borderRadius: "var(--radius-lg)",
-        border: "1px solid var(--border)",
-        padding: "var(--space-4)",
         display: "grid",
         gap: "var(--space-3)",
         opacity: disabled ? 0.6 : 1,
-        color: "var(--surfaceText)",
       }}
     >
       <div
+        className="video-editor-timeline__header"
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
-          fontSize: "var(--text-caption)",
-          color: "var(--surfaceTextMuted)",
-          letterSpacing: "var(--tracking-caps)",
-          textTransform: "uppercase",
-          fontWeight: 800,
         }}
       >
         <span>Timeline</span>
-        <span style={{ color: "var(--surfaceText)", fontVariantNumeric: "tabular-nums" }}>
+        <span className="video-editor-timeline__time">
           {formatTime(currentTime)} / {formatTime(duration)}
         </span>
       </div>
 
       {/* Toolbar: audio toggle + edit actions */}
       <div
+        className="video-editor-timeline__toolbar"
         style={{
           display: "flex",
           flexWrap: "wrap",
@@ -188,14 +181,12 @@ export default function TimelineTrimControl({
         }}
       >
         <label
+          className="video-editor-timeline__audio-toggle"
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: "var(--space-2)",
             cursor: disabled ? "not-allowed" : "pointer",
-            fontSize: "var(--text-body-sm)",
-            color: "var(--surfaceText)",
-            fontWeight: 600,
           }}
         >
           <Switch checked={!isMuted} onChange={onToggleMute} disabled={disabled} />
@@ -225,18 +216,14 @@ export default function TimelineTrimControl({
 
       {/* Track */}
       <div
+        className="video-editor-timeline__track"
         ref={trackRef}
         onPointerDown={handleTrackPointerDown}
         style={{
           position: "relative",
-          height: 56,
-          borderRadius: "var(--radius-md)",
-          background: "var(--control-bg)",
-          border: "1px solid var(--border)",
           cursor: disabled ? "not-allowed" : "pointer",
           touchAction: "none",
           userSelect: "none",
-          marginBottom: 18,
         }}
       >
         {/* Dim region left of trim start */}
@@ -464,12 +451,11 @@ function Legend() {
   );
   return (
     <div
+      className="video-editor-timeline__legend"
       style={{
         display: "flex",
         gap: "var(--space-4)",
         flexWrap: "wrap",
-        fontSize: "var(--text-caption)",
-        color: "var(--surfaceTextMuted)",
       }}
     >
       {item(START_COLOR, "Start")}
@@ -483,6 +469,7 @@ function Legend() {
 function Switch({ checked, onChange, disabled }) {
   return (
     <button
+      className="video-editor-timeline__switch"
       type="button"
       role="switch"
       aria-checked={checked}
@@ -490,10 +477,6 @@ function Switch({ checked, onChange, disabled }) {
       onClick={() => onChange?.()}
       style={{
         position: "relative",
-        width: 44,
-        height: 26,
-        borderRadius: 999,
-        border: "1px solid var(--border)",
         background: checked ? "var(--accentMain)" : "var(--control-bg)",
         cursor: disabled ? "not-allowed" : "pointer",
         transition: "background 160ms ease",
@@ -521,12 +504,13 @@ function Switch({ checked, onChange, disabled }) {
 function ToolButton({ onClick, disabled, tone = "default", children }) {
   const palette = {
     default: { bg: "var(--control-bg)", color: "var(--surfaceText)", border: "var(--border)" },
-    danger: { bg: "rgba(var(--danger-rgb), 0.12)", color: "var(--danger)", border: "rgba(var(--danger-rgb), 0.4)" },
+    danger: { bg: "rgba(var(--danger-rgb), 0.12)", color: "var(--danger)", border: "transparent" },
     ghost: { bg: "transparent", color: "var(--surfaceTextMuted)", border: "var(--border)" },
   }[tone];
 
   return (
     <button
+      className={`video-editor-timeline__tool-button is-${tone}`}
       type="button"
       onClick={onClick}
       disabled={disabled}
@@ -534,19 +518,11 @@ function ToolButton({ onClick, disabled, tone = "default", children }) {
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        minHeight: 32,
-        padding: "0 var(--space-3)",
-        borderRadius: "var(--radius-pill)",
         background: palette.bg,
         color: palette.color,
         border: `1px solid ${palette.border}`,
-        fontSize: "var(--text-caption)",
-        fontWeight: 700,
-        letterSpacing: "var(--tracking-wide)",
-        textTransform: "uppercase",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        transition: "background-color 160ms ease, opacity 160ms ease",
       }}
     >
       {children}

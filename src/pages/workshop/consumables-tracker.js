@@ -283,7 +283,7 @@ function toneToStyles(tone) {
       ...badgeBaseStyle,
       backgroundColor: "rgba(var(--warning-rgb), 0.16)",
       color: "var(--warning-dark)",
-      border: "1px solid rgba(var(--warning-rgb), 0.35)"
+      border: "none"
     };
   }
 
@@ -291,7 +291,7 @@ function toneToStyles(tone) {
     ...badgeBaseStyle,
     backgroundColor: "rgba(var(--success-rgb), 0.12)",
     color: "var(--success-dark)",
-    border: "1px solid rgba(var(--success-rgb), 0.35)"
+    border: "none"
   };
 }
 
@@ -312,7 +312,7 @@ const statusBadgeStyles = {
   pending: {
     backgroundColor: "rgba(var(--warning-rgb), 0.16)",
     color: "var(--warning-dark)",
-    border: "1px solid rgba(var(--warning-rgb), 0.35)"
+    border: "none"
   },
   urgent: {
     backgroundColor: "rgba(var(--primary-rgb),0.12)",
@@ -322,12 +322,12 @@ const statusBadgeStyles = {
   ordered: {
     backgroundColor: "rgba(var(--success-rgb), 0.12)",
     color: "var(--success-dark)",
-    border: "1px solid rgba(var(--success-rgb), 0.35)"
+    border: "none"
   },
   rejected: {
     backgroundColor: "rgba(var(--danger-rgb), 0.12)",
     color: "var(--danger)",
-    border: "1px solid rgba(var(--danger-rgb), 0.35)"
+    border: "none"
   }
 };
 

@@ -1,48 +1,25 @@
 // file location: src/components/VHC/PhotoEditorModal.js
 // Post-capture photo annotation editor. Opens in a VHCModalShell and
-// offers pen / shape (circle, square, line, arrow) / eraser tools with
-// a preset colour palette, a line-width slider and undo / redo / reset
-// history.
-//
-// Annotations live on an offscreen canvas that sits above the base
-// photo; the visible canvas is a composite of photo + annotations +
-// (optionally) an in-flight shape preview. Because the eraser only
-// operates on the annotations layer, it can never damage the photo.
-//
-// All colour / radius / spacing / typography values resolve through
-// the global design tokens in src/styles/theme.css so the editor
-// follows the user's chosen theme in both light and dark mode.
+// offers shape annotation tools with a fixed stroke width and a small
+// preset colour palette.
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import VHCModalShell from "./VHCModalShell";
 import Button from "@/components/ui/Button";
 
 const TOOLS = [
-  { id: "pen", label: "✏️ Pen", desc: "Freehand draw", group: "draw" },
-  { id: "circle", label: "⭕ Circle", desc: "Drag to size", group: "draw" },
-  { id: "square", label: "▭ Square", desc: "Drag to size", group: "draw" },
-  { id: "line", label: "／ Line", desc: "Drag endpoints", group: "draw" },
-  { id: "arrow", label: "➜ Arrow", desc: "Point & shoot", group: "draw" },
-  { id: "eraser", label: "🧹 Eraser", desc: "Remove marks only", group: "erase" },
+  { id: "circle", label: "Circle" },
+  { id: "square", label: "Square" },
+  { id: "line", label: "Line" },
+  { id: "arrow", label: "Arrow" },
 ];
 
 const SHAPE_TOOLS = new Set(["circle", "square", "line", "arrow"]);
+const FIXED_LINE_WIDTH = 10;
 
-// Annotation palette. The first three swatches map to the global
-// danger / warning / success tokens so the editor's default marker
-// colours stay in lock-step with the rest of the app. They are
-// resolved lazily at runtime because Canvas 2D's strokeStyle cannot
-// consume CSS variables directly — the fallback hex matches the
-// token's light-mode value so a cold SSR render still looks right.
 const PRESET_PALETTE_TOKENS = [
   { token: "--danger", fallback: "#ef4444" },
-  { token: "--warning", fallback: "#f59e0b" },
   { token: "--success", fallback: "#22c55e" },
-  // Remaining slots are annotation-only primaries with no direct
-  // semantic equivalent in the design system.
-  { token: null, fallback: "#06b6d4" },
-  { token: null, fallback: "#3b82f6" },
-  { token: null, fallback: "#a855f7" },
   { token: null, fallback: "#ffffff" },
   { token: null, fallback: "#000000" },
 ];
@@ -76,21 +53,31 @@ const SECTION_LABEL_STYLE = {
   display: "block",
 };
 
+const TOOL_BUTTON_STYLE = {
+  padding: "var(--space-sm) var(--space-3)",
+  borderRadius: "var(--radius-sm)",
+  fontSize: "var(--text-body-sm)",
+  fontFamily: "var(--font-family)",
+  cursor: "pointer",
+  textAlign: "center",
+  transition: "var(--control-transition)",
+  userSelect: "none",
+};
+
 export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, onSkip }) {
-  const [tool, setTool] = useState("pen");
+  const [tool, setTool] = useState("circle");
   const presetColors = useMemo(() => {
     void isOpen;
     return resolvePresetColors();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
   const [color, setColor] = useState(() => resolvePresetColors()[0]);
-  const [lineWidth, setLineWidth] = useState(3);
   const [history, setHistory] = useState([]);
   const [historyStep, setHistoryStep] = useState(-1);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const canvasRef = useRef(null);
-  const annotationsRef = useRef(null); // offscreen canvas: annotations only
+  const annotationsRef = useRef(null);
   const imageRef = useRef(null);
   const drawingRef = useRef(false);
   const lastPosRef = useRef({ x: 0, y: 0 });
@@ -99,10 +86,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
   const historyRef = useRef({ list: [], step: -1 });
   historyRef.current = { list: history, step: historyStep };
 
-  // --- Compositing ---------------------------------------------------
-  // Paint base image + annotations into the visible canvas. An optional
-  // `preview` callback lets in-flight shape drags render on top without
-  // being committed to the annotations layer.
   const compose = (preview) => {
     const canvas = canvasRef.current;
     const base = imageRef.current;
@@ -115,7 +98,17 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     if (preview) preview(ctx);
   };
 
-  // --- Image load ----------------------------------------------------
+  const saveHistory = () => {
+    const ann = annotationsRef.current;
+    if (!ann) return;
+    const snapshot = ann.toDataURL();
+    const { list, step } = historyRef.current;
+    const newHistory = list.slice(0, step + 1);
+    newHistory.push(snapshot);
+    setHistory(newHistory);
+    setHistoryStep(newHistory.length - 1);
+  };
+
   useEffect(() => {
     if (!isOpen || !photoFile) {
       setImageLoaded(false);
@@ -133,8 +126,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     const img = new Image();
     let objectUrl = null;
 
-    const sourceIsFile = typeof photoFile !== "string";
-    if (sourceIsFile) {
+    if (typeof photoFile !== "string") {
       objectUrl = URL.createObjectURL(photoFile);
       img.src = objectUrl;
     } else {
@@ -148,7 +140,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
       canvas.width = w;
       canvas.height = h;
 
-      // Create an offscreen annotations layer sized to the image.
       const ann = document.createElement("canvas");
       ann.width = w;
       ann.height = h;
@@ -157,7 +148,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
 
       compose();
       setImageLoaded(true);
-      saveHistory(); // empty-annotations baseline
+      saveHistory();
     };
 
     if (typeof img.decode === "function") {
@@ -183,18 +174,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, photoFile]);
-
-  // --- History (annotations-layer snapshots) ------------------------
-  const saveHistory = () => {
-    const ann = annotationsRef.current;
-    if (!ann) return;
-    const snapshot = ann.toDataURL();
-    const { list, step } = historyRef.current;
-    const newHistory = list.slice(0, step + 1);
-    newHistory.push(snapshot);
-    setHistory(newHistory);
-    setHistoryStep(newHistory.length - 1);
-  };
 
   const restoreFromHistory = (step) => {
     const ann = annotationsRef.current;
@@ -232,7 +211,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     }
   };
 
-  // --- Pointer coords in image space --------------------------------
   const getCanvasCoordinates = (event) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -256,11 +234,10 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     };
   };
 
-  // --- Shape drawing helpers ----------------------------------------
   const applyStrokeStyle = (ctx) => {
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
-    ctx.lineWidth = lineWidth;
+    ctx.lineWidth = FIXED_LINE_WIDTH;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.globalCompositeOperation = "source-over";
@@ -281,7 +258,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
       ctx.moveTo(a.x, a.y);
       ctx.lineTo(b.x, b.y);
       ctx.stroke();
-      const headLen = Math.max(12, lineWidth * 5);
+      const headLen = Math.max(12, FIXED_LINE_WIDTH * 5);
       const angle = Math.atan2(b.y - a.y, b.x - a.x);
       ctx.beginPath();
       ctx.moveTo(b.x, b.y);
@@ -316,7 +293,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     }
   };
 
-  // --- Pointer handlers ---------------------------------------------
   const startDrawing = (event) => {
     if (!imageLoaded) return;
     event.preventDefault();
@@ -333,40 +309,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     if (!ann) return;
 
     const pos = getCanvasCoordinates(event);
-
-    if (tool === "pen") {
-      const ctx = ann.getContext("2d");
-      applyStrokeStyle(ctx);
-      ctx.beginPath();
-      ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-      lastPosRef.current = pos;
-      compose();
-      return;
-    }
-
-    if (tool === "eraser") {
-      // destination-out targets the annotations canvas only, so the
-      // base photo is untouched when we recomposite.
-      const ctx = ann.getContext("2d");
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = lineWidth * 2;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-      ctx.globalCompositeOperation = "source-over";
-      lastPosRef.current = pos;
-      compose();
-      return;
-    }
-
     if (SHAPE_TOOLS.has(tool)) {
-      // Render the in-flight shape as a live preview — it is not
-      // written into the annotations layer until pointer-up.
       compose((ctx) => drawShape(ctx, tool, startPosRef.current, pos));
       lastPosRef.current = pos;
     }
@@ -376,32 +319,21 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     if (!drawingRef.current) return;
     drawingRef.current = false;
 
-    if (SHAPE_TOOLS.has(tool)) {
-      const ann = annotationsRef.current;
-      const end = event ? getCanvasCoordinates(event) : lastPosRef.current;
-      const start = startPosRef.current;
-      const hasSize = Math.hypot(end.x - start.x, end.y - start.y) > 2;
-      if (ann && hasSize) {
-        const ctx = ann.getContext("2d");
-        drawShape(ctx, tool, start, end);
-        compose();
-        saveHistory();
-        return;
-      }
-      // Zero-size drag — just clear the preview.
+    const ann = annotationsRef.current;
+    const end = event ? getCanvasCoordinates(event) : lastPosRef.current;
+    const start = startPosRef.current;
+    const hasSize = Math.hypot(end.x - start.x, end.y - start.y) > 2;
+    if (ann && hasSize) {
+      const ctx = ann.getContext("2d");
+      drawShape(ctx, tool, start, end);
       compose();
+      saveHistory();
       return;
     }
-
-    // Pen / eraser — a stroke already committed to the annotations
-    // layer, so just snapshot.
-    saveHistory();
+    compose();
   };
 
-  // --- Export --------------------------------------------------------
   const exportImage = () => {
-    // Ensure we flatten the latest annotations into the visible canvas
-    // before reading a blob off it.
     compose();
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -422,48 +354,27 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
   const canUndo = historyStep > 0;
   const canRedo = historyStep < history.length - 1;
 
-  const drawTools = TOOLS.filter((t) => t.group === "draw");
-  const eraseTools = TOOLS.filter((t) => t.group === "erase");
-
-  const footer = (
-    <div style={{ display: "flex", gap: "var(--space-3)", justifyContent: "space-between", width: "100%", flexWrap: "wrap" }}>
-      <Button variant="ghost" size="sm" onClick={onCancel} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-        Cancel
+  const headerActions = (
+    <div
+      style={{
+        display: "flex",
+        gap: "var(--space-2)",
+        flexWrap: "wrap",
+        justifyContent: "flex-end",
+        userSelect: "none",
+      }}
+    >
+      {onSkip && (
+        <Button variant="secondary" size="sm" onClick={() => onSkip(photoFile)} disabled={!imageLoaded}>
+          Skip Edit
+        </Button>
+      )}
+      <Button variant="secondary" size="sm" onClick={resetToOriginal} disabled={historyStep === 0}>
+        Reset
       </Button>
-
-      <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap", justifyContent: "flex-end" }}>
-        {onSkip && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onSkip(photoFile)}
-            disabled={!imageLoaded}
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-          >
-            Skip Editing
-          </Button>
-        )}
-
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={resetToOriginal}
-          disabled={historyStep === 0}
-          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-        >
-          Reset
-        </Button>
-
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={exportImage}
-          disabled={!imageLoaded}
-          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
-        >
-          Save Edits
-        </Button>
-      </div>
+      <Button variant="primary" size="sm" onClick={exportImage} disabled={!imageLoaded}>
+        Save Edit
+      </Button>
     </div>
   );
 
@@ -476,25 +387,14 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
         onClick={() => setTool(t.id)}
         aria-pressed={active}
         style={{
-          padding: "var(--space-sm) var(--space-3)",
-          borderRadius: "var(--radius-sm)",
+          ...TOOL_BUTTON_STYLE,
           border: `1px solid ${active ? "var(--accentBorderStrong)" : "var(--accentBorder)"}`,
           background: active ? "var(--accentSurfaceHover)" : "var(--surfaceMain)",
           color: active ? "var(--accentMain)" : "var(--text-primary)",
-          fontSize: "var(--text-body-sm)",
           fontWeight: active ? 700 : 500,
-          fontFamily: "var(--font-family)",
-          cursor: "pointer",
-          textAlign: "left",
-          transition: "var(--control-transition)",
-          display: "grid",
-          gap: 2,
         }}
       >
-        <span>{t.label}</span>
-        <span style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)" }}>
-          {t.desc}
-        </span>
+        {t.label}
       </button>
     );
   };
@@ -503,11 +403,11 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
     <VHCModalShell
       isOpen={isOpen}
       title="Edit Photo"
-      subtitle="Draw annotations, highlights, or notes on the photo"
       width="1000px"
       height="750px"
       onClose={onCancel}
-      footer={footer}
+      headerActions={headerActions}
+      overlayStyle={{ userSelect: "none", WebkitUserSelect: "none" }}
     >
       <div
         style={{
@@ -516,9 +416,10 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
           gap: "var(--space-4)",
           height: "100%",
           minHeight: 0,
+          userSelect: "none",
+          WebkitUserSelect: "none",
         }}
       >
-        {/* Toolbar */}
         <aside
           style={{
             ...PANEL_STYLE,
@@ -529,89 +430,45 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
           }}
         >
           <div>
-            <span style={SECTION_LABEL_STYLE}>Pen</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
-              {drawTools.map(renderToolButton)}
+            <span style={SECTION_LABEL_STYLE}>Shape</span>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--space-sm)" }}>
+              {TOOLS.map(renderToolButton)}
             </div>
           </div>
 
           <div>
-            <span style={SECTION_LABEL_STYLE}>Erase</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
-              {eraseTools.map(renderToolButton)}
-            </div>
-          </div>
-
-          {tool !== "eraser" && (
-            <div>
-              <span style={SECTION_LABEL_STYLE}>Colour</span>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "var(--space-sm)",
-                }}
-              >
-                {presetColors.map((c) => {
-                  const active = color === c;
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setColor(c)}
-                      aria-label={`Choose colour ${c}`}
-                      aria-pressed={active}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: "var(--radius-sm)",
-                        background: c,
-                        border: active
-                          ? "3px solid var(--accentMain)"
-                          : "1px solid var(--accentBorder)",
-                        cursor: "pointer",
-                        transition: "var(--control-transition)",
-                      }}
-                    />
-                  );
-                })}
-              </div>
-              <input
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                aria-label="Custom colour"
-                style={{
-                  width: "100%",
-                  height: 36,
-                  marginTop: "var(--space-sm)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--accentBorder)",
-                  cursor: "pointer",
-                  background: "var(--surfaceMain)",
-                }}
-              />
-            </div>
-          )}
-
-          <div>
-            <span style={SECTION_LABEL_STYLE}>
-              {tool === "eraser" ? "Eraser size" : "Line width"}
-              {" · "}
-              <span style={{ fontWeight: 800, color: "var(--accentMain)" }}>{lineWidth}px</span>
-            </span>
-            <input
-              type="range"
-              min="1"
-              max="20"
-              value={lineWidth}
-              onChange={(e) => setLineWidth(Number(e.target.value))}
+            <span style={SECTION_LABEL_STYLE}>Colour</span>
+            <div
               style={{
-                width: "100%",
-                accentColor: "var(--accentMain)",
-                cursor: "pointer",
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: "var(--space-sm)",
               }}
-            />
+            >
+              {presetColors.map((c) => {
+                const active = color === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    aria-label={`Choose colour ${c}`}
+                    aria-pressed={active}
+                    style={{
+                      width: "100%",
+                      height: 36,
+                      borderRadius: "var(--radius-sm)",
+                      background: c,
+                      border: active
+                        ? "3px solid var(--accentMain)"
+                        : "1px solid var(--accentBorder)",
+                      cursor: "pointer",
+                      transition: "var(--control-transition)",
+                    }}
+                  />
+                );
+              })}
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: "var(--space-sm)" }}>
@@ -632,9 +489,10 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 opacity: canUndo ? 1 : 0.55,
                 fontFamily: "var(--font-family)",
                 transition: "var(--control-transition)",
+                userSelect: "none",
               }}
             >
-              ↶ Undo
+              Undo
             </button>
             <button
               type="button"
@@ -653,14 +511,14 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 opacity: canRedo ? 1 : 0.55,
                 fontFamily: "var(--font-family)",
                 transition: "var(--control-transition)",
+                userSelect: "none",
               }}
             >
-              ↷ Redo
+              Redo
             </button>
           </div>
         </aside>
 
-        {/* Canvas stage */}
         <div
           style={{
             background: "var(--surfaceMutedToken)",
@@ -689,6 +547,8 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
               cursor: "crosshair",
               touchAction: "none",
               visibility: imageLoaded ? "visible" : "hidden",
+              userSelect: "none",
+              WebkitUserSelect: "none",
             }}
           />
           {!imageLoaded && (
@@ -697,16 +557,15 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 position: "absolute",
                 inset: 0,
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
                 textAlign: "center",
                 color: "var(--text-secondary)",
                 pointerEvents: "none",
+                fontSize: "var(--text-body-sm)",
               }}
             >
-              <div style={{ fontSize: "var(--text-h1)", marginBottom: "var(--space-sm)" }}>📷</div>
-              <div style={{ fontSize: "var(--text-body-sm)" }}>Loading image…</div>
+              Loading image...
             </div>
           )}
         </div>

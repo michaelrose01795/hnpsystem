@@ -1306,7 +1306,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             style={{
               padding: "8px 14px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--danger, #e53935)",
+              border: "none",
               background: "transparent",
               color: "var(--danger, #e53935)",
               fontWeight: 600,

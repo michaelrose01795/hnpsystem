@@ -38,9 +38,13 @@ export function ConfirmationProvider({ children }) {
       {children}
       <ConfirmationDialog
         isOpen={Boolean(currentRequest)}
-        title={currentRequest?.title || "Please confirm"}
+        // Default to "Please confirm" only when the caller didn't pass a title
+        // key at all. Explicit null/empty-string from a caller suppresses the
+        // eyebrow entirely (used by the modern Check-in dialog).
+        title={currentRequest?.title === undefined ? "Please confirm" : currentRequest.title}
         message={currentRequest?.message}
         description={currentRequest?.description}
+        details={currentRequest?.details}
         confirmLabel={currentRequest?.confirmLabel || "Yes"}
         cancelLabel={currentRequest?.cancelLabel || "No"}
         onConfirm={() => handleChoice(true)}

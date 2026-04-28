@@ -977,7 +977,7 @@ export default function BrakesHubsDetailsModal({
   }, [missingSections, showDrum, showValidation]);
 
   const requiredPanelStyle = {
-    border: "2px solid var(--danger)",
+    border: "none",
     background: "var(--danger-surface)",
   };
 

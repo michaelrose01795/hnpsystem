@@ -76,7 +76,7 @@ export default function PresentationDevOverlay() {
           color: "#b7f6ff",
           padding: "10px 12px",
           borderRadius: "var(--radius-sm)",
-          fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+          fontFamily: "var(--font-family-mono)",
           fontSize: 11,
           pointerEvents: "none",
           maxWidth: 390,
@@ -117,7 +117,7 @@ function OverlayBox({ rect, label, color, zIndex }) {
           color: "#001018",
           padding: "1px 5px",
           borderRadius: 3,
-          fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+          fontFamily: "var(--font-family-mono)",
           whiteSpace: "nowrap",
         }}
       >

@@ -14,6 +14,7 @@ export default function VHCModalShell({
   inlineMode = false,
   onClose,
   footer = null,
+  headerActions = null,
   children,
   hideCloseButton = false,
   adaptiveHeight = false,
@@ -74,6 +75,7 @@ export default function VHCModalShell({
             ) : null}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+            {headerActions}
             {inlineMode && footer ? footer : null}
             {!hideCloseButton && (
               <Button
@@ -163,7 +165,7 @@ export default function VHCModalShell({
               style={{
                 padding: "16px 20px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--danger)",
+                border: "none",
                 background: "var(--surface)",
                 color: "var(--danger)",
                 fontWeight: 700,

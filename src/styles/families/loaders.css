@@ -4,7 +4,7 @@
  *
  * Variants: block, inline, row, card, page
  * Component: src/components/ui/LoadingSkeleton.js
- * Showcase:  /dev/showcase#loader
+ * Showcase:  /dev/user-diagnostic#loader
  *
  * NOTE (2026-04 audit pass): the .skeleton-block base + @keyframes live in
  * src/styles/globals.css today. They stay there for this setup pass — the

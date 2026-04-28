@@ -3,7 +3,7 @@
  * Canonical home for the Table family.
  *
  * Variants: standard, compact, workflow
- * Showcase:  /dev/showcase#table
+ * Showcase:  /dev/user-diagnostic#table
  *
  * NOTE (2026-04 audit pass): the existing .app-data-table, thead, and tbody
  * rules still live in src/styles/globals.css (~1385-1410). They stay there

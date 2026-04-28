@@ -29,19 +29,19 @@ const statusPalette = {
     fill: "var(--danger)",
     text: "var(--text-inverse)",
     label: "var(--danger-dark)",
-    border: "var(--danger-dark)",
+    border: "none",
   },
   advisory: {
     fill: "var(--warning)",
     text: "var(--text-inverse)",
     label: "var(--warning-dark)",
-    border: "var(--warning-dark)",
+    border: "none",
   },
   good: {
     fill: "var(--success)",
     text: "var(--text-inverse)",
     label: "var(--success-dark)",
-    border: "var(--success-dark)",
+    border: "none",
   },
 };
 

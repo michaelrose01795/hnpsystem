@@ -676,7 +676,7 @@ const buildManualTaskSourceKey = (prefix) =>
 const modernInputStyle = {
   width: "100%",
   borderRadius: "var(--control-radius-xs)",
-  border: "1px solid var(--info)",
+  border: "none",
   padding: "10px 12px",
   fontSize: "14px",
   fontFamily: "inherit",
@@ -687,7 +687,7 @@ const modernInputStyle = {
 const modernTextareaStyle = {
   width: "100%",
   borderRadius: "var(--control-radius-xs)",
-  border: "1px solid var(--info)",
+  border: "none",
   padding: "10px 12px",
   fontSize: "14px",
   fontFamily: "inherit",
@@ -765,7 +765,7 @@ const addSectionButtonStyle = {
 };
 
 const deleteAddedRowButtonStyle = {
-  border: "1px solid var(--danger)",
+  border: "none",
   backgroundColor: "var(--danger-surface)",
   color: "var(--danger)",
   borderRadius: "var(--radius-xs)",
@@ -777,9 +777,9 @@ const deleteAddedRowButtonStyle = {
 
 const cardRowStyle = (completed) => ({
   borderRadius: "var(--radius-sm)",
-  border: `1px solid ${completed ? "var(--info)" : "var(--accent-purple-surface)"}`,
+  border: "none",
   padding: "12px",
-  backgroundColor: completed ? "var(--success-surface)" : "var(--layer-section-level-2)",
+  backgroundColor: completed ? "var(--success-surface)" : "var(--warning-surface)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -787,7 +787,7 @@ const cardRowStyle = (completed) => ({
 
 const rectificationCardStyle = (completed) => ({
   borderRadius: "var(--radius-sm)",
-  border: `1px solid ${completed ? "var(--info)" : "var(--danger)"}`,
+  border: "none",
   padding: "12px",
   backgroundColor: completed ? "var(--success-surface)" : "var(--layer-section-level-3)",
   display: "flex",
@@ -2988,7 +2988,7 @@ function WriteUpForm({
                 onClick={closeDocumentsPopup}
                 style={{
                   flex: 1,
-                  border: "1px solid var(--info)",
+                  border: "none",
                   borderRadius: "var(--control-radius-xs)",
                   padding: "12px 16px",
                   background: "var(--surface)",

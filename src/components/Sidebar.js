@@ -185,19 +185,7 @@ export default function Sidebar({
         <span>{label}</span>
         {isMessagesItem && unreadCount > 0 && (
           <span
-            style={{
-              minWidth: 24,
-              minHeight: 24,
-              padding: "0 6px",
-              borderRadius: 999,
-              background: "var(--accentMain)",
-              color: "var(--onAccentText)",
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className="app-badge app-badge--danger-strong app-badge--round-count"
           >
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
@@ -448,7 +436,7 @@ export default function Sidebar({
                             onClick={toggleDevOverlay}
                             style={{ flex: 1 }}
                           >
-                            Dev Overlay
+                            Overlay
                           </button>
                         )}
                       </div>

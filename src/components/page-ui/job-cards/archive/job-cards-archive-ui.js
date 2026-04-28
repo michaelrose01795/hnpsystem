@@ -115,7 +115,7 @@ export default function ArchivedJobsPageUi(props) {
 
         {error && <DevLayoutSection sectionKey="job-cards-archive-error-banner" parentKey="job-cards-archive-page-shell" sectionType="state-banner" backgroundToken="danger-surface" style={{
       borderRadius: "var(--radius-sm)",
-      border: "1px solid var(--danger-surface)",
+      border: "none",
       background: "var(--danger-surface)",
       padding: "12px"
     }}>
@@ -236,7 +236,7 @@ export default function ArchivedJobsPageUi(props) {
                     textDecoration: "none",
                     padding: "8px 14px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--info)",
+                    border: "none",
                     color: "var(--accent-purple)",
                     fontWeight: 600
                   }}>

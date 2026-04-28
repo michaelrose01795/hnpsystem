@@ -237,7 +237,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 const paidLabel = job.is_paid ? "Paid" : "Awaiting payment";
                 return <button key={job.id} type="button" style={{
                   ...jobRowButtonStyle,
-                  borderColor: job.status === "completed" ? "rgba(var(--success-rgb,34,139,34),0.5)" : jobRowButtonStyle.border,
+                  borderColor: "transparent",
                   background: job.status === "completed" ? "rgba(var(--success-rgb,34,139,34),0.08)" : jobRowButtonStyle.background
                 }} onClick={() => openJobModal(job)}>
                               <div style={{

@@ -2,17 +2,54 @@
 
 import { useEffect } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
+
+// Plain-string fallback: split a multi-line message into <p> lines so existing
+// callers that pass `confirm("Line 1\nLine 2")` keep rendering the same way.
 const renderMessageLines = (message) => {
   if (!message && message !== 0) return [];
   const text = String(message);
   return text.split("\n");
 };
 
+// Theme-token tones used by the new structured `details` prop. Each tile picks
+// one of these by passing { tone: "info" | "success" | "warning" | "accent" }.
+// Falls back to "info" so unknown tones still render a valid tile.
+const TONE_STYLES = {
+  info: {
+    background: "var(--info-surface)",
+    label: "var(--info)",
+    value: "var(--text-primary)",
+  },
+  success: {
+    background: "var(--success-surface)",
+    label: "var(--success)",
+    value: "var(--text-primary)",
+  },
+  warning: {
+    background: "var(--warning-surface)",
+    label: "var(--warning-dark)",
+    value: "var(--text-primary)",
+  },
+  accent: {
+    background: "var(--accentSurfaceSubtle)",
+    label: "var(--accentText)",
+    value: "var(--text-primary)",
+  },
+  neutral: {
+    background: "var(--surface)",
+    label: "var(--text-secondary)",
+    value: "var(--text-primary)",
+  },
+};
+
+const resolveToneStyle = (tone) => TONE_STYLES[tone] || TONE_STYLES.info;
+
 export default function ConfirmationDialog({
   isOpen,
   title,
   message,
   description,
+  details, // Optional array: [{ label, value, tone }] — renders as themed tile grid.
   cancelLabel = "No",
   confirmLabel = "Yes",
   onCancel,
@@ -37,13 +74,15 @@ export default function ConfirmationDialog({
     onConfirm?.();
   };
 
+  const hasDetails = Array.isArray(details) && details.length > 0;
+
   return (
     <PopupModal
       isOpen={isOpen}
       onClose={onCancel}
       ariaLabel={title || "Confirmation dialog"}
       cardStyle={{
-        width: "min(520px, 100%)",
+        width: "min(560px, 100%)",
         padding: "var(--space-7)",
         borderRadius: "var(--radius-xl)",
         display: "flex",
@@ -51,57 +90,123 @@ export default function ConfirmationDialog({
         gap: "20px",
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "16px" }}>
-        <div>
-          {title && (
-            <p
-              style={{
-                margin: "0 0 6px",
-                fontSize: "0.75rem",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                color: "var(--info)",
-              }}
-            >
-              {title}
-            </p>
-          )}
+      {/* Header: small uppercase eyebrow title + the main prompt */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {title && (
+          <p
+            style={{
+              margin: 0,
+              fontSize: "0.75rem",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "var(--info)",
+              fontWeight: 600,
+            }}
+          >
+            {title}
+          </p>
+        )}
+        {lines.length > 0 && (
           <div>
             {lines.map((line, index) => (
               <p
                 key={`${line}-${index}`}
                 style={{
-                  margin: "6px 0",
+                  margin: index === 0 ? "0" : "6px 0 0",
                   color: "var(--text-primary)",
-                  lineHeight: 1.4,
-                  fontSize: "0.95rem",
+                  lineHeight: 1.35,
+                  // First line is the headline question, the rest are supporting copy.
+                  fontSize: index === 0 ? "1.15rem" : "0.95rem",
+                  fontWeight: index === 0 ? 600 : 400,
                   whiteSpace: "pre-wrap",
                 }}
               >
                 {line}
               </p>
             ))}
-            {description && (
-              <p
+          </div>
+        )}
+        {description && (
+          <p
+            style={{
+              margin: 0,
+              color: "var(--text-secondary)",
+              fontSize: "0.9rem",
+              lineHeight: 1.5,
+            }}
+          >
+            {description}
+          </p>
+        )}
+      </div>
+
+      {/* Structured details grid: responsive 2-column tile layout, each tile
+          tinted with a theme surface so sections are visually distinct. */}
+      {hasDetails && (
+        <div
+          style={{
+            display: "grid",
+            gap: "10px",
+            // Auto-fit so single-tile sets centre, and the grid collapses to 1
+            // column on narrow widths automatically.
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          }}
+        >
+          {details.map((entry, index) => {
+            const tone = resolveToneStyle(entry?.tone);
+            const label = entry?.label ?? "";
+            const value = entry?.value ?? "—";
+            return (
+              <div
+                key={`${label}-${index}`}
                 style={{
-                  margin: "10px 0 0",
-                  color: "var(--info-dark)",
-                  fontSize: "0.9rem",
-                  lineHeight: 1.5,
+                  background: tone.background,
+                  borderRadius: "var(--radius-md)",
+                  padding: "12px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  // Subtle inner border using the matching label colour at low
+                  // alpha keeps the tile readable in dark mode where flat
+                  // surfaces can blend into the dialog background.
+                  border: "1px solid rgba(0,0,0,0.04)",
                 }}
               >
-                {description}
-              </p>
-            )}
-          </div>
+                <span
+                  style={{
+                    fontSize: "0.65rem",
+                    letterSpacing: "0.16em",
+                    textTransform: "uppercase",
+                    color: tone.label,
+                    fontWeight: 700,
+                  }}
+                >
+                  {label}
+                </span>
+                <span
+                  style={{
+                    fontSize: "1rem",
+                    color: tone.value,
+                    fontWeight: 600,
+                    lineHeight: 1.25,
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {value}
+                </span>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
+
+      {/* Action row */}
       <div
         style={{
           display: "flex",
           justifyContent: "flex-end",
           gap: "12px",
-          marginTop: "10px",
+          marginTop: "4px",
         }}
       >
         <button
@@ -110,11 +215,12 @@ export default function ConfirmationDialog({
           style={{
             padding: "var(--control-padding)",
             borderRadius: "var(--radius-sm)",
-            border: "none",
+            border: "1px solid var(--border)",
             backgroundColor: "var(--surface)",
             color: "var(--text-primary)",
             cursor: "pointer",
             fontWeight: 600,
+            minWidth: "96px",
           }}
         >
           {cancelLabel}
@@ -127,9 +233,10 @@ export default function ConfirmationDialog({
             borderRadius: "var(--radius-sm)",
             border: "1px solid var(--primary)",
             backgroundColor: "var(--primary)",
-            color: "var(--surface)",
+            color: "var(--text-inverse)",
             cursor: "pointer",
             fontWeight: 600,
+            minWidth: "96px",
           }}
         >
           {confirmLabel}

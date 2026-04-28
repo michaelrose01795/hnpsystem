@@ -228,6 +228,8 @@ If creating a new file, state why an existing file could not be used instead.
 | DB schema SQL | `src/lib/database/schema/schemaReference.sql` |
 | DB helpers | `src/lib/database/<domain>.js` |
 | Mobile detection | `src/hooks/useIsMobile.js` |
+| VHC status engine (single source of truth) | `src/features/vhc/vhcStatusEngine.js` |
+| VHC item state primitives | `src/lib/vhc/vhcItemState.js` |
 | Path alias | `@/` → `src/` |
 
 ---

@@ -35,7 +35,13 @@ const parseMultipart = async (req) => {
   let file = null;
 
   for (const [key, value] of formData.entries()) {
-    if (value instanceof File && key === "file") {
+    const isUploadedFile =
+      key === "file" &&
+      value &&
+      typeof value === "object" &&
+      typeof value.arrayBuffer === "function";
+
+    if (isUploadedFile) {
       const arrayBuffer = await value.arrayBuffer();
       file = {
         fileName: value.name,
@@ -60,6 +66,131 @@ const parseJson = (value, fallback) => {
   }
 };
 
+const readJsonBody = async (req) => {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  if (chunks.length === 0) return {};
+  return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+};
+
+const normaliseVideoMeta = ({ fileName, mimeType, fileSize }) => {
+  const safeFileName = String(fileName || "customer-video.webm").trim();
+  const safeMimeType = String(mimeType || "video/webm").trim();
+  const safeFileSize = Number(fileSize || 0);
+
+  if (!safeMimeType.startsWith("video/")) {
+    throw Object.assign(new Error("Only video uploads are allowed."), { statusCode: 400 });
+  }
+
+  return {
+    fileName: safeFileName,
+    mimeType: safeMimeType,
+    fileSize: Number.isFinite(safeFileSize) ? safeFileSize : 0,
+  };
+};
+
+const createCustomerVideoRecord = async ({
+  jobNumber,
+  storagePath,
+  publicUrl,
+  mimeType,
+  fileSize,
+  overlays,
+  contextLabel,
+  uploadedBy,
+}) => {
+  const { data: record, error: insertError } = await supabaseService
+    .from("vhc_customer_media")
+    .insert({
+      job_number: jobNumber,
+      media_type: "video",
+      storage_bucket: BUCKET_NAME,
+      storage_path: storagePath,
+      public_url: publicUrl,
+      mime_type: mimeType,
+      file_size_bytes: fileSize,
+      overlays,
+      context_label: contextLabel || null,
+      uploaded_by: uploadedBy,
+    })
+    .select("id, job_number, media_type, public_url, storage_bucket, storage_path, overlays, created_at")
+    .single();
+
+  if (insertError) {
+    throw Object.assign(new Error(insertError.message || "Failed to save metadata."), { statusCode: 500 });
+  }
+
+  return record;
+};
+
+const handleSignedUploadRequest = async (body, res) => {
+  const action = String(body.action || "").trim();
+
+  if (action === "createSignedUpload") {
+    const jobNumber = String(body.jobNumber || "").trim();
+    if (!jobNumber) {
+      return res.status(400).json({ success: false, message: "Missing job number." });
+    }
+
+    const fileMeta = normaliseVideoMeta(body);
+    await ensureVhcMediaBucket();
+
+    const storagePath = buildVhcMediaStoragePath(
+      jobNumber,
+      MEDIA_TYPES.customerVideo,
+      fileMeta.fileName
+    );
+    const { data, error } = await supabaseService
+      .storage
+      .from(BUCKET_NAME)
+      .createSignedUploadUrl(storagePath);
+
+    if (error) {
+      return res.status(500).json({ success: false, message: error.message || "Failed to prepare upload." });
+    }
+
+    return res.status(200).json({
+      success: true,
+      bucket: BUCKET_NAME,
+      storagePath,
+      signedUrl: data?.signedUrl || "",
+      token: data?.token || "",
+    });
+  }
+
+  if (action === "completeSignedUpload") {
+    const jobNumber = String(body.jobNumber || "").trim();
+    const storagePath = String(body.storagePath || "").trim();
+    if (!jobNumber) {
+      return res.status(400).json({ success: false, message: "Missing job number." });
+    }
+    if (!storagePath) {
+      return res.status(400).json({ success: false, message: "Missing storage path." });
+    }
+
+    const fileMeta = normaliseVideoMeta(body);
+    const uploadedBy = String(body.uploadedBy || "system").trim();
+    const overlays = Array.isArray(body.overlays) ? body.overlays : [];
+    const contextLabel = String(body.contextLabel || "").trim();
+    const publicUrl = supabaseService.storage.from(BUCKET_NAME).getPublicUrl(storagePath)?.data?.publicUrl || "";
+
+    const record = await createCustomerVideoRecord({
+      jobNumber,
+      storagePath,
+      publicUrl,
+      mimeType: fileMeta.mimeType,
+      fileSize: fileMeta.fileSize,
+      overlays,
+      contextLabel,
+      uploadedBy,
+    });
+
+    return res.status(200).json({ success: true, record });
+  }
+
+  return res.status(400).json({ success: false, message: "Unknown upload action." });
+};
+
 async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
@@ -71,6 +202,12 @@ async function handler(req, res) {
   }
 
   try {
+    const contentType = req.headers["content-type"] || "";
+    if (contentType.startsWith("application/json")) {
+      const body = await readJsonBody(req);
+      return handleSignedUploadRequest(body, res);
+    }
+
     // Ensure the bucket exists before upload
     await ensureVhcMediaBucket();
 
@@ -101,26 +238,16 @@ async function handler(req, res) {
     const publicUrl = uploadResult.publicUrl;
     const storagePath = uploadResult.storagePath;
 
-    const { data: record, error: insertError } = await supabaseService
-      .from("vhc_customer_media")
-      .insert({
-        job_number: jobNumber,
-        media_type: "video",
-        storage_bucket: BUCKET_NAME,
-        storage_path: storagePath,
-        public_url: publicUrl,
-        mime_type: file.mimeType,
-        file_size_bytes: file.size,
-        overlays,
-        context_label: contextLabel || null,
-        uploaded_by: uploadedBy,
-      })
-      .select("id, job_number, media_type, public_url, storage_bucket, storage_path, overlays, created_at")
-      .single();
-
-    if (insertError) {
-      return res.status(500).json({ success: false, message: insertError.message || "Failed to save metadata." });
-    }
+    const record = await createCustomerVideoRecord({
+      jobNumber,
+      storagePath,
+      publicUrl,
+      mimeType: file.mimeType,
+      fileSize: file.size,
+      overlays,
+      contextLabel,
+      uploadedBy,
+    });
 
     return res.status(200).json({ success: true, record });
   } catch (error) {
@@ -128,7 +255,7 @@ async function handler(req, res) {
       message: error?.message,
       stack: error?.stack,
     });
-    return res.status(500).json({ success: false, message: error?.message || "Unexpected upload error." });
+    return res.status(error?.statusCode || 500).json({ success: false, message: error?.message || "Unexpected upload error." });
   }
 }
 

@@ -81,7 +81,7 @@ const getWashIndicatorMeta = (state) => {
     return {
       symbol: "✓",
       color: "var(--success)",
-      borderColor: "rgba(var(--success-rgb), 0.35)",
+      borderColor: "transparent",
       background: "rgba(var(--success-rgb), 0.1)",
       label: "Wash complete"
     };
@@ -90,7 +90,7 @@ const getWashIndicatorMeta = (state) => {
     return {
       symbol: "✕",
       color: "var(--danger)",
-      borderColor: "rgba(var(--danger-rgb), 0.35)",
+      borderColor: "transparent",
       background: "rgba(var(--danger-rgb), 0.08)",
       label: "No wash to be done"
     };

@@ -9,7 +9,7 @@ const MetricCard = ({ label, value, helper }) =>
 <div
   className="app-section-card"
   style={{
-    border: "1px solid var(--danger-surface)",
+    border: "none",
     minWidth: 160
   }}>
   

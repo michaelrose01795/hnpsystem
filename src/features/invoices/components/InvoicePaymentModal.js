@@ -21,27 +21,27 @@ const toneStyle = (tone) => {
     return {
       background: "var(--success-surface)",
       color: "var(--success-dark)",
-      borderColor: "var(--success)",
+      borderColor: "transparent",
     };
   }
   if (tone === "danger") {
     return {
       background: "var(--danger-surface)",
       color: "var(--danger-dark)",
-      borderColor: "var(--danger)",
+      borderColor: "transparent",
     };
   }
   if (tone === "warning") {
     return {
       background: "var(--warning-surface)",
       color: "var(--warning-dark)",
-      borderColor: "var(--warning)",
+      borderColor: "transparent",
     };
   }
   return {
     background: "var(--info-surface)",
     color: "var(--info-dark)",
-    borderColor: "var(--info)",
+    borderColor: "transparent",
   };
 };
 

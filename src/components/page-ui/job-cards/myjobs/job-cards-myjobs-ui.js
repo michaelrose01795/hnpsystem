@@ -246,7 +246,7 @@ export default function MyJobsPageUi(props) {
         backgroundColor: "transparent",
         padding: "60px",
         borderRadius: "var(--radius-md)",
-        border: "1px dashed var(--danger)",
+        border: "none",
         textAlign: "center",
         margin: "auto",
         maxWidth: "520px"

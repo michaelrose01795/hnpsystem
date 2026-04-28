@@ -1,18 +1,11 @@
 // file location: src/components/VHC/VideoEditorModal.js
 // Edit Video popup. Single-column layout: video preview on top, the
 // unified timeline (with audio toggle, Split, Remove section, trim
-// handles and playhead) directly under it. The shell uses the global
-// surface / border tokens so the popup follows light and dark themes
-// the same way the rest of the app does.
-//
-// Trim/save semantics preserved. Additionally supports "cut" segments
-// removed from the middle of the clip: playback skips them, and export
-// pauses the MediaRecorder while the playhead is inside a cut.
+// handles and playhead) directly under it.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
-import { popupOverlayStyles } from "@/styles/appTheme";
 import Button from "@/components/ui/Button";
 import VideoPlayer from "./videoEditor/VideoPlayer";
 import TimelineTrimControl from "./videoEditor/TimelineTrimControl";
@@ -27,19 +20,6 @@ function getPreferredMimeType() {
   ];
   return candidates.find((type) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type)) || "";
 }
-
-const actionButtonStyle = (extra = {}) => ({
-  minHeight: "var(--control-height)",
-  padding: "0 var(--space-lg)",
-  fontSize: "var(--text-body-sm)",
-  letterSpacing: "var(--tracking-wide)",
-  fontWeight: 800,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "var(--space-sm)",
-  ...extra,
-});
 
 function findCutContaining(time, cuts) {
   return cuts.find((c) => time >= c.start && time < c.end);
@@ -68,6 +48,7 @@ export default function VideoEditorModal({
   const [processing, setProcessing] = useState(false);
   const [splits, setSplits] = useState([]);
   const [cuts, setCuts] = useState([]);
+  const [videoAspectRatio, setVideoAspectRatio] = useState(9 / 16);
 
   const videoRef = useRef(null);
   const scrubResumeRef = useRef(false);
@@ -95,6 +76,7 @@ export default function VideoEditorModal({
     setProcessing(false);
     setSplits([]);
     setCuts([]);
+    setVideoAspectRatio(9 / 16);
   }, [isOpen, previewSource]);
 
   const seekTo = (time) => {
@@ -102,8 +84,6 @@ export default function VideoEditorModal({
     if (!v) return;
     const safe = Number.isFinite(time) ? time : 0;
     const clamped = Math.max(0, Math.min(safe, duration || safe));
-    // Update React state immediately so the playhead UI tracks the
-    // pointer without waiting for the video's own timeupdate event.
     setCurrentTime(clamped);
     try {
       v.currentTime = clamped;
@@ -115,9 +95,6 @@ export default function VideoEditorModal({
   const handleScrubStart = () => {
     const v = videoRef.current;
     if (!v) return;
-    // Pause while scrubbing so rapid currentTime writes aren't
-    // fighting playback — the browser can then keep up with each
-    // seek and actually paint the requested frame.
     scrubResumeRef.current = !v.paused;
     if (!v.paused) {
       v.pause();
@@ -137,10 +114,16 @@ export default function VideoEditorModal({
   const togglePlayPause = async () => {
     const v = videoRef.current;
     if (!v || !videoLoaded) return;
-    if (isPlaying) { v.pause(); setIsPlaying(false); return; }
+    if (isPlaying) {
+      v.pause();
+      setIsPlaying(false);
+      return;
+    }
     if (v.currentTime < trimStart || v.currentTime >= trimEnd) v.currentTime = trimStart;
-    try { await v.play(); setIsPlaying(true); }
-    catch (err) {
+    try {
+      await v.play();
+      setIsPlaying(true);
+    } catch (err) {
       console.error("Playback failed:", err);
       setLoadError("Video playback was blocked by the browser.");
     }
@@ -175,12 +158,14 @@ export default function VideoEditorModal({
       }
 
       const stream = v.captureStream();
-      if (isMuted) { stream.getAudioTracks().forEach((track) => stream.removeTrack(track)); }
+      if (isMuted) stream.getAudioTracks().forEach((track) => stream.removeTrack(track));
 
       const mime = getPreferredMimeType();
       const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
       const chunks = [];
-      recorder.ondataavailable = (event) => { if (event.data && event.data.size > 0) chunks.push(event.data); };
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) chunks.push(event.data);
+      };
       recorder.onstop = () => {
         const type = mime || "video/webm";
         const ext = type.includes("mp4") ? "mp4" : "webm";
@@ -190,7 +175,6 @@ export default function VideoEditorModal({
         onSave?.(file);
       };
 
-      // Pause/resume across cuts during recording.
       const onTimeUpdate = () => {
         const t = v.currentTime;
         const cut = findCutContaining(t, cuts);
@@ -227,81 +211,27 @@ export default function VideoEditorModal({
 
   if (!isOpen || typeof document === "undefined") return null;
 
+  const popupMaxWidth = videoAspectRatio < 0.8 ? "460px" : videoAspectRatio < 1.35 ? "720px" : "900px";
+
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label="Edit video" style={popupOverlayStyles}>
+    <div className="popup-backdrop video-editor-backdrop" role="dialog" aria-modal="true" aria-label="Edit video">
       <div
+        className="popup-card video-editor-popup"
         style={{
-          width: "min(1100px, 100%)",
-          maxHeight: "calc(100dvh - clamp(10px, 2.5vw, 20px) * 2)",
-          background: "var(--surfaceMain)",
-          borderRadius: "var(--radius-xl)",
-          border: "1px solid var(--border)",
-          boxShadow: "0 30px 60px rgba(0,0,0,0.35)",
-          color: "var(--surfaceText)",
-          display: "grid",
-          gridTemplateRows: "auto 1fr auto",
-          overflow: "hidden",
-          fontFamily: "var(--font-family)",
+          "--video-editor-max-width": popupMaxWidth,
+          "--video-editor-aspect-ratio": videoAspectRatio,
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            padding: "var(--space-4) var(--space-5)",
-            borderBottom: "1px solid var(--border)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "var(--space-3)",
-          }}
-        >
-          <div style={{ display: "grid", gap: 2 }}>
-            <div
-              style={{
-                fontSize: "var(--text-caption)",
-                color: "var(--surfaceTextMuted)",
-                fontWeight: 800,
-                letterSpacing: "var(--tracking-caps)",
-                textTransform: "uppercase",
-              }}
-            >
-              Edit video
-            </div>
-            <div
-              style={{
-                fontSize: "var(--text-h3)",
-                fontWeight: 800,
-                color: "var(--surfaceText)",
-                lineHeight: 1.2,
-              }}
-            >
-              Trim and review your clip
-            </div>
-          </div>
+        <div className="video-editor-popup__header">
+          <h2 className="video-editor-popup__title">Edit video</h2>
           {widgetCount > 0 ? (
-            <span
-              style={{
-                fontSize: "var(--text-caption)",
-                color: "var(--surfaceTextMuted)",
-                fontWeight: 700,
-              }}
-            >
+            <span className="video-editor-popup__meta">
               {widgetCount} widget{widgetCount === 1 ? "" : "s"} baked in
             </span>
           ) : null}
         </div>
 
-        {/* Body */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateRows: "minmax(260px, 1fr) auto",
-            gap: "var(--space-4)",
-            padding: "var(--space-4) var(--space-5)",
-            minHeight: 0,
-            overflow: "auto",
-          }}
-        >
+        <div className="video-editor-popup__body">
           <VideoPlayer
             ref={videoRef}
             src={previewSource}
@@ -315,7 +245,11 @@ export default function VideoEditorModal({
             trimEnd={trimEnd}
             onTogglePlay={togglePlayPause}
             onLoadedMetadata={(event) => {
-              const next = Number(event.currentTarget.duration || 0);
+              const target = event.currentTarget;
+              const next = Number(target.duration || 0);
+              const width = Number(target.videoWidth || 0);
+              const height = Number(target.videoHeight || 0);
+              if (width > 0 && height > 0) setVideoAspectRatio(width / height);
               setDuration(next);
               setTrimStart(0);
               setTrimEnd(next);
@@ -331,10 +265,20 @@ export default function VideoEditorModal({
               const v = event.currentTarget;
               setCurrentTime(v.currentTime);
               const cut = findCutContaining(v.currentTime, cuts);
-              if (cut) { v.currentTime = cut.end; return; }
-              if (v.currentTime >= trimEnd) { v.pause(); v.currentTime = trimStart; setIsPlaying(false); }
+              if (cut) {
+                v.currentTime = cut.end;
+                return;
+              }
+              if (v.currentTime >= trimEnd) {
+                v.pause();
+                v.currentTime = trimStart;
+                setIsPlaying(false);
+              }
             }}
-            onEnded={(event) => { event.currentTarget.currentTime = trimStart; setIsPlaying(false); }}
+            onEnded={(event) => {
+              event.currentTarget.currentTime = trimStart;
+              setIsPlaying(false);
+            }}
           />
 
           <TimelineTrimControl
@@ -356,65 +300,24 @@ export default function VideoEditorModal({
             onCutsChange={setCuts}
           />
 
-          {(busyLabel || errorLabel) ? (
-            <div
-              role={errorLabel ? "alert" : undefined}
-              style={{
-                padding: "var(--space-sm) var(--space-3)",
-                borderRadius: "var(--radius-md)",
-                background: errorLabel ? "rgba(var(--danger-rgb), 0.12)" : "var(--control-bg)",
-                color: errorLabel ? "var(--danger)" : "var(--surfaceText)",
-                fontSize: "var(--text-body-sm)",
-                fontWeight: 700,
-                border: `1px solid ${errorLabel ? "rgba(var(--danger-rgb), 0.4)" : "var(--border)"}`,
-              }}
-            >
+          {busyLabel || errorLabel ? (
+            <div className={`video-editor-popup__status ${errorLabel ? "is-error" : ""}`} role={errorLabel ? "alert" : undefined}>
               {errorLabel || busyLabel}
             </div>
           ) : null}
         </div>
 
-        {/* Footer */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            gap: "var(--space-sm)",
-            padding: "var(--space-3) var(--space-5) calc(var(--space-3) + env(safe-area-inset-bottom))",
-            borderTop: "1px solid var(--border)",
-            background: "var(--control-bg)",
-            flexWrap: "wrap",
-          }}
-        >
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onCancel}
-            disabled={processing}
-            style={actionButtonStyle({ marginRight: "auto" })}
-          >
+        <div className="video-editor-popup__footer">
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={processing} className="video-editor-popup__cancel">
             Cancel
           </Button>
           {onSkip ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => onSkip?.(videoFile)}
-              disabled={processing || !videoLoaded}
-              style={actionButtonStyle()}
-            >
+            <Button variant="secondary" size="sm" onClick={() => onSkip?.(videoFile)} disabled={processing || !videoLoaded}>
               Keep original
             </Button>
           ) : null}
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={exportVideo}
-            disabled={!videoLoaded || processing}
-            style={actionButtonStyle()}
-          >
-            {processing ? "Processing…" : "Save edits"}
+          <Button variant="primary" size="sm" onClick={exportVideo} disabled={!videoLoaded || processing}>
+            {processing ? "Processing..." : "Save edits"}
           </Button>
         </div>
       </div>

@@ -12,28 +12,62 @@ import VideoEditorModal from "@/components/VHC/VideoEditorModal"; // Post-captur
 import { buildInspectionConcerns } from "@/components/VHC/mediaCapture/buildInspectionConcerns"; // Panel data helper
 import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
+import { supabaseClient } from "@/lib/database/supabaseClient";
+
+const postUploadJson = async (body) => {
+  const response = await fetch("/api/vhc/customer-video-upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload?.success) {
+    throw new Error(payload?.message || "Upload failed");
+  }
+  return payload;
+};
 
 // Upload the final customer video (after optional editing) with the
 // widget metadata preserved on the record. Widgets are already burned
 // into the video file itself, but we also persist the structured list
 // so the customer portal can tag playback in the future.
 async function uploadCustomerVideo({ file, jobNumber, userId, widgets, contextLabel }) {
-  const formData = new FormData(); // Build multipart body
-  formData.append("file", file); // The video file itself
-  formData.append("jobNumber", String(jobNumber)); // Job reference
-  formData.append("uploadedBy", String(userId || "system")); // User reference
-  formData.append("overlays", JSON.stringify(widgets || [])); // Persist widget metadata
-  formData.append("contextLabel", String(contextLabel || "")); // Optional section label
+  const fallbackName = `customer_video_${Date.now()}.webm`;
+  const mimeType = file?.type || "video/webm";
 
-  const response = await fetch("/api/vhc/customer-video-upload", { // Existing endpoint — unchanged
-    method: "POST", // File upload
-    body: formData, // FormData body
+  const uploadPlan = await postUploadJson({
+    action: "createSignedUpload",
+    jobNumber: String(jobNumber),
+    fileName: file?.name || fallbackName,
+    mimeType,
+    fileSize: file?.size || 0,
   });
-  const payload = await response.json().catch(() => ({})); // Read body defensively
-  if (!response.ok || !payload?.success) { // Surface upload errors
-    throw new Error(payload?.message || "Upload failed");
+
+  const { error: storageError } = await supabaseClient
+    .storage
+    .from(uploadPlan.bucket)
+    .uploadToSignedUrl(uploadPlan.storagePath, uploadPlan.token, file, {
+      contentType: mimeType,
+      upsert: false,
+    });
+
+  if (storageError) {
+    throw new Error(storageError.message || "Upload failed");
   }
-  return payload.record; // Return the saved DB record
+
+  const completePayload = await postUploadJson({
+    action: "completeSignedUpload",
+    jobNumber: String(jobNumber),
+    uploadedBy: String(userId || "system"),
+    overlays: widgets || [],
+    contextLabel: String(contextLabel || ""),
+    storagePath: uploadPlan.storagePath,
+    fileName: file?.name || fallbackName,
+    mimeType,
+    fileSize: file?.size || 0,
+  });
+
+  return completePayload.record; // Return the saved DB record
 }
 
 export default function CustomerVideoButton({

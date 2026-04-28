@@ -221,7 +221,7 @@ export default function JobClockingCard() {
         textAlign: "center",
         backgroundColor: "var(--warning-surface)",
         borderRadius: "var(--radius-xs)",
-        border: "1px solid var(--warning)"
+        border: "none"
       }}>
         <p style={{ margin: 0, color: "var(--warning-dark)" }}>
           Please log in to use job clocking
@@ -294,7 +294,7 @@ export default function JobClockingCard() {
               padding: "16px",
               backgroundColor: "var(--info-surface)",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--info)"
+              border: "none"
             }}>
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Total Hours Today
@@ -308,7 +308,7 @@ export default function JobClockingCard() {
               padding: "16px",
               backgroundColor: "var(--warning-surface)",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--warning-border)"
+              border: "none"
             }}>
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Active Jobs
@@ -322,7 +322,7 @@ export default function JobClockingCard() {
               padding: "16px",
               backgroundColor: "var(--success-surface)",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--success-border)"
+              border: "none"
             }}>
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Completed Today

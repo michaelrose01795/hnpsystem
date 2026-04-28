@@ -383,3 +383,27 @@ export const getVHCChecksByJob = async (jobId) => {
     throw error; // Preserve existing error behaviour so callers can handle failures
   }
 };
+
+// Phase 4 of the VHC refactor: VhcDetailsPanel previously made three direct
+// supabase.from(...) calls during its fallback-loader path. CLAUDE.md §5 forbids
+// direct DB queries from page/component files, so the parallel fetch is now
+// owned by this helper. Behaviour is byte-identical to the inline version.
+export const loadVhcFallbackBundle = async (jobId) => { // Fetch vhc_checks + parts_job_items + job_files for one job in parallel.
+  if (!jobId) throw new Error("loadVhcFallbackBundle: jobId is required."); // Defensive guard.
+  const [checksRes, partsRes, filesRes] = await Promise.all([
+    db.from(CHECKS_TABLE).select("*").eq("job_id", jobId), // All VHC checks for the job.
+    db.from("parts_job_items").select("*").eq("job_id", jobId), // All linked parts rows.
+    db
+      .from("job_files")
+      .select("file_id, file_name, file_url, file_type, folder, uploaded_at, uploaded_by")
+      .eq("job_id", jobId), // Attached job files (photos/videos).
+  ]);
+  if (checksRes.error) throw checksRes.error; // Match prior throw behaviour.
+  if (partsRes.error) throw partsRes.error; // Same.
+  if (filesRes.error) throw filesRes.error; // Same.
+  return {
+    vhcChecks: checksRes.data || [], // Empty array if no rows.
+    partsJobItems: partsRes.data || [],
+    jobFiles: filesRes.data || [],
+  };
+};

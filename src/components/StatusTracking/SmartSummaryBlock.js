@@ -8,9 +8,10 @@ import React from "react";
 // Inline style constants using CSS variables for consistency with the tracker.
 const STYLES = {
   container: {
-    backgroundColor: "var(--surface)", // Match tracker card background
+    backgroundColor: "var(--accentSurface)", // Theme-colour section background
     borderRadius: "var(--radius-sm)", // Consistent border radius
-    border: "1px solid var(--border)", // Subtle border
+    border: "none",
+    boxShadow: "none",
     padding: "14px 16px", // Comfortable internal spacing
     display: "flex",
     flexDirection: "column",
@@ -116,7 +117,7 @@ const STYLES = {
   },
   blockingBanner: {
     backgroundColor: "rgba(var(--danger-rgb, 220, 38, 38), 0.08)", // Danger-tinted background
-    border: "1px solid rgba(var(--danger-rgb, 220, 38, 38), 0.2)",
+    border: "none",
     borderRadius: "var(--radius-xs)",
     padding: "8px 12px",
     fontSize: "12px",
@@ -128,7 +129,7 @@ const STYLES = {
   },
   attentionBanner: {
     backgroundColor: "rgba(var(--warning-rgb, 245, 158, 11), 0.08)", // Warning-tinted background
-    border: "1px solid rgba(var(--warning-rgb, 245, 158, 11), 0.2)",
+    border: "none",
     borderRadius: "var(--radius-xs)",
     padding: "8px 12px",
     fontSize: "12px",

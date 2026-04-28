@@ -220,7 +220,7 @@ export default function PartsDashboardGrid({
                 style={{
                   padding: "12px",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid rgba(var(--danger-rgb), 0.1)",
+                  border: "none",
                   marginBottom: "12px",
                   background: "rgba(var(--primary-rgb),0.02)",
                 }}

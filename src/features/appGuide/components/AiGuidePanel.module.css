@@ -184,7 +184,7 @@
 }
 
 .bubbleContent code {
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   font-size: 12px;
   background: rgba(var(--primary-rgb), 0.12);
   padding: 1px 5px;
@@ -384,7 +384,7 @@
 
 .setupNotice code {
   font-size: 10px;
-  font-family: monospace;
+  font-family: var(--font-family-mono);
   background: rgba(0, 0, 0, 0.06);
   padding: 1px 4px;
   border-radius: 3px;

@@ -141,7 +141,7 @@ export default function PartsJobCardPageUi(props) {
                       </button>}
                     <button type="button" onClick={handleCustomerCleared} disabled={savingCustomerDetails} style={{
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--danger)",
+                  border: "none",
                   background: "var(--danger-surface)",
                   color: "var(--danger)",
                   padding: "8px 14px",
@@ -477,7 +477,7 @@ export default function PartsJobCardPageUi(props) {
                     </label>
                     {partLines.length > 1 && <button type="button" onClick={() => handleRemovePart(index)} style={{
                   gridColumn: "1 / -1",
-                  border: "1px solid var(--danger)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   background: "var(--danger-surface)",
                   color: "var(--danger)",

@@ -84,7 +84,7 @@ export default function ServiceManagerDashboard() {
         className="app-section-card"
         style={{
           background: "var(--info-surface)",
-          border: "1px solid var(--info-surface)",
+          border: "none",
           gap: "6px",
         }}
       >
@@ -106,7 +106,7 @@ export default function ServiceManagerDashboard() {
           flexWrap: "wrap",
           gap: "12px",
           padding: "14px 20px",
-          border: "1px solid var(--info-surface)",
+          border: "none",
         }}
       >
         {quickActions.map((action) => (
@@ -178,7 +178,7 @@ export default function ServiceManagerDashboard() {
           className="app-section-card"
           style={{
             padding: "var(--section-card-padding)",
-            border: "1px solid var(--info-surface)",
+            border: "none",
             gap: "16px",
           }}
         >
@@ -194,7 +194,7 @@ export default function ServiceManagerDashboard() {
               <div
                 key={advisor.advisor}
                 style={{
-                  border: "1px solid var(--info-surface)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   display: "grid",
@@ -236,7 +236,7 @@ export default function ServiceManagerDashboard() {
           className="app-section-card"
           style={{
             padding: "var(--section-card-padding)",
-            border: "1px solid var(--info-surface)",
+            border: "none",
             gap: "18px",
           }}
         >
@@ -251,7 +251,7 @@ export default function ServiceManagerDashboard() {
                 style={{
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
-                  border: "1px solid var(--info-surface)",
+                  border: "none",
                   background: "var(--info-surface)",
                 }}
               >
@@ -288,7 +288,7 @@ export default function ServiceManagerDashboard() {
           className="app-section-card"
           style={{
             padding: "var(--section-card-padding)",
-            border: "1px solid var(--info-surface)",
+            border: "none",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -303,7 +303,7 @@ export default function ServiceManagerDashboard() {
               <div
                 key={customer.jobNumber}
                 style={{
-                  border: "1px solid var(--info-surface)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   display: "grid",
@@ -339,7 +339,7 @@ export default function ServiceManagerDashboard() {
           className="app-section-card"
           style={{
             padding: "var(--section-card-padding)",
-            border: "1px solid var(--info-surface)",
+            border: "none",
             gap: "12px",
           }}
         >
@@ -352,7 +352,7 @@ export default function ServiceManagerDashboard() {
               <div
                 key={`${item.slot}-${item.owner}`}
                 style={{
-                  border: "1px dashed var(--info)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   background: "var(--info-surface)",

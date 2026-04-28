@@ -17,7 +17,7 @@ export default function PaintingDashboardUi(props) {
       <div>
         <header className="app-section-card" style={{
       background: "var(--warning-surface)",
-      border: "1px solid var(--warning)"
+      border: "none"
     }}>
           <p style={{
         margin: 0,

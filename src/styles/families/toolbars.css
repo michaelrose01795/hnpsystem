@@ -5,7 +5,7 @@
  * Variants: filter, action, header
  * Component: src/components/ui/layout-system/FilterToolbarRow.js,
  *            src/components/ui/ToolbarRow.js
- * Showcase:  /dev/showcase#toolbar
+ * Showcase:  /dev/user-diagnostic#toolbar
  *
  * NOTE (2026-04 audit pass): the .app-layout-toolbar-row container rule
  * lives in src/styles/globals.css (~463). New variant modifiers are defined

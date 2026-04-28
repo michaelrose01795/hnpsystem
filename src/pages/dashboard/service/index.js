@@ -64,7 +64,7 @@ const TrendBlock = ({ data }) => {
         flexDirection: "column",
         gap: "8px",
         padding: "12px",
-        border: "1px solid var(--danger-surface)",
+        border: "none",
         borderRadius: "var(--radius-sm)",
         background: "var(--surface)"
       }}>

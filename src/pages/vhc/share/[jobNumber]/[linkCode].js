@@ -2,13 +2,14 @@
 // Public shareable VHC preview page - no login required, read-only view
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useTheme } from "@/styles/themeProvider";
+import { supabase } from "@/lib/database/supabaseClient";
 import BrandLogo from "@/components/BrandLogo";
 import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
-import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
+import { normaliseDecisionStatus, resolveSeverityKey } from "@/features/vhc/vhcStatusEngine";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import PublicSharePreviewPageUi from "@/components/page-ui/vhc/share/[jobNumber]/vhc-share-job-number-link-code-ui"; // Extracted presentation layer.
 
@@ -21,32 +22,32 @@ const formatCurrency = (value) => {
 const SEVERITY_THEME = {
   red: {
     background: "var(--danger-surface)",
-    border: "var(--danger-surface)",
+    border: "none",
     text: "var(--danger)"
   },
   amber: {
     background: "var(--warning-surface)",
-    border: "var(--warning-surface)",
+    border: "none",
     text: "var(--warning)"
   },
   green: {
     background: "var(--success-surface)",
-    border: "var(--success)",
+    border: "none",
     text: "var(--success)"
   },
   grey: {
     background: "var(--info-surface)",
-    border: "var(--info-surface)",
+    border: "none",
     text: "var(--info)"
   },
   authorized: {
     background: "var(--success-surface)",
-    border: "var(--success)",
+    border: "none",
     text: "var(--success)"
   },
   declined: {
     background: "var(--danger-surface)",
-    border: "var(--danger)",
+    border: "none",
     text: "var(--danger)"
   }
 };
@@ -85,7 +86,7 @@ export default function PublicSharePreviewPage() {
     return {
       padding: "6px 12px",
       background: isDark ? "var(--surface)" : "var(--info-surface)",
-      border: "1px solid var(--info-surface)",
+      border: "none",
       borderRadius: "var(--radius-xs)",
       fontSize: "12px",
       color: "var(--info)"
@@ -111,7 +112,7 @@ export default function PublicSharePreviewPage() {
     return {
       padding: "6px 12px",
       background: "rgba(var(--danger-rgb), 0.08)",
-      border: "1px solid rgba(var(--danger-rgb), 0.25)",
+      border: "none",
       borderRadius: "var(--radius-xs)",
       fontSize: "12px",
       color: "var(--danger)",
@@ -120,12 +121,19 @@ export default function PublicSharePreviewPage() {
     };
   }, [resolvedMode, isMounted]);
 
+  const refetchTimerRef = useRef(null);
+  const currentJobIdRef = useRef(null);
+
+  const validateAndFetchRef = useRef(null);
+
   // Validate link and fetch job data
   useEffect(() => {
     if (!jobNumber || !linkCode) return;
 
-    const validateAndFetch = async () => {
-      setLoading(true);
+    const validateAndFetch = async ({ silent = false } = {}) => {
+      if (!silent) {
+        setLoading(true);
+      }
       setError(null);
 
       try {
@@ -164,6 +172,7 @@ export default function PublicSharePreviewPage() {
         const { vhc_checks = [], parts_job_items = [], job_files = [], ...jobFields } = jobData || {};
 
         setJob(jobFields);
+        currentJobIdRef.current = jobFields?.id || null;
         setVhcChecksData(vhc_checks || []);
         setPartsJobItems(parts_job_items || []);
         setJobFiles(job_files || []);
@@ -185,14 +194,49 @@ export default function PublicSharePreviewPage() {
         setAuthorizedViewRows(authorizedRows);
       } catch (err) {
         console.error("Error fetching job data:", err);
-        setError("Failed to load job data. Please try again later.");
+        if (!silent) {
+          setError("Failed to load job data. Please try again later.");
+        }
       } finally {
-        setLoading(false);
+        if (!silent) {
+          setLoading(false);
+        }
       }
     };
 
+    validateAndFetchRef.current = validateAndFetch;
     validateAndFetch();
   }, [jobNumber, linkCode]);
+
+  // Real-time updates: when staff edit the underlying job/VHC/parts/files,
+  // re-fetch the share data silently so the customer view stays current
+  // without a manual refresh. Debounced to coalesce rapid bursts of edits.
+  useEffect(() => {
+    const jobId = job?.id;
+    if (!jobId) return undefined;
+
+    const scheduleRefetch = () => {
+      if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
+      refetchTimerRef.current = setTimeout(() => {
+        if (typeof validateAndFetchRef.current === "function") {
+          validateAndFetchRef.current({ silent: true });
+        }
+      }, 400);
+    };
+
+    const channel = supabase
+      .channel(`vhc-share-${jobId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "vhc_checks", filter: `job_id=eq.${jobId}` }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "parts_job_items", filter: `job_id=eq.${jobId}` }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "job_files", filter: `job_id=eq.${jobId}` }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jobs", filter: `id=eq.${jobId}` }, scheduleRefetch)
+      .subscribe();
+
+    return () => {
+      if (refetchTimerRef.current) clearTimeout(refetchTimerRef.current);
+      supabase.removeChannel(channel);
+    };
+  }, [job?.id]);
 
   // Parse VHC data from checksheet — prefer the checksheet stored in the `vhc_checks` table (section='VHC_CHECKSHEET'), fall back to job.checksheet
   const vhcData = useMemo(() => {
@@ -672,7 +716,7 @@ export default function PublicSharePreviewPage() {
 
   // Render customer section
   const renderCustomerSection = (title, items, severity) => {
-    const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--surface)" };
+    const theme = SEVERITY_THEME[severity] || { border: "none", background: "var(--surface)" };
 
     let authorizedTotal = 0;
     let declinedTotal = 0;
@@ -716,7 +760,7 @@ export default function PublicSharePreviewPage() {
     return (
       <div
         style={{
-          border: `1px solid ${theme.border || "var(--info-surface)"}`,
+          border: "none",
           borderRadius: "var(--radius-md)",
           background: severity === "authorized" || severity === "declined" ? "var(--surface)" : theme.background || "var(--surface)",
           overflow: "hidden",
@@ -835,7 +879,7 @@ export default function PublicSharePreviewPage() {
     <div
       style={{
         padding: "18px",
-        border: "1px solid var(--info-surface)",
+        border: "none",
         borderRadius: "var(--radius-sm)",
         background: "var(--info-surface)",
         color: "var(--info)",
@@ -858,7 +902,7 @@ export default function PublicSharePreviewPage() {
         style={{
           background: "var(--surface)",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--info-surface)",
+          border: "none",
           overflow: "hidden"
         }}>
         
@@ -901,7 +945,7 @@ export default function PublicSharePreviewPage() {
     <div
       style={{
         padding: "18px",
-        border: "1px solid var(--info-surface)",
+        border: "none",
         borderRadius: "var(--radius-sm)",
         background: "var(--info-surface)",
         color: "var(--info)",
@@ -924,7 +968,7 @@ export default function PublicSharePreviewPage() {
         style={{
           background: "var(--surface)",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--info-surface)",
+          border: "none",
           overflow: "hidden"
         }}>
         

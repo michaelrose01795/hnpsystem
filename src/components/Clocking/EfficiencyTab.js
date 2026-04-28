@@ -1267,7 +1267,7 @@ export default function EfficiencyTab({
             borderRadius: "var(--radius-md)",
             padding: "14px 18px",
             background: "var(--danger-surface)",
-            border: "1px solid var(--danger)",
+            border: "none",
             color: "var(--danger)",
             fontSize: "0.9rem",
           }}
@@ -1614,7 +1614,7 @@ export default function EfficiencyTab({
                               textTransform: "capitalize",
                               background: entry.day_type === "saturday" ? "var(--info-surface)" : "var(--success-surface)",
                               color: entry.day_type === "saturday" ? "var(--info)" : "var(--success-dark)",
-                              border: `1px solid ${entry.day_type === "saturday" ? "var(--info)" : "var(--success)"}22`,
+                              border: "none",
                             }}>
                               {entry.day_type}
                             </span>
@@ -1751,7 +1751,7 @@ export default function EfficiencyTab({
                     <div style={{
                       borderRadius: "var(--input-radius)",
                       padding: "8px 12px",
-                      border: "1px solid var(--danger)",
+                      border: "none",
                       background: "var(--danger-surface)",
                       color: "var(--danger-dark)",
                       fontSize: "0.82rem",
@@ -1928,7 +1928,7 @@ export default function EfficiencyTab({
                                 textTransform: "capitalize",
                                 background: entry.day_type === "saturday" ? "var(--info-surface)" : "var(--success-surface)",
                                 color: entry.day_type === "saturday" ? "var(--info)" : "var(--success-dark)",
-                                border: `1px solid ${entry.day_type === "saturday" ? "var(--info)" : "var(--success)"}22`,
+                                border: "none",
                               }}>
                                 {entry.day_type}
                               </span>
@@ -2018,7 +2018,7 @@ export default function EfficiencyTab({
                 <div style={{
                   borderRadius: "var(--radius-md)",
                   padding: "12px 16px",
-                  border: "1px solid var(--danger)",
+                  border: "none",
                   background: "var(--danger-surface)",
                   color: "var(--danger-dark)",
                   fontSize: "0.85rem",
@@ -2036,7 +2036,7 @@ export default function EfficiencyTab({
                     color: "var(--info)",
                     fontSize: "0.82rem",
                     fontWeight: 500,
-                    border: "1px solid var(--info)22",
+                    border: "none",
                   }}>
                     Auto-logged from job clocking — this entry can be removed but not edited.
                   </div>
@@ -2272,7 +2272,7 @@ export default function EfficiencyTab({
                         style={{
                           padding: "12px 20px",
                           borderRadius: "var(--radius-md)",
-                          border: "1px solid var(--danger)33",
+                          border: "none",
                           background: "var(--danger-surface)",
                           color: "var(--danger)",
                           fontSize: "0.9rem",

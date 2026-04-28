@@ -1,3 +1,10 @@
+// Phase 1 of the VHC refactor: this module no longer normalises decisions itself.
+// All decision/severity normalisation now goes through the canonical engine at
+// src/features/vhc/vhcStatusEngine.js (which re-exports the primitives from
+// src/lib/vhc/vhcItemState.js). The previous local normalizeAuthorizationState
+// was deleted because resolveVhcItemState already handles every alias it covered.
+import { resolveVhcItemState } from "@/features/vhc/vhcStatusEngine";
+
 const compactText = (value = "") =>
   String(value || "")
     .toUpperCase()
@@ -34,34 +41,20 @@ const uniqueValues = (values = []) => {
 
 export const normalizePartNumberKey = compactText;
 
-export const normalizeAuthorizationState = (value = "") => {
-  const normalized = String(value || "").toLowerCase().trim();
-  if (!normalized) return "";
-  if (normalized === "authorised" || normalized === "approved") return "authorized";
-  if (normalized === "complete") return "completed";
-  if (normalized === "rejected") return "declined";
-  return normalized;
-};
-
 const isChecksheetRow = (row) => {
   const section = String(row?.section || "").trim();
   return section === "VHC_CHECKSHEET" || section === "VHC Checksheet";
 };
 
 const isAllocatableVhcRow = (row) => {
+  // Single source of truth: resolveVhcItemState normalises approval_status +
+  // authorization_state (in either snake_case or camelCase) and exposes
+  // isAuthorizedLike (true for AUTHORIZED and COMPLETED). The Complete flag
+  // is kept as a separate condition because legacy rows can have Complete=true
+  // without a recognised decision string.
   if (!row || isChecksheetRow(row)) return false;
-  const decision =
-    normalizeAuthorizationState(row?.authorization_state) ||
-    normalizeAuthorizationState(row?.approval_status) ||
-    normalizeAuthorizationState(row?.authorizationState) ||
-    normalizeAuthorizationState(row?.approvalStatus);
-
-  return (
-    decision === "authorized" ||
-    decision === "completed" ||
-    row?.Complete === true ||
-    row?.complete === true
-  );
+  const state = resolveVhcItemState(row);
+  return state.isAuthorizedLike || row?.Complete === true || row?.complete === true;
 };
 
 const extractWheelPositionToken = (...values) => {

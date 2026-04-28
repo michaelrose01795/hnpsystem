@@ -62,8 +62,7 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: var(--font-family);
   background: var(--page-shell-bg);
   color: var(--surfaceText);
   line-height: 1.35;
@@ -72,6 +71,17 @@ body {
   overflow-y: auto;
   overscroll-behavior-y: none;
   transition: background-color 0.3s, color 0.3s;
+}
+
+/* Force form controls to inherit the app font. Browsers don't inherit
+   font-family on these by default, so without this rule buttons/inputs
+   would fall back to the UA font and bypass --font-family. */
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
 }
 
 html.modal-open,
@@ -1032,18 +1042,76 @@ label {
 
 .app-status-message--info {
   background: var(--info-surface);
-  border-color: rgba(var(--info-rgb), 0.35);
+  border: none;
   color: var(--text-primary);
 }
 
 .app-status-message--success {
-  background: rgba(var(--success-rgb), 0.14);
+  background: var(--success-surface);
+  border: none;
   color: var(--success-text);
 }
 
+.app-status-message--warning {
+  background: var(--warning-surface);
+  border: none;
+  color: var(--warning-text);
+}
+
 .app-status-message--danger {
-  background: rgba(var(--danger-rgb), 0.12);
-  color: var(--danger-dark);
+  background: var(--danger-surface);
+  border: none;
+  color: var(--danger-text);
+}
+
+/* Standard semantic colour utilities. Use these when a component needs the
+   approved green / amber / red / info palette without inventing local colours. */
+.app-tone-success {
+  background: var(--success-surface);
+  color: var(--success-text);
+  border: none;
+}
+
+.app-tone-success-strong {
+  background: var(--success);
+  color: var(--text-inverse);
+  border: none;
+}
+
+.app-tone-warning {
+  background: var(--warning-surface);
+  color: var(--warning-text);
+  border: none;
+}
+
+.app-tone-warning-strong {
+  background: var(--warning);
+  color: var(--text-inverse);
+  border: none;
+}
+
+.app-tone-danger {
+  background: var(--danger-surface);
+  color: var(--danger-text);
+  border: none;
+}
+
+.app-tone-danger-strong {
+  background: var(--danger);
+  color: var(--text-inverse);
+  border: none;
+}
+
+.app-tone-info {
+  background: var(--info-surface);
+  color: var(--info);
+  border: none;
+}
+
+.app-tone-info-strong {
+  background: var(--info);
+  color: var(--text-inverse);
+  border: none;
 }
 
 /* Canonical home: src/styles/families/tables.css
@@ -1138,7 +1206,7 @@ label {
 .app-badge--danger {
   background: var(--danger-surface);
   color: var(--danger-dark);
-  border: 1px solid var(--danger);
+  border: none;
 }
 
 .app-badge--danger-strong {
@@ -1149,7 +1217,7 @@ label {
 .app-badge--warning {
   background: var(--warning-surface);
   color: var(--warning-dark);
-  border: 1px solid var(--warning);
+  border: none;
 }
 
 .app-badge--warning-strong {
@@ -1160,7 +1228,7 @@ label {
 .app-badge--success {
   background: var(--success-surface);
   color: var(--success);
-  border: 1px solid var(--success);
+  border: none;
 }
 
 .app-badge--success-strong {
@@ -1170,9 +1238,38 @@ label {
 
 /* Active-tab override — when a jobcard tab badge sits inside an active tab
    item, swap its fill for a translucent white so it reads on the accent bg. */
+.app-badge--round-count,
+.jobcard-tab-notes-badge {
+  width: auto;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  flex: 0 0 auto;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accentMainRgb), 0.9);
+  color: var(--onAccentText);
+  font-family: var(--font-family);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1;
+  transition: var(--control-transition);
+}
+
+.jobcard-tab-notes-badge {
+  margin-left: 4px;
+}
+
 .tab-api__item.is-active .app-badge--accent-strong,
 .tab-api__item.is-active .app-badge--danger-strong {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.tab-api__item.is-active .app-badge--round-count {
+  background: rgba(var(--accentMainRgb), 0.9);
+  color: var(--onAccentText);
 }
 
 .customer-portal-shell {
@@ -2065,7 +2162,9 @@ textarea {
 }
 
 .dropdown-api__control {
+  height: var(--dropdown-trigger-height);
   min-height: var(--dropdown-trigger-height);
+  max-height: var(--dropdown-trigger-height);
   padding: var(--dropdown-trigger-padding);
   border-radius: var(--dropdown-trigger-radius);
   line-height: 1;
@@ -2229,7 +2328,9 @@ textarea:disabled {
 /* Compact dropdown variants used inside the top bar — keep the secondary-button
    look but shrink padding/font for the dense topbar row. */
 .app-topbar-dropdown .dropdown-api__control {
-  min-height: var(--control-height-xs);
+  height: var(--dropdown-trigger-height);
+  min-height: var(--dropdown-trigger-height);
+  max-height: var(--dropdown-trigger-height);
   padding: var(--control-padding-xs);
   border-radius: var(--radius-pill);
   font-size: var(--text-caption);
@@ -3587,7 +3688,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 .hr-employees-row:focus-visible {
   background: rgba(var(--surface-rgb), 0.95);
   transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 0 28px rgba(15, 23, 42, 0.08);
 }
 
 .hr-employees-row:focus-visible {
@@ -3597,7 +3698,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .hr-employees-row.is-selected {
   background: rgba(var(--primary-rgb), 0.14);
-  box-shadow: 0 16px 30px rgba(var(--primary-rgb), 0.12);
+  box-shadow: 0 0 30px rgba(var(--primary-rgb), 0.12);
 }
 
 .hr-employees-row-avatar {
@@ -3811,6 +3912,19 @@ a.tab-api__item:focus-visible:not(.is-active) {
   border-radius: var(--dropdown-trigger-radius-sm);
 }
 
+.dropdown-api--sm .dropdown-api__control,
+.dropdown-api.compact-picker .dropdown-api__control,
+.dropdown-api.job-request-payment-dropdown .dropdown-api__control,
+.dropdown-api.edit-requests-payment-dropdown .dropdown-api__control,
+.dropdown-api.start-job-request-dropdown .dropdown-api__control,
+.dropdown-api.history-reg-dropdown .dropdown-api__control,
+.dropdown-api.prepick-popup-dropdown .dropdown-api__control,
+.dropdown-api.leave-modal-field .dropdown-api__control {
+  height: var(--dropdown-trigger-height);
+  min-height: var(--dropdown-trigger-height);
+  max-height: var(--dropdown-trigger-height);
+}
+
 .popup-card .calendar-api__menu,
 .calendar-api.leave-modal-field .calendar-api__menu {
   position: fixed;
@@ -3853,7 +3967,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   width: fit-content;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--success);
+  border: none;
   color: var(--success);
   background: rgba(var(--success-rgb), 0.08);
   font-weight: 600;
@@ -3919,6 +4033,70 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 /* ========================================================= */
+/* === VHC Parts Identified table (scoped clone of .table-api)
+       Independent from the global rules so row backgrounds and
+       per-row tints can be tuned without touching every table.   */
+/* ========================================================= */
+.vhc-parts-identified-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.vhc-parts-identified-table thead tr th {
+  padding: 12px;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--info);
+  background: var(--info-surface);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.vhc-parts-identified-table thead tr th:first-child {
+  padding-left: 14px;
+}
+
+.vhc-parts-identified-table thead tr th:last-child {
+  padding-right: 14px;
+}
+
+.vhc-parts-identified-table tbody tr {
+  background: var(--surface-light);
+  transition: background-color 0.18s ease;
+}
+
+.vhc-parts-identified-table tbody tr td {
+  padding: 12px;
+  background: transparent;
+  color: var(--text-primary);
+  vertical-align: middle;
+  border: none;
+  border-bottom: 1px solid var(--info-surface);
+  transition: background-color 0.18s ease;
+}
+
+.vhc-parts-identified-table tbody tr td:first-child {
+  padding-left: 14px;
+}
+
+.vhc-parts-identified-table tbody tr td:last-child {
+  padding-right: 14px;
+}
+
+/* Expanded "Add Part" panel that opens beneath a clicked Parts Identified row.
+   Styles only the surrounding background/frame — the inner table and buttons
+   keep their existing inline styles. */
+.vhc-parts-identified-expanded {
+  padding: 20px 24px 24px;
+  border-top: 1px solid var(--accent-surface);
+  /* background is set inline per-row to match the clicked row's hover colour */
+}
+
+/* ========================================================= */
 /* === Global Table Shells                                 === */
 /* ========================================================= */
 
@@ -3934,7 +4112,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .app-table-shell-scroll {
-  border: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12);
+  border: none;
   background: var(--surface);
 }
 
@@ -3943,7 +4121,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   color: var(--text-primary);
   background: var(--surface) !important;
   background-image: none !important;
-  border: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12);
+  border: none;
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -3986,9 +4164,9 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .app-table-shell--with-headings thead th {
-  background: var(--accent-dark, var(--accent-purple)) !important;
+  background: var(--page-shell-bg) !important;
   background-image: none !important;
-  color: var(--text-inverse, #ffffff) !important;
+  color: var(--text-primary) !important;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -4445,6 +4623,230 @@ a.tab-api__item:focus-visible:not(.is-active) {
   min-height: 0;
 }
 
+.video-editor-backdrop {
+  align-items: center;
+}
+
+.video-editor-popup {
+  width: min(100%, var(--video-editor-max-width, 520px));
+  max-width: min(var(--video-editor-max-width, 520px), calc(100vw - (var(--popup-viewport-gap) * 2)));
+  background: var(--surfaceMain);
+  color: var(--surfaceText);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  font-family: var(--font-family);
+}
+
+.video-editor-popup__header {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.video-editor-popup__title {
+  margin: 0;
+  color: var(--surfaceText);
+  font-size: var(--text-h3);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.video-editor-popup__meta {
+  color: var(--surfaceTextMuted);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+.video-editor-popup__body {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  min-height: 0;
+  overflow: auto;
+}
+
+.video-editor-popup__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-3) var(--space-5) calc(var(--space-3) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--control-bg);
+  flex-wrap: wrap;
+}
+
+.video-editor-popup__cancel {
+  margin-right: auto;
+}
+
+.video-editor-popup__status {
+  padding: var(--space-sm) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--control-bg);
+  color: var(--surfaceText);
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  border: none;
+}
+
+.video-editor-popup__status.is-error {
+  background: rgba(var(--danger-rgb), 0.12);
+  color: var(--danger);
+}
+
+.video-editor-player {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--video-editor-aspect-ratio, 0.5625);
+  background: #000;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--hud-divider);
+  box-shadow: var(--hud-shadow-lg);
+}
+
+.video-editor-player__video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  cursor: pointer;
+  display: block;
+}
+
+.video-editor-player__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hud-text);
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.video-editor-player__loading-content {
+  display: grid;
+  gap: var(--space-sm);
+  max-width: 380px;
+}
+
+.video-editor-player__loading-title {
+  font-size: var(--text-h3);
+  font-weight: 800;
+}
+
+.video-editor-player__loading-copy {
+  color: var(--hud-text-muted);
+  font-size: var(--text-body-sm);
+}
+
+.video-editor-player__time-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-body-sm);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+
+.video-editor-player__clip-range {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: var(--text-caption);
+}
+
+.video-editor-timeline {
+  background: var(--surfaceMain);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: var(--space-4);
+  color: var(--surfaceText);
+}
+
+.video-editor-timeline__header {
+  color: var(--surfaceTextMuted);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+.video-editor-timeline__time {
+  color: var(--surfaceText);
+  font-variant-numeric: tabular-nums;
+}
+
+.video-editor-timeline__audio-toggle {
+  color: var(--surfaceText);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+}
+
+.video-editor-timeline__track {
+  height: 56px;
+  border-radius: var(--radius-md);
+  background: var(--control-bg);
+  border: 1px solid var(--border);
+  margin-bottom: 18px;
+}
+
+.video-editor-timeline__legend {
+  color: var(--surfaceTextMuted);
+  font-size: var(--text-caption);
+}
+
+.video-editor-timeline__switch {
+  width: 44px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+}
+
+.video-editor-timeline__tool-button {
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  transition: background-color 160ms ease, opacity 160ms ease;
+}
+
+@media (max-width: 640px) {
+  .video-editor-popup__header,
+  .video-editor-popup__body,
+  .video-editor-popup__footer {
+    padding-inline: var(--space-3);
+  }
+
+  .video-editor-popup__footer .app-btn {
+    flex: 1 1 auto;
+  }
+
+  .video-editor-popup__cancel {
+    margin-right: 0;
+  }
+}
+
 /* Prevent global hover lift clipping inside the Start New Chat modal's scroll containers. */
 .start-new-chat-popup button:hover,
 .start-new-chat-popup button:active {
@@ -4478,7 +4880,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* ========================================================= */
 /* Light mode: white background */
 .cosmetic-notes-active {
-  background-color: white !important;
+  background-color: var(--surface) !important;
   color: var(--text-primary) !important;
 }
 
@@ -4508,8 +4910,8 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 /* Dark mode: dark grey background with white text */
 [data-theme="dark"] .cosmetic-notes-active {
-  background-color: #2a2a2e !important;
-  color: white !important;
+  background-color: var(--surface) !important;
+  color: var(--text-primary) !important;
 }
 
 /* ========================================================= */

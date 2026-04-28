@@ -2,7 +2,8 @@
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
-import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
+// Phase 6 follow-up: VHC cascades go through the engine entry point.
+import { applyVhcDecision } from "@/features/vhc/vhcStatusEngine";
 
 const MANAGER_ROLE_KEYWORDS = ["parts", "manager", "admin"]
 const VALID_STATUSES = new Set([
@@ -288,7 +289,7 @@ async function handler(req, res, session) {
       // Sync VHC status when unassigning a VHC-allocated part
       if (isUnassigningVhc && existing?.vhc_item_id) {
         try {
-          await syncVhcPartsAuthorisation({
+          await applyVhcDecision({
             jobId: existing.job_id,
             vhcItemId: existing.vhc_item_id,
           });
@@ -356,7 +357,7 @@ async function handler(req, res, session) {
       if (error) throw error
 
       if (existing?.vhc_item_id) {
-        await syncVhcPartsAuthorisation({
+        await applyVhcDecision({
           jobId: existing.job_id,
           vhcItemId: existing.vhc_item_id,
         });

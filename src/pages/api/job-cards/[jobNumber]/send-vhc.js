@@ -3,7 +3,7 @@ import { supabaseService } from "@/lib/database/supabaseClient";
 import { markVHCAsSent } from "@/lib/services/vhcStatusService";
 import { isSmtpConfigured } from "@/lib/email/smtp";
 import { sendDmsEmail } from "@/lib/email/emailApi";
-import { getEmailBranding, renderEmailShell, resolveEmailBaseUrl } from "@/lib/email/template";
+import { getEmailBranding, renderEmailShell } from "@/lib/email/template";
 import { resolveJobIdentity } from "@/lib/jobs/jobIdentity";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
@@ -86,7 +86,12 @@ async function handler(req, res, session) {
     }
 
     const body = req.body || {};
-    const customerEmail = String(body.customerEmail || jobRow.customer?.email || "").trim();
+    // TODO: revert to `body.customerEmail || jobRow.customer?.email` once VHC send testing is complete.
+    const TEST_EMAIL_OVERRIDE = "michaelrose01795@icloud.com";
+    const customerEmail = TEST_EMAIL_OVERRIDE;
+    // TODO: revert to `body.customerPhone || jobRow.customer?.phone` once VHC send testing is complete.
+    const TEST_PHONE_OVERRIDE = "07740795711";
+    const customerPhone = TEST_PHONE_OVERRIDE;
     if (!customerEmail) {
       return res.status(400).json({ success: false, error: "Customer email is required to send VHC" });
     }
@@ -122,7 +127,16 @@ async function handler(req, res, session) {
       if (insertError) throw insertError;
     }
 
-    const baseUrl = resolveEmailBaseUrl(req);
+    // The share link goes to the customer's phone/email, so it must always
+    // resolve to a publicly reachable host. resolveEmailBaseUrl can fall back
+    // to localhost when running in dev, which leaves customers with an
+    // unopenable URL — pin to the production app URL (override with
+    // VHC_PUBLIC_BASE_URL or NEXT_PUBLIC_APP_URL when needed).
+    const baseUrl = (
+      process.env.VHC_PUBLIC_BASE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://hnpsystem.vercel.app"
+    ).replace(/\/+$/, "");
     const shareUrl = `${baseUrl}/vhc/share/${canonicalJobNumber}/${linkCode}`;
     const customerName = `${jobRow.customer?.firstname || ""} ${jobRow.customer?.lastname || ""}`.trim() || "Customer";
     const branding = getEmailBranding(req, COMPANY_NAME);
@@ -135,6 +149,32 @@ async function handler(req, res, session) {
       text: `Hello ${customerName},\n\nYour Vehicle Health Check for job #${canonicalJobNumber} is ready.\nOpen it here: ${shareUrl}\n\nThis link expires in 24 hours.\n\nRegards,\n${COMPANY_NAME}`,
       companyName: COMPANY_NAME,
     });
+
+    // TODO: replace this stub with a real SMS provider integration (e.g. Twilio,
+    // MessageBird) and wire credentials via env vars. For now this only logs the
+    // attempt so the test phone number receives the share link via the dev console.
+    if (customerPhone) {
+      const smsBody = `Hello ${customerName}, your Vehicle Health Check for job #${canonicalJobNumber} is ready: ${shareUrl} (expires in 24h). - ${COMPANY_NAME}`;
+      try {
+        const smsApiUrl = process.env.SMS_API_URL;
+        const smsApiKey = process.env.SMS_API_KEY;
+        const smsFrom = process.env.SMS_FROM || COMPANY_NAME;
+        if (smsApiUrl && smsApiKey) {
+          await fetch(smsApiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${smsApiKey}`,
+            },
+            body: JSON.stringify({ to: customerPhone, from: smsFrom, body: smsBody }),
+          });
+        } else {
+          console.log(`[send-vhc] SMS provider not configured. Would send to ${customerPhone}: ${smsBody}`);
+        }
+      } catch (smsError) {
+        console.error("[send-vhc] SMS dispatch failed (continuing):", smsError);
+      }
+    }
 
     if (!jobRow.vhc_completed_at) {
       const { error: completeStampError } = await supabaseService

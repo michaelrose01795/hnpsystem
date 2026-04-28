@@ -70,7 +70,7 @@ export default function UserClockingHistoryUi(props) {
       }}>
           {error && <div style={{
           borderRadius: "var(--radius-md)",
-          border: "1px solid var(--danger)",
+          border: "none",
           background: "var(--layer-section-level-1)",
           padding: "14px 18px",
           color: "var(--danger-dark)",
@@ -188,7 +188,7 @@ export default function UserClockingHistoryUi(props) {
 
               {formError && <div style={{
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--danger)",
+            border: "none",
             background: "var(--layer-section-level-1)",
             padding: "12px 14px",
             color: "var(--danger-dark)",
@@ -198,7 +198,7 @@ export default function UserClockingHistoryUi(props) {
                 </div>}
               {selectedJobLockedMessage && !formError && <div style={{
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--warning)",
+            border: "none",
             background: "var(--layer-section-level-1)",
             padding: "12px 14px",
             color: "var(--warning-dark)",
@@ -208,7 +208,7 @@ export default function UserClockingHistoryUi(props) {
                 </div>}
               {formSuccess && <div style={{
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--success)",
+            border: "none",
             background: "var(--layer-section-level-1)",
             padding: "12px 14px",
             color: "var(--success-dark)",

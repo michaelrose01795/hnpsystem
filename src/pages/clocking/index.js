@@ -794,7 +794,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           borderRadius: "var(--radius-md)",
           padding: "14px 18px",
           background: "var(--danger-surface)",
-          border: "1px solid var(--danger)",
+          border: "none",
           color: "var(--danger)",
           fontSize: "0.9rem"
         }}>
@@ -1156,7 +1156,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 padding: "10px 14px",
-                border: "1px solid var(--danger)",
+                border: "none",
                 background: "var(--danger-surface)",
                 color: "var(--danger-dark)",
                 fontSize: "0.85rem"

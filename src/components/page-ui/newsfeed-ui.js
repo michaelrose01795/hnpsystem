@@ -253,7 +253,7 @@ export default function NewsFeedUi(props) {
               {notificationError && <div style={{
             padding: "12px 16px",
             borderRadius: "var(--radius-sm)",
-            border: "2px solid var(--danger-border)",
+            border: "none",
             backgroundColor: "var(--danger-surface)",
             color: "var(--danger)",
             fontSize: "13px",

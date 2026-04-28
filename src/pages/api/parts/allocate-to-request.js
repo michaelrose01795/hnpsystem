@@ -3,7 +3,8 @@
 
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
-import { syncVhcPartsAuthorisation } from "@/lib/database/vhcPartsSync";
+// Phase 6 follow-up: VHC cascades go through the engine entry point.
+import { applyVhcDecision } from "@/features/vhc/vhcStatusEngine";
 
 const buildVhcRowDescription = async ({ jobId, vhcItemId }) => {
   if (!jobId || !Number.isInteger(vhcItemId)) return null;
@@ -149,7 +150,7 @@ async function handler(req, res, session) {
     if (vhcItemIdForSync) {
       console.log("[ALLOCATE API] Running VHC sync for vhcItemId:", vhcItemIdForSync);
       try {
-        await syncVhcPartsAuthorisation({
+        await applyVhcDecision({
           jobId,
           vhcItemId: vhcItemIdForSync,
         });

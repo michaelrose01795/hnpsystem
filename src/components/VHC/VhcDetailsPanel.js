@@ -7,6 +7,9 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { saveChecksheet } from "@/lib/database/jobs";
+// Phase 4 of the VHC refactor: VHC-table reads inside the fallback loader are
+// owned by the DB helper module per CLAUDE.md §5.
+import { loadVhcFallbackBundle } from "@/lib/database/vhc";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
@@ -21,7 +24,9 @@ import VHCModalShell from "@/components/VHC/VHCModalShell";
 import PopupModal from "@/components/popups/popupStyleApi";
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
-import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
+// VHC status helpers are owned by the canonical engine. summaryStatus.js was
+// deleted in Phase 6 — these helpers now live inline inside the engine.
+import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/features/vhc/vhcStatusEngine";
 import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity";
 import {
   EmptyStateMessage,
@@ -539,12 +544,13 @@ const COLOUR_CLASS = {
 };
 
 const SEVERITY_THEME = {
-  red: { background: "var(--danger-surface)", border: "var(--danger-surface)", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
-  amber: { background: "var(--warning-surface)", border: "var(--warning-surface)", text: "var(--warning-dark)", hover: "var(--warning-surface-hover)" },
-  green: { background: "var(--success-surface)", border: "var(--success)", text: "var(--info-dark)", hover: "var(--success-surface-hover)" },
+  red: { background: "var(--danger-surface)", border: "none", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
+  amber: { background: "var(--warning-surface)", border: "none", text: "var(--warning-dark)", hover: "var(--warning-surface-hover)" },
+  green: { background: "var(--success-surface)", border: "none", text: "var(--info-dark)", hover: "var(--success-surface-hover)" },
   grey: { background: "var(--info-surface)", border: "var(--accent-surface)", text: "var(--info-dark)", hover: "var(--accent-surface)" },
-  authorized: { background: "var(--success-surface)", border: "var(--success)", text: "var(--success)", hover: "var(--success-surface-hover)" },
-  declined: { background: "var(--danger-surface)", border: "var(--danger)", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
+  authorized: { background: "var(--authorised-surface)", border: "none", text: "var(--authorised)", hover: "var(--authorised-surface-hover)" },
+  completed: { background: "var(--complete-surface)", border: "none", text: "var(--complete)", hover: "var(--complete-surface-hover)" },
+  declined: { background: "var(--danger-surface)", border: "none", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
 };
 
 // Tyre wear calculation: 8mm = 0% worn (new), 0mm = 100% worn
@@ -1105,25 +1111,19 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
               wheelRowsSeverity === "red"
                 ? {
                     blockBg: "var(--danger-surface)",
-                    blockBorder: "var(--danger)",
-                    tileBg: "var(--surface)",
-                    tileBorder: "rgba(var(--danger-rgb), 0.35)",
-                    keyColor: "var(--danger)",
+                    blockBorder: "none",
+                    tileBorder: "none",
                   }
                 : wheelRowsSeverity === "amber"
                   ? {
                       blockBg: "var(--warning-surface)",
-                      blockBorder: "var(--warning)",
-                      tileBg: "var(--surface)",
-                      tileBorder: "rgba(var(--warning-rgb), 0.35)",
-                      keyColor: "var(--warning-dark)",
+                      blockBorder: "none",
+                      tileBorder: "none",
                     }
                   : {
                       blockBg: "var(--success-surface)",
-                      blockBorder: "var(--success)",
-                      tileBg: "var(--surface)",
-                      tileBorder: "rgba(var(--success-rgb), 0.35)",
-                      keyColor: "var(--success-dark)",
+                      blockBorder: "none",
+                      tileBorder: "none",
                     };
             const brakeRowsSeverity = isBrakeSummaryItem
               ? (normaliseColour(item.status) || itemSeverity || "green")
@@ -1132,31 +1132,25 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
               brakeRowsSeverity === "red"
                 ? {
                     blockBg: "var(--danger-surface)",
-                    blockBorder: "var(--danger)",
-                    tileBg: "var(--surface)",
-                    tileBorder: "rgba(var(--danger-rgb), 0.35)",
-                    keyColor: "var(--danger)",
+                    blockBorder: "none",
+                    tileBorder: "none",
                   }
                 : brakeRowsSeverity === "amber"
                   ? {
                       blockBg: "var(--warning-surface)",
-                      blockBorder: "var(--warning)",
-                      tileBg: "var(--surface)",
-                      tileBorder: "rgba(var(--warning-rgb), 0.35)",
-                      keyColor: "var(--warning-dark)",
+                      blockBorder: "none",
+                      tileBorder: "none",
                     }
                   : {
                       blockBg: "var(--success-surface)",
-                      blockBorder: "var(--success)",
-                      tileBg: "var(--surface)",
-                      tileBorder: "rgba(var(--success-rgb), 0.35)",
-                      keyColor: "var(--success-dark)",
+                      blockBorder: "none",
+                      tileBorder: "none",
                     };
             return (
               <div
                 key={`${config.key}-${idx}-${item.heading || item.label || "item"}`}
                 style={{
-                  border: `1px solid ${theme?.border || "var(--info-surface)"}`,
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   display: "flex",
@@ -1801,24 +1795,15 @@ export default function VhcDetailsPanel({
           }
 
           if (fallbackBaseJob?.id) {
-            const [checksRes, partsRes, filesRes] = await Promise.all([
-              supabase.from("vhc_checks").select("*").eq("job_id", fallbackBaseJob.id),
-              supabase.from("parts_job_items").select("*").eq("job_id", fallbackBaseJob.id),
-              supabase
-                .from("job_files")
-                .select("file_id, file_name, file_url, file_type, folder, uploaded_at, uploaded_by")
-                .eq("job_id", fallbackBaseJob.id),
-            ]);
-
-            if (checksRes.error) throw checksRes.error;
-            if (partsRes.error) throw partsRes.error;
-            if (filesRes.error) throw filesRes.error;
+            // Phase 4 of the VHC refactor: parallel fetch is owned by the DB
+            // helper. The shape returned matches the original inline code.
+            const bundle = await loadVhcFallbackBundle(fallbackBaseJob.id);
 
             jobRow = {
               ...fallbackBaseJob,
-              vhc_checks: checksRes.data || [],
-              parts_job_items: partsRes.data || [],
-              job_files: filesRes.data || [],
+              vhc_checks: bundle.vhcChecks,
+              parts_job_items: bundle.partsJobItems,
+              job_files: bundle.jobFiles,
             };
           }
         }
@@ -2604,8 +2589,8 @@ export default function VhcDetailsPanel({
 
   // Combined severity sections and lists into single memo for better performance
   const severityLists = useMemo(() => {
-    const lists = { red: [], amber: [], authorized: [], declined: [] };
-    const sections = { red: new Map(), amber: new Map(), authorized: new Map(), declined: new Map() };
+    const lists = { red: [], amber: [], authorized: [], completed: [], declined: [] };
+    const sections = { red: new Map(), amber: new Map(), authorized: new Map(), completed: new Map(), declined: new Map() };
 
     // Build sections map
     summaryItems.forEach((item) => {
@@ -2621,7 +2606,9 @@ export default function VhcDetailsPanel({
       // prefer explicit severity column over display_status (approval)
       const severityKey = normaliseColour(item.vhcCheck?.severity || item.vhcCheck?.display_status) || item.severityKey || normaliseColour(item.rawSeverity);
       const sectionKey =
-        decisionKey === "authorized" || decisionKey === "completed"
+        decisionKey === "completed"
+          ? "completed"
+          : decisionKey === "authorized"
           ? "authorized"
           : decisionKey === "declined"
           ? "declined"
@@ -2642,7 +2629,7 @@ export default function VhcDetailsPanel({
     });
 
     // Flatten sections to lists
-    ["red", "amber", "authorized", "declined"].forEach((severity) => {
+    ["red", "amber", "authorized", "completed", "declined"].forEach((severity) => {
       const section = sections[severity];
       if (!section) return;
 
@@ -2657,9 +2644,10 @@ export default function VhcDetailsPanel({
       });
     });
 
-    // Sort authorized and declined lists so red items are shown first then amber
+    // Sort authorized, completed and declined lists so red items are shown first then amber
     const severityRank = (s) => (s === "red" ? 0 : s === "amber" ? 1 : s === "green" ? 2 : 3);
     lists.authorized.sort((a, b) => severityRank(a.severityKey || a.rawSeverity) - severityRank(b.severityKey || b.rawSeverity));
+    lists.completed.sort((a, b) => severityRank(a.severityKey || a.rawSeverity) - severityRank(b.severityKey || b.rawSeverity));
     lists.declined.sort((a, b) => severityRank(a.severityKey || a.rawSeverity) - severityRank(b.severityKey || b.rawSeverity));
 
     return lists;
@@ -2675,7 +2663,16 @@ export default function VhcDetailsPanel({
       underside: "underside",
     };
     const locked = new Set();
-    (severityLists.authorized || []).forEach((item) => {
+    // Decided items lock their owning Health-Check section so the underlying
+    // measurement can no longer be edited. "Decided" means the customer has
+    // made a final call — authorised, completed, OR declined. Declined was
+    // previously omitted from this set, which let users keep editing the
+    // section even after the row had been turned down on the Summary tab.
+    [
+      ...(severityLists.authorized || []),
+      ...(severityLists.completed || []),
+      ...(severityLists.declined || []),
+    ].forEach((item) => {
       const sectionKey = categoryToSection[item.categoryId];
       if (sectionKey) {
         locked.add(sectionKey);
@@ -3384,6 +3381,7 @@ export default function VhcDetailsPanel({
         ...(severityLists.red || []),
         ...(severityLists.amber || []),
         ...(severityLists.authorized || []),
+        ...(severityLists.completed || []),
         ...(severityLists.declined || [])
       ];
 
@@ -3572,6 +3570,7 @@ export default function VhcDetailsPanel({
         ...(severityLists.red || []),
         ...(severityLists.amber || []),
         ...(severityLists.authorized || []),
+        ...(severityLists.completed || []),
         ...(severityLists.declined || []),
       ];
 
@@ -3605,7 +3604,7 @@ export default function VhcDetailsPanel({
     setItemEntries((prev) => {
       const updated = { ...prev };
       let hasChanges = false;
-      const items = [...(severityLists.red || []), ...(severityLists.amber || []), ...(severityLists.authorized || []), ...(severityLists.declined || [])];
+      const items = [...(severityLists.red || []), ...(severityLists.amber || []), ...(severityLists.authorized || []), ...(severityLists.completed || []), ...(severityLists.declined || [])];
 
       items.forEach((item) => {
         const entry = ensureEntryValue(prev, item.id);
@@ -3804,7 +3803,7 @@ export default function VhcDetailsPanel({
     };
 
     // Iterate across all known lists and compute totals based on raw severity so red/amber totals include authorised/declined items
-    const allLists = [severityLists.red || [], severityLists.amber || [], severityLists.authorized || [], severityLists.declined || []];
+    const allLists = [severityLists.red || [], severityLists.amber || [], severityLists.authorized || [], severityLists.completed || [], severityLists.declined || []];
 
     allLists.forEach((list) => {
       list.forEach((item) => {
@@ -4097,6 +4096,7 @@ export default function VhcDetailsPanel({
           ...(severityLists.red || []),
           ...(severityLists.amber || []),
           ...(severityLists.authorized || []),
+          ...(severityLists.completed || []),
           ...(severityLists.declined || []),
         ].find((row) => String(row?.id) === String(itemId));
         const restoredPendingSeverity = resolveOriginalSeverityDisplay(itemId, sourceItem);
@@ -4255,10 +4255,140 @@ export default function VhcDetailsPanel({
     };
   }, []);
 
+  const renderSectionBulkActions = (severity, itemsOverride = null) => {
+    if (readOnly) return null;
+    const itemsRaw = itemsOverride || severityLists[severity] || [];
+    if (!itemsRaw || itemsRaw.length === 0) return null;
+    const isRedOrAmberTable = severity === "red" || severity === "amber";
+    const isRowSelectionEligible = (item) => {
+      if (!isRedOrAmberTable) return true;
+      const entry = getEntryForItem(item.id);
+      const effectiveEntry = {
+        ...entry,
+        partsComplete:
+          typeof item?.partsComplete === "boolean" ? item.partsComplete : entry.partsComplete,
+        labourComplete:
+          typeof item?.labourComplete === "boolean" ? item.labourComplete : entry.labourComplete,
+      };
+      const quoteParts = Number.isFinite(Number(item.parts_gbp)) ? Number(item.parts_gbp) : null;
+      const resolvedPartsCost = quoteParts !== null ? quoteParts : resolvePartsCost(item.id, entry);
+      const quoteLabourHours = Number.isFinite(Number(item.labour_hours)) ? Number(item.labour_hours) : null;
+      const hasLocalLabourHoursValue = entry?.laborHours !== null && entry?.laborHours !== undefined;
+      const resolvedLabourHours = hasLocalLabourHoursValue
+        ? String(entry.laborHours)
+        : quoteLabourHours !== null
+          ? String(quoteLabourHours)
+          : resolveLabourHoursValue(item.id, entry);
+      const rowStatus = resolveVhcRowStatusView(item, effectiveEntry, resolvedPartsCost, resolvedLabourHours);
+      return rowStatus.dotStateKey === "awaiting";
+    };
+    const selectableIds = new Set(itemsRaw.filter((item) => isRowSelectionEligible(item)).map((item) => item.id));
+    const selectedIds = (severitySelections[severity] || []).filter((itemId) => selectableIds.has(itemId));
+    const selectedSet = new Set(selectedIds);
+    const selectedItems = itemsRaw.filter((item) => selectedSet.has(item.id));
+    const selectedCompletedCount = selectedItems.filter((item) => {
+      const entry = getEntryForItem(item.id);
+      return Boolean(entry?.completed || vhcApprovalLookup.get(String(resolveCanonicalVhcId(item.id)))?.complete);
+    }).length;
+    const selectedAllCompleted = selectedItems.length > 0 && selectedCompletedCount === selectedItems.length;
+    const buttonBaseStyle = {
+      padding: "8px 14px",
+      borderRadius: "var(--input-radius)",
+      fontWeight: 600,
+      fontSize: "13px",
+    };
+    return (
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        {severity === "completed" ? (
+          <button
+            type="button"
+            onClick={() => handleBulkStatus(severity, "uncomplete")}
+            disabled={selectedSet.size === 0}
+            style={{
+              ...buttonBaseStyle,
+              border: "1px solid var(--primary)",
+              backgroundColor: selectedSet.size === 0 ? "var(--accent-surface)" : "var(--surface)",
+              color: "var(--primary)",
+              cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+            }}
+          >
+            Reset
+          </button>
+        ) : (severity === "authorized" || severity === "declined") ? (
+          <>
+            {!(severity === "authorized" && selectedAllCompleted) && (
+              <button
+                type="button"
+                onClick={() => handleBulkStatus(severity, "pending")}
+                disabled={selectedSet.size === 0}
+                style={{
+                  ...buttonBaseStyle,
+                  border: "1px solid var(--primary)",
+                  backgroundColor: selectedSet.size === 0 ? "var(--accent-surface)" : "var(--surface)",
+                  color: "var(--primary)",
+                  cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+                }}
+              >
+                Reset
+              </button>
+            )}
+            {severity === "authorized" && (
+              <button
+                type="button"
+                onClick={() => handleBulkStatus(severity, selectedAllCompleted ? "uncomplete" : "completed")}
+                disabled={selectedSet.size === 0}
+                style={{
+                  ...buttonBaseStyle,
+                  border: "none",
+                  backgroundColor: selectedSet.size === 0 ? "var(--complete-surface)" : "var(--complete)",
+                  color: selectedSet.size === 0 ? "var(--complete)" : "white",
+                  cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+                }}
+              >
+                {selectedAllCompleted ? "Uncomplete" : "Complete"}
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => handleBulkStatus(severity, "declined")}
+              disabled={selectedSet.size === 0}
+              style={{
+                ...buttonBaseStyle,
+                border: "none",
+                backgroundColor: selectedSet.size === 0 ? "var(--danger-surface)" : "var(--surface)",
+                color: "var(--danger)",
+                cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              Decline
+            </button>
+            <button
+              type="button"
+              onClick={() => handleBulkStatus(severity, "authorized")}
+              disabled={selectedSet.size === 0}
+              style={{
+                ...buttonBaseStyle,
+                border: "none",
+                backgroundColor: selectedSet.size === 0 ? "var(--authorised-surface)" : "var(--authorised)",
+                color: selectedSet.size === 0 ? "var(--authorised)" : "white",
+                cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+              }}
+            >
+              Authorise
+            </button>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const renderSeverityTable = (severity, itemsOverride = null) => {
     const itemsRaw = itemsOverride || severityLists[severity] || [];
     let items =
-      severity === "authorized" || severity === "declined"
+      severity === "authorized" || severity === "completed" || severity === "declined"
         ? [...itemsRaw].sort((a, b) => {
             const severityRank = (item) => {
               const value = normaliseColour(
@@ -4341,12 +4471,12 @@ export default function VhcDetailsPanel({
     const selectedAllCompleted = selectedItems.length > 0 && selectedCompletedCount === selectedItems.length;
     const selectableCount = selectableIds.size;
     const allChecked = selectableCount > 0 && selectedSet.size === selectableCount;
-    const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)" };
+    const theme = SEVERITY_THEME[severity] || { border: "none" };
 
     return (
       <div
         style={{
-          border: `1px solid ${theme.border}`,
+          border: "none",
           borderRadius: "var(--radius-md)",
           background: "var(--surface)",
           overflow: "hidden",
@@ -4435,7 +4565,7 @@ export default function VhcDetailsPanel({
                         partsComplete:
                           typeof item.partsComplete === "boolean" ? item.partsComplete : entry.partsComplete,
                         labourComplete:
-                          severity === "authorized" || severity === "declined"
+                          severity === "authorized" || severity === "completed" || severity === "declined"
                             ? entry.labourComplete ?? item.labourComplete
                             : typeof item.labourComplete === "boolean"
                               ? item.labourComplete
@@ -5080,93 +5210,6 @@ export default function VhcDetailsPanel({
             </tbody>
           </table>
         </div>
-        {selectionEnabled && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "12px",
-              padding: "16px",
-              borderTop: "1px solid var(--info-surface)",
-            }}
-          >
-            {(severity === "authorized" || severity === "declined") ? (
-              <>
-                {!(severity === "authorized" && selectedAllCompleted) && (
-                  <button
-                    type="button"
-                    onClick={() => handleBulkStatus(severity, "pending")}
-                    disabled={selectedSet.size === 0}
-                    style={{
-                      padding: "10px 16px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--primary)",
-                      backgroundColor: selectedSet.size === 0 ? "var(--accent-surface)" : "var(--surface)",
-                      color: "var(--primary)",
-                      fontWeight: 600,
-                      cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Reset
-                  </button>
-                )}
-                {severity === "authorized" && (
-                  <button
-                    type="button"
-                    onClick={() => handleBulkStatus(severity, selectedAllCompleted ? "uncomplete" : "completed")}
-                    disabled={selectedSet.size === 0}
-                    style={{
-                      padding: "10px 16px",
-                      borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--success)",
-                      backgroundColor: selectedSet.size === 0 ? "var(--success-surface)" : "var(--success)",
-                      color: selectedSet.size === 0 ? "var(--success)" : "white",
-                      fontWeight: 600,
-                      cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    {selectedAllCompleted ? "Uncomplete" : "Complete"}
-                  </button>
-                )}
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleBulkStatus(severity, "declined")}
-                  disabled={selectedSet.size === 0}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "var(--input-radius)",
-                    border: "1px solid var(--danger)",
-                    backgroundColor: selectedSet.size === 0 ? "var(--danger-surface)" : "var(--surface)",
-                    color: "var(--danger)",
-                    fontWeight: 600,
-                    cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Decline
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleBulkStatus(severity, "authorized")}
-                  disabled={selectedSet.size === 0}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "var(--input-radius)",
-                    border: "1px solid var(--success)",
-                    backgroundColor: selectedSet.size === 0 ? "var(--success-surface)" : "var(--success)",
-                    color: selectedSet.size === 0 ? "var(--success)" : "white",
-                    fontWeight: 600,
-                    cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Authorise
-                </button>
-              </>
-            )}
-          </div>
-        )}
       </div>
     );
   };
@@ -5357,7 +5400,7 @@ export default function VhcDetailsPanel({
   };
 
   const renderCustomerSection = (title, items, severity) => {
-    const theme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--surface)" };
+    const theme = SEVERITY_THEME[severity] || { border: "none", background: "var(--surface)" };
 
     let authorized = 0;
     let declined = 0;
@@ -5422,7 +5465,7 @@ export default function VhcDetailsPanel({
     return (
       <div
         style={{
-          border: `1px solid ${theme.border || "var(--info-surface)"}`,
+          border: "none",
           borderRadius: "var(--radius-md)",
           background: theme.background || "var(--surface)",
           overflow: "hidden",
@@ -6633,29 +6676,44 @@ export default function VhcDetailsPanel({
     setSelectedPartForJob(null);
   }, []);
 
-  // Render VHC items panel for Parts Identified (includes all decisions; red/amber priority)
+  // Render VHC items panel for Parts Identified — only red and amber rows are shown here.
+  // We source from every bucket (red/amber/authorised/completed/declined) and filter by
+  // the row's underlying severity instead of bucket name. This is necessary because the
+  // bucketing in quoteLines.js promotes any item with approvalStatus in
+  // {authorized, completed, declined} into its decision bucket BEFORE checking severity,
+  // so a red item the customer has authorised would otherwise vanish from Parts Identified.
   const renderVhcItemsPanel = useCallback(() => {
-    // Parts Identified should still show rows after authorization/decline.
-    // Order by underlying severity so red appears before amber.
+    const resolveRowSeverity = (value) =>
+      normaliseColour(
+        value?.vhcCheck?.severity ||
+          value?.vhcCheck?.display_status ||
+          value?.severityKey ||
+          value?.rawSeverity ||
+          value?.severity
+      );
     const quoteItems = [
       ...(quoteSeverityLists.red || []),
       ...(quoteSeverityLists.amber || []),
       ...(quoteSeverityLists.authorized || []),
+      ...(quoteSeverityLists.completed || []),
       ...(quoteSeverityLists.declined || []),
-    ].sort((a, b) => {
-      const rank = (value) => {
-        const severity = normaliseColour(
-          value?.vhcCheck?.severity ||
-          value?.vhcCheck?.display_status ||
-          value?.severityKey ||
-          value?.rawSeverity
-        );
-        if (severity === "red") return 0;
-        if (severity === "amber") return 1;
-        return 2;
-      };
-      return rank(a) - rank(b);
-    });
+    ]
+      .filter((value) => {
+        // Underlying severity is what gates Parts Identified visibility, not the
+        // current decision. A row is red or amber if any of its severity sources
+        // resolves to one of those colours.
+        const severity = resolveRowSeverity(value);
+        return severity === "red" || severity === "amber";
+      })
+      .sort((a, b) => {
+        const rank = (value) => {
+          const severity = resolveRowSeverity(value);
+          if (severity === "red") return 0;
+          if (severity === "amber") return 1;
+          return 2;
+        };
+        return rank(a) - rank(b);
+      });
 
     const normaliseMatchText = (value = "") =>
       String(value || "")
@@ -6877,25 +6935,28 @@ export default function VhcDetailsPanel({
 
     return (
       <div
+        data-dev-section="1"
+        data-dev-section-key="vhc-parts-identified-card"
+        data-dev-section-type="content-card"
+        data-dev-section-parent="vhc-parts-identified-shell"
         style={{
-          border: "1px solid var(--accent-surface)",
+          border: "none",
           borderRadius: "var(--radius-md)",
           background: "var(--surface)",
           overflow: "hidden",
         }}
       >
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-            <thead>
-              <tr
-                style={{
-                  background: "var(--info-surface)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  color: "var(--info)",
-                  fontSize: "10px",
-                }}
-              >
+        <div style={{ overflowX: "auto" }} data-dev-section="1" data-dev-section-key="vhc-parts-identified-scroll" data-dev-section-type="section-shell" data-dev-section-parent="vhc-parts-identified-card">
+          {/* data-app-table-shell="off" opts this table out of the global
+              GlobalTableShells classifier (src/components/App/GlobalTableShells.js).
+              Without this, the auto-applied .app-table-shell--with-headings
+              class sets `background: var(--surface) !important` on every <tr>,
+              which beats the inline severity-tint set on the row. The scoped
+              .vhc-parts-identified-table rules already supply the design we
+              want. */}
+          <table className="vhc-parts-identified-table" data-app-table-shell="off" data-dev-section="1" data-dev-section-key="vhc-parts-identified-table" data-dev-section-type="data-table" data-dev-section-parent="vhc-parts-identified-scroll">
+            <thead data-dev-section="1" data-dev-section-key="vhc-parts-identified-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="vhc-parts-identified-table">
+              <tr>
                 <th style={{ textAlign: "left", padding: "10px 12px", minWidth: "200px" }}>VHC Item</th>
                 <th style={{ textAlign: "left", padding: "10px 12px", minWidth: "160px" }}>Linked Parts</th>
                 <th style={{ textAlign: "right", padding: "10px 12px", minWidth: "90px" }}>Parts Cost</th>
@@ -6926,7 +6987,13 @@ export default function VhcDetailsPanel({
                 // VHC item details
                 const vhcLabel = vhcItem?.label || "VHC Item";
                 const vhcNotes = vhcItem?.notes || vhcItem?.concernText || "";
-                const vhcSeverity = vhcItem?.severityKey || vhcItem?.rawSeverity;
+                // Use the same severity resolver as the row filter at the top of
+                // this function so the two stay in lockstep. quoteLines.js puts
+                // the colour on `line.severity` and on the raw DB row at
+                // `vhcCheck.severity`/`display_status`; older code only looked at
+                // `severityKey`/`rawSeverity`, so authorised/declined items in the
+                // table came through as undefined and never picked up a tint.
+                const vhcSeverity = resolveRowSeverity(vhcItem);
                 const vhcCategory = vhcItem?.categoryLabel || vhcItem?.category?.label || "";
                 const vhcRows = Array.isArray(vhcItem?.rows)
                   ? vhcItem.rows.map((row) => (row ? String(row).trim() : "")).filter(Boolean)
@@ -7089,7 +7156,7 @@ export default function VhcDetailsPanel({
                         style={{
                           padding: "8px 16px",
                           borderRadius: "var(--radius-xs)",
-                          border: isPartsNotRequired ? "1px solid var(--success)" : "1px solid var(--accent-surface)",
+                          border: "none",
                           background: isPartsNotRequired ? "var(--success)" : "var(--surface)",
                           color: isPartsNotRequired ? "var(--surface)" : "var(--info-dark)",
                           fontWeight: 600,
@@ -7109,7 +7176,14 @@ export default function VhcDetailsPanel({
                   {isExpanded && (
                     <tr>
                       <td colSpan="5" style={{ padding: "0", borderBottom: "1px solid var(--info-surface)" }}>
-                        <div style={{ padding: "24px", background: rowBackground }}>
+                        <div
+                          className="vhc-parts-identified-expanded"
+                          data-dev-section="1"
+                          data-dev-section-key={`vhc-parts-identified-expanded-${vhcId}`}
+                          data-dev-section-type="content-card"
+                          data-dev-section-parent="vhc-parts-identified-table"
+                          style={{ background: rowHoverBackground }}
+                        >
                           {!isCustomerView ? (
                             <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "12px" }}>
                               <button
@@ -7273,7 +7347,7 @@ export default function VhcDetailsPanel({
     return (
       <div
         style={{
-          border: "1px solid var(--success-surface)",
+          border: "none",
           borderRadius: "var(--radius-md)",
           background: "var(--surface)",
           overflow: "hidden",
@@ -7573,12 +7647,7 @@ export default function VhcDetailsPanel({
                             style={{
                               padding: "8px 16px",
                               borderRadius: "var(--radius-xs)",
-                              border:
-                                isRemoved
-                                  ? "1px solid var(--danger)"
-                                  : isAddedToJob || isOrdered
-                                  ? "1px solid var(--success)"
-                                  : "1px solid var(--primary)",
+                              border: "none",
                               background:
                                 isRemoved
                                   ? "var(--danger)"
@@ -7859,7 +7928,7 @@ export default function VhcDetailsPanel({
                                   style={{
                                     padding: "8px 16px",
                                     borderRadius: "var(--radius-xs)",
-                                    border: "1px solid var(--success)",
+                                    border: "none",
                                     background: "var(--success-surface)",
                                     color: "var(--success)",
                                     fontWeight: 600,
@@ -7878,7 +7947,7 @@ export default function VhcDetailsPanel({
                                   style={{
                                     padding: "8px 16px",
                                     borderRadius: "var(--radius-xs)",
-                                    border: "1px solid var(--success)",
+                                    border: "none",
                                     background: "var(--success-surface)",
                                     color: "var(--success)",
                                     fontWeight: 600,
@@ -7898,7 +7967,7 @@ export default function VhcDetailsPanel({
                                 style={{
                                   padding: "8px 16px",
                                   borderRadius: "var(--radius-xs)",
-                                  border: "1px solid var(--success)",
+                                  border: "none",
                                   background: "var(--success)",
                                   color: "var(--surface)",
                                   fontWeight: 600,
@@ -8197,24 +8266,14 @@ export default function VhcDetailsPanel({
       <div style={PANEL_SECTION_STYLE}>
         {enableTabs ? (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }} data-dev-section="1" data-dev-section-key="vhc-tabs-row" data-dev-section-type="toolbar">
               <nav
-                style={{
-                  borderRadius: "var(--control-radius)",
-                  border: "none",
-                  background: "var(--tab-container-bg)",
-                  padding: "6px",
-                  display: "flex",
-                  flexWrap: "nowrap",
-                  gap: "6px",
-                  overflowX: "auto",
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "var(--scrollbar-thumb) transparent",
-                  scrollBehavior: "smooth",
-                  WebkitOverflowScrolling: "touch",
-                }}
                 className="tab-api"
                 aria-label="VHC tabs"
+                data-dev-section="1"
+                data-dev-section-key="vhc-tabs-nav"
+                data-dev-section-type="toolbar"
+                data-dev-section-parent="vhc-tabs-row"
               >
                 {TAB_OPTIONS.map((tab) => {
                   const isActive = activeTab === tab.id;
@@ -8224,10 +8283,6 @@ export default function VhcDetailsPanel({
                       type="button"
                       onClick={() => setActiveTab(tab.id)}
                       className={`tab-api__item${isActive ? " is-active" : ""}`}
-                      style={{
-                        flex: "0 0 auto",
-                        whiteSpace: "nowrap",
-                      }}
                     >
                       {tab.label}
                     </button>
@@ -8240,15 +8295,15 @@ export default function VhcDetailsPanel({
                 </div>
               )}
             </div>
-            <div style={TAB_CONTENT_STYLE}>
+            <div style={TAB_CONTENT_STYLE} data-dev-section="1" data-dev-section-key="vhc-tab-content" data-dev-section-type="section-shell">
               {activeTab === "summary" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }} data-dev-section="1" data-dev-section-key="vhc-summary-stack" data-dev-section-type="section-shell" data-dev-section-parent="vhc-tab-content">
                 {/* Only show Red/Amber sections if there are pending items */}
                 {["red", "amber"].map((severity) => {
                     const items = quoteSeverityLists[severity] || [];
                     if (items.length === 0) return null;
                     const meta = SEVERITY_META[severity];
-                    const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
+                    const severityTheme = SEVERITY_THEME[severity] || { border: "none", background: "var(--danger-surface)" };
 
                     // Calculate totals for this severity
                     const selectedIds = severitySelections[severity] || [];
@@ -8276,38 +8331,36 @@ export default function VhcDetailsPanel({
                     return (
                       <div
                         key={severity}
+                        data-dev-section="1"
+                        data-dev-section-key={`vhc-summary-${severity}-section`}
+                        data-dev-section-type="content-card"
+                        data-dev-section-parent="vhc-summary-stack"
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          gap: "16px",
-                          border: `2px solid ${severityTheme.border}`,
+                          gap: "18px",
+                          border: "none",
                           borderRadius: "var(--radius-lg)",
-                          padding: "18px",
-                          background: "var(--surface)",
-                        
+                          padding: "20px",
+                          background: severityTheme.background,
                         }}
                       >
                         <div
                           style={{
-                            borderBottom: `1px solid ${severityTheme.border}`,
+                            borderBottom: "none",
                             paddingBottom: "10px",
                           }}
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" }}>
-                            <div>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                               <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
-                              {meta.description ? (
-                                <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
-                              ) : null}
-                            </div>
-                            <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                               {selectedSet.size > 0 && (
                                 <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--info-dark)" }}>
                                   Selected: £{selectedTotal.toFixed(2)}
                                 </span>
                               )}
                               {authorisedTotal > 0 && (
-                                <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--success)" }}>
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--authorised)" }}>
                                   Authorised: £{authorisedTotal.toFixed(2)}
                                 </span>
                               )}
@@ -8316,7 +8369,11 @@ export default function VhcDetailsPanel({
                                   Declined: £{declinedTotal.toFixed(2)}
                                 </span>
                               )}
+                              {meta.description ? (
+                                <p style={{ margin: 0, color: "var(--info)", flexBasis: "100%" }}>{meta.description}</p>
+                              ) : null}
                             </div>
+                            {renderSectionBulkActions(severity, items)}
                           </div>
                         </div>
                         {renderSeverityTable(severity, items)}
@@ -8324,60 +8381,114 @@ export default function VhcDetailsPanel({
                     );
                   })}
 
-                  {/* Authorised section - only show if there are authorized items */}
+                  {/* Authorised section - only show if there are authorized items (in-progress) */}
                   {quoteSeverityLists.authorized && quoteSeverityLists.authorized.length > 0 ? (
                     <div
+                      data-dev-section="1"
+                      data-dev-section-key="vhc-summary-authorised-section"
+                      data-dev-section-type="content-card"
+                      data-dev-section-parent="vhc-summary-stack"
                       style={{
-                        border: "2px solid var(--success)",
+                        border: "none",
                         borderRadius: "var(--radius-lg)",
-                        padding: "18px",
-                        background: "var(--surface)",
-                      
+                        padding: "20px",
+                        background: "var(--authorised-surface)",
                         display: "flex",
                         flexDirection: "column",
-                        gap: "16px",
+                        gap: "18px",
                       }}
                     >
-                      <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div>
-                            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
+                      <div style={{ paddingBottom: "10px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
+                            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--authorised)" }}>Authorised</h2>
+                            {(() => {
+                              const authorisedOnlyTotal = (quoteSeverityLists.authorized || []).reduce(
+                                (sum, item) => sum + Number(item.total_gbp ?? item.total ?? 0),
+                                0
+                              );
+                              return authorisedOnlyTotal > 0 ? (
+                                <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--authorised)" }}>
+                                  {formatCurrency(authorisedOnlyTotal)}
+                                </span>
+                              ) : null;
+                            })()}
                           </div>
-                          {quoteTotals.authorized > 0 && (
-                            <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
-                              {formatCurrency(quoteTotals.authorized)}
-                            </div>
-                          )}
+                          {renderSectionBulkActions("authorized", quoteSeverityLists.authorized)}
                         </div>
                       </div>
                       {renderSeverityTable("authorized", quoteSeverityLists.authorized)}
                     </div>
                   ) : null}
 
+                  {/* Complete section - rows from Authorised that are now completed */}
+                  {quoteSeverityLists.completed && quoteSeverityLists.completed.length > 0 ? (
+                    <div
+                      data-dev-section="1"
+                      data-dev-section-key="vhc-summary-complete-section"
+                      data-dev-section-type="content-card"
+                      data-dev-section-parent="vhc-summary-stack"
+                      style={{
+                        border: "none",
+                        borderRadius: "var(--radius-lg)",
+                        padding: "20px",
+                        background: "var(--complete-surface)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "18px",
+                      }}
+                    >
+                      <div style={{ paddingBottom: "10px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
+                            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--complete)" }}>Complete</h2>
+                            {(() => {
+                              const completedTotal = (quoteSeverityLists.completed || []).reduce(
+                                (sum, item) => sum + Number(item.total_gbp ?? item.total ?? 0),
+                                0
+                              );
+                              return completedTotal > 0 ? (
+                                <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--complete)" }}>
+                                  {formatCurrency(completedTotal)}
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
+                          {renderSectionBulkActions("completed", quoteSeverityLists.completed)}
+                        </div>
+                      </div>
+                      {renderSeverityTable("completed", quoteSeverityLists.completed)}
+                    </div>
+                  ) : null}
+
                   {/* Declined section - only show if there are declined items */}
                   {quoteSeverityLists.declined && quoteSeverityLists.declined.length > 0 ? (
                     <div
+                      data-dev-section="1"
+                      data-dev-section-key="vhc-summary-declined-section"
+                      data-dev-section-type="content-card"
+                      data-dev-section-parent="vhc-summary-stack"
                       style={{
-                        border: "2px solid var(--danger)",
+                        border: "none",
                         borderRadius: "var(--radius-lg)",
-                        padding: "18px",
-                        background: "var(--surface)",
-                      
+                        padding: "20px",
+                        background: "var(--danger-surface)",
                         display: "flex",
                         flexDirection: "column",
-                        gap: "16px",
+                        gap: "18px",
                       }}
                     >
-                      <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div>
+                      <div style={{ paddingBottom: "10px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                             <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
+                            {quoteTotals.declined > 0 && (
+                              <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>
+                                {formatCurrency(quoteTotals.declined)}
+                              </span>
+                            )}
                           </div>
-                          {quoteTotals.declined > 0 && (
-                            <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
-                              {formatCurrency(quoteTotals.declined)}
-                            </div>
-                          )}
+                          {renderSectionBulkActions("declined", quoteSeverityLists.declined)}
                         </div>
                       </div>
                       {renderSeverityTable("declined", quoteSeverityLists.declined)}
@@ -8386,12 +8497,16 @@ export default function VhcDetailsPanel({
 
                   {greenItems.length > 0 && (
                     <div
+                      data-dev-section="1"
+                      data-dev-section-key="vhc-summary-greenchecks-section"
+                      data-dev-section-type="content-card"
+                      data-dev-section-parent="vhc-summary-stack"
                       style={{
-                        border: "2px solid var(--success)",
+                        border: "none",
                         borderRadius: "var(--radius-lg)",
                         padding: "20px",
                         background: "var(--success-surface)",
-                      
+
                         display: "flex",
                         flexDirection: "column",
                         gap: "18px",
@@ -8464,8 +8579,12 @@ export default function VhcDetailsPanel({
               )}
 
               {activeTab === "health-check" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "18px" }} data-dev-section="1" data-dev-section-key="vhc-healthcheck-stack" data-dev-section-type="section-shell" data-dev-section-parent="vhc-tab-content">
                   <div
+                    data-dev-section="1"
+                    data-dev-section-key="vhc-healthcheck-status-row"
+                    data-dev-section-type="toolbar"
+                    data-dev-section-parent="vhc-healthcheck-stack"
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
@@ -8512,23 +8631,29 @@ export default function VhcDetailsPanel({
               )}
 
               {activeTab === "parts-identified" && (
-                <div id="parts-identified">
+                <div id="parts-identified" data-dev-section="1" data-dev-section-key="vhc-parts-identified-shell" data-dev-section-type="section-shell" data-dev-section-parent="vhc-tab-content">
                   {renderVhcItemsPanel()}
                 </div>
               )}
 
               {activeTab === "parts-authorized" && (
-                <div id="parts-authorized">
+                <div id="parts-authorized" data-dev-section="1" data-dev-section-key="vhc-parts-authorised-shell" data-dev-section-type="section-shell" data-dev-section-parent="vhc-tab-content">
                   {renderVhcAuthorizedPanel()}
                 </div>
               )}
 
 
-              {activeTab === "photos" &&
-                renderFileGallery("Photos", photoFiles, "No customer-facing photos have been attached.", "photo")}
+              {activeTab === "photos" && (
+                <div data-dev-section="1" data-dev-section-key="vhc-photos-shell" data-dev-section-type="section-shell" data-dev-section-parent="vhc-tab-content">
+                  {renderFileGallery("Photos", photoFiles, "No customer-facing photos have been attached.", "photo")}
+                </div>
+              )}
 
-              {activeTab === "videos" &&
-                renderFileGallery("Videos", videoFiles, "No customer-facing videos have been attached.", "video")}
+              {activeTab === "videos" && (
+                <div data-dev-section="1" data-dev-section-key="vhc-videos-shell" data-dev-section-type="section-shell" data-dev-section-parent="vhc-tab-content">
+                  {renderFileGallery("Videos", videoFiles, "No customer-facing videos have been attached.", "video")}
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -8545,7 +8670,7 @@ export default function VhcDetailsPanel({
                   const items = quoteSeverityLists[severity] || [];
                   if (items.length === 0) return null;
                   const meta = SEVERITY_META[severity];
-                  const severityTheme = SEVERITY_THEME[severity] || { border: "var(--info-surface)", background: "var(--danger-surface)" };
+                  const severityTheme = SEVERITY_THEME[severity] || { border: "none", background: "var(--danger-surface)" };
 
                   // Calculate totals for this severity
                   const selectedIds = severitySelections[severity] || [];
@@ -8576,35 +8701,29 @@ export default function VhcDetailsPanel({
                       style={{
                         display: "flex",
                         flexDirection: "column",
-                        gap: "16px",
-                        border: `2px solid ${severityTheme.border}`,
+                        gap: "18px",
+                        border: "none",
                         borderRadius: "var(--radius-lg)",
-                        padding: "18px",
-                        background: "var(--surface)",
-                      
+                        padding: "20px",
+                        background: severityTheme.background,
                       }}
                     >
                       <div
                         style={{
-                          borderBottom: `1px solid ${severityTheme.border}`,
+                          borderBottom: "none",
                           paddingBottom: "10px",
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" }}>
-                          <div>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                             <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
-                            {meta.description ? (
-                              <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{meta.description}</p>
-                            ) : null}
-                          </div>
-                          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                             {selectedSet.size > 0 && (
                               <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--info-dark)" }}>
                                 Selected: £{selectedTotal.toFixed(2)}
                               </span>
                             )}
                             {authorisedTotal > 0 && (
-                              <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--success)" }}>
+                              <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--authorised)" }}>
                                 Authorised: £{authorisedTotal.toFixed(2)}
                               </span>
                             )}
@@ -8613,7 +8732,11 @@ export default function VhcDetailsPanel({
                                 Declined: £{declinedTotal.toFixed(2)}
                               </span>
                             )}
+                            {meta.description ? (
+                              <p style={{ margin: 0, color: "var(--info)", flexBasis: "100%" }}>{meta.description}</p>
+                            ) : null}
                           </div>
+                          {renderSectionBulkActions(severity, items)}
                         </div>
                       </div>
                       {renderSeverityTable(severity, items)}
@@ -8621,33 +8744,75 @@ export default function VhcDetailsPanel({
                   );
                 })}
 
-                {/* Authorised section - show if there are authorized items */}
+                {/* Authorised section - show if there are authorized items (in-progress) */}
                 {quoteSeverityLists.authorized && quoteSeverityLists.authorized.length > 0 && (
                   <div
                     style={{
-                      border: "2px solid var(--success)",
+                      border: "none",
                       borderRadius: "var(--radius-lg)",
-                      padding: "18px",
-                      background: "var(--surface)",
-                    
+                      padding: "20px",
+                      background: "var(--authorised-surface)",
                       display: "flex",
                       flexDirection: "column",
-                      gap: "16px",
+                      gap: "18px",
                     }}
                   >
-                    <div style={{ borderBottom: "1px solid var(--success)", paddingBottom: "10px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--success)" }}>Authorised</h2>
+                    <div style={{ paddingBottom: "10px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
+                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--authorised)" }}>Authorised</h2>
+                          {(() => {
+                            const authorisedOnlyTotal = (quoteSeverityLists.authorized || []).reduce(
+                              (sum, item) => sum + Number(item.total_gbp ?? item.total ?? 0),
+                              0
+                            );
+                            return authorisedOnlyTotal > 0 ? (
+                              <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--authorised)" }}>
+                                {formatCurrency(authorisedOnlyTotal)}
+                              </span>
+                            ) : null;
+                          })()}
                         </div>
-                        {quoteTotals.authorized > 0 && (
-                          <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--success)" }}>
-                            {formatCurrency(quoteTotals.authorized)}
-                          </div>
-                        )}
+                        {renderSectionBulkActions("authorized", quoteSeverityLists.authorized)}
                       </div>
                     </div>
                     {renderSeverityTable("authorized", quoteSeverityLists.authorized)}
+                  </div>
+                )}
+
+                {/* Complete section - rows from Authorised that are now completed */}
+                {quoteSeverityLists.completed && quoteSeverityLists.completed.length > 0 && (
+                  <div
+                    style={{
+                      border: "none",
+                      borderRadius: "var(--radius-lg)",
+                      padding: "20px",
+                      background: "var(--complete-surface)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "18px",
+                    }}
+                  >
+                    <div style={{ paddingBottom: "10px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
+                          <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--complete)" }}>Complete</h2>
+                          {(() => {
+                            const completedTotal = (quoteSeverityLists.completed || []).reduce(
+                              (sum, item) => sum + Number(item.total_gbp ?? item.total ?? 0),
+                              0
+                            );
+                            return completedTotal > 0 ? (
+                              <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--complete)" }}>
+                                {formatCurrency(completedTotal)}
+                              </span>
+                            ) : null;
+                          })()}
+                        </div>
+                        {renderSectionBulkActions("completed", quoteSeverityLists.completed)}
+                      </div>
+                    </div>
+                    {renderSeverityTable("completed", quoteSeverityLists.completed)}
                   </div>
                 )}
 
@@ -8655,26 +8820,26 @@ export default function VhcDetailsPanel({
                 {quoteSeverityLists.declined && quoteSeverityLists.declined.length > 0 && (
                   <div
                     style={{
-                      border: "2px solid var(--danger)",
+                      border: "none",
                       borderRadius: "var(--radius-lg)",
-                      padding: "18px",
-                      background: "var(--surface)",
-                    
+                      padding: "20px",
+                      background: "var(--danger-surface)",
                       display: "flex",
                       flexDirection: "column",
-                      gap: "16px",
+                      gap: "18px",
                     }}
                   >
-                    <div style={{ borderBottom: "1px solid var(--danger)", paddingBottom: "10px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
+                    <div style={{ paddingBottom: "10px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                           <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>Declined</h2>
+                          {quoteTotals.declined > 0 && (
+                            <span style={{ fontSize: "20px", fontWeight: 700, color: "var(--danger)" }}>
+                              {formatCurrency(quoteTotals.declined)}
+                            </span>
+                          )}
                         </div>
-                        {quoteTotals.declined > 0 && (
-                          <div style={{ fontSize: "24px", fontWeight: 700, color: "var(--danger)" }}>
-                            {formatCurrency(quoteTotals.declined)}
-                          </div>
-                        )}
+                        {renderSectionBulkActions("declined", quoteSeverityLists.declined)}
                       </div>
                     </div>
                     {renderSeverityTable("declined", quoteSeverityLists.declined)}
@@ -8684,7 +8849,7 @@ export default function VhcDetailsPanel({
                 {greenItems.length > 0 && (
                   <div
                     style={{
-                      border: "2px solid var(--success)",
+                      border: "none",
                       borderRadius: "var(--radius-lg)",
                       padding: "20px",
                       background: "var(--success-surface)",
@@ -9089,7 +9254,7 @@ export default function VhcDetailsPanel({
               {newPartError && (
                 <div
                   style={{
-                    border: "1px solid var(--danger)",
+                    border: "none",
                     borderRadius: "var(--radius-sm)",
                     padding: "10px 14px",
                     color: "var(--danger)",
@@ -9388,7 +9553,7 @@ export default function VhcDetailsPanel({
                                 style={{
                                   padding: "6px 10px",
                                   borderRadius: "var(--radius-xs)",
-                                  border: "1px solid var(--danger)",
+                                  border: "none",
                                   background: "var(--danger-surface)",
                                   color: "var(--danger)",
                                   fontWeight: 600,
@@ -9468,7 +9633,7 @@ export default function VhcDetailsPanel({
                             style={{
                               padding: "6px 10px",
                               borderRadius: "var(--radius-xs)",
-                              border: "1px solid var(--danger)",
+                              border: "none",
                               background: "var(--danger-surface)",
                               color: "var(--danger)",
                               fontWeight: 600,

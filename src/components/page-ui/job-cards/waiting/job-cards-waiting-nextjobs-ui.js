@@ -83,11 +83,10 @@ export default function NextJobsPageUi(props) {
   }}>
         
         {/* ✅ Outstanding Jobs Section with Drop Zone */}
-            <div data-dev-section-key="nextjobs-outstanding" data-dev-section-parent="app-layout-page-card" data-dev-section-type="content-card" data-dev-background-token="layer-section-level-3" style={{
+            <div className="app-layout-card" data-dev-section-key="nextjobs-outstanding" data-dev-section-parent="app-layout-page-card" data-dev-section-type="content-card" data-dev-background-token="page-card-bg-alt" style={{
       marginBottom: "12px",
-      background: "var(--layer-section-level-3)",
-      borderRadius: "var(--radius-xs)",
-      border: activeDropTarget === "outstanding" ? "3px solid var(--primary)" : "1px solid var(--surface-light)",
+      borderRadius: "var(--section-card-radius)",
+      border: activeDropTarget === "outstanding" ? "3px solid var(--primary)" : "var(--section-card-border)",
       boxShadow: activeDropTarget === "outstanding" ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
       padding: "16px",
       display: "flex",
@@ -95,7 +94,7 @@ export default function NextJobsPageUi(props) {
       minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
       flexShrink: 0,
       transition: "all 0.2s ease",
-      backgroundColor: activeDropTarget === "outstanding" ? "var(--surface-light)" : "var(--layer-section-level-3)",
+      backgroundColor: activeDropTarget === "outstanding" ? "var(--accent-surface)" : "var(--page-card-bg-alt)",
       color: "var(--text-primary)"
     }}>
           <div data-dev-section-key="nextjobs-outstanding-header" data-dev-section-parent="nextjobs-outstanding" data-dev-section-type="toolbar" style={{
@@ -173,7 +172,7 @@ export default function NextJobsPageUi(props) {
                   padding: "14px",
                   position: "relative",
                   borderRadius: "var(--radius-md)",
-                  border: draggingJob?.jobNumber === job.jobNumber ? "2px dashed var(--primary)" : isSearchHighlighted ? "2px solid var(--success)" : "1px solid var(--surface-light)",
+                  border: draggingJob?.jobNumber === job.jobNumber ? "2px dashed var(--primary)" : isSearchHighlighted ? "none" : "1px solid var(--surface-light)",
                   backgroundColor: draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : isSearchHighlighted ? "var(--success-surface)" : "var(--surface)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "border 0.2s, background-color 0.2s, transform 0.2s",
@@ -337,11 +336,10 @@ export default function NextJobsPageUi(props) {
         </div>
 
         {/* ✅ Technicians Grid Section */}
-            <div data-dev-section-key="nextjobs-technicians" data-dev-section-parent="app-layout-page-card" data-dev-shell="1" data-dev-section-type="content-card" data-dev-background-token="layer-section-level-3" style={{
+            <div className="app-layout-card" data-dev-section-key="nextjobs-technicians" data-dev-section-parent="app-layout-page-card" data-dev-shell="1" data-dev-section-type="content-card" data-dev-background-token="page-card-bg-alt" style={{
       flex: "1 0 auto",
-      borderRadius: "var(--radius-xs)",
-      border: "none",
-      background: "var(--layer-section-level-3)",
+      borderRadius: "var(--section-card-radius)",
+      backgroundColor: "var(--page-card-bg-alt)",
       padding: "24px",
       display: "flex",
       flexDirection: "column",
@@ -452,7 +450,7 @@ export default function NextJobsPageUi(props) {
             color: feedbackMessage.type === "error" ? "var(--danger)" : "var(--text-primary)",
             fontSize: "14px",
             fontWeight: 600,
-            border: feedbackMessage.type === "error" ? "1px solid var(--danger)" : "1px solid var(--success)"
+            border: "none"
           }}>
                   {feedbackMessage.text}
                 </div>}

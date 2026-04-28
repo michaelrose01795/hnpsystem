@@ -40,7 +40,7 @@ import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
 import VhcAssistantPanel from "@/features/vhcAssistant/components/VhcAssistantPanel";
-import { normaliseDecisionStatus } from "@/lib/vhc/summaryStatus";
+import { normaliseDecisionStatus } from "@/features/vhc/vhcStatusEngine";
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -4634,6 +4634,38 @@ function isVideoMime(mime = "") {
   return /^video\//i.test(mime);
 }
 
+function isImageDocument(doc = {}) {
+  const type = doc.type || doc.file_type || "";
+  const name = doc.name || doc.file_name || "";
+  return isImageMime(type) || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name);
+}
+
+function isVideoDocument(doc = {}) {
+  const type = doc.type || doc.file_type || "";
+  const name = doc.name || doc.file_name || "";
+  return isVideoMime(type) || /\.(mp4|mov|avi|mkv|webm|m4v)$/i.test(name);
+}
+
+function getPreviewHeading(doc = {}) {
+  if (isImageDocument(doc)) return "Photo preview";
+  if (isVideoDocument(doc)) return "Video preview";
+  return "Document preview";
+}
+
+const previewHeaderButtonStyle = {
+  padding: "6px 14px",
+  border: "1px solid rgba(var(--primary-rgb), 0.42)",
+  borderRadius: "var(--input-radius)",
+  backgroundColor: "rgba(var(--primary-rgb), 0.5)",
+  color: "var(--text-inverse)",
+  fontSize: "13px",
+  fontWeight: 600,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  backdropFilter: "blur(12px)",
+  WebkitBackdropFilter: "blur(12px)"
+};
+
 function DocumentsTab({
   documents = [],
   canDelete,
@@ -4687,6 +4719,7 @@ function DocumentsTab({
               backgroundColor: "var(--surface)",
               borderRadius: "var(--radius-xl)",
               overflow: "hidden",
+              position: "relative",
               display: "flex",
               flexDirection: "column",
               maxWidth: "min(92vw, 1000px)",
@@ -4699,8 +4732,15 @@ function DocumentsTab({
               style={{
                 display: "flex", alignItems: "center", gap: "10px",
                 padding: "16px 20px",
-                borderBottom: "1px solid var(--surface-light)",
-                flexShrink: 0
+                borderBottom: "1px solid rgba(var(--surface-rgb), 0.28)",
+                backgroundColor: "rgba(var(--background-rgb), 0.9)",
+                backdropFilter: "blur(18px)",
+                WebkitBackdropFilter: "blur(18px)",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 2
               }}>
               
               {isRenamingPreview ?
@@ -4726,7 +4766,9 @@ function DocumentsTab({
                     border: "1px solid var(--primary)",
                     fontSize: "14px", fontWeight: 600,
                     color: "var(--text-primary)",
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "rgba(var(--surface-rgb), 0.78)",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
                     outline: "none"
                   }} />
                 
@@ -4740,24 +4782,14 @@ function DocumentsTab({
                     }
                     setIsRenamingPreview(false);
                   }}
-                  style={{
-                    padding: "6px 14px", border: "none",
-                    borderRadius: "var(--input-radius)",
-                    backgroundColor: "var(--primary)", color: "var(--text-inverse)",
-                    fontSize: "13px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap"
-                  }}>
+                  style={previewHeaderButtonStyle}>
                   
                     Save
                   </button>
                   <button
                   type="button"
                   onClick={() => setIsRenamingPreview(false)}
-                  style={{
-                    padding: "6px 10px", border: "none",
-                    borderRadius: "var(--input-radius)",
-                    backgroundColor: "var(--surface-light)", color: "var(--text-secondary)",
-                    fontSize: "13px", fontWeight: 600, cursor: "pointer"
-                  }}>
+                  style={previewHeaderButtonStyle}>
                   
                     Cancel
                   </button>
@@ -4765,18 +4797,13 @@ function DocumentsTab({
 
               <>
                   <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
-                    Document Preview
+                    {getPreviewHeading(previewDoc)}
                   </span>
                   {typeof onReplaceDocument === "function" && (isImageMime(previewDoc.type || previewDoc.file_type || "") || isVideoMime(previewDoc.type || previewDoc.file_type || "")) &&
                 <button
                   type="button"
                   onClick={() => {setEditingDoc(previewDoc);setPreviewDoc(null);}}
-                  style={{
-                    padding: "6px 14px", border: "1px solid var(--surface-light)",
-                    borderRadius: "var(--input-radius)",
-                    backgroundColor: "var(--surface)", color: "var(--text-primary)",
-                    fontSize: "13px", fontWeight: 600, cursor: "pointer"
-                  }}>
+                  style={previewHeaderButtonStyle}>
                   
                       Edit
                     </button>
@@ -4789,12 +4816,7 @@ function DocumentsTab({
                     setPreviewRenameValue(currentName);
                     setIsRenamingPreview(true);
                   }}
-                  style={{
-                    padding: "6px 14px", border: "1px solid var(--surface-light)",
-                    borderRadius: "var(--input-radius)",
-                    backgroundColor: "var(--surface)", color: "var(--text-primary)",
-                    fontSize: "13px", fontWeight: 600, cursor: "pointer"
-                  }}>
+                  style={previewHeaderButtonStyle}>
                   
                       Rename
                     </button>
@@ -4808,10 +4830,12 @@ function DocumentsTab({
                   width: "32px", height: "32px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   border: "none", borderRadius: "var(--radius-xs)",
-                  backgroundColor: "var(--surface-light)",
-                  color: "var(--text-primary)",
+                  backgroundColor: "rgba(var(--primary-rgb), 0.5)",
+                  color: "var(--text-inverse)",
                   fontSize: "18px", lineHeight: 1,
-                  cursor: "pointer", fontWeight: 400, flexShrink: 0
+                  cursor: "pointer", fontWeight: 400, flexShrink: 0,
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)"
                 }}
                 aria-label="Close preview">
                 
@@ -4827,14 +4851,20 @@ function DocumentsTab({
                 minHeight: "300px"
               }}>
               
-              {isImageMime(previewDoc.type || previewDoc.file_type || "") ?
+              {isImageDocument(previewDoc) ?
               <img
                 src={previewDoc.url || previewDoc.file_url || ""}
                 alt="Document preview"
                 style={{
-                  maxWidth: "100%", maxHeight: "80vh",
+                  maxWidth: "100%", maxHeight: "90vh",
                   objectFit: "contain", display: "block"
                 }} /> :
+              isVideoDocument(previewDoc) ?
+              <video
+                src={previewDoc.url || previewDoc.file_url || ""}
+                controls
+                title="Video preview"
+                style={{ width: "100%", maxHeight: "90vh", display: "block", backgroundColor: "var(--surface-dark, #111)" }} /> :
 
 
               <iframe

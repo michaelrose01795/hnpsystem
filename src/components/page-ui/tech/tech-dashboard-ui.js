@@ -87,7 +87,7 @@ export default function TechsDashboardUi(props) {
             </div>
           </StatCard>
 
-          <StatCard sectionKey="tech-dashboard-stat-clocking" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle(isClockedIn ? "var(--success-surface)" : "var(--danger-surface)", isClockedIn ? "var(--success-border)" : "var(--danger-border)")}>
+          <StatCard sectionKey="tech-dashboard-stat-clocking" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle(isClockedIn ? "var(--success-surface)" : "var(--danger-surface)", "transparent")}>
             <div style={{
           fontSize: "16px",
           fontWeight: "600",

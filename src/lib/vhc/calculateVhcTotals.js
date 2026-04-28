@@ -5,26 +5,27 @@
  */
 
 import { summariseTechnicianVhc } from './summary';
-import { normalizeDecision, normalizeSeverity, resolveVhcItemState, isAuthorizedLike } from '@/lib/vhc/vhcItemState'; // Canonical state model.
+// Phase 2 of the VHC refactor: route every normalisation through the canonical
+// engine. The local normaliseColour wrapper that also mapped workflow strings
+// onto the severity-list buckets is preserved here as a small private helper —
+// it is structurally specific to this file's bucketing strategy and not part of
+// the engine's normalised model.
+import { normalizeDecision, normalizeSeverity } from '@/features/vhc/vhcStatusEngine';
 
 const LABOUR_RATE = 150; // £150 per hour
 
-/**
- * Normalise colour values to standard severity levels.
- * Delegates to canonical normalizeSeverity, with legacy aliases for workflow statuses.
- */
-function normaliseColour(value) { // Local wrapper that also maps workflow strings for backward compat.
-  if (!value || typeof value !== 'string') return null; // Null guard.
-  const severity = normalizeSeverity(value); // Try canonical severity first.
-  if (severity) return severity; // Return if it's a color.
-  const decision = normalizeDecision(value); // Try as a decision value.
-  if (decision === 'authorized' || decision === 'completed') return 'authorized'; // Map for severity list bucketing.
-  if (decision === 'declined') return 'declined'; // Map for severity list bucketing.
-  return null; // Unrecognized.
-}
-
-function normaliseDecisionStatus(value) { // Delegates to canonical normalizer.
-  return normalizeDecision(value); // Single source of truth.
+// Severity-list bucketing helper. Workflow strings ("authorized"/"completed"/
+// "declined") are mapped onto the severity-list keys this file uses; real
+// severity colours pass straight through. Kept private to this module because
+// the engine returns a richer projection that callers in other files use.
+function normaliseColour(value) {
+  if (!value || typeof value !== 'string') return null;
+  const severity = normalizeSeverity(value);
+  if (severity) return severity;
+  const decision = normalizeDecision(value);
+  if (decision === 'authorized' || decision === 'completed') return 'authorized';
+  if (decision === 'declined') return 'declined';
+  return null;
 }
 
 /**
@@ -99,8 +100,8 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = [], 
     vhcChecks.forEach((check) => {
       if (check.vhc_id) {
         approvalLookup.set(String(check.vhc_id), {
-          approvalStatus: normaliseDecisionStatus(check.approval_status) || 'pending',
-          authorizationState: normaliseDecisionStatus(check.authorization_state) || null,
+          approvalStatus: normalizeDecision(check.approval_status) || 'pending',
+          authorizationState: normalizeDecision(check.authorization_state) || null,
           displayStatus: check.display_status || null,
           labourHours: check.labour_hours,
           partsCost: check.parts_cost,

@@ -32,7 +32,7 @@ export default function PartsDashboardUi(props) {
       return <>
       <div>
         <header className="app-section-card" style={{
-      border: "1px solid var(--info)"
+      border: "none"
     }}>
           <p style={{
         margin: 0,

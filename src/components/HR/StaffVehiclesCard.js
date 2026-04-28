@@ -569,7 +569,7 @@ export default function StaffVehiclesCard({
         <div
           className="mb-4 rounded-2xl px-3 py-2 text-sm"
           style={{
-            border: "1px solid var(--danger-border)",
+            border: "none",
             background: "var(--danger-surface)",
             color: "var(--danger-text)",
           }}
@@ -1288,7 +1288,7 @@ const secondaryActionButton = {
 };
 
 const dangerActionButton = {
-  border: "1px solid rgba(var(--danger-rgb), 0.5)",
+  border: "none",
   borderRadius: "var(--input-radius)",
   padding: "var(--control-padding)",
   background: "rgba(var(--danger-rgb), 0.12)",

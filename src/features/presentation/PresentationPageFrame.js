@@ -29,7 +29,7 @@ export default function PresentationPageFrame() {
       style={{
         width: "100%",
         minHeight: "100%",
-        paddingBottom: "96px",
+        paddingBottom: "24px",
       }}
     >
       {MockComponent ? <MockComponent /> : <FallbackPage slide={currentSlide} />}

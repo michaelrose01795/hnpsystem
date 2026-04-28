@@ -1,9 +1,68 @@
 // file location: src/components/page-ui/dev/dev-user-diagnostic-ui.js
 
+import PopupModal from "@/components/popups/popupStyleApi";
+
+const developingSections = [
+  {
+    title: "Product Direction",
+    items: [
+      "Create a single H&P operations platform covering service, workshop, parts, accounts, customer updates, HR, and management reporting.",
+      "Replace scattered spreadsheets, message threads, and manual status chasing with one controlled workflow.",
+      "Keep the product built around real dealership processes so each screen supports daily work, not just reporting.",
+    ],
+  },
+  {
+    title: "Delivery Plan",
+    items: [
+      "Deliver in phases so management can review working software every 2 to 4 weeks instead of waiting for one large handover.",
+      "Prioritise the highest-value flows first: job cards, VHC, vehicle tracking, parts requests, customer communication, and management dashboards.",
+      "Use the diagnostics page before reviews and demos to confirm key workflows, APIs, and data links are healthy.",
+    ],
+  },
+  {
+    title: "Time Commitment",
+    items: [
+      "Expected build time: 18 to 28 focused hours per week alongside a full-time job.",
+      "Typical pattern: 3 to 5 hours per evening, with weekend blocks used for testing, demos, and larger releases where needed.",
+      "Weekly progress should be summarised as delivered work, active risks, next priorities, and any decisions needed from management.",
+    ],
+  },
+  {
+    title: "Milestones",
+    items: [
+      "MVP, 3 to 4 weeks: core navigation, job cards, workshop status tracking, basic VHC flow, and management visibility.",
+      "Phase 1, 4 to 6 weeks: parts workflow, customer updates, stronger dashboards, accounts links, and role-based access.",
+      "Phase 2, 6 to 8 weeks: customer portal, HR/admin tools, reporting packs, workflow automation, and presentation-ready polish.",
+      "Stabilisation, 2 weeks per release: bug fixing, user feedback, training notes, and handover material.",
+    ],
+  },
+  {
+    title: "Support & Handover",
+    items: [
+      "Include guided walkthroughs for each department so managers can see exactly how the system fits daily operations.",
+      "Provide short workflow notes for major areas: job cards, VHC, parts, tracking, customer updates, accounts, and admin.",
+      "Separate bugs, agreed improvements, and new feature requests so support remains clear and commercially fair.",
+      "Keep documentation practical enough for future staff training and internal continuity.",
+    ],
+  },
+  {
+    title: "Commercials",
+    items: [
+      "Use staged payments tied to visible delivery: small start payment, MVP delivery payment, then phase payments as each area goes live.",
+      "Example structure: 20% start, 30% on MVP, 25% on Phase 1, 25% on Phase 2 or final handover.",
+      "Ongoing support can be a modest monthly retainer covering hosting checks, small fixes, training help, and priority updates.",
+      "Larger new modules or urgent out-of-scope requests should be quoted separately before work begins.",
+    ],
+  },
+];
+
 export default function UserDiagnosticDevPageUi(props) {
   const {
     DevLayoutSection,
+    developingOpen,
     GlobalUiShowcase,
+    onCloseDeveloping,
+    onOpenDeveloping,
     SECTION_ORDER,
     expanded,
     groupedResults,
@@ -48,24 +107,8 @@ export default function UserDiagnosticDevPageUi(props) {
     height: "100%",
     overflowY: "auto",
     paddingRight: "8px"
-  }}>
-      <DevLayoutSection sectionKey="user-diagnostic/toolbar" sectionType="toolbar" parentKey="user-diagnostic/diagnostics-panel" backgroundToken="">
-      <button type="button" onClick={() => router.back()} style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "6px",
-        padding: "6px 14px",
-        marginBottom: "16px",
-        borderRadius: "var(--radius-xs)",
-        border: "none",
-        background: "transparent",
-        color: "var(--text-secondary)",
-        fontWeight: 600,
-        fontSize: "13px",
-        cursor: "pointer"
       }}>
-        &larr; Back
-      </button>
+      <DevLayoutSection sectionKey="user-diagnostic/toolbar" sectionType="toolbar" parentKey="user-diagnostic/diagnostics-panel" backgroundToken="">
       <div style={{
         display: "flex",
         gap: "10px",
@@ -73,6 +116,38 @@ export default function UserDiagnosticDevPageUi(props) {
         marginBottom: "24px",
         flexWrap: "wrap"
       }}>
+        <button type="button" onClick={() => router.back()} style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          padding: "6px 14px",
+          borderRadius: "var(--radius-xs)",
+          border: "none",
+          background: "transparent",
+          color: "var(--text-secondary)",
+          fontWeight: 600,
+          fontSize: "13px",
+          cursor: "pointer"
+        }}>
+          &larr; Back
+        </button>
+        <button type="button" onClick={onOpenDeveloping} style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px",
+          padding: "7px 14px",
+          borderRadius: "var(--radius-xs)",
+          border: "1px solid var(--accentBorder)",
+          background: "var(--surface)",
+          color: "var(--text-primary)",
+          fontWeight: 700,
+          fontSize: "13px",
+          cursor: "pointer",
+          textTransform: "lowercase"
+        }}>
+          developing
+        </button>
         <button type="button" onClick={runAllTests} disabled={running || userLoading} style={{
           padding: "10px 20px",
           borderRadius: "var(--radius-xs)",
@@ -117,7 +192,7 @@ export default function UserDiagnosticDevPageUi(props) {
         }} style={{
           padding: "10px 16px",
           borderRadius: "var(--radius-xs)",
-          border: "1px solid var(--danger)",
+          border: "none",
           background: promptCopied ? "var(--success)" : "var(--surface)",
           color: promptCopied ? "var(--text-inverse)" : "var(--danger)",
           fontWeight: 600,
@@ -153,7 +228,7 @@ export default function UserDiagnosticDevPageUi(props) {
         }}>
             {group.items.map(result => <div key={result._index} style={{
             background: "var(--surface)",
-            border: `1px solid ${result.pass ? "var(--success)" : "var(--danger)"}`,
+            border: "none",
             borderRadius: "var(--radius-xs)",
             padding: "14px 16px"
           }}>
@@ -228,6 +303,109 @@ export default function UserDiagnosticDevPageUi(props) {
         </div>
         </DevLayoutSection>}
       </DevLayoutSection>
+      {developingOpen && <PopupModal onClose={onCloseDeveloping} ariaLabel="Developing sales details" cardStyle={{
+        width: "min(100%, 880px)",
+        padding: "24px",
+        borderRadius: "var(--radius-sm)"
+      }}>
+        <div style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "16px",
+          marginBottom: "20px"
+        }}>
+          <div>
+            <div style={{
+              fontSize: "11px",
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: "var(--text-secondary)",
+              marginBottom: "6px"
+            }}>
+              Sales planning
+            </div>
+            <h2 style={{
+              margin: 0,
+              fontSize: "24px",
+              lineHeight: 1.2,
+              color: "var(--text-primary)"
+            }}>
+              Development Proposal
+            </h2>
+            <p style={{
+              margin: "8px 0 0",
+              color: "var(--text-secondary)",
+              fontSize: "14px",
+              lineHeight: 1.55,
+              maxWidth: "660px"
+            }}>
+              A practical phased proposal for building H&P's internal operations platform, focused on measurable workflow improvements, controlled delivery, and a clear commercial structure.
+            </p>
+          </div>
+          <button type="button" onClick={onCloseDeveloping} aria-label="Close developing details" style={{
+            width: "34px",
+            height: "34px",
+            flex: "0 0 auto",
+            borderRadius: "var(--radius-xs)",
+            border: "1px solid var(--accentBorder)",
+            background: "var(--surface-light)",
+            color: "var(--text-primary)",
+            cursor: "pointer",
+            fontSize: "20px",
+            lineHeight: 1
+          }}>
+            &times;
+          </button>
+        </div>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          gap: "14px"
+        }}>
+          {developingSections.map(section => <section key={section.title} style={{
+            border: "1px solid var(--accentBorder)",
+            borderRadius: "var(--radius-xs)",
+            background: "var(--surface-light)",
+            padding: "16px",
+            minWidth: 0
+          }}>
+            <h3 style={{
+              margin: "0 0 10px",
+              fontSize: "14px",
+              color: "var(--text-primary)"
+            }}>
+              {section.title}
+            </h3>
+            <ul style={{
+              margin: 0,
+              paddingLeft: "18px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              color: "var(--text-secondary)",
+              fontSize: "13px",
+              lineHeight: 1.45
+            }}>
+              {section.items.map(item => <li key={item}>{item}</li>)}
+            </ul>
+          </section>)}
+        </div>
+        <div style={{
+          marginTop: "16px",
+          padding: "14px 16px",
+          borderRadius: "var(--radius-xs)",
+          background: "var(--surface)",
+          color: "var(--text-secondary)",
+          fontSize: "13px",
+          lineHeight: 1.5
+        }}>
+          <strong style={{
+            color: "var(--text-primary)"
+          }}>Why this works for H&amp;P:</strong> the system reduces the cost and friction of separate tools, gives managers clearer control of live work, improves communication between departments, and creates a platform that can keep growing around the way H&amp;P actually operates.
+        </div>
+      </PopupModal>}
       <GlobalUiShowcase />
     </DevLayoutSection>; // render extracted page section.
     default:

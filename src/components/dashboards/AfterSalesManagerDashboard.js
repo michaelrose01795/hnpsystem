@@ -217,7 +217,7 @@ export default function AfterSalesManagerDashboard() {
         className="app-section-card"
         style={{
           background: "var(--warning-surface)",
-          border: "1px solid var(--warning)",
+          border: "none",
           gap: "6px",
         }}
       >
@@ -239,7 +239,7 @@ export default function AfterSalesManagerDashboard() {
           flexWrap: "wrap",
           gap: "12px",
           padding: "14px 20px",
-          border: "1px solid var(--warning)",
+          border: "none",
         }}
       >
         {quickActions.map((action) => (
@@ -325,7 +325,7 @@ export default function AfterSalesManagerDashboard() {
                       height: "12px",
                       borderRadius: "var(--radius-pill)",
                       background: "var(--warning-surface)",
-                      border: "1px solid var(--warning)",
+                      border: "none",
                       overflow: "hidden",
                     }}
                   >
@@ -355,7 +355,7 @@ export default function AfterSalesManagerDashboard() {
               <div
                 key={site.site}
                 style={{
-                  border: "1px solid var(--warning)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   display: "flex",
@@ -401,7 +401,7 @@ export default function AfterSalesManagerDashboard() {
             <div
               key={risk.title}
               style={{
-                border: "1px solid var(--warning)",
+                border: "none",
                 borderRadius: "var(--radius-md)",
                 padding: "16px",
                 background: risk.severity === "high" ? "var(--warning-surface)" : "var(--warning-surface)",
@@ -440,7 +440,7 @@ export default function AfterSalesManagerDashboard() {
               <div
                 key={metric.label}
                 style={{
-                  border: "1px dashed var(--warning)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   background: "var(--warning-surface)",

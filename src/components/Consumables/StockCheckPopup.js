@@ -586,7 +586,7 @@ function StockCheckPopup({
                   ...buttonSecondaryStyle,
                   padding: "4px 10px",
                   color: "var(--danger)",
-                  borderColor: "rgba(var(--danger-rgb),0.4)",
+                  borderColor: "transparent",
                 }}
                 onClick={() => handleDeleteItem(item.id, item.name)}
               >
@@ -727,7 +727,7 @@ function StockCheckPopup({
               <div
                 style={{
                   ...sectionCardStyle,
-                  borderColor: "rgba(var(--danger-rgb), 0.28)",
+                  borderColor: "transparent",
                   background: "var(--danger-surface)",
                 }}
               >
@@ -738,7 +738,7 @@ function StockCheckPopup({
               <div
                 style={{
                   ...sectionCardStyle,
-                  borderColor: "rgba(var(--success-rgb), 0.3)",
+                  borderColor: "transparent",
                   background: "var(--success-surface)",
                 }}
               >
@@ -892,7 +892,7 @@ function StockCheckPopup({
                                         ...buttonSecondaryStyle,
                                         padding: "6px 12px",
                                         color: "var(--danger)",
-                                        borderColor: "rgba(var(--danger-rgb), 0.36)",
+                                        borderColor: "transparent",
                                       }}
                                       disabled={requestUpdateId === request.id}
                                     >

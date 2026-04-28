@@ -3,7 +3,7 @@
  * Canonical home for the Toggle family (checkbox, radio, switch).
  *
  * Variants: switch, checkbox, radio
- * Showcase:  /dev/showcase#toggle
+ * Showcase:  /dev/user-diagnostic#toggle
  *
  * NOTE (2026-04 audit pass): today toggles are bare native <input> elements
  * scattered across forms. The shared classes below are the approved wrapper

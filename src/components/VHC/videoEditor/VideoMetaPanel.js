@@ -169,7 +169,7 @@ export default function VideoMetaPanel({
             color: errorLabel ? "rgba(var(--danger-rgb), 1)" : "var(--hud-text)",
             fontSize: "var(--text-body-sm)",
             fontWeight: 700,
-            border: `1px solid ${errorLabel ? "rgba(var(--danger-rgb), 0.4)" : "rgba(var(--accentMainRgb), 0.36)"}`,
+            border: "none",
           }}
         >
           {errorLabel || busyLabel}

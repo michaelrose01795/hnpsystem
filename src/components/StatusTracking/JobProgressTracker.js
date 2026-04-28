@@ -9,7 +9,7 @@ const COLORS = {
   current: "var(--danger)", // Current status node colour
   complete: "var(--danger)", // Completed status node colour
   base: "var(--surface-light)", // Default node colour for unknown statuses
-  panelBg: "var(--surface)", // Panel background
+  panelBg: "var(--accentSurface)", // Theme-colour panel background
   textDark: "var(--info-dark)", // Primary text colour
   textMuted: "var(--info)", // Muted/secondary text colour
   connector: "var(--accent-purple)", // Timeline connector line colour
@@ -143,7 +143,7 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
         display: "flex",
         flexDirection: "column",
         gap: "6px",
-        fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif",
+        fontFamily: "var(--font-family)",
         minHeight: isGroupChild ? "auto" : isCompact ? "52px" : "60px",
         opacity: cardOpacity,
         transition: "opacity 0.2s ease",
@@ -320,7 +320,7 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
           fontSize: "13px",
           fontWeight: 600,
           color: COLORS.textDark,
-          fontFamily: "'Inter','Segoe UI','Helvetica Neue',Arial,sans-serif",
+          fontFamily: "var(--font-family)",
           textAlign: "left",
         }}
       >
@@ -494,7 +494,7 @@ export default function JobProgressTracker({
         border: "none",
         padding: isCompact ? "var(--section-card-padding-sm, 16px)" : "12px",
         boxShadow: "none",
-        height: "100%",
+        height: "auto",
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
@@ -577,6 +577,15 @@ export default function JobProgressTracker({
           value={selectedUser}
           onChange={(event) => setSelectedUser(event.target.value)}
           size="sm"
+          usePortal={false}
+          menuStyle={{
+            position: "relative",
+            top: "auto",
+            left: "auto",
+            maxHeight: "none",
+            overflow: "visible",
+            overflowY: "visible",
+          }}
         />
         <DropdownField
           id="timeline-filter-action"
@@ -585,15 +594,24 @@ export default function JobProgressTracker({
           value={selectedAction}
           onChange={(event) => setSelectedAction(event.target.value)}
           size="sm"
+          usePortal={false}
+          menuStyle={{
+            position: "relative",
+            top: "auto",
+            left: "auto",
+            maxHeight: "none",
+            overflow: "visible",
+            overflowY: "visible",
+          }}
         />
       </div>
 
-      {/* Scrollable timeline area */}
+      {/* Timeline content grows naturally; the Job Tracker sidebar owns scrolling. */}
       <div
         style={{
           position: "relative",
-          flex: 1,
-          overflowY: "auto",
+          flex: "0 0 auto",
+          overflowY: "visible",
           overflowX: "hidden",
           padding: "0 4px 8px 4px",
           minHeight: 0,
@@ -725,7 +743,7 @@ export default function JobProgressTracker({
             marginTop: "12px",
             padding: "8px",
             fontSize: "10px",
-            fontFamily: "monospace",
+            fontFamily: "var(--font-family-mono)",
             backgroundColor: "var(--surface-light)",
             borderRadius: "var(--radius-xs)",
             maxHeight: "200px",

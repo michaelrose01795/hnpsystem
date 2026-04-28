@@ -23,7 +23,7 @@ This document explains what was built during the **UI audit setup pass** (2026-0
 | [src/styles/families/toasts.css](../src/styles/families/toasts.css) | Base `.app-toast` + `info` / `success` / `warning` / `error` variants. | Adoption work only. |
 | [src/styles/features/vhc.css](../src/styles/features/vhc.css) | Feature-scoped VHC styles, migrated verbatim out of `globals.css`. | VHC-only changes. |
 | [src/lib/dev-layout/auditTags.js](../src/lib/dev-layout/auditTags.js) | localStorage-backed store for the per-element classification tags. Keyed by a stable signature (route + DOM path + text hash). Exposes `buildAuditKey`, `getAuditTag`, `setAuditTag`, `clearAuditTag`, `exportAuditTagsJson`. | When the classification schema needs to change. |
-| [src/pages/dev/showcase.js](../src/pages/dev/showcase.js) | Live gallery of every approved family + variant, gated by the dev-overlay role check. | Never — it renders `variants.js`. |
+| [src/pages/dev/user-diagnostic.js](../src/pages/dev/user-diagnostic.js) | Live gallery of every approved family + variant, gated by the dev-overlay role check. | Never — it renders `variants.js`. |
 
 ## 2. Edited files
 
@@ -88,4 +88,4 @@ When you start the actual restyling:
 6. **Cards, toolbars, empty states, toasts** — adopt as pages are touched.
 7. **Modal unification** last — it's the highest-risk migration because JobCardModal and the custom popups have bespoke behaviour.
 
-Use the showcase at `/dev/showcase` as the "done definition" for each migration.
+Use the showcase at `/dev/user-diagnostic` as the "done definition" for each migration.

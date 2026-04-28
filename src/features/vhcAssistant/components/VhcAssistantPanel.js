@@ -4,9 +4,9 @@ import React, { useMemo } from "react";
 import { buildVhcAssistantMessages } from "@/features/vhcAssistant/buildVhcAssistantMessages";
 
 const scoreTone = (score = 0) => {
-  if (score >= 85) return { fg: "var(--success-dark)", bg: "var(--success-surface)", border: "var(--success)" };
-  if (score >= 60) return { fg: "var(--warning-dark)", bg: "var(--warning-surface)", border: "var(--warning)" };
-  return { fg: "var(--danger-dark)", bg: "var(--danger-surface)", border: "var(--danger)" };
+  if (score >= 85) return { fg: "var(--success-dark)", bg: "var(--success-surface)", border: "none" };
+  if (score >= 60) return { fg: "var(--warning-dark)", bg: "var(--warning-surface)", border: "none" };
+  return { fg: "var(--danger-dark)", bg: "var(--danger-surface)", border: "none" };
 };
 
 export default function VhcAssistantPanel({
@@ -56,7 +56,7 @@ export default function VhcAssistantPanel({
           style={{
             color: tone.fg,
             background: tone.bg,
-            border: `1px solid ${tone.border}`,
+            border: "none",
             cursor: "default",
             letterSpacing: "0.02em",
           }}

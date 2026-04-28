@@ -1,9 +1,10 @@
 // ✅ New NotesTab with Multiple Notes Support
 // file location: src/components/NotesTab.js
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { getNotesByJob, createJobNote, updateJobNote, deleteJobNote } from "@/lib/database/notes";
 import { normalizeRequests } from "@/lib/jobCards/utils";
+import { useConfirmation } from "@/context/ConfirmationContext";
 
 export default function NotesTabNew({
   jobData,
@@ -14,6 +15,7 @@ export default function NotesTabNew({
   highlightNoteIds = []
 }) {
   const jobId = jobData?.id;
+  const { confirm } = useConfirmation();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newNoteText, setNewNoteText] = useState("");
@@ -24,6 +26,13 @@ export default function NotesTabNew({
   const [editingNoteText, setEditingNoteText] = useState("");
   const [error, setError] = useState("");
   const [linkingNote, setLinkingNote] = useState(null);
+  const notesListViewportRef = useRef(null);
+  const notesListInnerRef = useRef(null);
+  const [notesListScrollStyle, setNotesListScrollStyle] = useState({
+    maxHeight: "none",
+    overflowY: "visible",
+    paddingRight: 0,
+  });
 
   const requestOptions = useMemo(() => normalizeRequests(jobData?.requests), [jobData?.requests]);
   const authorisedItems = useMemo(
@@ -51,6 +60,72 @@ export default function NotesTabNew({
     if (!jobId) return;
     loadNotes();
   }, [jobId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    let frameId = null;
+    const bottomGutter = 16;
+
+    const updateNotesListScroll = () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        const viewportEl = notesListViewportRef.current;
+        const innerEl = notesListInnerRef.current;
+        if (!viewportEl || !innerEl) return;
+
+        const listRect = viewportEl.getBoundingClientRect();
+        const layoutBottom =
+          document.querySelector('[data-dev-section-key="app-layout-sidebar-rail"]')?.getBoundingClientRect().bottom ||
+          window.innerHeight - bottomGutter;
+        const availableHeight = Math.floor(layoutBottom - listRect.top - bottomGutter);
+        const contentHeight = Math.ceil(innerEl.scrollHeight);
+        const shouldScroll = availableHeight > 120 && contentHeight > availableHeight;
+        const nextStyle = shouldScroll
+          ? {
+              maxHeight: `${availableHeight}px`,
+              overflowY: "auto",
+              paddingRight: "6px",
+            }
+          : {
+              maxHeight: "none",
+              overflowY: "visible",
+              paddingRight: 0,
+            };
+
+        setNotesListScrollStyle((current) =>
+          current.maxHeight === nextStyle.maxHeight &&
+          current.overflowY === nextStyle.overflowY &&
+          current.paddingRight === nextStyle.paddingRight
+            ? current
+            : nextStyle
+        );
+      });
+    };
+
+    updateNotesListScroll();
+    window.addEventListener("resize", updateNotesListScroll);
+
+    const resizeObserver = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(updateNotesListScroll)
+      : null;
+    if (resizeObserver) {
+      if (notesListViewportRef.current) resizeObserver.observe(notesListViewportRef.current);
+      if (notesListInnerRef.current) resizeObserver.observe(notesListInnerRef.current);
+    }
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+      window.removeEventListener("resize", updateNotesListScroll);
+      resizeObserver?.disconnect();
+    };
+  }, [notes.length, showAddNote, editingNoteId, editingNoteText, canEdit]);
 
   const loadNotes = async () => {
     setLoading(true);
@@ -159,7 +234,13 @@ export default function NotesTabNew({
 
   const handleDeleteNote = async (noteId) => {
     if (!canEdit) return;
-    if (!confirm("Are you sure you want to delete this note?")) return;
+    const confirmed = await confirm({
+      title: "Delete note",
+      message: "Are you sure you want to delete this note?",
+      confirmLabel: "Delete",
+      cancelLabel: "Cancel",
+    });
+    if (!confirmed) return;
 
     try {
       const result = await deleteJobNote(noteId, actingUserNumericId);
@@ -395,7 +476,7 @@ export default function NotesTabNew({
                       padding: "10px 18px",
                       backgroundColor: "var(--surface)",
                       color: "var(--info)",
-                      border: "1px solid var(--info)",
+                      border: "none",
                       borderRadius: "var(--radius-xs)",
                       cursor: "pointer",
                       fontSize: "14px",
@@ -429,19 +510,16 @@ export default function NotesTabNew({
 
       {/* Notes List */}
       <div
-        style={{
-          maxHeight: notes.length > 2 ? "460px" : "none",
-          overflowY: notes.length > 2 ? "auto" : "visible",
-          paddingRight: notes.length > 2 ? "6px" : 0,
-        }}
+        ref={notesListViewportRef}
+        style={notesListScrollStyle}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div ref={notesListInnerRef} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {notes.length === 0 ? (
           <div
             style={{
               padding: "40px",
               textAlign: "center",
-              backgroundColor: "var(--layer-section-level-1)",
+              backgroundColor: "var(--control-bg)",
               borderRadius: "var(--radius-sm)",
               border: "none",
             }}
@@ -465,9 +543,9 @@ export default function NotesTabNew({
                 key={note.noteId}
                 style={{
                   padding: "14px",
-                  backgroundColor: isHighlighted ? "var(--success-surface)" : "var(--layer-section-level-1)",
+                  backgroundColor: isHighlighted ? "var(--success-surface)" : "var(--control-bg)",
                   borderRadius: "var(--radius-sm)",
-                  border: `1px solid ${note.hiddenFromCustomer ? "var(--warning)" : "var(--success)"}`,
+                  border: "none",
                   transition: "background-color 0.2s ease",
                 }}
               >
@@ -479,7 +557,7 @@ export default function NotesTabNew({
                         style={{
                           padding: "3px 8px",
                           borderRadius: "var(--radius-pill)",
-                          backgroundColor: "var(--surface-light)",
+                          backgroundColor: "var(--control-bg-hover)",
                           color: "var(--text-primary)",
                           fontSize: "10px",
                           fontWeight: 700,
@@ -492,8 +570,8 @@ export default function NotesTabNew({
                           style={{
                             padding: "3px 8px",
                             borderRadius: "var(--radius-pill)",
-                            backgroundColor: "var(--accent-purple-surface)",
-                            color: "var(--accent-purple)",
+                            backgroundColor: "var(--control-bg-hover)",
+                            color: "var(--accentText)",
                             fontSize: "10px",
                             fontWeight: 600,
                           }}
@@ -663,7 +741,7 @@ export default function NotesTabNew({
                       style={{
                         padding: "6px 12px",
                         borderRadius: "var(--radius-xs)",
-                        border: "1px solid var(--danger-surface)",
+                        border: "none",
                         backgroundColor: "var(--warning-surface)",
                         color: "var(--danger)",
                         fontWeight: 700,
@@ -766,7 +844,7 @@ export default function NotesTabNew({
                         style={{
                           padding: "10px 12px",
                           borderRadius: "var(--radius-sm)",
-                          border: isSelected ? "1px solid var(--success)" : "1px solid var(--surface-light)",
+                          border: "none",
                           backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
                           textAlign: "left",
                           cursor: "pointer",
@@ -812,7 +890,7 @@ export default function NotesTabNew({
                         style={{
                           padding: "10px 12px",
                           borderRadius: "var(--radius-sm)",
-                          border: isSelected ? "1px solid var(--success)" : "1px solid var(--surface-light)",
+                          border: "none",
                           backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
                           textAlign: "left",
                           cursor: "pointer",
@@ -864,7 +942,7 @@ export default function NotesTabNew({
                           style={{
                             padding: "10px 12px",
                             borderRadius: "var(--radius-sm)",
-                            border: isSelected ? "1px solid var(--success)" : "1px solid var(--surface-light)",
+                            border: "none",
                             backgroundColor: isSelected ? "var(--success-surface)" : "var(--layer-section-level-3)",
                             textAlign: "left",
                             cursor: "pointer",

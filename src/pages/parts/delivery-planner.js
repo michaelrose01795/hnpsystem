@@ -1760,7 +1760,7 @@ function DeliveryJobModal({
               disabled={saving}
               style={{
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--danger)",
+                border: "none",
                 background: "var(--danger-surface)",
                 color: "var(--danger)",
                 padding: "10px 18px",

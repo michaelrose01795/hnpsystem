@@ -449,7 +449,7 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
       {error &&
       <div
         style={{
-          border: "1px solid var(--danger)",
+          border: "none",
           borderRadius: "var(--radius-sm)",
           padding: "10px 14px",
           color: "var(--danger)"

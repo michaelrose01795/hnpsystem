@@ -79,22 +79,22 @@ const statusBadgeStyles = {
   urgent: {
     backgroundColor: "rgba(var(--warning-rgb), 0.18)", // Amber background for urgent requests
     color: "var(--warning-dark)", // Brown/orange text tone
-    border: "1px solid rgba(var(--warning-rgb), 0.38)" // Amber border accent
+    border: "none" // Amber border accent
   },
   fulfilled: {
     backgroundColor: "rgba(var(--success-rgb), 0.15)", // Green background for completed requests
     color: "var(--success-dark)", // Deep green text tone
-    border: "1px solid rgba(var(--success-rgb), 0.32)" // Green border accent
+    border: "none" // Green border accent
   },
   ordered: {
     backgroundColor: "rgba(var(--success-rgb), 0.15)",
     color: "var(--success-dark)",
-    border: "1px solid rgba(var(--success-rgb), 0.32)"
+    border: "none"
   },
   rejected: {
     backgroundColor: "rgba(var(--danger-rgb), 0.15)",
     color: "var(--danger)",
-    border: "1px solid rgba(var(--danger-rgb), 0.32)"
+    border: "none"
   }
 };
 

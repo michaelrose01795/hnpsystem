@@ -354,7 +354,7 @@ export default function InvoiceBuilderPopup({
                 style={{
                   width: "100%",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--info)",
+                  border: "none",
                   padding: "8px 10px",
                   fontSize: "14px"
                 }}
@@ -457,7 +457,7 @@ export default function InvoiceBuilderPopup({
               style={{
                 width: "100%",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--info)",
+                border: "none",
                 padding: "10px",
                 fontSize: "14px",
                 marginTop: "6px"
@@ -482,7 +482,7 @@ export default function InvoiceBuilderPopup({
               style={{
                 width: "100%",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--info)",
+                border: "none",
                 padding: "10px",
                 fontSize: "14px",
                 marginTop: "6px",
@@ -535,7 +535,7 @@ export default function InvoiceBuilderPopup({
                 style={{
                   padding: "10px 16px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--info)",
+                  border: "none",
                   background: "var(--surface)",
                   cursor: "pointer"
                 }}
@@ -549,7 +549,7 @@ export default function InvoiceBuilderPopup({
                 style={{
                   padding: "10px 16px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--info-dark)",
+                  border: "none",
                   background: "var(--info-dark)",
                   color: "white",
                   cursor: isSharing ? "not-allowed" : "pointer"
@@ -564,7 +564,7 @@ export default function InvoiceBuilderPopup({
                 style={{
                   padding: "10px 16px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--info)",
+                  border: "none",
                   background: "var(--surface)",
                   cursor: isSharing ? "not-allowed" : "pointer"
                 }}
@@ -593,7 +593,7 @@ export default function InvoiceBuilderPopup({
               onClick={() => setPreviewOpen((prev) => !prev)}
               style={{
                 background: "transparent",
-                border: "1px solid var(--info)",
+                border: "none",
                 borderRadius: "var(--radius-pill)",
                 padding: "6px 12px",
                 fontSize: "12px",

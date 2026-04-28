@@ -1,27 +1,27 @@
 // file location: src/lib/vhc/quoteLines.js
 import { parseVhcBuilderPayload, summariseTechnicianVhc } from "@/lib/vhc/summary";
-import { normaliseDecisionStatus, resolveSeverityKey } from "@/lib/vhc/summaryStatus";
 import { buildStableDisplayId } from "@/lib/vhc/displayId";
 import { normaliseColour, resolveCategoryForItem, toNumber } from "@/lib/vhc/shared";
-import { resolveVhcItemState, DECISION } from "@/lib/vhc/vhcItemState";
+// Phase 6 follow-up: every VHC normalisation goes through the engine. Local
+// resolveDisplaySeverity / isWorkflowDisplayStatus / WORKFLOW_DISPLAY_STATUSES
+// were deleted earlier; the summaryStatus.js helpers used here now live inside
+// the engine, so callers have one import path.
+import {
+  resolveVhcItemState,
+  DECISION,
+  normalizeSeverity,
+  normaliseDecisionStatus,
+  resolveSeverityKey,
+} from "@/features/vhc/vhcStatusEngine";
 
-const WORKFLOW_DISPLAY_STATUSES = new Set(["authorized", "declined", "completed", "pending", "n/a", ""]); // Workflow statuses that are not severity colours.
-
-const isWorkflowDisplayStatus = (value) => { // Identify workflow-only display_status values that must not be used as severity colour.
-  const normalized = String(value ?? "").toLowerCase().trim();
-  return WORKFLOW_DISPLAY_STATUSES.has(normalized);
+const resolveColourFromDisplayStatus = (displayStatus) => { // Replaces resolveDisplaySeverity.
+  const colour = normalizeSeverity(displayStatus); // null for workflow strings, "red"|"amber"|"green"|"grey" otherwise.
+  return colour && colour !== "grey" ? colour : null; // Match legacy: grey is treated as "no override".
 };
 
 const normaliseLookupToken = (value) => String(value || "").toLowerCase().replace(/\s+/g, " ").trim(); // Create stable tokens for section/title matching.
 
 const buildSectionTitleKey = (sectionName, issueTitle) => `${normaliseLookupToken(sectionName)}|${normaliseLookupToken(issueTitle)}`; // Build deterministic key for inferred severity lookup.
-
-const resolveDisplaySeverity = (displayStatus) => { // Only allow display_status when it is an actual colour.
-  if (isWorkflowDisplayStatus(displayStatus)) return null;
-  const normalized = String(displayStatus || "").toLowerCase().trim();
-  const candidate = normaliseColour(normalized);
-  return candidate === "red" || candidate === "amber" || candidate === "green" ? candidate : null;
-};
 
 const resolveDecisionStatus = (check = {}, fallback = null) => { // Delegates to canonical resolver; keeps local signature stable.
   if (check && (check.approval_status || check.approvalStatus || check.authorization_state || check.authorizationState)) {
@@ -258,7 +258,7 @@ export const buildVhcQuoteLinesModel = ({
     if (check.section === "VHC_CHECKSHEET") return;
 
     const severityFromColumn = normaliseColour(check.severity);
-    const severityFromDisplay = resolveDisplaySeverity(check.display_status);
+    const severityFromDisplay = resolveColourFromDisplayStatus(check.display_status);
     const inferredSeverity = inferredSeverityMap.get(buildSectionTitleKey(check.section || "Other", check.issue_title || ""));
     const severity = severityFromColumn || severityFromDisplay || inferredSeverity || "grey";
 
@@ -458,7 +458,7 @@ export const buildVhcQuoteLinesModel = ({
     }
 
     const severityFromColumn = normaliseColour(check.severity);
-    const severityFromDisplay = resolveDisplaySeverity(check.display_status);
+    const severityFromDisplay = resolveColourFromDisplayStatus(check.display_status);
     const severity = severityFromColumn || severityFromDisplay || item.severityKey || item.rawSeverity || "grey";
     const parts = partsCostMap.get(itemId) ?? partsCostMap.get(canonicalId) ?? toNumber(check.parts_cost, 0);
     const labourHours = labourHoursMap.get(itemId) ?? labourHoursMap.get(canonicalId) ?? toNumber(check.labour_hours, 0);
@@ -530,13 +530,21 @@ export const buildVhcQuoteLinesModel = ({
     console.log("[VHC quotedOnly] counts", { preFilterCount, postFilterCount, severityCounter });
   }
 
-  const severityLists = { red: [], amber: [], green: [], other: [], authorized: [], declined: [] };
+  // Phase 3 of the VHC refactor: every line's approvalStatus and severity have
+  // already been normalised through the engine upstream (resolveDecisionStatus
+  // and normaliseColour). We use DECISION constants here so the bucketing keys
+  // are guaranteed in lockstep with the engine vocabulary.
+  const severityLists = { red: [], amber: [], green: [], other: [], authorized: [], completed: [], declined: [] };
   deduped.forEach((line) => {
-    if (line.approvalStatus === "authorized" || line.approvalStatus === "completed") {
+    if (line.approvalStatus === DECISION.COMPLETED) {
+      severityLists.completed.push(line);
+      return;
+    }
+    if (line.approvalStatus === DECISION.AUTHORIZED) {
       severityLists.authorized.push(line);
       return;
     }
-    if (line.approvalStatus === "declined") {
+    if (line.approvalStatus === DECISION.DECLINED) {
       severityLists.declined.push(line);
       return;
     }
@@ -557,10 +565,21 @@ export const buildVhcQuoteLinesModel = ({
 
   const sum = (rows) => rows.reduce((acc, row) => acc + toNumber(row.total_gbp, 0), 0);
   const totals = {
-    red: sum([...severityLists.red, ...severityLists.authorized.filter((r) => r.severity === "red"), ...severityLists.declined.filter((r) => r.severity === "red")]),
-    amber: sum([...severityLists.amber, ...severityLists.authorized.filter((r) => r.severity === "amber"), ...severityLists.declined.filter((r) => r.severity === "amber")]),
+    red: sum([
+      ...severityLists.red,
+      ...severityLists.authorized.filter((r) => r.severity === "red"),
+      ...severityLists.completed.filter((r) => r.severity === "red"),
+      ...severityLists.declined.filter((r) => r.severity === "red"),
+    ]),
+    amber: sum([
+      ...severityLists.amber,
+      ...severityLists.authorized.filter((r) => r.severity === "amber"),
+      ...severityLists.completed.filter((r) => r.severity === "amber"),
+      ...severityLists.declined.filter((r) => r.severity === "amber"),
+    ]),
     green: sum(severityLists.green),
     authorized: sum(severityLists.authorized),
+    completed: sum(severityLists.completed),
     declined: sum(severityLists.declined),
   };
 

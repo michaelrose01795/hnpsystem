@@ -4,7 +4,7 @@
  *
  * Variants: text, textarea, select, search
  * Component: src/components/ui/InputField.js
- * Showcase:  /dev/showcase#input
+ * Showcase:  /dev/user-diagnostic#input
  *
  * NOTE (2026-04 audit pass): the base .app-input rule lives in
  * src/styles/globals.css (~1299-1320). It stays there for this setup pass.

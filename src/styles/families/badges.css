@@ -4,7 +4,7 @@
  *
  * Variants: neutral, primary, success, warning, danger, accent-soft,
  *           accent-strong
- * Showcase:  /dev/showcase#badge
+ * Showcase:  /dev/user-diagnostic#badge
  *
  * NOTE (2026-04 audit pass): the existing .app-badge and every .app-badge--*
  * variant rule lives in src/styles/globals.css (~1412-1501). They stay there

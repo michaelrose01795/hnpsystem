@@ -2,7 +2,7 @@
 //
 // Single source of truth for the HNPSystem design system's approved UI
 // families and their variants. Every shared component, the dev-overlay
-// classifier, and the /dev/showcase page reads from this file.
+// classifier, and the /dev/user-diagnostic page reads from this file.
 //
 // Editing rules:
 //   1. Do not invent one-off variants for a single page. If a variant is

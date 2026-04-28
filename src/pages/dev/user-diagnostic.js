@@ -479,15 +479,6 @@ const COLOUR_GROUPS = [
 
 },
 {
-  title: "Layer System",
-  swatches: [
-  "layer-section-level-1", "layer-section-level-2",
-  "layer-section-level-3", "layer-section-level-4",
-  "page-shell-bg", "page-card-bg", "page-card-bg-alt",
-  "section-card-bg", "row-background"]
-
-},
-{
   title: "Text & Borders",
   swatches: [
   "text-primary", "text-secondary", "text-inverse",
@@ -495,37 +486,14 @@ const COLOUR_GROUPS = [
 
 },
 {
-  title: "Status",
+  title: "Status Colours",
   swatches: [
   "success", "success-surface", "success-text", "success-border",
+  "authorised", "authorised-surface", "authorised-text", "authorised-border",
+  "complete", "complete-surface", "complete-text", "complete-border",
   "warning", "warning-surface", "warning-text", "warning-border",
   "danger", "danger-surface", "danger-text", "danger-border",
   "info", "info-surface"]
-
-},
-{
-  title: "Controls & Menus",
-  swatches: [
-  "control-bg", "control-bg-hover", "control-bg-active",
-  "control-menu-bg", "control-icon", "control-muted-text",
-  "nav-link-bg", "nav-link-bg-hover", "nav-link-bg-active",
-  "tab-container-bg"]
-
-},
-{
-  title: "Calendar",
-  swatches: [
-  "calendar-selection-border", "calendar-saturday-row-bg",
-  "calendar-amber-selected-bg", "calendar-red-selected-bg",
-  "calendar-today-row-bg", "calendar-today-pill-bg"]
-
-},
-{
-  title: "Accent Layers",
-  swatches: [
-  "accent-layer-1", "accent-layer-2", "accent-layer-3", "accent-layer-4",
-  "accent-base", "accent-base-hover", "accent-strong",
-  "grey-accent", "grey-accent-light", "grey-accent-dark"]
 
 }];
 
@@ -749,7 +717,7 @@ const USAGE_REGISTRY = {
   { label: "Canonical page skeleton — PageSkeleton export", file: "src/components/ui/LoadingSkeleton.js" }],
 
   "navigation-states": [
-  { label: "--nav-link-bg / --nav-link-bg-hover / --nav-link-bg-active", file: "src/styles/theme.css" },
+  { label: "Navigation colours inherit from --accentSurface / --accentSurfaceHover / --accentMain", file: "src/styles/theme.css" },
   { label: "Sidebar consumer", file: "src/components/Sidebar.js" },
   { label: "Proposed: <Breadcrumbs /> + <Pagination /> primitives", file: "src/components/ui/" }],
 
@@ -838,7 +806,7 @@ function UsagePopup({ itemKey, title, onClose }) {
               padding: "10px 12px",
               background: u.migrated ? "rgba(var(--success-rgb, 34,197,94), 0.06)" : "var(--surface-light)",
               borderRadius: "var(--radius-sm)",
-              border: `1px solid ${u.migrated ? "var(--success)" : "var(--accentBorder)"}`
+              border: "none"
             }}>
             
               {u.migrated &&
@@ -1624,7 +1592,7 @@ function DevOverlayShowcase({ overlay, registry, computedSections, onOpenUsage }
             {Object.entries(issueBreakdown).sort((a, b) => b[1] - a[1]).map(([tag, count]) => {
             const danger = ["rogue-wrapper", "extra-wrapper", "nested-shell", "duplicate-surface"].includes(tag);
             return (
-              <span key={tag} style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: "var(--radius-pill)", fontSize: "10px", fontWeight: 700, background: danger ? "rgba(var(--danger-rgb), 0.14)" : "rgba(var(--warning-rgb), 0.14)", color: danger ? "var(--danger-text)" : "var(--warning-text)", border: `1px solid ${danger ? "rgba(var(--danger-rgb), 0.22)" : "rgba(var(--warning-rgb), 0.24)"}` }}>
+              <span key={tag} style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: "var(--radius-pill)", fontSize: "10px", fontWeight: 700, background: danger ? "rgba(var(--danger-rgb), 0.14)" : "rgba(var(--warning-rgb), 0.14)", color: danger ? "var(--danger-text)" : "var(--warning-text)", border: "none" }}>
                   {tag} ({count})
                 </span>);
 
@@ -1639,7 +1607,7 @@ function DevOverlayShowcase({ overlay, registry, computedSections, onOpenUsage }
             Section Tree ({totalComputed})
           </button>
           {treeExpanded &&
-        <div style={{ maxHeight: "280px", overflowY: "auto", padding: "6px 0", fontSize: "11px", fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace", lineHeight: 1.6 }}>
+        <div style={{ maxHeight: "280px", overflowY: "auto", padding: "6px 0", fontSize: "11px", fontFamily: "var(--font-family-mono)", lineHeight: 1.6 }}>
               {sorted.map((s) => {
             const depth = (s.number || "").split(".").length - 1;
             const hasIssues = (s.issueTags || []).length > 0;
@@ -1649,7 +1617,7 @@ function DevOverlayShowcase({ overlay, registry, computedSections, onOpenUsage }
                     <span style={{ fontWeight: 600 }}>{s.key}</span>
                     <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>{s.type}</span>
                     {s.isShell && <span style={{ fontSize: "9px", padding: "1px 4px", borderRadius: "var(--radius-pill)", background: "var(--accent-surface)", border: "1px solid var(--accentBorder)", fontWeight: 700, color: "var(--text-secondary)" }}>shell</span>}
-                    {hasIssues && <span style={{ fontSize: "9px", padding: "1px 4px", borderRadius: "var(--radius-pill)", background: "rgba(var(--warning-rgb), 0.14)", border: "1px solid rgba(var(--warning-rgb), 0.24)", fontWeight: 700, color: "var(--warning-text)" }}>{s.issueTags.length}</span>}
+                    {hasIssues && <span style={{ fontSize: "9px", padding: "1px 4px", borderRadius: "var(--radius-pill)", background: "rgba(var(--warning-rgb), 0.14)", border: "none", fontWeight: 700, color: "var(--warning-text)" }}>{s.issueTags.length}</span>}
                   </div>);
 
           })}
@@ -1867,13 +1835,13 @@ function GlobalUiShowcase() {
         .showcase-field--error .calendar-api__control,
         .showcase-field--error .timepicker-api__control,
         .showcase-field--error .searchbar-api {
-          border: 1px solid var(--danger-text);
+          border: none;
         }
         .showcase-input--error {
-          border: 1px solid var(--danger-text);
+          border: none;
         }
         .showcase-input--success {
-          border: 1px solid var(--success-text);
+          border: none;
         }
         .showcase-searchbar--hide-clear .searchbar-api__clear {
           opacity: 0;
@@ -2081,8 +2049,8 @@ function GlobalUiShowcase() {
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <input className="app-input" placeholder="Default" />
           <input className="app-input" placeholder="Focus (simulated)" style={{ borderColor: "var(--accentBorderStrong)", boxShadow: "var(--control-ring)" }} />
-          <input className="app-input" placeholder="Error" style={{ border: "1px solid var(--danger-text)" }} />
-          <input className="app-input" placeholder="Success" style={{ border: "1px solid var(--success-text)" }} />
+          <input className="app-input" placeholder="Error" style={{ border: "none" }} />
+          <input className="app-input" placeholder="Success" style={{ border: "none" }} />
           <input className="app-input" placeholder="Disabled" disabled />
         </div>
       </ShowcaseSection>
@@ -2148,12 +2116,12 @@ function GlobalUiShowcase() {
       <ShowcaseSection title="Form Validation (error / success / helper)" itemKey="form-validation" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           <label style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--danger-text)", textTransform: "uppercase", letterSpacing: "var(--tracking-caps)" }}>Email *</label>
-          <input className="app-input" defaultValue="bad@" style={{ border: "1px solid var(--danger-text)" }} />
+          <input className="app-input" defaultValue="bad@" style={{ border: "none" }} />
           <div style={{ fontSize: "11px", color: "var(--danger-text)" }}>⚠ Enter a valid email address</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "12px" }}>
           <label style={{ fontSize: "var(--text-label)", fontWeight: 600, color: "var(--success-text)", textTransform: "uppercase", letterSpacing: "var(--tracking-caps)" }}>Username</label>
-          <input className="app-input" defaultValue="alice" style={{ border: "1px solid var(--success-text)" }} />
+          <input className="app-input" defaultValue="alice" style={{ border: "none" }} />
           <div style={{ fontSize: "11px", color: "var(--success-text)" }}>✓ Username available</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "12px" }}>
@@ -2754,7 +2722,7 @@ function GlobalUiShowcase() {
               <span>Row w/ actions</span>
               <span style={{ display: "flex", gap: "4px" }}>
                 <button type="button" style={{ padding: "2px 8px", fontSize: "11px", border: "1px solid var(--accentBorder)", borderRadius: "var(--radius-xs)", background: "var(--surface)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
-                <button type="button" style={{ padding: "2px 8px", fontSize: "11px", border: "1px solid var(--danger)", color: "var(--danger)", borderRadius: "var(--radius-xs)", background: "var(--surface)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
+                <button type="button" style={{ padding: "2px 8px", fontSize: "11px", border: "none", color: "var(--danger)", borderRadius: "var(--radius-xs)", background: "var(--surface)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
               </span>
             </div>
           </div>
@@ -2836,7 +2804,7 @@ function GlobalUiShowcase() {
       {isSectionVisible("confirm-dialogs") &&
       <ShowcaseSection title="Confirmation Dialogs (preview)" itemKey="confirm-dialogs" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div style={{ padding: "14px", background: "var(--surface)", border: "1px solid var(--danger)", borderRadius: "var(--radius-md)" }}>
+          <div style={{ padding: "14px", background: "var(--surface)", border: "none", borderRadius: "var(--radius-md)" }}>
             <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--danger-text)", marginBottom: "4px" }}>Delete record?</div>
             <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "10px" }}>This action cannot be undone.</div>
             <div style={{ display: "flex", gap: "6px" }}><Button variant="danger" size="sm">Delete</Button><Button variant="ghost" size="sm">Cancel</Button></div>
@@ -2846,7 +2814,7 @@ function GlobalUiShowcase() {
             <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "10px" }}>Non-destructive confirmation body.</div>
             <div style={{ display: "flex", gap: "6px" }}><Button variant="primary" size="sm">OK</Button></div>
           </div>
-          <div style={{ padding: "14px", background: "var(--success-surface)", border: "1px solid var(--success-border)", borderRadius: "var(--radius-md)" }}>
+          <div style={{ padding: "14px", background: "var(--success-surface)", border: "none", borderRadius: "var(--radius-md)" }}>
             <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--success-text)", marginBottom: "4px" }}>✓ Saved successfully</div>
             <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Success confirmation modal body.</div>
           </div>
@@ -2962,10 +2930,10 @@ function GlobalUiShowcase() {
       <ShowcaseSection title="Toast Notifications (proposed)" itemKey="toast-notifications" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {[
-          { tone: "success", bg: "var(--success-surface)", fg: "var(--success-text)", border: "var(--success-border)", msg: "✓ Record saved" },
-          { tone: "error", bg: "var(--danger-surface)", fg: "var(--danger-text)", border: "var(--danger-border)", msg: "✕ Something went wrong" },
+          { tone: "success", bg: "var(--success-surface)", fg: "var(--success-text)", border: "none", msg: "✓ Record saved" },
+          { tone: "error", bg: "var(--danger-surface)", fg: "var(--danger-text)", border: "none", msg: "✕ Something went wrong" },
           { tone: "info", bg: "var(--info-surface)", fg: "var(--info)", border: "var(--accentBorder)", msg: "ℹ New message" },
-          { tone: "warning", bg: "var(--warning-surface)", fg: "var(--warning-text)", border: "var(--warning-border)", msg: "⚠ Action required" }].
+          { tone: "warning", bg: "var(--warning-surface)", fg: "var(--warning-text)", border: "none", msg: "⚠ Action required" }].
           map((t) =>
           <div key={t.tone} style={{ padding: "10px 12px", background: t.bg, color: t.fg, border: `1px solid ${t.border}`, borderRadius: "var(--radius-sm)", fontSize: "12px", fontWeight: 600, boxShadow: "0 6px 18px rgba(0,0,0,0.08)" }}>
               {t.msg}
@@ -2980,13 +2948,13 @@ function GlobalUiShowcase() {
       {isSectionVisible("non-global-banners") &&
       <ShowcaseSection title="Non-Global Banners / Alerts" itemKey="non-global-banners" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ padding: "18px", border: "1px solid var(--info-surface)", background: "var(--info-surface)", color: "var(--info)", borderRadius: "var(--radius-md)", fontSize: "13px" }}>
+          <div style={{ padding: "18px", border: "none", background: "var(--info-surface)", color: "var(--info)", borderRadius: "var(--radius-md)", fontSize: "13px" }}>
             VHC EmptyStateMessage (info banner)
           </div>
           <div style={{ background: "rgba(var(--danger-rgb), 0.12)", padding: "10px 14px", borderRadius: "var(--radius-lg)", color: "var(--danger-dark)", fontSize: "13px", fontWeight: 600 }}>
             login-error banner
           </div>
-          <div style={{ border: "1px solid var(--warning)", background: "var(--warning-surface)", padding: "16px", borderRadius: "var(--radius-md)", color: "var(--warning-text)", fontSize: "13px" }}>
+          <div style={{ border: "none", background: "var(--warning-surface)", padding: "16px", borderRadius: "var(--radius-md)", color: "var(--warning-text)", fontSize: "13px" }}>
             releasePromptBox (payment warning)
           </div>
         </div>
@@ -3393,6 +3361,7 @@ export default function UserDiagnosticDevPage() {
   const [running, setRunning] = useState(false);
   const [expanded, setExpanded] = useState({});
   const [promptCopied, setPromptCopied] = useState(false);
+  const [developingOpen, setDevelopingOpen] = useState(false);
 
   const runAllTests = useCallback(async () => {
     setRunning(true);
@@ -3492,7 +3461,7 @@ export default function UserDiagnosticDevPage() {
   })).filter((g) => g.items.length > 0) :
   [];
 
-  return <UserDiagnosticDevPageUi view="section2" DevLayoutSection={DevLayoutSection} expanded={expanded} GlobalUiShowcase={GlobalUiShowcase} groupedResults={groupedResults} passCount={passCount} promptCopied={promptCopied} results={results} router={router} runAllTests={runAllTests} running={running} SECTION_ORDER={SECTION_ORDER} setExpanded={setExpanded} setPromptCopied={setPromptCopied} setTimeout={setTimeout} totalCount={totalCount} userLoading={userLoading} />;
+  return <UserDiagnosticDevPageUi view="section2" DevLayoutSection={DevLayoutSection} developingOpen={developingOpen} expanded={expanded} GlobalUiShowcase={GlobalUiShowcase} groupedResults={groupedResults} onCloseDeveloping={() => setDevelopingOpen(false)} onOpenDeveloping={() => setDevelopingOpen(true)} passCount={passCount} promptCopied={promptCopied} results={results} router={router} runAllTests={runAllTests} running={running} SECTION_ORDER={SECTION_ORDER} setExpanded={setExpanded} setPromptCopied={setPromptCopied} setTimeout={setTimeout} totalCount={totalCount} userLoading={userLoading} />;
 
 
 

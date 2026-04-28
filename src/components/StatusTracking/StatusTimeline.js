@@ -95,7 +95,7 @@ export default function StatusTimeline({ currentStatus, currentStatusId = null, 
                     className="mt-2 text-xs rounded p-2"
                     style={{
                       backgroundColor: "var(--warning-surface)",
-                      border: "1px solid var(--warning-border)",
+                      border: "none",
                       color: "var(--warning-text)",
                     }}
                   >
@@ -109,7 +109,7 @@ export default function StatusTimeline({ currentStatus, currentStatusId = null, 
                     className="mt-2 inline-flex items-center gap-1 text-xs rounded px-2 py-1"
                     style={{
                       backgroundColor: "var(--danger-surface)",
-                      border: "1px solid var(--danger-border)",
+                      border: "none",
                       color: "var(--danger-text)",
                     }}
                   >

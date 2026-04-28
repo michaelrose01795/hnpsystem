@@ -5,7 +5,7 @@
  * Variants: field, menu, combobox
  * Component: src/components/ui/dropdownAPI/DropdownField.js,
  *            src/components/ui/dropdownAPI/MultiSelectDropdown.js
- * Showcase:  /dev/showcase#dropdown
+ * Showcase:  /dev/user-diagnostic#dropdown
  *
  * NOTE (2026-04 audit pass): the existing dropdown internals live inside
  * the dropdownAPI folder and lean on control tokens (--control-bg,

@@ -48,13 +48,13 @@ export const vhcCardStates = {
     label: "Complete",
     background: "var(--success-surface)",
     color: "var(--success-dark)",
-    border: "var(--success)",
+    border: "none",
   },
   inProgress: {
     label: "In Progress",
     background: "var(--warning-surface)",
     color: "var(--warning-dark)",
-    border: "var(--warning)",
+    border: "none",
   },
   pending: {
     label: "Not Started",
@@ -70,7 +70,9 @@ export const vhcCardStates = {
 // button factories.
 
 export const dropdownTriggerButtonStyle = {
+  height: "var(--dropdown-trigger-height)",
   minHeight: "var(--dropdown-trigger-height)",
+  maxHeight: "var(--dropdown-trigger-height)",
   padding: "var(--dropdown-trigger-padding)",
   borderRadius: "var(--dropdown-trigger-radius)",
   lineHeight: 1,

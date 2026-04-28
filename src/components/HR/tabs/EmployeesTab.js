@@ -987,7 +987,7 @@ function EmployeeForm({
               style={{
                 color: "var(--danger-dark)",
                 background: "var(--danger-surface)",
-                border: "1px solid var(--danger-border)",
+                border: "none",
                 borderRadius: "var(--input-radius)",
                 padding: "var(--control-padding)",
                 fontWeight: 600,
@@ -1076,7 +1076,7 @@ function SearchableListDropdown({
           ...accentFieldSurface,
           padding: "10px",
           borderRadius: "var(--radius-xs)",
-          border: hasError ? "1px solid var(--danger)" : accentFieldSurface.border,
+          border: hasError ? "none" : accentFieldSurface.border,
             boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
           width: "100%",
           cursor: "pointer",
@@ -1204,7 +1204,7 @@ function SearchableMultiSelect({
           minHeight: "42px",
           padding: "8px 10px",
           borderRadius: "var(--radius-xs)",
-          border: hasError ? "1px solid var(--danger)" : "1px solid var(--surface-light)",
+          border: hasError ? "none" : "1px solid var(--surface-light)",
           boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
           background: "var(--surface)",
           display: "flex",
@@ -1353,7 +1353,7 @@ function SectionHeading({ title, hasError = false, errorCount = 0 }) {
             fontWeight: 700,
             color: "var(--danger-dark)",
             background: "rgba(var(--danger-rgb), 0.15)",
-            border: "1px solid var(--danger-border)",
+            border: "none",
             borderRadius: "var(--radius-pill)",
             padding: "2px 8px",
             textTransform: "none",
@@ -1387,7 +1387,7 @@ function EmployeeDetailsFields({
     fieldErrors[field]
       ? {
           ...baseStyle,
-          border: "1px solid var(--danger)",
+          border: "none",
           boxShadow: "0 0 0 2px rgba(var(--danger-rgb), 0.12)",
         }
       : baseStyle;
@@ -1404,7 +1404,7 @@ function EmployeeDetailsFields({
   const getSectionShellStyle = (section) => {
     const hasError = Boolean(sectionErrors[section]?.length);
     return {
-      border: hasError ? "1px solid var(--danger-border)" : "1px solid var(--surface-light)",
+      border: hasError ? "none" : "1px solid var(--surface-light)",
       borderRadius: "var(--radius-sm)",
       padding: "12px",
       background: hasError ? "rgba(var(--danger-rgb), 0.06)" : "var(--surface-light)",

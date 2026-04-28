@@ -136,7 +136,7 @@ const jobDetailsPopupWarningButtonStyle = {
   ...jobDetailsPopupPrimaryButtonStyle,
   backgroundColor: "var(--warning-surface)",
   color: "var(--warning-dark)",
-  border: "1px solid var(--warning)"
+  border: "none"
 };
 
 const jobDetailsPopupQuietButtonStyle = {
@@ -1394,7 +1394,7 @@ export default function NextJobsPage() {
             marginBottom: "12px",
             padding: "12px",
             borderRadius: "var(--radius-xs)",
-            border: currentClocking ? "1px solid var(--success)" : "1px dashed var(--accent-purple)",
+            border: "none",
             backgroundColor: currentClocking ? "var(--success-surface)" : "var(--layer-section-level-1)",
             cursor: currentClocking ? "pointer" : "default"
           }}
@@ -1509,7 +1509,7 @@ export default function NextJobsPage() {
                   data-dnd-job-number={job.jobNumber}
                   onPointerDown={handleCardPointerDown(job, () => handleOpenJobDetails(job))}
                   style={{
-                    border: isSearchHighlighted ? "2px solid var(--success)" : "none",
+                    border: "none",
                     borderRadius: "var(--radius-xs)",
                     padding: "10px",
                     marginBottom: "8px",

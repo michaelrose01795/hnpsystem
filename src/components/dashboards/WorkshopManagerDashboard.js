@@ -358,7 +358,7 @@ export default function WorkshopManagerDashboard() {
             style={{
               gridColumn: "1 / -1",
               padding: "18px",
-              border: "1px solid var(--danger)",
+              border: "none",
               color: "var(--danger)",
             }}
           >

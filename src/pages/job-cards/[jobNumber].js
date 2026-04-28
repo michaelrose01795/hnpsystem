@@ -13,7 +13,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile, upsertJobRequestsForJob, getJobsByPrimeGroup, convertToPrimeJob } from "@/lib/database/jobs";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
-import { autoSetCheckedInStatus } from "@/lib/services/jobStatusService";
+import { autoSetCheckedInStatus, autoSetBookedStatus } from "@/lib/services/jobStatusService";
 import {
   getNotesByJob,
   createJobNote,
@@ -37,8 +37,15 @@ import { resolveMainStatusId } from "@/lib/status/statusFlow";
 import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
 import InvoiceSection from "@/components/Invoices/InvoiceSection";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
-import { normaliseDecisionStatus, buildVhcRowStatusView } from "@/lib/vhc/summaryStatus";
-import { resolveVhcItemState } from "@/lib/vhc/vhcItemState";
+// Phase 1 of the VHC refactor: route all VHC status reads through the canonical
+// engine. normaliseDecisionStatus is re-exported from the engine (legacy-permissive
+// wrapper) so behaviour is unchanged.
+import {
+  projectVhcItem,
+  getDisplayStatus,
+  resolveVhcItemState,
+  normaliseDecisionStatus,
+} from "@/features/vhc/vhcStatusEngine";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import { clockInToJob, getUserActiveJobs, switchJob } from "@/lib/database/jobClocking";
 import PartsTabNew from "@/components/PartsTab";
@@ -883,7 +890,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   const lockAlertStyle = {
     padding: "12px 14px",
     borderRadius: "var(--radius-sm)",
-    border: "1px solid var(--warning-surface)",
+    border: "none",
     backgroundColor: "var(--warning-surface)",
     color: "var(--warning-dark)",
     marginBottom: "12px",
@@ -1034,6 +1041,12 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   overallStatusId === JOB_STATUSES.BOOKED :
   typeof jobData?.status === "string" &&
   jobData.status.trim().toLowerCase() === "booked";
+  // "Open" is a raw jobs.status DB value that bypasses the canonical catalog
+  // (see src/lib/status/_baseline/currentStatusOutputs.md). Walk-in / unbooked
+  // jobs land here and need the same Check-in flow as Booked appointments.
+  const isOpenStatus =
+    typeof jobData?.status === "string" &&
+    jobData.status.trim().toLowerCase() === "open";
   const isCheckedIn = Boolean(
     overallStatusId && overallStatusId === JOB_STATUSES.CHECKED_IN ||
     jobData?.checkedInAt ||
@@ -1787,13 +1800,20 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       return;
     }
 
-    const confirmed = await confirm(
-      `Check in customer?\n\n` +
-      `Job: ${jobData.jobNumber || jobData.id}\n` +
-      `Customer: ${jobData.customer || "N/A"}\n` +
-      `Vehicle: ${jobData.reg || "N/A"}\n` +
-      `Appointment: ${jobData.appointment?.time || "N/A"}`
-    );
+    // Structured payload renders the modern themed-tile layout in
+    // ConfirmationDialog (see src/components/popups/ConfirmationDialog.js).
+    const confirmed = await confirm({
+      title: null, // Suppress the eyebrow — the prompt is enough on its own.
+      message: "Check in this customer?",
+      details: [
+        { label: "Job", value: jobData.jobNumber || jobData.id || "—", tone: "info" },
+        { label: "Customer", value: jobData.customer || "N/A", tone: "success" },
+        { label: "Vehicle", value: jobData.reg || "N/A", tone: "warning" },
+        { label: "Appointment", value: jobData.appointment?.time || "N/A", tone: "accent" },
+      ],
+      confirmLabel: "Check In",
+      cancelLabel: "Cancel",
+    });
 
     if (!confirmed) return;
 
@@ -2152,6 +2172,38 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             } catch (subErr) {
               console.warn(`⚠️ Failed to sync appointment to sub-job ${subJob.id}:`, subErr);
             }
+          }
+        }
+
+        // Sync the job's status to "Booked" once the appointment row has been
+        // written. Without this, jobs created with the legacy default status
+        // "Open" stay on "Open" even after they're put on the appointment
+        // calendar, which is why such a job appears in /appointments but its
+        // header badge still reads "Open". Only fire this transition for jobs
+        // that haven't moved past the pre-booked stage — autoSetBookedStatus
+        // would otherwise overwrite Checked-In / In-Progress / Invoiced jobs.
+        const currentJobStatus = String(jobData?.status || "").trim().toLowerCase();
+        const PRE_BOOKED_STATUSES = new Set(["", "open", "pending", "new", "booked"]);
+        if (PRE_BOOKED_STATUSES.has(currentJobStatus)) {
+          try {
+            await autoSetBookedStatus(jobData.id);
+            // Mirror the transition onto sub-jobs the prime job created
+            // appointments for, so they stay in lockstep with the prime.
+            if (jobData.isPrimeJob && Array.isArray(jobData.subJobs) && jobData.subJobs.length > 0) {
+              for (const subJob of jobData.subJobs) {
+                if (!subJob?.id) continue;
+                const subStatus = String(subJob?.status || "").trim().toLowerCase();
+                if (PRE_BOOKED_STATUSES.has(subStatus)) {
+                  try {
+                    await autoSetBookedStatus(subJob.id);
+                  } catch (subStatusErr) {
+                    console.warn(`⚠️ Failed to sync Booked status to sub-job ${subJob.id}:`, subStatusErr);
+                  }
+                }
+              }
+            }
+          } catch (statusError) {
+            console.warn("⚠️ Failed to auto-set Booked status after appointment save:", statusError);
           }
         }
 
@@ -3421,7 +3473,6 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       amber: amberIssues.length,
       grey: greyIssues.length
     };
-    const vhcTabBadge = vhcSummaryCounts.red || vhcSummaryCounts.amber ? "⚠" : undefined;
     const notesTabBadge = pendingNewNoteIds.length ?
     pendingNewNoteIds.length > 9 ?
     "9+" :
@@ -3450,16 +3501,14 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       if (tab.id === "notes") {
         return { ...tab, badge: notesTabBadge };
       }
-      if (tab.id === "vhc") {
-        return { ...tab, badge: vhcTabBadge };
-      }
       return tab;
     });
 
     const pageStackStyle = {
       display: "flex",
       flexDirection: "column",
-      gap: "16px"
+      gap: "16px",
+      rowGap: "16px"
     };
     const sharedJobCardShellBackground = "var(--tab-container-bg)";
     const summaryPrimaryTextStyle = {
@@ -3480,7 +3529,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
 
     // ✅ Main Render
-    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} WarrantyTab={WarrantyTab} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
+    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} WarrantyTab={WarrantyTab} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
 
 
 
@@ -4622,6 +4671,83 @@ function CustomerRequestsTab({
     letterSpacing: "0.12em",
     textTransform: "uppercase"
   };
+  const requestRowBaseStyle = {
+    padding: "14px",
+    color: "var(--text-inverse)",
+    border: "none",
+    borderRadius: "var(--control-radius)",
+    marginBottom: "12px",
+    transition: "var(--control-transition)"
+  };
+  const requestRowButtonStyle = {
+    ...requestRowBaseStyle,
+    backgroundColor: "var(--warning-surface)"
+  };
+  const authorisedRowButtonStyle = {
+    ...requestRowBaseStyle,
+    backgroundColor: "var(--success-surface)"
+  };
+  const requestPillButtonStyle = {
+    height: "var(--control-height)",
+    minHeight: "var(--control-height)",
+    maxHeight: "var(--control-height)",
+    padding: "var(--control-padding)",
+    backgroundColor: "var(--control-bg)",
+    color: "var(--accentText)",
+    border: "none",
+    borderRadius: "var(--control-radius)",
+    fontSize: "var(--control-font-size)",
+    fontWeight: "600",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    lineHeight: 1,
+    whiteSpace: "nowrap"
+  };
+  const requestColumnGridStyle = {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 190px 90px 180px 150px",
+    columnGap: "8px",
+    rowGap: "12px",
+    alignItems: "center"
+  };
+  const requestColumnBaseStyle = {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "center"
+  };
+  const requestValueColumnStyle = {
+    ...requestColumnBaseStyle,
+    justifyContent: "stretch"
+  };
+  const requestFullWidthValueStyle = {
+    width: "100%"
+  };
+  const getPaymentTypePillStyle = useCallback((paymentType = "") => {
+    const normalizedType = String(paymentType || "").trim().toLowerCase();
+    const isCustomer = normalizedType === "customer";
+    const isWarranty = normalizedType === "warranty";
+    const isGoodwill = normalizedType.includes("goodwill");
+    const isInternal = normalizedType === "internal";
+    const isDanger = normalizedType === "insurance" || normalizedType === "lease company";
+    return {
+      ...requestPillButtonStyle,
+      backgroundColor: isCustomer ? "var(--success-surface)" : isWarranty || isInternal ? "var(--warning-surface)" : isDanger ? "var(--danger-surface)" : isGoodwill ? "var(--info-surface)" : "var(--control-bg)",
+      color: isCustomer ? "var(--success-text)" : isWarranty || isInternal ? "var(--warning-text)" : isDanger ? "var(--danger-text)" : isGoodwill ? "var(--info)" : "var(--accentText)",
+      border: "none"
+    };
+  }, [requestPillButtonStyle]);
+  const getStatusPillStyle = useCallback((normalizedStatus = "") => {
+    const isSuccess = ["added_to_job", "completed", "done", "authorized", "authorised"].includes(normalizedStatus);
+    const isDanger = ["removed", "declined", "cancelled", "canceled"].includes(normalizedStatus);
+    const isWarning = ["not_started", "on_hold", "hold", "pending"].includes(normalizedStatus);
+    return {
+      ...requestPillButtonStyle,
+      backgroundColor: isSuccess ? "var(--success-surface)" : isDanger ? "var(--danger-surface)" : isWarning ? "var(--warning-surface)" : "var(--info-surface)",
+      color: isSuccess ? "var(--success-text)" : isDanger ? "var(--danger-text)" : isWarning ? "var(--warning-text)" : "var(--info)",
+      border: "none"
+    };
+  }, [requestPillButtonStyle]);
   const formatPrePickLabel = (value = "") => {
     const trimmed = String(value || "").trim();
     if (!trimmed) return "";
@@ -4876,51 +5002,11 @@ function CustomerRequestsTab({
     join(" ") || "In Progress";
 
     const statusBadgeStyle = {
-      padding: "4px 10px",
-      borderRadius: "var(--radius-sm)",
-      fontSize: "12px",
-      fontWeight: "600",
-      whiteSpace: "nowrap",
-      backgroundColor:
-      normalizedStatus === "added_to_job" ?
-      "var(--success-surface)" :
-      normalizedStatus === "removed" ?
-      "var(--danger-surface)" :
-      normalizedStatus === "completed" || normalizedStatus === "done" ?
-      "var(--success-surface)" :
-      normalizedStatus === "not_started" ?
-      "var(--surface-light)" :
-      normalizedStatus === "on_hold" || normalizedStatus === "hold" ?
-      "var(--warning-surface)" :
-      normalizedStatus === "cancelled" || normalizedStatus === "canceled" ?
-      "var(--danger-surface)" :
-      normalizedStatus === "inprogress" ?
-      "var(--info-surface)" :
-      normalizedStatus === "authorized" || normalizedStatus === "authorised" ?
-      "var(--success-surface)" :
-      "var(--surface-light)",
-      color:
-      normalizedStatus === "added_to_job" ?
-      "var(--success-dark)" :
-      normalizedStatus === "removed" ?
-      "var(--danger-dark)" :
-      normalizedStatus === "completed" || normalizedStatus === "done" ?
-      "var(--success-dark)" :
-      normalizedStatus === "not_started" ?
-      "var(--grey-accent)" :
-      normalizedStatus === "on_hold" || normalizedStatus === "hold" ?
-      "var(--warning-dark)" :
-      normalizedStatus === "cancelled" || normalizedStatus === "canceled" ?
-      "var(--danger-dark)" :
-      normalizedStatus === "inprogress" ?
-      "var(--info-dark)" :
-      normalizedStatus === "authorized" || normalizedStatus === "authorised" ?
-      "var(--success-dark)" :
-      "var(--text-secondary)"
+      ...getStatusPillStyle(normalizedStatus)
     };
 
     return { normalizedStatus, statusLabel, statusBadgeStyle };
-  }, []);
+  }, [getStatusPillStyle]);
 
   // Authorised VHC items (source: vhc_checks where approval_status is authorized/completed)
   const authorisedRows = useMemo(() => {
@@ -5470,11 +5556,7 @@ function CustomerRequestsTab({
         <div
           key={index}
           style={{
-            padding: "14px",
-            backgroundColor: "var(--surface)",
-            borderLeft: "4px solid var(--primary)",
-            borderRadius: "var(--control-radius)",
-            marginBottom: "12px",
+            ...requestRowButtonStyle,
             display: "flex",
             alignItems: "center",
             gap: "12px",
@@ -5484,6 +5566,7 @@ function CustomerRequestsTab({
               <div
             style={{
               flex: 1,
+              flexBasis: "420px",
               display: "flex",
               flexDirection: "column",
               gap: "6px",
@@ -5499,7 +5582,7 @@ function CustomerRequestsTab({
                 updated[index] = {
                   ...updated[index],
                   text: preset.label,
-                  time: Number(preset.defaultHours),
+                  time: Number(preset.defaultHours) > 0 ? Number(preset.defaultHours) : "",
                   presetId: preset.id,
                   selectedPresetLabel: preset.label
                 };
@@ -5519,10 +5602,11 @@ function CustomerRequestsTab({
             
               </div>
 
-              <div style={{ width: "120px", flexShrink: 0 }}>
+              <div style={{ width: "82px", flexShrink: 0 }}>
                 <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
                   Est. Hours
                 </label>
+                <div style={{ position: "relative" }}>
                 <input
               type="number"
               min="0"
@@ -5534,7 +5618,7 @@ function CustomerRequestsTab({
               style={{
                 width: "100%",
                 height: "var(--control-height-sm)",
-                padding: "8px 10px",
+                padding: "8px 24px 8px 10px",
                 border: "none",
                 borderRadius: "var(--control-radius)",
                 fontSize: "14px",
@@ -5543,6 +5627,20 @@ function CustomerRequestsTab({
                 appearance: "textfield",
                 MozAppearance: "textfield"
               }} />
+                <span style={{
+                pointerEvents: "none",
+                position: "absolute",
+                right: "9px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--text-secondary)",
+                fontSize: "var(--control-font-size)",
+                fontWeight: 700,
+                lineHeight: 1
+              }}>
+                  h
+                </span>
+                </div>
             
               </div>
 
@@ -5614,11 +5712,7 @@ function CustomerRequestsTab({
           <div
             key={`authorised-edit-${req.requestId || req.vhcItemId || index}`}
             style={{
-              padding: "14px",
-              backgroundColor: "var(--surface)",
-              borderLeft: "4px solid var(--success)",
-              borderRadius: "var(--control-radius)",
-              marginBottom: "12px",
+              ...authorisedRowButtonStyle,
               display: "flex",
               alignItems: "center",
               gap: "12px",
@@ -5628,6 +5722,7 @@ function CustomerRequestsTab({
                   <div
               style={{
                 flex: 1,
+                flexBasis: "420px",
                 display: "flex",
                 flexDirection: "column",
                 gap: "6px",
@@ -5653,10 +5748,11 @@ function CustomerRequestsTab({
               
                   </div>
 
-                  <div style={{ width: "120px", flexShrink: 0 }}>
+                  <div style={{ width: "82px", flexShrink: 0 }}>
                     <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
                       Est. Hours
                     </label>
+                    <div style={{ position: "relative" }}>
                     <input
                 type="number"
                 min="0"
@@ -5668,7 +5764,7 @@ function CustomerRequestsTab({
                 style={{
                   width: "100%",
                   height: "var(--control-height-sm)",
-                  padding: "8px 10px",
+                  padding: "8px 24px 8px 10px",
                   border: "none",
                   borderRadius: "var(--control-radius)",
                   fontSize: "14px",
@@ -5677,6 +5773,21 @@ function CustomerRequestsTab({
                   opacity: 0.75,
                   cursor: "not-allowed"
                 }} />
+                    <span style={{
+                  pointerEvents: "none",
+                  position: "absolute",
+                  right: "9px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--text-secondary)",
+                  fontSize: "var(--control-font-size)",
+                  fontWeight: 700,
+                  lineHeight: 1,
+                  opacity: 0.75
+                }}>
+                      h
+                    </span>
+                    </div>
               
                   </div>
 
@@ -5718,21 +5829,9 @@ function CustomerRequestsTab({
               "inprogress"
             );
             return (
-              <div key={index} style={{
-                padding: "14px",
-                backgroundColor: "var(--surface)",
-                borderLeft: "4px solid var(--primary)",
-                borderRadius: "var(--control-radius)",
-                marginBottom: "12px"
-              }}>
+              <div key={index} style={requestRowButtonStyle}>
                 <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) minmax(160px, 210px) max-content max-content",
-                    columnGap: "8px",
-                    rowGap: "12px",
-                    alignItems: "center"
-                  }}>
+                  style={requestColumnGridStyle}>
                   
                   <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", alignSelf: "start" }}>
                     <span style={requestSubtitleStyle}>Request {index + 1}</span>
@@ -5754,7 +5853,7 @@ function CustomerRequestsTab({
                       </div>
                     )}
                   </div>
-                  <div style={{ minWidth: 0, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                  <div style={requestValueColumnStyle}>
                     {prePickRowKey ?
                     <DropdownField
                       value={req.prePickLocation || ""}
@@ -5766,56 +5865,30 @@ function CustomerRequestsTab({
                       className="customer-request-prepick-dropdown"
                       disabled={!canEdit || savingRequestPrePickId === prePickRowKey}
                       size="sm"
-                      style={{ width: "170px", minWidth: "170px" }} /> :
+                      style={requestFullWidthValueStyle} /> :
 
 
-                    <span style={{ ...smallPrintStyle, display: "inline-block" }}>
+                    <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
                         {req.prePickLocation ?
                       `Pre-picked: ${formatPrePickLabel(req.prePickLocation)}` :
                       "Pre-pick not set"}
                       </span>
                     }
                   </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "6px",
-                      alignItems: "center",
-                      justifyContent: "flex-start",
-                      flexWrap: "wrap"
-                    }}>
-                    
-                    <span style={{
-                      padding: "4px 10px",
-                      backgroundColor: "var(--info-surface)",
-                      color: "var(--info)",
-                      borderRadius: "var(--radius-sm)",
-                      fontSize: "12px",
-                      fontWeight: "600"
-                    }}>
+                  <div style={requestValueColumnStyle}>
+                    <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
                       {formatHoursDisplay(req.hours)}
                     </span>
+                  </div>
+                  <div style={requestValueColumnStyle}>
                     {req.jobType &&
-                    <span style={{
-                      padding: "4px 10px",
-                      backgroundColor:
-                      req.jobType === "Warranty" ? "var(--warning-surface)" :
-                      req.jobType === "Customer" ? "var(--success)" :
-                      "var(--danger-surface)",
-                      color:
-                      req.jobType === "Warranty" ? "var(--warning-dark)" :
-                      req.jobType === "Customer" ? "var(--success-dark)" :
-                      "var(--danger-dark)",
-                      borderRadius: "var(--radius-sm)",
-                      fontSize: "12px",
-                      fontWeight: "600"
-                    }}>
+                    <span style={{ ...getPaymentTypePillStyle(req.jobType), ...requestFullWidthValueStyle }}>
                         {req.jobType}
                       </span>
                     }
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
-                    <span style={statusBadgeStyle}>{statusLabel}</span>
+                  <div style={requestValueColumnStyle}>
+                    <span style={{ ...statusBadgeStyle, ...requestFullWidthValueStyle }}>{statusLabel}</span>
                   </div>
                 </div>
               </div>);
@@ -5859,21 +5932,9 @@ function CustomerRequestsTab({
             Number(row.partsCost) :
             null;
             return (
-              <div key={rowKey} style={{
-                padding: "14px",
-                backgroundColor: "var(--surface)",
-                borderLeft: "4px solid var(--success)",
-                borderRadius: "var(--control-radius)",
-                marginBottom: "12px"
-              }}>
+              <div key={rowKey} style={authorisedRowButtonStyle}>
                   <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) minmax(160px, 210px) max-content max-content",
-                    columnGap: "8px",
-                    rowGap: "12px",
-                    alignItems: "center"
-                  }}>
+                  style={requestColumnGridStyle}>
                   
                     <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", alignSelf: "start" }}>
                       <span style={requestSubtitleStyle}>{`Authorised ${index + 1}`}</span>
@@ -5900,7 +5961,7 @@ function CustomerRequestsTab({
                     <span style={indentedNoteStyle}>Note - {row.noteText}</span>
                     }
                     </div>
-                    <div style={{ minWidth: 0, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                    <div style={requestValueColumnStyle}>
                       {prePickRowKey ?
                     <DropdownField
                       value={row.prePickLocation || ""}
@@ -5912,56 +5973,30 @@ function CustomerRequestsTab({
                       className="customer-request-prepick-dropdown"
                       disabled={!canEdit || savingRequestPrePickId === prePickRowKey}
                       size="sm"
-                      style={{ width: "170px", minWidth: "170px" }} /> :
+                      style={requestFullWidthValueStyle} /> :
 
 
-                    <span style={{ ...smallPrintStyle, display: "inline-block" }}>
+                    <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
                           {row.prePickLocation ?
                       `Pre-picked: ${formatPrePickLabel(row.prePickLocation)}` :
                       "Pre-pick not set"}
                         </span>
                     }
                     </div>
-                    <div
-                    style={{
-                      display: "flex",
-                      gap: "6px",
-                      alignItems: "center",
-                      justifyContent: "flex-start",
-                      flexWrap: "wrap"
-                    }}>
-                    
-                      <span style={{
-                      padding: "4px 10px",
-                      backgroundColor: "var(--info-surface)",
-                      color: "var(--info)",
-                      borderRadius: "var(--radius-sm)",
-                      fontSize: "12px",
-                      fontWeight: "600"
-                    }}>
+                    <div style={requestValueColumnStyle}>
+                      <span style={{ ...requestPillButtonStyle, ...requestFullWidthValueStyle }}>
                         {formatHoursDisplay(labourHoursValue)}
                       </span>
+                    </div>
+                    <div style={requestValueColumnStyle}>
                       {row.jobType &&
-                    <span style={{
-                      padding: "4px 10px",
-                      backgroundColor:
-                      row.jobType === "Warranty" ? "var(--warning-surface)" :
-                      row.jobType === "Customer" ? "var(--success)" :
-                      "var(--danger-surface)",
-                      color:
-                      row.jobType === "Warranty" ? "var(--warning-dark)" :
-                      row.jobType === "Customer" ? "var(--success-dark)" :
-                      "var(--danger-dark)",
-                      borderRadius: "var(--radius-sm)",
-                      fontSize: "12px",
-                      fontWeight: "600"
-                    }}>
+                    <span style={{ ...getPaymentTypePillStyle(row.jobType), ...requestFullWidthValueStyle }}>
                           {row.jobType}
                         </span>
                     }
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
-                      <span style={authorisedStatusBadgeStyle}>{authorisedStatusLabel}</span>
+                    <div style={requestValueColumnStyle}>
+                      <span style={{ ...authorisedStatusBadgeStyle, ...requestFullWidthValueStyle }}>{authorisedStatusLabel}</span>
                     </div>
                   </div>
                   {linkedParts.length > 0 &&
@@ -7158,57 +7193,53 @@ function SchedulingTab({
           </div>
         </DevLayoutSection>
 
-        {/* ── Section 4: Customer Logistics ── */}
+        {/* ── Section 4: Customer Logistics ──
+            Migrated to the canonical .app-section-card class per CLAUDE.md
+            §3.3. Inline sectionCardStyle removed so padding, background and
+            radius come from --section-card-padding / --section-card-bg /
+            --section-card-radius design tokens. .app-section-card also
+            establishes a flex-column with --layout-card-gap between children. */}
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-logistics"
           sectionType="content-card"
           parentKey="jobcard-tab-scheduling"
           backgroundToken="surface"
-          style={sectionCardStyle}>
-          
+          className="app-section-card">
+
           <div style={sectionTitleRow}>
             <h3 style={cardTitleStyle}>Customer Logistics</h3>
           </div>
+          {/* Mirrors the main job-card tab strip (job-cards-auto-tab-row-1):
+              same .tab-scroll-row container chip + .tab-api__item buttons,
+              same --tab-container-bg background and 8px padding. Reusing
+              those classes means this row picks up every visual change made
+              to the canonical tab family (radius, spacing, active-state
+              colours, hover, focus) without diverging styling. */}
           <div
+            className="tab-scroll-row"
+            role="tablist"
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "8px",
+              backgroundColor: "var(--tab-container-bg)",
+              borderRadius: "var(--radius-sm)",
               padding: "8px",
-              backgroundColor: "rgba(var(--primary-rgb), 0.05)",
-              border: "none",
-              borderRadius: "var(--radius-sm)"
             }}>
-            
             {waitingOptions.map((option) => {
               const isActive =
-              bookingWaitingStatus === option ||
-              !bookingWaitingStatus && option === "Neither";
+                bookingWaitingStatus === option ||
+                (!bookingWaitingStatus && option === "Neither");
               return (
                 <button
                   key={option}
+                  type="button"
+                  role="tab"
+                  className={`tab-api__item${isActive ? " is-active" : ""}`}
                   onClick={() => handleBookingWaitingSelect(option)}
                   disabled={!canEdit}
                   aria-pressed={isActive}
-                  style={{
-                    flex: "1 1 150px",
-                    minWidth: "120px",
-                    padding: "12px 14px",
-                    border: "none",
-                    borderRadius: "calc(var(--radius-sm) - 2px)",
-                    backgroundColor: isActive ? "var(--surface)" : "transparent",
-                    color: isActive ? "var(--primary-dark)" : "var(--text-secondary)",
-                    fontWeight: "600",
-                    fontSize: "var(--control-font-size)",
-                    cursor: canEdit ? "pointer" : "default",
-                    boxShadow: "none",
-                    transition: "background-color 0.15s, color 0.15s, box-shadow 0.15s",
-                    textAlign: "center"
-                  }}>
-                  
+                  aria-selected={isActive}>
                   {option}
-                </button>);
-
+                </button>
+              );
             })}
           </div>
           {/* Placeholder for future conditional fields (loan car details, collection time, etc.) */}
@@ -8695,30 +8726,31 @@ function VHCTab({
   const [checkboxesLockReason, setCheckboxesLockReason] = useState("");
   const actionsEnabled = canEdit && allCheckboxesComplete;
   const hasAwaitingCustomerDecision = useMemo(() => {
+    // Routed through the engine in Phase 1: projectVhcItem normalises the row,
+    // getDisplayStatus computes the same dotStateKey buildVhcRowStatusView used
+    // to compute inline. Behaviour is byte-identical — "awaiting" still means
+    // pending decision with labour AND parts filled in (the gate for "Send VHC").
     const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
     return checks.some((check) => {
       const section = (check?.section || "").toString().trim();
       if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
-      const severity = check?.severity || check?.traffic_light || check?.display_status;
-      const rowView = buildVhcRowStatusView({
-        decisionValue:
-        check?.approval_status ??
-        check?.approvalStatus ??
-        check?.authorization_state ??
-        check?.authorizationState ??
-        check?.display_status,
-        rawSeverity: severity,
-        displayStatus: check?.display_status,
-        labourHoursValue: check?.labour_hours ?? check?.labourHours,
-        labourComplete: check?.labour_complete ?? check?.labourComplete,
-        partsNotRequired: check?.parts_not_required ?? check?.partsNotRequired,
-        resolvedPartsCost: undefined,
-        partsCost: check?.parts_cost ?? check?.partsCost,
-        totalOverride: check?.total_override ?? check?.totalOverride
-      });
-      return rowView.dotStateKey === "awaiting";
+      const item = projectVhcItem(check, { job: jobData });
+      return getDisplayStatus(item)?.dotStateKey === "awaiting";
     });
-  }, [jobData?.vhcChecks]);
+  }, [jobData?.vhcChecks, jobData?.vhc_sent_at]);
+  // Send button enables once any row has a decided/awaiting status (awaiting,
+  // approved/authorised/completed, or declined). Stays clickable after rows
+  // move out of "awaiting" so users can re-send post-decision.
+  const sendVhcEnabled = useMemo(() => {
+    const checks = Array.isArray(jobData?.vhcChecks) ? jobData.vhcChecks : [];
+    return checks.some((check) => {
+      const section = (check?.section || "").toString().trim();
+      if (section === "VHC_CHECKSHEET" || section === "VHC Checksheet") return false;
+      const item = projectVhcItem(check, { job: jobData });
+      const key = getDisplayStatus(item)?.dotStateKey;
+      return key === "awaiting" || key === "approved" || key === "declined";
+    });
+  }, [jobData?.vhcChecks, jobData?.vhc_sent_at]);
   const customerViewUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
     return `${window.location.origin}/vhc/customer-preview/${jobNumber}`;
@@ -8769,7 +8801,7 @@ function VHCTab({
   };
 
   const handleSendVhc = async () => {
-    if (!actionsEnabled || !previewOpened || sendingVhc) return;
+    if (!sendVhcEnabled || sendingVhc) return;
 
     setSendingVhc(true);
     setSendVhcMessage("");
@@ -8804,77 +8836,33 @@ function VHCTab({
 
   const customActions =
   <>
-      {canShowCustomerActions && hasAwaitingCustomerDecision ?
-    <>
-          <button
-        type="button"
-        onClick={handleCustomerViewClick}
-        disabled={!actionsEnabled}
-        style={{
-          padding: "8px 16px",
-          borderRadius: "var(--control-radius)",
-          border: `1px solid ${actionsEnabled ? "var(--primary)" : "var(--grey-accent)"}`,
-          backgroundColor: actionsEnabled ? "var(--primary)" : "var(--surface-light)",
-          color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
-          fontWeight: 600,
-          cursor: actionsEnabled ? "pointer" : "not-allowed",
-          opacity: actionsEnabled ? 1 : 0.5,
-          fontSize: "13px"
-        }}
-        title={!actionsEnabled ? checkboxesLockReason || "Summary checks are incomplete." : "Open customer preview"}>
-        
-            View VHC
-          </button>
-          <button
-        type="button"
-        onClick={handleCopyToClipboard}
-        disabled={!actionsEnabled || generatingLink}
-        style={{
-          padding: "var(--control-padding)",
-          borderRadius: "var(--control-radius)",
-          border: "none",
-          fontSize: "var(--control-font-size)",
-          fontWeight: "600",
-          cursor: actionsEnabled && !generatingLink ? "pointer" : "not-allowed",
-          minHeight: "var(--control-height)",
-          backgroundColor: copied ? "rgba(var(--success-rgb, 22, 163, 74), 0.08)" : "rgba(var(--primary-rgb), 0.08)",
-          color: copied ? "var(--success-dark, var(--success))" : "var(--primary-dark)",
-          opacity: actionsEnabled ? 1 : 0.5
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.opacity = "0.9";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.opacity = actionsEnabled ? "1" : "0.5";
-        }}
-        title={!actionsEnabled ? checkboxesLockReason || "Summary checks are incomplete." : copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}>
-        
-            {generatingLink ? "..." : copied ? "Copied" : "Copy Link"}
-          </button>
-        </> :
-    null}
-      {canShowCustomerActions && hasAwaitingCustomerDecision && previewOpened ?
-    <button
-      type="button"
-      onClick={handleSendVhc}
-      disabled={!actionsEnabled || sendingVhc}
-      style={{
-        padding: "8px 12px",
-        borderRadius: "var(--control-radius)",
-        border: `1px solid ${actionsEnabled ? "var(--success)" : "var(--grey-accent)"}`,
-        backgroundColor: actionsEnabled ? "var(--success)" : "var(--surface-light)",
-        color: actionsEnabled ? "var(--surface)" : "var(--grey-accent)",
-        fontWeight: 600,
-        cursor: actionsEnabled && !sendingVhc ? "pointer" : "not-allowed",
-        opacity: actionsEnabled ? 1 : 0.5,
-        fontSize: "13px",
-        minWidth: "100px"
-      }}
-      title={!actionsEnabled ? checkboxesLockReason || "Summary checks are incomplete." : "Send interactive VHC to customer"}>
-      
-          {sendingVhc ? "Sending..." : "Send to Customer"}
-        </button> :
-    null}
+      <button
+    type="button"
+    className="app-btn app-btn--primary app-btn--sm"
+    onClick={handleCustomerViewClick}
+    title="Open customer preview">
+        View
+      </button>
+      <button
+    type="button"
+    className="app-btn app-btn--secondary app-btn--sm"
+    onClick={handleCopyToClipboard}
+    disabled={generatingLink}
+    title={copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}>
+        {generatingLink ? "..." : copied ? "Copied" : "Copy"}
+      </button>
+      {/* TODO: After testing, lock the Send button to fire only once per job — */}
+      {/* relabel to "Sent" and disable after a successful first send (track via */}
+      {/* jobData.vhc_sent_at or a local state mirror) so the same email can't */}
+      {/* be re-sent. For now multiple sends are allowed for debugging. */}
+      <button
+    type="button"
+    className="app-btn app-btn--success app-btn--sm"
+    onClick={handleSendVhc}
+    disabled={!sendVhcEnabled || sendingVhc}
+    title={!sendVhcEnabled ? "Awaiting customer decision must be set on a Red or Amber row before sending." : "Send interactive VHC to customer"}>
+        {sendingVhc ? "Sending..." : "Send"}
+      </button>
       {sendVhcMessage ?
     <span
       style={{
@@ -8882,7 +8870,7 @@ function VHCTab({
         fontWeight: 600,
         color: sendVhcMessage === "VHC sent" ? "var(--success)" : "var(--danger)"
       }}>
-      
+
           {sendVhcMessage}
         </span> :
     null}
@@ -9040,7 +9028,7 @@ function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
       <div style={{
         padding: "28px",
         borderRadius: "var(--radius-sm)",
-        border: "1px dashed var(--danger-surface)",
+        border: "none",
         backgroundColor: "var(--danger-surface)",
         textAlign: "center"
       }}>
@@ -9765,7 +9753,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
     color: "var(--info-dark)",
     fontWeight: 600,
     fontSize: "0.85rem",
-    border: "1px solid var(--info)", // subtle border to match button appearance
+    border: "none",
     lineHeight: 1.4
   };
 
@@ -9790,7 +9778,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
       <div
         style={{
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--danger)",
+          border: "none",
           backgroundColor: "var(--danger-surface)",
           padding: "12px 14px",
           color: "var(--danger-dark)",
@@ -9805,7 +9793,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
       <div
         style={{
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--warning)",
+          border: "none",
           backgroundColor: "var(--warning-surface)",
           padding: "12px 14px",
           color: "var(--warning-dark)",
@@ -9820,7 +9808,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
       <div
         style={{
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--danger)",
+          border: "none",
           backgroundColor: "var(--danger-surface)",
           padding: "12px 14px",
           color: "var(--danger-dark)",
@@ -9835,7 +9823,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
       <div
         style={{
           borderRadius: "var(--radius-sm)",
-          border: "1px solid var(--success)",
+          border: "none",
           backgroundColor: "var(--success-surface)",
           padding: "12px 14px",
           color: "var(--success-dark)",
@@ -9998,7 +9986,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               disabled={submitting}
               style={{
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--info)",
+                border: "none",
                 backgroundColor: "transparent",
                 color: "var(--info)",
                 padding: "12px 20px",
@@ -10032,7 +10020,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                   borderRadius: "var(--radius-xs)",
                   backgroundColor: "var(--warning-surface)",
                   color: "var(--warning)",
-                  border: "1px solid var(--warning)"
+                  border: "none"
                 }}>
                 
                   {techAbsences.length} off
@@ -10045,7 +10033,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 ...infoPillStyle,
                 backgroundColor: "var(--success-surface)",
                 color: "var(--success-dark)",
-                border: "1px solid var(--success)" // match success theme border
+                border: "none"
               }}>
               
                 Job #{normalizedJobNumber}
@@ -10425,7 +10413,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
             style={{
               padding: "10px 18px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--info)",
+              border: "none",
               backgroundColor: "var(--surface)",
               color: "var(--text-primary)",
               fontWeight: "600",
@@ -10473,8 +10461,8 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               onClick={handleOpenLinkedJob}
               style={{
                 padding: "8px 14px",
-                borderRadius: "var(--control-radius)",
-                border: "1px solid var(--info)",
+              borderRadius: "var(--control-radius)",
+                border: "none",
                 backgroundColor: "var(--surface)",
                 color: "var(--text-primary)",
                 cursor: "pointer",
@@ -10771,6 +10759,38 @@ function isVideoMime(mime = "") {
   return /^video\//i.test(mime);
 }
 
+function isImageDocument(doc = {}) {
+  const type = doc.type || doc.file_type || "";
+  const name = doc.name || doc.file_name || "";
+  return isImageMime(type) || /\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(name);
+}
+
+function isVideoDocument(doc = {}) {
+  const type = doc.type || doc.file_type || "";
+  const name = doc.name || doc.file_name || "";
+  return isVideoMime(type) || /\.(mp4|mov|avi|mkv|webm|m4v)$/i.test(name);
+}
+
+function getPreviewHeading(doc = {}) {
+  if (isImageDocument(doc)) return "Photo preview";
+  if (isVideoDocument(doc)) return "Video preview";
+  return "Document preview";
+}
+
+const previewHeaderButtonStyle = {
+  padding: "6px 14px",
+  border: "1px solid rgba(var(--primary-rgb), 0.42)",
+  borderRadius: "var(--input-radius)",
+  backgroundColor: "rgba(var(--primary-rgb), 0.5)",
+  color: "var(--text-inverse)",
+  fontSize: "13px",
+  fontWeight: 600,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  backdropFilter: "blur(12px)",
+  WebkitBackdropFilter: "blur(12px)"
+};
+
 function DocumentsTab({
   documents = [],
   canDelete,
@@ -10807,13 +10827,6 @@ function DocumentsTab({
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return "";
     return parsed.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-  };
-
-  const handlePreview = (doc) => {
-    const url = doc.url || doc.file_url || "";
-    if (!url) return;
-    const target = url.startsWith("http") ? url : `${window.location.origin}${url}`;
-    window.open(target, "_blank", "noopener,noreferrer");
   };
 
   const handleValetPhotoUpload = useCallback(async () => {
@@ -10861,6 +10874,7 @@ function DocumentsTab({
               backgroundColor: "var(--surface)",
               borderRadius: "var(--radius-xl)",
               overflow: "hidden",
+              position: "relative",
               display: "flex",
               flexDirection: "column",
               maxWidth: "min(92vw, 1000px)",
@@ -10874,8 +10888,15 @@ function DocumentsTab({
               style={{
                 display: "flex", alignItems: "center", gap: "10px",
                 padding: "16px 20px",
-                borderBottom: "1px solid var(--surface-light)",
-                flexShrink: 0
+                borderBottom: "1px solid rgba(var(--surface-rgb), 0.28)",
+                backgroundColor: "rgba(var(--background-rgb), 0.9)",
+                backdropFilter: "blur(18px)",
+                WebkitBackdropFilter: "blur(18px)",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 2
               }}>
               
               {isRenamingPreview ?
@@ -10901,7 +10922,9 @@ function DocumentsTab({
                     border: "1px solid var(--primary)",
                     fontSize: "14px", fontWeight: 600,
                     color: "var(--text-primary)",
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "rgba(var(--surface-rgb), 0.78)",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
                     outline: "none"
                   }} />
                 
@@ -10915,24 +10938,14 @@ function DocumentsTab({
                     }
                     setIsRenamingPreview(false);
                   }}
-                  style={{
-                    padding: "6px 14px", border: "none",
-                    borderRadius: "var(--input-radius)",
-                    backgroundColor: "var(--primary)", color: "var(--text-inverse)",
-                    fontSize: "13px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap"
-                  }}>
+                  style={previewHeaderButtonStyle}>
                   
                     Save
                   </button>
                   <button
                   type="button"
                   onClick={() => setIsRenamingPreview(false)}
-                  style={{
-                    padding: "6px 10px", border: "none",
-                    borderRadius: "var(--input-radius)",
-                    backgroundColor: "var(--surface-light)", color: "var(--text-secondary)",
-                    fontSize: "13px", fontWeight: 600, cursor: "pointer"
-                  }}>
+                  style={previewHeaderButtonStyle}>
                   
                     Cancel
                   </button>
@@ -10940,18 +10953,13 @@ function DocumentsTab({
 
               <>
                   <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
-                    Document Preview
+                    {getPreviewHeading(previewDoc)}
                   </span>
                   {typeof onReplaceDocument === "function" && (isImageMime(previewDoc.type || previewDoc.file_type || "") || isVideoMime(previewDoc.type || previewDoc.file_type || "")) &&
                 <button
                   type="button"
                   onClick={() => {setEditingDoc(previewDoc);setPreviewDoc(null);}}
-                  style={{
-                    padding: "6px 14px", border: "1px solid var(--surface-light)",
-                    borderRadius: "var(--input-radius)",
-                    backgroundColor: "var(--surface)", color: "var(--text-primary)",
-                    fontSize: "13px", fontWeight: 600, cursor: "pointer"
-                  }}>
+                  style={previewHeaderButtonStyle}>
                   
                       Edit
                     </button>
@@ -10964,12 +10972,7 @@ function DocumentsTab({
                     setPreviewRenameValue(currentName);
                     setIsRenamingPreview(true);
                   }}
-                  style={{
-                    padding: "6px 14px", border: "1px solid var(--surface-light)",
-                    borderRadius: "var(--input-radius)",
-                    backgroundColor: "var(--surface)", color: "var(--text-primary)",
-                    fontSize: "13px", fontWeight: 600, cursor: "pointer"
-                  }}>
+                  style={previewHeaderButtonStyle}>
                   
                       Rename
                     </button>
@@ -10983,10 +10986,12 @@ function DocumentsTab({
                   width: "32px", height: "32px",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   border: "none", borderRadius: "var(--radius-xs)",
-                  backgroundColor: "var(--surface-light)",
-                  color: "var(--text-primary)",
+                  backgroundColor: "rgba(var(--primary-rgb), 0.5)",
+                  color: "var(--text-inverse)",
                   fontSize: "18px", lineHeight: 1,
-                  cursor: "pointer", fontWeight: 400, flexShrink: 0
+                  cursor: "pointer", fontWeight: 400, flexShrink: 0,
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)"
                 }}
                 aria-label="Close preview">
                 
@@ -11003,14 +11008,20 @@ function DocumentsTab({
                 minHeight: "300px"
               }}>
               
-              {isImageMime(previewDoc.type || previewDoc.file_type || "") ?
+              {isImageDocument(previewDoc) ?
               <img
                 src={previewDoc.url || previewDoc.file_url || ""}
                 alt="Document preview"
                 style={{
-                  maxWidth: "100%", maxHeight: "80vh",
+                  maxWidth: "100%", maxHeight: "90vh",
                   objectFit: "contain", display: "block"
                 }} /> :
+              isVideoDocument(previewDoc) ?
+              <video
+                src={previewDoc.url || previewDoc.file_url || ""}
+                controls
+                title="Video preview"
+                style={{ width: "100%", maxHeight: "90vh", display: "block", backgroundColor: "var(--surface-dark, #111)" }} /> :
 
 
               <iframe
@@ -11143,7 +11154,7 @@ function DocumentsTab({
                 {/* Thumbnail / type icon */}
                 <button
                 type="button"
-                onClick={() => handlePreview(doc)}
+                onClick={() => docUrl && setPreviewDoc(doc)}
                 title={`Open ${docName}`}
                 style={{
                   display: "block",

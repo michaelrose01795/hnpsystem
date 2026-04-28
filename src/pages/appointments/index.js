@@ -187,12 +187,12 @@ const CALENDAR_SEVERITY_STYLES = {
   amber: {
     backgroundColor: "var(--warning-surface)",
     textColor: "var(--warning)",
-    borderColor: "var(--warning)"
+    borderColor: "transparent"
   },
   red: {
     backgroundColor: "var(--danger-surface)",
     textColor: "var(--danger)",
-    borderColor: "var(--danger)"
+    borderColor: "transparent"
   }
 };
 
@@ -200,12 +200,12 @@ const SATURDAY_SEVERITY_STYLES = {
   amber: {
     backgroundColor: "var(--warning-surface)",
     textColor: "var(--warning)",
-    borderColor: "var(--warning)"
+    borderColor: "transparent"
   },
   red: {
     backgroundColor: "var(--danger-dark)",
     textColor: "var(--surface)",
-    borderColor: "var(--danger)"
+    borderColor: "transparent"
   }
 };
 
@@ -894,13 +894,21 @@ export default function Appointments() {
       return;
     }
 
-    const confirmed = await confirm(
-      `Check in customer?\n\n` +
-      `Job: ${job.jobNumber || job.id}\n` +
-      `Customer: ${job.customer || "N/A"}\n` +
-      `Vehicle: ${job.reg || "N/A"}\n` +
-      `Appointment: ${job.appointment?.time || "N/A"}`
-    );
+    // Structured payload renders the modern themed-tile layout in
+    // ConfirmationDialog. Falls back to the plain message if a future
+    // ConfirmationDialog drops the details prop.
+    const confirmed = await confirm({
+      title: null, // Suppress the eyebrow — the prompt is enough on its own.
+      message: "Check in this customer?",
+      details: [
+        { label: "Job", value: job.jobNumber || job.id || "—", tone: "info" },
+        { label: "Customer", value: job.customer || "N/A", tone: "success" },
+        { label: "Vehicle", value: job.reg || "N/A", tone: "warning" },
+        { label: "Appointment", value: job.appointment?.time || "N/A", tone: "accent" },
+      ],
+      confirmLabel: "Check In",
+      cancelLabel: "Cancel",
+    });
 
     if (!confirmed) return;
 

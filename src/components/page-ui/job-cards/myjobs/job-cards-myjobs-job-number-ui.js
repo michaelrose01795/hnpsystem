@@ -273,7 +273,7 @@ export default function TechJobDetailPageUi(props) {
       padding: "12px 14px",
       borderRadius: "var(--radius-xs)",
       backgroundColor: "var(--warning-surface)",
-      border: "1px solid var(--warning)",
+      border: "none",
       color: "var(--warning-dark)",
       marginBottom: "12px"
     }}>
@@ -525,7 +525,7 @@ export default function TechJobDetailPageUi(props) {
                           gap: "4px",
                           alignItems: "flex-start",
                           backgroundColor: "var(--success-surface)",
-                          border: "1px solid var(--success)",
+                          border: "none",
                           borderRadius: "var(--radius-xs)",
                           padding: "10px 14px"
                         }}>
@@ -1323,7 +1323,7 @@ export default function TechJobDetailPageUi(props) {
               <DevLayoutSection as="div" sectionKey="myjob-parts-authorised" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" style={{
             backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--success)",
+            border: "none",
             padding: "20px",
             display: "flex",
             flexDirection: "column",
@@ -1386,7 +1386,7 @@ export default function TechJobDetailPageUi(props) {
                 const isComplete = row.Complete === true;
                 return <div key={row.vhc_id} style={{
                   padding: "14px 16px",
-                  border: "1px solid var(--success)",
+                  border: "none",
                   borderLeft: "4px solid var(--success)",
                   borderRadius: "var(--control-radius-xs)",
                   backgroundColor: "var(--success-surface)",
@@ -1452,7 +1452,7 @@ export default function TechJobDetailPageUi(props) {
                         fontWeight: "600",
                         backgroundColor: isComplete ? "var(--info-surface)" : "var(--success-surface)",
                         color: isComplete ? "var(--info)" : "var(--success-dark)",
-                        border: `1px solid ${isComplete ? "var(--info)" : "var(--success)"}`
+                        border: "none"
                       }}>
                                 {isComplete ? "Complete" : "Authorised"}
                               </span>
@@ -1525,7 +1525,7 @@ export default function TechJobDetailPageUi(props) {
                   <textarea value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note about the job..." style={{
               width: "100%",
               padding: "12px 14px",
-              border: "1px solid var(--danger)",
+              border: "none",
               borderRadius: "var(--control-radius-xs)",
               resize: "vertical",
               minHeight: "110px",
@@ -1542,7 +1542,7 @@ export default function TechJobDetailPageUi(props) {
                 padding: "10px 18px",
                 backgroundColor: "var(--surface)",
                 color: "var(--info)",
-                border: "1px solid var(--info)",
+                border: "none",
                 borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontSize: "14px",
@@ -1554,7 +1554,7 @@ export default function TechJobDetailPageUi(props) {
                 padding: "10px 18px",
                 backgroundColor: notesSubmitting ? "var(--border)" : "var(--info)",
                 color: "white",
-                border: "1px solid var(--info-dark)",
+                border: "none",
                 borderRadius: "var(--radius-xs)",
                 cursor: notesSubmitting ? "not-allowed" : "pointer",
                 fontSize: "14px",
