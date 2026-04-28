@@ -497,6 +497,26 @@ const COLOUR_GROUPS = [
 
 }];
 
+// Distinct background values used as card surfaces across pages.
+// Catalogued from a codebase sweep — extend when a new card background appears.
+const CARD_BACKGROUND_LAYERS = [
+{ label: "--surfaceMain", value: "var(--surfaceMain)", usage: "Page card / section card base (.app-page-card, .app-section-card)" },
+{ label: "--surface", value: "var(--surface)", usage: "Neutral card surfaces (job card sections, clocking history)" },
+{ label: "--surface-light", value: "var(--surface-light)", usage: "Secondary / hover card backgrounds (workshop dashboard rows, clocking stats)" },
+{ label: "--accent-surface", value: "var(--accent-surface)", usage: "Subtle accent rows (newsfeed updates, profile work summary)" },
+{ label: "--accentSurfaceSubtle", value: "var(--accentSurfaceSubtle)", usage: "Raw accent subtle token (diagnostic cards, confirmation dialog)" },
+{ label: "--page-card-bg-alt", value: "var(--page-card-bg-alt)", usage: "Alt page card surface (job card focus rows, appointments list)" },
+{ label: "--layer-section-level-1", value: "var(--layer-section-level-1)", usage: "Nested section panel level 1 (clocking history)" },
+{ label: "--layer-section-level-2", value: "var(--layer-section-level-2)", usage: "Nested section panel level 2 (clocking history)" },
+{ label: "--control-bg", value: "var(--control-bg)", usage: "Interactive card surfaces (.vhc-card, notes widget)" },
+{ label: "--info-surface", value: "var(--info-surface)", usage: "Info status cards (appointments, job archive)" },
+{ label: "--success-surface", value: "var(--success-surface)", usage: "Success status cards (appointments, clocking history)" },
+{ label: "--warning-surface", value: "var(--warning-surface)", usage: "Warning status cards (appointments, job card modal)" },
+{ label: "--danger-surface", value: "var(--danger-surface)", usage: "Danger status cards (appointments, workshop dashboard)" },
+{ label: "rgba(--primary-rgb, 0.08)", value: "rgba(var(--primary-rgb), 0.08)", usage: "Primary tinted focus rows (workshop manager dashboard focus row)" },
+{ label: "--accent-purple-surface", value: "var(--accent-purple-surface)", usage: "Purple accent action cards (job number page)" }];
+
+
 
 // Registry of where each showcased item is used in the codebase.
 // Each entry: { label, file, route? }. A route opens via router.push.
@@ -1969,6 +1989,55 @@ function GlobalUiShowcase() {
             </div>
           </div>
         )}
+        <div style={{ marginBottom: "14px" }}>
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "var(--text-secondary)",
+              marginBottom: "6px",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em"
+            }}>
+            Layers — Card Backgrounds
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: "8px"
+            }}>
+            {CARD_BACKGROUND_LAYERS.map((layer) =>
+            <div
+              key={layer.label}
+              title={`${layer.value} — ${layer.usage}`}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+                minWidth: 0
+              }}>
+                <div
+                style={{
+                  height: "36px",
+                  borderRadius: "var(--radius-xs)",
+                  background: layer.value,
+                  border: "1px solid var(--accentBorder)"
+                }} />
+                <code
+                style={{
+                  fontSize: "10px",
+                  color: "var(--text-secondary)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}>
+                  {layer.label}
+                </code>
+              </div>
+            )}
+          </div>
+        </div>
       </ShowcaseSection>
       }
 

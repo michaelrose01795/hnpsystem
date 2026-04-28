@@ -810,9 +810,9 @@ function ClockingOverviewTab({ onSummaryChange }) {
         parentKey="clocking-overview-shell"
         sectionType="section-shell"
         shell
-        backgroundToken="layer-section-level-2"
+        backgroundToken="accent"
         style={{
-          background: "var(--layer-section-level-2)",
+          background: "rgba(var(--primary-rgb), 0.08)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",

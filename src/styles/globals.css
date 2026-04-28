@@ -726,6 +726,37 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 }
 
 /* ========================================================= */
+/* === Global: hide front-end scrollbar on tables & tabs === */
+/* ========================================================= */
+/* Scroll still works (wheel, trackpad, keyboard); only the visual track and */
+/* thumb are hidden. Tables and tab sections stay hidden even when the       */
+/* global show-on-scroll handler in _app.js adds `.scrollbar-visible`. To    */
+/* explicitly opt a tab rail back into showing a bar, use the dedicated      */
+/* `.tabs-scroll-container-visible` class.                                   */
+:where(
+  .app-table-shell-scroll,
+  [data-app-table-shell-scroll],
+  .tabs-scroll-container,
+  [data-dev-section-type="tab-row"]
+):not(.tabs-scroll-container-visible),
+*:has(> table):not(.tabs-scroll-container-visible) {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+:where(
+  .app-table-shell-scroll,
+  [data-app-table-shell-scroll],
+  .tabs-scroll-container,
+  [data-dev-section-type="tab-row"]
+):not(.tabs-scroll-container-visible)::-webkit-scrollbar,
+*:has(> table):not(.tabs-scroll-container-visible)::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+/* ========================================================= */
 /* === Custom Checkbox Styles === */
 /* ========================================================= */
 

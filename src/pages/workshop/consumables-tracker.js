@@ -12,38 +12,16 @@ import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+import { PageShell, ContentWidth, SectionShell } from "@/components/ui";
 import ConsumablesTrackerPageUi from "@/components/page-ui/workshop/workshop-consumables-tracker-ui"; // Extracted presentation layer.
 
-const containerStyle = {
-  flex: 1,
-  height: "100%",
-  display: "flex",
-  flexDirection: "column",
-  padding: "8px 16px",
-  overflow: "hidden"
-};
+// Page layout follows the canonical PageShell > ContentWidth > app-section-card
+// hierarchy from globals.css (via @/components/ui), so no local layout shells.
 
-const workspaceShellStyle = {
-  flex: 1,
-  display: "flex",
-  flexDirection: "column",
-  minHeight: 0,
-  overflow: "hidden"
-};
-
-const mainColumnStyle = {
-  flex: 3,
-  display: "flex",
-  flexDirection: "column",
-  gap: "20px",
-  minHeight: 0,
-  minWidth: 0,
-  overflowY: "auto",
-  paddingRight: "8px"
-};
-
+// Cards use the theme accent surface so they are visibly themed against the
+// page card; the token follows the active theme (light/dark) automatically.
 const cardStyle = {
-  backgroundColor: "var(--section-card-bg)",
+  backgroundColor: "var(--accentSurface)",
   borderRadius: "var(--section-card-radius)",
   padding: "var(--section-card-padding)",
   border: "var(--section-card-border)"
@@ -1064,7 +1042,7 @@ function ConsumablesTrackerPage() {
 
   }
 
-  return <ConsumablesTrackerPageUi view="section2" accentDashedBorder={accentDashedBorder} budgetInput={budgetInput} budgetSaveError={budgetSaveError} budgetSaveMessage={budgetSaveMessage} budgetSaving={budgetSaving} CalendarField={CalendarField} canAdvanceToNextMonth={canAdvanceToNextMonth} cardStyle={cardStyle} closeHistoryModal={closeHistoryModal} closeOrderModal={closeOrderModal} consumables={consumables} consumablesError={consumablesError} containerStyle={containerStyle} dbUserId={dbUserId} duplicateModalStyle={duplicateModalStyle} duplicateOverlayStyle={duplicateOverlayStyle} fetchTechRequests={fetchTechRequests} filteredConsumables={filteredConsumables} financialError={financialError} financialLoading={financialLoading} formatCurrency={formatCurrency} formatDate={formatDate} formattedBudgetUpdatedAt={formattedBudgetUpdatedAt} getConsumableStatus={getConsumableStatus} handleBudgetInputChange={handleBudgetInputChange} handleBudgetSave={handleBudgetSave} handleEditedOrder={handleEditedOrder} handleMonthChange={handleMonthChange} handleOrderFormChange={handleOrderFormChange} handleRequestOrder={handleRequestOrder} handleSameDetails={handleSameDetails} highlightRowBackground={highlightRowBackground} historyModalConsumable={historyModalConsumable} historyModalStyle={historyModalStyle} InlineLoading={InlineLoading} isWorkshopManager={isWorkshopManager} loadingConsumables={loadingConsumables} logsError={logsError} logsLoading={logsLoading} logsSummary={logsSummary} mainColumnStyle={mainColumnStyle} monthLabel={monthLabel} monthlyLogs={monthlyLogs} mutedTextColor={mutedTextColor} openHistoryModal={openHistoryModal} openOrderModal={openOrderModal} orderButtonStyle={orderButtonStyle} orderForm={orderForm} orderHistoryHeaderStyle={orderHistoryHeaderStyle} orderingRequestId={orderingRequestId} orderModalButtonStyle={orderModalButtonStyle} orderModalCloseButtonStyle={orderModalCloseButtonStyle} orderModalConsumable={orderModalConsumable} orderModalError={orderModalError} orderModalFormGroupStyle={orderModalFormGroupStyle} orderModalInputStyle={orderModalInputStyle} orderModalLoading={orderModalLoading} orderModalOverlayStyle={orderModalOverlayStyle} orderModalSecondaryButtonStyle={orderModalSecondaryButtonStyle} orderModalStyle={orderModalStyle} potentialDuplicates={potentialDuplicates} previewLogs={previewLogs} quietLabelColor={quietLabelColor} requestsError={requestsError} requestsLoading={requestsLoading} scheduledTableBodyStyle={scheduledTableBodyStyle} SearchBar={SearchBar} searchQuery={searchQuery} sectionTitleStyle={sectionTitleStyle} setSearchQuery={setSearchQuery} setShowDuplicateModal={setShowDuplicateModal} setShowEditForm={setShowEditForm} setShowStockCheck={setShowStockCheck} showDuplicateModal={showDuplicateModal} showEditForm={showEditForm} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} stockCheckButtonStyle={stockCheckButtonStyle} StockCheckPopup={StockCheckPopup} tableHeaderColor={tableHeaderColor} techRequests={techRequests} themedBudgetInputStyle={themedBudgetInputStyle} themedOrderHistoryContainerStyle={themedOrderHistoryContainerStyle} themedOrderHistoryRowBorder={themedOrderHistoryRowBorder} themedOrderHistoryRowStyle={themedOrderHistoryRowStyle} toneToStyles={toneToStyles} totals={totals} workspaceShellStyle={workspaceShellStyle} />;
+  return <ConsumablesTrackerPageUi view="section2" PageShell={PageShell} ContentWidth={ContentWidth} SectionShell={SectionShell} accentDashedBorder={accentDashedBorder} budgetInput={budgetInput} budgetSaveError={budgetSaveError} budgetSaveMessage={budgetSaveMessage} budgetSaving={budgetSaving} CalendarField={CalendarField} canAdvanceToNextMonth={canAdvanceToNextMonth} cardStyle={cardStyle} closeHistoryModal={closeHistoryModal} closeOrderModal={closeOrderModal} consumables={consumables} consumablesError={consumablesError} dbUserId={dbUserId} duplicateModalStyle={duplicateModalStyle} duplicateOverlayStyle={duplicateOverlayStyle} fetchTechRequests={fetchTechRequests} filteredConsumables={filteredConsumables} financialError={financialError} financialLoading={financialLoading} formatCurrency={formatCurrency} formatDate={formatDate} formattedBudgetUpdatedAt={formattedBudgetUpdatedAt} getConsumableStatus={getConsumableStatus} handleBudgetInputChange={handleBudgetInputChange} handleBudgetSave={handleBudgetSave} handleEditedOrder={handleEditedOrder} handleMonthChange={handleMonthChange} handleOrderFormChange={handleOrderFormChange} handleRequestOrder={handleRequestOrder} handleSameDetails={handleSameDetails} highlightRowBackground={highlightRowBackground} historyModalConsumable={historyModalConsumable} historyModalStyle={historyModalStyle} InlineLoading={InlineLoading} isWorkshopManager={isWorkshopManager} loadingConsumables={loadingConsumables} logsError={logsError} logsLoading={logsLoading} logsSummary={logsSummary} monthLabel={monthLabel} monthlyLogs={monthlyLogs} mutedTextColor={mutedTextColor} openHistoryModal={openHistoryModal} openOrderModal={openOrderModal} orderButtonStyle={orderButtonStyle} orderForm={orderForm} orderHistoryHeaderStyle={orderHistoryHeaderStyle} orderingRequestId={orderingRequestId} orderModalButtonStyle={orderModalButtonStyle} orderModalCloseButtonStyle={orderModalCloseButtonStyle} orderModalConsumable={orderModalConsumable} orderModalError={orderModalError} orderModalFormGroupStyle={orderModalFormGroupStyle} orderModalInputStyle={orderModalInputStyle} orderModalLoading={orderModalLoading} orderModalOverlayStyle={orderModalOverlayStyle} orderModalSecondaryButtonStyle={orderModalSecondaryButtonStyle} orderModalStyle={orderModalStyle} potentialDuplicates={potentialDuplicates} previewLogs={previewLogs} quietLabelColor={quietLabelColor} requestsError={requestsError} requestsLoading={requestsLoading} scheduledTableBodyStyle={scheduledTableBodyStyle} SearchBar={SearchBar} searchQuery={searchQuery} sectionTitleStyle={sectionTitleStyle} setSearchQuery={setSearchQuery} setShowDuplicateModal={setShowDuplicateModal} setShowEditForm={setShowEditForm} setShowStockCheck={setShowStockCheck} showDuplicateModal={showDuplicateModal} showEditForm={showEditForm} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} stockCheckButtonStyle={stockCheckButtonStyle} StockCheckPopup={StockCheckPopup} tableHeaderColor={tableHeaderColor} techRequests={techRequests} themedBudgetInputStyle={themedBudgetInputStyle} themedOrderHistoryContainerStyle={themedOrderHistoryContainerStyle} themedOrderHistoryRowBorder={themedOrderHistoryRowBorder} themedOrderHistoryRowStyle={themedOrderHistoryRowStyle} toneToStyles={toneToStyles} totals={totals} />;
 
 
 

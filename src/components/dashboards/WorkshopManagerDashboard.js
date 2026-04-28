@@ -335,10 +335,16 @@ export default function WorkshopManagerDashboard() {
         sectionKey="dashboard-workshop-metrics-grid"
         parentKey="dashboard-workshop-shell"
         sectionType="grid-card"
+        backgroundToken="accent"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "16px",
+          background: "rgba(var(--primary-rgb), 0.08)",
+          borderRadius: "var(--radius-md)",
+          padding: "24px",
+          border: "none",
+          boxShadow: "none",
         }}
       >
         {dashboardLoading ? (
@@ -408,11 +414,17 @@ export default function WorkshopManagerDashboard() {
         sectionKey="dashboard-workshop-focus-row"
         parentKey="dashboard-workshop-shell"
         sectionType="grid-card"
+        backgroundToken="accent"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: "18px",
           alignItems: "stretch",
+          background: "rgba(var(--primary-rgb), 0.08)",
+          borderRadius: "var(--radius-md)",
+          padding: "24px",
+          border: "none",
+          boxShadow: "none",
         }}
       >
         <DevLayoutSection sectionKey="dashboard-workshop-technician-focus" parentKey="dashboard-workshop-focus-row" sectionType="content-card">
@@ -500,7 +512,15 @@ export default function WorkshopManagerDashboard() {
         parentKey="dashboard-workshop-shell"
         sectionType="section-shell"
         shell
-        style={{ marginBottom: "32px" }}
+        backgroundToken="accent"
+        style={{
+          marginBottom: "32px",
+          background: "rgba(var(--primary-rgb), 0.08)",
+          borderRadius: "var(--radius-md)",
+          padding: "24px",
+          border: "none",
+          boxShadow: "none",
+        }}
       >
         <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px" }}>
           Clocking Overview
@@ -541,7 +561,15 @@ export default function WorkshopManagerDashboard() {
         parentKey="dashboard-workshop-shell"
         sectionType="section-shell"
         shell
-        style={{ marginBottom: "32px" }}
+        backgroundToken="accent"
+        style={{
+          marginBottom: "32px",
+          background: "rgba(var(--primary-rgb), 0.08)",
+          borderRadius: "var(--radius-md)",
+          padding: "24px",
+          border: "none",
+          boxShadow: "none",
+        }}
       >
         <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px" }}>
           Consumables
@@ -588,6 +616,14 @@ export default function WorkshopManagerDashboard() {
         parentKey="dashboard-workshop-shell"
         sectionType="section-shell"
         shell
+        backgroundToken="accent"
+        style={{
+          background: "rgba(var(--primary-rgb), 0.08)",
+          borderRadius: "var(--radius-md)",
+          padding: "24px",
+          border: "none",
+          boxShadow: "none",
+        }}
       >
         <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px" }}>
           Important Notices

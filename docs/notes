@@ -1,4 +1,6 @@
-showcase updates
+
+
+
 
 Presentation!!!!!!!!!
 
@@ -12,7 +14,8 @@ what is the height of the tab buttons? 32px
 appoinement table
 
 
-SET 10px GAP BETWEEN CARDS AND CONTENTS WITHIN CARDS AS A GLOBAL.CSS SETTING
+
+
 
 lets have 10px gap around all the contents within 
 
@@ -30,13 +33,12 @@ between /profile :: 1.2.2.1.1.1 (profile-tab-toolbar) to /profile :: 1.2.2.1.1.2
 
 
 
-
-have it so "/dashboard :: 1.2.2.1.1.1 (dashboard-workshop-metrics-grid)" "/dashboard :: 1.2.2.1.1.2 (dashboard-workshop-focus-row)" "/dashboard :: 1.2.1.1.1.3 (dashboard-workshop-clocking-overview)" "/dashboard :: 1.2.1.1.1.4 (dashboard-workshop-consumables)" "/dashboard :: 1.2.1.1.1.4 (dashboard-workshop-important-notices)" is all theme colour background. also /clocking :: 1.2.1.1.1.1.2.1 (clocking-overview-stats), /clocking :: 1.2.1.1.1.1.2.2 (clocking-overview-technician-status), 
-
+CHECK CONSUMABLES TRACKER
 
 
-Improve "/workshop/consumables-tracker :: 1.2.1.1 (app-layout-page-card)" dev overlay within this seciton. have it so this page follows the global.css setting everywhere and the layout and design is also imrpoved. use a 10px between cards etc
 
+
+Deep dive the repo and fix both CI failures without changing app behaviour: first fix the GitHub Pages/Jekyll failure by opening docs/ui-system.md, finding line 83 and any other raw {{ / }} examples that Jekyll Liquid is trying to parse, then escape them safely using {% raw %} / {% endraw %} or code-fence-safe formatting so the markdown still reads correctly and actions/jekyll-build-pages@v1 passes; second fix the Playwright CI smoke test failures by auditing .github/workflows/playwright.yml, Supabase client initialisation, dev-login/test-auth paths, and the smoke specs, then remove unsafe placeholder Supabase fallbacks or fail fast with a clear missing-secret message, and add a proper CI-safe test mode so smoke tests do not depend on a live Supabase database unless real secrets are present; preserve production behaviour, auth roles, database logic, UI, and route behaviour, only adjust CI/test handling and docs escaping, then run/verify the relevant checks locally where possible: Jekyll/docs build if available, npm run lint, npm test/Vitest if available, and npx playwright test --project=auth-setup --project=smoke, then report exactly which files changed and why.
 
 
 TODO

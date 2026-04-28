@@ -330,7 +330,7 @@
     color 0.18s ease,
     box-shadow 0.18s ease;
   --layout-card-padding: 24px;
-  --layout-card-gap: 20px;
+  --layout-card-gap: 10px;
   --layout-stack-gap: 20px;
 
   /* ── Spacing scale ── */

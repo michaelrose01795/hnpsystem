@@ -3,9 +3,12 @@
 export default function ConsumablesTrackerPageUi(props) {
   const {
     CalendarField,
+    ContentWidth,
     InlineLoading,
     Link,
+    PageShell,
     SearchBar,
+    SectionShell,
     StockCheckPopup,
     accentDashedBorder,
     budgetInput,
@@ -18,7 +21,6 @@ export default function ConsumablesTrackerPageUi(props) {
     closeOrderModal,
     consumables,
     consumablesError,
-    containerStyle,
     dbUserId,
     duplicateModalStyle,
     duplicateOverlayStyle,
@@ -45,7 +47,6 @@ export default function ConsumablesTrackerPageUi(props) {
     logsError,
     logsLoading,
     logsSummary,
-    mainColumnStyle,
     monthLabel,
     monthlyLogs,
     mutedTextColor,
@@ -90,7 +91,6 @@ export default function ConsumablesTrackerPageUi(props) {
     themedOrderHistoryRowStyle,
     toneToStyles,
     totals,
-    workspaceShellStyle,
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
@@ -136,8 +136,8 @@ export default function ConsumablesTrackerPageUi(props) {
 
     case "section2":
       return <>
-      <div style={containerStyle}>
-        <div style={workspaceShellStyle}>
+      <PageShell sectionKey="workshop-consumables-tracker-shell">
+        <ContentWidth sectionKey="workshop-consumables-tracker-content" parentKey="workshop-consumables-tracker-shell" widthMode="content" style={{ gap: "10px" }}>
           {!orderModalConsumable && showDuplicateModal && potentialDuplicates.length > 0 && <div style={duplicateOverlayStyle}>
               <div style={duplicateModalStyle}>
                 <h3 style={{
@@ -343,16 +343,13 @@ export default function ConsumablesTrackerPageUi(props) {
                   </form>}
               </div>
             </div>}
-          <div style={mainColumnStyle}>
-            <div style={{
+            <div className="app-section-card" style={{
           ...cardStyle
         }}>
               <div style={{
-            background: "var(--layer-section-level-1)",
-            borderRadius: "var(--radius-md)",
-            border: "none",
-            padding: "14px",
-            marginBottom: "12px"
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px"
           }}>
                 <div style={{
               display: "flex",
@@ -396,7 +393,6 @@ export default function ConsumablesTrackerPageUi(props) {
                 </div>
 
                 <div style={{
-              marginTop: "20px",
               display: "flex",
               justifyContent: "space-between",
               flexWrap: "wrap",
@@ -495,7 +491,9 @@ export default function ConsumablesTrackerPageUi(props) {
               }}>{financialError}</p>}
                 </div>
               </div>
+            </div>
 
+            <div className="app-section-card" style={{ ...cardStyle }}>
               <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -512,16 +510,16 @@ export default function ConsumablesTrackerPageUi(props) {
                 </h2>
               </div>
               <div style={{
-            marginTop: "12px",
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-            gap: "12px"
+            gap: "10px"
           }}>
                 <div style={{
               ...cardStyle,
               padding: "12px",
               boxShadow: "none",
-              border: accentDashedBorder
+              backgroundColor: "var(--surface-light)",
+              border: "var(--section-card-border)"
             }}>
                   <p style={{
                 margin: 0,
@@ -538,7 +536,8 @@ export default function ConsumablesTrackerPageUi(props) {
               ...cardStyle,
               padding: "12px",
               boxShadow: "none",
-              border: accentDashedBorder
+              backgroundColor: "var(--surface-light)",
+              border: "var(--section-card-border)"
             }}>
                   <p style={{
                 margin: 0,
@@ -555,7 +554,8 @@ export default function ConsumablesTrackerPageUi(props) {
               ...cardStyle,
               padding: "12px",
               boxShadow: "none",
-              border: accentDashedBorder
+              backgroundColor: "var(--surface-light)",
+              border: "var(--section-card-border)"
             }}>
                   <p style={{
                 margin: 0,
@@ -572,7 +572,8 @@ export default function ConsumablesTrackerPageUi(props) {
               ...cardStyle,
               padding: "12px",
               boxShadow: "none",
-              border: accentDashedBorder
+              backgroundColor: "var(--surface-light)",
+              border: "var(--section-card-border)"
             }}>
                   <p style={{
                 margin: 0,
@@ -591,8 +592,7 @@ export default function ConsumablesTrackerPageUi(props) {
             color: "var(--text-primary)"
           }}>{logsError}</p>}
               <div style={{
-            overflowX: "auto",
-            marginTop: "16px"
+            overflowX: "auto"
           }}>
                 <table style={{
               width: "100%",
@@ -684,17 +684,18 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
             </div>
 
-              <div style={{
-          marginTop: "20px",
+              <div className="app-section-card" style={{ ...cardStyle }}>
+                <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "16px"
+          gap: "10px"
         }}>
                 <div style={{
             ...cardStyle,
             padding: "16px",
             boxShadow: "none",
-            border: accentDashedBorder
+            backgroundColor: "var(--surface-light)",
+            border: "var(--section-card-border)"
           }}>
                   <p style={{
               margin: 0,
@@ -715,7 +716,8 @@ export default function ConsumablesTrackerPageUi(props) {
             ...cardStyle,
             padding: "16px",
             boxShadow: "none",
-            border: accentDashedBorder
+            backgroundColor: "var(--surface-light)",
+            border: "var(--section-card-border)"
           }}>
                   <p style={{
               margin: 0,
@@ -736,7 +738,8 @@ export default function ConsumablesTrackerPageUi(props) {
             ...cardStyle,
             padding: "16px",
             boxShadow: "none",
-            border: accentDashedBorder
+            backgroundColor: "var(--surface-light)",
+            border: "var(--section-card-border)"
           }}>
                   <p style={{
               margin: 0,
@@ -754,10 +757,9 @@ export default function ConsumablesTrackerPageUi(props) {
                   </h2>
                 </div>
               </div>
+              </div>
 
-            </div>
-
-            <div style={{
+            <div className="app-section-card" style={{
         ...cardStyle
       }}>
               <div style={{
@@ -923,13 +925,12 @@ export default function ConsumablesTrackerPageUi(props) {
                 })}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div style={{
-        ...cardStyle,
-        marginTop: "20px"
+          <div className="app-section-card" style={{
+        ...cardStyle
       }}>
             <div style={{
           display: "flex",
@@ -1086,8 +1087,8 @@ export default function ConsumablesTrackerPageUi(props) {
               </table>
             </div>
           </div>
-        </div>
-      </div>
+        </ContentWidth>
+      </PageShell>
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

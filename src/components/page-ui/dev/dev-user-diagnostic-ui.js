@@ -2,6 +2,45 @@
 
 import PopupModal from "@/components/popups/popupStyleApi";
 
+const plannedFeatureGroups = [
+  {
+    title: "Workshop",
+    items: [
+      "Consumables tracker with technician request and manager approval flow, so usage stays controlled and visible.",
+      "Equipment, tools, and workshop stock tracking — oils, shared tools, and consumables logged in one place.",
+      "Key tracker and parking management so every vehicle and key is accounted for at all times.",
+      "Job card activity tracker showing every change — authorisations, parts ordered, VHC updates, status moves.",
+    ],
+  },
+  {
+    title: "Staff",
+    items: [
+      "Full user profiles covering hours worked, leave requests, payslips, staff vehicles, and part purchases.",
+      "Technician performance tracking — efficiency, time on jobs, and real output measured day to day.",
+      "Accurate clocking and activity tracking — login time, job time, and idle time captured automatically.",
+      "Fully paper-free workflow for job cards, checklists, approvals, and signatures.",
+    ],
+  },
+  {
+    title: "Management",
+    items: [
+      "Live dashboards showing targets, efficiency, clocking, and current workload across the workshop.",
+      "Global and department news feed for clear internal communication and company updates.",
+      "Messaging system with quick slash commands (/job, /part, /note) to move information without leaving the screen.",
+      "Real-time visibility of bottlenecks, approvals waiting, and where each job actually stands.",
+    ],
+  },
+  {
+    title: "System-wide",
+    items: [
+      "Fully customisable platform tailored to H&P workflows — not locked to a third-party system.",
+      "Built in-house with company-first priorities and lower long-term running costs.",
+      "Single connected platform — service, parts, HR, accounts, and management all share one source of truth.",
+      "Designed to keep growing around the way H&P operates, with no per-seat licensing surprises.",
+    ],
+  },
+];
+
 const developingSections = [
   {
     title: "Product Direction",
@@ -316,33 +355,14 @@ export default function UserDiagnosticDevPageUi(props) {
           marginBottom: "20px"
         }}>
           <div>
-            <div style={{
-              fontSize: "11px",
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--text-secondary)",
-              marginBottom: "6px"
-            }}>
-              Sales planning
-            </div>
             <h2 style={{
               margin: 0,
-              fontSize: "24px",
+              fontSize: "16px",
               lineHeight: 1.2,
               color: "var(--text-primary)"
             }}>
               Development Proposal
             </h2>
-            <p style={{
-              margin: "8px 0 0",
-              color: "var(--text-secondary)",
-              fontSize: "14px",
-              lineHeight: 1.55,
-              maxWidth: "660px"
-            }}>
-              A practical phased proposal for building H&P's internal operations platform, focused on measurable workflow improvements, controlled delivery, and a clear commercial structure.
-            </p>
           </div>
           <button type="button" onClick={onCloseDeveloping} aria-label="Close developing details" style={{
             width: "34px",
@@ -391,6 +411,50 @@ export default function UserDiagnosticDevPageUi(props) {
               {section.items.map(item => <li key={item}>{item}</li>)}
             </ul>
           </section>)}
+        </div>
+        <div style={{
+          marginTop: "20px"
+        }}>
+          <h3 style={{
+            margin: "0 0 12px",
+            fontSize: "16px",
+            color: "var(--text-primary)"
+          }}>
+            Features
+          </h3>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "14px"
+          }}>
+            {plannedFeatureGroups.map(group => <section key={group.title} style={{
+              border: "1px solid var(--accentBorder)",
+              borderRadius: "var(--radius-xs)",
+              background: "var(--surface-light)",
+              padding: "16px",
+              minWidth: 0
+            }}>
+              <h3 style={{
+                margin: "0 0 10px",
+                fontSize: "14px",
+                color: "var(--text-primary)"
+              }}>
+                {group.title}
+              </h3>
+              <ul style={{
+                margin: 0,
+                paddingLeft: "18px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                color: "var(--text-secondary)",
+                fontSize: "13px",
+                lineHeight: 1.45
+              }}>
+                {group.items.map(item => <li key={item}>{item}</li>)}
+              </ul>
+            </section>)}
+          </div>
         </div>
         <div style={{
           marginTop: "16px",
