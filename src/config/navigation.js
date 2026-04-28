@@ -309,6 +309,17 @@ export const sidebarSections = [
     ],
   },
   {
+    label: "Accounts Manager",
+    category: "departments",
+    items: [
+      {
+        label: "Payslips",
+        href: "/accounts/payslips",
+        roles: ["accounts", "accounts manager", "admin", "admin manager", "owner"],
+      },
+    ],
+  },
+  {
     label: "Account",
     category: "account",
     items: [

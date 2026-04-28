@@ -7,19 +7,6 @@ Format to edit:
 - Add `1.`, `2.`, `3.` when you want to lock the role's page order.
 - Use `[jobNumber]`, `[accountId]`, etc. for dynamic pages.
 
-## Accounts
-
-- /dashboard/accounts
-- /accounts
-- /accounts/transactions/[accountId]
-- /accounts/invoices
-- /accounts/invoices/[invoiceId]
-- /company-accounts
-- /company-accounts/[accountNumber]
-- /messages
-- /newsfeed
-- /profile
-
 ## Accounts Manager
 
 - /dashboard/accounts
@@ -30,21 +17,11 @@ Format to edit:
 - /accounts/transactions/[accountId]
 - /accounts/invoices
 - /accounts/invoices/[invoiceId]
+- /accounts/payslips
 - /accounts/reports
 - /accounts/settings
 - /company-accounts
 - /company-accounts/[accountNumber]
-- /messages
-- /newsfeed
-- /profile
-
-## Admin
-
-- /dashboard/admin
-- /admin/users
-- /admin/profiles/[user]
-- /dev/status-snapshot
-- /dev/user-diagnostic
 - /messages
 - /newsfeed
 - /profile
@@ -57,6 +34,7 @@ Format to edit:
 - /job-cards/[jobNumber]
 - /admin/users
 - /admin/profiles/[user]
+- /accounts/payslips
 - /hr/manager
 - /messages
 - /newsfeed
@@ -74,30 +52,6 @@ Format to edit:
 - /newsfeed
 - /profile
 - /tracking
-
-## Aftersales Manager
-
-- /dashboard/after-sales
-- /job-cards/waiting/nextjobs
-- /job-cards/view
-- /job-cards/[jobNumber]
-- /parts/goods-in
-- /messages
-- /newsfeed
-- /profile
-- /tracking
-
-## Buying Director
-
-- /newsfeed
-- /messages
-- /profile
-
-## Contractors
-
-- /newsfeed
-- /messages
-- /profile
 
 ## Customer
 
@@ -172,6 +126,7 @@ Format to edit:
 - /hr/manager
 - /admin/users
 - /admin/profiles/[user]
+- /accounts/payslips
 - /messages
 - /newsfeed
 - /profile
@@ -182,29 +137,6 @@ Format to edit:
 - /job-cards/myjobs
 - /job-cards/myjobs/[jobNumber]
 - /job-cards/[jobNumber]
-- /messages
-- /newsfeed
-- /profile
-
-## Parts
-
-- /dashboard/parts
-- /parts
-- /job-cards/view
-- /job-cards/[jobNumber]
-- /stock-catalogue
-- /parts/goods-in
-- /parts/goods-in/[goodsInNumber]
-- /parts/deliveries
-- /parts/deliveries/[deliveryId]
-- /messages
-- /newsfeed
-- /profile
-
-## Parts Driver
-
-- /parts/deliveries
-- /parts/deliveries/[deliveryId]
 - /messages
 - /newsfeed
 - /profile
@@ -241,39 +173,12 @@ Format to edit:
 - /newsfeed
 - /profile
 
-## Sales
-
-- /newsfeed
-- /messages
-- /profile
-
 ## Sales Director
 
 - /dashboard/managers
 - /newsfeed
 - /messages
 - /profile
-
-## Second Hand Buying
-
-- /newsfeed
-- /messages
-- /profile
-
-## Service
-
-- /dashboard/service
-- /customers
-- /customers/[customerSlug]
-- /job-cards/create
-- /job-cards/view
-- /job-cards/[jobNumber]
-- /parts/goods-in
-- /mobile/create
-- /messages
-- /newsfeed
-- /profile
-- /tracking
 
 ## Service Manager
 
@@ -308,27 +213,11 @@ Format to edit:
 - /profile
 - /tracking
 
-## Valet Sales
-
-- /dashboard/valeting
-- /valet
-- /messages
-- /newsfeed
-- /profile
-
 ## Valet Service
 
 - /dashboard/valeting
 - /valet
 - /job-cards/valet/[jobnumber]
-- /messages
-- /newsfeed
-- /profile
-
-## Vehicle Processor & Photographer
-
-- /dashboard/valeting
-- /valet
 - /messages
 - /newsfeed
 - /profile

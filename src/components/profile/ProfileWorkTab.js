@@ -24,6 +24,7 @@ import {
   buildFinanceDashboardModel,
   ensureFinanceState,
 } from "@/lib/profile/personalFinance";
+import PayslipsCard from "@/features/payslips/PayslipsCard";
 
 function formatDate(value) {
   if (!value) return "-"; // guard empty values
@@ -2353,45 +2354,16 @@ export function ProfileWorkTab({
                   </div>
               </ProfileCard>
 
-              {/* Pay Rates card — 50/50 split matching Total Hours style */}
-              {isAdminOrManager && (
-                <ProfileCard
-                  className="app-profile-accent-card"
-                  sectionKey="profile-work-kpi-pay-rates"
+              {/* Payslips card — replaces the legacy Pay Rates KPI; reuses the personal-tab PIN flow.
+                  When viewing another user's profile (admin preview), payslips are managed from
+                  /accounts/payslips instead, so we hide this card. */}
+              {!forcedUserName && !adminPreviewOverride ? (
+                <PayslipsCard
+                  sectionKey="profile-work-kpi-payslips"
                   parentKey="profile-active-tab-panel"
-                  backgroundToken="accent-surface"
-                  style={{
-                    ...profileSurfaceCardStyle,
-                    padding: 0,
-                    gap: 0,
-                    overflow: "hidden",
-                    minHeight: "112px",
-                  }}
-                  headerStyle={{
-                    padding: "10px 14px 6px",
-                  }}
-                  title="Pay Rates"
-                >
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    flex: 1,
-                  }}>
-                    <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Hourly Rate</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #43a047)" }}>
-                        {formatCurrency(profile.hourlyRate ?? 0)}
-                      </div>
-                    </div>
-                    <div style={{ padding: "6px 8px", textAlign: "center" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime Rate</div>
-                      <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
-                        {formatCurrency(profile.overtimeRate ?? 0)}
-                      </div>
-                    </div>
-                  </div>
-                </ProfileCard>
-              )}
+                  profile={profile}
+                />
+              ) : null}
               <KpiCard
                 sectionKey="profile-work-kpi-estimated-pay"
                 parentKey="profile-active-tab-panel"
