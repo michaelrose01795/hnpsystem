@@ -8,6 +8,8 @@ export function TabGroup({
   className = "",
   layout = "wrap",
   stretch = false,
+  devSectionKey = "",
+  devSectionParent = "",
 }) {
   const wrapperClassName = [
     "tab-api",
@@ -19,10 +21,24 @@ export function TabGroup({
     .join(" ");
 
   return (
-    <div className={wrapperClassName} role="tablist" aria-label={ariaLabel}>
+    <div
+      className={wrapperClassName}
+      role="tablist"
+      aria-label={ariaLabel}
+      {...(devSectionKey
+        ? {
+            "data-dev-section": "1",
+            "data-dev-section-key": devSectionKey,
+            "data-dev-section-type": "tab-row",
+            "data-dev-background-token": "tab-api",
+            ...(devSectionParent ? { "data-dev-section-parent": devSectionParent } : {}),
+          }
+        : {})}
+    >
       {items.map((item) => {
         const itemValue = item.value ?? item.key ?? item.label;
         const isActive = itemValue === value;
+        const itemDevSectionKey = item.devSectionKey || (devSectionKey ? `${devSectionKey}-${String(itemValue)}` : "");
         return (
           <button
             key={String(itemValue)}
@@ -31,6 +47,15 @@ export function TabGroup({
             aria-selected={isActive}
             className={`tab-api__item${isActive ? " is-active" : ""}${item.className ? ` ${item.className}` : ""}`}
             onClick={() => onChange?.(itemValue, item)}
+            {...(itemDevSectionKey
+              ? {
+                  "data-dev-section": "1",
+                  "data-dev-section-key": itemDevSectionKey,
+                  "data-dev-section-type": "tab-button",
+                  "data-dev-section-parent": devSectionKey,
+                  "data-dev-background-token": isActive ? "tab-api-active" : "tab-api-button",
+                }
+              : {})}
           >
             {item.label}
           </button>

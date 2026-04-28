@@ -146,6 +146,8 @@ export default function StatusSidebar({
       { table: "job_writeups", filter: `job_id=eq.${numericId}` },
       { table: "invoices", filter: `job_id=eq.${numericId}` },
       { table: "vhc_declinations", filter: `job_id=eq.${numericId}` },
+      { table: "job_activity_events", filter: `job_id=eq.${numericId}` },
+      { table: "job_files", filter: `job_id=eq.${numericId}` },
     ];
 
     tables.forEach(({ table, filter }) => {
@@ -563,16 +565,6 @@ export default function StatusSidebar({
                   inputClassName="status-sidebar__searchbar-input"
                   style={{ width: '100%' }}
                 />
-                <button
-                  type="submit"
-                  className="status-sidebar__search-submit"
-                  aria-label="Search jobs"
-                  title="Search jobs"
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
-                    <path d="M10.5 4a6.5 6.5 0 0 1 5.12 10.5l4.44 4.44-1.42 1.42-4.44-4.44A6.5 6.5 0 1 1 10.5 4Zm0 2a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9Z" />
-                  </svg>
-                </button>
               </form>
             )}
 

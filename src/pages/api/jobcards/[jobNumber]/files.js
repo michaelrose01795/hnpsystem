@@ -5,6 +5,7 @@
 // the FK relationship is not in the schema cache.
 import { supabaseService, supabase as supabaseFallback } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { logJobActivity } from "@/lib/database/jobActivity";
 
 function getClient() {
   return supabaseService || supabaseFallback;
@@ -24,9 +25,9 @@ const buildJobNumberCandidates = (value) => {
   return Array.from(candidates);
 };
 
-async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method === "PATCH") {
-    return handleRename(req, res);
+    return handleRename(req, res, session);
   }
 
   if (req.method !== "GET") {
@@ -80,7 +81,7 @@ async function handler(req, res) {
   }
 }
 
-async function handleRename(req, res) {
+async function handleRename(req, res, session) {
   const { fileId, fileName } = req.body || {};
   if (!fileId || !fileName || !String(fileName).trim()) {
     return res.status(400).json({ error: "fileId and fileName are required" });
@@ -88,22 +89,56 @@ async function handleRename(req, res) {
   const trimmedName = String(fileName).trim();
   try {
     const client = getClient();
+    // Read old name first so the tracker entry can show the rename arrow.
+    const { data: existing } = await client
+      .from("job_files")
+      .select("file_id, file_name, job_id, file_type")
+      .eq("file_id", fileId)
+      .maybeSingle();
+
     const { data, error } = await client
       .from("job_files")
       .update({ file_name: trimmedName })
       .eq("file_id", fileId)
-      .select("file_id, file_name")
+      .select("file_id, file_name, job_id, file_type")
       .single();
 
     if (error) {
       console.error("❌ files.js rename error:", error);
       return res.status(500).json({ error: "Failed to rename file", message: error.message });
     }
+
+    try {
+      if (data?.job_id) {
+        const kind = describeFileKind(data.file_type);
+        const oldName = existing?.file_name || "(unnamed)";
+        await logJobActivity({
+          jobId: data.job_id,
+          category: "files",
+          action: "renamed",
+          summary: `${kind} renamed: "${oldName}" → "${trimmedName}"`,
+          targetType: "job_file",
+          targetId: String(fileId),
+          payload: { oldName, newName: trimmedName, fileType: data.file_type || null },
+          performedBy: session?.user?.user_id || session?.user?.id || null,
+        });
+      }
+    } catch (logErr) {
+      console.warn("files rename activity log failed:", logErr?.message || logErr);
+    }
+
     return res.status(200).json({ success: true, file: data });
   } catch (error) {
     console.error("❌ files.js rename handler error:", error);
     return res.status(500).json({ error: "Internal server error", message: error.message });
   }
+}
+
+function describeFileKind(mimeOrName) {
+  const v = String(mimeOrName || "").toLowerCase();
+  if (v.startsWith("image") || /\.(jpe?g|png|gif|webp|heic|bmp)$/.test(v)) return "Photo";
+  if (v.startsWith("video") || /\.(mp4|mov|avi|mkv|webm)$/.test(v)) return "Video";
+  return "Document";
 }
 
 export default withRoleGuard(handler);

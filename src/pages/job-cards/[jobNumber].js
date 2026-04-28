@@ -11,6 +11,7 @@ import { useUser } from "@/context/UserContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { supabase } from "@/lib/database/supabaseClient";
 import { getJobByNumber, updateJob, updateJobStatus, addJobFile, deleteJobFile, upsertJobRequestsForJob, getJobsByPrimeGroup, convertToPrimeJob } from "@/lib/database/jobs";
+import { logJobActivityClient } from "@/lib/jobs/logActivityClient";
 import { fetchTrackingSnapshot } from "@/lib/database/tracking";
 import { logJobSubStatus } from "@/lib/services/jobStatusService";
 import { autoSetCheckedInStatus, autoSetBookedStatus } from "@/lib/services/jobStatusService";
@@ -2783,6 +2784,26 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
           return;
         }
 
+        // Job tracker logging — non-blocking.
+        try {
+          const mime = String(file.type || file.mimeType || file.name || "").toLowerCase();
+          const kind = mime.startsWith("image") || /\.(jpe?g|png|gif|webp|heic)$/.test(mime)
+            ? "Photo"
+            : mime.startsWith("video") || /\.(mp4|mov|avi|mkv|webm)$/.test(mime)
+            ? "Video"
+            : "Document";
+          await logJobActivityClient({
+            jobId: jobData?.id || null,
+            jobNumber,
+            category: "files",
+            action: "deleted",
+            summary: `${kind} deleted: ${file.name || "(unnamed)"}`,
+            targetType: "job_file",
+            targetId: String(file.id),
+            payload: { fileName: file.name || null, fileType: file.type || null },
+          });
+        } catch {}
+
         setJobDocuments((prev) => prev.filter((doc) => doc.id !== file.id));
         setJobData((prev) =>
         prev ?
@@ -2794,7 +2815,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         alert(deleteError?.message || "Failed to delete document");
       }
     },
-    [canManageDocuments, confirm]
+    [canManageDocuments, confirm, jobData?.id, jobNumber]
   );
 
   const saveSharedNote = useCallback(
@@ -8787,7 +8808,17 @@ function VHCTab({
       }
 
       const { linkCode } = await response.json();
-      const shareUrl = `${window.location.origin}/vhc/share/${jobNumber}/${linkCode}`;
+      // Match send-vhc: customers must always receive a publicly reachable URL,
+      // never localhost. Override via NEXT_PUBLIC_VHC_BASE_URL / NEXT_PUBLIC_APP_URL
+      // when developing against a tunnel.
+      const publicOrigin = (
+        process.env.NEXT_PUBLIC_VHC_BASE_URL ||
+        process.env.NEXT_PUBLIC_APP_URL ||
+        (typeof window !== "undefined" && !/localhost|127\.0\.0\.1/.test(window.location.origin)
+          ? window.location.origin
+          : "https://hnpsystem.vercel.app")
+      ).replace(/\/+$/, "");
+      const shareUrl = `${publicOrigin}/vhc/customer/${jobNumber}/${linkCode}`;
 
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);

@@ -66,6 +66,17 @@ async function handler(req, res, session) {
     .slice(-MAX_HISTORY_ITEMS)
     .map((item) => ({ role: item.role, content: String(item.content || "").slice(0, 2000) }));
 
+  const rawCurrentPage =
+    req.body?.currentPage && typeof req.body.currentPage === "object" ? req.body.currentPage : null;
+  const currentPage = rawCurrentPage
+    ? {
+        route: String(rawCurrentPage.route || "").slice(0, 300),
+        pathname: String(rawCurrentPage.pathname || "").slice(0, 300),
+        title: String(rawCurrentPage.title || "").slice(0, 160),
+        entryId: String(rawCurrentPage.entryId || "").slice(0, 120),
+      }
+    : null;
+
   // ── Resolve or create session ───────────────────────────────────────────
   // If the DB tables don't exist yet we skip persistence entirely so the
   // assistant still answers — the user just won't get saved history.
@@ -95,7 +106,7 @@ async function handler(req, res, session) {
   const userRoles = Array.isArray(session?.user?.roles) ? session.user.roles : [];
   let engineResult;
   try {
-    engineResult = search(rawMessage, conversationHistory, userRoles);
+    engineResult = search(rawMessage, conversationHistory, userRoles, currentPage);
   } catch (engineError) {
     console.error("[guide-query] Query engine error:", engineError);
     engineResult = {

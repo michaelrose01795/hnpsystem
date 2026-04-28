@@ -137,7 +137,7 @@ async function handler(req, res, session) {
       process.env.NEXT_PUBLIC_APP_URL ||
       "https://hnpsystem.vercel.app"
     ).replace(/\/+$/, "");
-    const shareUrl = `${baseUrl}/vhc/share/${canonicalJobNumber}/${linkCode}`;
+    const shareUrl = `${baseUrl}/vhc/customer/${canonicalJobNumber}/${linkCode}`;
     const customerName = `${jobRow.customer?.firstname || ""} ${jobRow.customer?.lastname || ""}`.trim() || "Customer";
     const branding = getEmailBranding(req, COMPANY_NAME);
 

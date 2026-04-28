@@ -156,41 +156,42 @@ async function handler(req, res, session) {
   }
 
   try {
-    const { threadId, actorId, customerQuery } = req.body || {};
+    const { threadId, actorId, customerQuery, memberIds = [], title } = req.body || {};
     const threadIdNum = Number(threadId);
     const actorUserId = Number(actorId);
 
-    if (!Number.isFinite(threadIdNum) || threadIdNum <= 0) {
-      throw createHttpError(400, "threadId must be a valid number.");
-    }
     if (!Number.isFinite(actorUserId) || actorUserId <= 0) {
       throw createHttpError(400, "actorId must be a valid number.");
     }
 
-    // The actor must already be a member of the conversation they're inviting into.
-    const members = await fetchThreadMembers(threadIdNum);
-    if (!members.some((entry) => entry.user_id === actorUserId)) {
-      throw createHttpError(
-        403,
-        "You must be part of the conversation to invite a customer."
-      );
-    }
-
-    const baseThread = await fetchThreadMeta(threadIdNum);
     const customerRow = await lookupCustomerRow(customerQuery);
     // Provisions the matching users row when none exists yet.
     const customerUserId = await ensureCustomerUser(customerRow);
+    let baseThread = null;
+    let existingMemberIds = [];
+
+    if (Number.isFinite(threadIdNum) && threadIdNum > 0) {
+      // The actor must already be a member of the conversation they're inviting into.
+      const members = await fetchThreadMembers(threadIdNum);
+      if (!members.some((entry) => entry.user_id === actorUserId)) {
+        throw createHttpError(
+          403,
+          "You must be part of the conversation to invite a customer."
+        );
+      }
+
+      baseThread = await fetchThreadMeta(threadIdNum);
+      existingMemberIds = members.map((entry) => entry.user_id);
+    }
 
     // Merge the new customer user_id into the existing membership set, dedup,
     // then build a fresh group thread containing everyone.
-    const existingMemberIds = members.map((entry) => entry.user_id);
+    const requestedMemberIds = Array.isArray(memberIds)
+      ? memberIds.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0)
+      : [];
     const combinedMemberIds = Array.from(
-      new Set([...existingMemberIds, customerUserId])
+      new Set([...existingMemberIds, ...requestedMemberIds, actorUserId, customerUserId])
     );
-
-    if (!combinedMemberIds.includes(actorUserId)) {
-      combinedMemberIds.push(actorUserId);
-    }
 
     if (combinedMemberIds.length < 2) {
       throw createHttpError(
@@ -200,7 +201,8 @@ async function handler(req, res, session) {
     }
 
     const fallbackTitle =
-      baseThread.title ||
+      title ||
+      baseThread?.title ||
       `Customer · ${buildCustomerDisplayName(customerRow)}` ||
       "Customer Conversation";
 

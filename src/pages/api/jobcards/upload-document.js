@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 import { parseMultipartForm } from "@/lib/storage/parseMultipartForm";
 import { uploadAndRecord, uploadFile } from "@/lib/storage/storageService";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
+import { logJobActivity } from "@/lib/database/jobActivity";
 
 export const config = {
   api: {
@@ -85,6 +86,31 @@ async function handler(req, res, session) {
     }
 
     console.log("✅ Document uploaded successfully");
+
+    // Tracker logging — only for real (non-temp) jobs.
+    try {
+      if (!isTempJob && Number.isFinite(Number(jobId))) {
+        const mime = String(file.mimetype || file.fileName || "").toLowerCase();
+        const kind =
+          mime.startsWith("image") || /\.(jpe?g|png|gif|webp|heic)$/.test(mime)
+            ? "Photo"
+            : mime.startsWith("video") || /\.(mp4|mov|avi|mkv|webm)$/.test(mime)
+            ? "Video"
+            : "Document";
+        await logJobActivity({
+          jobId: Number(jobId),
+          category: "files",
+          action: "uploaded",
+          summary: `${kind} uploaded: ${result.data?.file_name || file.fileName}`,
+          targetType: "job_file",
+          targetId: result.data?.file_id ? String(result.data.file_id) : null,
+          payload: { fileName: result.data?.file_name || file.fileName, mimetype: file.mimetype },
+          performedBy: userId,
+        });
+      }
+    } catch (logErr) {
+      console.warn("upload-document activity log failed:", logErr?.message || logErr);
+    }
 
     return res.status(200).json({
       message: "File uploaded successfully",

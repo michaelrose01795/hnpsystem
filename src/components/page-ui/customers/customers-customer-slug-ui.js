@@ -1,4 +1,16 @@
 // file location: src/components/page-ui/customers/customers-customer-slug-ui.js
+import StatusMessage from "@/components/ui/StatusMessage";
+
+const isWindowsDevice = () => {
+  if (typeof navigator === "undefined") return true;
+  return /win/i.test(`${navigator.platform || ""} ${navigator.userAgent || ""}`);
+};
+
+const handleMapLinkClick = (event, item) => {
+  if (!item?.nativeHref || isWindowsDevice()) return;
+  event.preventDefault();
+  window.location.href = item.nativeHref;
+};
 
 export default function CustomerDetailWorkspaceUi(props) {
   const {
@@ -48,26 +60,20 @@ export default function CustomerDetailWorkspaceUi(props) {
           )}
 
           {error && (
-            <div
-              style={{
-                borderRadius: "var(--radius-md)",
-                padding: "16px",
-                border: "none",
-                background: "var(--danger-surface)",
-                color: "var(--danger-dark)",
-              }}
-            >
+            <StatusMessage tone="danger">
               {error}
-            </div>
+            </StatusMessage>
           )}
 
           {customer && !error && !isLoading && (
             <>
               <section
+                className="app-section-card"
                 data-dev-section="1"
                 data-dev-section-key="customer-profile-summary"
                 data-dev-section-type="section-shell"
-                data-dev-background-token="customer-profile-summary"
+                data-dev-section-parent="app-layout-page-card"
+                data-dev-background-token="accent-surface"
                 style={detailCardStyles.container}
               >
                 <div style={detailCardStyles.identityBlock}>
@@ -79,6 +85,7 @@ export default function CustomerDetailWorkspaceUi(props) {
                 <div style={detailGridStyles.grid}>
                   {profileGridItems.map((item) => (
                     <div
+                      className="app-section-card"
                       key={item.key}
                       data-dev-section="1"
                       data-dev-section-key={`customer-profile-card-${item.key}`}
@@ -165,7 +172,14 @@ export default function CustomerDetailWorkspaceUi(props) {
                           <span style={{ color: "var(--text-secondary)" }}>No numbers on file</span>
                         )
                       ) : item.href ? (
-                        <a href={item.href} style={{ color: "var(--primary)", fontWeight: 600, overflowWrap: "anywhere" }}>
+                        <a
+                          href={item.href}
+                          target={item.nativeHref ? "_blank" : undefined}
+                          rel={item.nativeHref ? "noopener noreferrer" : undefined}
+                          aria-label={item.key === "address" ? `Open ${item.value || "address"} in maps` : undefined}
+                          onClick={(event) => handleMapLinkClick(event, item)}
+                          style={{ color: "var(--primary)", fontWeight: 600, overflowWrap: "anywhere" }}
+                        >
                           {item.value || "—"}
                         </a>
                       ) : (
@@ -195,6 +209,8 @@ export default function CustomerDetailWorkspaceUi(props) {
                 data-dev-section="1"
                 data-dev-section-key="customer-profile-tabs"
                 data-dev-section-type="tab-row"
+                data-dev-section-parent="app-layout-page-card"
+                data-dev-background-token="transparent"
                 style={{ display: "inline-flex", alignSelf: "flex-start", maxWidth: "100%", overflowX: "auto" }}
               >
                 <TabGroup
@@ -206,18 +222,24 @@ export default function CustomerDetailWorkspaceUi(props) {
                         ? `${tab.label} (${jobs.length})`
                         : tab.label,
                     value: tab.id,
+                    devSectionKey: `customer-profile-tab-button-${tab.id}`,
                   }))}
                   value={activeTab}
                   onChange={setActiveTab}
                   ariaLabel="Customer data tabs"
+                  className="tab-api--inline"
+                  devSectionKey="customer-profile-tab-group"
+                  devSectionParent="customer-profile-tabs"
                 />
               </div>
 
               <section
+                className="app-section-card"
                 data-dev-section="1"
                 data-dev-section-key={`customer-profile-tab-${activeTab}`}
                 data-dev-section-type="section-shell"
-                data-dev-background-token="customer-profile-tab-panel"
+                data-dev-section-parent="app-layout-page-card"
+                data-dev-background-token="accent-surface"
                 style={tabPanelStyles.container}
               >
                 {renderTabContent()}

@@ -13,8 +13,10 @@
 //   - Role-aware — answers reflect the user's own access level
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import Dropdown from "@/components/ui/dropdownAPI/Dropdown";
 import { useConfirmation } from "@/context/ConfirmationContext";
+import { getEntryByRoute } from "@/features/appGuide/queryEngine";
 import styles from "./AiGuidePanel.module.css";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
@@ -34,6 +36,21 @@ const STARTER_QUESTIONS = [
 
 // Maximum characters in the input field
 const MAX_INPUT_LENGTH = 2000;
+
+function titleFromRoute(route) {
+  const path = String(route || "").split("?")[0].split("#")[0];
+  const parts = path
+    .split("/")
+    .filter(Boolean)
+    .filter((part) => !/^\[.+\]$/.test(part))
+    .filter((part) => !/^\d+$/.test(part));
+  const lastParts = parts.slice(-2);
+  if (lastParts.length === 0) return "Current Page";
+  return lastParts
+    .join(" ")
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Minimal Markdown renderer
@@ -188,11 +205,11 @@ async function fetchMessages(sessionId) {
   return json.data || [];
 }
 
-async function sendQuery(message, sessionId, conversationHistory) {
+async function sendQuery(message, sessionId, conversationHistory, currentPage) {
   const res = await fetch("/api/ai/guide-query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, sessionId, conversationHistory }),
+    body: JSON.stringify({ message, sessionId, conversationHistory, currentPage }),
   });
   if (!res.ok) {
     const json = await res.json().catch(() => ({}));
@@ -244,6 +261,7 @@ function MessagesSkeleton() {
  *   userRoles — string[] of the user's roles (for contextual awareness in the UI)
  */
 export default function AiGuidePanel({ userId, userRoles }) {
+  const router = useRouter();
   // ── Session state ──────────────────────────────────────────────────────
   const [sessions, setSessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -269,6 +287,36 @@ export default function AiGuidePanel({ userId, userRoles }) {
   // ── Refs ───────────────────────────────────────────────────────────────
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  const currentPage = useMemo(() => {
+    const route = router?.asPath || router?.pathname || "";
+    const entry = getEntryByRoute(route);
+    const fallbackTitle = titleFromRoute(router?.pathname || route);
+    return {
+      route,
+      pathname: router?.pathname || "",
+      title: entry?.title || fallbackTitle,
+      entryId: entry?.id || "",
+    };
+  }, [router?.asPath, router?.pathname]);
+
+  const starterQuestions = useMemo(() => {
+    if (!currentPage.title) {
+      return [
+        "What can I do on this page?",
+        "How do I use this screen?",
+        ...STARTER_QUESTIONS.slice(0, 4),
+      ];
+    }
+
+    return [
+      `What can I do on ${currentPage.title}?`,
+      `How do I use ${currentPage.title}?`,
+      `Who can access ${currentPage.title}?`,
+      `Where does ${currentPage.title} fit in the workflow?`,
+      "How do slash commands work in Floating Notes?",
+    ];
+  }, [currentPage.title]);
 
   // ─────────────────────────────────────────────────────────────────────
   // Load sessions on mount
@@ -378,7 +426,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
     setMessages((prev) => [...prev, optimisticUserMsg]);
 
     try {
-      const result = await sendQuery(text, currentSessionId, conversationHistory);
+      const result = await sendQuery(text, currentSessionId, conversationHistory, currentPage);
 
       // If persistence is unavailable (tables not set up) update dbReady flag
       if (result.persistenceAvailable === false) {
@@ -432,7 +480,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
     } finally {
       setIsSending(false);
     }
-  }, [isSending, messages, currentSessionId]);
+  }, [isSending, messages, currentSessionId, currentPage]);
 
   // ─────────────────────────────────────────────────────────────────────
   // Handle input submission
@@ -617,7 +665,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
             <h4>App Guide</h4>
             <p>Ask me anything about the HNP System — pages, features, roles, or how-tos.</p>
             <div className={styles.emptySuggestions}>
-              {STARTER_QUESTIONS.map((q) => (
+              {starterQuestions.map((q) => (
                 <button
                   key={q}
                   type="button"

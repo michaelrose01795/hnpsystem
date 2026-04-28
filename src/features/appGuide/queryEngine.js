@@ -105,6 +105,56 @@ const ENTRIES = (knowledgeIndex.entries || []).map((entry) => ({
 // Build a lookup map for related entry resolution
 const ENTRY_MAP = Object.fromEntries(ENTRIES.map((e) => [e.id, e]));
 
+function normaliseRoutePath(route) {
+  const raw = String(route || "").split("?")[0].split("#")[0].trim();
+  if (!raw) return "";
+  const withLeadingSlash = raw.startsWith("/") ? raw : `/${raw}`;
+  return withLeadingSlash.length > 1 ? withLeadingSlash.replace(/\/+$/, "") : withLeadingSlash;
+}
+
+function isCurrentPageQuery(query) {
+  const q = normalise(query);
+  return (
+    /\b(this|current) (page|screen|section|area|view)\b/.test(q) ||
+    /\b(on|in) (this|current) (page|screen|section|area|view)\b/.test(q) ||
+    /\b(here|where am i|what can i do)\b/.test(q)
+  );
+}
+
+function resolveCurrentPageEntry(currentPageContext) {
+  if (!currentPageContext || typeof currentPageContext !== "object") return null;
+  if (currentPageContext.entryId && ENTRY_MAP[currentPageContext.entryId]) {
+    return ENTRY_MAP[currentPageContext.entryId];
+  }
+
+  const currentRoute = normaliseRoutePath(currentPageContext.route || currentPageContext.pathname);
+  if (!currentRoute) return null;
+
+  const exact = ENTRIES.find((entry) => normaliseRoutePath(entry.route) === currentRoute);
+  if (exact) return exact;
+
+  return ENTRIES
+    .filter((entry) => {
+      const entryRoute = normaliseRoutePath(entry.route);
+      return entryRoute && entryRoute !== "/" && currentRoute.startsWith(`${entryRoute}/`);
+    })
+    .sort((a, b) => normaliseRoutePath(b.route).length - normaliseRoutePath(a.route).length)[0] || (
+      currentPageContext.title
+        ? {
+            id: "current-page-context",
+            type: "page",
+            title: String(currentPageContext.title),
+            keywords: tokenise(`${currentPageContext.title} ${currentRoute}`),
+            route: currentRoute,
+            roles: [],
+            description: "This is the page you are currently viewing.",
+            details: "I can use this page context for questions about where you are, what this screen is, and what to ask next. Detailed guide notes for this exact route have not been added yet.",
+            relatedIds: [],
+          }
+        : null
+    );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Scoring
 // ─────────────────────────────────────────────────────────────────────────────
@@ -576,21 +626,29 @@ function answerFallback(rawQuery) {
  * @param {string[]} userRoles - The current user's roles (for access-aware answers)
  * @returns {{ answer: string, sources: Array, suggestedQuestions: string[] }}
  */
-export function search(query, conversationHistory = [], userRoles = []) {
+export function search(query, conversationHistory = [], userRoles = [], currentPageContext = null) {
   if (!query || !query.trim()) {
+    const currentPageEntry = resolveCurrentPageEntry(currentPageContext);
     return {
       answer: "Please type a question about the HNP System and I will do my best to help.",
       sources: [],
-      suggestedQuestions: [
-        "What does the Job Cards page do?",
-        "How do I create a job card?",
-        "What is Page Access?",
-      ],
+      suggestedQuestions: currentPageEntry
+        ? buildSuggestedQuestions(currentPageEntry, "general")
+        : [
+            "What does the Job Cards page do?",
+            "How do I create a job card?",
+            "What is Page Access?",
+          ],
     };
   }
 
   // 1. Tokenise the query
-  let queryTokens = tokenise(query);
+  const currentPageEntry = resolveCurrentPageEntry(currentPageContext);
+  const pageAwareQuery =
+    currentPageEntry && isCurrentPageQuery(query)
+      ? `${query} ${currentPageEntry.title} ${currentPageEntry.route || ""}`
+      : query;
+  let queryTokens = tokenise(pageAwareQuery);
 
   // 2. Expand with context tokens if this looks like a follow-up question
   if (isFollowUpQuery(query) && conversationHistory.length > 0) {
@@ -612,6 +670,20 @@ export function search(query, conversationHistory = [], userRoles = []) {
 
   // 4. If nothing scored high enough, return fallback
   if (topResults.length === 0) {
+    if (currentPageEntry && isCurrentPageQuery(query)) {
+      const intent = detectIntent(query);
+      const answer =
+        intent === "where"
+          ? answerWhere(currentPageEntry, [currentPageEntry], userRoles)
+          : intent === "who"
+            ? answerWho(currentPageEntry, [currentPageEntry], userRoles)
+            : answerWhat(currentPageEntry, [currentPageEntry], userRoles);
+      return {
+        answer,
+        sources: buildSources([currentPageEntry]),
+        suggestedQuestions: buildSuggestedQuestions(currentPageEntry, intent),
+      };
+    }
     return {
       answer: answerFallback(query),
       sources: [],
@@ -701,6 +773,16 @@ export function getEntriesByType(type) {
  */
 export function getEntryById(id) {
   const entry = ENTRY_MAP[id];
+  if (!entry) return null;
+  const { _index, ...rest } = entry;
+  return rest;
+}
+
+/**
+ * Resolve a knowledge entry for the route the user is currently viewing.
+ */
+export function getEntryByRoute(route) {
+  const entry = resolveCurrentPageEntry({ route });
   if (!entry) return null;
   const { _index, ...rest } = entry;
   return rest;

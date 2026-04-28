@@ -104,7 +104,7 @@ async function handler(req, res, session) {
         dbClient
           .from("vhc_checks")
           .select(
-            `vhc_id, job_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, note_text, pre_pick_location, request_id, display_id`
+            `vhc_id, job_id, section, issue_description, customer_description, issue_title, measurement, created_at, updated_at, approval_status, display_status, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, note_text, pre_pick_location, request_id, display_id`
           )
           .eq("job_id", jobRow.id),
         dbClient

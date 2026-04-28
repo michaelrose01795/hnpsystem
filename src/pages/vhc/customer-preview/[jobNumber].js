@@ -11,7 +11,7 @@ import { normaliseDecisionStatus, resolveSeverityKey } from "@/features/vhc/vhcS
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { useTheme } from "@/styles/themeProvider";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
-import CustomerPreviewPageUi from "@/components/page-ui/vhc/customer-preview/vhc-customer-preview-job-number-ui"; // Extracted presentation layer.
+import VhcCustomerView from "@/components/VHC/VhcCustomerView";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -183,6 +183,7 @@ export default function CustomerPreviewPage() {
               section,
               severity,
               issue_description,
+              customer_description,
               issue_title,
               measurement,
               created_at,
@@ -1358,10 +1359,23 @@ export default function CustomerPreviewPage() {
 
 
   if (loading) {
-    // Shell-first skeleton: preserve the customer preview shape (logo header,
-    // vehicle summary card, section cards) so the user sees the final layout
-    // immediately instead of a blank viewport.
-    return <CustomerPreviewPageUi view="section1" SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} />;
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--surface-light)", padding: "16px 12px" }}>
+        <SkeletonKeyframes />
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
+          <SkeletonBlock width="100%" height="64px" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+            <SkeletonBlock width="100%" height="60px" />
+            <SkeletonBlock width="100%" height="60px" />
+            <SkeletonBlock width="100%" height="60px" />
+            <SkeletonBlock width="100%" height="60px" />
+          </div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonBlock key={i} width="100%" height="120px" />
+          ))}
+        </div>
+      </div>
+    );
 
 
 
@@ -1409,7 +1423,25 @@ export default function CustomerPreviewPage() {
 
   // Error state
   if (error) {
-    return <CustomerPreviewPageUi view="section2" error={error} handleBack={handleBack} />;
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--surface-light)",
+          padding: 16
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--accent-purple)", marginBottom: 8 }}>
+            Unable to load report
+          </div>
+          <div style={{ fontSize: 14, color: "var(--info)" }}>{error}</div>
+        </div>
+      </div>
+    );
 
 
 
@@ -1436,7 +1468,39 @@ export default function CustomerPreviewPage() {
   const vehicleInfo = job?.vehicle;
   const customerInfo = job?.customer;
 
-  return <CustomerPreviewPageUi view="section3" activeTab={activeTab} BrandLogo={BrandLogo} customerInfo={customerInfo} handleBack={handleBack} Head={Head} jobNumber={jobNumber} photoFiles={photoFiles} renderPhotosTab={renderPhotosTab} renderSummaryTab={renderSummaryTab} renderVideosTab={renderVideosTab} setActiveTab={setActiveTab} vehicleInfo={vehicleInfo} videoFiles={videoFiles} visibleTabs={visibleTabs} />;
+  const previewBanner = (
+    <div
+      style={{
+        background: "var(--accent-purple)",
+        color: "var(--surface)",
+        padding: "6px 14px",
+        fontSize: 12,
+        fontWeight: 600,
+        letterSpacing: "0.04em",
+        textAlign: "center"
+      }}
+    >
+      STAFF PREVIEW · This is exactly what the customer sees
+    </div>
+  );
+
+  return (
+    <VhcCustomerView
+      jobNumber={jobNumber}
+      vehicleInfo={vehicleInfo}
+      customerInfo={customerInfo}
+      severityLists={displaySeverityLists}
+      totals={displayTotals}
+      photoFiles={photoFiles}
+      videoFiles={videoFiles}
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      interactive={true}
+      onUpdateStatus={updateEntryStatus}
+      updatingIds={updatingStatus}
+      previewBanner={previewBanner}
+    />
+  );
 
 
 

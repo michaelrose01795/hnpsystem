@@ -163,7 +163,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   border-radius: var(--page-card-radius);
   padding: 0 var(--space-5);
   position: relative;
-  z-index: 100;
+  z-index: 3300;
 }
 
 .app-page-shell {
@@ -5244,7 +5244,14 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* !important overrides row-level backgroundColor and any td inline styles */
 #appointments-auto-data-table-2 tr.appt-sat-row,
 #appointments-auto-data-table-2 tr.appt-sat-row td {
-  background: rgba(var(--accent-base-rgb), 0.22) !important;
+  background: var(--warning-surface) !important;
+  color: var(--warning-text) !important;
+}
+
+#appointments-auto-data-table-2 tr.appt-today-row,
+#appointments-auto-data-table-2 tr.appt-today-row td {
+  background: var(--success-surface) !important;
+  color: var(--success-text) !important;
 }
 
 
@@ -5255,4 +5262,110 @@ a.tab-api__item:focus-visible:not(.is-active) {
 #appointments-auto-data-table-2 tbody tr:hover td {
   box-shadow: inset 0 0 0 9999px rgba(var(--shadow-rgb), 0.07);
   transition: box-shadow 0.15s ease;
+}
+
+/* Scroll still works; the visual scrollbar is hidden. Firefox uses          */
+/* scrollbar-width: none, Webkit hides the ::-webkit-scrollbar pseudo, and   */
+/* IE/legacy Edge use -ms-overflow-style: none.                              */
+.appointments-calendar-table-scroll {
+  --appointments-scrollbar-overlay-width: 0px;
+  background: transparent !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.appointments-calendar-table-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.appointments-calendar-table-scroll #appointments-auto-data-table-2 {
+  width: calc(100% + var(--appointments-scrollbar-overlay-width)) !important;
+  min-width: calc(100% + var(--appointments-scrollbar-overlay-width)) !important;
+  margin-right: calc(var(--appointments-scrollbar-overlay-width) * -1);
+}
+
+#appointments-auto-data-table-2 thead th {
+  background: var(--page-shell-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+#appointments-auto-data-table-2 tbody tr {
+  background: var(--surface) !important;
+  background-image: none !important;
+}
+
+#appointments-auto-data-table-2 tbody td {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+#appointments-auto-data-table-2 tr.appt-sat-row,
+#appointments-auto-data-table-2 tr.appt-sat-row td {
+  background: var(--warning-surface) !important;
+}
+
+#appointments-auto-data-table-2 tr.appt-today-row,
+#appointments-auto-data-table-2 tr.appt-today-row td {
+  background: var(--success-surface) !important;
+}
+
+#appointments-auto-data-table-2 tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row),
+#appointments-auto-data-table-2 tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row) td {
+  background: rgba(var(--primary-rgb), 0.25) !important;
+  color: var(--text-primary) !important;
+}
+
+#appointments-auto-data-table-2 tr.appt-sat-row.appt-selected-row,
+#appointments-auto-data-table-2 tr.appt-sat-row.appt-selected-row td {
+  background: var(--warning-text) !important;
+  color: var(--text-inverse) !important;
+}
+
+#appointments-auto-data-table-2 tr.appt-today-row.appt-selected-row,
+#appointments-auto-data-table-2 tr.appt-today-row.appt-selected-row td {
+  background: var(--success-text) !important;
+  color: var(--text-inverse) !important;
+}
+
+#appointments-auto-data-table-2 tr.appt-sat-row *,
+#appointments-auto-data-table-2 tr.appt-today-row *,
+#appointments-auto-data-table-2 tr.appt-selected-row * {
+  color: inherit !important;
+}
+
+#appointments-auto-data-table-2 tbody tr:not(.appt-sat-row):not(.appt-today-row):not(.appt-selected-row):hover td {
+  background: var(--control-bg-hover) !important;
+  box-shadow: none !important;
+  transition: background-color 0.15s ease;
+}
+
+#appointments-auto-data-table-2 tbody tr.appt-sat-row:hover td {
+  background: var(--warning-surface-hover) !important;
+  color: var(--warning-text) !important;
+  box-shadow: none !important;
+}
+
+#appointments-auto-data-table-2 tbody tr.appt-today-row:hover td {
+  background: var(--success-surface-hover) !important;
+  color: var(--success-text) !important;
+  box-shadow: none !important;
+}
+
+#appointments-auto-data-table-2 tbody tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row):hover td {
+  background: var(--accent-surface-hover) !important;
+  box-shadow: none !important;
+}
+
+#appointments-auto-data-table-2 tbody tr.appt-sat-row.appt-selected-row:hover td {
+  background: var(--warning-surface-hover) !important;
+  color: var(--warning-text) !important;
+  box-shadow: none !important;
+}
+
+#appointments-auto-data-table-2 tbody tr.appt-today-row.appt-selected-row:hover td {
+  background: var(--success-surface-hover) !important;
+  color: var(--success-text) !important;
+  box-shadow: none !important;
 }

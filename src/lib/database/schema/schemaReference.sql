@@ -463,6 +463,21 @@ CREATE TABLE public.invoices (
   CONSTRAINT invoices_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT invoices_account_id_fkey FOREIGN KEY (account_id) REFERENCES public.accounts(account_id)
 );
+CREATE TABLE public.job_activity_events (
+  event_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  job_id integer NOT NULL,
+  category text NOT NULL,
+  action text NOT NULL,
+  target_type text,
+  target_id text,
+  summary text NOT NULL,
+  payload jsonb NOT NULL DEFAULT '{}'::jsonb,
+  performed_by integer,
+  occurred_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT job_activity_events_pkey PRIMARY KEY (event_id),
+  CONSTRAINT job_activity_events_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
+  CONSTRAINT job_activity_events_performed_by_fkey FOREIGN KEY (performed_by) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.job_archive (
   archive_id uuid NOT NULL DEFAULT gen_random_uuid(),
   job_id integer NOT NULL UNIQUE,
@@ -1410,6 +1425,16 @@ CREATE TABLE public.proforma_request_overrides (
   CONSTRAINT proforma_request_overrides_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT proforma_request_overrides_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.job_requests(request_id)
 );
+CREATE TABLE public.showcase_notes (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  section_key text NOT NULL UNIQUE,
+  note_text text NOT NULL DEFAULT ''::text,
+  updated_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT showcase_notes_pkey PRIMARY KEY (id),
+  CONSTRAINT showcase_notes_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.staff_vehicle_history (
   history_id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   vehicle_id uuid NOT NULL,
@@ -1701,6 +1726,7 @@ CREATE TABLE public.vhc_checks (
   authorized_total_gbp numeric DEFAULT 0,
   declined_total_gbp numeric DEFAULT 0,
   Complete boolean NOT NULL DEFAULT false,
+  customer_description text,
   CONSTRAINT vhc_checks_pkey PRIMARY KEY (vhc_id),
   CONSTRAINT vhc_checks_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );

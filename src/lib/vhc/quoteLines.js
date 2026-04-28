@@ -225,6 +225,10 @@ export const buildVhcQuoteLinesModel = ({
         const concerns = Array.isArray(item?.concerns) ? item.concerns : [];
         const primaryConcern = concerns.find((c) => normaliseColour(c?.status) === severity) || concerns[0] || null;
 
+        // Customer override on the linked vhc_check row replaces the technician's
+        // description in every customer-facing surface (Summary, customer
+        // preview, share/customer link, view/copy/send flows).
+        const customerOverride = (check?.customer_description || "").trim();
         baseItems.push({
           id: String(id),
           canonicalId,
@@ -232,8 +236,9 @@ export const buildVhcQuoteLinesModel = ({
           category,
           categoryLabel: category.label,
           label: heading || "Recorded item",
-          notes: item?.notes || item?.issue_description || "",
-          concernText: primaryConcern?.text || "",
+          notes: customerOverride || item?.notes || item?.issue_description || "",
+          concernText: customerOverride || primaryConcern?.text || "",
+          customerDescription: customerOverride || "",
           measurement: item?.measurement || "",
           rows: Array.isArray(item?.rows) ? item.rows : [],
           rawSeverity: severity,
@@ -265,6 +270,7 @@ export const buildVhcQuoteLinesModel = ({
     const sectionName = check.section || "Other";
     const category = resolveCategoryForItem(sectionName);
 
+    const customerOverride = (check?.customer_description || "").trim();
     baseItems.push({
       id,
       canonicalId: id,
@@ -272,8 +278,9 @@ export const buildVhcQuoteLinesModel = ({
       category,
       categoryLabel: category.label,
       label: check.issue_title || sectionName || "Recorded item",
-      notes: check.issue_description || "",
-      concernText: "",
+      notes: customerOverride || check.issue_description || "",
+      concernText: customerOverride || "",
+      customerDescription: customerOverride || "",
       measurement: check.measurement || "",
       rows: [],
       rawSeverity: severity,

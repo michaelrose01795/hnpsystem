@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/job-cards/myjobs/job-cards-myjobs-ui.js
+import Button from "@/components/ui/Button";
 
 export default function MyJobsPageUi(props) {
   const {
@@ -92,16 +93,12 @@ export default function MyJobsPageUi(props) {
         </DevLayoutSection>
 
         {/* Search and Filter Bar */}
-        <DevLayoutSection sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="myjobs-page-shell" backgroundToken="surface-filter-card" style={{
+        <DevLayoutSection sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="myjobs-page-shell" backgroundToken="surface-filter-card" className="app-section-card myjobs-filter-toolbar" style={{
       display: "flex",
+      flexDirection: "row",
       gap: "12px",
       alignItems: "center",
-      flexWrap: "wrap",
-      padding: "12px",
-      backgroundColor: "var(--accent-surface)",
-      border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-      borderRadius: "var(--radius-sm)",
-      color: "var(--search-text)"
+      flexWrap: "wrap"
     }}>
           {/* Search Input */}
           <SearchBar placeholder="Search by job number, customer, reg, or vehicle..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onClear={() => setSearchTerm("")} style={{
@@ -130,44 +127,17 @@ export default function MyJobsPageUi(props) {
         }].map(({
           value,
           label
-        }) => <button key={value} onClick={() => setFilter(value)} style={{
-          minHeight: "var(--control-height-md)",
-          padding: "0 16px",
-          backgroundColor: filter === value ? "var(--primary)" : "var(--surface)",
-          color: filter === value ? "var(--surface)" : "var(--primary)",
-          border: "1px solid var(--primary)",
-          borderRadius: "var(--input-radius)",
-          cursor: "pointer",
-          fontSize: "0.9rem",
-          fontWeight: filter === value ? "600" : "500",
-          whiteSpace: "nowrap",
-          transition: "all 0.2s",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }} onMouseEnter={e => {
-          if (filter !== value) {
-            e.target.style.backgroundColor = "var(--surface-light)";
-          }
-        }} onMouseLeave={e => {
-          if (filter !== value) {
-            e.target.style.backgroundColor = "var(--surface)";
-          }
-        }}>
+        }) => <Button key={value} type="button" variant="control" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>
                 {label}
-              </button>)}
+              </Button>)}
           </div>
         </DevLayoutSection>
 
         {/* Jobs List */}
-        <DevLayoutSection sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="myjobs-page-shell" backgroundToken="surface-results-card" style={{
+        <DevLayoutSection sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="myjobs-page-shell" backgroundToken="surface-results-card" className="app-section-card" style={{
       flex: 1,
       display: "flex",
       flexDirection: "column",
-      borderRadius: "var(--radius-xl)",
-      border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-      background: "var(--accent-surface)",
-      padding: "var(--page-card-padding)",
       overflow: "hidden",
       minHeight: 0
     }}>
@@ -449,10 +419,7 @@ export default function MyJobsPageUi(props) {
         </DevLayoutSection>
 
         {/* Job Count Summary */}
-        <DevLayoutSection sectionKey="myjobs-summary" sectionType="content-card" parentKey="myjobs-page-shell" backgroundToken="surface-summary-card" className="app-section-card" style={{
-      border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-      background: "var(--accent-surface)"
-    }}>
+        <DevLayoutSection sectionKey="myjobs-summary" sectionType="content-card" parentKey="myjobs-page-shell" backgroundToken="surface-summary-card" className="app-section-card">
           <div data-dev-section="1" data-dev-section-key="myjobs-summary-grid" data-dev-section-type="content-card" data-dev-section-parent="myjobs-summary" style={{
         display: "grid",
         gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
@@ -569,12 +536,6 @@ export default function MyJobsPageUi(props) {
           :global([data-dev-section-key="myjobs-filter-buttons"] button) {
             width: 100%;
             min-width: 0;
-            padding: 10px 12px !important;
-            font-size: 0.82rem !important;
-          }
-          :global([data-dev-section-key="myjobs-results-shell"]) {
-            padding: 12px !important;
-            border-radius: 16px !important;
           }
           :global([data-dev-section-key="myjobs-results-scroll"]) {
             gap: 10px !important;

@@ -12,9 +12,30 @@ what is the height of the tab buttons? 32px
 appoinement table
 
 
+SET 10px GAP BETWEEN CARDS AND CONTENTS WITHIN CARDS AS A GLOBAL.CSS SETTING
+
+lets have 10px gap around all the contents within 
+
+/job-cards/create :: 1.2.1.1.1.1.2.1 (job-cards-create-job-request-1)
+
+/job-cards/view :: 1.2.2.1.1.1.1 (job-cards-view-filter-shell)
+
+between "/job-cards/view :: 1.2.2.1.1.1.1 (job-cards-view-filter-shell)" and "/job-cards/view :: 1.2.2.1.1.1.2 (job-cards-view-list-shell)"
+
+between /clocking :: 1.2.1.1.1.1.1.1 (clocking-auto-tab-row-1), /clocking :: 1.2.1.1.1.1.2.1 (clocking-overview-stats), /clocking :: 1.2.1.1.1.1.2.2 (clocking-overview-technician-status) and from the bottom of "/clocking :: 1.2.1.1.1.1.1.2 (clocking-overview-technician-status)" to the bottom of /clocking :: 1.2.1.1 (app-layout-page-card)
+
+between /profile :: 1.2.2.1.1.1 (profile-tab-toolbar) to /profile :: 1.2.2.1.1.2.1 (profile-work-kpi-card-group) to /profile :: 1.2.2.1.1.2.6 (profile-work-summary-card-group) to /profile :: 1.2.1.1.1.1.9 (profile-work-attendance-history-group) to /profile :: 1.2.1.1.1.1.2 (profile-work-staff-vehicles-group), and the bottom of /profile :: 1.2.1.1.1.1.2 (profile-work-staff-vehicles-group) to the bottom of the page. 
 
 
 
+
+
+
+have it so "/dashboard :: 1.2.2.1.1.1 (dashboard-workshop-metrics-grid)" "/dashboard :: 1.2.2.1.1.2 (dashboard-workshop-focus-row)" "/dashboard :: 1.2.1.1.1.3 (dashboard-workshop-clocking-overview)" "/dashboard :: 1.2.1.1.1.4 (dashboard-workshop-consumables)" "/dashboard :: 1.2.1.1.1.4 (dashboard-workshop-important-notices)" is all theme colour background. also /clocking :: 1.2.1.1.1.1.2.1 (clocking-overview-stats), /clocking :: 1.2.1.1.1.1.2.2 (clocking-overview-technician-status), 
+
+
+
+Improve "/workshop/consumables-tracker :: 1.2.1.1 (app-layout-page-card)" dev overlay within this seciton. have it so this page follows the global.css setting everywhere and the layout and design is also imrpoved. use a 10px between cards etc
 
 
 
@@ -29,7 +50,9 @@ with camera for concerns, hgave ir link rto vhc photo and vedio section  in cata
 
 
 
-- Mileage to show within the customer page inside previous job section. 
+Mileage to show within the customer page inside previous job section. 
+
+
 
 /dashboard/service
 

@@ -181,48 +181,25 @@ export default function TechJobDetailPageUi(props) {
       borderRadius: "var(--radius-xs)",
       flexShrink: 0
     }}>
-          <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "flex-start",
-        alignSelf: "stretch",
-        backgroundColor: "var(--surface)",
-        border: "none",
-        borderRadius: "var(--radius-sm)",
-        padding: "10px 14px",
-        width: "fit-content",
+          <h1 style={{
+        color: "var(--primary)",
+        fontSize: "28px",
+        fontWeight: "700",
+        margin: "0",
+        lineHeight: 1,
         flexShrink: 0
       }}>
-            <h1 style={{
-          color: "var(--primary)",
-          fontSize: "28px",
-          fontWeight: "700",
-          margin: "0",
-          lineHeight: 1
-        }}>
-              {jobCard.jobNumber}
-            </h1>
-          </div>
+            {jobCard.jobNumber}
+          </h1>
           <div style={{
         flex: 1,
         minWidth: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "flex-end",
-        gap: "12px"
+        gap: "12px",
+        flexWrap: "wrap"
       }}>
-            <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          flexWrap: "wrap",
-          justifyContent: "flex-end",
-          backgroundColor: "var(--surface)",
-          border: "none",
-          borderRadius: "var(--radius-sm)",
-          padding: "10px 14px",
-          flexShrink: 0
-        }}>
               {/* Status pill rides the shared .app-btn shape. Semantic colour
                   for non-complete states comes from STATUS_BADGE_STYLES — those
                   background/color tokens are applied inline because .app-btn
@@ -266,7 +243,6 @@ export default function TechJobDetailPageUi(props) {
                 </Button>
               </div>
             </div>
-          </div>
         </DevLayoutSection>
 
         {completeJobFeedback ? <div style={{
@@ -293,11 +269,14 @@ export default function TechJobDetailPageUi(props) {
           </div> : null}
 
         {/* Quick Stats Grid */}
-        <DevLayoutSection as="div" sectionKey="myjob-quick-stats" sectionType="section-shell" parentKey="myjob-page-shell" style={{
+        <DevLayoutSection as="div" sectionKey="myjob-quick-stats" sectionType="section-shell" parentKey="myjob-page-shell" backgroundToken="page-card-bg-alt" style={{
       display: "grid",
       gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
       gap: "12px",
       marginBottom: "12px",
+      padding: "12px",
+      backgroundColor: "var(--page-card-bg-alt)",
+      borderRadius: "var(--radius-xs)",
       flexShrink: 0
     }}>
           {quickStats.map(stat => {
@@ -412,11 +391,11 @@ export default function TechJobDetailPageUi(props) {
         </DevLayoutSection>
 
         {/* Main Content Area with Scrolling */}
-        <DevLayoutSection as="div" sectionKey="myjob-main-content" sectionType="section-shell" parentKey="myjob-page-shell" backgroundToken="layer-section-level-1" shell style={{
+        <DevLayoutSection as="div" sectionKey="myjob-main-content" sectionType="section-shell" parentKey="myjob-page-shell" backgroundToken="page-card-bg-alt" shell style={{
       flex: 1,
       borderRadius: "var(--radius-xs)",
       border: "none",
-      backgroundColor: "var(--layer-section-level-1)",
+      backgroundColor: "var(--page-card-bg-alt)",
       padding: "24px",
       overflow: "hidden",
       display: "flex",

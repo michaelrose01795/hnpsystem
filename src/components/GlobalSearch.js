@@ -308,7 +308,7 @@ const GlobalSearch = ({
   const placeholderColor = isDarkMode ? "rgba(var(--primary-rgb), 0.7)" : "rgba(var(--primary-rgb), 0.7)";
   const drawerBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.45)" : "var(--surface)";
 
-  const dropdownZIndex = 140;
+  const dropdownZIndex = 3700;
   const dropdownContent =
     shouldShowDropdown && dropdownStyle ? (
       <div

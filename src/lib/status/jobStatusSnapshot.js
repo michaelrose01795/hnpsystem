@@ -379,6 +379,7 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
     writeUpRes,
     clockingRes,
     requestsRes,
+    activityRes,
   ] = await Promise.all([
     db
       .from("job_status_history")
@@ -445,6 +446,13 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
       .select("request_id, description, status, request_source, job_type, sort_order")
       .eq("job_id", jobIdValue)
       .order("sort_order", { ascending: true }),
+    db
+      .from("job_activity_events")
+      .select(
+        "event_id, category, action, target_type, target_id, summary, payload, performed_by, occurred_at, user:performed_by (first_name, last_name)"
+      )
+      .eq("job_id", jobIdValue)
+      .order("occurred_at", { ascending: true }),
   ]);
 
   const statusEntries = [];
@@ -753,6 +761,52 @@ export const buildJobStatusSnapshot = async ({ jobId, jobNumber }) => {
           userName: getUserName(row.user),
         },
         userName: getUserName(row.user) || null,
+      });
+    });
+  }
+
+  // Job activity events — VHC decisions, parts/labour edits, file rename/delete,
+  // customer description overrides, non-tech health-check edits, etc. These are
+  // logged via /api/jobs/log-activity or the server-side helper logJobActivity.
+  if (activityRes?.error) {
+    console.error("Failed to load job_activity_events", activityRes.error);
+  } else {
+    const CATEGORY_META = {
+      vhc:          { dept: "VHC",           color: "var(--info)",          icon: "🩺" },
+      health_check: { dept: "Health Check",  color: "var(--accent-purple)", icon: "🧰" },
+      files:        { dept: "Documents",     color: "var(--accent-orange)", icon: "📎" },
+      parts:        { dept: "Parts",         color: "var(--info)",          icon: "🧩" },
+    };
+    (activityRes.data || []).forEach((row) => {
+      if (!row?.occurred_at) return;
+      const meta = CATEGORY_META[row.category] || {
+        dept: "Activity",
+        color: "var(--info)",
+        icon: "•",
+      };
+      const performerName = getUserName(row.user) || null;
+      const isCustomerSourced =
+        row.payload?.source === "share_link" || /^customer_/.test(row.action || "");
+      actionEntries.push({
+        id: `activity-${row.event_id}`,
+        kind: "event",
+        eventType: `${row.category || "activity"}_${row.action || "update"}`,
+        label: row.summary || `${row.category || "activity"} update`,
+        timestamp: ensureIsoString(row.occurred_at),
+        userId: row.performed_by || null,
+        description: null,
+        color: meta.color,
+        department: meta.dept,
+        icon: meta.icon,
+        meta: {
+          category: row.category || null,
+          action: row.action || null,
+          targetType: row.target_type || null,
+          targetId: row.target_id || null,
+          payload: row.payload || {},
+          userName: isCustomerSourced ? "Customer (link)" : performerName,
+        },
+        userName: isCustomerSourced ? "Customer (link)" : performerName,
       });
     });
   }

@@ -879,14 +879,13 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
   const noteText = typeof noteTextProp === "object" && noteTextProp !== null ? noteTextProp[itemKey] || "" : noteTextProp || "";
   const hasNote = typeof noteText === "string" && noteText.length > 0;
   return (
-    <section
-      style={{
-        background: "var(--surface)",
-        borderRadius: "var(--radius-md)",
-        padding: "16px",
-        border: "1px solid var(--accentBorder)",
-        marginBottom: "16px"
-      }}>
+    <DevLayoutSection
+      as="section"
+      sectionKey={itemKey ? `showcase-${itemKey}` : undefined}
+      sectionType="content-card"
+      parentKey="user-diagnostic/showcase"
+      backgroundToken="surface"
+      className="app-section-card showcase-section-card">
       
       <div style={{ display: "flex", alignItems: "center", gap: "6px", margin: "0 0 12px" }}>
         <button
@@ -996,7 +995,7 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
         </div>
       }
       {children}
-    </section>);
+    </DevLayoutSection>);
 
 }
 
@@ -1490,8 +1489,8 @@ const SHOWCASE_CATALOG = {
 };
 
 const SHOWCASE_CATEGORY_ORDER = [
-"Buttons", "Inputs & Fields", "Dropdowns & Selects", "Calendar & Time", "Search", "Tabs",
-"Badges & Labels", "Typography", "Colours & Tokens", "Spacing & Layout", "Tables",
+"Colours & Tokens", "Buttons", "Inputs & Fields", "Dropdowns & Selects", "Calendar & Time", "Search", "Tabs",
+"Badges & Labels", "Typography", "Spacing & Layout", "Tables",
 "Popups & Modals", "Cards & Sections", "Feedback & Status", "Loading & Skeletons",
 "Navigation", "Scroll", "Tooltips", "Icons", "Motion & Transitions", "Reference", "Dev Tools"];
 
@@ -1777,10 +1776,25 @@ function GlobalUiShowcase() {
           flex-direction: column;
           gap: var(--space-sm);
           margin-bottom: var(--space-md);
-          padding: var(--space-md);
-          border-radius: var(--radius-sm);
-          background: var(--surface-light);
-          border: 1px solid var(--accentBorder);
+        }
+        .showcase-section-card {
+          margin-bottom: var(--page-stack-gap);
+        }
+        .showcase-filter-card {
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          margin-bottom: var(--space-sm);
+          border-bottom: var(--section-card-border);
+        }
+        .showcase-filter-tabs {
+          display: flex;
+          gap: var(--space-xs);
+          margin-bottom: var(--space-sm);
+        }
+        .showcase-filter-tabs .app-btn {
+          flex: 1;
+          justify-content: center;
         }
         .showcase-control-row {
           display: grid;
@@ -1874,61 +1888,37 @@ function GlobalUiShowcase() {
       `}</style>
 
       {/* ── Showcase Filters ──────────────────────────────────── */}
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          background: "var(--surfaceMain, var(--surface))",
-          paddingBottom: "12px",
-          marginBottom: "4px",
-          borderBottom: "1px solid var(--accentBorder)"
-        }}>
+      <DevLayoutSection
+        sectionKey="user-diagnostic/showcase-filters"
+        sectionType="filter-row"
+        parentKey="user-diagnostic/showcase"
+        backgroundToken="surface"
+        className="app-section-card showcase-filter-card">
         
-        <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+        <div className="showcase-filter-tabs">
           {[
           { value: "all", label: "All" },
           { value: "global", label: "Global" },
           { value: "non-global", label: "Non-Global" }].
           map((opt) =>
-          <button
+          <Button
             key={opt.value}
             type="button"
             onClick={() => setShowcaseScope(opt.value)}
-            style={{
-              flex: 1,
-              padding: "6px 0",
-              borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--accentBorder)",
-              background: showcaseScope === opt.value ? "var(--accent-base, var(--primary))" : "var(--surface-light)",
-              color: showcaseScope === opt.value ? "var(--text-inverse)" : "var(--text-secondary)",
-              fontSize: "11px",
-              fontWeight: 700,
-              cursor: "pointer",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              transition: "background 0.15s, color 0.15s"
-            }}>
+            size="xs"
+            variant={showcaseScope === opt.value ? "primary" : "secondary"}>
             
               {opt.label}
-            </button>
+            </Button>
           )}
         </div>
-        <input
-          type="text"
+        <SearchBar
           value={showcaseSearch}
           onChange={(e) => setShowcaseSearch(e.target.value)}
           placeholder="Search components, colours, styles…"
-          className="app-input"
+          onClear={() => setShowcaseSearch("")}
           style={{
-            width: "100%",
-            padding: "7px 10px",
-            fontSize: "12px",
-            borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--accentBorder)",
-            background: "var(--surface)",
-            color: "var(--text-primary)",
-            boxSizing: "border-box"
+            width: "100%"
           }} />
         
         {(showcaseScope !== "all" || searchLower) &&
@@ -1936,27 +1926,52 @@ function GlobalUiShowcase() {
             <span style={{ fontSize: "10px", color: "var(--text-secondary)" }}>
               {visibleCategorySet.size} categor{visibleCategorySet.size === 1 ? "y" : "ies"} visible
             </span>
-            <button
+            <Button
             type="button"
             onClick={() => {setShowcaseScope("all");setShowcaseSearch("");}}
-            style={{
-              padding: "2px 8px",
-              borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--accentBorder)",
-              background: "var(--surface-light)",
-              color: "var(--text-secondary)",
-              fontSize: "10px",
-              fontWeight: 600,
-              cursor: "pointer"
-            }}>
+            size="xs"
+            variant="ghost">
             
               Clear filters
-            </button>
+            </Button>
           </div>
         }
-      </div>
+      </DevLayoutSection>
 
       {/* ── Dev Layout Overlay ────────────────────────────────── */}
+      <ShowcaseCategoryHeader category="Colours & Tokens" visible={visibleCategorySet.has("Colours & Tokens")} />
+      {isSectionVisible("colour-tokens") &&
+      <ShowcaseSection title="Colour Tokens" itemKey="colour-tokens" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+        {COLOUR_GROUPS.map((group) =>
+        <div key={group.title} style={{ marginBottom: "14px" }}>
+            <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "var(--text-secondary)",
+              marginBottom: "6px",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em"
+            }}>
+            
+              {group.title}
+            </div>
+            <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: "8px"
+            }}>
+            
+              {group.swatches.map((token) =>
+            <ColourSwatch key={token} token={token} />
+            )}
+            </div>
+          </div>
+        )}
+      </ShowcaseSection>
+      }
+
       {isSectionVisible("dev-layout-overlay") &&
       <>
         <ShowcaseCategoryHeader category="Dev Tools" visible={visibleCategorySet.has("Dev Tools")} />
@@ -2550,38 +2565,6 @@ function GlobalUiShowcase() {
         </div>
       </ShowcaseSection>
       }
-      {isSectionVisible("colour-tokens") &&
-      <ShowcaseSection title="Colour Tokens" itemKey="colour-tokens" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        {COLOUR_GROUPS.map((group) =>
-        <div key={group.title} style={{ marginBottom: "14px" }}>
-            <div
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              color: "var(--text-secondary)",
-              marginBottom: "6px",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em"
-            }}>
-            
-              {group.title}
-            </div>
-            <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: "8px"
-            }}>
-            
-              {group.swatches.map((token) =>
-            <ColourSwatch key={token} token={token} />
-            )}
-            </div>
-          </div>
-        )}
-      </ShowcaseSection>
-      }
-
       <ShowcaseCategoryHeader category="Spacing & Layout" visible={visibleCategorySet.has("Spacing & Layout")} />
       {isSectionVisible("spacing-global") &&
       <ShowcaseSection title="Spacing — Global (--space-* / gutters / layout)" itemKey="spacing-global" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>

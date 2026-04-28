@@ -9,8 +9,6 @@ export default function AppointmentsUi(props) {
     Popup,
     SATURDAY_SEVERITY_STYLES,
     SearchBar,
-    TECH_AVAILABILITY_TABLE,
-    activeDayTab,
     checkingInJobId,
     currentNote,
     dates,
@@ -24,7 +22,6 @@ export default function AppointmentsUi(props) {
     getJobCounts,
     getJobGroupBadge,
     getJobTypeBadgeStyle,
-    getTechDailyHours,
     getVehicleDisplay,
     handleAddAppointment,
     handleCheckIn,
@@ -32,19 +29,15 @@ export default function AppointmentsUi(props) {
     handleJobRowClick,
     handleJobRowHover,
     handleShowStaffOff,
-    handleTechAvailabilityChange,
     highlightJob,
     isCompactMobile,
     isJobActuallyCheckedIn,
     isLoading,
     isSameDate,
-    isTechAvailabilityLoading,
     jobNumber,
-    parseHoursValue,
     saveNote,
     searchQuery,
     selectedDay,
-    setActiveDayTab,
     setCurrentNote,
     setSearchQuery,
     setSelectedDay,
@@ -57,15 +50,8 @@ export default function AppointmentsUi(props) {
     staffAbsences,
     staffOffPopupDate,
     staffOffPopupDetails,
-    techAvailabilityError,
-    techSummaryForSelectedDay,
-    techsForSelectedDay,
     time,
     timeSlots,
-    totalAvailableTechHours,
-    totalBookedTechHours,
-    totalCapacityBadgeStyle,
-    totalCapacityLabel,
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
@@ -79,7 +65,8 @@ export default function AppointmentsUi(props) {
         <div id="appointments-auto-content-card-2" data-dev-section-key="appointments-auto-content-card-2" data-dev-section-type="content-card" className="app-section-card" style={{
       display: "grid",
       gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-      gap: "8px",
+      gap: "10px",
+      padding: "10px",
       alignItems: "center",
       overflowX: "hidden",
       backgroundColor: "rgba(var(--primary-rgb), 0.16)",
@@ -130,19 +117,29 @@ export default function AppointmentsUi(props) {
         </div>
 
         {/* Calendar Table Container — mirrors the .app-table-shell-* visual design inline so this table can be edited freely without fighting global !important rules. data-app-table-shell="off" opts the table out of the GlobalTableShells auto-classifier. */}
+        {/* Outer wrapper owns the card visuals (border, radius, surface fallback) and clips the rounded corners. The inner scroller is transparent and gutter-free so row backgrounds paint behind the scrollbar thumb instead of being cut off by a reserved gutter. */}
         <div data-dev-section-key="appointments-auto-data-table-2-shell" data-dev-section-type="section-shell" style={{
-      flex: "0 0 auto",
-      marginBottom: "12px"
+      flex: "1 1 auto",
+      minHeight: 0,
+      marginBottom: "12px",
+      display: "flex",
+      flexDirection: "column",
+      borderRadius: "var(--radius-md)",
+      border: "1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12)",
+      background: "var(--surface)",
+      overflow: "hidden"
     }}>
-          <div style={{
-        maxHeight: "calc(9 * 44px)",
+          <div className="appointments-calendar-table-scroll" style={{
+        flex: "1 1 auto",
+        minHeight: 0,
+        maxHeight: "418px",
         overflowY: "auto",
-        borderRadius: "var(--radius-md)",
-        border: "1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12)",
-        background: "var(--surface)"
+        overflowX: "hidden",
+        background: "transparent"
       }}>
             <table id="appointments-auto-data-table-2" data-dev-section-key="appointments-auto-data-table-2" data-dev-section-type="data-table" data-app-table-shell="off" style={{
           width: "100%",
+          minWidth: "100%",
           tableLayout: "fixed",
           color: "var(--text-primary)",
           background: "var(--surface)",
@@ -224,8 +221,8 @@ export default function AppointmentsUi(props) {
                 textAlign: align,
                 whiteSpace: "nowrap",
                 padding: idx === 0 ? "12px 10px 12px 14px" : idx === arr.length - 1 ? "12px 14px 12px 10px" : "12px 10px",
-                background: "var(--accent-dark, var(--accent-purple))",
-                color: "var(--text-inverse, #ffffff)",
+                background: "var(--page-shell-bg)",
+                color: "var(--text-primary)",
                 fontSize: "0.72rem",
                 fontWeight: 700,
                 textTransform: "uppercase",
@@ -258,11 +255,12 @@ export default function AppointmentsUi(props) {
               const availabilityLabelColor = isCalmDay ? "var(--success-dark)" : severityStyle?.textColor || "var(--text-primary)";
 
               // Row background — alternating like the global .app-table-shell--with-headings, with overrides for Saturday / selected / today.
-              const baseRowBg = index % 2 === 0 ? "var(--surface)" : "var(--surface-light, var(--surface))";
-              let rowBg = baseRowBg;
+              let rowBg = "var(--surface)";
               if (isWeekendSaturday) rowBg = "var(--warning-surface)";
               if (isSelected) rowBg = "rgba(var(--primary-rgb), 0.25)";
-              else if (isToday) rowBg = "rgba(var(--primary-rgb), 0.07)";
+              if (isToday) rowBg = "var(--success-surface)";
+              if (isSelected && isWeekendSaturday) rowBg = "var(--warning-text)";
+              if (isSelected && isToday) rowBg = "var(--success-text)";
 
               // Shared cell padding rhythm (12px 10px, with first/last getting 14px outer padding) — matches global table feel.
               const tdBase = {
@@ -275,11 +273,7 @@ export default function AppointmentsUi(props) {
               const tdFirst = { ...tdBase, paddingLeft: "14px" };
               const tdLast = { ...tdBase, paddingRight: "14px" };
 
-              return <tr key={dateKey} className={isWeekendSaturday ? "appt-sat-row" : undefined} onClick={() => setSelectedDay(date)} onMouseEnter={e => {
-                if (isWeekendSaturday) e.currentTarget.style.backgroundColor = "var(--accent-surface-hover)";
-              }} onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = rowBg;
-              }} style={{
+              return <tr key={dateKey} className={[isWeekendSaturday ? "appt-sat-row" : "", isToday ? "appt-today-row" : "", isSelected ? "appt-selected-row" : ""].filter(Boolean).join(" ") || undefined} onClick={() => setSelectedDay(date)} style={{
                 cursor: "pointer",
                 backgroundColor: rowBg,
                 transition: "background-color 0.2s ease"
@@ -416,263 +410,22 @@ export default function AppointmentsUi(props) {
           }}>{formatDateNoYear(selectedDay)}</span>
             </h3>
             <span style={{
-          padding: "6px 14px",
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "6px 12px",
           backgroundColor: "var(--surface)",
-          borderRadius: "var(--radius-md)",
-          fontSize: "14px",
-          fontWeight: "600",
+          borderRadius: "var(--radius-xs)",
+          border: "none",
+          fontSize: "13px",
+          fontWeight: "700",
           color: "var(--text-secondary)"
         }}>
               {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''}
             </span>
           </div>
 
+          {/* ✅ Enhanced Jobs Table — always shown (toggle removed) */}
           <div style={{
-        display: "flex",
-        gap: "12px",
-        marginBottom: "16px",
-        flexWrap: "wrap"
-      }}>
-            <button onClick={() => setActiveDayTab("jobs")} style={{
-          padding: "8px 16px",
-          border: activeDayTab === "jobs" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
-          backgroundColor: activeDayTab === "jobs" ? "var(--surface-light)" : "var(--surface)",
-          color: activeDayTab === "jobs" ? "var(--text-primary)" : "var(--grey-accent)",
-          borderRadius: "var(--radius-xs)",
-          cursor: "pointer",
-          fontWeight: activeDayTab === "jobs" ? "600" : "500",
-          fontSize: "13px",
-          transition: "all 0.2s"
-        }} onMouseEnter={e => {
-          if (activeDayTab !== "jobs") {
-            e.currentTarget.style.backgroundColor = "var(--surface)";
-          }
-        }} onMouseLeave={e => {
-          if (activeDayTab !== "jobs") {
-            e.currentTarget.style.backgroundColor = "var(--surface)";
-          }
-        }}>
-              All Jobs ({sortedJobs.length})
-            </button>
-            
-            <button onClick={() => setActiveDayTab("tech-hours")} style={{
-          padding: "8px 16px",
-          border: activeDayTab === "tech-hours" ? "2px solid var(--primary)" : "1px solid var(--surface-light)",
-          backgroundColor: activeDayTab === "tech-hours" ? "var(--surface-light)" : "var(--surface)",
-          color: activeDayTab === "tech-hours" ? "var(--text-primary)" : "var(--grey-accent)",
-          borderRadius: "var(--radius-xs)",
-          cursor: "pointer",
-          fontWeight: activeDayTab === "tech-hours" ? "600" : "500",
-          fontSize: "13px",
-          transition: "all 0.2s"
-        }} onMouseEnter={e => {
-          if (activeDayTab !== "tech-hours") {
-            e.currentTarget.style.backgroundColor = "var(--surface)";
-          }
-        }} onMouseLeave={e => {
-          if (activeDayTab !== "tech-hours") {
-            e.currentTarget.style.backgroundColor = "var(--surface)";
-          }
-        }}>
-              Tech Hours
-            </button>
-          </div>
-          {activeDayTab === "tech-hours" && <div style={{
-        marginBottom: "16px",
-        padding: "16px",
-        border: "2px solid var(--primary)",
-        borderRadius: "var(--radius-xs)",
-        background: "var(--surface-light)"
-      }}>
-              <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "12px"
-        }}>
-                <div>
-                  <div style={{
-              fontSize: "14px",
-              fontWeight: "600",
-              color: "var(--text-secondary)"
-            }}>
-                    Live Tech Availability — {formatDateNoYear(selectedDay)}
-                  </div>
-                  <div style={{
-              fontSize: "12px",
-              color: "var(--grey-accent)"
-            }}>
-                    Source: {TECH_AVAILABILITY_TABLE === "tech_hours" ? "tech_hours" : "job_clocking"} table
-                  </div>
-                </div>
-                <span style={{
-            padding: "4px 12px",
-            borderRadius: "var(--radius-pill)",
-            backgroundColor: "var(--surface-light)",
-            color: "var(--primary)",
-            fontWeight: "600",
-            fontSize: "13px"
-          }}>
-                  {techSummaryForSelectedDay.totalTechs} tech{techSummaryForSelectedDay.totalTechs !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <div style={{
-          marginBottom: "12px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "6px"
-        }}>
-                <div style={{
-            fontSize: "13px",
-            fontWeight: "600",
-            color: "var(--text-primary)"
-          }}>
-                  Booked {totalBookedTechHours.toFixed(1)}h
-                </div>
-                <div style={{
-            fontSize: "12px",
-            color: "var(--grey-accent-dark)"
-          }}>
-                  of {totalAvailableTechHours.toFixed(1)}h available
-                </div>
-                <span style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "var(--radius-pill)",
-            padding: "4px 10px",
-            fontSize: "12px",
-            fontWeight: "600",
-            ...totalCapacityBadgeStyle
-          }}>
-                  {totalCapacityLabel}
-                </span>
-              </div>
-              {techAvailabilityError && <div style={{
-          marginBottom: "10px",
-          padding: "10px 12px",
-          background: "var(--surface-light)",
-          borderRadius: "var(--radius-xs)",
-          color: "var(--danger)",
-          fontSize: "13px"
-        }}>
-                  {techAvailabilityError}
-                </div>}
-              {isTechAvailabilityLoading ? <div style={{
-          padding: "10px 0",
-          color: "var(--grey-accent)",
-          fontSize: "13px"
-        }}>
-                  Loading live tech availability...
-                </div> : <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px"
-        }}>
-                  {techsForSelectedDay.map(tech => {
-            const latestSegment = tech.segments[tech.segments.length - 1];
-            const latestJobDisplay = latestSegment ? `Job ${latestSegment.jobNumber || "-"} (${latestSegment.workType})` : "No jobs recorded";
-            const latestClockIn = tech.latestClockIn ? new Date(tech.latestClockIn).toLocaleTimeString("en-GB", {
-              hour: "2-digit",
-              minute: "2-digit"
-            }) : "-";
-            const latestClockOut = tech.latestClockOut ? new Date(tech.latestClockOut).toLocaleTimeString("en-GB", {
-              hour: "2-digit",
-              minute: "2-digit"
-            }) : "-";
-            const availableHoursValue = parseHoursValue(tech.availableHours) ?? getTechDailyHours(tech);
-            const totalLogged = parseHoursValue(tech.totalHours) ?? 0;
-            const absenceLabel = tech.absenceType || "Holiday";
-            return <div key={tech.techId} style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "10px 12px",
-              background: "var(--surface)",
-              borderRadius: "var(--radius-xs)",
-              border: "none",
-              boxShadow: "none"
-            }}>
-                        <div>
-                          <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px"
-                }}>
-                            <div style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: "var(--text-secondary)"
-                  }}>
-                              {tech.name || "Retail Technician"}
-                            </div>
-                            {tech.isOnHoliday && <span style={{
-                    fontSize: "11px",
-                    fontWeight: "600",
-                    padding: "2px 8px",
-                    borderRadius: "var(--radius-pill)",
-                    backgroundColor: "var(--warning-surface)",
-                    color: "var(--warning)"
-                  }}>
-                                {`On ${absenceLabel}`}
-                              </span>}
-                          </div>
-                          <div style={{
-                  fontSize: "12px",
-                  color: "var(--grey-accent)"
-                }}>
-                            {latestJobDisplay}
-                          </div>
-                          <div style={{
-                  fontSize: "12px",
-                  color: "var(--grey-accent-light)",
-                  marginTop: "4px"
-                }}>
-                            Shift: {latestClockIn} – {tech.currentlyClockedIn ? "Present" : latestClockOut}
-                            {" · "}
-                            {totalLogged > 0 ? `${totalLogged.toFixed(1)}h logged` : "0h recorded"}
-                          </div>
-                        </div>
-                        <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-                gap: "4px"
-              }}>
-                          <label style={{
-                  fontSize: "11px",
-                  color: "var(--grey-accent)",
-                  fontWeight: "600"
-                }}>
-                            Availability
-                          </label>
-                          <input type="number" min="0" max="6" step="0.5" value={availableHoursValue} onChange={event => handleTechAvailabilityChange(techSummaryForSelectedDay.dateKey || selectedDay.toDateString(), tech.techId, event.target.value)} style={{
-                  width: "80px",
-                  padding: "6px 8px",
-                  borderRadius: "var(--radius-xs)",
-                  border: "none",
-                  fontSize: "14px",
-                  textAlign: "right",
-                  fontFamily: "inherit",
-                  background: "var(--surface)"
-                }} />
-                          <span style={{
-                  fontSize: "11px",
-                  color: "var(--grey-accent-dark)"
-                }}>
-                            hours (manual override)
-                          </span>
-                        </div>
-                      </div>;
-          })}
-                </div>}
-            </div>}
-
-          {activeDayTab === "jobs" && <>
-              {/* ✅ Enhanced Jobs Table */}
-              <div style={{
           overflowX: "auto",
           border: "var(--control-border)",
           borderRadius: "var(--radius-md)",
@@ -751,7 +504,7 @@ export default function AppointmentsUi(props) {
                       minHeight: 0,
                       borderRadius: "var(--radius-xs)",
                       background: "var(--accent-surface)",
-                      border: "var(--control-border)",
+                      border: "none",
                       color: "var(--primary)",
                       fontWeight: "700",
                       fontSize: "inherit",
@@ -812,7 +565,7 @@ export default function AppointmentsUi(props) {
                           alignItems: "center",
                           padding: "6px 12px",
                           borderRadius: "var(--radius-xs)",
-                          border: "var(--control-border)",
+                          border: "none",
                           fontWeight: "700"
                         }}>
                                 {label}
@@ -828,7 +581,7 @@ export default function AppointmentsUi(props) {
                       alignItems: "center",
                       padding: "6px 12px",
                       borderRadius: "var(--radius-xs)",
-                      border: "var(--control-border)",
+                      border: "none",
                       fontSize: "11px",
                       fontWeight: "700",
                       ...getCustomerStatusBadgeColors(job.waitingStatus || "Neither")
@@ -854,7 +607,7 @@ export default function AppointmentsUi(props) {
                       minWidth: isCompactMobile ? "90px" : "110px",
                       textAlign: "center",
                       borderRadius: "var(--radius-xs)",
-                      border: "var(--control-border)",
+                      border: "none",
                       fontSize: "13px",
                       fontWeight: "700",
                       lineHeight: "1",
@@ -906,7 +659,6 @@ export default function AppointmentsUi(props) {
               </tbody>
             </table>
           </div>
-            </>}
         </div>
         {/* Add Note Popup */}
         <Popup isOpen={showNotePopup} onClose={() => setShowNotePopup(false)}>

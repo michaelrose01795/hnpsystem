@@ -7,6 +7,7 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { summariseTechnicianVhc } from "@/lib/vhc/summary";
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { saveChecksheet } from "@/lib/database/jobs";
+import { logJobActivityClient } from "@/lib/jobs/logActivityClient";
 // Phase 4 of the VHC refactor: VHC-table reads inside the fallback loader are
 // owned by the DB helper module per CLAUDE.md §5.
 import { loadVhcFallbackBundle } from "@/lib/database/vhc";
@@ -21,6 +22,7 @@ import InternalElectricsDetailsModal from "@/components/VHC/InternalElectricsDet
 import UndersideDetailsModal from "@/components/VHC/UndersideDetailsModal";
 import PrePickLocationModal from "@/components/VHC/PrePickLocationModal";
 import VHCModalShell from "@/components/VHC/VHCModalShell";
+import VhcCustomerDescriptionModal from "@/components/VHC/VhcCustomerDescriptionModal";
 import PopupModal from "@/components/popups/popupStyleApi";
 import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
@@ -1386,7 +1388,7 @@ export default function VhcDetailsPanel({
 }) {
   const isCustomerView = viewMode === "customer";
   const router = useRouter();
-  const { authUserId, dbUserId } = useUser() || {};
+  const { authUserId, dbUserId, user: currentUser } = useUser() || {};
   const { confirm } = useConfirmation();
   const resolvedJobNumber = jobNumber || router.query?.jobNumber;
 
@@ -1412,6 +1414,9 @@ export default function VhcDetailsPanel({
   const [vhcItemAliasRecords, setVhcItemAliasRecords] = useState([]);
   const [removingPartIds, setRemovingPartIds] = useState(new Set());
   const [hoveredStatusId, setHoveredStatusId] = useState(null);
+  // Customer description override modal — opened when user clicks the
+  // description text on a Summary tab row to edit what the customer sees.
+  const [customerDescriptionEditTarget, setCustomerDescriptionEditTarget] = useState(null);
   // Track the item currently being edited in the Total column and its raw edit value,
   // so the input shows whatever the user is typing (including empty string) without
   // immediately snapping back to the computed Parts+Labour total mid-edit.
@@ -1692,6 +1697,30 @@ export default function VhcDetailsPanel({
         }
         setSectionSaveStatus("saved");
         setLastSectionSavedAt(new Date());
+        // Job tracker logging — record every health-check save. Whether the
+        // editor is the assigned tech or another role is captured in payload
+        // so the tracker can highlight non-tech edits.
+        try {
+          const userRoles = (currentUser?.roles || []).map((r) => String(r).toUpperCase());
+          const isTechRole = userRoles.some((r) => r.includes("TECH") || r.includes("MOT"));
+          const isAssignedTech =
+            job?.assigned_to && currentUser?.user_id && Number(job.assigned_to) === Number(currentUser.user_id);
+          const editorIsTech = isAssignedTech || isTechRole;
+          await logJobActivityClient({
+            jobNumber: resolvedJobNumber,
+            category: "health_check",
+            action: editorIsTech ? "tech_saved_checksheet" : "non_tech_edited_checksheet",
+            summary: editorIsTech
+              ? "Technician saved health check changes"
+              : `Health check edited by ${currentUser?.first_name || currentUser?.name || "non-tech user"}`,
+            targetType: "vhc_checksheet",
+            payload: {
+              roles: userRoles,
+              editorIsTech,
+              assignedTo: job?.assigned_to || null,
+            },
+          });
+        } catch {}
         return true;
       } catch (err) {
         console.error("Failed to save VHC sections", err);
@@ -1700,7 +1729,7 @@ export default function VhcDetailsPanel({
         return false;
       }
     },
-    [resolvedJobNumber]
+    [resolvedJobNumber, currentUser, job?.assigned_to]
   );
 
   const fetchJobPartsViaApi = useCallback(async (jobId) => {
@@ -1732,7 +1761,7 @@ export default function VhcDetailsPanel({
             customer:customer_id(*),
             vehicle:vehicle_id(*),
             technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-            vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id, Complete),
+            vhc_checks(vhc_id, section, issue_description, customer_description, issue_title, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id, Complete),
             parts_job_items(
               id,
               part_id,
@@ -4601,7 +4630,19 @@ export default function VhcDetailsPanel({
 
                 let detailLabel = item.label || item.sectionName || "Recorded item";
                 const concernDetail = item.concernText || "";
-                let detailContent = concernDetail || item.notes || "";
+                const technicianDescription = concernDetail || item.notes || "";
+                const customerOverride = (item.vhcCheck?.customer_description || "").trim();
+                let detailContent = customerOverride || technicianDescription;
+                const isCustomerOverride = Boolean(customerOverride);
+                const handleDescriptionClick = () => {
+                  setCustomerDescriptionEditTarget({
+                    vhcId: item.vhcCheck?.vhc_id || item.id,
+                    itemLabel: item.label || item.sectionName || "Recorded item",
+                    categoryLabel: item.categoryLabel || item.sectionName || "",
+                    technicianDescription,
+                    currentCustomerDescription: customerOverride,
+                  });
+                };
                 const rawDetailRows = Array.isArray(item.rows)
                   ? item.rows.map((row) => (row ? String(row).trim() : "")).filter(Boolean)
                   : [];
@@ -4681,18 +4722,108 @@ export default function VhcDetailsPanel({
                         <span>{detailLabel}</span>
                       </div>
                       {detailRows.length > 0 ? (
-                        <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <button
+                          type="button"
+                          onClick={handleDescriptionClick}
+                          title="Click to edit the customer description"
+                          style={{
+                            marginTop: "6px",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                            background: "transparent",
+                            border: "none",
+                            padding: 0,
+                            textAlign: "left",
+                            cursor: "pointer",
+                            color: "var(--info-dark)",
+                            font: "inherit",
+                            width: "100%",
+                          }}
+                        >
                           {detailRows.map((row, rowIdx) => (
                             <div key={`${statusKey}-detail-row-${rowIdx}`} style={{ fontWeight: 600, color: "var(--info-dark)" }}>
                               - {row}
                             </div>
                           ))}
-                        </div>
+                          {isCustomerOverride ? (
+                            <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--accentMain, var(--primary))", fontWeight: 700 }}>
+                              Customer description ✎
+                            </div>
+                          ) : null}
+                        </button>
                       ) : suppressDetailLabel ? (
-                        <div style={{ marginTop: "6px", fontWeight: 600, color: "var(--info-dark)" }}>{`- ${detailContent}`}</div>
+                        <button
+                          type="button"
+                          onClick={handleDescriptionClick}
+                          title="Click to edit the customer description"
+                          style={{
+                            marginTop: "6px",
+                            fontWeight: 600,
+                            color: "var(--info-dark)",
+                            background: "transparent",
+                            border: "none",
+                            padding: 0,
+                            textAlign: "left",
+                            cursor: "pointer",
+                            font: "inherit",
+                            width: "100%",
+                          }}
+                        >
+                          {`- ${detailContent}`}
+                          {isCustomerOverride ? (
+                            <span style={{ marginLeft: 6, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--accentMain, var(--primary))", fontWeight: 700 }}>
+                              ✎ customer
+                            </span>
+                          ) : null}
+                        </button>
                       ) : detailContent ? (
-                        <div style={{ marginTop: "6px", fontWeight: 500, color: "var(--info-dark)" }}>- {detailContent}</div>
-                      ) : null}
+                        <button
+                          type="button"
+                          onClick={handleDescriptionClick}
+                          title="Click to edit the customer description"
+                          style={{
+                            marginTop: "6px",
+                            fontWeight: 500,
+                            color: "var(--info-dark)",
+                            background: "transparent",
+                            border: "none",
+                            padding: 0,
+                            textAlign: "left",
+                            cursor: "pointer",
+                            font: "inherit",
+                            width: "100%",
+                          }}
+                        >
+                          - {detailContent}
+                          {isCustomerOverride ? (
+                            <span style={{ marginLeft: 6, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--accentMain, var(--primary))", fontWeight: 700 }}>
+                              ✎ customer
+                            </span>
+                          ) : null}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleDescriptionClick}
+                          title="Click to add a customer description"
+                          style={{
+                            marginTop: "6px",
+                            fontStyle: "italic",
+                            color: "var(--info)",
+                            background: "transparent",
+                            border: "1px dashed var(--border)",
+                            borderRadius: "var(--radius-xs)",
+                            padding: "4px 8px",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            font: "inherit",
+                            fontSize: "12px",
+                          }}
+                        >
+                          + Add customer description
+                        </button>
+                      )}
                       {item.measurement ? (
                         <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{item.measurement}</div>
                       ) : null}
@@ -5218,7 +5349,8 @@ export default function VhcDetailsPanel({
     const entry = getEntryForItem(item.id);
     const total = resolveCustomerRowTotal(item.id);
     const detailLabel = item.label || item.sectionName || "Recorded item";
-    const detailContent = item.concernText || item.notes || "";
+    const customerOverride = (item.vhcCheck?.customer_description || "").trim();
+    const detailContent = customerOverride || item.concernText || item.notes || "";
     const measurement = item.measurement || "";
     const categoryLabel = item.categoryLabel || item.sectionName || "Recorded Section";
     const decisionKey = resolveVhcRowDecisionKey(item, entry);
@@ -5623,7 +5755,7 @@ export default function VhcDetailsPanel({
               customer:customer_id(*),
               vehicle:vehicle_id(*),
               technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-              vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id, Complete),
+              vhc_checks(vhc_id, section, issue_description, customer_description, issue_title, measurement, created_at, updated_at, approval_status, authorization_state, display_status, severity, approved_by, approved_at, labour_hours, parts_cost, total_override, labour_complete, parts_complete, display_id, Complete),
               parts_job_items(
                 id,
                 part_id,
@@ -6277,7 +6409,7 @@ export default function VhcDetailsPanel({
           customer:customer_id(*),
           vehicle:vehicle_id(*),
           technician:assigned_to(user_id, first_name, last_name, email, role, phone),
-          vhc_checks(vhc_id, section, issue_description, issue_title, measurement, created_at, updated_at, severity),
+          vhc_checks(vhc_id, section, issue_description, customer_description, issue_title, measurement, created_at, updated_at, severity),
           parts_job_items(
             id,
             part_id,
@@ -6652,6 +6784,27 @@ export default function VhcDetailsPanel({
       if (!response.ok || !data.success) {
         throw new Error(data.message || "Failed to add part to job");
       }
+
+      // Job tracker logging — non-blocking.
+      try {
+        const qty = selectedPartForJob.quantity_requested || 1;
+        await logJobActivityClient({
+          jobId: job.id,
+          jobNumber: resolvedJobNumber,
+          category: "parts",
+          action: "added_to_vhc_item",
+          summary: `Part added: ${part.name || part.part_number || "(unnamed)"} × ${qty}`,
+          targetType: "parts_job_item",
+          targetId: selectedPartForJob.vhc_item_id ? String(selectedPartForJob.vhc_item_id) : null,
+          payload: {
+            partId: part.id,
+            partName: part.name,
+            partNumber: part.part_number,
+            quantity: qty,
+            vhcItemId: selectedPartForJob.vhc_item_id || null,
+          },
+        });
+      } catch {}
 
       // Refresh job data
       await handlePartAdded();
@@ -9838,6 +9991,42 @@ export default function VhcDetailsPanel({
         partName={selectedPartForJob?.part?.name || "Part"}
         initialLocation=""
         allowSkip={true}
+      />
+
+      {/* Customer description override modal — Summary tab edit popup */}
+      <VhcCustomerDescriptionModal
+        open={Boolean(customerDescriptionEditTarget)}
+        onClose={() => setCustomerDescriptionEditTarget(null)}
+        itemLabel={customerDescriptionEditTarget?.itemLabel || ""}
+        categoryLabel={customerDescriptionEditTarget?.categoryLabel || ""}
+        technicianDescription={customerDescriptionEditTarget?.technicianDescription || ""}
+        initialCustomerDescription={customerDescriptionEditTarget?.currentCustomerDescription || ""}
+        onSave={async (nextValue) => {
+          const target = customerDescriptionEditTarget;
+          if (!target?.vhcId) return;
+          const response = await fetch("/api/vhc/update-customer-description", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              vhcItemId: target.vhcId,
+              customerDescription: nextValue,
+            }),
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || !payload?.success) {
+            throw new Error(payload?.message || "Could not save the customer description.");
+          }
+          // Optimistically reflect the change in local state so the row updates
+          // before the realtime channel re-syncs vhcChecksData.
+          const savedValue = payload?.data?.customer_description ?? null;
+          setVhcChecksData((prev) =>
+            (prev || []).map((row) =>
+              String(row?.vhc_id) === String(target.vhcId)
+                ? { ...row, customer_description: savedValue }
+                : row
+            )
+          );
+        }}
       />
 
       <style jsx global>{`

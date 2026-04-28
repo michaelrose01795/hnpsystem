@@ -817,7 +817,7 @@ export default function Layout({
                 style={{
                   position: "fixed",
                   inset: 0,
-                  zIndex: 150,
+                  zIndex: 3500,
                   display: "flex",
                   justifyContent: "flex-start",
                   alignItems: "stretch",
@@ -891,8 +891,7 @@ export default function Layout({
                 gridTemplateColumns: !isTablet ? "minmax(0, 1fr) auto minmax(0, 1fr)" : "1fr",
                 alignItems: "center",
                 gap: isMobile ? "10px" : "14px",
-                overflowX: "auto",
-                overflowY: "visible",
+                overflow: "visible",
                 width: "100%",
               }}
             >
@@ -1195,7 +1194,7 @@ export default function Layout({
             fontWeight: 700,
             boxShadow: "none",
             cursor: "pointer",
-            zIndex: 160,
+            zIndex: 3600,
             transition: "left 0.25s ease, width 0.2s ease, height 0.2s ease",
           }}
           aria-label={isSidebarOpen ? "Close navigation sidebar" : "Open navigation sidebar"}
@@ -1227,7 +1226,7 @@ export default function Layout({
               fontWeight: 700,
               boxShadow: "none",
               cursor: "pointer",
-              zIndex: 140,
+              zIndex: 3400,
               transition: "right 0.35s ease, width 0.2s ease, height 0.2s ease",
             }}
             aria-label={isStatusSidebarOpen ? "Close status sidebar" : "Open status sidebar"}
@@ -1247,7 +1246,7 @@ export default function Layout({
               flexDirection: "column",
               transform: isStatusSidebarOpen ? "translateX(0)" : "translateX(100%)",
               transition: "transform 0.35s ease",
-              zIndex: 130,
+              zIndex: 3350,
               pointerEvents: isStatusSidebarOpen ? "auto" : "none",
             }}
           >

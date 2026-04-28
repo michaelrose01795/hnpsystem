@@ -191,6 +191,88 @@ async function handlePasswordRevert(req, res) {
 
   const { data: user, error: lookupError } = await supabaseService
     .from("users")
+    .select("user_id, password_hash, accent_color, dark_mode, first_name, last_name, email")
+    .eq("user_id", payload.userId)
+    .maybeSingle();
+
+  if (lookupError) {
+    return res.status(500).json({ success: false, message: lookupError.message });
+  }
+  if (!user?.user_id) {
+    return res.status(404).json({ success: false, message: "User no longer exists." });
+  }
+
+  // Allow re-opening the link after revert: if DB already matches the old hash,
+  // treat as already-reverted (idempotent) instead of failing with 409.
+  const alreadyReverted =
+    String(user.password_hash || "") === String(payload.oldPasswordHash || "");
+
+  if (
+    !alreadyReverted &&
+    String(user.password_hash || "") !== String(payload.newPasswordHash || "")
+  ) {
+    return res.status(409).json({
+      success: false,
+      message: "Password has changed again since this reset email was sent.",
+    });
+  }
+
+  if (!alreadyReverted) {
+    const { error: revertError } = await supabaseService
+      .from("users")
+      .update({
+        password_hash: String(payload.oldPasswordHash || ""),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", payload.userId);
+
+    if (revertError) {
+      return res.status(500).json({ success: false, message: revertError.message });
+    }
+  }
+
+  const displayName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim() || user.email || "";
+
+  return res.status(200).json({
+    success: true,
+    message: alreadyReverted ? "Password is already reverted." : "Password has been reverted.",
+    revertedPassword: String(payload.oldPasswordHash || ""),
+    themePreferences: {
+      accentColor: user.accent_color || "red",
+      darkMode: user.dark_mode || "system",
+    },
+    displayName,
+  });
+}
+
+// Allow the customer to choose a new password from the revert page using the
+// same token. We re-verify the token, then require the current DB password to
+// match the token's oldPasswordHash — proving the revert was just performed by
+// this token and the account hasn't been tampered with by a third party.
+async function handleSetNewFromToken(req, res) {
+  if (!supabaseService) {
+    return res.status(500).json({ success: false, message: "Server missing Supabase service client." });
+  }
+
+  const token = String(req.body?.token || "");
+  const newPassword = String(req.body?.newPassword ?? "");
+
+  if (!token) {
+    return res.status(400).json({ success: false, message: "Reset token is required." });
+  }
+  if (!newPassword) {
+    return res.status(400).json({ success: false, message: "A new password is required." });
+  }
+
+  let payload = null;
+  try {
+    payload = verifyResetToken(token);
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message || "Invalid token." });
+  }
+
+  const { data: user, error: lookupError } = await supabaseService
+    .from("users")
     .select("user_id, password_hash")
     .eq("user_id", payload.userId)
     .maybeSingle();
@@ -202,29 +284,28 @@ async function handlePasswordRevert(req, res) {
     return res.status(404).json({ success: false, message: "User no longer exists." });
   }
 
-  if (String(user.password_hash || "") !== String(payload.newPasswordHash || "")) {
+  if (String(user.password_hash || "") !== String(payload.oldPasswordHash || "")) {
     return res.status(409).json({
       success: false,
-      message: "Password has changed again since this reset email was sent.",
+      message: "This token can no longer be used to set a new password.",
     });
   }
 
-  const { error: revertError } = await supabaseService
+  const { error: updateError } = await supabaseService
     .from("users")
     .update({
-      password_hash: String(payload.oldPasswordHash || ""),
+      password_hash: newPassword,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", payload.userId);
 
-  if (revertError) {
-    return res.status(500).json({ success: false, message: revertError.message });
+  if (updateError) {
+    return res.status(500).json({ success: false, message: updateError.message });
   }
 
   return res.status(200).json({
     success: true,
-    message: "Password has been reverted.",
-    revertedPassword: String(payload.oldPasswordHash || ""),
+    message: "Your new password has been saved.",
   });
 }
 
@@ -238,6 +319,9 @@ export default async function handler(req, res) {
     const action = String(req.body?.action || "reset").toLowerCase();
     if (action === "revert") {
       return handlePasswordRevert(req, res);
+    }
+    if (action === "setnewfromtoken") {
+      return handleSetNewFromToken(req, res);
     }
     return handlePasswordReset(req, res);
   } catch (error) {

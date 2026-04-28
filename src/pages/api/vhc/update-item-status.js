@@ -8,8 +8,9 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { applyVhcDecision } from "@/features/vhc/vhcStatusEngine";
 import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 import { normalizeDecision, normalizeSeverity, isSeverityColor, DECISION, buildDecisionUpdatePayload } from "@/lib/vhc/vhcItemState";
+import { logJobActivity } from "@/lib/database/jobActivity";
 
-async function handler(req, res) {
+async function handler(req, res, session) {
   if (req.method !== "PATCH" && req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
   }
@@ -186,6 +187,91 @@ async function handler(req, res) {
     }
 
     const updatedRow = data?.[0] || null;
+
+    // Job tracker activity logging — record what was changed so the Job Tracker
+    // shows VHC edits alongside status history. Failures here never block.
+    try {
+      const performedBy =
+        session?.user?.user_id || session?.user?.id || null;
+      const trackerJobId = updatedRow?.job_id || null;
+      const itemTitle =
+        updatedRow?.issue_title || updatedRow?.section || `item ${vhcItemId}`;
+      const events = [];
+
+      if (approvalStatus !== undefined) {
+        const norm = normaliseApproval(approvalStatus);
+        const labelMap = {
+          authorized: "VHC item authorised",
+          declined: "VHC item declined",
+          completed: "VHC item completed",
+          pending: "VHC decision reset to pending",
+          "n/a": "VHC item marked N/A",
+        };
+        events.push({
+          action: norm || "decision_changed",
+          summary: `${labelMap[norm] || "VHC decision changed"}: ${itemTitle}`,
+          payload: { approvalStatus: norm, displayStatus: updateData.display_status || null },
+        });
+      }
+      if (labourHours !== undefined) {
+        const v = updateData.labour_hours;
+        events.push({
+          action: "labour_changed",
+          summary:
+            v === null
+              ? `Labour time cleared on: ${itemTitle}`
+              : `Labour time set to ${v}h on: ${itemTitle}`,
+          payload: { labourHours: v },
+        });
+      }
+      if (partsCost !== undefined && partsCost !== null) {
+        events.push({
+          action: "parts_cost_changed",
+          summary: `Parts cost set to £${Number(updateData.parts_cost || 0).toFixed(2)} on: ${itemTitle}`,
+          payload: { partsCost: updateData.parts_cost },
+        });
+      }
+      if (totalOverride !== undefined && totalOverride !== null) {
+        events.push({
+          action: "total_override_changed",
+          summary:
+            updateData.total_override === null
+              ? `Total override cleared on: ${itemTitle}`
+              : `Total override set to £${Number(updateData.total_override).toFixed(2)} on: ${itemTitle}`,
+          payload: { totalOverride: updateData.total_override },
+        });
+      }
+      if (complete !== undefined || labourComplete !== undefined || partsComplete !== undefined) {
+        const fields = [];
+        if (complete !== undefined) fields.push(`complete=${Boolean(complete)}`);
+        if (labourComplete !== undefined) fields.push(`labour_complete=${Boolean(labourComplete)}`);
+        if (partsComplete !== undefined) fields.push(`parts_complete=${Boolean(partsComplete)}`);
+        events.push({
+          action: "completion_flags_changed",
+          summary: `VHC completion flags updated on: ${itemTitle} (${fields.join(", ")})`,
+          payload: { complete, labourComplete, partsComplete },
+        });
+      }
+
+      if (trackerJobId && events.length > 0) {
+        await Promise.all(
+          events.map((evt) =>
+            logJobActivity({
+              jobId: trackerJobId,
+              category: "vhc",
+              action: evt.action,
+              summary: evt.summary,
+              targetType: "vhc_check",
+              targetId: String(vhcItemId),
+              payload: evt.payload,
+              performedBy,
+            })
+          )
+        );
+      }
+    } catch (logErr) {
+      console.warn("update-item-status activity log failed:", logErr?.message || logErr);
+    }
 
     if (approvalStatus !== undefined) {
       const normalizedStatus = normaliseApproval(approvalStatus);

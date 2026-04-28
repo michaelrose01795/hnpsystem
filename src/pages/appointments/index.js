@@ -131,41 +131,6 @@ const isJobActuallyCheckedIn = (job) => {
 
 };
 
-const getCapacityStatus = (booked, available) => {
-  const numericBooked = parseHoursValue(booked) || 0;
-  const numericAvailable = parseHoursValue(available) || 0;
-
-  if (numericAvailable <= 0) {
-    return numericBooked > 0 ? "red" : "default";
-  }
-
-  if (numericBooked >= numericAvailable + 0.5) {
-    return "red";
-  }
-
-  if (numericAvailable - numericBooked <= 3) {
-    return "amber";
-  }
-
-  return "default";
-};
-
-const getStatusBadgeStyle = (status) => {
-  if (status === "red") {
-    return { backgroundColor: "var(--surface-light)", color: "var(--danger)" };
-  }
-  if (status === "amber") {
-    return { backgroundColor: "var(--warning-surface)", color: "var(--warning)" };
-  }
-  return { backgroundColor: "var(--success-surface)", color: "var(--success-dark)" };
-};
-
-const getCapacityStatusLabel = (status) => {
-  if (status === "red") return "Over capacity";
-  if (status === "amber") return "Approaching max";
-  return "Within capacity";
-};
-
 const DEFAULT_RETAIL_TECH_COUNT = 6;
 const DEFAULT_RETAIL_TECH_HOURS = 6;
 const DEFAULT_RETAIL_TECH_NAMES = [
@@ -426,8 +391,6 @@ export default function Appointments() {
   const [highlightJob, setHighlightJob] = useState("");
   const [jobParamActive, setJobParamActive] = useState(true);
   const [techAvailability, setTechAvailability] = useState({});
-  const [isTechAvailabilityLoading, setIsTechAvailabilityLoading] = useState(false);
-  const [techAvailabilityError, setTechAvailabilityError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [timeSlots] = useState(generateTimeSlots());
   const [isLoading, setIsLoading] = useState(false);
@@ -438,7 +401,6 @@ export default function Appointments() {
   const [showStaffOffPopup, setShowStaffOffPopup] = useState(false);
   const [staffOffPopupDetails, setStaffOffPopupDetails] = useState([]);
   const [staffOffPopupDate, setStaffOffPopupDate] = useState(null);
-  const [activeDayTab, setActiveDayTab] = useState("jobs");
   const [techHoursOverrides, setTechHoursOverrides] = useState({});
   const [techUsers, setTechUsers] = useState([]);
   const [isCompactMobile, setIsCompactMobile] = useState(false);
@@ -532,9 +494,6 @@ export default function Appointments() {
   const fetchTechAvailability = useCallback(async () => {
     if (!dates || dates.length === 0) return;
 
-    setIsTechAvailabilityLoading(true);
-    setTechAvailabilityError("");
-
     const startDate = dates[0].toISOString().split("T")[0];
     const endDate = dates[dates.length - 1].toISOString().split("T")[0];
 
@@ -566,9 +525,6 @@ export default function Appointments() {
       setTechAvailability(availabilityMap);
     } catch (error) {
       console.error("Error fetching tech availability:", error);
-      setTechAvailabilityError("Unable to load live tech availability.");
-    } finally {
-      setIsTechAvailabilityLoading(false);
     }
   }, [dates]);
 
@@ -1133,28 +1089,6 @@ export default function Appointments() {
     return finish.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const handleTechAvailabilityChange = (dateKey, techId, rawValue) => {
-    setTechHoursOverrides((prev) => {
-      const dayOverrides = { ...(prev[dateKey] || {}) };
-      const parsedValue = parseHoursValue(rawValue);
-
-      if (parsedValue === null) {
-        delete dayOverrides[techId];
-      } else {
-        dayOverrides[techId] = parsedValue;
-      }
-
-      const next = { ...prev };
-      if (Object.keys(dayOverrides).length === 0) {
-        delete next[dateKey];
-      } else {
-        next[dateKey] = dayOverrides;
-      }
-
-      return next;
-    });
-  };
-
   const normalizeJobCategoryLabel = (rawLabel) => {
     if (!rawLabel || typeof rawLabel !== "string") return null;
     const cleaned = rawLabel.trim().toLowerCase();
@@ -1325,20 +1259,7 @@ export default function Appointments() {
 
   // ---------------- Filtered Jobs for Selected Day ----------------
   const jobsForDay = jobs.filter((j) => j.appointment?.date === selectedDay.toISOString().split("T")[0]);
-  const techSummaryForSelectedDay = getDayTechSummary(selectedDay);
-  const techsForSelectedDay = techSummaryForSelectedDay.techs;
   const checkinStatsForSelectedDay = getCheckinStatsForDate(selectedDay);
-
-  const totalBookedTechHours = techsForSelectedDay.reduce(
-    (sum, tech) => sum + (parseHoursValue(tech.totalHours) || 0),
-    0
-  );
-
-  const totalAvailableTechHours = techSummaryForSelectedDay.totalAvailableHours;
-
-  const totalCapacityStatus = getCapacityStatus(totalBookedTechHours, totalAvailableTechHours);
-  const totalCapacityBadgeStyle = getStatusBadgeStyle(totalCapacityStatus);
-  const totalCapacityLabel = getCapacityStatusLabel(totalCapacityStatus);
 
   const filteredJobs = jobsForDay.filter((job) => {
     const query = searchQuery.toLowerCase();
@@ -1385,7 +1306,7 @@ export default function Appointments() {
   };
 
   // ---------------- Render ----------------
-  return <AppointmentsUi view="section1" activeDayTab={activeDayTab} CALENDAR_SEVERITY_STYLES={CALENDAR_SEVERITY_STYLES} checkingInJobId={checkingInJobId} currentNote={currentNote} dates={dates} DEFAULT_RETAIL_TECH_COUNT={DEFAULT_RETAIL_TECH_COUNT} DEFAULT_RETAIL_TECH_HOURS={DEFAULT_RETAIL_TECH_HOURS} DropdownField={DropdownField} formatDate={formatDate} formatDateNoYear={formatDateNoYear} getBookingSeverity={getBookingSeverity} getCustomerStatusBadgeColors={getCustomerStatusBadgeColors} getDayTechSummary={getDayTechSummary} getDetectedJobTypeLabels={getDetectedJobTypeLabels} getEstimatedFinishTime={getEstimatedFinishTime} getJobCounts={getJobCounts} getJobGroupBadge={getJobGroupBadge} getJobTypeBadgeStyle={getJobTypeBadgeStyle} getTechDailyHours={getTechDailyHours} getVehicleDisplay={getVehicleDisplay} handleAddAppointment={handleAddAppointment} handleCheckIn={handleCheckIn} handleJobNumberInputChange={handleJobNumberInputChange} handleJobRowClick={handleJobRowClick} handleJobRowHover={handleJobRowHover} handleShowStaffOff={handleShowStaffOff} handleTechAvailabilityChange={handleTechAvailabilityChange} highlightJob={highlightJob} isCompactMobile={isCompactMobile} isJobActuallyCheckedIn={isJobActuallyCheckedIn} isLoading={isLoading} isSameDate={isSameDate} isTechAvailabilityLoading={isTechAvailabilityLoading} jobNumber={jobNumber} parseHoursValue={parseHoursValue} Popup={Popup} SATURDAY_SEVERITY_STYLES={SATURDAY_SEVERITY_STYLES} saveNote={saveNote} SearchBar={SearchBar} searchQuery={searchQuery} selectedDay={selectedDay} setActiveDayTab={setActiveDayTab} setCurrentNote={setCurrentNote} setSearchQuery={setSearchQuery} setSelectedDay={setSelectedDay} setShowNotePopup={setShowNotePopup} setShowStaffOffPopup={setShowStaffOffPopup} setTime={setTime} showNotePopup={showNotePopup} showStaffOffPopup={showStaffOffPopup} sortedJobs={sortedJobs} staffAbsences={staffAbsences} staffOffPopupDate={staffOffPopupDate} staffOffPopupDetails={staffOffPopupDetails} TECH_AVAILABILITY_TABLE={TECH_AVAILABILITY_TABLE} techAvailabilityError={techAvailabilityError} techsForSelectedDay={techsForSelectedDay} techSummaryForSelectedDay={techSummaryForSelectedDay} time={time} timeSlots={timeSlots} totalAvailableTechHours={totalAvailableTechHours} totalBookedTechHours={totalBookedTechHours} totalCapacityBadgeStyle={totalCapacityBadgeStyle} totalCapacityLabel={totalCapacityLabel} />;
+  return <AppointmentsUi view="section1" CALENDAR_SEVERITY_STYLES={CALENDAR_SEVERITY_STYLES} checkingInJobId={checkingInJobId} currentNote={currentNote} dates={dates} DEFAULT_RETAIL_TECH_COUNT={DEFAULT_RETAIL_TECH_COUNT} DEFAULT_RETAIL_TECH_HOURS={DEFAULT_RETAIL_TECH_HOURS} DropdownField={DropdownField} formatDate={formatDate} formatDateNoYear={formatDateNoYear} getBookingSeverity={getBookingSeverity} getCustomerStatusBadgeColors={getCustomerStatusBadgeColors} getDayTechSummary={getDayTechSummary} getDetectedJobTypeLabels={getDetectedJobTypeLabels} getEstimatedFinishTime={getEstimatedFinishTime} getJobCounts={getJobCounts} getJobGroupBadge={getJobGroupBadge} getJobTypeBadgeStyle={getJobTypeBadgeStyle} getVehicleDisplay={getVehicleDisplay} handleAddAppointment={handleAddAppointment} handleCheckIn={handleCheckIn} handleJobNumberInputChange={handleJobNumberInputChange} handleJobRowClick={handleJobRowClick} handleJobRowHover={handleJobRowHover} handleShowStaffOff={handleShowStaffOff} highlightJob={highlightJob} isCompactMobile={isCompactMobile} isJobActuallyCheckedIn={isJobActuallyCheckedIn} isLoading={isLoading} isSameDate={isSameDate} jobNumber={jobNumber} Popup={Popup} SATURDAY_SEVERITY_STYLES={SATURDAY_SEVERITY_STYLES} saveNote={saveNote} SearchBar={SearchBar} searchQuery={searchQuery} selectedDay={selectedDay} setCurrentNote={setCurrentNote} setSearchQuery={setSearchQuery} setSelectedDay={setSelectedDay} setShowNotePopup={setShowNotePopup} setShowStaffOffPopup={setShowStaffOffPopup} setTime={setTime} showNotePopup={showNotePopup} showStaffOffPopup={showStaffOffPopup} sortedJobs={sortedJobs} staffAbsences={staffAbsences} staffOffPopupDate={staffOffPopupDate} staffOffPopupDetails={staffOffPopupDetails} time={time} timeSlots={timeSlots} />;
 
 
 
