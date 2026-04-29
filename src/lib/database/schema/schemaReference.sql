@@ -72,6 +72,58 @@ CREATE TABLE public.appointments (
   CONSTRAINT appointments_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id),
   CONSTRAINT appointments_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
+CREATE TABLE public.audit_log (
+  id bigint NOT NULL DEFAULT nextval('audit_log_id_seq'::regclass),
+  occurred_at timestamp with time zone NOT NULL DEFAULT now(),
+  actor_user_id integer,
+  actor_role text,
+  action text NOT NULL,
+  entity_type text,
+  entity_id text,
+  prev_hash text,
+  row_hash text NOT NULL,
+  diff jsonb,
+  reason text,
+  ip_address inet,
+  user_agent text,
+  request_id uuid,
+  CONSTRAINT audit_log_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.auth_login_attempts (
+  id bigint NOT NULL DEFAULT nextval('auth_login_attempts_id_seq'::regclass),
+  attempted_at timestamp with time zone NOT NULL DEFAULT now(),
+  email text,
+  user_id integer,
+  ip_address inet,
+  user_agent text,
+  succeeded boolean NOT NULL DEFAULT false,
+  failure_reason text,
+  endpoint text NOT NULL,
+  CONSTRAINT auth_login_attempts_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.breach_records (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  detected_at timestamp with time zone NOT NULL,
+  reported_internally_at timestamp with time zone,
+  ico_notified_at timestamp with time zone,
+  ico_reference text,
+  subjects_notified_at timestamp with time zone,
+  category text,
+  severity text,
+  root_cause text,
+  affected_count integer,
+  data_categories_affected ARRAY,
+  containment_actions text,
+  remediation_actions text,
+  reportable_to_ico boolean,
+  reportable_to_subjects boolean,
+  decision_rationale text,
+  status text NOT NULL DEFAULT 'open'::text,
+  owner_user_id integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT breach_records_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.clocking (
   id bigint NOT NULL DEFAULT nextval('clocking_id_seq'::regclass),
   user_id integer NOT NULL,
@@ -142,6 +194,23 @@ CREATE TABLE public.company_settings (
   CONSTRAINT company_settings_pkey PRIMARY KEY (id),
   CONSTRAINT company_settings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.consent_records (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  subject_type text NOT NULL,
+  subject_id integer,
+  email text,
+  purpose text NOT NULL,
+  channel text,
+  status text NOT NULL,
+  source text,
+  policy_version text,
+  wording_shown text,
+  ip_address inet,
+  user_agent text,
+  captured_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT consent_records_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.consumable_locations (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   name text NOT NULL,
@@ -168,6 +237,17 @@ CREATE TABLE public.consumables (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT consumables_pkey PRIMARY KEY (id),
   CONSTRAINT consumables_location_id_fkey FOREIGN KEY (location_id) REFERENCES public.consumable_locations(id)
+);
+CREATE TABLE public.cookie_consents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  anonymous_id uuid NOT NULL,
+  user_id integer,
+  categories jsonb NOT NULL,
+  policy_version text,
+  ip_address inet,
+  user_agent text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT cookie_consents_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.customer_activity_events (
   event_id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -266,6 +346,21 @@ CREATE TABLE public.delivery_stops (
   CONSTRAINT delivery_stops_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT delivery_stops_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
   CONSTRAINT delivery_stops_delivery_id_fkey FOREIGN KEY (delivery_id) REFERENCES public.deliveries(id)
+);
+CREATE TABLE public.dpia_records (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  system_or_feature text NOT NULL,
+  description text,
+  status text NOT NULL DEFAULT 'draft'::text,
+  risk_level text,
+  mitigations text,
+  signed_off_by integer,
+  signed_off_at timestamp with time zone,
+  next_review date,
+  document_url text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT dpia_records_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.floating_note_shares (
   share_id bigint NOT NULL DEFAULT nextval('floating_note_shares_share_id_seq'::regclass),
@@ -1335,6 +1430,46 @@ CREATE TABLE public.payment_plans (
   CONSTRAINT payment_plans_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT payment_plans_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
+CREATE TABLE public.payslips (
+  payslip_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id integer NOT NULL,
+  paid_date date NOT NULL,
+  period_start date,
+  period_end date,
+  pay_period_label text,
+  status text NOT NULL DEFAULT 'paid'::text CHECK (status = ANY (ARRAY['draft'::text, 'issued'::text, 'paid'::text, 'void'::text])),
+  gross_pay numeric NOT NULL DEFAULT 0,
+  net_pay numeric NOT NULL DEFAULT 0,
+  taxable_pay numeric,
+  tax_paid numeric NOT NULL DEFAULT 0,
+  ni_paid numeric NOT NULL DEFAULT 0,
+  pension_employee numeric NOT NULL DEFAULT 0,
+  pension_employer numeric NOT NULL DEFAULT 0,
+  other_deductions numeric NOT NULL DEFAULT 0,
+  hourly_rate numeric,
+  contracted_hours numeric,
+  tax_code text,
+  ni_number text,
+  ytd_gross numeric,
+  ytd_net numeric,
+  ytd_tax numeric,
+  ytd_ni numeric,
+  ytd_pension numeric,
+  earnings jsonb NOT NULL DEFAULT '[]'::jsonb,
+  deductions jsonb NOT NULL DEFAULT '[]'::jsonb,
+  employee_snapshot jsonb,
+  employer_snapshot jsonb,
+  notes text,
+  reference text,
+  created_by integer,
+  updated_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT payslips_pkey PRIMARY KEY (payslip_id),
+  CONSTRAINT payslips_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id),
+  CONSTRAINT payslips_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
+  CONSTRAINT payslips_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
+);
 CREATE TABLE public.personal_attachments (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id integer NOT NULL,
@@ -1404,6 +1539,23 @@ CREATE TABLE public.personal_transactions (
   CONSTRAINT personal_transactions_pkey PRIMARY KEY (id),
   CONSTRAINT personal_transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.processing_activities (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  purpose text,
+  lawful_basis text,
+  data_categories ARRAY,
+  recipients ARRAY,
+  international_transfers text,
+  security_measures text,
+  retention_summary text,
+  owner_user_id integer,
+  last_reviewed_at date,
+  next_review_at date,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT processing_activities_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.proforma_request_overrides (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   job_id integer NOT NULL,
@@ -1424,6 +1576,29 @@ CREATE TABLE public.proforma_request_overrides (
   CONSTRAINT proforma_request_overrides_pkey PRIMARY KEY (id),
   CONSTRAINT proforma_request_overrides_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id),
   CONSTRAINT proforma_request_overrides_request_id_fkey FOREIGN KEY (request_id) REFERENCES public.job_requests(request_id)
+);
+CREATE TABLE public.retention_policies (
+  entity_type text NOT NULL,
+  retention_period interval NOT NULL,
+  legal_basis text,
+  action text NOT NULL,
+  notes text,
+  reviewed_at date,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT retention_policies_pkey PRIMARY KEY (entity_type)
+);
+CREATE TABLE public.retention_runs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  ran_at timestamp with time zone NOT NULL DEFAULT now(),
+  entity_type text NOT NULL,
+  rows_processed integer NOT NULL DEFAULT 0,
+  rows_actioned integer NOT NULL DEFAULT 0,
+  action text NOT NULL,
+  dry_run boolean NOT NULL DEFAULT true,
+  triggered_by integer,
+  notes text,
+  CONSTRAINT retention_runs_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.showcase_notes (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -1477,6 +1652,25 @@ CREATE TABLE public.staff_vehicles (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT staff_vehicles_pkey PRIMARY KEY (vehicle_id),
   CONSTRAINT staff_vehicles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
+);
+CREATE TABLE public.subject_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  subject_user_id integer,
+  subject_email text,
+  subject_type text NOT NULL,
+  request_type text NOT NULL,
+  status text NOT NULL DEFAULT 'received'::text,
+  received_at timestamp with time zone NOT NULL DEFAULT now(),
+  due_at timestamp with time zone NOT NULL DEFAULT (now() + '30 days'::interval),
+  fulfilled_at timestamp with time zone,
+  identity_verification_method text,
+  response_artifact_url text,
+  rejection_reason text,
+  details text,
+  handled_by integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT subject_requests_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.tech_efficiency_entries (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
@@ -1628,7 +1822,6 @@ CREATE TABLE public.users (
   annual_salary numeric,
   payroll_reference text,
   national_insurance_number text,
-  keycloak_user_id text,
   home_address text,
   signature_storage_path text,
   signature_file_url text,
@@ -1637,6 +1830,8 @@ CREATE TABLE public.users (
   probation_end date,
   name text,
   contracted_hours_per_week numeric,
+  password_algo text NOT NULL DEFAULT 'plaintext'::text,
+  password_updated_at timestamp with time zone,
   CONSTRAINT users_pkey PRIMARY KEY (user_id),
   CONSTRAINT users_manager_id_fkey FOREIGN KEY (manager_id) REFERENCES public.users(user_id)
 );
@@ -1840,44 +2035,4 @@ CREATE TABLE public.workshop_consumables (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumables_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.payslips (
-  payslip_id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id integer NOT NULL,
-  paid_date date NOT NULL,
-  period_start date,
-  period_end date,
-  pay_period_label text,
-  status text NOT NULL DEFAULT 'paid' CHECK (status = ANY (ARRAY['draft'::text, 'issued'::text, 'paid'::text, 'void'::text])),
-  gross_pay numeric NOT NULL DEFAULT 0,
-  net_pay numeric NOT NULL DEFAULT 0,
-  taxable_pay numeric,
-  tax_paid numeric NOT NULL DEFAULT 0,
-  ni_paid numeric NOT NULL DEFAULT 0,
-  pension_employee numeric NOT NULL DEFAULT 0,
-  pension_employer numeric NOT NULL DEFAULT 0,
-  other_deductions numeric NOT NULL DEFAULT 0,
-  hourly_rate numeric,
-  contracted_hours numeric,
-  tax_code text,
-  ni_number text,
-  ytd_gross numeric,
-  ytd_net numeric,
-  ytd_tax numeric,
-  ytd_ni numeric,
-  ytd_pension numeric,
-  earnings jsonb NOT NULL DEFAULT '[]'::jsonb,
-  deductions jsonb NOT NULL DEFAULT '[]'::jsonb,
-  employee_snapshot jsonb,
-  employer_snapshot jsonb,
-  notes text,
-  reference text,
-  created_by integer,
-  updated_by integer,
-  created_at timestamp with time zone NOT NULL DEFAULT now(),
-  updated_at timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT payslips_pkey PRIMARY KEY (payslip_id),
-  CONSTRAINT payslips_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id) ON DELETE CASCADE,
-  CONSTRAINT payslips_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id),
-  CONSTRAINT payslips_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(user_id)
 );

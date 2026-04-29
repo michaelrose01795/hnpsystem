@@ -37,6 +37,7 @@ import {
   isAuthorizedLike,
   isSeverityColor,
 } from "@/lib/vhc/vhcItemState"; // Underlying primitives.
+import { NORMALIZE_ITEM as normalizePartItemStatus, ITEM_STATUSES as PART_ITEM_STATUSES } from "@/lib/status/catalog/parts"; // Canonical parts_job_items status normalizer.
 
 // ---------------------------------------------------------------------------
 // Inlined from src/lib/vhc/summaryStatus.js (deleted in Phase 6)
@@ -565,4 +566,177 @@ export const applyVhcDecision = async ({ jobId, vhcItemId, targetDecision } = {}
   // engine to reuse normalizeDecision).
   const { syncVhcPartsAuthorisation } = await import("@/lib/database/vhcPartsSync");
   await syncVhcPartsAuthorisation({ jobId, vhcItemId, approvalStatus: decision });
+};
+
+// ---------------------------------------------------------------------------
+// Tech-side job status — links VHC authorised work to the technician's
+// "Complete Job" flow on the job number page and to the Next Jobs board.
+// ---------------------------------------------------------------------------
+//
+// These helpers are pure projections of vhc_checks rows; they own the rule
+// "if the customer authorised VHC work and it isn't done yet, the tech-side
+// job is not finished — even if the main job is". The persisted DB column is
+// jobs.tech_completion_status (text, no schema change). Values written by
+// this engine:
+//   - "tech_complete"    → all main + authorised VHC work is done (existing value)
+//   - "authorised_items" → main work is done but at least one authorised VHC item is outstanding
+// A null / empty / "in_progress" value means the tech has not pressed
+// Complete Job yet. The Next Jobs page treats "authorised_items" as
+// outstanding so the job reappears in the unassigned queue.
+
+// Canonical tech-side job status values. IN_PROGRESS is not persisted — null
+// in the DB means in-progress; this constant exists so callers can switch on
+// engine output without dealing with null.
+export const TECH_JOB_STATUS = Object.freeze({
+  IN_PROGRESS: "in_progress", // Tech has not yet pressed Complete Job (DB null/empty).
+  COMPLETED: "tech_complete", // Tech finished main + any authorised VHC work (matches existing DB value).
+  AUTHORISED_ITEMS: "authorised_items", // Tech finished main work but authorised VHC items remain.
+});
+
+// Clocking work types — mirrors job_clocking.work_type. The DB also accepts
+// "mot" but that is owned by the MOT handoff path, not this engine.
+export const CLOCKING_WORK_TYPE = Object.freeze({
+  INITIAL: "initial", // "Main Work Requested" — first clock-in to a normal job.
+  ADDITIONAL: "additional", // "Additional Work" — clock-in after authorised VHC items reopened the job.
+});
+
+// Normalise a persisted tech_completion_status value into a TECH_JOB_STATUS.
+// Tolerates null/empty (returns IN_PROGRESS) and the historical "complete" /
+// "completed" aliases so reload paths reading legacy rows behave correctly.
+const normaliseTechStatus = (value) => {
+  const text = String(value ?? "").trim().toLowerCase();
+  if (!text) return TECH_JOB_STATUS.IN_PROGRESS;
+  if (text === TECH_JOB_STATUS.AUTHORISED_ITEMS) return TECH_JOB_STATUS.AUTHORISED_ITEMS;
+  if (text === TECH_JOB_STATUS.COMPLETED || text === "complete" || text === "completed") return TECH_JOB_STATUS.COMPLETED;
+  if (text === TECH_JOB_STATUS.IN_PROGRESS || text === "in progress") return TECH_JOB_STATUS.IN_PROGRESS;
+  return TECH_JOB_STATUS.IN_PROGRESS; // Unknown values are treated as not-yet-complete (safe default).
+};
+
+/**
+ * True when at least one projected VHC item represents customer-authorised
+ * work that is not yet finished. Drives both the Next Jobs reappearance and
+ * the Additional Work clock-in path.
+ *
+ * Outstanding = authorised-like (authorized OR in_progress workflow) AND not
+ * completed AND not declined. Pending / awaiting_customer / declined items
+ * are NOT outstanding work for the technician — only items the customer has
+ * said yes to and that haven't been signed off.
+ *
+ * @param {Array<object>} vhcItems - Output of projectVhcItems().
+ * @returns {boolean}
+ */
+export const hasOutstandingAuthorisedVhcWork = (vhcItems = []) => {
+  if (!Array.isArray(vhcItems) || vhcItems.length === 0) return false; // No items → no work outstanding.
+  return vhcItems.some((item) => {
+    if (!item) return false; // Defensive null guard.
+    if (item.workflow_status === WORKFLOW_STATUS.COMPLETED) return false; // Done — does not count.
+    if (item.workflow_status === WORKFLOW_STATUS.DECLINED) return false; // Customer said no — does not count.
+    // Authorised AND not yet complete. Both APPROVED and IN_PROGRESS workflow
+    // states reach here when the decision is authorized; isAuthorizedLike
+    // also catches "completed" decisions paired with Complete=false (rare).
+    return item.workflow_status === WORKFLOW_STATUS.APPROVED
+        || item.workflow_status === WORKFLOW_STATUS.IN_PROGRESS;
+  });
+};
+
+/**
+ * Resolve the canonical tech-side job status from the current set of
+ * projected VHC items plus whether the technician has signalled main-work
+ * completion (i.e. has just pressed, or has previously pressed, Complete Job).
+ *
+ * Returns one of TECH_JOB_STATUS values:
+ *   - IN_PROGRESS      → tech has not signalled completion
+ *   - AUTHORISED_ITEMS → tech signalled completion BUT outstanding authorised VHC items remain
+ *   - COMPLETED        → tech signalled completion AND no outstanding authorised VHC items
+ *
+ * @param {Array<object>} vhcItems - Output of projectVhcItems().
+ * @param {object} [options]
+ * @param {boolean} [options.techHasCompletedMainWork=false] - True when the tech has pressed Complete Job.
+ * @returns {string} A TECH_JOB_STATUS value.
+ */
+export const getJobTechStatusFromVhcItems = (vhcItems = [], { techHasCompletedMainWork = false } = {}) => {
+  if (!techHasCompletedMainWork) return TECH_JOB_STATUS.IN_PROGRESS; // Hasn't pressed Complete Job yet.
+  if (hasOutstandingAuthorisedVhcWork(vhcItems)) return TECH_JOB_STATUS.AUTHORISED_ITEMS; // Authorised items still open.
+  return TECH_JOB_STATUS.COMPLETED; // Everything done.
+};
+
+/**
+ * Decide which work type a clock-in should record against a job. When the
+ * persisted tech-side status is AUTHORISED_ITEMS and there is still
+ * outstanding authorised VHC work, the clock-in is "Additional Work";
+ * otherwise it is "Main Work Requested" (initial).
+ *
+ * Read both sides — persisted status survives reload and is the source of
+ * truth across the app, but we still re-check vhcItems so an
+ * out-of-date AUTHORISED_ITEMS row (e.g. all items have since been completed
+ * by another path) does not force an inappropriate Additional Work entry.
+ *
+ * @param {object} args
+ * @param {Array<object>} [args.vhcItems=[]]      - Output of projectVhcItems().
+ * @param {string|null} [args.currentTechStatus]  - The persisted jobs.tech_completion_status.
+ * @returns {string} A CLOCKING_WORK_TYPE value.
+ */
+export const getClockingWorkTypeForJob = ({ vhcItems = [], currentTechStatus = null } = {}) => {
+  const status = normaliseTechStatus(currentTechStatus); // Tolerates null + legacy aliases.
+  if (status === TECH_JOB_STATUS.AUTHORISED_ITEMS && hasOutstandingAuthorisedVhcWork(vhcItems)) {
+    return CLOCKING_WORK_TYPE.ADDITIONAL; // Additional Work path.
+  }
+  return CLOCKING_WORK_TYPE.INITIAL; // Main Work Requested (default).
+};
+
+// ---------------------------------------------------------------------------
+// Parts Authorised button/status — single source of truth for the VHC tab's
+// "Parts Authorised" auto-data table on the job card page. The displayed
+// button label must reflect what the parts panels would show:
+//   - "added_to_job" → row is present in the jobcard-parts-added-panel
+//                      (parts_job_items.status normalises to BOOKED).
+//   - "on_order"     → row is in the jobcard-parts-on-order-panel
+//                      (status normalises to ON_ORDER).
+//   - "removed"      → row was removed from the job (status REMOVED).
+//   - "order"        → just authorised, not yet added or ordered (default).
+// ---------------------------------------------------------------------------
+
+// Canonical button states. Kept as a frozen object so call sites can switch
+// on AUTHORISED_PART_STATUS.ADDED_TO_JOB without typo risk.
+export const AUTHORISED_PART_STATUS = Object.freeze({
+  ADDED_TO_JOB: "added_to_job", // Lives in the Parts Added to Job panel.
+  ON_ORDER: "on_order",         // Lives in the Parts On Order panel.
+  REMOVED: "removed",           // Removed from the job.
+  ORDER: "order",               // Authorised only; not yet added or ordered.
+});
+
+/**
+ * Resolve which button/status the VHC Parts Authorised table should show for
+ * a given parts_job_items row. The decision is anchored on the canonical
+ * NORMALIZE_ITEM categorisation so this stays in lockstep with how the
+ * Parts Added / Parts On Order panels filter the same dataset.
+ *
+ * @param {object} part - Raw parts_job_items row.
+ * @returns {string}    - One of AUTHORISED_PART_STATUS values.
+ */
+export const getPartAuthorisedDisplayStatus = (part = {}) => {
+  // Treat missing rows as not-yet-progressed authorised work.
+  if (!part) return AUTHORISED_PART_STATUS.ORDER;
+
+  // Use the canonical parts catalog normaliser so that aliases like
+  // "ordered" / "awaiting_stock" / "pre-pick" all collapse correctly.
+  const normalized = normalizePartItemStatus(part?.status ?? "");
+
+  if (normalized === PART_ITEM_STATUSES.REMOVED) return AUTHORISED_PART_STATUS.REMOVED; // Removed wins over everything else.
+  if (normalized === PART_ITEM_STATUSES.BOOKED) return AUTHORISED_PART_STATUS.ADDED_TO_JOB; // Present in the Parts Added panel.
+  if (normalized === PART_ITEM_STATUSES.ON_ORDER) return AUTHORISED_PART_STATUS.ON_ORDER; // Present in the On Order panel.
+
+  // PRE_PICK / STOCK / PRICED rows have already been added to the job — they
+  // would render in the Parts Added panel as well, just at a later stage.
+  if (
+    normalized === PART_ITEM_STATUSES.PRE_PICK ||
+    normalized === PART_ITEM_STATUSES.STOCK ||
+    normalized === PART_ITEM_STATUSES.PRICED ||
+    normalized === PART_ITEM_STATUSES.RESERVED
+  ) {
+    return AUTHORISED_PART_STATUS.ADDED_TO_JOB;
+  }
+
+  // PENDING and any unknown status → just authorised, awaiting an order action.
+  return AUTHORISED_PART_STATUS.ORDER;
 };

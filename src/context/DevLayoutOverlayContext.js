@@ -1,5 +1,6 @@
 // file location: src/context/DevLayoutOverlayContext.js
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { canUseDevLayoutOverlay } from "@/lib/dev-layout/access";
 import {
@@ -67,7 +68,10 @@ const readJson = (raw) => {
 
 export function DevLayoutOverlayProvider({ children }) {
   const { user } = useUser();
-  const canAccess = canUseDevLayoutOverlay(user);
+  const router = useRouter();
+  const routePath = (router?.asPath || router?.pathname || "").split("?")[0];
+  const isPresentationRoute = routePath === "/presentation" || routePath.startsWith("/presentation/");
+  const canAccess = !isPresentationRoute && canUseDevLayoutOverlay(user);
   const [enabled, setEnabledState] = useState(false);
   const [mode, setModeState] = useState("labels");
   const [fullScreen, setFullScreen] = useState(false);

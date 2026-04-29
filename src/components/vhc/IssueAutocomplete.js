@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getIssueSectionHint, getIssueSuggestions, resolveIssueSectionKey } from "@/lib/vhc/issueSuggestions";
-import { useTheme } from "@/styles/themeProvider";
 
 const DEBOUNCE_MS = 150;
 const DISPLAY_LIMIT = 12;
@@ -16,7 +15,6 @@ const baseInputStyle = {
   fontSize: "14px",
   color: "var(--text-primary)",
   outline: "none",
-  boxShadow: "none",
 };
 
 const wrapperStyle = {
@@ -117,7 +115,6 @@ export default function IssueAutocomplete({
   placeholder = "Describe the issue...",
   inputStyle,
 }) {
-  const { resolvedMode } = useTheme();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);

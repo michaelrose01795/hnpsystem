@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import ModalPortal from "@/components/popups/ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
+import Button from "@/components/ui/Button";
 import styles from "@/features/invoices/styles/invoice.module.css";
 import { isInvoiceRowPaid } from "@/lib/status/statusHelpers"; // Centralized paid check.
 import {
@@ -77,7 +78,7 @@ const buildMethodSummary = ({ method, amount, amountReceived }) => {
     return {
       title: "Over-the-phone capture",
       description:
-        "Use this to document the MOTO flow. Real PCI-compliant backend capture is still a TODO and this remains simulated.",
+        "Capture card details over the phone. Confirm the customer, quote the balance, and verify cardholder authority before running the payment.",
     };
   }
 
@@ -123,7 +124,21 @@ export default function InvoicePaymentModal({
   const [resultMessage, setResultMessage] = useState("");
   const [showReleasePrompt, setShowReleasePrompt] = useState(false);
   const [releaseBusy, setReleaseBusy] = useState(false);
+  const [railHeight, setRailHeight] = useState(null);
   const timeoutsRef = useRef([]);
+  const railRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const node = railRef.current;
+    if (!node || typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver((entries) => {
+      const next = Math.round(entries[0]?.contentRect?.height ?? 0);
+      if (next > 0) setRailHeight(next);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isOpen]);
 
   const selectedMethod = useMemo(
     () => findPaymentFlowMethod(selectedMethodId),
@@ -301,39 +316,65 @@ export default function InvoicePaymentModal({
   if (!isOpen) return null;
 
   return (
-    <ModalPortal>
-      <div className={styles.modalBackdrop}>
-        <div className={styles.paymentModal}>
-          <div className={styles.paymentModalHeader}>
-            <div>
-              <h2 style={{ margin: 0 }}>Payment Journey</h2>
-              <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>
-                {invoice?.invoice_number || "Invoice"} · {formatCurrency(invoiceTotal)}
-              </p>
-            </div>
-            <button type="button" className={styles.secondaryActionButton} onClick={onClose}>
-              Close
-            </button>
-          </div>
+    <PopupModal
+      isOpen={isOpen}
+      onClose={onClose}
+      closeOnBackdrop={!isRunning}
+      ariaLabel="Payment Journey"
+      cardStyle={{
+        width: "min(100%, 1180px)",
+        padding: "var(--section-card-padding)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--page-stack-gap)",
+        overflowY: "hidden",
+      }}
+    >
+      <header className={styles.paymentModalHeader}>
+        <div>
+          <h2 style={{ margin: 0, color: "var(--accentMain)" }}>Payment Journey</h2>
+          <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>
+            {invoice?.invoice_number || "Invoice"} · {formatCurrency(invoiceTotal)}
+          </p>
+        </div>
+        <Button variant="secondary" size="sm" onClick={onClose} disabled={isRunning}>
+          Close
+        </Button>
+      </header>
 
-          <div className={styles.paymentModalGrid}>
-            <aside className={styles.paymentMethodRail}>
-              {PAYMENT_FLOW_METHODS.map((method) => (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => setSelectedMethodId(method.id)}
-                  className={styles.paymentMethodCard}
-                  data-active={selectedMethodId === method.id ? "true" : "false"}
-                >
-                  <strong>{method.label}</strong>
-                  <span>{method.category}</span>
-                  <p>{method.description}</p>
-                </button>
-              ))}
+      <div className={styles.paymentModalGrid}>
+            <aside className={styles.paymentMethodRail} ref={railRef}>
+              {PAYMENT_FLOW_METHODS.map((method) => {
+                const isActive = selectedMethodId === method.id;
+                return (
+                  <Button
+                    key={method.id}
+                    variant={isActive ? "secondary" : "primary"}
+                    onClick={() => setSelectedMethodId(method.id)}
+                    className={styles.paymentMethodButton}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      justifyContent: "center",
+                      gap: "4px",
+                      width: "100%",
+                      whiteSpace: "normal",
+                      textAlign: "left",
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    <strong>{method.label}</strong>
+                    <span className={styles.paymentMethodCategory}>{method.category}</span>
+                  </Button>
+                );
+              })}
             </aside>
 
-            <section className={styles.paymentPanel}>
+            <section
+              className={styles.paymentPanel}
+              style={railHeight ? { height: `${railHeight}px` } : undefined}
+            >
               <div className={styles.paymentPanelCard}>
                 <div className={styles.paymentPanelHeading}>
                   <div>
@@ -342,14 +383,6 @@ export default function InvoicePaymentModal({
                       {methodSummary.description}
                     </p>
                   </div>
-                  {currentState && (
-                    <span
-                      className={styles.invoiceStatusBadge}
-                      style={toneStyle(PAYMENT_FLOW_OUTCOMES[currentState]?.tone)}
-                    >
-                      {outcomeLabel(currentState)}
-                    </span>
-                  )}
                 </div>
 
                 {selectedMethod.defaultAmountMode !== "none" && (
@@ -402,9 +435,6 @@ export default function InvoicePaymentModal({
                       Confirm the customer, quote the balance, verify cardholder authority, and
                       note the adviser taking the call.
                     </p>
-                    <p>
-                      {selectedMethod.backendTodo}
-                    </p>
                   </div>
                 )}
 
@@ -419,25 +449,9 @@ export default function InvoicePaymentModal({
                   </div>
                 )}
 
-                <div className={styles.outcomeSelector}>
-                  {selectedMethod.allowedOutcomes.map((outcome) => (
-                    <button
-                      key={outcome}
-                      type="button"
-                      onClick={() => setSelectedOutcome(outcome)}
-                      className={styles.outcomeChip}
-                      data-active={selectedOutcome === outcome ? "true" : "false"}
-                      disabled={isRunning}
-                    >
-                      {outcomeLabel(outcome)}
-                    </button>
-                  ))}
-                </div>
-
                 <div className={styles.paymentActionRow}>
-                  <button
-                    type="button"
-                    className={styles.primaryActionButton}
+                  <Button
+                    variant="primary"
                     onClick={runSimulation}
                     disabled={
                       invoiceAlreadyPaid ||
@@ -450,18 +464,54 @@ export default function InvoicePaymentModal({
                       : isRunning
                       ? "Running simulation..."
                       : `Run ${selectedMethod.label}`}
-                  </button>
-                  <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-                    Test flow only. Real gateway execution is still pending backend integration.
-                  </span>
+                  </Button>
+                  {currentState && (
+                    <span
+                      className={styles.invoiceStatusBadge}
+                      style={toneStyle(PAYMENT_FLOW_OUTCOMES[currentState]?.tone)}
+                    >
+                      {outcomeLabel(currentState)}
+                    </span>
+                  )}
                 </div>
+
+                {resultMessage && (
+                  <div className={styles.paymentNoteBox}>
+                    {resultMessage}
+                  </div>
+                )}
+
+                {showReleasePrompt && (
+                  <div className={styles.releasePromptBox}>
+                    <h4 style={{ margin: "0 0 8px" }}>Release vehicle now?</h4>
+                    <p style={{ margin: "0 0 12px", opacity: 0.9 }}>
+                      Payment has been completed. Confirm whether the vehicle or job can now be released.
+                    </p>
+                    <div className={styles.paymentActionRow}>
+                      <Button
+                        variant="primary"
+                        onClick={() => handleReleaseDecision(true)}
+                        disabled={releaseBusy}
+                      >
+                        {releaseBusy ? "Releasing..." : "Yes, release"}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleReleaseDecision(false)}
+                        disabled={releaseBusy}
+                      >
+                        No, keep on site
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className={styles.paymentPanelCard}>
-                <h3 style={{ marginTop: 0 }}>Transaction activity</h3>
+                <h3 style={{ margin: 0 }}>Transaction activity</h3>
                 {activityLog.length === 0 ? (
                   <p style={{ margin: 0, color: "var(--text-secondary)" }}>
-                    Select a method, choose a simulated outcome, and run the flow.
+                    Waiting for Run command.
                   </p>
                 ) : (
                   <div className={styles.activityTimeline}>
@@ -481,42 +531,32 @@ export default function InvoicePaymentModal({
                     ))}
                   </div>
                 )}
-                {resultMessage && (
-                  <div className={styles.paymentNoteBox} style={{ marginTop: "16px" }}>
-                    {resultMessage}
-                  </div>
-                )}
-                {showReleasePrompt && (
-                  <div className={styles.releasePromptBox}>
-                    <h4 style={{ margin: "0 0 8px" }}>Release vehicle now?</h4>
-                    <p style={{ margin: "0 0 12px", color: "var(--text-secondary)" }}>
-                      Payment has been completed. Confirm whether the vehicle or job can now be released.
-                    </p>
-                    <div className={styles.paymentActionRow}>
-                      <button
-                        type="button"
-                        className={styles.primaryActionButton}
-                        onClick={() => handleReleaseDecision(true)}
-                        disabled={releaseBusy}
-                      >
-                        {releaseBusy ? "Releasing..." : "Yes, release"}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.secondaryActionButton}
-                        onClick={() => handleReleaseDecision(false)}
-                        disabled={releaseBusy}
-                      >
-                        No, keep on site
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
-            </section>
-          </div>
-        </div>
+
+              <div className={styles.paymentTestCard}>
+                <div className={styles.paymentTestHeader}>
+                  <strong>Simulated outcome</strong>
+                  <span>Test flow only — real gateway execution is still pending backend integration.</span>
+                </div>
+                <div className={styles.outcomeSelector}>
+                  {selectedMethod.allowedOutcomes.map((outcome) => {
+                    const isActive = selectedOutcome === outcome;
+                    return (
+                      <Button
+                        key={outcome}
+                        variant={isActive ? "primary" : "ghost"}
+                        size="sm"
+                        onClick={() => setSelectedOutcome(outcome)}
+                        disabled={isRunning}
+                      >
+                        {outcomeLabel(outcome)}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+        </section>
       </div>
-    </ModalPortal>
+    </PopupModal>
   );
 }

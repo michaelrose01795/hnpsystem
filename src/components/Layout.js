@@ -34,6 +34,9 @@ import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
 import BrandLogo from "@/components/BrandLogo";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
+import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
+
+const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
 
 const SERVICE_ACTION_ROLES = new Set([
   "service",
@@ -66,6 +69,19 @@ const MODE_ROLE_MAP = {
 };
 const NAV_DRAWER_WIDTH = 260;
 const STATUS_DRAWER_WIDTH = 560;
+// Fallback role union used only if /presentation is somehow rendered without
+// a chosen role from /loginPresentation (the provider redirects in that case,
+// but Layout sits outside the provider so this keeps it safe during the brief
+// pre-redirect render).
+const PRESENTATION_SHELL_ROLES = [
+  "admin manager",
+  "service manager",
+  "workshop manager",
+  "parts manager",
+  "techs",
+  "valet service",
+  "accounts manager",
+];
 
 export default function Layout({
   children,
@@ -74,20 +90,24 @@ export default function Layout({
   disableContentCardHover = false,
   contentBackground = null,
   requiresLandscape = false,
+  presentationShell = false,
 }) {
   const { user, loading: userLoading, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
-  const hideSidebar = router.pathname === "/login";
+  const hideSidebar =
+    router.pathname === "/login" || router.pathname === "/loginPresentation";
   const showHrTabs =
     (router.pathname.startsWith("/hr") && router.pathname !== "/hr/manager") ||
     router.pathname.startsWith("/admin/users");
 
   const [viewportWidth, setViewportWidth] = useState(1440);
+  const [viewportHeight, setViewportHeight] = useState(900);
   useMessagesBadge(dbUserId);
 
   const isTablet = viewportWidth <= 1024;
   const isMobile = viewportWidth <= 640; // phone view cutoff
+  const isVerticalPhone = isMobile && viewportHeight >= viewportWidth;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusSidebarOpen, setIsStatusSidebarOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -121,7 +141,29 @@ export default function Layout({
     "valet service",
   ];
 
-  const rawUserRoles = user?.roles?.map((r) => r.toLowerCase()) || [];
+  // When in presentation shell, the active role is chosen on /loginPresentation
+  // and passed in via ?role=KEY. Read it from the query first; fall back to
+  // sessionStorage so a refresh keeps the shell scoped to the same role.
+  const queryRoleKey =
+    typeof router.query?.role === "string" ? router.query.role : null;
+  const [storedPresentationRoleKey, setStoredPresentationRoleKey] = useState(null);
+  useEffect(() => {
+    if (!presentationShell) return;
+    if (typeof window === "undefined") return;
+    if (queryRoleKey) return;
+    const stored = window.sessionStorage.getItem(PRESENTATION_ROLE_STORAGE_KEY);
+    if (stored) setStoredPresentationRoleKey(stored);
+  }, [presentationShell, queryRoleKey]);
+  const activePresentationRole = presentationShell
+    ? getPresentationRoleByKey(queryRoleKey || storedPresentationRoleKey)
+    : null;
+  const presentationAllowedRoutes = activePresentationRole?.routes || null;
+
+  const rawUserRoles = presentationShell
+    ? activePresentationRole
+      ? [activePresentationRole.roleId]
+      : PRESENTATION_SHELL_ROLES
+    : user?.roles?.map((r) => r.toLowerCase()) || [];
   const availableModes = Object.entries(MODE_ROLE_MAP).reduce((acc, [mode, roleSet]) => {
     if (rawUserRoles.some((role) => roleSet.has(role))) {
       acc.push(mode);
@@ -178,11 +220,14 @@ export default function Layout({
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
   const normalizedUsername = typeof user?.username === "string" ? user.username.trim() : "";
-  const fallbackName =
-    typeof user?.username === "string" && user.username.trim() ? user.username.trim() : "Guest";
+  const fallbackName = presentationShell
+    ? activePresentationRole?.demoName || "Demo User"
+    : typeof user?.username === "string" && user.username.trim() ? user.username.trim() : "Guest";
   const firstName =
     normalizedUsername.split(/\s+/).filter(Boolean)[0] || fallbackName;
-  const userIdForQuote =
+  const userIdForQuote = presentationShell
+    ? null
+    :
     user?.authUuid ||
     user?.id ||
     user?.email ||
@@ -190,13 +235,14 @@ export default function Layout({
     null;
   const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));
   const isTech = (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
-  const canViewStatusSidebar = userRoles.some((role) =>
+  const canViewStatusSidebar = presentationShell || userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
   const hasPartsAccess = userRoles.some((role) => PARTS_NAV_ROLES.has(role));
   const isPartsManager = userRoles.includes("parts manager");
 
   const fetchCurrentJobStatus = useCallback(async (id) => {
+    if (presentationShell) return;
     if (!id) return;
     try {
       const response = await fetch(`/api/status/getCurrentStatus?jobId=${id}`);
@@ -205,13 +251,15 @@ export default function Layout({
     } catch (error) {
       console.error("Error fetching job status:", error);
     }
-  }, []);
+  }, [presentationShell]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => {
       const nextWidth = window.innerWidth || 1440;
+      const nextHeight = window.innerHeight || 900;
       setViewportWidth(nextWidth);
+      setViewportHeight(nextHeight);
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -229,8 +277,9 @@ export default function Layout({
   }, [requiresLandscape]);
 
   useEffect(() => {
+    if (presentationShell) return;
     setIsStatusSidebarOpen(false);
-  }, [isTablet]);
+  }, [isTablet, presentationShell]);
 
   // Welcome quote: keyed by (userId, slotKey) so SWR dedupes automatically across
   // navigations and only refetches when the slot rolls over. Layout is persistent
@@ -304,11 +353,12 @@ export default function Layout({
   }, [isSidebarOpen, isTablet]);
 
   useEffect(() => {
+    if (presentationShell) return;
     if (userLoading) return;
     if (user === null && !hideSidebar) {
       router.replace("/login");
     }
-  }, [user, userLoading, hideSidebar, router]);
+  }, [user, userLoading, hideSidebar, router, presentationShell]);
 
   useEffect(() => {
     if (activeJobId) fetchCurrentJobStatus(activeJobId);
@@ -410,7 +460,7 @@ export default function Layout({
   // in place of children. Only ONE skeleton is ever visible — no overlay, no
   // stacking, no fade. Pages handle their own data-loading skeletons inside
   // their own render once auth is resolved.
-  const isPreAuthLoading = !hideSidebar && (userLoading || !user);
+  const isPreAuthLoading = !presentationShell && !hideSidebar && (userLoading || !user);
 
   useEffect(() => {
     if (isTablet) {
@@ -561,7 +611,7 @@ export default function Layout({
     });
   });
 
-  if (user) {
+  if (user || presentationShell) {
     addNavItem("My Profile", "/profile", {
       keywords: ["profile", "employee profile", "my profile"],
       description: "View your personal employment info",
@@ -676,6 +726,30 @@ export default function Layout({
   }
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const lockChromeInteraction = presentationShell
+    ? {
+        onClickCapture: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+        onSubmitCapture: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+        onInputCapture: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+        onChangeCapture: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+        onKeyDownCapture: (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+      }
+    : {};
 
   const mainColumnMaxWidth = hideSidebar ? "100%" : "100%";
   const layoutStyles = {
@@ -721,6 +795,7 @@ export default function Layout({
           parentKey="app-layout-chrome"
           sectionType="section-shell"
           shell
+          {...lockChromeInteraction}
           backgroundToken="app-sidebar-rail"
           style={{
             width: isSidebarOpen ? `${NAV_DRAWER_WIDTH}px` : "0px",
@@ -742,6 +817,8 @@ export default function Layout({
               extraSections={serviceSidebarSections}
               visibleRoles={userRoles}
               modeLabel={activeModeLabel}
+              allowedRoutes={presentationAllowedRoutes}
+              inPresentationMode={presentationShell}
             />
           )}
         </DevLayoutSection>
@@ -783,7 +860,7 @@ export default function Layout({
             >
               <button
                 type="button"
-                onClick={() => setIsSidebarOpen(true)}
+                onClick={presentationShell ? undefined : () => setIsSidebarOpen(true)}
                 className={`app-btn ${isSidebarOpen ? "app-btn--primary" : "app-btn--secondary"}`}
                 style={{ flex: 1 }}
               >
@@ -792,7 +869,7 @@ export default function Layout({
               {canViewStatusSidebar && (
                 <button
                   type="button"
-                  onClick={() => setIsStatusSidebarOpen(true)}
+                  onClick={() => setIsStatusSidebarOpen((prev) => !prev)}
                   className={`app-btn ${isStatusSidebarOpen ? "app-btn--primary" : "app-btn--secondary"}`}
                   style={{ flex: 1 }}
                 >
@@ -804,6 +881,7 @@ export default function Layout({
             {/* Full-width search bar below tab buttons for tablet/mobile - hidden when sidebar/status is open */}
             {!isSidebarOpen && !isStatusSidebarOpen && (
               <div
+                {...lockChromeInteraction}
                 style={{
                   width: "100%",
                 }}
@@ -814,6 +892,7 @@ export default function Layout({
 
             {isSidebarOpen && (
               <div
+                {...lockChromeInteraction}
                 style={{
                   position: "fixed",
                   inset: 0,
@@ -824,7 +903,7 @@ export default function Layout({
                 }}
               >
                 <div
-                  onClick={closeSidebar}
+                  onClick={presentationShell ? undefined : closeSidebar}
                   style={{
                     position: "absolute",
                     inset: 0,
@@ -852,10 +931,13 @@ export default function Layout({
                 >
                   <Sidebar
                     onToggle={closeSidebar}
+                    onNavigate={isVerticalPhone ? closeSidebar : undefined}
                     isCondensed
                     extraSections={serviceSidebarSections}
                     visibleRoles={userRoles}
                     modeLabel={activeModeLabel}
+                    allowedRoutes={presentationAllowedRoutes}
+                    inPresentationMode={presentationShell}
                   />
                 </div>
               </div>
@@ -872,6 +954,7 @@ export default function Layout({
             shell
             backgroundToken="app-topbar-shell"
             className="app-topbar-shell"
+            {...lockChromeInteraction}
             style={{
               background: "rgba(var(--surface-rgb), 0.92)",
               borderRadius: "var(--radius-md)",
@@ -1176,7 +1259,7 @@ export default function Layout({
       {showNavToggleButton && (
         <button
           type="button"
-          onClick={toggleSidebar}
+          onClick={presentationShell ? undefined : toggleSidebar}
           style={{
             position: "fixed",
             top: "50%",
@@ -1234,6 +1317,7 @@ export default function Layout({
             {isStatusSidebarOpen ? "›" : "‹"}
           </button>
           <div
+            {...lockChromeInteraction}
             style={{
               position: "fixed",
               top: 0,
@@ -1255,8 +1339,8 @@ export default function Layout({
               currentStatus={currentJobStatus}
               isOpen={isStatusSidebarOpen}
               onToggle={() => {}}
-              onJobSearch={handleJobSearch}
-              onJobClear={handleJobClear}
+              onJobSearch={presentationShell ? () => {} : handleJobSearch}
+              onJobClear={presentationShell ? () => {} : handleJobClear}
               hasUrlJobId={hasActiveAutoJob}
               viewportWidth={viewportWidth}
               isCompact={false}
@@ -1276,24 +1360,26 @@ export default function Layout({
 
       {/* Status sidebar overlay for tablets/phones */}
       {showMobileStatusSidebar && (
-        <StatusSidebar
-          jobId={activeJobId}
-          currentStatus={currentJobStatus}
-          isOpen={isStatusSidebarOpen}
-          onToggle={() => setIsStatusSidebarOpen(false)}
-          onJobSearch={handleJobSearch}
-          onJobClear={handleJobClear}
-          hasUrlJobId={hasActiveAutoJob}
-          viewportWidth={viewportWidth}
-          isCompact={isTablet && !isMobile}
-          timelineContent={
-            timelineJobNumber ? (
-              <JobTimeline jobNumber={String(timelineJobNumber)} />
-            ) : null
-          }
-          showToggleButton={false}
-          refreshKey={statusSidebarRefreshKey}
-        />
+        <div {...lockChromeInteraction}>
+          <StatusSidebar
+            jobId={activeJobId}
+            currentStatus={currentJobStatus}
+            isOpen={isStatusSidebarOpen}
+            onToggle={presentationShell ? () => {} : () => setIsStatusSidebarOpen(false)}
+            onJobSearch={presentationShell ? () => {} : handleJobSearch}
+            onJobClear={presentationShell ? () => {} : handleJobClear}
+            hasUrlJobId={hasActiveAutoJob}
+            viewportWidth={viewportWidth}
+            isCompact={isTablet && !isMobile}
+            timelineContent={
+              timelineJobNumber ? (
+                <JobTimeline jobNumber={String(timelineJobNumber)} />
+              ) : null
+            }
+            showToggleButton={false}
+            refreshKey={statusSidebarRefreshKey}
+          />
+        </div>
       )}
 
       {isTech && (

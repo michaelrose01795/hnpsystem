@@ -146,16 +146,9 @@ export default function LoginPage() {
   const [loadingDevUsers, setLoadingDevUsers] = useState(true);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
-  const [resetPassword, setResetPassword] = useState("");
   const [resetStatus, setResetStatus] = useState("");
   const [resetStatusType, setResetStatusType] = useState("info");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [revertToken, setRevertToken] = useState("");
-  const [showRevertPrompt, setShowRevertPrompt] = useState(false);
-  const [isRevertingPassword, setIsRevertingPassword] = useState(false);
-  const [showRevertResult, setShowRevertResult] = useState(false);
-  const [revertResultType, setRevertResultType] = useState("success");
-  const [revertResultMessage, setRevertResultMessage] = useState("");
   const [isRedirecting, setIsRedirecting] = useState(false);
   const finalizedPendingLogoutRef = useRef(false);
 
@@ -291,15 +284,8 @@ export default function LoginPage() {
     }
   };
 
-  const removeRevertTokenFromUrl = React.useCallback(() => {
-    const { passwordResetToken, ...rest } = router.query || {};
-    void passwordResetToken;
-    router.replace({ pathname: "/login", query: rest }, undefined, { shallow: true });
-  }, [router]);
-
   const openResetModal = () => {
     setResetEmail(email.trim());
-    setResetPassword("");
     setResetStatus("");
     setResetStatusType("info");
     setShowResetModal(true);
@@ -307,7 +293,6 @@ export default function LoginPage() {
 
   const closeResetModal = () => {
     setShowResetModal(false);
-    setResetPassword("");
     setResetStatus("");
     setResetStatusType("info");
   };
@@ -322,9 +307,8 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "reset",
-          email: (resetEmail || email || "").trim(),
-          newPassword: resetPassword
+          action: "request",
+          email: (resetEmail || email || "").trim()
         })
       });
       let payload = null;
@@ -334,74 +318,17 @@ export default function LoginPage() {
         payload = { success: false, message: `Request failed (${response.status}).` };
       }
       if (!response.ok || !payload?.success) {
-        setResetStatus(payload?.message || "Password reset failed.");
+        setResetStatus(payload?.message || "Password reset request failed.");
         setResetStatusType("error");
         return;
       }
-      setResetStatus(payload?.message || "Password reset complete.");
-      setResetStatusType(payload?.emailSent === false ? "error" : "success");
-      setPassword("");
+      setResetStatus(payload?.message || "If an account exists, a reset link has been sent.");
+      setResetStatusType("success");
     } catch (error) {
-      setResetStatus(error?.message || "Password reset failed.");
+      setResetStatus(error?.message || "Password reset request failed.");
       setResetStatusType("error");
     } finally {
       setIsResettingPassword(false);
-    }
-  };
-
-  const handlePasswordRevertDecision = async (wasNotYou) => {
-    if (!wasNotYou) {
-      setShowRevertPrompt(false);
-      removeRevertTokenFromUrl();
-      return;
-    }
-
-    if (!revertToken) {
-      setRevertResultType("error");
-      setRevertResultMessage("The reset link is missing or invalid.");
-      setShowRevertResult(true);
-      setShowRevertPrompt(false);
-      removeRevertTokenFromUrl();
-      return;
-    }
-
-    setIsRevertingPassword(true);
-    try {
-      const response = await fetch("/api/auth/password-reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "revert",
-          token: revertToken
-        })
-      });
-      let payload = null;
-      try {
-        payload = await response.json();
-      } catch {
-        payload = { success: false, message: `Request failed (${response.status}).` };
-      }
-      if (!response.ok || !payload?.success) {
-        setErrorMessage(payload?.message || "Unable to revert password.");
-        setRevertResultType("error");
-        setRevertResultMessage(payload?.message || "Unable to revert password.");
-        setShowRevertResult(true);
-      } else {
-        setErrorMessage("Password reverted to the previous password.");
-        setRevertResultType("success");
-        setRevertResultMessage("Password reverted successfully.");
-        setShowRevertResult(true);
-      }
-    } catch (error) {
-      setErrorMessage(error?.message || "Unable to revert password.");
-      setRevertResultType("error");
-      setRevertResultMessage(error?.message || "Unable to revert password.");
-      setShowRevertResult(true);
-    } finally {
-      setIsRevertingPassword(false);
-      setShowRevertPrompt(false);
-      setRevertToken("");
-      removeRevertTokenFromUrl();
     }
   };
 
@@ -487,19 +414,11 @@ export default function LoginPage() {
     }
   }, [rosterLoading]);
 
-  useEffect(() => {
-    if (!router.isReady) return;
-    const token = router.query?.passwordResetToken;
-    if (!token || typeof token !== "string") return;
-    setRevertToken(token);
-    setShowRevertPrompt(true);
-  }, [router.isReady, router.query]);
-
   if (isRedirecting) {
     return <LoginPageUi view="section1" PageSkeleton={PageSkeleton} />;
   }
 
-  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handlePasswordReset={handlePasswordReset} handlePasswordRevertDecision={handlePasswordRevertDecision} isResettingPassword={isResettingPassword} isRevertingPassword={isRevertingPassword} loadingDevUsers={loadingDevUsers} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetPassword={resetPassword} resetStatus={resetStatus} resetStatusType={resetStatusType} revertResultMessage={revertResultMessage} revertResultType={revertResultType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setEmail={setEmail} setPassword={setPassword} setResetEmail={setResetEmail} setResetPassword={setResetPassword} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} setShowRevertResult={setShowRevertResult} showResetModal={showResetModal} showRevertPrompt={showRevertPrompt} showRevertResult={showRevertResult} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
+  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handlePasswordReset={handlePasswordReset} isResettingPassword={isResettingPassword} loadingDevUsers={loadingDevUsers} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetStatus={resetStatus} resetStatusType={resetStatusType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setEmail={setEmail} setPassword={setPassword} setResetEmail={setResetEmail} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} showResetModal={showResetModal} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
 
 
 

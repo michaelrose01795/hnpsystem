@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import {
   createFloatingNote,
@@ -164,6 +165,10 @@ function NotesLoadingSkeleton() {
 
 export default function GlobalNotesWidget() {
   const { dbUserId, user } = useUser() || {};
+  const router = useRouter();
+  // Widen the bubble on the public VHC customer link page so it stays
+  // visible against the locked red theme.
+  const isWideBubblePage = (router?.pathname || "").startsWith("/vhc/customer/[jobNumber]/[linkCode]");
   const [hasHydrated, setHasHydrated] = useState(false);
   const [bubblePosition, setBubblePosition] = useState({ x: 0, y: 0 });
   const [panelRect, setPanelRect] = useState(PANEL_DEFAULT);
@@ -989,11 +994,25 @@ export default function GlobalNotesWidget() {
       <button
         type="button"
         className={`${styles.bubble} ${isPanelVisible || isPanelMounted ? styles.bubbleOpen : ""}`}
-        style={{ left: bubblePosition.x, top: bubblePosition.y }}
+        style={{
+          left:
+            isWideBubblePage && typeof window !== "undefined"
+              ? Math.min(bubblePosition.x, Math.max(0, window.innerWidth - 132))
+              : bubblePosition.x,
+          top: bubblePosition.y,
+          ...(isWideBubblePage
+            ? { width: 132, paddingLeft: 14, paddingRight: 14, borderRadius: 28 }
+            : null)
+        }}
         onPointerDown={startBubbleDrag}
         aria-label="Open Notes"
       >
-        <span className={styles.bubbleLabel}>N</span>
+        <span
+          className={styles.bubbleLabel}
+          style={isWideBubblePage ? { fontSize: 14, letterSpacing: "0.08em" } : undefined}
+        >
+          {isWideBubblePage ? "NOTES" : "N"}
+        </span>
       </button>
 
       {isPanelMounted && (

@@ -331,6 +331,7 @@ class MyDocument extends Document {
         <Head>
           <meta name="viewport" content={viewportContent} />
           <meta name="theme-color" content={bootTheme.background} />
+          <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
           {/* Ensure iPad/Safari gets structuredClone before Next.js router boots */}

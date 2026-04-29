@@ -523,12 +523,15 @@ export const ensureUserForCustomer = async (customerRow = {}) => {
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
 
+  // No password set: the customer must use the password-reset flow before
+  // they can log in. password_algo='unset' makes verifyPassword refuse.
   const insertPayload = {
     first_name: firstName,
     last_name: lastName,
     name: fullName || firstName || "Customer",
     email: rawEmail,
-    password_hash: "external_auth",
+    password_hash: "",
+    password_algo: "unset",
     role: "Customer",
     phone,
   };

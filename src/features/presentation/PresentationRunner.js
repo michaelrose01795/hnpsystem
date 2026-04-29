@@ -4,6 +4,7 @@ import PresentationPageFrame from "./PresentationPageFrame";
 import PresentationOverlay from "./PresentationOverlay";
 import PresentationDevOverlay from "./PresentationDevOverlay";
 import useKeyboardNav from "./useKeyboardNav";
+import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 
 function EmptyState() {
   return (
@@ -21,9 +22,10 @@ function EmptyState() {
 }
 
 export default function PresentationRunner() {
-  const { slides } = usePresentation();
+  const { slides, authLoading } = usePresentation();
   useKeyboardNav();
 
+  if (authLoading) return <PageSkeleton />;
   if (!slides || slides.length === 0) return <EmptyState />;
 
   return (

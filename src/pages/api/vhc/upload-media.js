@@ -12,6 +12,8 @@ import {
   uploadFile,
 } from "@/lib/storage/storageService";
 import { ensureJobFilesSchema } from "@/lib/storage/jobFilesSchemaRepair";
+import { writeAuditLog } from "@/lib/audit/auditLog";
+import { getAuditContext } from "@/lib/audit/auditContext";
 
 export const config = {
   api: {
@@ -302,6 +304,26 @@ async function handler(req, res) {
         visible_to_customer: visibleToCustomer,
         uploaded_at: new Date().toISOString(),
       };
+    }
+
+    try {
+      const auditCtx = await getAuditContext(req, res);
+      await writeAuditLog({
+        ...auditCtx,
+        action: replaceFileId ? "update" : "create",
+        entityType: "vhc_media",
+        entityId: savedFile?.file_id ?? null,
+        diff: {
+          job_id: jobId,
+          file_name: file.fileName,
+          mime: file.mimetype,
+          size: file.size || file.buffer.length,
+          visible_to_customer: visibleToCustomer,
+          replaced_file_id: replaceFileId || null,
+        },
+      });
+    } catch {
+      // audit best-effort
     }
 
     return res.status(200).json({

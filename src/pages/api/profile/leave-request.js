@@ -8,6 +8,8 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver";
 import { ensureDirectThread, sendThreadMessage } from "@/lib/database/messages";
 import { parseEmployeeMeta } from "@/lib/hr/employeeMeta";
+import { writeAuditLog } from "@/lib/audit/auditLog";
+import { getAuditContext } from "@/lib/audit/auditContext";
 import {
   calculateLeaveRequestDayTotals,
   formatLeaveDateRange,
@@ -147,6 +149,16 @@ export default async function handler(req, res) {
         error: error.message,
       });
     }
+
+    const auditCtx = await getAuditContext(req, res);
+    await writeAuditLog({
+      ...auditCtx,
+      actorUserId: auditCtx.actorUserId ?? userId,
+      action: "create",
+      entityType: "hr_absence",
+      entityId: data.absence_id,
+      diff: { type, start_date: startDate, end_date: endDate, approval_status: "Pending" },
+    });
 
     const leaveSummary = formatLeaveDateRange(startDate, endDate);
     const requestLines = [

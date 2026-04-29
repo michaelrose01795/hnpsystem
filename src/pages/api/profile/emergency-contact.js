@@ -5,6 +5,8 @@ import { getServerSession } from "next-auth/next"; // NextAuth session helper
 import { authOptions } from "@/pages/api/auth/[...nextauth]"; // Auth config
 import { supabase } from "@/lib/database/supabaseClient"; // Supabase client for DB access
 import { resolveSessionUserId } from "@/lib/auth/sessionUserResolver"; // Resolve DB user_id from session
+import { writeAuditLog } from "@/lib/audit/auditLog";
+import { getAuditContext } from "@/lib/audit/auditContext";
 
 export default async function handler(req, res) {
   // Only allow POST method for updates
@@ -83,6 +85,20 @@ export default async function handler(req, res) {
       console.error("❌ Emergency contact update failed", updateError); // Log error for debugging
       return res.status(500).json({ success: false, message: "Failed to update emergency contact." });
     }
+
+    const auditCtx = await getAuditContext(req, res);
+    await writeAuditLog({
+      ...auditCtx,
+      actorUserId: auditCtx.actorUserId ?? userId,
+      action: "update",
+      entityType: "user_emergency_contact",
+      entityId: userId,
+      diff: {
+        fields_changed: address !== undefined
+          ? ["emergency_contact", "home_address"]
+          : ["emergency_contact"],
+      },
+    });
 
     return res.status(200).json({ success: true, message: "Emergency contact updated." }); // Success response
   } catch (err) {

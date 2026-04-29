@@ -7,6 +7,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export default function VhcCustomerDescriptionModal({
   open,
@@ -41,7 +42,7 @@ export default function VhcCustomerDescriptionModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   const handleSave = async () => {
     setSaving(true);
@@ -60,7 +61,7 @@ export default function VhcCustomerDescriptionModal({
     setValue("");
   };
 
-  return (
+  const modal = (
     <div
       className="popup-backdrop"
       role="presentation"
@@ -74,8 +75,8 @@ export default function VhcCustomerDescriptionModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 1000,
-        padding: 16,
+        zIndex: 10000,
+        padding: 20,
       }}
     >
       <div
@@ -85,22 +86,27 @@ export default function VhcCustomerDescriptionModal({
         onMouseDown={(e) => e.stopPropagation()}
         style={{
           width: "100%",
-          maxWidth: 560,
+          maxWidth: 640,
           background: "var(--page-card-bg, var(--surface))",
           color: "var(--text-primary)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--radius-md)",
-          boxShadow: "var(--shadow-xl, 0 24px 48px rgba(0,0,0,0.18))",
-          padding: "var(--section-card-padding, 20px)",
+          border: "none",
+          borderRadius: "var(--radius-sm)",
+          boxShadow: "0 24px 60px rgba(15, 23, 42, 0.24)",
+          padding: 0,
           display: "flex",
           flexDirection: "column",
-          gap: 14,
           maxHeight: "calc(100vh - 32px)",
           overflowY: "auto",
           boxSizing: "border-box",
         }}
       >
-        <div>
+        <div
+          style={{
+            padding: "18px 20px 14px",
+            borderBottom: "none",
+            background: "var(--page-card-bg-alt, var(--surface-light))",
+          }}
+        >
           <div
             style={{
               fontSize: 11,
@@ -123,88 +129,89 @@ export default function VhcCustomerDescriptionModal({
           </h2>
         </div>
 
-        <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-          What you write here is what the customer will see on the Summary tab,
-          customer preview, share link and the view / copy / send flows. The
-          technician's original health-check description is not changed.
-        </p>
+        <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+            This is the customer-facing wording used in the Summary tab, preview,
+            share link and send flows. The technician's original VHC note stays unchanged.
+          </p>
 
-        {technicianDescription ? (
-          <div
-            style={{
-              padding: "10px 12px",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--info-surface, var(--surface-muted))",
-              border: "1px solid var(--border)",
-            }}
-          >
+          {technicianDescription ? (
             <div
               style={{
-                fontSize: 11,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
-                color: "var(--info)",
-                marginBottom: 4,
+                padding: "12px 14px",
+                borderRadius: "var(--radius-sm)",
+                background: "var(--info-surface, var(--surface-muted))",
+                border: "none",
               }}
             >
-              Technician's description
+              <div
+                style={{
+                  fontSize: 11,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "var(--info)",
+                  marginBottom: 4,
+                }}
+              >
+                Technician's description
+              </div>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.45 }}>
+                {technicianDescription}
+              </div>
             </div>
-            <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.45 }}>
-              {technicianDescription}
-            </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 6,
-            fontSize: 12,
-            color: "var(--text-secondary)",
-            textTransform: "uppercase",
-            letterSpacing: "0.06em",
-          }}
-        >
-          Customer description
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            disabled={saving}
-            rows={5}
-            placeholder="Leave empty to use the technician's description"
+          <label
             style={{
-              width: "100%",
-              boxSizing: "border-box",
-              padding: "10px 12px",
-              minHeight: 110,
-              borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--border)",
-              background: "var(--surface)",
-              color: "var(--text-primary)",
-              fontSize: 14,
-              lineHeight: 1.5,
-              fontFamily: "inherit",
-              resize: "vertical",
-            }}
-          />
-        </label>
-
-        {error ? (
-          <div
-            style={{
-              padding: "8px 10px",
-              borderRadius: "var(--radius-xs)",
-              background: "var(--danger-surface, rgba(239,68,68,0.1))",
-              border: "1px solid var(--danger, rgba(239,68,68,0.4))",
-              color: "var(--danger, #ef4444)",
-              fontSize: 13,
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              fontSize: 12,
+              color: "var(--text-secondary)",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
             }}
           >
-            {error}
-          </div>
-        ) : null}
+            Customer description
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              disabled={saving}
+              rows={5}
+              placeholder="Leave empty to use the technician's description"
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "12px 14px",
+                minHeight: 130,
+                borderRadius: "var(--radius-xs)",
+                border: "none",
+                background: "var(--page-card-bg-alt, var(--surface-light))",
+                color: "var(--text-primary)",
+                fontSize: 14,
+                lineHeight: 1.5,
+                fontFamily: "inherit",
+                resize: "vertical",
+              }}
+            />
+          </label>
+
+          {error ? (
+            <div
+              style={{
+                padding: "8px 10px",
+                borderRadius: "var(--radius-xs)",
+                background: "var(--danger-surface, rgba(239,68,68,0.1))",
+                border: "none",
+                color: "var(--danger, #ef4444)",
+                fontSize: 13,
+              }}
+            >
+              {error}
+            </div>
+          ) : null}
+        </div>
 
         <div
           style={{
@@ -212,6 +219,9 @@ export default function VhcCustomerDescriptionModal({
             justifyContent: "space-between",
             gap: 8,
             flexWrap: "wrap",
+            padding: "14px 20px 18px",
+            borderTop: "none",
+            background: "var(--page-card-bg-alt, var(--surface-light))",
           }}
         >
           <button
@@ -222,12 +232,13 @@ export default function VhcCustomerDescriptionModal({
               padding: "10px 14px",
               minHeight: 40,
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--border)",
-              background: "transparent",
-              color: "var(--text-secondary)",
-              fontWeight: 600,
+              border: "none",
+              background: "var(--accentMain, var(--primary))",
+              color: "var(--onAccentText, #fff)",
+              fontWeight: 700,
               fontSize: 13,
               cursor: saving ? "not-allowed" : "pointer",
+              opacity: saving ? 0.7 : 1,
             }}
           >
             Use technician's text
@@ -242,7 +253,7 @@ export default function VhcCustomerDescriptionModal({
                 padding: "10px 14px",
                 minHeight: 40,
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--border)",
+                border: "none",
                 background: "var(--surface)",
                 color: "var(--text-primary)",
                 fontWeight: 600,
@@ -276,4 +287,6 @@ export default function VhcCustomerDescriptionModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

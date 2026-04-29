@@ -21,17 +21,6 @@ async function findUserIdByNumericId(userId) {
   return data?.user_id || null;
 }
 
-async function findUserIdByKeycloakId(keycloakUserId) {
-  if (!keycloakUserId) return null;
-  const { data, error } = await supabase
-    .from("users")
-    .select("user_id")
-    .eq("keycloak_user_id", keycloakUserId)
-    .maybeSingle();
-  if (error) throw error;
-  return data?.user_id || null;
-}
-
 async function findUserIdByEmail(email) {
   if (!email) return null;
   const normalizedEmail = email.toLowerCase();
@@ -88,17 +77,6 @@ export async function resolveSessionUserId(session) {
 
   if (numericSessionId) {
     const userId = await findUserIdByNumericId(numericSessionId);
-    if (userId) return userId;
-  }
-
-  const keycloakCandidates = [
-    asNonEmptyString(sessionUser.id),
-    asNonEmptyString(session.userId),
-    asNonEmptyString(sessionUser.sub),
-  ].filter(Boolean);
-
-  for (const keycloakId of keycloakCandidates) {
-    const userId = await findUserIdByKeycloakId(keycloakId);
     if (userId) return userId;
   }
 

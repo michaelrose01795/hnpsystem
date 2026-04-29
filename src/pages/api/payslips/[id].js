@@ -15,6 +15,8 @@ import {
   getPayslipById,
   updatePayslip,
 } from "@/lib/database/payslips";
+import { writeAuditLog } from "@/lib/audit/auditLog";
+import { getAuditContext, shallowDiff } from "@/lib/audit/auditContext";
 
 const ADMIN_ROLES = new Set([
   "admin",
@@ -53,6 +55,16 @@ async function handler(req, res, session) {
         }
       }
 
+      // Read of own/another user's payslip is sensitive enough to log.
+      const ctx = await getAuditContext(req, res);
+      await writeAuditLog({
+        ...ctx,
+        action: "read",
+        entityType: "payslip",
+        entityId: id,
+        diff: { admin_view: isAdmin, target_user_id: payslip.userId ?? null },
+      });
+
       return res.status(200).json({ success: true, data: payslip });
     }
 
@@ -62,12 +74,30 @@ async function handler(req, res, session) {
 
     if (req.method === "PUT") {
       const actorUserId = await resolveSessionUserId(session).catch(() => null);
+      const auditCtx = await getAuditContext(req, res);
+      const before = await getPayslipById(id).catch(() => null);
       const updated = await updatePayslip(id, req.body || {}, actorUserId);
+      await writeAuditLog({
+        ...auditCtx,
+        action: "update",
+        entityType: "payslip",
+        entityId: id,
+        diff: shallowDiff(before, updated),
+      });
       return res.status(200).json({ success: true, data: updated });
     }
 
     if (req.method === "DELETE") {
+      const auditCtx = await getAuditContext(req, res);
+      const before = await getPayslipById(id).catch(() => null);
       await deletePayslip(id);
+      await writeAuditLog({
+        ...auditCtx,
+        action: "delete",
+        entityType: "payslip",
+        entityId: id,
+        diff: { before_target_user_id: before?.userId ?? null },
+      });
       return res.status(200).json({ success: true, data: { id } });
     }
 

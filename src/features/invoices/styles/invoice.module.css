@@ -295,107 +295,115 @@
   font-weight: 700;
 }
 
-.modalBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.48);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  z-index: 1600;
-}
-
-.paymentModal {
-  width: min(1180px, 100%);
-  max-height: min(92vh, 960px);
-  overflow: auto;
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--surface-light);
-  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.22);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
+/* Payment Journey modal — wrapper handled by PopupModal (popupStyleApi).
+   The classes below shape the inner grid/rail/cards only. Surface, padding
+   and centering of the popup itself come from the canonical PopupModal. */
 
 .paymentModalHeader {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--layout-card-gap);
   align-items: flex-start;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border);
 }
 
 .paymentModalGrid {
   display: grid;
-  grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: var(--layout-card-gap);
+  align-items: start;
+  flex: 1;
+  min-height: 0;
 }
 
 .paymentMethodRail {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
+  align-self: start;
 }
 
-.paymentMethodCard {
-  text-align: left;
-  border: 1px solid var(--surface-light);
-  background: var(--surface-secondary, var(--surface));
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: var(--text-primary);
+.paymentMethodButton {
+  min-height: 0 !important;
+  height: auto !important;
+  padding: var(--space-3) !important;
 }
 
-.paymentMethodCard[data-active="true"] {
-  border-color: var(--primary-dark);
-  box-shadow: inset 0 0 0 1px var(--primary-dark);
-  background: var(--primary-surface, var(--surface));
+.paymentMethodButton strong {
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
-.paymentMethodCard span {
-  color: var(--text-secondary);
-  font-size: 0.8rem;
+.paymentMethodCategory {
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.paymentMethodCard p {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.45;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  opacity: 0.75;
 }
 
 .paymentPanel {
   display: grid;
-  gap: 16px;
+  gap: var(--layout-card-gap);
+  align-content: start;
+  background: var(--page-card-bg-alt);
+  border-radius: var(--radius-md);
+  padding: var(--section-card-padding);
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .paymentPanelCard {
-  border: 1px solid var(--surface-light);
+  border: none;
   border-radius: var(--radius-sm);
-  padding: 18px;
-  background: var(--surface-secondary, var(--surface));
+  padding: var(--section-card-padding);
+  background: var(--section-card-bg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.paymentTestCard {
+  border: 1px dashed var(--accentMain);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  background: var(--accentSurfaceSubtle, var(--surfaceMain));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.paymentTestHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.paymentTestHeader strong {
+  color: var(--accentText);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.paymentTestHeader span {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.45;
 }
 
 .paymentPanelHeading {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: flex-start;
 }
 
 .paymentFieldGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
+  gap: var(--space-3);
 }
 
 .paymentField {
@@ -407,11 +415,10 @@
 }
 
 .paymentNoteBox {
-  margin-top: 16px;
-  border: 1px solid var(--surface-light);
+  border: none;
   border-radius: var(--radius-sm);
-  padding: 14px;
-  background: var(--surface);
+  padding: var(--space-3);
+  background: var(--surfaceMain);
   color: var(--text-primary);
 }
 
@@ -424,49 +431,31 @@
 .outcomeSelector {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.outcomeChip {
-  border: 1px solid var(--surface-light);
-  background: var(--surface);
-  color: var(--text-primary);
-  border-radius: var(--radius-pill);
-  padding: 8px 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.outcomeChip[data-active="true"] {
-  border-color: var(--primary-dark);
-  background: var(--primary-surface, var(--surface));
-  color: var(--primary-dark);
+  gap: var(--space-2);
 }
 
 .paymentActionRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--space-2);
   align-items: center;
-  margin-top: 18px;
 }
 
 .activityTimeline {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .activityTimelineItem {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: center;
-  border: 1px solid var(--surface-light);
+  border: none;
   border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  background: var(--surface);
+  padding: var(--space-3);
+  background: var(--surfaceMain);
 }
 
 .activityTimelineItem p {
@@ -476,11 +465,16 @@
 }
 
 .releasePromptBox {
-  margin-top: 16px;
   border: none;
   background: var(--warning-surface);
   border-radius: var(--radius-sm);
-  padding: 16px;
+  padding: var(--space-3);
+  color: var(--warning-dark);
+}
+
+.releasePromptBox h4,
+.releasePromptBox p {
+  color: var(--warning-dark);
 }
 
 /* .skeleton / .skeletonRow / @keyframes shimmer removed — dead code.
@@ -491,6 +485,5 @@
   .invoiceShell { padding: 16px; } /* // reduce padding */
   .companyHeader { flex-direction: column; align-items: flex-start; } /* // stack header */
   .partsTable { min-width: 520px; } /* // allow smaller scroll width */
-  .paymentModal { padding: 16px; }
   .paymentModalGrid { grid-template-columns: 1fr; }
 } /* // end media query */

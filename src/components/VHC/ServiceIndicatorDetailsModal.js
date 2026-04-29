@@ -558,8 +558,8 @@ export default function ServiceIndicatorDetailsModal({
         <div
           style={{
             ...popupOverlayStyles,
-            zIndex: 5600,
-            padding: "24px",
+            zIndex: 9000,
+            padding: "var(--popup-viewport-gap, clamp(12px, 2.5vw, 24px))",
           }}
         >
           <div
@@ -569,21 +569,34 @@ export default function ServiceIndicatorDetailsModal({
             data-dev-section-parent="vhc-service-layout"
             style={{
               ...popupCardStyles,
-              width: "min(520px, 92vw)",
-              maxWidth: "92vw",
-              minHeight: "480px",
-              maxHeight: "90vh",
-              padding: "24px",
+              width: "min(720px, 94vw)",
+              minHeight: "auto",
+              maxHeight: "calc(100dvh - 48px)",
+              padding: 0,
               display: "flex",
               flexDirection: "column",
-              gap: "16px",
-              overflow: "visible",
+              gap: 0,
+              overflow: "hidden",
+              background: "var(--page-card-bg, var(--surface))",
+              borderRadius: "var(--radius-sm)",
             }}
           >
-            <div data-dev-section="1" data-dev-section-key="vhc-service-concern-header" data-dev-section-type="toolbar" data-dev-section-parent="vhc-service-concern-popup" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                {activeConcernLabel}
-              </h3>
+            <div data-dev-section="1" data-dev-section-key="vhc-service-concern-header" data-dev-section-type="toolbar" data-dev-section-parent="vhc-service-concern-popup" style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "16px",
+              padding: "18px 20px",
+              background: "var(--page-card-bg-alt, var(--surface-light))",
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>
+                  Issue report
+                </span>
+                <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: palette.accent }}>
+                  {activeConcernLabel}
+                </h3>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -593,84 +606,83 @@ export default function ServiceIndicatorDetailsModal({
                   setNewConcern("");
                   setConcernStatus("Red");
                 }}
-                style={{ padding: "6px 14px" }}
+                style={{ padding: "6px 14px", flexShrink: 0 }}
               >
                 Close
               </Button>
             </div>
 
-            <div data-dev-section="1" data-dev-section-key="vhc-service-concern-form" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-concern-popup" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <label style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: palette.textMuted }}>
-                Issue
-              </label>
+            <div data-dev-section="1" data-dev-section-key="vhc-service-concern-form" data-dev-section-type="content-card" data-dev-section-parent="vhc-service-concern-popup" style={{
+              padding: "18px 20px",
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) 160px auto",
+              gap: "12px",
+              alignItems: "end",
+              background: "var(--surface)",
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
+                <label style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: palette.textMuted, fontWeight: 700 }}>
+                  Issue
+                </label>
+                {activeConcernTarget === "Miscellaneous" ? (
+                  <input
+                    type="text"
+                    value={newConcern}
+                    onChange={(event) => setNewConcern(event.target.value)}
+                    placeholder="Describe concern..."
+                    readOnly={locked}
+                    style={{
+                      width: "100%",
+                      borderRadius: "var(--control-radius)",
+                      border: "none",
+                      padding: "var(--control-padding)",
+                      minHeight: "var(--control-height)",
+                      fontSize: "var(--control-font-size)",
+                      color: "var(--text-primary)",
+                      outline: "none",
+                      background: "var(--control-bg)",
+                    }}
+                  />
+                ) : (
+                  <IssueAutocomplete
+                    sectionKey={resolveServiceSectionKey(activeConcernTarget)}
+                    value={newConcern}
+                    onChange={setNewConcern}
+                    onSelect={setNewConcern}
+                    disabled={locked}
+                    placeholder="Describe concern..."
+                    inputStyle={{
+                      borderRadius: "var(--control-radius)",
+                      border: "none",
+                      padding: "var(--control-padding)",
+                      minHeight: "var(--control-height)",
+                      fontSize: "var(--control-font-size)",
+                      color: "var(--text-primary)",
+                      outline: "none",
+                    }}
+                  />
+                )}
+              </div>
 
-              {activeConcernTarget === "Miscellaneous" ? (
-                <input
-                  type="text"
-                  value={newConcern}
-                  onChange={(event) => setNewConcern(event.target.value)}
-                  placeholder="Describe concern..."
-                  readOnly={locked}
-                  style={{
-                    width: "100%",
-                    borderRadius: "var(--radius-md)",
-                    border: "none",
-                    padding: "12px",
-                    fontSize: "14px",
-                    color: palette.textPrimary,
-                    outline: "none",
-                    background: palette.surface,
-                  }}
-                />
-              ) : (
-                <IssueAutocomplete
-                  sectionKey={resolveServiceSectionKey(activeConcernTarget)}
-                  value={newConcern}
-                  onChange={setNewConcern}
-                  onSelect={setNewConcern}
-                  disabled={locked}
-                  placeholder="Describe concern..."
-                  inputStyle={{
-                    borderRadius: "var(--radius-md)",
-                    border: "none",
-                    padding: "12px",
-                    fontSize: "14px",
-                    color: palette.textPrimary,
-                    outline: "none",
-                  }}
-                />
-              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: palette.textMuted, fontWeight: 700 }}>
+                  Status
+                </label>
+                <DropdownField
+                  value={concernStatus}
+                  onChange={(e) => setConcernStatus(e.target.value)}
+                  className="vhc-concern-dropdown"
+                  style={{ width: "100%" }}
+                >
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </DropdownField>
+              </div>
 
-              <label style={{ fontSize: "12px", letterSpacing: "0.08em", textTransform: "uppercase", color: palette.textMuted }}>
-                Status
-              </label>
-              <DropdownField
-                value={concernStatus}
-                onChange={(e) => setConcernStatus(e.target.value)}
-                className="vhc-concern-dropdown"
-                style={{
-                  borderRadius: "var(--radius-md)",
-                  border: "none",
-                  padding: "10px 12px",
-                  background: palette.surface,
-                  fontSize: "14px",
-                  color: palette.textPrimary,
-                }}
-              >
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </DropdownField>
-
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={addConcern}
-                disabled={locked}
-                style={{ alignSelf: "flex-end" }}
-              >
+              <Button variant="primary" size="sm" onClick={addConcern} disabled={locked}>
                 Save Concern
               </Button>
             </div>
@@ -685,8 +697,8 @@ export default function ServiceIndicatorDetailsModal({
                 flexDirection: "column",
                 gap: "10px",
                 overflowY: shouldScrollConcernEntries ? "auto" : "visible",
-                maxHeight: shouldScrollConcernEntries ? "360px" : "none",
-                paddingRight: shouldScrollConcernEntries ? "6px" : "0px",
+                maxHeight: shouldScrollConcernEntries ? "340px" : "none",
+                padding: "0 20px 20px",
               }}
             >
               {activeConcernEntries.length === 0 ? (
@@ -707,30 +719,27 @@ export default function ServiceIndicatorDetailsModal({
                   <div
                     key={`${concern.source}-${concern._globalIndex}`}
                     style={{
-                      display: "flex",
-                      flexDirection: "column",
+                    display: "flex",
+                    flexDirection: "column",
                       gap: "12px",
-                      padding: "16px",
-                      borderRadius: "var(--radius-lg)",
+                      padding: "14px",
+                      borderRadius: "var(--radius-sm)",
                       border: "none",
-                      background: palette.surface,
+                      background: "var(--page-card-bg-alt, var(--surface-light))",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) 160px auto",
+                      gap: "10px",
+                      alignItems: "center"
+                    }}>
                       <span style={{ fontSize: "13px", fontWeight: 600, color: palette.textMuted }}>{activeConcernLabel}</span>
                       <DropdownField
                         value={concern.status}
                         onChange={(e) => updateConcern(concern._globalIndex, { status: e.target.value })}
                         className="vhc-concern-dropdown"
-                        style={{
-                          borderRadius: "var(--radius-pill)",
-                          padding: "6px 12px",
-                          border: "none",
-                          background: palette.surfaceAlt,
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          color: palette.textPrimary,
-                        }}
+                        style={{ width: "160px" }}
                       >
                         {STATUS_OPTIONS.map((status) => (
                           <option key={status} value={status}>
@@ -738,6 +747,13 @@ export default function ServiceIndicatorDetailsModal({
                           </option>
                         ))}
                       </DropdownField>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => deleteConcern(concern._globalIndex)}
+                      >
+                        Remove
+                      </Button>
                     </div>
                     {activeConcernTarget === "Miscellaneous" ? (
                       <textarea
@@ -771,14 +787,6 @@ export default function ServiceIndicatorDetailsModal({
                         }}
                       />
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteConcern(concern._globalIndex)}
-                      style={{ color: "var(--danger)", border: "none" }}
-                    >
-                      Remove
-                    </Button>
                   </div>
                 ))
               )}

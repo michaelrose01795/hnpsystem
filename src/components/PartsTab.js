@@ -368,8 +368,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
     jobParts.forEach((part) => {
       const requestId = part?.allocatedToRequestId;
       if (requestId === null || requestId === undefined || requestId === "") return;
+      // Skip VHC-sourced parts — they already render under their VHC request,
+      // so backfilling would duplicate the row as a phantom customer request.
+      if (part?.vhcItemId) return;
       const key = String(requestId);
       if (customerReqMap.has(key)) return;
+      if (vhcReqMap.has(key)) return;
       const description =
         firstText(part?.requestNotes, part?.description, part?.name) ||
         `Reported request ${key}`;
@@ -2035,8 +2039,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   overflowX: "auto",
                   overflowY: "auto",
                   maxHeight: "600px",
-                  background: "var(--accent-purple-surface)",
-                  borderRadius: "var(--radius-sm)",
                   padding: "0 6px 6px",
                 }}
               >
@@ -2814,8 +2816,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   overflowY: "auto",
                   maxHeight: "600px",
                   flex: 1,
-                  background: "var(--accent-purple-surface)",
-                  borderRadius: "var(--radius-xs)",
                   padding: "8px",
                 }}
               >

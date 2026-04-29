@@ -1,96 +1,182 @@
 // file location: src/components/page-ui/dev/dev-user-diagnostic-ui.js
 
+import { useState } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 
-const plannedFeatureGroups = [
-  {
-    title: "Workshop",
-    items: [
-      "Consumables tracker with technician request and manager approval flow, so usage stays controlled and visible.",
-      "Equipment, tools, and workshop stock tracking — oils, shared tools, and consumables logged in one place.",
-      "Key tracker and parking management so every vehicle and key is accounted for at all times.",
-      "Job card activity tracker showing every change — authorisations, parts ordered, VHC updates, status moves.",
-    ],
-  },
-  {
-    title: "Staff",
-    items: [
-      "Full user profiles covering hours worked, leave requests, payslips, staff vehicles, and part purchases.",
-      "Technician performance tracking — efficiency, time on jobs, and real output measured day to day.",
-      "Accurate clocking and activity tracking — login time, job time, and idle time captured automatically.",
-      "Fully paper-free workflow for job cards, checklists, approvals, and signatures.",
-    ],
-  },
-  {
-    title: "Management",
-    items: [
-      "Live dashboards showing targets, efficiency, clocking, and current workload across the workshop.",
-      "Global and department news feed for clear internal communication and company updates.",
-      "Messaging system with quick slash commands (/job, /part, /note) to move information without leaving the screen.",
-      "Real-time visibility of bottlenecks, approvals waiting, and where each job actually stands.",
-    ],
-  },
-  {
-    title: "System-wide",
-    items: [
-      "Fully customisable platform tailored to H&P workflows — not locked to a third-party system.",
-      "Built in-house with company-first priorities and lower long-term running costs.",
-      "Single connected platform — service, parts, HR, accounts, and management all share one source of truth.",
-      "Designed to keep growing around the way H&P operates, with no per-seat licensing surprises.",
-    ],
-  },
-];
-
-const developingSections = [
+const mainPitchSections = [
   {
     title: "Product Direction",
     items: [
-      "Create a single H&P operations platform covering service, workshop, parts, accounts, customer updates, HR, and management reporting.",
-      "Replace scattered spreadsheets, message threads, and manual status chasing with one controlled workflow.",
-      "Keep the product built around real dealership processes so each screen supports daily work, not just reporting.",
+      "One H&P operations platform across service, workshop, parts, accounts, HR, and management.",
+      "Replace spreadsheets, message chasing, and disconnected tools with controlled workflows.",
+      "Build around real H&P processes, including custom workshop and management routines.",
+      "Keep the system flexible enough to evolve as the business changes.",
     ],
   },
   {
     title: "Delivery Plan",
     items: [
-      "Deliver in phases so management can review working software every 2 to 4 weeks instead of waiting for one large handover.",
-      "Prioritise the highest-value flows first: job cards, VHC, vehicle tracking, parts requests, customer communication, and management dashboards.",
-      "Use the diagnostics page before reviews and demos to confirm key workflows, APIs, and data links are healthy.",
-    ],
-  },
-  {
-    title: "Time Commitment",
-    items: [
-      "Expected build time: 18 to 28 focused hours per week alongside a full-time job.",
-      "Typical pattern: 3 to 5 hours per evening, with weekend blocks used for testing, demos, and larger releases where needed.",
-      "Weekly progress should be summarised as delivered work, active risks, next priorities, and any decisions needed from management.",
-    ],
-  },
-  {
-    title: "Milestones",
-    items: [
-      "MVP, 3 to 4 weeks: core navigation, job cards, workshop status tracking, basic VHC flow, and management visibility.",
-      "Phase 1, 4 to 6 weeks: parts workflow, customer updates, stronger dashboards, accounts links, and role-based access.",
-      "Phase 2, 6 to 8 weeks: customer portal, HR/admin tools, reporting packs, workflow automation, and presentation-ready polish.",
-      "Stabilisation, 2 weeks per release: bug fixing, user feedback, training notes, and handover material.",
-    ],
-  },
-  {
-    title: "Support & Handover",
-    items: [
-      "Include guided walkthroughs for each department so managers can see exactly how the system fits daily operations.",
-      "Provide short workflow notes for major areas: job cards, VHC, parts, tracking, customer updates, accounts, and admin.",
-      "Separate bugs, agreed improvements, and new feature requests so support remains clear and commercially fair.",
-      "Keep documentation practical enough for future staff training and internal continuity.",
+      "Deliver working software in reviewable phases, not one long invisible build.",
+      "Focus first on job cards, VHC, tracking, parts flow, customer updates, and dashboards.",
+      "Use diagnostics before demos to check APIs, data links, and key workflows.",
+      "Release, gather feedback, tighten the workflow, then move to the next high-value area.",
     ],
   },
   {
     title: "Commercials",
     items: [
-      "Use staged payments tied to visible delivery: small start payment, MVP delivery payment, then phase payments as each area goes live.",
-      "Example structure: 20% start, 30% on MVP, 25% on Phase 1, 25% on Phase 2 or final handover.",
-      "Ongoing support can be a modest monthly retainer covering hosting checks, small fixes, training help, and priority updates.",
-      "Larger new modules or urgent out-of-scope requests should be quoted separately before work begins.",
+      "Staged payments tied to visible delivery and signed-off phases.",
+      "Support retainer can cover hosting checks, small fixes, training help, and priority updates.",
+      "Larger new modules are quoted separately before work starts.",
+      "No per-seat licensing surprises as the team grows.",
+    ],
+  },
+  {
+    title: "Features",
+    items: [
+      "Workshop consumables, technician requests, tools/stock tracking, key tracker, and parking management.",
+      "Job card activity tracker, paper-free workflows, dashboards, news feed, and slash-command messaging.",
+      "Full user profiles with hours worked, leave requests, payslips, staff vehicles, and part purchases.",
+      "Technician performance, accurate clocking, bottleneck visibility, and custom H&P workflows.",
+      "In-house build, single source of truth, and no per-seat licensing surprises.",
+    ],
+  },
+  {
+    title: "Management Value",
+    items: [
+      "See workload, delays, approvals, and department pressure without chasing staff.",
+      "Give managers cleaner decisions from live data instead of end-of-day updates.",
+      "Improve accountability with clear ownership, history, and status movement.",
+      "Reduce operational noise so managers can focus on throughput and customer outcomes.",
+    ],
+  },
+  {
+    title: "Future Potential",
+    items: [
+      "Customer portal, automation, reporting packs, and workflow rules can grow from the same base.",
+      "Internal integrations can connect service, parts, accounts, HR, and management reporting.",
+      "Training and handover can turn the build into a maintainable internal platform.",
+      "The system becomes a long-term H&P asset, not another rented tool.",
+    ],
+  },
+];
+
+const supportingPitchSections = [
+  {
+    title: "Time Saving",
+    items: [
+      "Less time spent asking where a job, key, vehicle, part, or approval is.",
+      "Slash commands like /job, /part, and /note move people straight to context.",
+      "Paper-free workflows cut duplicate writing and end-of-day admin.",
+      "Dashboards reduce manual status updates for managers.",
+    ],
+  },
+  {
+    title: "Error Reduction",
+    items: [
+      "Single source of truth reduces conflicting notes and version confusion.",
+      "Accurate clocking separates login time, job time, and idle time.",
+      "Job card activity tracker shows authorisations, parts, VHC updates, and status moves.",
+      "Tools/stock tracking keeps workshop data visible instead of relying on memory.",
+    ],
+  },
+  {
+    title: "Workshop Control",
+    items: [
+      "Workshop consumables are requested, approved, logged, and reviewed.",
+      "Technician requests create a clear trail for materials and stock needs.",
+      "Key tracker and parking management keep vehicles and keys accounted for.",
+      "Bottleneck visibility shows where jobs are waiting and why.",
+    ],
+  },
+  {
+    title: "Customer Experience",
+    items: [
+      "Cleaner customer updates because job status and VHC progress are visible.",
+      "Fewer missed callbacks when the system highlights approvals and delays.",
+      "Paper-free checks and signatures make the process feel more professional.",
+      "Messaging keeps customer and internal context closer to the job.",
+    ],
+  },
+  {
+    title: "Accountability & Transparency",
+    items: [
+      "Every key action has a clearer owner, timestamp, and status trail.",
+      "Technician performance shows efficiency, time on jobs, and real output.",
+      "Full user profiles connect hours worked, leave requests, and payslips.",
+      "Managers can review part purchases, staff vehicles, and activity history in one place.",
+    ],
+  },
+  {
+    title: "Scalability",
+    items: [
+      "Custom H&P workflows can expand without forcing the business into generic software.",
+      "New departments, dashboards, and modules can be added onto the same foundation.",
+      "No per-seat licensing surprises as more staff use the system.",
+      "In-house build means priorities stay aligned with H&P operations.",
+    ],
+  },
+  {
+    title: "Cost Control",
+    items: [
+      "Consumables and stock usage become easier to monitor and challenge.",
+      "Part purchases and workshop requests are visible before costs drift.",
+      "Lower long-term cost than stacking separate tools for every department.",
+      "Commercial scope stays clear: support, fixes, and new modules are separated.",
+    ],
+  },
+  {
+    title: "Decision Making",
+    items: [
+      "Live dashboards show targets, efficiency, clocking, and current workload.",
+      "Managers can spot bottlenecks before they become customer issues.",
+      "Data links service, parts, HR, accounts, and workshop performance.",
+      "Weekly reviews can focus on evidence, risks, and the next decision needed.",
+    ],
+  },
+  {
+    title: "Internal System Integration",
+    items: [
+      "Service, parts, HR, accounts, and management share one operational record.",
+      "News feed supports company updates and department communication.",
+      "Messaging with slash commands keeps job, part, and note references connected.",
+      "Dashboards pull from the same activity, clocking, and workflow data.",
+    ],
+  },
+  {
+    title: "Staff Adoption",
+    items: [
+      "Screens are built around the way staff already work, not around generic software rules.",
+      "Short workflows reduce training friction for technicians and managers.",
+      "Department walkthroughs make live use easier after each release.",
+      "Staff see practical benefits: fewer repeats, clearer requests, faster answers.",
+    ],
+  },
+  {
+    title: "Risk Reduction",
+    items: [
+      "Phased delivery keeps management close to progress and priority changes.",
+      "Diagnostics support safer demos and quicker fault finding.",
+      "Activity tracking reduces reliance on verbal handovers.",
+      "Role-based visibility can protect sensitive HR, payroll, and account areas.",
+    ],
+  },
+  {
+    title: "Support & Handover",
+    items: [
+      "Guided walkthroughs for each department as features go live.",
+      "Practical notes for job cards, VHC, parts, tracking, accounts, HR, and admin.",
+      "Bugs, improvements, and new feature requests stay separated.",
+      "Handover material supports future training and internal continuity.",
+    ],
+  },
+  {
+    title: "Milestones",
+    items: [
+      "MVP: navigation, job cards, workshop status, basic VHC, and management visibility.",
+      "Phase 1: parts workflow, customer updates, stronger dashboards, accounts links, and access control.",
+      "Phase 2: customer portal, HR/admin tools, reporting packs, automation, and polish.",
+      "Stabilisation: bug fixing, feedback, training notes, and handover material.",
     ],
   },
 ];
@@ -117,6 +203,7 @@ export default function UserDiagnosticDevPageUi(props) {
     totalCount,
     userLoading,
   } = props; // receive page logic props.
+  const [pitchMoreOpen, setPitchMoreOpen] = useState(false);
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -128,27 +215,24 @@ export default function UserDiagnosticDevPageUi(props) {
       </div>; // render extracted page section.
 
     case "section2":
-      return <DevLayoutSection sectionKey="user-diagnostic" sectionType="page-shell" backgroundToken="surface" widthMode="constrained" shell style={{
-  padding: "32px",
+      return <DevLayoutSection className="user-diagnostic-page" sectionKey="user-diagnostic" sectionType="page-shell" backgroundToken="surface" widthMode="constrained" shell style={{
+  padding: "clamp(14px, 4vw, 32px)",
   display: "flex",
   gap: "24px",
   alignItems: "flex-start",
+  flexWrap: "wrap",
   maxWidth: "1500px",
-  height: "100vh",
-  maxHeight: "100vh",
-  overflow: "hidden",
+  minHeight: "100dvh",
+  overflow: "visible",
   boxSizing: "border-box"
 }}>
-      <DevLayoutSection sectionKey="user-diagnostic/diagnostics-panel" sectionType="section-shell" parentKey="user-diagnostic" backgroundToken="" style={{
-    flex: 1,
+      <DevLayoutSection className="user-diagnostic-diagnostics" sectionKey="user-diagnostic/diagnostics-panel" sectionType="section-shell" parentKey="user-diagnostic" backgroundToken="" style={{
+    flex: "1 1 620px",
     minWidth: 0,
-    maxWidth: "900px",
-    height: "100%",
-    overflowY: "auto",
-    paddingRight: "8px"
+    maxWidth: "min(100%, 900px)"
       }}>
       <DevLayoutSection sectionKey="user-diagnostic/toolbar" sectionType="toolbar" parentKey="user-diagnostic/diagnostics-panel" backgroundToken="">
-      <div style={{
+      <div className="user-diagnostic-toolbar" style={{
         display: "flex",
         gap: "10px",
         alignItems: "center",
@@ -269,12 +353,14 @@ export default function UserDiagnosticDevPageUi(props) {
             background: "var(--surface)",
             border: "none",
             borderRadius: "var(--radius-xs)",
-            padding: "14px 16px"
+            padding: "14px 16px",
+            minWidth: 0
           }}>
                 <div style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px"
+              gap: "10px",
+              flexWrap: "wrap"
             }}>
                   <span style={{
                 fontSize: "18px",
@@ -286,7 +372,8 @@ export default function UserDiagnosticDevPageUi(props) {
                   </span>
                   <span style={{
                 fontWeight: 600,
-                flex: 1
+                flex: "1 1 180px",
+                minWidth: 0
               }}>{result.label}</span>
                   {result.data && <button type="button" onClick={() => setExpanded(prev => ({
                 ...prev,
@@ -306,7 +393,8 @@ export default function UserDiagnosticDevPageUi(props) {
                 <p style={{
               margin: "6px 0 0 34px",
               fontSize: "14px",
-              color: "var(--text-secondary)"
+              color: "var(--text-secondary)",
+              overflowWrap: "anywhere"
             }}>
                   {result.detail}
                 </p>
@@ -342,22 +430,48 @@ export default function UserDiagnosticDevPageUi(props) {
         </div>
         </DevLayoutSection>}
       </DevLayoutSection>
-      {developingOpen && <PopupModal onClose={onCloseDeveloping} ariaLabel="Developing sales details" cardStyle={{
-        width: "min(100%, 880px)",
-        padding: "24px",
-        borderRadius: "var(--radius-sm)"
+      <style jsx global>{`
+        @media (max-width: 700px) {
+          .user-diagnostic-page {
+            gap: 16px !important;
+            align-items: stretch !important;
+          }
+          .user-diagnostic-diagnostics {
+            flex-basis: 100% !important;
+            max-width: 100% !important;
+          }
+          .user-diagnostic-toolbar > button {
+            flex: 1 1 100%;
+            min-height: 40px;
+          }
+          .user-diagnostic-diagnostics pre {
+            margin-left: 0 !important;
+            max-width: 100%;
+          }
+          .user-diagnostic-diagnostics p {
+            margin-left: 0 !important;
+          }
+        }
+      `}</style>
+      {developingOpen && <PopupModal onClose={onCloseDeveloping} ariaLabel="Development proposal pitch notes" cardStyle={{
+        width: "min(100%, 1120px)",
+        padding: "clamp(16px, 2.4vw, 26px)",
+        borderRadius: "var(--radius-sm)",
+        overflow: "auto"
       }}>
         <div style={{
           display: "flex",
           alignItems: "flex-start",
           justifyContent: "space-between",
           gap: "16px",
-          marginBottom: "20px"
+          marginBottom: "18px"
         }}>
-          <div>
+          <div style={{
+            minWidth: 0
+          }}>
             <h2 style={{
               margin: 0,
-              fontSize: "16px",
+              fontSize: "clamp(18px, 2vw, 24px)",
               lineHeight: 1.2,
               color: "var(--text-primary)"
             }}>
@@ -381,93 +495,105 @@ export default function UserDiagnosticDevPageUi(props) {
         </div>
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "14px"
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
+          gap: "14px",
+          alignItems: "stretch"
         }}>
-          {developingSections.map(section => <section key={section.title} style={{
-            border: "1px solid var(--accentBorder)",
+          {mainPitchSections.map(section => <section key={section.title} style={{
+            border: "none",
             borderRadius: "var(--radius-xs)",
-            background: "var(--surface-light)",
+            background: "var(--accentSurface)",
             padding: "16px",
-            minWidth: 0
+            minWidth: 0,
+            boxShadow: "0 10px 26px rgba(15, 23, 42, 0.08)"
           }}>
             <h3 style={{
               margin: "0 0 10px",
-              fontSize: "14px",
+              fontSize: "15px",
+              lineHeight: 1.25,
               color: "var(--text-primary)"
             }}>
               {section.title}
             </h3>
             <ul style={{
               margin: 0,
-              paddingLeft: "18px",
+              paddingLeft: "17px",
               display: "flex",
               flexDirection: "column",
-              gap: "8px",
+              gap: "7px",
               color: "var(--text-secondary)",
               fontSize: "13px",
-              lineHeight: 1.45
+              lineHeight: 1.38
             }}>
               {section.items.map(item => <li key={item}>{item}</li>)}
             </ul>
           </section>)}
         </div>
         <div style={{
-          marginTop: "20px"
+          display: "flex",
+          justifyContent: "center",
+          marginTop: "18px"
         }}>
-          <h3 style={{
-            margin: "0 0 12px",
-            fontSize: "16px",
-            color: "var(--text-primary)"
+          <button type="button" onClick={() => setPitchMoreOpen(open => !open)} aria-expanded={pitchMoreOpen} style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            minHeight: "38px",
+            padding: "9px 16px",
+            borderRadius: "var(--radius-xs)",
+            border: "1px solid var(--accentBorder)",
+            background: "var(--surface)",
+            color: "var(--text-primary)",
+            fontWeight: 700,
+            fontSize: "13px",
+            cursor: "pointer",
+            transition: "background 0.2s, border-color 0.2s, color 0.2s"
           }}>
-            Features
-          </h3>
+            {pitchMoreOpen ? "Hide sections" : "More sections"}
+          </button>
+        </div>
+        <div aria-hidden={!pitchMoreOpen} style={{
+          maxHeight: pitchMoreOpen ? "4200px" : 0,
+          opacity: pitchMoreOpen ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height 0.35s ease, opacity 0.25s ease, margin-top 0.25s ease",
+          marginTop: pitchMoreOpen ? "18px" : 0
+        }}>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
             gap: "14px"
           }}>
-            {plannedFeatureGroups.map(group => <section key={group.title} style={{
-              border: "1px solid var(--accentBorder)",
+            {supportingPitchSections.map(section => <section key={section.title} style={{
+              border: "none",
               borderRadius: "var(--radius-xs)",
-              background: "var(--surface-light)",
+              background: "var(--accentSurface)",
               padding: "16px",
               minWidth: 0
             }}>
               <h3 style={{
                 margin: "0 0 10px",
                 fontSize: "14px",
+                lineHeight: 1.25,
                 color: "var(--text-primary)"
               }}>
-                {group.title}
+                {section.title}
               </h3>
               <ul style={{
                 margin: 0,
-                paddingLeft: "18px",
+                paddingLeft: "17px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "8px",
+                gap: "7px",
                 color: "var(--text-secondary)",
                 fontSize: "13px",
-                lineHeight: 1.45
+                lineHeight: 1.38
               }}>
-                {group.items.map(item => <li key={item}>{item}</li>)}
+                {section.items.map(item => <li key={item}>{item}</li>)}
               </ul>
             </section>)}
           </div>
-        </div>
-        <div style={{
-          marginTop: "16px",
-          padding: "14px 16px",
-          borderRadius: "var(--radius-xs)",
-          background: "var(--surface)",
-          color: "var(--text-secondary)",
-          fontSize: "13px",
-          lineHeight: 1.5
-        }}>
-          <strong style={{
-            color: "var(--text-primary)"
-          }}>Why this works for H&amp;P:</strong> the system reduces the cost and friction of separate tools, gives managers clearer control of live work, improves communication between departments, and creates a platform that can keep growing around the way H&amp;P actually operates.
         </div>
       </PopupModal>}
       <GlobalUiShowcase />

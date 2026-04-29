@@ -33,12 +33,34 @@ const hiddenHrRoutes = new Set([
   "/admin/users",
 ]);
 
+function buildRouteAllowedChecker(allowedRoutes) {
+  if (!Array.isArray(allowedRoutes) || allowedRoutes.length === 0) return null;
+  const matchers = allowedRoutes.map((template) => {
+    if (!template) return () => false;
+    if (!template.includes("[")) {
+      return (candidate) => candidate === template;
+    }
+    const pattern = new RegExp(
+      "^" + template.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"
+    );
+    return (candidate) => pattern.test(candidate);
+  });
+  return (href) => {
+    if (!href) return false;
+    const stripped = String(href).split("?")[0].split("#")[0];
+    return matchers.some((m) => m(stripped));
+  };
+}
+
 export default function Sidebar({
   onToggle,
+  onNavigate,
   isCondensed = false,
   extraSections = [],
   visibleRoles = null,
   modeLabel: _modeLabel = null, // keep legacy prop available without rendering the old text block
+  allowedRoutes = null,
+  inPresentationMode = false,
 }) {
   void _modeLabel;
   const router = useRouter();
@@ -54,7 +76,9 @@ export default function Sidebar({
     Array.isArray(visibleRoles) && visibleRoles.length > 0
       ? visibleRoles.map((role) => role.toLowerCase())
       : derivedRoles;
+  const isRouteAllowed = useMemo(() => buildRouteAllowedChecker(allowedRoutes), [allowedRoutes]);
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) => {
+    if (isRouteAllowed && shortcut.href && !isRouteAllowed(shortcut.href)) return false;
     if (!shortcut.roles || shortcut.roles.length === 0) return true;
     return shortcut.roles.some((role) => userRoles.includes(role));
   });
@@ -80,6 +104,12 @@ export default function Sidebar({
   }, [extraSections]);
 
   const hasAccess = (item) => {
+    // In presentation mode, the doc-driven allowed-routes list is the
+    // authoritative filter — items outside the active role's list are hidden
+    // even if their `roles` would otherwise grant access.
+    if (isRouteAllowed && item?.href) {
+      if (!isRouteAllowed(item.href)) return false;
+    }
     if (!item.roles || item.roles.length === 0) return true;
     // Check if any of the item's required roles match the user's roles (case-insensitive)
     const access = item.roles.some((requiredRole) =>
@@ -111,7 +141,24 @@ export default function Sidebar({
   const generalSections = filterAccessibleSections(groupedSections.general);
   const departmentSections = filterAccessibleSections(groupedSections.departments);
   const accountSections = filterAccessibleSections(groupedSections.account);
+  const handleNavigationPress = useCallback(() => {
+    if (typeof onNavigate === "function") {
+      onNavigate();
+    }
+  }, [onNavigate]);
+
   const handleLogout = () => {
+    // In presentation mode the "logout" action returns to the role picker
+    // instead of clearing the real session — the demo user has no session to
+    // tear down.
+    if (inPresentationMode) {
+      if (typeof window !== "undefined") {
+        window.location.replace("/loginPresentation");
+        return;
+      }
+      router.replace("/loginPresentation");
+      return;
+    }
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(
         LOGOUT_BARRIER_STORAGE_KEY,
@@ -307,6 +354,7 @@ export default function Sidebar({
                   key={shortcut.href}
                   href={shortcut.href}
                   title={shortcut.description}
+                  onClick={handleNavigationPress}
                 >
                   {shortcut.label}
                 </Link>
@@ -329,6 +377,7 @@ export default function Sidebar({
                   className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
+                  onClick={handleNavigationPress}
                 >
                   {renderLinkLabel(item.label, item.href)}
                 </Link>
@@ -351,6 +400,7 @@ export default function Sidebar({
                   className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
+                  onClick={handleNavigationPress}
                 >
                   {renderLinkLabel(item.label, item.href)}
                 </Link>
@@ -418,6 +468,7 @@ export default function Sidebar({
                             className="app-btn app-btn--ghost"
                             href="/dev/user-diagnostic"
                             style={{ flex: 1 }}
+                            onClick={handleNavigationPress}
                           >
                             Diagnostics
                           </Link>
@@ -467,6 +518,7 @@ export default function Sidebar({
                           }
                         }
                         router.push("/presentation");
+                        handleNavigationPress();
                       }}
                     >
                       <span
@@ -489,16 +541,17 @@ export default function Sidebar({
               if (item.href) {
                 const isActive = pathname === item.href;
                 return (
-                <Link
-                  className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
-                  key={item.href}
-                  href={item.href}
+                  <Link
+                    className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
+                    key={item.href}
+                    href={item.href}
+                    onClick={handleNavigationPress}
                     style={{
                       marginBottom: "10px",
                     }}
-                >
-                  {renderLinkLabel(item.label, item.href)}
-                </Link>
+                  >
+                    {renderLinkLabel(item.label, item.href)}
+                  </Link>
                 );
               }
 

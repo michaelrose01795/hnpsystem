@@ -518,3 +518,42 @@ npm i next@latest
 npm i -g vercel@latest
 
 sudo apt install ripgrep
+
+
+
+TODO — Compliance / Auth (Phase 1A leftovers, before public launch)
+- Configure SMTP provider so /api/auth/password-reset (action: request) actually delivers reset emails. Required env vars in Vercel: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS. SMTP_FROM is already set. Until this is done the reset endpoint returns 200 but no email is sent (warning logged). Provider candidates: existing Microsoft 365 mailbox on humphriesandpark.co.uk, Google Workspace, or Resend (free tier).
+- Set PASSWORD_RESET_PUBLIC_URL in Vercel to the live production origin (no trailing slash). Defaults to https://hnpsystem.vercel.app if unset.
+- Run src/lib/database/migrations/0001_phase1a_auth.sql in Supabase SQL editor.
+- Run src/lib/database/migrations/0002_phase1b_password_hashing.sql in Supabase SQL editor.
+- Re-save NEXTAUTH_SECRET, SUPABASE_SERVICE_ROLE_KEY, DVLA_API_KEY in Vercel to clear the "Needs Attention" badge (do not change the values).
+- Delete unused KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, KEYCLOAK_ISSUER from Vercel — internal auth only now.
+
+TODO — Compliance items deferred because they require external software / services
+- MFA (TOTP) enrolment: needs the user to install an authenticator app on their phone (Google Authenticator, Microsoft Authenticator, Authy, 1Password, etc.). Server side is in-app via an RFC 6238 library; defer until ready to roll out.
+- Breached-password screening: integrate Have I Been Pwned k-anonymity API at registration / password change so users cannot pick a known-leaked password. Pure HTTP, no account, but it is an external service.
+- Email verification: requires SMTP (same blocker as password reset email delivery).
+- Customer self-service data export (SAR fulfilment): can be built in-app, but legal advice should review the export shape before public launch.
+- Automated ICO breach submission: not currently offered as an API by ICO; manual report stays manual.
+- Pen test: external service, before public launch.
+- DPA agreements: legal/contractual, not code.
+
+TODO — Compliance items now in-app
+- Phase 1C: account/security page, audit log, drop keycloak_user_id column. DONE.
+- Phase 2: audit-log middleware for data CRUD endpoints. DONE (helper + first consumer in HR employees).
+- Phase 3: RLS policies on PII tables. PARTIAL (server-only tables locked; PII rollout staged in PHASE_3_RLS_PLAN.md).
+- Phase 4: cookie banner + consent ledger. DONE.
+- Phase 5: /profile/privacy hub + SAR / export / erasure endpoints. DONE.
+- Phase 6: SAR + breach register UI under /admin/compliance. DONE.
+- Phase 7: ROPA + DPIA + retention policy registers. DONE.
+- Phase 8: retention runner script + runbook. DONE for safe entity types (auth_login_attempts, cookie_consent, audit_log). Customer / job / VHC / marketing handlers throw until written.
+
+TODO — Compliance follow-ups (in-app, deferred)
+- Wire audit middleware into the rest of the API routes (currently only HR employees writes are audited). Highest-priority targets: customers, vehicles, payslips, VHC, finance application data.
+- Stage Phase 3B: migrate component-level anon-key reads to API endpoints, then enable RLS per table. Plan in PHASE_3_RLS_PLAN.md.
+- Implement the customer / job / VHC anonymisation handlers in tools/scripts/run-retention.js (currently throw). Needs schema review per entity type.
+- Add /admin/compliance/audit-log page so the Privacy Lead can search audit_log without going to Supabase.
+- Sidebar entries for /profile/privacy, /account/security, /admin/compliance.
+- Versioned privacy policy + cookie policy + employee privacy notice pages under /legal/* (drafted by lawyer; templates referenced from CookieBanner).
+- Hash-chain verifier job for audit_log (re-walks the chain, alerts on break).
+- Schedule retention dry-run weekly + apply monthly (currently manual; see PHASE_8_RETENTION_RUNBOOK.md).

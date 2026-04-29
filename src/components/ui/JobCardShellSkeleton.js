@@ -282,34 +282,23 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
           flexShrink: 0,
         }}
       >
-        {/* Job number box */}
-        <div
+        {/* Job number — sits directly inside header, no nested card */}
+        <h1
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            alignSelf: "stretch",
-            backgroundColor: "var(--surface)",
-            borderRadius: radius,
-            padding: "10px 14px",
-            width: "fit-content",
+            color: "var(--primary)",
+            fontSize: "28px",
+            fontWeight: "700",
+            margin: 0,
+            lineHeight: 1,
             flexShrink: 0,
           }}
         >
-          <h1
-            style={{
-              color: "var(--primary)",
-              fontSize: "28px",
-              fontWeight: "700",
-              margin: 0,
-              lineHeight: 1,
-            }}
-          >
-            {jobNumber}
-          </h1>
-        </div>
+          {jobNumber}
+        </h1>
 
-        {/* Right side: status + buttons */}
+        <SkeletonBlock width="170px" height="14px" borderRadius="5px" />
+
+        {/* Right side: status + buttons — sit directly inside header, no nested cards */}
         <div
           style={{
             flex: 1,
@@ -318,34 +307,15 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
             alignItems: "center",
             justifyContent: "flex-end",
             gap: "12px",
+            flexWrap: "wrap",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "wrap",
-              justifyContent: "flex-end",
-              backgroundColor: "var(--surface)",
-              borderRadius: radius,
-              padding: "10px 14px",
-              flexShrink: 0,
-            }}
-          >
-            <SkeletonBadge width="80px" />
-            <SkeletonBlock width="110px" height="14px" borderRadius="5px" />
-          </div>
-
+          <SkeletonBadge width="100px" />
           <div
             style={{
               display: "flex",
               gap: "8px",
               flexWrap: "wrap",
-              backgroundColor: "var(--surface)",
-              borderRadius: radius,
-              padding: "10px 14px",
-              flexShrink: 0,
             }}
           >
             <SkeletonButton width="96px" />
@@ -365,6 +335,9 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
           gap: "12px",
           marginBottom: "12px",
+          padding: "12px",
+          backgroundColor: "var(--page-card-bg-alt)",
+          borderRadius: radiusXs,
           flexShrink: 0,
         }}
       >
@@ -418,17 +391,20 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
         ))}
       </div>
 
-      {/* Tab content */}
+      {/* Tab content — wraps in myjob-main-content shell to match the live page's theme background */}
       <div
         data-dev-section="1"
-        data-dev-section-key="myjob-tab-content"
-        data-dev-section-type="content-card"
+        data-dev-section-key="myjob-main-content"
+        data-dev-section-type="section-shell"
         data-dev-section-parent="myjob-page-shell"
         style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
           gap: "12px",
+          padding: "12px",
+          backgroundColor: "var(--page-card-bg-alt)",
+          borderRadius: radiusXs,
           minHeight: "240px",
         }}
       >

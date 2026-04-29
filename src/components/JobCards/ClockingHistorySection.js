@@ -1,6 +1,8 @@
 // file location: src/components/JobCards/ClockingHistorySection.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/database/supabaseClient";
+import { clockOutFromJob } from "@/lib/database/jobClocking";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -48,6 +50,9 @@ export default function ClockingHistorySection({
   const [error, setError] = useState("");
   const [requestsAllocatedTotal, setRequestsAllocatedTotal] = useState(null);
   const [liveNow, setLiveNow] = useState(() => Date.now());
+  const [clockOffTarget, setClockOffTarget] = useState(null);
+  const [clockOffSubmitting, setClockOffSubmitting] = useState(false);
+  const [clockOffError, setClockOffError] = useState("");
 
   const fetchEntries = useCallback(async () => {
     if (!jobId) {
@@ -255,6 +260,43 @@ export default function ClockingHistorySection({
     });
   }, [entries, fallbackJobHours, jobNumber, liveNow]);
 
+  const handleConfirmClockOff = useCallback(async () => {
+    if (!clockOffTarget) return;
+    const entry = clockOffTarget.rawEntry || {};
+    const clockingId = entry.id;
+    const userId = entry.userId ?? null;
+    const targetJobId = entry.raw?.job_id ?? jobId ?? null;
+    if (!clockingId) {
+      setClockOffError("Missing clocking entry id.");
+      return;
+    }
+    setClockOffSubmitting(true);
+    setClockOffError("");
+    try {
+      const result = await clockOutFromJob({
+        userId,
+        jobId: targetJobId,
+        clockingId,
+      });
+      if (!result?.success) {
+        throw new Error(result?.error || "Failed to clock off.");
+      }
+      setClockOffTarget(null);
+      await fetchEntries();
+    } catch (err) {
+      console.error("Clock off failed:", err);
+      setClockOffError(err?.message || "Failed to clock off.");
+    } finally {
+      setClockOffSubmitting(false);
+    }
+  }, [clockOffTarget, fetchEntries, jobId]);
+
+  const closeClockOffPopup = useCallback(() => {
+    if (clockOffSubmitting) return;
+    setClockOffTarget(null);
+    setClockOffError("");
+  }, [clockOffSubmitting]);
+
   const shouldScroll = derivedRows.length > 5;
   const rowHeight = 48;
   const headerHeight = 44;
@@ -359,7 +401,14 @@ export default function ClockingHistorySection({
                   </tr>
                 ) : (
                   derivedRows.map((row) => (
-                    <tr key={row.id}>
+                    <tr
+                      key={row.id}
+                      onClick={row.isActive ? () => setClockOffTarget(row) : undefined}
+                      title={row.isActive ? "Click to clock off this technician" : undefined}
+                      style={{
+                        cursor: row.isActive ? "pointer" : "default",
+                      }}
+                    >
                       <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--surface-light)", fontWeight: 600 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <span>{row.technicianName}</span>
@@ -455,6 +504,105 @@ export default function ClockingHistorySection({
           </div>
         </div>
       </div>
+
+      {clockOffTarget && typeof document !== "undefined" ? createPortal(
+        <div
+          onClick={closeClockOffPopup}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1300,
+            padding: "16px",
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            style={{
+              width: "100%",
+              maxWidth: "420px",
+              backgroundColor: "var(--surface)",
+              borderRadius: "var(--radius-lg)",
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              boxShadow: "0 20px 40px rgba(0, 0, 0, 0.25)",
+            }}
+          >
+            <div>
+              <h4 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--text-primary)" }}>
+                Clock off technician
+              </h4>
+              <p style={{ margin: "8px 0 0", fontSize: "0.9rem", color: "var(--grey-accent)" }}>
+                Clock <strong>{clockOffTarget.technicianName}</strong> off Job #{jobNumber || "—"}?
+              </p>
+              <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--grey-accent)" }}>
+                Started {clockOffTarget.dateOn} at {clockOffTarget.timeOn}
+                {clockOffTarget.timeTaken !== null
+                  ? ` · running ${clockOffTarget.timeTaken.toFixed(2)}h`
+                  : ""}
+              </p>
+            </div>
+
+            {clockOffError ? (
+              <div
+                style={{
+                  borderRadius: "var(--control-radius-xs)",
+                  backgroundColor: "var(--layer-section-level-1)",
+                  color: "var(--danger-dark)",
+                  padding: "8px 12px",
+                  fontSize: "0.85rem",
+                }}
+              >
+                {clockOffError}
+              </div>
+            ) : null}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <button
+                type="button"
+                onClick={closeClockOffPopup}
+                disabled={clockOffSubmitting}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "var(--control-radius-xs)",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "transparent",
+                  color: "var(--text-primary)",
+                  fontWeight: 600,
+                  cursor: clockOffSubmitting ? "not-allowed" : "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmClockOff}
+                disabled={clockOffSubmitting}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "var(--control-radius-xs)",
+                  border: "none",
+                  backgroundColor: "var(--accentMain)",
+                  color: "#ffffff",
+                  fontWeight: 700,
+                  letterSpacing: "0.02em",
+                  cursor: clockOffSubmitting ? "wait" : "pointer",
+                }}
+              >
+                {clockOffSubmitting ? "Clocking off…" : "Clock off"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      ) : null}
     </section>
   );
 }

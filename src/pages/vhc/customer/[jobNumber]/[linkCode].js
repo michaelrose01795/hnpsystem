@@ -62,7 +62,12 @@ export default function CustomerLinkPage() {
           } else if (response.status === 404) {
             setError("This link is invalid or the job was not found.");
           } else {
-            setError(data?.error || "Failed to load job data");
+            // Surface either `error` or `message` so an auth/guard rejection
+            // (which returns `message`) doesn't get masked behind the generic
+            // fallback. See: GET on /api/job-cards/[jobNumber]/share-link must
+            // remain public — if a future change re-wraps it in withRoleGuard
+            // the response would otherwise show "Failed to load job data".
+            setError(data?.error || data?.message || "Failed to load job data");
           }
           return;
         }
@@ -238,9 +243,72 @@ export default function CustomerLinkPage() {
     [jobNumber, linkCode]
   );
 
+  // Lock the red theme + black text on this customer-facing page regardless
+  // of the user's saved theme. CSS custom properties set on the wrapper div
+  // override the same tokens applied at :root by ThemeProvider, scoped to
+  // descendants only. A body class is also added so the global floating notes
+  // widget (rendered outside this subtree) can detect the page.
+  const lockedThemeStyle = {
+    "--accentMain": "#dc2626",
+    "--accentMainRgb": "220, 38, 38",
+    "--accentText": "#dc2626",
+    "--accentHover": "#b91c1c",
+    "--accentPressed": "#991b1b",
+    "--accentSurface": "rgba(220, 38, 38, 0.14)",
+    "--accentSurfaceHover": "rgba(220, 38, 38, 0.22)",
+    "--accentSurfaceSubtle": "rgba(220, 38, 38, 0.08)",
+    "--accent-base": "rgba(220, 38, 38, 0.14)",
+    "--accent-base-rgb": "220, 38, 38",
+    "--accent-base-hover": "rgba(220, 38, 38, 0.22)",
+    "--accent-strong": "#dc2626",
+    "--accent-purple": "#000000",
+    "--accent-purple-rgb": "0, 0, 0",
+    "--primary": "#dc2626",
+    "--primary-light": "#ef4444",
+    "--primary-dark": "#991b1b",
+    "--primary-rgb": "220, 38, 38",
+    "--surface": "#ffffff",
+    "--surface-rgb": "255, 255, 255",
+    "--surface-light": "#fafafa",
+    "--surface-muted": "#f5f5f5",
+    "--surfaceMain": "#ffffff",
+    "--surfaceText": "#000000",
+    "--text-primary": "#000000",
+    "--text-primary-rgb": "0, 0, 0",
+    "--text-secondary": "#1f1f1f",
+    "--text-inverse": "#ffffff",
+    "--border": "#e5e7eb",
+    "--info": "#4b5563",
+    "--info-dark": "#1f2937",
+    "--info-surface": "#f3f4f6",
+    "--info-rgb": "75, 85, 99",
+    "--danger": "#dc2626",
+    "--danger-base": "#dc2626",
+    "--danger-surface": "#fee2e2",
+    "--danger-text": "#991b1b",
+    "--warning": "#b45309",
+    "--warning-surface": "#fef3c7",
+    "--success": "#15803d",
+    "--success-surface": "#dcfce7",
+    color: "#000000",
+    fontSize: "16px",
+    lineHeight: 1.5,
+    minHeight: "100vh"
+  };
+
+  // Tag the document body while mounted so external widgets (floating notes)
+  // can detect this page.
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    document.body.classList.add("vhc-customer-link-page");
+    return () => {
+      document.body.classList.remove("vhc-customer-link-page");
+    };
+  }, []);
+
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--surface-light)", padding: "16px 12px" }}>
+      <div style={{ ...lockedThemeStyle, background: "#fafafa", padding: "16px 12px" }}>
         <SkeletonKeyframes />
         <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
           <SkeletonBlock width="100%" height="64px" />
@@ -262,19 +330,19 @@ export default function CustomerLinkPage() {
     return (
       <div
         style={{
-          minHeight: "100vh",
+          ...lockedThemeStyle,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "var(--surface-light)",
+          background: "#fafafa",
           padding: 16
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--accent-purple)", marginBottom: 8 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "#000000", marginBottom: 8 }}>
             Unable to load report
           </div>
-          <div style={{ fontSize: 14, color: "var(--info)" }}>{error}</div>
+          <div style={{ fontSize: 14, color: "#4b5563" }}>{error}</div>
         </div>
       </div>
     );
@@ -284,21 +352,23 @@ export default function CustomerLinkPage() {
   const customerInfo = job?.customer;
 
   return (
-    <VhcCustomerView
-      jobNumber={jobNumber}
-      vehicleInfo={vehicleInfo}
-      customerInfo={customerInfo}
-      severityLists={displaySeverityLists}
-      totals={displayTotals}
-      photoFiles={photoFiles}
-      videoFiles={videoFiles}
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      interactive={false}
-      onUpdateStatus={updateEntryStatus}
-      updatingIds={updatingStatus}
-      expiresAt={expiresAt}
-    />
+    <div style={lockedThemeStyle}>
+      <VhcCustomerView
+        jobNumber={jobNumber}
+        vehicleInfo={vehicleInfo}
+        customerInfo={customerInfo}
+        severityLists={displaySeverityLists}
+        totals={displayTotals}
+        photoFiles={photoFiles}
+        videoFiles={videoFiles}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        interactive={true}
+        onUpdateStatus={updateEntryStatus}
+        updatingIds={updatingStatus}
+        expiresAt={expiresAt}
+      />
+    </div>
   );
 }
 

@@ -1034,10 +1034,33 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // Invoice tab is visible for anyone who can open this page to make review easier
   const canViewInvoice = true;
 
-  const overallStatusId =
+  const rawOverallStatusId =
   statusSnapshot?.job?.overallStatus || resolveMainStatusId(jobData?.status);
-  const overallStatusLabel =
+  const rawOverallStatusLabel =
   statusSnapshot?.job?.statusLabel || jobData?.status || "";
+
+  // The status badge must reflect actual workshop progress: once any
+  // technician has clocked onto this job (currently or previously), the
+  // job is past the Checked In stage and should read as "In Progress" until
+  // the next stage advances it. The persisted jobs.status row is sometimes
+  // still "Checked In" because the auto-promotion in jobStatusService runs on
+  // the sub-status path, not on every clocking event — so we promote here
+  // for display whenever clocking activity exists for the job.
+  const clockingSummary = statusSnapshot?.clockingSummary || null;
+  const techHasClockedOnThisJob = Boolean(
+    clockingSummary && (
+      (Array.isArray(clockingSummary.activeClockIns) && clockingSummary.activeClockIns.length > 0) ||
+      (typeof clockingSummary.completedSeconds === "number" && clockingSummary.completedSeconds > 0)
+    )
+  );
+  const shouldPromoteCheckedInToInProgress =
+    rawOverallStatusId === JOB_STATUSES.CHECKED_IN && techHasClockedOnThisJob;
+  const overallStatusId = shouldPromoteCheckedInToInProgress
+    ? JOB_STATUSES.IN_PROGRESS
+    : rawOverallStatusId;
+  const overallStatusLabel = shouldPromoteCheckedInToInProgress
+    ? "In Progress"
+    : rawOverallStatusLabel;
   const isBookedStatus = overallStatusId ?
   overallStatusId === JOB_STATUSES.BOOKED :
   typeof jobData?.status === "string" &&
@@ -1048,10 +1071,21 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   const isOpenStatus =
     typeof jobData?.status === "string" &&
     jobData.status.trim().toLowerCase() === "open";
+  // Treat the job as Checked In for button visibility only when the status
+  // genuinely sits at CHECKED_IN. The legacy fallback to checkedInAt /
+  // appointment.status was matching jobs that had progressed past Check In
+  // (because those timestamps survive once the tech clocks on), causing the
+  // header badge to show Checked In even though work is in progress.
   const isCheckedIn = Boolean(
-    overallStatusId && overallStatusId === JOB_STATUSES.CHECKED_IN ||
-    jobData?.checkedInAt ||
-    jobData?.appointment?.status === "checked_in"
+    overallStatusId === JOB_STATUSES.CHECKED_IN ||
+    (
+      // Only fall back to the timestamps when we don't know the canonical
+      // status yet — i.e. before the status snapshot has loaded.
+      !overallStatusId && (
+        jobData?.checkedInAt ||
+        jobData?.appointment?.status === "checked_in"
+      )
+    )
   );
 
   // Sync active tab from query parameter, default to customer-requests
@@ -2761,6 +2795,44 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     return { success: true };
   }, [fetchJobData, jobData?.id, loadStatusSnapshot, router, updateJobStatus]);
 
+  const handleArchiveJob = useCallback(async () => {
+    if (!jobData?.jobNumber) {
+      return { success: false, error: "Job number missing" };
+    }
+    const confirmed = await confirm({
+      title: null,
+      message: `Archive job ${jobData.jobNumber}?`,
+      details: [
+        { label: "Customer", value: jobData.customer || "N/A", tone: "info" },
+        { label: "Vehicle", value: jobData.reg || "N/A", tone: "warning" }
+      ],
+      confirmLabel: "Archive Job",
+      cancelLabel: "Cancel",
+      tone: "warning"
+    });
+    if (!confirmed) return { success: false, cancelled: true };
+    try {
+      const response = await fetch("/api/jobcards/archive/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobNumber: jobData.jobNumber })
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload?.success) {
+        const message = payload?.error || "Failed to archive job";
+        alert(message);
+        return { success: false, error: message };
+      }
+      revalidateAllJobs(); // sync archive to other pages
+      await router.push("/newsfeed");
+      return { success: true };
+    } catch (error) {
+      console.error("Archive job failed:", error);
+      alert(error.message || "Failed to archive job");
+      return { success: false, error: error.message };
+    }
+  }, [alert, confirm, jobData?.customer, jobData?.jobNumber, jobData?.reg, router]);
+
   const handleDeleteDocument = useCallback(
     async (file) => {
       if (!canManageDocuments || !file?.id) return;
@@ -3446,8 +3518,14 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       overallStatusId
     );
     const partsIssues = getPartsValidationIssues(jobData.partsAllocations);
+    // Invoice gate matches the tab indicator — if every checklist row is
+    // ticked the write-up is "done" for prerequisite purposes, even if the
+    // 800ms autosave hasn't yet rewritten writeUp.completion_status in the
+    // DB. Without this, ticking the final box flips the tab green but the
+    // invoice tab still shows "Complete and mark the write up as finished."
+    const writeUpCompleteForInvoice = writeUpComplete || writeUpCompleteInstant;
     const invoiceWorkflow = getInvoiceWorkflowState({
-      writeUpComplete,
+      writeUpComplete: writeUpCompleteForInvoice,
       vhcRequired: Boolean(jobData.vhcRequired),
       vhcQualified,
       vhcSummaryRowsCompleted,
@@ -3550,7 +3628,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
 
     // ✅ Main Render
-    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} WarrantyTab={WarrantyTab} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
+    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} WarrantyTab={WarrantyTab} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
 
 
 
@@ -4982,12 +5060,89 @@ function CustomerRequestsTab({
   const writeUpCompletionStatus = normalizeWriteUpCompletionStatus(
     jobData?.writeUp?.completion_status || jobData?.completionStatus || ""
   );
-  const writeUpMarkedComplete = [
-  "complete",
-  "completed",
-  "done",
-  "waiting_additional_work"].
-  includes(writeUpCompletionStatus);
+
+  // Pull the write-up checklist tasks so per-request completion can flow
+  // through to this tab. Tasks are stored either as an array directly, an
+  // object with a .tasks array, or a JSON string of either shape.
+  const writeUpChecklistTasksRaw = jobData?.writeUp?.task_checklist;
+  let writeUpChecklistTasks = [];
+  if (Array.isArray(writeUpChecklistTasksRaw)) {
+    writeUpChecklistTasks = writeUpChecklistTasksRaw;
+  } else if (writeUpChecklistTasksRaw && typeof writeUpChecklistTasksRaw === "object") {
+    writeUpChecklistTasks = Array.isArray(writeUpChecklistTasksRaw.tasks)
+      ? writeUpChecklistTasksRaw.tasks
+      : [];
+  } else if (typeof writeUpChecklistTasksRaw === "string") {
+    try {
+      const parsed = JSON.parse(writeUpChecklistTasksRaw);
+      if (Array.isArray(parsed)) {
+        writeUpChecklistTasks = parsed;
+      } else if (parsed && typeof parsed === "object") {
+        writeUpChecklistTasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+      }
+    } catch (_error) {
+      writeUpChecklistTasks = [];
+    }
+  }
+
+  // Reuse the canonical write-up completion selector. isCompleteInstant is
+  // true when EITHER the completion_status is set to a complete-like value
+  // OR every checklist row is checked — which is what the user expects when
+  // they tick off every row but haven't yet hit the explicit "Mark Complete"
+  // button.
+  const writeUpStateForRequests = getWriteUpCompletionState({
+    completionStatus: writeUpCompletionStatus,
+    checklistTasks: writeUpChecklistTasks
+  });
+  const writeUpMarkedComplete = writeUpStateForRequests.isCompleteInstant;
+
+  // Build a quick lookup of which individual write-up rows have been ticked,
+  // keyed by both requestId and sortOrder. Customer request rows with a
+  // matching tick are shown as Completed even if siblings are still open.
+  const completedWriteUpRequestIds = new Set();
+  const completedWriteUpSortOrders = new Set();
+  if (Array.isArray(writeUpChecklistTasks)) {
+    writeUpChecklistTasks.forEach((task) => {
+      if (!task || typeof task !== "object") return;
+      const isCheckedTask =
+        typeof task.checked === "boolean"
+          ? task.checked
+          : ["complete", "completed", "done"].includes(
+              String(task.status || "").trim().toLowerCase()
+            );
+      if (!isCheckedTask) return;
+      const requestIdNum = Number(task.requestId ?? task.request_id ?? null);
+      if (Number.isInteger(requestIdNum) && requestIdNum > 0) {
+        completedWriteUpRequestIds.add(requestIdNum);
+      }
+      const sortOrderNum = Number(task.sortOrder ?? task.sort_order ?? null);
+      if (Number.isInteger(sortOrderNum) && sortOrderNum > 0) {
+        completedWriteUpSortOrders.add(sortOrderNum);
+      }
+    });
+  }
+
+  const isRequestRowCompleteFromWriteUp = useCallback((req, indexInList = -1) => {
+    if (!req) return false;
+    const requestIdNum = Number(req.requestId ?? req.request_id ?? null);
+    if (Number.isInteger(requestIdNum) && requestIdNum > 0
+      && completedWriteUpRequestIds.has(requestIdNum)) {
+      return true;
+    }
+    const sortOrderNum = Number(req.sortOrder ?? req.sort_order ?? null);
+    if (Number.isInteger(sortOrderNum) && sortOrderNum > 0
+      && completedWriteUpSortOrders.has(sortOrderNum)) {
+      return true;
+    }
+    // Fall back to positional index (1-based) — matches how WriteUpForm seeds
+    // a fresh checklist when no requestId/sortOrder is present.
+    if (Number.isInteger(indexInList) && indexInList >= 0
+      && completedWriteUpSortOrders.has(indexInList + 1)) {
+      return true;
+    }
+    return false;
+  }, [completedWriteUpRequestIds, completedWriteUpSortOrders]);
+
   const mainJobStatusId = overallStatusId || resolveMainStatusId(jobData?.status);
   const customerRequestStatusByWorkflow = writeUpMarkedComplete ?
   "completed" :
@@ -5306,11 +5461,13 @@ function CustomerRequestsTab({
         approvedBy: row.approvedBy ?? row.approved_by ?? null,
         _groupKey: deriveAuthorisedGroupKey(row, computedLabel, baseLabel),
         _wheelOrder: toWheelPositionOrder(`${computedLabel || ""} ${computedDetail || ""}`),
-        _originalIndex: rowIndex
+        _originalIndex: rowIndex,
+        // Resolve VHC severity for the row so it can drive red/amber row backgrounds + ordering in Authorised/Completed/Declined sections. Merge every available source — the matched VHC check, the linked request row, and the row itself — so the severity field is found regardless of which shape the row arrived as.
+        severity: resolveVhcSeverity({ ...(row || {}), ...(linkedRequestRow || {}), ...(matchedCheck || {}) })
       };
     });
 
-    return mappedRows.
+    const baseSorted = mappedRows.
     sort((a, b) => {
       const groupCompare = String(a._groupKey || "").localeCompare(String(b._groupKey || ""));
       if (groupCompare !== 0) return groupCompare;
@@ -5327,7 +5484,18 @@ function CustomerRequestsTab({
       if (approvedAtA !== approvedAtB) return approvedAtA - approvedAtB;
 
       return (a._originalIndex ?? 0) - (b._originalIndex ?? 0);
+    });
+
+    // Stable severity-priority pass: red rows first, then amber, others retain prior relative order.
+    const severityRank = (sev) => (sev === "red" ? 0 : sev === "amber" ? 1 : 2);
+    return baseSorted.
+    map((row, idx) => ({ row, idx })).
+    sort((a, b) => {
+      const sevDiff = severityRank(a.row.severity) - severityRank(b.row.severity);
+      if (sevDiff !== 0) return sevDiff;
+      return a.idx - b.idx;
     }).
+    map(({ row }) => row).
     map(({ _groupKey, _wheelOrder, _originalIndex, ...row }) => row);
   }, [jobData?.authorizedVhcItems, linkedPrePickPartsSource, unifiedRequests, vhcChecks, normaliseAuthorizationState, normaliseServiceText, serviceChoiceLabel, resolveCanonicalVhcId]);
 
@@ -5366,7 +5534,8 @@ function CustomerRequestsTab({
       paymentType: row.jobType || "Customer",
       noteText: row.noteText || "",
       prePickLocation: row.prePickLocation ?? null,
-      sortOrder: row.sortOrder ?? index + 1
+      sortOrder: row.sortOrder ?? index + 1,
+      severity: row.severity || "grey" // Carry severity for red/amber row tinting in edit mode.
     })),
     []
   );
@@ -5737,7 +5906,13 @@ function CustomerRequestsTab({
               display: "flex",
               alignItems: "center",
               gap: "12px",
-              flexWrap: "nowrap"
+              flexWrap: "nowrap",
+              // Severity-driven row tint overrides default authorised-row background for red/amber VHC items.
+              ...(req.severity === "red"
+                ? { backgroundColor: "var(--danger-surface)", color: "var(--danger-text)" }
+                : req.severity === "amber"
+                ? { backgroundColor: "var(--warning-surface)", color: "var(--warning-text)" }
+                : null)
             }}>
             
                   <div
@@ -5845,8 +6020,15 @@ function CustomerRequestsTab({
             {customerRequestRows.map((req, index) => {
             const linkedNoteTexts = linkedNotesByRequestIndex.get(index + 1) || [];
             const prePickRowKey = getPrePickRowKey(req);
+            // Per-row override: if this customer request has a matching ticked
+            // task in the write-up checklist, show Completed for this row even
+            // when the bulk write-up status hasn't been flipped yet.
+            const rowCompletedInWriteUp = isRequestRowCompleteFromWriteUp(req, index);
+            const effectiveRowStatus = rowCompletedInWriteUp
+              ? "completed"
+              : customerRequestStatusByWorkflow;
             const { statusLabel, statusBadgeStyle } = getRequestStatusPresentation(
-              customerRequestStatusByWorkflow,
+              effectiveRowStatus,
               "inprogress"
             );
             return (
@@ -5952,8 +6134,14 @@ function CustomerRequestsTab({
             row.partsCost !== null && row.partsCost !== undefined && row.partsCost !== "" ?
             Number(row.partsCost) :
             null;
+            const severityRowStyle =
+              row.severity === "red"
+                ? { backgroundColor: "var(--danger-surface)", color: "var(--danger-text)" } // Red VHC severity overrides default row bg.
+                : row.severity === "amber"
+                ? { backgroundColor: "var(--warning-surface)", color: "var(--warning-text)" } // Amber VHC severity overrides default row bg.
+                : null;
             return (
-              <div key={rowKey} style={authorisedRowButtonStyle}>
+              <div key={rowKey} style={{ ...authorisedRowButtonStyle, ...(severityRowStyle || {}) }}>
                   <div
                   style={requestColumnGridStyle}>
                   
@@ -9375,6 +9563,97 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
     [techAbsences]
   );
 
+  // Live tech-clocking status (Waiting for Job / In Progress / Tea Break / Not Clocked In)
+  // Loaded only while the Technicians popup is open so the standard Clocking tab
+  // form does not have to wait on extra queries.
+  const [techStatuses, setTechStatuses] = useState({});
+  const [techStatusesLoading, setTechStatusesLoading] = useState(false);
+  const [popupClockingUserId, setPopupClockingUserId] = useState(null);
+  const [popupClockingError, setPopupClockingError] = useState("");
+
+  useEffect(() => {
+    if (!showTechsPopup) return undefined;
+    let isMounted = true;
+    const loadStatuses = async () => {
+      setTechStatusesLoading(true);
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        const [{ data: jobClocking, error: jobError }, { data: timeRecords, error: timeError }] =
+          await Promise.all([
+            supabase
+              .from("job_clocking")
+              .select("user_id, job_id, job_number, clock_in")
+              .is("clock_out", null),
+            supabase
+              .from("time_records")
+              .select("user_id, clock_in, notes")
+              .eq("date", today)
+              .is("clock_out", null),
+          ]);
+        if (jobError) throw jobError;
+        if (timeError) throw timeError;
+
+        const map = {};
+        (jobClocking || []).forEach((entry) => {
+          if (!entry?.user_id) return;
+          if (!map[entry.user_id]) {
+            map[entry.user_id] = {
+              status: "In Progress",
+              jobNumber: entry.job_number || null,
+              jobId: entry.job_id || null,
+            };
+          }
+        });
+        (timeRecords || []).forEach((record) => {
+          if (!record?.user_id) return;
+          if (map[record.user_id]) return; // active job_clocking already wins
+          const note = (record.notes || "").toString().toLowerCase();
+          map[record.user_id] = {
+            status: note.includes("tea") || note.includes("break")
+              ? "Tea Break"
+              : "Waiting for Job",
+            jobNumber: null,
+            jobId: null,
+          };
+        });
+        if (isMounted) setTechStatuses(map);
+      } catch (err) {
+        console.error("Failed to load tech clocking statuses:", err);
+        if (isMounted) setTechStatuses({});
+      } finally {
+        if (isMounted) setTechStatusesLoading(false);
+      }
+    };
+    loadStatuses();
+    return () => {
+      isMounted = false;
+    };
+  }, [showTechsPopup, refreshSignal]);
+
+  const handleClockTechFromPopup = useCallback(async (userId) => {
+    if (!jobId || !normalizedJobNumber) return;
+    setPopupClockingError("");
+    setPopupClockingUserId(userId);
+    try {
+      const result = await clockInToJob({
+        userId,
+        jobId,
+        jobNumber: normalizedJobNumber,
+        workType: "initial",
+      });
+      if (!result?.success) {
+        throw new Error(result?.error || "Unable to clock the technician onto this job.");
+      }
+      setRefreshSignal((prev) => prev + 1);
+      setShowTechsPopup(false);
+    } catch (err) {
+      console.error("Popup clock-on failed:", err);
+      setPopupClockingError(err?.message || "Unable to clock the technician onto this job.");
+    } finally {
+      setPopupClockingUserId(null);
+    }
+  }, [jobId, normalizedJobNumber]);
+
   const technicianOptions = useMemo(
     () =>
     (technicians || []).map((tech) => ({
@@ -10033,40 +10312,17 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             <button
               type="button"
               onClick={() => setShowTechsPopup(true)}
-              style={{
-                ...infoPillStyle,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px"
-              }}>
-              
+              className="app-badge app-badge--control app-badge--uppercase app-badge--accent-soft"
+              style={{ border: "none", cursor: "pointer" }}>
               {techniciansLoading ? "Loading technicians…" : `${technicianOptions.length} techs`}
               {techAbsences.length > 0 &&
-              <span
-                style={{
-                  fontSize: "11px",
-                  fontWeight: "700",
-                  padding: "2px 8px",
-                  borderRadius: "var(--radius-xs)",
-                  backgroundColor: "var(--warning-surface)",
-                  color: "var(--warning)",
-                  border: "none"
-                }}>
-                
+              <span className="app-badge app-badge--uppercase app-badge--warning" style={{ marginLeft: "6px" }}>
                   {techAbsences.length} off
                 </span>
               }
             </button>
             {normalizedJobNumber ?
-            <span
-              style={{
-                ...infoPillStyle,
-                backgroundColor: "var(--success-surface)",
-                color: "var(--success-dark)",
-                border: "none"
-              }}>
-              
+            <span className="app-badge app-badge--control app-badge--uppercase app-badge--success">
                 Job #{normalizedJobNumber}
               </span> :
             null}
@@ -10088,117 +10344,188 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         </div>
       }
 
-      {/* Techs / Staff Off popup — mirrors appointment page Staff Off section */}
-      {showTechsPopup &&
-      <div
-        style={{
-          ...popupOverlayStyles,
-          zIndex: 1200
-        }}
-        onClick={() => setShowTechsPopup(false)}>
-        
+      {/* Techs / Staff Off popup — portal-rendered so it centers on the viewport, not the tab */}
+      {showTechsPopup && typeof document !== "undefined" && createPortal(
+        <div
+          style={{ ...popupOverlayStyles, zIndex: 1300 }}
+          onClick={() => setShowTechsPopup(false)}
+        >
           <div
-          style={{
-            ...popupCardStyles,
-            maxWidth: "520px",
-            width: "100%",
-            maxHeight: "80vh",
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px"
-          }}
-          onClick={(event) => event.stopPropagation()}>
-          
-            <h3 style={{ marginTop: 0, marginBottom: 0, fontSize: "20px", fontWeight: "600" }}>
-              Technicians · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
-            </h3>
-            <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "14px" }}>
-              Showing all technicians{techAbsences.length > 0 ? ` — ${techAbsences.length} with approved time off today.` : "."}
-            </p>
+            role="dialog"
+            aria-modal="true"
+            style={{
+              ...popupCardStyles,
+              width: "min(560px, 100%)",
+              maxWidth: "min(560px, calc(100vw - 24px))",
+              padding: "24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "18px"
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--text-primary)" }}>
+                Technicians · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+              </h3>
+              <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>
+                Click an available technician to clock them onto Job #{normalizedJobNumber || "—"}.
+                {techAbsences.length > 0 ? ` ${techAbsences.length} with approved time off today.` : ""}
+              </p>
+            </div>
 
-            {techniciansLoading ?
-          <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading technicians…</div> :
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {technicianOptions.map((tech) => {
-              const absence = techAbsences.find((a) => a.userId === Number(tech.value));
-              const isOff = Boolean(absence);
-              return (
-                <div
-                  key={tech.key}
-                  style={{
-                    padding: "12px",
-                    borderRadius: "var(--radius-xs)",
-                    backgroundColor: "var(--surface)",
-                    border: "none",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "8px"
-                  }}>
-                  
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
-                            {tech.label}
-                          </div>
-                          {isOff &&
-                      <span
-                        style={{
-                          fontSize: "11px",
-                          fontWeight: "600",
-                          padding: "2px 8px",
-                          borderRadius: "var(--radius-xs)",
-                          backgroundColor: "var(--warning-surface)",
-                          color: "var(--warning)"
-                        }}>
-                        
-                              On {absence.type}
-                            </span>
-                      }
-                        </div>
-                        <div style={{ fontSize: "13px", color: "var(--grey-accent-dark)", marginTop: "4px" }}>
-                          {isOff ? absence.role : tech.description || "Technician"}
-                        </div>
-                      </div>
-                      {isOff ?
-                  <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--warning)" }}>Unavailable</span> :
-
-                  <span style={{ fontSize: "12px", fontWeight: "600", color: "var(--success)" }}>Available</span>
-                  }
-                    </div>);
-
-            })}
-                {technicianOptions.length === 0 &&
-            <div style={{ color: "var(--grey-accent)", padding: "8px 0" }}>No technicians found.</div>
-            }
+            {popupClockingError ? (
+              <div
+                style={{
+                  borderRadius: "var(--control-radius-xs)",
+                  backgroundColor: "var(--danger-surface)",
+                  color: "var(--danger-dark)",
+                  padding: "8px 12px",
+                  fontSize: "0.85rem"
+                }}
+              >
+                {popupClockingError}
               </div>
-          }
+            ) : null}
+
+            {techniciansLoading || techStatusesLoading ? (
+              <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading technicians…</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "60vh", overflowY: "auto" }}>
+                {technicianOptions.map((tech) => {
+                  const userIdNum = Number(tech.value);
+                  const absence = techAbsences.find((a) => a.userId === userIdNum);
+                  const isOff = Boolean(absence);
+                  const statusEntry = techStatuses[userIdNum] || null;
+                  const rawStatus = isOff
+                    ? `On ${absence.type}`
+                    : statusEntry?.status || "Not Clocked In";
+                  const isOnThisJob =
+                    !isOff &&
+                    statusEntry?.status === "In Progress" &&
+                    Number(statusEntry?.jobId) === Number(jobId);
+                  const isOnAnotherJob =
+                    !isOff &&
+                    statusEntry?.status === "In Progress" &&
+                    !isOnThisJob;
+                  const canClockOn = !isOff && rawStatus === "Waiting for Job";
+                  const isThisRowSubmitting = popupClockingUserId === userIdNum;
+
+                  // Pick a tone class from global.css so every row's pill shares
+                  // the same shape/size and only the colour changes.
+                  let toneClass = "app-badge--neutral";
+                  let pillLabel = rawStatus;
+                  if (isOff) {
+                    toneClass = "app-badge--warning";
+                  } else if (isOnThisJob) {
+                    toneClass = "app-badge--success";
+                    pillLabel = "On this job";
+                  } else if (isOnAnotherJob) {
+                    toneClass = "app-badge--danger";
+                    pillLabel = `On Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}`;
+                  } else if (canClockOn) {
+                    toneClass = "app-badge--success-strong";
+                    pillLabel = isThisRowSubmitting ? "Clocking on…" : "Clock on";
+                  } else if (rawStatus === "Tea Break") {
+                    toneClass = "app-badge--warning";
+                  }
+
+                  const pillBaseClass = "app-badge app-badge--control app-badge--uppercase";
+                  const pillStyle = { minWidth: "120px", justifyContent: "center" };
+
+                  // Row background follows the same tone as the right-side pill,
+                  // sourced from the theme's surface tokens.
+                  let rowBackground = "var(--info-surface)";
+                  if (isOff) {
+                    rowBackground = "var(--warning-surface)";
+                  } else if (isOnThisJob) {
+                    rowBackground = "var(--success-surface)";
+                  } else if (isOnAnotherJob) {
+                    rowBackground = "var(--danger-surface)";
+                  } else if (canClockOn) {
+                    rowBackground = "var(--success-surface)";
+                  } else if (rawStatus === "Tea Break") {
+                    rowBackground = "var(--warning-surface)";
+                  }
+
+                  const rightLabel = canClockOn ? (
+                    <button
+                      type="button"
+                      disabled={isThisRowSubmitting}
+                      onClick={() => handleClockTechFromPopup(userIdNum)}
+                      className={`${pillBaseClass} ${toneClass}`}
+                      style={{
+                        ...pillStyle,
+                        border: "none",
+                        cursor: isThisRowSubmitting ? "wait" : "pointer"
+                      }}
+                    >
+                      {pillLabel}
+                    </button>
+                  ) : (
+                    <span className={`${pillBaseClass} ${toneClass}`} style={pillStyle}>
+                      {pillLabel}
+                    </span>
+                  );
+
+                  const secondaryLine = isOff
+                    ? absence.role
+                    : isOnAnotherJob
+                      ? `Currently on Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}`
+                      : tech.description || "Technician";
+
+                  return (
+                    <div
+                      key={tech.key}
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: "var(--radius-sm)",
+                        backgroundColor: rowBackground,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "12px"
+                      }}
+                    >
+                      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)" }}>
+                          {tech.label}
+                        </span>
+                        <span style={{ fontSize: "12px", color: "var(--grey-accent)" }}>
+                          {secondaryLine}
+                        </span>
+                      </div>
+                      {rightLabel}
+                    </div>
+                  );
+                })}
+                {technicianOptions.length === 0 && (
+                  <div style={{ color: "var(--grey-accent)", padding: "8px 0" }}>No technicians found.</div>
+                )}
+              </div>
+            )}
 
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
               <button
-              type="button"
-              onClick={() => setShowTechsPopup(false)}
-              style={{
-                padding: "10px 20px",
-                borderRadius: "var(--radius-xs)",
-                border: "none",
-                backgroundColor: "var(--primary)",
-                color: "var(--surface)",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "background-color 0.2s"
-              }}
-              onMouseEnter={(event) => event.currentTarget.style.backgroundColor = "var(--danger)"}
-              onMouseLeave={(event) => event.currentTarget.style.backgroundColor = "var(--primary)"}>
-              
+                type="button"
+                onClick={() => setShowTechsPopup(false)}
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "var(--control-radius-xs)",
+                  border: "1px solid var(--border)",
+                  backgroundColor: "transparent",
+                  color: "var(--text-primary)",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
                 Close
               </button>
             </div>
           </div>
-        </div>
-      }
+        </div>,
+        document.body
+      )}
 
     </div>);
 

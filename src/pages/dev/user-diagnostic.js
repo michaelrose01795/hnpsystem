@@ -493,6 +493,7 @@ const COLOUR_GROUPS = [
   "complete", "complete-surface", "complete-text", "complete-border",
   "warning", "warning-surface", "warning-text", "warning-border",
   "danger", "danger-surface", "danger-text", "danger-border",
+  "declined-section-bg",
   "info", "info-surface"]
 
 }];
@@ -513,6 +514,7 @@ const CARD_BACKGROUND_LAYERS = [
 { label: "--success-surface", value: "var(--success-surface)", usage: "Success status cards (appointments, clocking history)" },
 { label: "--warning-surface", value: "var(--warning-surface)", usage: "Warning status cards (appointments, job card modal)" },
 { label: "--danger-surface", value: "var(--danger-surface)", usage: "Danger status cards (appointments, workshop dashboard)" },
+{ label: "--declined-section-bg", value: "var(--declined-section-bg)", usage: "VHC summary Declined section card background (distinct from --danger-surface)" },
 { label: "rgba(--primary-rgb, 0.08)", value: "rgba(var(--primary-rgb), 0.08)", usage: "Primary tinted focus rows (workshop manager dashboard focus row)" },
 { label: "--accent-purple-surface", value: "var(--accent-purple-surface)", usage: "Purple accent action cards (job number page)" }];
 
@@ -1782,11 +1784,10 @@ function GlobalUiShowcase() {
   join(" ");
 
   return (
-    <DevLayoutSection as="aside" sectionKey="user-diagnostic/showcase" sectionType="section-shell" parentKey="user-diagnostic" backgroundToken="" style={{
-      width: "440px",
-      flexShrink: 0,
-      height: "100%",
-      overflowY: "auto",
+    <DevLayoutSection as="aside" className="user-diagnostic-showcase" sectionKey="user-diagnostic/showcase" sectionType="section-shell" parentKey="user-diagnostic" backgroundToken="" style={{
+      width: "min(100%, 440px)",
+      flex: "0 1 440px",
+      maxWidth: "100%",
       paddingRight: "4px"
     }}>
       
@@ -1901,7 +1902,24 @@ function GlobalUiShowcase() {
           background: var(--calendar-red-selected-bg);
         }
         @media (max-width: 640px) {
+          .user-diagnostic-showcase {
+            width: 100% !important;
+            flex-basis: 100% !important;
+            padding-right: 0 !important;
+          }
+          .showcase-filter-card {
+            position: static;
+          }
+          .showcase-filter-tabs {
+            flex-wrap: wrap;
+          }
+          .showcase-filter-tabs .app-btn {
+            min-width: min(100%, 110px);
+          }
           .showcase-control-row {
+            grid-template-columns: 1fr;
+          }
+          .showcase-status-tones {
             grid-template-columns: 1fr;
           }
         }

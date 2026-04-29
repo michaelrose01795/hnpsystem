@@ -8,6 +8,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useRouter } from "next/router";
+import { useUser } from "@/context/UserContext";
 import { buildCiRoster } from "@/lib/api/ciMocks";
 
 const NETWORK_TIMEOUT_MS = 4000;
@@ -49,10 +51,19 @@ async function fetchRoster(signal) {
 }
 
 export function RosterProvider({ children }) {
+  const router = useRouter();
+  const { user, loading: userLoading } = useUser() || {};
   const [state, setState] = useState(initialState);
   const hasLoadedRef = useRef(false);
+  const isPresentationRoute = router?.pathname === "/presentation";
+  const isPublicPresentation = isPresentationRoute && !userLoading && !user;
 
   const loadRoster = useCallback(async () => {
+    if (isPublicPresentation) {
+      setState({ ...initialState, isLoading: false });
+      return;
+    }
+
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
       const data = await fetchRoster();
@@ -79,10 +90,17 @@ export function RosterProvider({ children }) {
       }
       setState((prev) => ({ ...prev, isLoading: false, error }));
     }
-  }, []);
+  }, [isPublicPresentation]);
 
   useEffect(() => {
+    if (isPresentationRoute && userLoading) return undefined;
+    if (isPublicPresentation) {
+      setState({ ...initialState, isLoading: false });
+      hasLoadedRef.current = true;
+      return undefined;
+    }
     if (hasLoadedRef.current) return undefined;
+
     const controller = new AbortController();
     fetchRoster(controller.signal)
       .then((data) => {
@@ -113,7 +131,7 @@ export function RosterProvider({ children }) {
       });
 
     return () => controller.abort();
-  }, []);
+  }, [isPresentationRoute, isPublicPresentation, userLoading]);
 
   const value = useMemo(
     () => ({

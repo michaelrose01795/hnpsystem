@@ -5,6 +5,8 @@
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { supabase } from "@/lib/database/supabaseClient";
 import { logJobActivity } from "@/lib/database/jobActivity";
+import { writeAuditLog } from "@/lib/audit/auditLog";
+import { getAuditContext } from "@/lib/audit/auditContext";
 
 async function handler(req, res, session) {
   if (req.method !== "PATCH" && req.method !== "POST") {
@@ -64,6 +66,23 @@ async function handler(req, res, session) {
     }
   } catch (logErr) {
     console.warn("update-customer-description activity log failed:", logErr?.message || logErr);
+  }
+
+  try {
+    const auditCtx = await getAuditContext(req, res);
+    await writeAuditLog({
+      ...auditCtx,
+      action: "update",
+      entityType: "vhc_check",
+      entityId: vhcItemId,
+      diff: {
+        field: "customer_description",
+        cleared: nextValue === null,
+        job_id: data[0]?.job_id ?? null,
+      },
+    });
+  } catch {
+    // audit best-effort
   }
 
   return res.status(200).json({ success: true, data: data[0] });

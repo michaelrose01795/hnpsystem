@@ -50,6 +50,11 @@ export const sidebarSections = [
         href: "/admin/users",
         roles: ["admin manager"],
       },
+      {
+        label: "Compliance",
+        href: "/admin/compliance",
+        roles: ["admin manager"],
+      },
     ],
   },
   {
@@ -64,6 +69,11 @@ export const sidebarSections = [
       {
         label: "User Admin",
         href: "/admin/users",
+        roles: ["owner"],
+      },
+      {
+        label: "Compliance",
+        href: "/admin/compliance",
         roles: ["owner"],
       },
     ],
@@ -324,6 +334,8 @@ export const sidebarSections = [
     category: "account",
     items: [
       { label: "Profile", href: "/profile", roles: [] },
+      { label: "Security", href: "/account/security", roles: [] },
+      { label: "Privacy", href: "/profile/privacy", roles: [] },
       { label: "Logout", href: null, roles: [], action: "logout" },
     ],
   },

@@ -984,6 +984,11 @@ function WriteUpForm({
   });
   const [writeUpMeta, setWriteUpMeta] = useState({ jobId: null, writeupId: null });
   const warmHydratedJobRef = useRef(null);
+  // Ref-guard for the server fetch effect below — prevents the effect from
+  // re-running and clobbering the user's optimistic checkbox toggle every
+  // time the parent passes a new jobCardData wrapper reference (e.g. after a
+  // realtime refresh).
+  const fetchedWriteUpJobRef = useRef(null);
   const warmStartReadyRef = useRef(Boolean(jobCardData?.jobCard));
   // Tracks when we last wrote to the DB so the realtime handler can skip echoes
   const lastLocalSaveAtRef = useRef(0);
@@ -1314,6 +1319,15 @@ function WriteUpForm({
     if (!jobNumber) {
       return;
     }
+    // The server fetch should run once per jobNumber. Re-running it on every
+    // jobCardData reference change overwrites freshly-toggled checkbox state
+    // with stale server tasks (autosave hasn't fired yet). Realtime updates
+    // are handled separately — the fault/cause/rectification handler at the
+    // job_writeups channel below, and the authorizedVhcItems hydration above.
+    if (fetchedWriteUpJobRef.current === jobNumber) {
+      return;
+    }
+    fetchedWriteUpJobRef.current = jobNumber;
 
     const fetchData = async () => {
       try {
@@ -2024,6 +2038,18 @@ function WriteUpForm({
         }
       })();
     }
+
+    // Checkbox toggles are discrete user actions — persist immediately instead
+    // of waiting on the 800ms autosave debounce, so a quick page refresh after
+    // toggling never loses the change. setTimeout(0) defers until after React
+    // has committed the state update so writeUpDataRef holds the latest tasks.
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSaveTimeoutRef.current = null;
+      void performWriteUpSaveRef.current({ silent: true });
+    }, 0);
   };
   useEffect(() => {
     if (readOnly) return;
@@ -2619,6 +2645,7 @@ function WriteUpForm({
                 gap: "16px",
                 minHeight: 0,
                 width: "100%",
+                backgroundColor: "transparent",
               }}
             >
               <div style={darkSectionBoxStyle}>

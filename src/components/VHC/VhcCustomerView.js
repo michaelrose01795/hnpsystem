@@ -35,6 +35,9 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
   const measurement = item.measurement || "";
   const categoryLabel = item.categoryLabel || item.sectionName || "";
 
+  // Green items are passing checks — only show description, no pricing or actions
+  const isGreen = severity === "green";
+
   const originalSeverity = item.severityKey || item.rawSeverity;
   const rowBg =
     (isAuthorized || isDeclined)
@@ -82,35 +85,37 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
         )}
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 8,
-          fontSize: 12
-        }}
-      >
-        <div>
-          <div style={{ color: "var(--info)", fontSize: 11 }}>Parts</div>
-          <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
-            {formatCurrency(partsCost)}
+      {!isGreen && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 8,
+            fontSize: 12
+          }}
+        >
+          <div>
+            <div style={{ color: "var(--info)", fontSize: 11 }}>Parts</div>
+            <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+              {formatCurrency(partsCost)}
+            </div>
+          </div>
+          <div>
+            <div style={{ color: "var(--info)", fontSize: 11 }}>Labour</div>
+            <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+              {labourHours > 0 ? `${labourHours}h · ${formatCurrency(labourCost)}` : "—"}
+            </div>
+          </div>
+          <div>
+            <div style={{ color: "var(--info)", fontSize: 11 }}>Total</div>
+            <div style={{ fontWeight: 700, color: "var(--accent-purple)" }}>
+              {formatCurrency(total)}
+            </div>
           </div>
         </div>
-        <div>
-          <div style={{ color: "var(--info)", fontSize: 11 }}>Labour</div>
-          <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
-            {labourHours > 0 ? `${labourHours}h · ${formatCurrency(labourCost)}` : "—"}
-          </div>
-        </div>
-        <div>
-          <div style={{ color: "var(--info)", fontSize: 11 }}>Total</div>
-          <div style={{ fontWeight: 700, color: "var(--accent-purple)" }}>
-            {formatCurrency(total)}
-          </div>
-        </div>
-      </div>
+      )}
 
-      {interactive && (
+      {interactive && !isGreen && (
         <div style={{ display: "flex", gap: 8 }}>
           <button
             type="button"
@@ -415,7 +420,8 @@ export default function VhcCustomerView({
   onUpdateStatus,
   updatingIds,
   previewBanner = null,
-  expiresAt = null
+  expiresAt = null,
+  onBack = null
 }) {
   const tabs = useMemo(() => {
     const list = [{ id: "summary", label: "Summary" }];
@@ -486,6 +492,26 @@ export default function VhcCustomerView({
                 </div>
               )}
             </div>
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                style={{
+                  flexShrink: 0,
+                  minHeight: 36,
+                  padding: "8px 14px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  color: "var(--text-primary)",
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: "pointer"
+                }}
+              >
+                ← Back
+              </button>
+            )}
           </div>
 
           {/* Tab switcher */}

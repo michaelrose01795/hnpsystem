@@ -8,6 +8,8 @@ import {
   createPayslip,
   listPayslipsAdmin,
 } from "@/lib/database/payslips";
+import { writeAuditLog } from "@/lib/audit/auditLog";
+import { getAuditContext } from "@/lib/audit/auditContext";
 
 const ALLOWED_ROLES = [
   "admin",
@@ -48,7 +50,21 @@ async function handler(req, res, session) {
 
     if (req.method === "POST") {
       const actorUserId = await resolveSessionUserId(session).catch(() => null);
+      const auditCtx = await getAuditContext(req, res);
       const created = await createPayslip(req.body || {}, actorUserId);
+      await writeAuditLog({
+        ...auditCtx,
+        action: "create",
+        entityType: "payslip",
+        entityId: created?.id ?? null,
+        diff: {
+          target_user_id: created?.userId ?? null,
+          period_start: created?.periodStart ?? null,
+          period_end: created?.periodEnd ?? null,
+          gross: created?.gross ?? null,
+          net: created?.net ?? null,
+        },
+      });
       return res.status(201).json({ success: true, data: created });
     }
 

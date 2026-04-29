@@ -19,7 +19,7 @@ import {
   deleteJobFile,
   summarizeWriteUpTasks } from
 "@/lib/database/jobs";
-import { getVHCChecksByJob } from "@/lib/database/vhc";
+import { getVHCChecksByJob, updateVhcCheck } from "@/lib/database/vhc";
 import { getClockingStatus } from "@/lib/database/clocking";
 import { clockInToJob, clockOutFromJob, getUserActiveJobs } from "@/lib/database/jobClocking";
 import { supabase } from "@/lib/database/supabaseClient";
@@ -40,7 +40,16 @@ import { DISPLAY as TECH_DISPLAY } from "@/lib/status/catalog/tech";
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { buildVhcAssistantState } from "@/features/vhcAssistant/buildVhcAssistantState";
 import VhcAssistantPanel from "@/features/vhcAssistant/components/VhcAssistantPanel";
-import { normaliseDecisionStatus } from "@/features/vhc/vhcStatusEngine";
+import {
+  normaliseDecisionStatus,
+  projectVhcItems,
+  getJobTechStatusFromVhcItems,
+  getClockingWorkTypeForJob,
+  hasOutstandingAuthorisedVhcWork,
+  TECH_JOB_STATUS,
+  CLOCKING_WORK_TYPE,
+  WORKFLOW_STATUS,
+} from "@/features/vhc/vhcStatusEngine";
 
 // VHC Section Modals
 import WheelsTyresDetailsModal from "@/components/VHC/WheelsTyresDetailsModal";
@@ -2525,11 +2534,20 @@ export default function TechJobDetailPage() {
     setClockInLoading(true);
     try {
       const isMotClockIn = canClockIntoMotHandoff && pendingMotRequest?.requestId;
+      // Engine-resolved work type — when the job is in the "authorised_items"
+      // state and there is still outstanding authorised VHC work, this clock-in
+      // is Additional Work, not Main Work Requested. MOT clock-ins always win.
+      const projectedVhcItems = projectVhcItems(vhcChecks || [], { job: jobCard });
+      const engineWorkType = getClockingWorkTypeForJob({
+        vhcItems: projectedVhcItems,
+        currentTechStatus: jobCard?.techCompletionStatus ?? null,
+      });
+      const resolvedWorkType = isMotClockIn ? "mot" : engineWorkType;
       const result = await clockInToJob(
         workshopUserId,
         jobCardId,
         jobCardNumber,
-        isMotClockIn ? "mot" : "initial",
+        resolvedWorkType,
         isMotClockIn ? pendingMotRequest.requestId : null
       );
 
@@ -2596,6 +2614,40 @@ export default function TechJobDetailPage() {
       }
     }
 
+    // Pressing Complete Job is the tech's "I'm done with all my work" signal.
+    // Authorised VHC rows whose Complete flag never got flipped (e.g. write-up
+    // checklist was completed without the tech revisiting each VHC row) would
+    // otherwise force the engine into AUTHORISED_ITEMS and keep the job on the
+    // Next Jobs board. Treat the press as a bulk-complete for any still-open
+    // authorised items so the engine reads the job as truly finished.
+    const preProjection = projectVhcItems(vhcChecks || [], { job: jobCard });
+    const outstandingAuthorisedIds = preProjection.
+    filter((item) =>
+    item.workflow_status === WORKFLOW_STATUS.APPROVED ||
+    item.workflow_status === WORKFLOW_STATUS.IN_PROGRESS).
+    map((item) => item.vhcId).
+    filter((id) => typeof id === "number");
+
+    let updatedVhcChecks = vhcChecks || [];
+    if (outstandingAuthorisedIds.length > 0) {
+      try {
+        await Promise.all(
+          outstandingAuthorisedIds.map((id) => updateVhcCheck(id, { Complete: true }))
+        );
+        updatedVhcChecks = (vhcChecks || []).map((row) => {
+          const rowId = row?.vhcId ?? row?.id ?? null;
+          if (typeof rowId !== "number") return row;
+          return outstandingAuthorisedIds.includes(rowId) ?
+          { ...row, Complete: true, complete: true } :
+          row;
+        });
+        setVhcChecks(updatedVhcChecks);
+      } catch (vhcUpdateError) {
+        console.error("Error marking authorised VHC items complete:", vhcUpdateError);
+        // Fall through — the engine guard below will catch any rows that didn't update.
+      }
+    }
+
     const statusSyncResult = await syncJobStatus("Technician Work Completed", jobCardStatus, {
       status: "In Progress",
       status_change_reason: "Technician marked workshop work complete"
@@ -2610,8 +2662,18 @@ export default function TechJobDetailPage() {
       await fetchJobData();
       return;
     }
+    // Engine decides what the persisted tech-side status should be after this
+    // press of Complete Job. If any authorised VHC items are still outstanding
+    // we write "authorised_items" instead of "tech_complete" so the job
+    // reappears on the Next Jobs page and the next clock-in is Additional Work.
+    const projectedVhcItems = projectVhcItems(updatedVhcChecks, { job: jobCard });
+    const resolvedTechStatus = getJobTechStatusFromVhcItems(projectedVhcItems, {
+      techHasCompletedMainWork: true,
+    });
+    const hasAuthorisedItemsOutstanding = resolvedTechStatus === TECH_JOB_STATUS.AUTHORISED_ITEMS;
+
     if (jobCardId) {
-      const statusResult = await updateJob(jobCardId, { tech_completion_status: "tech_complete" });
+      const statusResult = await updateJob(jobCardId, { tech_completion_status: resolvedTechStatus });
       if (!statusResult?.success) {
         console.warn("Failed to set completion status");
       } else if (statusResult.data) {
@@ -2622,7 +2684,7 @@ export default function TechJobDetailPage() {
             jobCard: {
               ...prev.jobCard,
               ...statusResult.data,
-              techCompletionStatus: statusResult.data.techCompletionStatus || "tech_complete"
+              techCompletionStatus: statusResult.data.techCompletionStatus || resolvedTechStatus
             }
           };
         });
@@ -2640,6 +2702,19 @@ export default function TechJobDetailPage() {
         title: 'Technician work is complete, but the main job status is still "Checked In".',
         detail:
         'Reason: the technician completion event was logged, but the main job status did not move forward. Fix: use the status control to change the main status to "In Progress", then press "Complete Job" again.'
+      });
+      return;
+    }
+
+    // When authorised VHC work is still outstanding, leave the tech on the
+    // job page rather than navigating away — the job stays visible on the
+    // Next Jobs board and they can clock back in to do the additional work.
+    if (hasAuthorisedItemsOutstanding) {
+      setCompleteJobFeedback({
+        tone: "warning",
+        title: "Main work complete — authorised additional work is still outstanding.",
+        detail:
+        "Clock in again to start the authorised VHC work. The job will stay on the Next Jobs board until it is finished."
       });
       return;
     }

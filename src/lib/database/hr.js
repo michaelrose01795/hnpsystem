@@ -873,7 +873,6 @@ export async function getEmployeeDirectory() {
         annual_salary,
         payroll_reference,
         national_insurance_number,
-        keycloak_user_id,
         home_address,
         created_at
       `
@@ -904,7 +903,6 @@ export async function getEmployeeDirectory() {
     const annualSalary = user.annual_salary;
     const payrollReference = user.payroll_reference;
     const nationalInsuranceNumber = user.national_insurance_number;
-    const keycloakUserId = user.keycloak_user_id;
     const homeAddress = user.home_address;
 
     return {
@@ -927,7 +925,7 @@ export async function getEmployeeDirectory() {
           : calculateBasicSalary(contractedHours, hourlyRate),
       payrollNumber: payrollReference || "",
       nationalInsurance: nationalInsuranceNumber || "",
-      keycloakId: keycloakUserId || (user.email ? `kc-${user.email.split("@")[0]}` : `kc-${userId}`),
+      keycloakId: user.email ? `kc-${user.email.split("@")[0]}` : `kc-${userId}`,
       email: user.email,
       phone: user.phone || "N/A",
       emergencyContact: emergencyDetails.contact,

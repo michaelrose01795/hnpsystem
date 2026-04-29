@@ -1,6 +1,7 @@
 // ✅ Connected to Supabase (server-side)
 // file location: src/pages/api/users/roster.js
 import { getAllUsers, getUsersGroupedByRole } from "@/lib/database/users";
+import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { buildCiRoster, isPlaywrightCi } from "@/lib/api/ciMocks";
 
 const mapUsersToNameList = (grouped = {}) =>
@@ -71,4 +72,12 @@ async function handler(req, res) {
   }
 }
 
-export default handler;
+const guardedHandler = withRoleGuard(handler);
+
+export default function rosterApi(req, res) {
+  if (isPlaywrightCi()) {
+    return handler(req, res);
+  }
+
+  return guardedHandler(req, res);
+}

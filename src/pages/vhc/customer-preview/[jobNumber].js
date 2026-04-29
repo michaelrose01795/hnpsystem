@@ -838,7 +838,7 @@ export default function CustomerPreviewPage() {
 
   // Handle back button
   const handleBack = useCallback(() => {
-    router.push(`/job-cards/${jobNumber}?tab=summary`);
+    router.push(`/job-cards/${jobNumber}?tab=vhc`);
   }, [router, jobNumber]);
 
   // Handle authorise/decline status update
@@ -1499,6 +1499,7 @@ export default function CustomerPreviewPage() {
       onUpdateStatus={updateEntryStatus}
       updatingIds={updatingStatus}
       previewBanner={previewBanner}
+      onBack={handleBack}
     />
   );
 

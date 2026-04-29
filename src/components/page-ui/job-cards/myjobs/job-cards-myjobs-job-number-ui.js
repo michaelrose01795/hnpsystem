@@ -110,6 +110,192 @@ export default function TechJobDetailPageUi(props) {
     writeUpTechComplete,
   } = props; // receive page logic props.
 
+  const overviewCustomerRequests = (() => {
+    const structuredRows = Array.isArray(jobCard?.jobRequests) && jobCard.jobRequests.length > 0 ?
+    jobCard.jobRequests :
+    Array.isArray(jobCard?.job_requests) && jobCard.job_requests.length > 0 ?
+    jobCard.job_requests :
+    [];
+
+    if (structuredRows.length > 0) {
+      return structuredRows.
+      filter((row) => (row?.requestSource ?? row?.request_source ?? "customer_request") === "customer_request").
+      map((row, index) => ({
+        text: row?.description ?? row?.text ?? "",
+        hours: row?.hours ?? row?.time ?? "",
+        jobType: row?.jobType ?? row?.job_type ?? row?.paymentType ?? "Customer",
+        status: row?.status ?? null,
+        prePickLocation: row?.prePickLocation ?? row?.pre_pick_location ?? null,
+        sortOrder: row?.sortOrder ?? row?.sort_order ?? index + 1,
+        original: row
+      })).
+      sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    }
+
+    return (Array.isArray(jobCard?.requests) ? jobCard.requests : []).
+    map((request, index) => ({
+      text: request?.text || request?.description || request || "",
+      hours: request?.hours ?? request?.time ?? "",
+      jobType: request?.jobType ?? request?.paymentType ?? "Customer",
+      status: request?.status ?? null,
+      prePickLocation: request?.prePickLocation ?? request?.pre_pick_location ?? null,
+      sortOrder: index + 1,
+      original: request
+    }));
+  })();
+  const overviewAuthorisedRequests = (() => {
+    const structuredRows = [
+      ...(Array.isArray(jobCard?.jobRequests) ? jobCard.jobRequests : []),
+      ...(Array.isArray(jobCard?.job_requests) ? jobCard.job_requests : [])
+    ];
+    const requestRows = structuredRows.
+    filter((row) => {
+      const source = String(row?.requestSource ?? row?.request_source ?? "").toLowerCase().trim();
+      const status = String(row?.status ?? row?.approvalStatus ?? row?.approval_status ?? row?.authorizationState ?? row?.authorization_state ?? "").toLowerCase().trim();
+      return source === "vhc_authorised" ||
+      source === "vhc_authorized" ||
+      status === "authorized" ||
+      status === "authorised" ||
+      status === "completed" ||
+      row?.vhcItemId !== null && row?.vhcItemId !== undefined ||
+      row?.vhc_item_id !== null && row?.vhc_item_id !== undefined;
+    }).
+    map((row, index) => ({
+      rowKey: `request-${row?.requestId ?? row?.request_id ?? row?.vhcItemId ?? row?.vhc_item_id ?? index}`,
+      text: row?.label ?? row?.description ?? row?.text ?? row?.section ?? "Authorised item",
+      detail: row?.detail ?? row?.issueDescription ?? row?.issue_description ?? row?.noteText ?? row?.note_text ?? "",
+      hours: row?.labourHours ?? row?.labour_hours ?? row?.hours ?? row?.time ?? "",
+      jobType: row?.jobType ?? row?.job_type ?? row?.paymentType ?? "Customer",
+      status: row?.status ?? row?.approvalStatus ?? row?.approval_status ?? row?.authorizationState ?? row?.authorization_state ?? "authorized",
+      prePickLocation: row?.prePickLocation ?? row?.pre_pick_location ?? null,
+      sortOrder: row?.sortOrder ?? row?.sort_order ?? index + 1
+    }));
+
+    if (requestRows.length > 0) {
+      return requestRows.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    }
+
+    const vhcRows = Array.isArray(authorisedVhcItems) && authorisedVhcItems.length > 0 ?
+    authorisedVhcItems :
+    Array.isArray(authorizedVhcRows) ?
+    authorizedVhcRows :
+    [];
+
+    return vhcRows.map((row, index) => ({
+      rowKey: `vhc-${row?.vhc_id ?? row?.vhcItemId ?? row?.id ?? index}`,
+      text: row?.label ?? row?.issue_title ?? row?.issueTitle ?? row?.description ?? row?.section ?? "Authorised item",
+      detail: row?.issueDescription ?? row?.issue_description ?? row?.noteText ?? row?.note_text ?? "",
+      hours: row?.labourHours ?? row?.labour_hours ?? row?.hours ?? "",
+      jobType: row?.jobType ?? row?.job_type ?? row?.paymentType ?? "Customer",
+      status: row?.status ?? row?.approvalStatus ?? row?.approval_status ?? row?.authorizationState ?? row?.authorization_state ?? "authorized",
+      prePickLocation: row?.prePickLocation ?? row?.pre_pick_location ?? null,
+      sortOrder: index + 1
+    }));
+  })();
+  const formatOverviewHours = (value) => {
+    const numeric = Number(value);
+    const safe = Number.isFinite(numeric) ? numeric : 0;
+    return `${safe.toFixed(1)}h`;
+  };
+  const getOverviewPaymentPillStyle = (paymentType = "") => {
+    const normalized = String(paymentType || "").trim().toLowerCase();
+    const isCustomer = normalized === "customer";
+    const isWarranty = normalized === "warranty";
+    const isGoodwill = normalized.includes("goodwill");
+    const isInternal = normalized === "internal";
+    const isDanger = normalized === "insurance" || normalized === "lease company";
+    return {
+      backgroundColor: isCustomer ? "var(--success-surface)" : isWarranty || isInternal ? "var(--warning-surface)" : isDanger ? "var(--danger-surface)" : isGoodwill ? "var(--info-surface)" : "var(--control-bg)",
+      color: isCustomer ? "var(--success-text)" : isWarranty || isInternal ? "var(--warning-text)" : isDanger ? "var(--danger-text)" : isGoodwill ? "var(--info)" : "var(--accentText)"
+    };
+  };
+  const getOverviewStatusPresentation = (statusValue = "") => {
+    const normalized = String(statusValue || "not_started").
+    trim().
+    toLowerCase().
+    replace(/\s+/g, "_");
+    const labelMap = {
+      authorized: "Authorised",
+      authorised: "Authorised",
+      added_to_job: "Added to Job",
+      removed: "Removed",
+      completed: "Completed",
+      complete: "Completed",
+      not_started: "Not Started",
+      declined: "Declined",
+      inprogress: "In Progress",
+      pending: "Pending",
+      cancelled: "Cancelled",
+      on_hold: "On Hold"
+    };
+    const isSuccess = ["added_to_job", "completed", "complete", "authorized", "authorised"].includes(normalized);
+    const isDanger = ["removed", "declined", "cancelled", "canceled"].includes(normalized);
+    const isWarning = ["not_started", "on_hold", "hold", "pending"].includes(normalized);
+    return {
+      label: labelMap[normalized] || normalized.
+      split("_").
+      filter(Boolean).
+      map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1)).
+      join(" ") || "Not Started",
+      style: {
+        backgroundColor: isSuccess ? "var(--success-surface)" : isDanger ? "var(--danger-surface)" : isWarning ? "var(--warning-surface)" : "var(--info-surface)",
+        color: isSuccess ? "var(--success-text)" : isDanger ? "var(--danger-text)" : isWarning ? "var(--warning-text)" : "var(--info)"
+      }
+    };
+  };
+  const overviewRequestPillStyle = {
+    height: "var(--control-height)",
+    minHeight: "var(--control-height)",
+    maxHeight: "var(--control-height)",
+    padding: "var(--control-padding)",
+    borderRadius: "var(--control-radius)",
+    fontSize: "var(--control-font-size)",
+    fontWeight: "600",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    lineHeight: 1,
+    cursor: "default",
+    border: "none",
+    whiteSpace: "nowrap"
+  };
+  const overviewRequestSubtitleStyle = {
+    fontSize: "11px",
+    color: "var(--grey-accent)",
+    fontWeight: "700",
+    letterSpacing: "0.12em",
+    textTransform: "uppercase"
+  };
+  const overviewRequestRowStyle = {
+    padding: "14px",
+    color: "var(--text-inverse)",
+    border: "none",
+    borderRadius: "var(--control-radius)",
+    marginBottom: "12px",
+    transition: "var(--control-transition)",
+    backgroundColor: "var(--warning-surface)"
+  };
+  const overviewAuthorisedRowStyle = {
+    ...overviewRequestRowStyle,
+    backgroundColor: "var(--success-surface)"
+  };
+  const overviewRequestColumnGridStyle = {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 190px 90px 180px 150px",
+    columnGap: "8px",
+    rowGap: "12px",
+    alignItems: "center"
+  };
+  const overviewRequestValueColumnStyle = {
+    minWidth: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "stretch"
+  };
+  const overviewRequestFullWidthValueStyle = {
+    width: "100%"
+  };
+
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
@@ -191,6 +377,13 @@ export default function TechJobDetailPageUi(props) {
       }}>
             {jobCard.jobNumber}
           </h1>
+          <span style={{
+        fontSize: "12px",
+        color: "var(--info)",
+        flexShrink: 0
+      }}>
+            Updated {formatDateTime(jobCard.updatedAt)}
+          </span>
           <div style={{
         flex: 1,
         minWidth: 0,
@@ -215,12 +408,6 @@ export default function TechJobDetailPageUi(props) {
             letterSpacing: "0.02em"
           }}>
                 {techStatusDisplay}
-              </span>
-              <span style={{
-            fontSize: "12px",
-            color: "var(--info)"
-          }}>
-                Updated {formatDateTime(jobCard.updatedAt)}
               </span>
               <div style={{
             display: "flex",
@@ -430,7 +617,7 @@ export default function TechJobDetailPageUi(props) {
             }}>
                   Job Details
                 </h3>
-                {jobCard.requests && jobCard.requests.length > 0 && <div style={{
+                {(overviewCustomerRequests.length > 0 || overviewAuthorisedRequests.length > 0) && <div style={{
               marginBottom: "16px"
             }}>
                     <strong style={{
@@ -442,16 +629,68 @@ export default function TechJobDetailPageUi(props) {
                 marginTop: "12px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "12px"
+                gap: "0"
               }}>
-                      {jobCard.requests.map((req, i) => <div key={i} style={{
-                  padding: "14px 16px",
-                  backgroundColor: "var(--surface-light)",
-                  borderLeft: "4px solid var(--primary)",
-                  borderRadius: "var(--control-radius-xs)",
-                  color: "var(--info-dark)"
-                }}>
-                          <div>{req.text || req}</div>
+                      {overviewCustomerRequests.map((req, i) => {
+                const statusPresentation = getOverviewStatusPresentation(req.status);
+                return <div key={i} style={overviewRequestRowStyle}>
+                          <div style={overviewRequestColumnGridStyle}>
+                            <div style={{
+                      minWidth: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px",
+                      alignSelf: "start"
+                    }}>
+                              <span style={overviewRequestSubtitleStyle}>Request {i + 1}</span>
+                              <span style={{
+                        fontSize: "14px",
+                        color: "var(--text-secondary)"
+                      }}>
+                                {req.text}
+                              </span>
+                            </div>
+                            <div style={overviewRequestValueColumnStyle}>
+                              <span className="app-btn app-btn--sm" style={{
+                      ...overviewRequestPillStyle,
+                      ...overviewRequestFullWidthValueStyle,
+                      backgroundColor: "var(--control-bg)",
+                      color: "var(--accentText)"
+                    }}>
+                                {req.prePickLocation ?
+                        `Pre-picked: ${formatPrePickLabel(req.prePickLocation)}` :
+                        "Pre-pick not set"}
+                              </span>
+                            </div>
+                            <div style={overviewRequestValueColumnStyle}>
+                              <span className="app-btn app-btn--sm" style={{
+                        ...overviewRequestPillStyle,
+                        ...overviewRequestFullWidthValueStyle,
+                        backgroundColor: "var(--control-bg)",
+                        color: "var(--accentText)"
+                      }}>
+                                {formatOverviewHours(req.hours)}
+                              </span>
+                            </div>
+                            <div style={overviewRequestValueColumnStyle}>
+                              <span className="app-btn app-btn--sm" style={{
+                        ...overviewRequestPillStyle,
+                        ...overviewRequestFullWidthValueStyle,
+                        ...getOverviewPaymentPillStyle(req.jobType)
+                      }}>
+                                {req.jobType || "Customer"}
+                              </span>
+                            </div>
+                            <div style={overviewRequestValueColumnStyle}>
+                              <span className="app-btn app-btn--sm" style={{
+                        ...overviewRequestPillStyle,
+                        ...overviewRequestFullWidthValueStyle,
+                        ...statusPresentation.style
+                      }}>
+                                {statusPresentation.label}
+                              </span>
+                            </div>
+                          </div>
                           {notes.filter(note => Array.isArray(note.linkedRequestIndices) ? note.linkedRequestIndices.includes(i + 1) : note.linkedRequestIndex === i + 1).map(note => <div key={note.noteId} style={{
                     fontSize: "11px",
                     color: "var(--info)",
@@ -459,7 +698,79 @@ export default function TechJobDetailPageUi(props) {
                   }}>
                                 Note: {note.noteText}
                               </div>)}
-                        </div>)}
+                        </div>;
+              })}
+                      {overviewAuthorisedRequests.map((row, i) => {
+                const statusPresentation = getOverviewStatusPresentation(row.status || "authorized");
+                const rowDetail = row.detail && !String(row.text || "").toLowerCase().includes(String(row.detail || "").toLowerCase()) ?
+                row.detail :
+                "";
+                return <div key={row.rowKey || i} style={overviewAuthorisedRowStyle}>
+                          <div style={overviewRequestColumnGridStyle}>
+                            <div style={{
+                      minWidth: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px",
+                      alignSelf: "start"
+                    }}>
+                              <span style={overviewRequestSubtitleStyle}>Authorised {i + 1}</span>
+                              <span style={{
+                        fontSize: "14px",
+                        color: "var(--text-secondary)"
+                      }}>
+                                {row.text}
+                              </span>
+                              {rowDetail ? <span style={{
+                        fontSize: "13px",
+                        color: "var(--text-secondary)"
+                      }}>
+                                  - {rowDetail}
+                                </span> : null}
+                            </div>
+                            <div style={overviewRequestValueColumnStyle}>
+                              <span className="app-btn app-btn--sm" style={{
+                      ...overviewRequestPillStyle,
+                      ...overviewRequestFullWidthValueStyle,
+                      backgroundColor: "var(--control-bg)",
+                      color: "var(--accentText)"
+                    }}>
+                                {row.prePickLocation ?
+                        `Pre-picked: ${formatPrePickLabel(row.prePickLocation)}` :
+                        "Pre-pick not set"}
+                              </span>
+                            </div>
+                            <div style={overviewRequestValueColumnStyle}>
+                              <span className="app-btn app-btn--sm" style={{
+                        ...overviewRequestPillStyle,
+                        ...overviewRequestFullWidthValueStyle,
+                        backgroundColor: "var(--control-bg)",
+                        color: "var(--accentText)"
+                      }}>
+                                {formatOverviewHours(row.hours)}
+                              </span>
+                            </div>
+                            <div style={overviewRequestValueColumnStyle}>
+                              <span className="app-btn app-btn--sm" style={{
+                        ...overviewRequestPillStyle,
+                        ...overviewRequestFullWidthValueStyle,
+                        ...getOverviewPaymentPillStyle(row.jobType)
+                      }}>
+                                {row.jobType || "Customer"}
+                              </span>
+                            </div>
+                            <div style={overviewRequestValueColumnStyle}>
+                              <span className="app-btn app-btn--sm" style={{
+                        ...overviewRequestPillStyle,
+                        ...overviewRequestFullWidthValueStyle,
+                        ...statusPresentation.style
+                      }}>
+                                {statusPresentation.label}
+                              </span>
+                            </div>
+                          </div>
+                        </div>;
+              })}
                     </div>
                   </div>}
                 {authorisedVhcItems.length > 0 ? <div style={{
@@ -1640,12 +1951,12 @@ export default function TechJobDetailPageUi(props) {
           border: "none",
           backgroundColor: "var(--layer-section-level-2)"
         }}>
-            <DevLayoutSection as="div" sectionKey="myjob-writeup-form-shell" sectionType="content-card" parentKey="myjob-tab-writeup" backgroundToken="surface" style={{
+            <DevLayoutSection as="div" sectionKey="myjob-writeup-form-shell" sectionType="content-card" parentKey="myjob-tab-writeup" backgroundToken="transparent" style={{
             flex: 1,
             minHeight: 0,
             borderRadius: "var(--radius-sm)",
             overflow: "hidden",
-            backgroundColor: "var(--surface)"
+            backgroundColor: "transparent"
           }}>
               <WriteUpForm jobNumber={jobNumber} jobCardData={jobData} showHeader={false} onCompletionChange={nextStatus => {
               setJobData(prev => {

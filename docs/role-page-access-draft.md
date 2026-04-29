@@ -1,5 +1,12 @@
 # Role Page Access Draft
 
+!!!!!!ONCE CHANGED HAVE CODEX UPDATE THE LOGINPRESENTATION PAGE AS WELL AS THE ORDER AND ACCESS WHICH THAT USER SELECTED HAS THE PRESENTATION GO IN!!!!!!!!!!!!!!!
+
+TODO!!!!!!!!!!!!!
+FIX IT SO THESE PAGES USE THE EXACT SAME FILE AS THE PAGES UI STYLE, ATM WHEN A PAGE UI IS UPDATED THIS DOESNT UPDATE THE UI WITHIN THE PRESENTATION PAGE, FIX THIS 
+
+
+
 Use this as the working list for Presentation Mode/page access. Add/remove pages under each role, then number the pages in the order that role should see them.
 
 Format to edit:

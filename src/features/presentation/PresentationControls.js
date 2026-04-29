@@ -8,11 +8,11 @@ export default function PresentationControls({ onExport, exportBusy }) {
     currentSteps,
     next,
     prev,
-    devOverlayOn,
-    toggleDevOverlay,
     exit,
     currentSlide,
     userRoles,
+    canExit,
+    isPublicViewer,
   } = usePresentation();
 
   const slideCount = slides.length;
@@ -88,15 +88,6 @@ export default function PresentationControls({ onExport, exportBusy }) {
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, minWidth: 0, flex: "0 0 auto" }}>
         <button
           type="button"
-          className={devOverlayOn ? "app-btn app-btn--success app-btn--sm" : "app-btn app-btn--ghost app-btn--sm"}
-          onClick={toggleDevOverlay}
-          title="Toggle Presentation dev overlay"
-          aria-pressed={devOverlayOn}
-        >
-          Dev
-        </button>
-        <button
-          type="button"
           className="app-btn app-btn--ghost app-btn--sm"
           onClick={onExport}
           disabled={exportBusy}
@@ -108,10 +99,21 @@ export default function PresentationControls({ onExport, exportBusy }) {
           type="button"
           className="app-btn app-btn--danger app-btn--sm"
           onClick={exit}
+          disabled={!canExit}
           title="Exit Presentation Mode"
+          aria-disabled={!canExit}
+          style={{ display: canExit ? undefined : "none" }}
         >
           Exit
         </button>
+        {isPublicViewer && (
+          <span
+            className="app-badge app-badge--info"
+            title="This public demo stays inside Presentation Mode."
+          >
+            Public demo
+          </span>
+        )}
       </div>
     </div>
   );

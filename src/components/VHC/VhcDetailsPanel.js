@@ -28,7 +28,15 @@ import { getVehicleRegistration, pickMileageValue } from "@/lib/canonical/fields
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 // VHC status helpers are owned by the canonical engine. summaryStatus.js was
 // deleted in Phase 6 — these helpers now live inline inside the engine.
-import { buildVhcRowStatusView, normaliseDecisionStatus, resolveSeverityKey } from "@/features/vhc/vhcStatusEngine";
+import {
+  buildVhcRowStatusView,
+  normaliseDecisionStatus,
+  resolveSeverityKey,
+  // Single source of truth for the Parts Authorised button label — keeps the
+  // VHC tab aligned with the Parts Added / Parts On Order panel datasets.
+  getPartAuthorisedDisplayStatus,
+  AUTHORISED_PART_STATUS,
+} from "@/features/vhc/vhcStatusEngine";
 import { getSlotCode, makeLineKey, resolveLineType } from "@/lib/vhc/slotIdentity";
 import {
   EmptyStateMessage,
@@ -1042,10 +1050,14 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
 
   return (
     <div
+      data-dev-section="1"
+      data-dev-section-key={`vhc-healthcheck-card-${config.key}`}
+      data-dev-section-type="content-card"
+      data-dev-section-parent="vhc-healthcheck-stack"
       style={{
-        border: "1px solid var(--accent-surface)",
+        border: "none",
         borderRadius: "var(--radius-md)",
-        background: "var(--surface)",
+        background: "var(--accent-surface)",
         padding: "20px",
         display: "flex",
         flexDirection: "column",
@@ -1053,6 +1065,10 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
       }}
     >
       <div
+        data-dev-section="1"
+        data-dev-section-key={`vhc-healthcheck-card-${config.key}-header`}
+        data-dev-section-type="toolbar"
+        data-dev-section-parent={`vhc-healthcheck-card-${config.key}`}
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -1148,9 +1164,14 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                       blockBorder: "none",
                       tileBorder: "none",
                     };
+            const itemSectionKey = `vhc-healthcheck-card-${config.key}-item-${idx}`;
             return (
               <div
                 key={`${config.key}-${idx}-${item.heading || item.label || "item"}`}
+                data-dev-section="1"
+                data-dev-section-key={itemSectionKey}
+                data-dev-section-type="content-card"
+                data-dev-section-parent={`vhc-healthcheck-card-${config.key}`}
                 style={{
                   border: "none",
                   borderRadius: "var(--radius-sm)",
@@ -1223,10 +1244,14 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                         return (
                           <div
                             key={`${config.key}-${idx}-row-group-${rowIdx}`}
+                            data-dev-section="1"
+                            data-dev-section-key={`${itemSectionKey}-tile-${rowIdx}`}
+                            data-dev-section-type="stat-card"
+                            data-dev-section-parent={itemSectionKey}
                             style={{
                               borderRadius: "var(--input-radius)",
-                              background: config.key === "wheelsTyres" ? wheelRowsTint.tileBg : "var(--info-surface)",
-                              border: `1px solid ${config.key === "wheelsTyres" ? wheelRowsTint.tileBorder : "var(--accent-surface)"}`,
+                              background: "var(--surface)",
+                              border: "none",
                               padding: "10px 12px",
                               display: "flex",
                               flexDirection: "column",
@@ -1259,21 +1284,14 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                       return (
                         <div
                           key={`${config.key}-${idx}-row-${rowIdx}`}
+                          data-dev-section="1"
+                          data-dev-section-key={`${itemSectionKey}-tile-${rowIdx}`}
+                          data-dev-section-type="stat-card"
+                          data-dev-section-parent={itemSectionKey}
                           style={{
                             borderRadius: "var(--input-radius)",
-                            background:
-                              config.key === "wheelsTyres"
-                                ? wheelRowsTint.tileBg
-                                : isBrakeSummaryItem
-                                  ? brakeRowsTint.tileBg
-                                  : "var(--info-surface)",
-                            border: `1px solid ${
-                              config.key === "wheelsTyres"
-                                ? wheelRowsTint.tileBorder
-                                : isBrakeSummaryItem
-                                  ? brakeRowsTint.tileBorder
-                                  : "var(--accent-surface)"
-                            }`,
+                            background: "var(--surface)",
+                            border: "none",
                             padding: "10px 12px",
                             display: "flex",
                             flexDirection: "column",
@@ -2721,8 +2739,11 @@ export default function VhcDetailsPanel({
       const hours = Number(check.labour_hours);
       if (!Number.isFinite(hours) || hours < 0) return; // Allow 0 values
       const key = String(check.vhc_id);
-      map.set(key, hours);
-      if (Boolean(check.labour_complete)) {
+      const isLabourComplete = Boolean(check.labour_complete);
+      if (hours > 0 || isLabourComplete) {
+        map.set(key, hours);
+      }
+      if (isLabourComplete) {
         fromVhcChecks.add(key);
       }
     });
@@ -3612,7 +3633,7 @@ export default function VhcDetailsPanel({
         const canonicalId = resolveCanonicalVhcId(item.id);
         const hours = labourHoursByVhcItem.map.get(canonicalId);
         const isFromVhcChecks = labourHoursByVhcItem.fromVhcChecks.has(canonicalId);
-        if (Number.isFinite(hours) && hours >= 0) { // Allow 0 values
+        if (Number.isFinite(hours) && (hours > 0 || isFromVhcChecks)) {
           updated[item.id] = {
             ...entry,
             laborHours: String(hours),
@@ -3636,6 +3657,7 @@ export default function VhcDetailsPanel({
       const items = [...(severityLists.red || []), ...(severityLists.amber || []), ...(severityLists.authorized || []), ...(severityLists.completed || []), ...(severityLists.declined || [])];
 
       items.forEach((item) => {
+        const hasLocalEntry = Object.prototype.hasOwnProperty.call(prev, item.id);
         const entry = ensureEntryValue(prev, item.id);
 
         // Resolve by canonical VHC id first, then display id fallback.
@@ -3644,6 +3666,13 @@ export default function VhcDetailsPanel({
           vhcApprovalLookup.get(String(canonicalId)) ||
           vhcApprovalLookup.get(String(item.id));
         if (approvalData) {
+          const candidateIds = new Set([String(item.id), String(canonicalId)]);
+          const derivedPartsComplete = Array.from(candidateIds).some(
+            (id) =>
+              partsCostByVhcItem.has(id) ||
+              partsAuthorizedByVhcItemId.has(id) ||
+              partsNotRequired.has(id)
+          );
           const dbDecision = normaliseDecisionStatus(approvalData.approvalStatus);
           const nextStatus =
             dbDecision && (dbDecision !== "pending" || !entry.status)
@@ -3658,8 +3687,17 @@ export default function VhcDetailsPanel({
 
           // Update labour hours if present in database
           const hasLabourHours = approvalData.labourHours !== null && approvalData.labourHours !== undefined;
+          const approvalLabourHours = Number(approvalData.labourHours);
+          const hasExplicitLabourHours =
+            hasLabourHours &&
+            Number.isFinite(approvalLabourHours) &&
+            (approvalLabourHours > 0 || approvalData.labourComplete === true);
           if (hasLabourHours) {
-            updatedEntry.laborHours = String(approvalData.labourHours);
+            if (hasExplicitLabourHours) {
+              updatedEntry.laborHours = String(approvalData.labourHours);
+            } else if (!hasLocalEntry) {
+              updatedEntry.laborHours = null;
+            }
           }
           if (approvalData.labourComplete !== null && approvalData.labourComplete !== undefined) {
             updatedEntry.labourComplete = approvalData.labourComplete;
@@ -3671,7 +3709,11 @@ export default function VhcDetailsPanel({
           }
 
           // Update parts complete status
-          updatedEntry.partsComplete = approvalData.partsComplete || false;
+          updatedEntry.partsComplete = derivedPartsComplete
+            ? true
+            : hasLocalEntry
+            ? Boolean(entry.partsComplete)
+            : Boolean(approvalData.partsComplete);
 
           // Update total override if present in database — but skip if the user
           // has already touched this field (typed or cleared) to prevent the
@@ -3694,7 +3736,14 @@ export default function VhcDetailsPanel({
 
       return hasChanges ? updated : prev;
     });
-  }, [vhcApprovalLookup, severityLists, resolveCanonicalVhcId]);
+  }, [
+    vhcApprovalLookup,
+    severityLists,
+    resolveCanonicalVhcId,
+    partsCostByVhcItem,
+    partsAuthorizedByVhcItemId,
+    partsNotRequired,
+  ]);
 
   // Check if Summary actions can be enabled and notify parent with completion + lock reason.
   // IMPORTANT: Only gate on Parts/Labour checkbox columns in Summary.
@@ -3862,10 +3911,17 @@ export default function VhcDetailsPanel({
   useEffect(() => {
     if (loading) return;
     if (onFinancialTotalsChange && typeof onFinancialTotalsChange === 'function') {
+      // Authorised + Complete both count toward the job-card summary's
+      // "Authorised" total — completed work is still authorised work.
+      const authorisedSum = Number.isFinite(Number(quoteTotals.authorized))
+        ? Number(quoteTotals.authorized)
+        : null;
+      const completedSum = Number.isFinite(Number(quoteTotals.completed))
+        ? Number(quoteTotals.completed)
+        : 0;
       onFinancialTotalsChange({
-        // Match the Summary tab headline totals shown in the VHC UI.
-        authorized: Number.isFinite(Number(quoteTotals.authorized))
-          ? Number(quoteTotals.authorized)
+        authorized: authorisedSum !== null
+          ? authorisedSum + completedSum
           : customerTotals.authorized,
         declined: Number.isFinite(Number(quoteTotals.declined))
           ? Number(quoteTotals.declined)
@@ -3874,6 +3930,7 @@ export default function VhcDetailsPanel({
     }
   }, [
     quoteTotals.authorized,
+    quoteTotals.completed,
     quoteTotals.declined,
     customerTotals.authorized,
     customerTotals.declined,
@@ -4512,7 +4569,8 @@ export default function VhcDetailsPanel({
         }}
       >
         <div style={{ overflow: "visible" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "fixed" }}>
+          {/* Opt out of GlobalTableShells: .app-table-shell--with-headings forces tbody tr backgrounds with !important and would beat the per-row severity background set on each <tr> below. */}
+          <table data-app-table-shell="off" style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "fixed" }}>
             <thead>
               <tr
                 style={{
@@ -4565,11 +4623,16 @@ export default function VhcDetailsPanel({
                 // Display value: only show the field populated when the user has
                 // actively entered something locally, OR there's a persisted
                 // non-zero value. A stored 0 (from default/seed data) renders blank.
+                const hasExplicitPersistedZero =
+                  Number(resolvedLabourHours) === 0 &&
+                  (entry.labourComplete === true || item.labourComplete === true);
                 const labourInputDisplayValue = hasLocalLabourHoursValue
                   ? String(entry.laborHours)
                   : (() => {
                       const num = Number(resolvedLabourHours);
-                      return Number.isFinite(num) && num > 0 ? String(resolvedLabourHours) : "";
+                      return Number.isFinite(num) && (num > 0 || hasExplicitPersistedZero)
+                        ? String(resolvedLabourHours)
+                        : "";
                     })();
                 const labourCost =
                   quoteLabourHours !== null
@@ -4610,15 +4673,18 @@ export default function VhcDetailsPanel({
                 const isWarranty = warrantyRows.has(String(item.id));
                 // prefer explicit severity column over display_status (approval)
                 const rowSeverity = normaliseColour(item.vhcCheck?.severity || item.vhcCheck?.display_status) || item.severityKey || item.rawSeverity || severity;
-                // For authorized/declined items, use original severity for background color
-                const backgroundSeverity = (severity === "authorized" || severity === "declined")
-                  ? rowSeverity
-                  : rowSeverity;
+                // For authorised/completed/declined items, use original severity
+                // for background colour so red/amber rows stay visually flagged
+                // even after they've been actioned.
+                const backgroundSeverity = rowSeverity;
                 const rowTheme = SEVERITY_THEME[backgroundSeverity] || {};
 
-                // Explicitly set background color for authorized/declined items based on original severity
                 const getExplicitBackground = () => {
-                  if (severity === "authorized" || severity === "declined") {
+                  if (
+                    severity === "authorized" ||
+                    severity === "completed" ||
+                    severity === "declined"
+                  ) {
                     if (rowSeverity === "red") {
                       return "var(--danger-surface)";
                     } else if (rowSeverity === "amber") {
@@ -4634,6 +4700,13 @@ export default function VhcDetailsPanel({
                 const customerOverride = (item.vhcCheck?.customer_description || "").trim();
                 let detailContent = customerOverride || technicianDescription;
                 const isCustomerOverride = Boolean(customerOverride);
+                const summaryCategoryId = item.categoryId || item.category?.id || "";
+                const canEditDescriptionFromTitle = [
+                  "wheels_tyres",
+                  "brakes_hubs",
+                  "service_indicator",
+                  "underside",
+                ].includes(summaryCategoryId);
                 const handleDescriptionClick = () => {
                   setCustomerDescriptionEditTarget({
                     vhcId: item.vhcCheck?.vhc_id || item.id,
@@ -4719,7 +4792,28 @@ export default function VhcDetailsPanel({
                         {item.categoryLabel || "Recorded Section"}
                       </div>
                       <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--primary)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                        <span>{detailLabel}</span>
+                        {canEditDescriptionFromTitle ? (
+                          <button
+                            type="button"
+                            onClick={handleDescriptionClick}
+                            title="Click to edit the customer description"
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              padding: 0,
+                              margin: 0,
+                              color: "var(--primary)",
+                              font: "inherit",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              textAlign: "left",
+                            }}
+                          >
+                            {detailLabel}
+                          </button>
+                        ) : (
+                          <span>{detailLabel}</span>
+                        )}
                       </div>
                       {detailRows.length > 0 ? (
                         <button
@@ -4802,7 +4896,7 @@ export default function VhcDetailsPanel({
                             </span>
                           ) : null}
                         </button>
-                      ) : (
+                      ) : canEditDescriptionFromTitle ? null : (
                         <button
                           type="button"
                           onClick={handleDescriptionClick}
@@ -7518,12 +7612,14 @@ export default function VhcDetailsPanel({
                   fontSize: "11px",
                 }}
               >
-                <th style={{ textAlign: "left", padding: "12px 16px", width: "32%", whiteSpace: "normal" }}>VHC Item</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", width: "22%", whiteSpace: "normal" }}>Linked Parts</th>
-                <th style={{ textAlign: "right", padding: "12px 16px", width: "10%" }}>Parts Cost</th>
+                {/* Pre-Pick Location column intentionally removed from the
+                    auto data table — pre-pick is owned by the Parts tab now;
+                    keeping it here duplicated state and confused the badge. */}
+                <th style={{ textAlign: "left", padding: "12px 16px", width: "38%", whiteSpace: "normal" }}>VHC Item</th>
+                <th style={{ textAlign: "left", padding: "12px 16px", width: "26%", whiteSpace: "normal" }}>Linked Parts</th>
+                <th style={{ textAlign: "right", padding: "12px 16px", width: "12%" }}>Parts Cost</th>
                 <th style={{ textAlign: "center", padding: "12px 16px", width: "8%" }}>Warranty</th>
-                <th style={{ textAlign: "center", padding: "12px 16px", width: "14%" }}>Status</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", width: "14%", whiteSpace: "normal" }}>Pre-Pick Location</th>
+                <th style={{ textAlign: "center", padding: "12px 16px", width: "16%" }}>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -7532,7 +7628,7 @@ export default function VhcDetailsPanel({
                 groupRows.push(
                   <tr key={`vhc-authorized-group-${group.categoryLabel}`}>
                     <td
-                      colSpan={6}
+                      colSpan={5}
                       style={{
                         padding: "10px 16px",
                         background: "var(--surface-light)",
@@ -7669,24 +7765,27 @@ export default function VhcDetailsPanel({
                           Order
                         </button>
                       </td>
-                      <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
-                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
-                      </td>
+                      {/* Pre-Pick Location column removed — see header comment. */}
                     </tr>
                   );
                   return;
                 }
 
                 // Show a single row per VHC item, with parts stacked inside cells.
+                // Status is derived through the VHC engine so it stays aligned with
+                // the Parts Added to Job / Parts On Order panel datasets — a part
+                // only shows "Added to Job" when the parts_job_items row is in the
+                // booked panel; "On Order" when it's in the on-order panel; and
+                // "Order" when it has only just been authorised.
                 const partLines = linkedParts.map((part) => {
                   const partPrice = Number(part.unit_price ?? part.part?.unit_price ?? 0);
                   const partQty = Number(part.quantity_requested || 1);
                   const partTotal = partPrice * partQty;
-                  const normalizedStatus = normalisePartStatus(part.status);
-                  const currentStatus = normalizedStatus || "authorized";
-                  const isOrdered = currentStatus === "on_order";
-                  const isRemoved = currentStatus === "removed";
-                  const isAddedToJob = !isRemoved && !isOrdered;
+                  const buttonStatus = getPartAuthorisedDisplayStatus(part); // Engine-owned classification.
+                  const isRemoved = buttonStatus === AUTHORISED_PART_STATUS.REMOVED;
+                  const isOrdered = buttonStatus === AUTHORISED_PART_STATUS.ON_ORDER;
+                  const isAddedToJob = buttonStatus === AUTHORISED_PART_STATUS.ADDED_TO_JOB;
+                  // "Order" is the default when none of the above are true.
                   return { part, partQty, partTotal, isOrdered, isRemoved, isAddedToJob };
                 });
 
@@ -7829,67 +7928,14 @@ export default function VhcDetailsPanel({
                               }
                             }}
                           >
-                            {isRemoved ? "Removed" : isAddedToJob ? "Added to Job" : isOrdered ? "Ordered" : "Order"}
+                            {isRemoved ? "Removed" : isAddedToJob ? "Added to Job" : isOrdered ? "On Order" : "Order"}
                           </button>
                         ))}
                       </div>
                     </td>
-
-                    <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        {partLines.map(({ part }) => (
-                          <DropdownField
-                            key={`prepick-${part.id}`}
-                            value={
-                              requestPrePickLocation ??
-                              part.pre_pick_location ??
-                              part.prePickLocation ??
-                              ""
-                            }
-                            onChange={async (e) => {
-                              const newLocation = e.target.value;
-                              try {
-                                if (requestId || canonicalVhcId) {
-                                  applyLinkedPrePickLocation(
-                                    {
-                                      requestId: requestId ?? null,
-                                      vhcItemId: canonicalVhcId,
-                                    },
-                                    newLocation || null
-                                  );
-                                  await onUpdateRequestPrePickLocation(
-                                    {
-                                      requestId: requestId ?? null,
-                                      vhcItemId: canonicalVhcId,
-                                    },
-                                    newLocation || null
-                                  );
-                                } else {
-                                  const updates = { prePickLocation: newLocation };
-
-                                  if (newLocation === "on_order") {
-                                    updates.status = "on_order";
-                                    updates.stockStatus = "no_stock";
-                                  } else if (newLocation && newLocation !== "") {
-                                    updates.status = "pre_picked";
-                                    updates.stockStatus = "in_stock";
-                                  }
-
-                                  await handlePartStatusUpdate(part.id, updates);
-                                }
-                              } catch (error) {
-                                console.error(`[VHC] Failed to update part ${part.id}:`, error);
-                                alert(`Failed to update part location: ${error.message}`);
-                                refreshJobData({ silent: true, force: true });
-                              }
-                            }}
-                            options={PRE_PICK_LOCATION_OPTIONS_FULL}
-                            placeholder="Select Location"
-                            size="sm"
-                          />
-                        ))}
-                      </div>
-                    </td>
+                    {/* Pre-Pick Location column intentionally removed — pre-pick
+                        is owned by the Parts tab; the dropdown was duplicating
+                        state and is no longer rendered here. */}
                   </tr>
                 );
                 });
@@ -8625,7 +8671,7 @@ export default function VhcDetailsPanel({
                         border: "none",
                         borderRadius: "var(--radius-lg)",
                         padding: "20px",
-                        background: "var(--danger-surface)",
+                        background: "var(--declined-section-bg)",
                         display: "flex",
                         flexDirection: "column",
                         gap: "18px",
@@ -8976,7 +9022,7 @@ export default function VhcDetailsPanel({
                       border: "none",
                       borderRadius: "var(--radius-lg)",
                       padding: "20px",
-                      background: "var(--danger-surface)",
+                      background: "var(--declined-section-bg)",
                       display: "flex",
                       flexDirection: "column",
                       gap: "18px",

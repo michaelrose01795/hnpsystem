@@ -22,6 +22,13 @@ import { normalizeRequests, compareJobsForBoard } from "@/lib/jobCards/utils";
 import { getJobRequests, getJobRequestsCount as canonicalRequestsCount, getVehicleRegistration } from "@/lib/canonical/fields";
 import { revalidateAllJobs } from "@/lib/swr/mutations";
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
+// Engine helpers — single source of truth for "is this job still outstanding
+// because the customer authorised VHC work the tech hasn't finished yet".
+import {
+  projectVhcItems,
+  hasOutstandingAuthorisedVhcWork,
+  TECH_JOB_STATUS,
+} from "@/features/vhc/vhcStatusEngine";
 
 // Layout constants ensure consistent panel sizing and scroll thresholds
 import NextJobsPageUi from "@/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui"; // Extracted presentation layer.
@@ -507,6 +514,9 @@ export default function NextJobsPage() {
       jobRequestsCount: getJobRequestsCountFromPayload(row.requests),
       vhcChecks: Array.isArray(row.vhc_checks) ? row.vhc_checks : [],
       vhcRequired: Boolean(row.vhc_required),
+      // Tech-side completion flag — drives reappearance in the outstanding queue
+      // when the engine has resolved this to "authorised_items".
+      techCompletionStatus: row.tech_completion_status || null,
       assignedTo: row.assigned_to,
       assignedTech,
       technician: assignedTech?.name || "",
@@ -547,6 +557,7 @@ export default function NextJobsPage() {
         description,
         type,
         status,
+        tech_completion_status,
         assigned_to,
         waiting_status,
         job_categories,
@@ -564,7 +575,7 @@ export default function NextJobsPage() {
         customer:customer_id(firstname, lastname, name, mobile, telephone, email, address, postcode, contact_preference),
         vehicle:vehicle_id(registration, reg_number, make, model, make_model),
         appointments(appointment_id, scheduled_time, status, notes),
-        vhc_checks(vhc_id, section, issue_title, issue_description, approval_status, authorization_state)
+        vhc_checks(vhc_id, section, issue_title, issue_description, approval_status, authorization_state, severity, display_status, labour_complete, labour_hours, Complete)
       `
     ).
     order("checked_in_at", { ascending: false }).
@@ -829,6 +840,18 @@ export default function NextJobsPage() {
   const outstandingJobs = useMemo(
     () =>
     jobs.filter((job) => {
+      // Engine-driven reappearance: a job whose tech-side status is
+      // "authorised_items" must show in outstanding regardless of assignment,
+      // because the customer authorised extra work that hasn't been done yet.
+      // We trust the persisted value (survives reload) but cross-check the
+      // current vhc_checks projection so a stale flag does not surface a job
+      // whose authorised items have all since been completed.
+      const techStatus = String(job?.techCompletionStatus || "").trim().toLowerCase();
+      if (techStatus === TECH_JOB_STATUS.AUTHORISED_ITEMS) {
+        const projected = projectVhcItems(job?.vhcChecks || [], { job });
+        if (hasOutstandingAuthorisedVhcWork(projected)) return true;
+      }
+
       const assignedToStaff = isAssignedToKnownStaff(job);
       const statusKey = toStatusKey(job.status);
       const isCheckedIn = Boolean(job.checkedInAt) || statusKey === "CHECKED IN";

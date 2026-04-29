@@ -677,21 +677,22 @@ export default function BrakesHubsDetailsModal({
 
   const popupOverlayStyle = {
     ...popupOverlayStyles,
-    zIndex: 1200,
-    padding: "24px",
+    zIndex: 9000,
+    padding: "var(--popup-viewport-gap, clamp(12px, 2.5vw, 24px))",
   };
 
   const popupCardStyle = {
     ...popupCardStyles,
-    width: "min(520px, 92vw)",
-    maxWidth: "92vw",
-    minHeight: "480px",
-    maxHeight: "90vh",
-    padding: "24px",
+    width: "min(640px, 94vw)",
+    minHeight: "auto",
+    maxHeight: "calc(100dvh - 48px)",
+    padding: 0,
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
-    overflow: "visible",
+    gap: 0,
+    overflow: "hidden",
+    background: "var(--page-card-bg, var(--surface))",
+    borderRadius: "var(--radius-sm)",
   };
 
   const enhanceFocus = (event) => {
@@ -1280,9 +1281,27 @@ export default function BrakesHubsDetailsModal({
             createPortal(
             <div style={{ ...popupOverlayStyle, zIndex: 5600 }}>
               <div style={popupCardStyle}>
-                <h4 style={{ fontSize: "16px", fontWeight: 700, color: palette.textPrimary, margin: 0 }}>
-                  {concernPopup.editIndex !== null ? "Edit Concern" : "Add Concern"}
-                </h4>
+                <div style={{
+                  padding: "18px 20px",
+                  background: "var(--page-card-bg-alt, var(--surface-light))",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "16px",
+                }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>
+                      Issue report
+                    </span>
+                    <h4 style={{ fontSize: "20px", fontWeight: 800, color: palette.textPrimary, margin: 0 }}>
+                      {areaLabels[concernPopup.category] || concernPopup.category}
+                    </h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={resetConcernPopup}>
+                    Close
+                  </Button>
+                </div>
+                <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "12px" }}>
                 <span style={{ ...fieldLabelStyle, display: "block" }}>
                   Area:{" "}
                   <strong style={{ color: palette.textPrimary }}>
@@ -1364,6 +1383,7 @@ export default function BrakesHubsDetailsModal({
                       {concernPopup.editIndex !== null ? "Save" : "Add Concern"}
                     </Button>
                   </div>
+                </div>
                 </div>
               </div>
             </div>,

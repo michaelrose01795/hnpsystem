@@ -133,6 +133,8 @@ export default function PresentationCallout({ step }) {
     exit,
     currentSlide,
     userRoles,
+    canExit,
+    isPublicViewer,
   } = usePresentation();
 
   const slideCount = slides.length;
@@ -281,14 +283,28 @@ export default function PresentationCallout({ step }) {
         >
           Next
         </button>
-        <button
-          type="button"
-          className="app-btn app-btn--danger app-btn--sm"
-          onClick={exit}
-          title="Exit Presentation Mode"
-        >
-          Exit
-        </button>
+        {canExit ? (
+          <button
+            type="button"
+            className="app-btn app-btn--danger app-btn--sm"
+            onClick={exit}
+            title="Exit Presentation Mode"
+          >
+            Exit
+          </button>
+        ) : (
+          <span
+            className="app-badge app-badge--info"
+            title="This public demo stays inside Presentation Mode."
+            style={{
+              alignSelf: "center",
+              justifySelf: "end",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {isPublicViewer ? "Public demo" : "Locked"}
+          </span>
+        )}
       </div>
 
       <div

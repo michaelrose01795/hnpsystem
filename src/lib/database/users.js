@@ -35,7 +35,6 @@ const USER_COLUMNS = [
   "annual_salary",
   "payroll_reference",
   "national_insurance_number",
-  "keycloak_user_id",
   "home_address",
   "signature_storage_path",
   "signature_file_url",
@@ -79,7 +78,6 @@ const mapUserRow = (row = {}) => ({
   annualSalary: row.annual_salary,
   payrollReference: row.payroll_reference,
   nationalInsuranceNumber: row.national_insurance_number,
-  keycloakUserId: row.keycloak_user_id,
   homeAddress: row.home_address,
   signatureStoragePath: row.signature_storage_path,
   signatureFileUrl: row.signature_file_url,
@@ -96,10 +94,19 @@ const assertUserWriteAllowed = (source) => {
 };
 
 const ensureUserPayload = (payload = {}) => {
-  const requiredFields = ["first_name", "last_name", "email", "password_hash", "role"];
+  const requiredFields = ["first_name", "last_name", "email", "role"];
   const missing = requiredFields.filter((field) => !payload[field]);
   if (missing.length) {
     throw new Error(`Missing required user fields: ${missing.join(", ")}`);
+  }
+  // Refuse silent plaintext writes. Callers must either pass a bcrypt hash
+  // (with password_algo='bcrypt') or create the row as 'unset' and force
+  // the user through the password-reset flow.
+  const algo = payload.password_algo;
+  if (algo !== "bcrypt" && algo !== "unset") {
+    throw new Error(
+      "createUser requires password_algo='bcrypt' (with a bcrypt hash) or password_algo='unset' (no password)."
+    );
   }
 };
 

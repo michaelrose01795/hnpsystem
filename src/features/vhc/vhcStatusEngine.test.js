@@ -21,6 +21,13 @@ import {
   LABOUR_STATUS,
   DECISION,
   SEVERITY,
+  TECH_JOB_STATUS,
+  CLOCKING_WORK_TYPE,
+  hasOutstandingAuthorisedVhcWork,
+  getJobTechStatusFromVhcItems,
+  getClockingWorkTypeForJob,
+  getPartAuthorisedDisplayStatus,
+  AUTHORISED_PART_STATUS,
 } from "@/features/vhc/vhcStatusEngine";
 
 // ---------------------------------------------------------------------------
@@ -331,5 +338,200 @@ describe("applyVhcDecision", () => {
   });
   it("throws when vhcItemId is missing", async () => {
     await expect(applyVhcDecision({ jobId: "j-1", targetDecision: "authorized" })).rejects.toThrow(/vhcItemId/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tech-side job status helpers — links VHC engine to Next Jobs / Complete Job.
+// Scenarios mirror the requirement spec:
+//   1. Normal job completed (no authorised work) → COMPLETED, hides from next jobs.
+//   2. Authorised VHC work outstanding → AUTHORISED_ITEMS, reappears in next jobs.
+//   3. Clocking onto an AUTHORISED_ITEMS job uses Additional Work.
+//   4. Completing the authorised work → COMPLETED, hides again.
+//   5. Reload (i.e. just persisted state + items) keeps the correct status.
+// ---------------------------------------------------------------------------
+
+describe("hasOutstandingAuthorisedVhcWork", () => {
+  it("false when no items", () => {
+    expect(hasOutstandingAuthorisedVhcWork([])).toBe(false);
+    expect(hasOutstandingAuthorisedVhcWork(null)).toBe(false);
+  });
+
+  it("false when all items are pending / awaiting customer", () => {
+    const items = projectVhcItems(
+      [baseCheck({ vhc_id: "a", approval_status: "pending" })],
+      { job: { vhc_sent_at: "2026-04-28T09:00:00Z" } },
+    );
+    expect(hasOutstandingAuthorisedVhcWork(items)).toBe(false);
+  });
+
+  it("false when all authorised items are completed", () => {
+    const items = projectVhcItems([
+      baseCheck({ vhc_id: "a", approval_status: "authorized", Complete: true }),
+      baseCheck({ vhc_id: "b", approval_status: "completed" }),
+    ]);
+    expect(hasOutstandingAuthorisedVhcWork(items)).toBe(false);
+  });
+
+  it("false when only declined items remain", () => {
+    const items = projectVhcItems([baseCheck({ approval_status: "declined" })]);
+    expect(hasOutstandingAuthorisedVhcWork(items)).toBe(false);
+  });
+
+  it("true when at least one authorised item is not complete", () => {
+    const items = projectVhcItems([
+      baseCheck({ vhc_id: "a", approval_status: "authorized", Complete: false }),
+    ]);
+    expect(hasOutstandingAuthorisedVhcWork(items)).toBe(true);
+  });
+
+  it("true for an in_progress authorised item with parts fitted but not Complete", () => {
+    const items = projectVhcItems(
+      [baseCheck({ vhc_id: "a", approval_status: "authorized", labour_hours: 1.0 })],
+    );
+    expect(hasOutstandingAuthorisedVhcWork(items)).toBe(true);
+  });
+});
+
+describe("getJobTechStatusFromVhcItems", () => {
+  it("returns IN_PROGRESS when tech has not pressed Complete Job", () => {
+    const items = projectVhcItems([baseCheck({ approval_status: "authorized" })]);
+    expect(getJobTechStatusFromVhcItems(items, { techHasCompletedMainWork: false }))
+      .toBe(TECH_JOB_STATUS.IN_PROGRESS);
+  });
+
+  it("scenario 1 — normal job completed (no authorised work) → COMPLETED", () => {
+    const items = projectVhcItems([baseCheck({ approval_status: "pending" })]);
+    expect(getJobTechStatusFromVhcItems(items, { techHasCompletedMainWork: true }))
+      .toBe(TECH_JOB_STATUS.COMPLETED);
+  });
+
+  it("scenario 2 — authorised VHC work outstanding → AUTHORISED_ITEMS", () => {
+    const items = projectVhcItems([
+      baseCheck({ vhc_id: "a", approval_status: "authorized", Complete: false }),
+    ]);
+    expect(getJobTechStatusFromVhcItems(items, { techHasCompletedMainWork: true }))
+      .toBe(TECH_JOB_STATUS.AUTHORISED_ITEMS);
+  });
+
+  it("scenario 4 — completing all authorised work → COMPLETED", () => {
+    const items = projectVhcItems([
+      baseCheck({ vhc_id: "a", approval_status: "authorized", Complete: true }),
+      baseCheck({ vhc_id: "b", approval_status: "completed" }),
+    ]);
+    expect(getJobTechStatusFromVhcItems(items, { techHasCompletedMainWork: true }))
+      .toBe(TECH_JOB_STATUS.COMPLETED);
+  });
+
+  it("declined items alone do not block completion", () => {
+    const items = projectVhcItems([baseCheck({ approval_status: "declined" })]);
+    expect(getJobTechStatusFromVhcItems(items, { techHasCompletedMainWork: true }))
+      .toBe(TECH_JOB_STATUS.COMPLETED);
+  });
+});
+
+describe("getClockingWorkTypeForJob", () => {
+  it("returns INITIAL when persisted status is null (fresh job)", () => {
+    const items = projectVhcItems([baseCheck()]);
+    expect(getClockingWorkTypeForJob({ vhcItems: items, currentTechStatus: null }))
+      .toBe(CLOCKING_WORK_TYPE.INITIAL);
+  });
+
+  it("returns INITIAL when persisted status is tech_complete (job done)", () => {
+    const items = projectVhcItems([baseCheck({ approval_status: "completed" })]);
+    expect(getClockingWorkTypeForJob({ vhcItems: items, currentTechStatus: TECH_JOB_STATUS.COMPLETED }))
+      .toBe(CLOCKING_WORK_TYPE.INITIAL);
+  });
+
+  it("scenario 3 — AUTHORISED_ITEMS + outstanding work → ADDITIONAL", () => {
+    const items = projectVhcItems([
+      baseCheck({ vhc_id: "a", approval_status: "authorized", Complete: false }),
+    ]);
+    expect(
+      getClockingWorkTypeForJob({ vhcItems: items, currentTechStatus: TECH_JOB_STATUS.AUTHORISED_ITEMS }),
+    ).toBe(CLOCKING_WORK_TYPE.ADDITIONAL);
+  });
+
+  it("AUTHORISED_ITEMS but items have since all completed → INITIAL (defensive)", () => {
+    // If persisted status is stale but the item set has caught up, do not
+    // force Additional Work — the tech is starting fresh on something else.
+    const items = projectVhcItems([baseCheck({ approval_status: "authorized", Complete: true })]);
+    expect(
+      getClockingWorkTypeForJob({ vhcItems: items, currentTechStatus: TECH_JOB_STATUS.AUTHORISED_ITEMS }),
+    ).toBe(CLOCKING_WORK_TYPE.INITIAL);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// VHC Parts Authorised button/status helper — locks the mapping between a
+// parts_job_items row and the badge rendered in the VHC tab so it cannot
+// drift away from the Parts Added / Parts On Order panels.
+// ---------------------------------------------------------------------------
+
+describe("getPartAuthorisedDisplayStatus", () => {
+  it("status='booked' → ADDED_TO_JOB (row is in the Parts Added panel)", () => {
+    expect(getPartAuthorisedDisplayStatus({ status: "booked" }))
+      .toBe(AUTHORISED_PART_STATUS.ADDED_TO_JOB);
+  });
+
+  it("status='on_order' → ON_ORDER (row is in the On Order panel)", () => {
+    expect(getPartAuthorisedDisplayStatus({ status: "on_order" }))
+      .toBe(AUTHORISED_PART_STATUS.ON_ORDER);
+  });
+
+  it("alias 'ordered' is treated as ON_ORDER", () => {
+    expect(getPartAuthorisedDisplayStatus({ status: "ordered" }))
+      .toBe(AUTHORISED_PART_STATUS.ON_ORDER);
+  });
+
+  it("status='removed' → REMOVED", () => {
+    expect(getPartAuthorisedDisplayStatus({ status: "removed" }))
+      .toBe(AUTHORISED_PART_STATUS.REMOVED);
+  });
+
+  it("authorised but no progress (status='pending' / null / unknown) → ORDER", () => {
+    expect(getPartAuthorisedDisplayStatus({ status: "pending" })).toBe(AUTHORISED_PART_STATUS.ORDER);
+    expect(getPartAuthorisedDisplayStatus({ status: null })).toBe(AUTHORISED_PART_STATUS.ORDER);
+    expect(getPartAuthorisedDisplayStatus({ status: "" })).toBe(AUTHORISED_PART_STATUS.ORDER);
+    expect(getPartAuthorisedDisplayStatus({})).toBe(AUTHORISED_PART_STATUS.ORDER);
+    expect(getPartAuthorisedDisplayStatus(null)).toBe(AUTHORISED_PART_STATUS.ORDER);
+  });
+
+  it("downstream stages (pre_pick/stock/fitted) keep showing ADDED_TO_JOB", () => {
+    expect(getPartAuthorisedDisplayStatus({ status: "pre_pick" })).toBe(AUTHORISED_PART_STATUS.ADDED_TO_JOB);
+    expect(getPartAuthorisedDisplayStatus({ status: "picked" })).toBe(AUTHORISED_PART_STATUS.ADDED_TO_JOB);
+    expect(getPartAuthorisedDisplayStatus({ status: "stock" })).toBe(AUTHORISED_PART_STATUS.ADDED_TO_JOB);
+    expect(getPartAuthorisedDisplayStatus({ status: "fitted" })).toBe(AUTHORISED_PART_STATUS.ADDED_TO_JOB);
+  });
+});
+
+describe("scenario 5 — reload preserves the correct status", () => {
+  // Simulates: page reloads, reads jobs.tech_completion_status from DB,
+  // re-projects vhc_checks, and re-derives the clocking work type. The
+  // engine must give the same answer it did before the reload.
+  it("authorised_items + outstanding items still yield ADDITIONAL after reload", () => {
+    const persistedAfterReload = "authorised_items"; // Raw DB value.
+    const itemsAfterReload = projectVhcItems([
+      baseCheck({ vhc_id: "a", approval_status: "authorized", Complete: false }),
+    ]);
+    expect(
+      getClockingWorkTypeForJob({ vhcItems: itemsAfterReload, currentTechStatus: persistedAfterReload }),
+    ).toBe(CLOCKING_WORK_TYPE.ADDITIONAL);
+    expect(hasOutstandingAuthorisedVhcWork(itemsAfterReload)).toBe(true);
+  });
+
+  it("tech_complete + nothing outstanding still yields COMPLETED after reload", () => {
+    const persistedAfterReload = "tech_complete";
+    const itemsAfterReload = projectVhcItems([
+      baseCheck({ approval_status: "authorized", Complete: true }),
+    ]);
+    expect(hasOutstandingAuthorisedVhcWork(itemsAfterReload)).toBe(false);
+    expect(
+      getJobTechStatusFromVhcItems(itemsAfterReload, { techHasCompletedMainWork: true }),
+    ).toBe(TECH_JOB_STATUS.COMPLETED);
+    // Persisted tech_complete + no outstanding work → next clock-in is INITIAL.
+    expect(
+      getClockingWorkTypeForJob({ vhcItems: itemsAfterReload, currentTechStatus: persistedAfterReload }),
+    ).toBe(CLOCKING_WORK_TYPE.INITIAL);
   });
 });

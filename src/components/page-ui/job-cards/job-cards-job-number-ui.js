@@ -60,6 +60,8 @@ export default function JobCardDetailPageUi(props) {
     handleNoteAdded,
     handleNotesChange,
     handleReleaseJob,
+    handleArchiveJob,
+    jobReleased,
     handleRenameDocument,
     handleReplaceDocument,
     handleTabClick,
@@ -225,7 +227,7 @@ export default function JobCardDetailPageUi(props) {
         fontSize: "0.95rem",
         fontWeight: 600
       }}>
-            Job card is read-only in {jobData.status}. Payment remains available while invoiced, and key/car location updates remain available until archive.
+            Job card is read-only in {jobData.status}. Key/car location updates remain available until archive. Awaiting job to be archived.
           </section>}
 
         {/* ✅ Header Section */}
@@ -340,10 +342,16 @@ export default function JobCardDetailPageUi(props) {
                     </button>;
               })}
               </>}
-            {/* ✅ Link Job Button */}
+            {/* Link Job — hidden once job reaches Invoiced / Released / Archived (read-only). */}
+            {!isInvoiceOrBeyondReadOnly && !isArchiveMode &&
             <button className="app-btn app-btn--sm app-btn--primary" onClick={() => setIsLinkPopupOpen(true)}>
-              Link Job
-            </button>
+                Link Job
+              </button>}
+            {/* Archive — replaces Link Job once the job is Released (awaits archival). */}
+            {jobReleased && !isArchiveMode &&
+            <button className="app-btn app-btn--sm app-btn--primary" onClick={handleArchiveJob}>
+                Archive Job
+              </button>}
             {(isOpenStatus || isBookedStatus) && !isCheckedIn && <button onClick={handleCheckIn} disabled={checkingIn || !canEdit} style={{
               padding: "var(--control-padding)",
               backgroundColor: "var(--primary)",
@@ -366,29 +374,6 @@ export default function JobCardDetailPageUi(props) {
               }
             }}>
                 {checkingIn ? "Checking In..." : "Check In"}
-              </button>}
-            {showCreateInvoiceButton && <button onClick={handleCreateInvoice} disabled={creatingInvoice} style={{
-              padding: "var(--control-padding)",
-              backgroundColor: "var(--primary)",
-              color: "var(--text-inverse)",
-              border: "none",
-              borderRadius: "var(--control-radius)",
-              cursor: creatingInvoice ? "not-allowed" : "pointer",
-              fontWeight: "600",
-              fontSize: "var(--control-font-size)",
-              minHeight: "var(--control-height)",
-              transition: "background-color 0.2s, transform 0.2s",
-              opacity: creatingInvoice ? 0.7 : 1
-            }} onMouseEnter={e => {
-              if (!creatingInvoice) {
-                e.target.style.backgroundColor = "var(--primary-light)";
-              }
-            }} onMouseLeave={e => {
-              if (!creatingInvoice) {
-                e.target.style.backgroundColor = "var(--primary)";
-              }
-            }}>
-                {creatingInvoice ? "Creating Invoice..." : "Create Invoice"}
               </button>}
             {showReleaseButton && <button onClick={async () => {
               const result = await handleReleaseJob();
@@ -830,7 +815,7 @@ export default function JobCardDetailPageUi(props) {
                   <strong>Locked: Write Up</strong>
                   <span>{partsWriteUpVhcLockDescription}</span>
                 </div>}
-              {writeUpTabMounted || activeTab === "write-up" ? <WriteUpForm jobNumber={jobData?.jobNumber || jobNumber} jobCardData={jobData} showHeader={false} readOnly={!canEditPartsWriteUpVhc} onSaveSuccess={handleWriteUpSaveSuccess} onCompletionChange={handleWriteUpCompletionChange} onRequestStatusesChange={handleWriteUpRequestStatusesChange} onTasksSnapshotChange={handleWriteUpTasksSnapshotChange} /> : null}
+              {writeUpTabMounted || activeTab === "write-up" ? <WriteUpForm jobNumber={jobData?.jobNumber || jobNumber} jobCardData={jobData ? { jobCard: jobData } : null} showHeader={false} readOnly={!canEditPartsWriteUpVhc} onSaveSuccess={handleWriteUpSaveSuccess} onCompletionChange={handleWriteUpCompletionChange} onRequestStatusesChange={handleWriteUpRequestStatusesChange} onTasksSnapshotChange={handleWriteUpTasksSnapshotChange} /> : null}
             </div>
           </div>
 
@@ -892,6 +877,31 @@ export default function JobCardDetailPageUi(props) {
           <div className="app-page-stack" data-invoice-print-area style={{
           display: activeTab === "invoice" ? undefined : "none"
         }} data-dev-section="1" data-dev-section-key="jobcard-tab-invoice" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+            {showCreateInvoiceButton && <div style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: "16px"
+          }}>
+                <button type="button" onClick={handleCreateInvoice} disabled={creatingInvoice} style={{
+              padding: "var(--control-padding)",
+              backgroundColor: "var(--primary)",
+              color: "var(--text-inverse)",
+              border: "none",
+              borderRadius: "var(--control-radius)",
+              cursor: creatingInvoice ? "not-allowed" : "pointer",
+              fontWeight: 600,
+              fontSize: "var(--control-font-size)",
+              minHeight: "var(--control-height)",
+              transition: "background-color 0.2s",
+              opacity: creatingInvoice ? 0.7 : 1
+            }} onMouseEnter={e => {
+              if (!creatingInvoice) e.currentTarget.style.backgroundColor = "var(--primary-light)";
+            }} onMouseLeave={e => {
+              if (!creatingInvoice) e.currentTarget.style.backgroundColor = "var(--primary)";
+            }}>
+                  {creatingInvoice ? "Creating Invoice..." : "Create Invoice"}
+                </button>
+              </div>}
             {!invoicePrerequisitesMet && <div style={{
             padding: "24px",
             border: "none",

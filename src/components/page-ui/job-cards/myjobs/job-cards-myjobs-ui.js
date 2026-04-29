@@ -79,11 +79,11 @@ export default function MyJobsPageUi(props) {
     case "section3":
       return <>
       {loading && <SkeletonKeyframes />}
-      <DevLayoutSection sectionKey="myjobs-page-shell" sectionType="page-shell" backgroundToken="surface-page" shell className="app-page-stack" style={{
+      <div className="app-page-stack" style={{
     minHeight: "100%"
   }}>
         {/* Header */}
-        <DevLayoutSection sectionKey="myjobs-page-header" sectionType="toolbar" parentKey="myjobs-page-shell" className="myjobs-page-header" style={{
+        <DevLayoutSection sectionKey="myjobs-page-header" sectionType="toolbar" parentKey="app-layout-page-card" className="myjobs-page-header" style={{
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center"
@@ -93,7 +93,7 @@ export default function MyJobsPageUi(props) {
         </DevLayoutSection>
 
         {/* Search and Filter Bar */}
-        <DevLayoutSection sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="myjobs-page-shell" backgroundToken="surface-filter-card" className="app-section-card myjobs-filter-toolbar" style={{
+        <DevLayoutSection sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="app-layout-page-card" backgroundToken="surface-filter-card" className="app-section-card myjobs-filter-toolbar" style={{
       display: "flex",
       flexDirection: "row",
       gap: "12px",
@@ -134,7 +134,7 @@ export default function MyJobsPageUi(props) {
         </DevLayoutSection>
 
         {/* Jobs List */}
-        <DevLayoutSection sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="myjobs-page-shell" backgroundToken="surface-results-card" className="app-section-card" style={{
+        <DevLayoutSection sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="surface-results-card" className="app-section-card" style={{
       flex: 1,
       display: "flex",
       flexDirection: "column",
@@ -419,7 +419,7 @@ export default function MyJobsPageUi(props) {
         </DevLayoutSection>
 
         {/* Job Count Summary */}
-        <DevLayoutSection sectionKey="myjobs-summary" sectionType="content-card" parentKey="myjobs-page-shell" backgroundToken="surface-summary-card" className="app-section-card">
+        <DevLayoutSection sectionKey="myjobs-summary" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="surface-summary-card" className="app-section-card">
           <div data-dev-section="1" data-dev-section-key="myjobs-summary-grid" data-dev-section-type="content-card" data-dev-section-parent="myjobs-summary" style={{
         display: "grid",
         gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
@@ -507,7 +507,7 @@ export default function MyJobsPageUi(props) {
           </div>
         </DevLayoutSection>
 
-      </DevLayoutSection>
+      </div>
 
       {/* Start Job Modal */}
       <JobCardModal isOpen={showStartJobModal} onClose={() => {

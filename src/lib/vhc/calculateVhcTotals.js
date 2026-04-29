@@ -167,7 +167,7 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = [], 
     });
 
     // Step 7: Build severity lists (mimics VhcDetailsPanel logic)
-    const severityLists = { red: [], amber: [], authorized: [], declined: [] };
+    const severityLists = { red: [], amber: [], authorized: [], completed: [], declined: [] };
     summaryItems.forEach((item) => {
       // Use display_status if available, otherwise use original severity
       const displaySeverity = item.displayStatus || item.rawSeverity;
@@ -213,6 +213,8 @@ export function calculateVhcFinancialTotals(vhcChecks = [], partsJobItems = [], 
     accumulate(severityLists.red, 'red');
     accumulate(severityLists.amber, 'amber');
     accumulate(severityLists.authorized, 'authorized');
+    // Completed work was authorised first — count it toward the authorised total.
+    accumulate(severityLists.completed, 'authorized');
     accumulate(severityLists.declined, 'declined');
 
     // Debug logging (can be removed in production)

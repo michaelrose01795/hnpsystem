@@ -1303,54 +1303,92 @@ export default function WheelsTyresDetailsModal({
         <div
           style={{
             ...popupOverlayStyles,
-            zIndex: 5600,
-            padding: "24px",
+            zIndex: 9000,
+            padding: "var(--popup-viewport-gap, clamp(12px, 2.5vw, 24px))",
           }}
         >
           <div
             style={{
               ...popupCardStyles,
-              width: "min(520px, 92vw)",
-              maxWidth: "92vw",
-              minHeight: "480px",
-              maxHeight: "90vh",
-              padding: "24px",
+              width: "min(640px, 94vw)",
+              minHeight: "auto",
+              maxHeight: "calc(100dvh - 48px)",
+              padding: 0,
               display: "flex",
               flexDirection: "column",
-              gap: "16px",
-              overflow: "visible",
+              gap: 0,
+              overflow: "hidden",
+              background: "var(--page-card-bg, var(--surface))",
+              borderRadius: "var(--radius-sm)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
-              <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: palette.accent }}>
-                {concernTarget} Concern
-              </h3>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "16px",
+              padding: "18px 20px",
+              background: "var(--page-card-bg-alt, var(--surface-light))",
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>
+                  Issue report
+                </span>
+                <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: palette.accent }}>
+                  {concernTarget} Tyre
+                </h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setConcernTarget(null);
+                  setConcernInput("");
+                  setConcernStatus("Amber");
+                  setConcernEditIndex(null);
+                }}
+              >
+                Close
+              </Button>
             </div>
 
-            <IssueAutocomplete
-              sectionKey={WHEEL_SECTION_KEYS[concernTarget] || "wheels_nsf"}
-              value={concernInput}
-              onChange={setConcernInput}
-              onSelect={setConcernInput}
-              disabled={locked}
-              placeholder="Describe concern..."
-              inputStyle={baseInputStyle}
-            />
+            <div style={{
+              padding: "18px 20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "14px",
+              background: "var(--surface)",
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={fieldLabelStyle}>Issue</label>
+                <IssueAutocomplete
+                  sectionKey={WHEEL_SECTION_KEYS[concernTarget] || "wheels_nsf"}
+                  value={concernInput}
+                  onChange={setConcernInput}
+                  onSelect={setConcernInput}
+                  disabled={locked}
+                  placeholder="Describe concern..."
+                  inputStyle={{ ...baseInputStyle, minHeight: "var(--control-height)" }}
+                />
+              </div>
 
-            <div style={{ display: "flex", gap: "10px" }}>
-              {CONCERN_STATUS_OPTIONS.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => setConcernStatus(status)}
-                  style={pillButton({ active: concernStatus === status })}
-                >
-                  {status}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "6px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: "14px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={fieldLabelStyle}>Status</label>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    {CONCERN_STATUS_OPTIONS.map((status) => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => setConcernStatus(status)}
+                        style={pillButton({ active: concernStatus === status })}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
               {concernEditIndex !== null && (
                 <Button
                   variant="danger"
@@ -1360,19 +1398,6 @@ export default function WheelsTyresDetailsModal({
                   Delete
                 </Button>
               )}
-              <div style={{ display: "flex", gap: "10px" }}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setConcernTarget(null);
-                    setConcernInput("");
-                    setConcernStatus("Amber");
-                    setConcernEditIndex(null);
-                  }}
-                >
-                  Close
-                </Button>
                 <Button
                   variant="primary"
                   size="sm"
@@ -1381,6 +1406,7 @@ export default function WheelsTyresDetailsModal({
                 >
                   {concernEditIndex !== null ? "Save" : "Add Concern"}
                 </Button>
+              </div>
               </div>
             </div>
           </div>

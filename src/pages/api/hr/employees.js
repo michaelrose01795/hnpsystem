@@ -4,6 +4,8 @@ import { getEmployeeDirectory } from "@/lib/database/hr";
 import { supabaseService } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 import { buildEmployeeMeta, normalizeLineManagerIds, parseEmployeeMeta } from "@/lib/hr/employeeMeta";
+import { writeAuditLog } from "@/lib/audit/auditLog";
+import { getAuditContext, shallowDiff } from "@/lib/audit/auditContext";
 
 const HR_MANAGER_EMPLOYEE_EDITOR_ROLES = ["owner", "admin manager"];
 
@@ -118,6 +120,22 @@ async function handleCreateOrUpdate(req, res) {
     hourlyRate: payload.hourlyRate,
   });
 
+  const auditCtx = await getAuditContext(req, res);
+
+  // Snapshot the user row before the change so we can write a diff if this
+  // is an edit. For new employees, before will be null.
+  let beforeRow = null;
+  if (isEditOperation && payload.userId) {
+    const { data: priorRow } = await supabaseService
+      .from("users")
+      .select(
+        "user_id, email, first_name, last_name, role, phone, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, home_address"
+      )
+      .eq("user_id", payload.userId)
+      .maybeSingle();
+    beforeRow = priorRow || null;
+  }
+
   try {
     const userRecord = await upsertUser({
       userId: payload.userId || null,
@@ -129,6 +147,16 @@ async function handleCreateOrUpdate(req, res) {
       jobTitle: payload.jobTitle,
       payload,
       isEditOperation,
+    });
+
+    await writeAuditLog({
+      ...auditCtx,
+      action: isEditOperation ? "update" : "create",
+      entityType: "employee",
+      entityId: userRecord?.user_id ?? null,
+      diff: isEditOperation
+        ? shallowDiff(beforeRow, userRecord)
+        : { after: userRecord },
     });
 
     const directory = await getEmployeeDirectory();
@@ -205,7 +233,7 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
 
   let existingUser = null;
   const existingUserSelect =
-    "user_id, name, email, first_name, last_name, role, phone, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, emergency_contact, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, national_insurance_number, keycloak_user_id, home_address";
+    "user_id, name, email, first_name, last_name, role, phone, job_title, department, employment_type, employment_status, start_date, probation_end, manager_id, emergency_contact, contracted_hours, hourly_rate, overtime_rate, annual_salary, payroll_reference, national_insurance_number, home_address";
 
   if (payload?.userId) {
     const { data, error } = await supabaseService
@@ -268,7 +296,6 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
       annual_salary: annualSalary,
       payroll_reference: payload.payrollNumber || null,
       national_insurance_number: payload.nationalInsurance || null,
-      keycloak_user_id: payload.keycloakId || null,
       home_address: payload.address || null,
     };
   };
@@ -318,10 +345,14 @@ async function upsertUser({ email, firstName, lastName, phone, role, jobTitle, p
     return data || existingUser;
   }
 
+  // No password is set at create time. The user must go through the
+  // password-reset flow to get an emailed link before they can log in.
+  // password_algo='unset' makes verifyPassword refuse this row.
   const insertPayload = {
     ...userPayload,
     email,
-    password_hash: "external_auth",
+    password_hash: "",
+    password_algo: "unset",
     role: role || "Employee",
   };
 

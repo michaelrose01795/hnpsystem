@@ -105,7 +105,9 @@
       "Bash(node -p \"Object.keys\\(require\\('./package.json'\\).dependencies\\).filter\\(k=>k.includes\\('font'\\)||k==='styled-jsx'\\)\")",
       "Bash(node -p \"JSON.stringify\\(require\\('./package.json'\\).scripts, null, 2\\)\")",
       "Bash(awk 'NR>=140 && NR<=1089 { *)",
-      "Bash(awk 'NR>=140 && NR<=1090 { *)"
+      "Bash(awk 'NR>=140 && NR<=1090 { *)",
+      "Bash(node --experimental-vm-modules -e \"import\\('./src/features/vhc/vhcStatusEngine.js'\\).then\\(m => console.log\\(Object.keys\\(m\\).join\\(','\\)\\)\\).catch\\(e => console.error\\('ERR:', e.message\\)\\)\")",
+      "Bash(echo \"EXIT=$?\")"
     ],
     "deny": [],
     "ask": []

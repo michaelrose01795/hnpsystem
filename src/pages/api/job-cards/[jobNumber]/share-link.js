@@ -25,29 +25,33 @@ function isLinkExpired(createdAt) {
   return Date.now() - created > expiryMs;
 }
 
-async function handler(req, res, session) {
-  const { jobNumber: rawJobNumber } = req.query;
-  const allowedMethods = new Set(["GET", "POST"]);
-  if (!allowedMethods.has(req.method)) {
-    return res.status(405).json({ success: false, error: "Method not allowed" });
-  }
-
+async function getIdentity(rawJobNumber, res) {
   if (!rawJobNumber) {
-    return res.status(400).json({ success: false, error: "Job number is required" });
+    res.status(400).json({ success: false, error: "Job number is required" });
+    return null;
   }
-
   const identity = await resolveJobIdentity({
     client: dbClient,
     identifier: rawJobNumber,
     select: "id, job_number",
   });
   if (!identity?.id) {
-    return res.status(404).json({ success: false, error: "Job not found" });
+    res.status(404).json({ success: false, error: "Job not found" });
+    return null;
   }
+  return identity;
+}
+
+// GET is public: validation is by linkCode (the link itself is the secret),
+// so a customer following a share URL on any device — no auth cookies — can
+// load their VHC report.
+async function publicGetHandler(req, res) {
+  const { jobNumber: rawJobNumber } = req.query;
+  const identity = await getIdentity(rawJobNumber, res);
+  if (!identity) return;
   const canonicalJobNumber = identity.job_number;
 
-  // GET: Validate a share link
-  if (req.method === "GET") {
+  {
     const { linkCode } = req.query;
 
     if (!linkCode) {
@@ -158,8 +162,16 @@ async function handler(req, res, session) {
     }
   }
 
-  // POST: Generate a new share link (or return existing valid one)
-  if (req.method === "POST") {
+}
+
+// POST stays role-guarded: only staff can mint share links.
+async function protectedPostHandler(req, res, session) {
+  const { jobNumber: rawJobNumber } = req.query;
+  const identity = await getIdentity(rawJobNumber, res);
+  if (!identity) return;
+  const canonicalJobNumber = identity.job_number;
+
+  {
     try {
       // First, check if there's an existing valid (non-expired) link
       const { data: existingLinks, error: fetchError } = await dbClient
@@ -232,7 +244,12 @@ async function handler(req, res, session) {
       return res.status(500).json({ success: false, error: "Internal server error" });
     }
   }
-
 }
 
-export default withRoleGuard(handler);
+const guardedPost = withRoleGuard(protectedPostHandler);
+
+export default async function handler(req, res) {
+  if (req.method === "GET") return publicGetHandler(req, res);
+  if (req.method === "POST") return guardedPost(req, res);
+  return res.status(405).json({ success: false, error: "Method not allowed" });
+}

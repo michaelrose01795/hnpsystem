@@ -37,6 +37,7 @@ import { ConfirmationProvider } from "@/context/ConfirmationContext";
 import { DevLayoutOverlayProvider } from "@/context/DevLayoutOverlayContext";
 import { DevLayoutRegistryProvider } from "@/context/DevLayoutRegistryContext";
 import GlobalNotesWidget from "@/components/GlobalNotesWidget";
+import CookieBanner from "@/components/CookieBanner";
 import GlobalDraftPersistence from "@/components/App/GlobalDraftPersistence";
 import GlobalTableShells from "@/components/App/GlobalTableShells";
 import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverlayRoot";
@@ -175,6 +176,7 @@ function AppWrapper({ Component, pageProps }) {
       <GlobalTableShells />
       {getLayout(pageElement)}
       {!hideNotesWidget && <GlobalNotesWidget />}
+      <CookieBanner />
       <DevLayoutOverlayRoot />
     </>
   ); // render the requested page inside its (persistent) layout shell

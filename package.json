@@ -18,6 +18,8 @@
     "seed:parts-search-presets": "node tools/scripts/seed-parts-search-presets.js",
     "seed:job-request-presets": "node tools/scripts/seed-job-request-presets.js",
     "db:seed": "node tools/scripts/db-seed.js",
+    "retention:dry-run": "node tools/scripts/run-retention.js",
+    "retention:apply": "node tools/scripts/run-retention.js --apply",
     "test": "npx playwright test",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
@@ -30,6 +32,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.81.1",
     "autoprefixer": "^10.4.21",
+    "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
