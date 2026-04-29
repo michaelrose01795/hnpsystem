@@ -1,5 +1,15 @@
 update the "# Role Page Access Draft" page with the edits
 
+fix "❌ archive job error: Error: update or delete on table "job_requests" violates foreign key constraint "job_request_detections_request_id_fkey" on table "job_request_detections"
+    at handler (src\pages\api\jobcards\archive\create.js:489:33)
+  487 |       .delete()
+  488 |       .eq("job_id", jobId);
+> 489 |     if (jobRequestsError) throw new Error(jobRequestsError.message);
+      |                                 ^
+  490 |
+  491 |     // Parts: items, allocations, requests, goods-in
+  492 |     const { error: partsJobItemsError } = await supabaseService"
+
 
 Presentation!!!!!!!!!
 /create card doesnt use the create ui for Presentation 
