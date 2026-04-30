@@ -50,10 +50,10 @@ export default function WorkshopDashboardUi(props) {
 
           <Section sectionKey="workshop-dashboard-checkin-trends" parentKey="workshop-dashboard-analytics-row" title="Check-in trends" subtitle="Last 7 days" style={{
           height: "100%",
-          minHeight: "250px",
-          border: "1px solid rgba(var(--accent-purple-rgb), 0.32)",
-          background: "rgba(var(--accent-purple-rgb), 0.08)"
-        }}>
+	          minHeight: "250px",
+	          border: "1px solid rgba(var(--accent-purple-rgb), 0.32)",
+	          background: "var(--theme)"
+	        }}>
             <TrendBlock sectionKey="workshop-dashboard-checkin-trends-chart" parentKey="workshop-dashboard-checkin-trends" title="Daily check-ins" data={dashboardData.trends.checkInsLast7} />
           </Section>
         </DevLayoutSection>
@@ -72,7 +72,7 @@ export default function WorkshopDashboardUi(props) {
             }}>No outstanding jobs in the queue.</p> : dashboardData.queue.map(job => <div key={job.job_number} style={{
               padding: "12px",
               borderRadius: "var(--radius-sm)",
-              background: "rgba(var(--accent-purple-rgb), 0.08)",
+	              background: "var(--theme)",
               border: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
               display: "flex",
               flexDirection: "column",
@@ -81,7 +81,7 @@ export default function WorkshopDashboardUi(props) {
             }}>
                       <div>
                         <strong style={{
-                  color: "var(--primary-dark)",
+                  color: "var(--primary-selected)",
                   fontSize: "0.95rem"
                 }}>
                           {job.job_number || "-"} - {job.vehicle_reg || "TBC"}
@@ -120,7 +120,7 @@ export default function WorkshopDashboardUi(props) {
               gap: "8px",
               background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--border)",
+              border: "1px solid var(--primary-border)",
               padding: "12px",
               minHeight: "84px"
             }}>

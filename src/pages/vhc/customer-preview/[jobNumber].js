@@ -36,7 +36,7 @@ const SEVERITY_THEME = {
     text: "var(--success)"
   },
   grey: {
-    background: "var(--info-surface)",
+    background: "var(--theme)",
     border: "none",
     text: "var(--info)"
   },
@@ -961,7 +961,7 @@ export default function CustomerPreviewPage() {
       <tr
         key={item.id}
         style={{
-          borderBottom: "1px solid var(--info-surface)",
+          borderBottom: "1px solid var(--theme)",
           background: getRowBackground(),
           transition: "background 0.2s ease"
         }}>
@@ -989,7 +989,7 @@ export default function CustomerPreviewPage() {
               <div style={{
               width: "80px",
               height: "8px",
-              background: "var(--info-surface)",
+              background: "var(--theme)",
               borderRadius: "var(--radius-xs)",
               overflow: "hidden"
             }}>
@@ -1103,7 +1103,7 @@ export default function CustomerPreviewPage() {
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             fontSize: "12px",
-            borderBottom: "1px solid var(--info-surface)"
+            borderBottom: "1px solid var(--theme)"
           }}>
           
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1134,7 +1134,7 @@ export default function CustomerPreviewPage() {
               <thead>
                 <tr
                 style={{
-                  background: "var(--info-surface)",
+                  background: "var(--theme)",
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
                   color: "var(--info)",
@@ -1236,7 +1236,7 @@ export default function CustomerPreviewPage() {
         padding: "18px",
         border: "none",
         borderRadius: "var(--radius-sm)",
-        background: "var(--info-surface)",
+        background: "var(--theme)",
         color: "var(--info)",
         fontSize: "13px"
       }}>
@@ -1261,7 +1261,7 @@ export default function CustomerPreviewPage() {
           overflow: "hidden"
         }}>
         
-              <div style={{ position: "relative", paddingTop: "75%", background: "var(--info-surface)" }}>
+              <div style={{ position: "relative", paddingTop: "75%", background: "var(--theme)" }}>
                 <img
             src={file.file_url}
             alt={file.file_name || "Photo"}
@@ -1302,7 +1302,7 @@ export default function CustomerPreviewPage() {
         padding: "18px",
         border: "none",
         borderRadius: "var(--radius-sm)",
-        background: "var(--info-surface)",
+        background: "var(--theme)",
         color: "var(--info)",
         fontSize: "13px"
       }}>
@@ -1360,7 +1360,7 @@ export default function CustomerPreviewPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--surface-light)", padding: "16px 12px" }}>
+      <div style={{ minHeight: "100vh", background: "var(--surface)", padding: "16px 12px" }}>
         <SkeletonKeyframes />
         <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
           <SkeletonBlock width="100%" height="64px" />
@@ -1430,7 +1430,7 @@ export default function CustomerPreviewPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "var(--surface-light)",
+          background: "var(--surface)",
           padding: 16
         }}
       >

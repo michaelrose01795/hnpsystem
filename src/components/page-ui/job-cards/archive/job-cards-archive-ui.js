@@ -126,9 +126,9 @@ export default function ArchivedJobsPageUi(props) {
           </DevLayoutSection>}
 
         <DevLayoutSection as="section" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell backgroundToken="surface" style={{
-      background: "var(--accentSurfaceSubtle)",
+      background: "var(--theme)",
       borderRadius: "var(--radius-sm)",
-      border: "1px solid var(--accentBorder)"
+      border: "1px solid var(--primary-border)"
     }}>
           <DevLayoutSection sectionKey="job-cards-archive-results-table-scroll" parentKey="job-cards-archive-results-panel" sectionType="content-card" backgroundToken="accent-surface" style={{
         overflowX: "auto"
@@ -138,7 +138,7 @@ export default function ArchivedJobsPageUi(props) {
           borderCollapse: "collapse"
         }}>
               <thead data-dev-section="1" data-dev-section-key="job-cards-archive-results-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="job-cards-archive-results-table" style={{
-            background: "var(--accentSurface)",
+            background: "var(--secondary)",
             color: "var(--surfaceText)"
           }}>
                 <tr style={{
@@ -170,12 +170,12 @@ export default function ArchivedJobsPageUi(props) {
                 {filteredResults.map(job => {
               const badge = STATUS_BADGES[job.status] || defaultStatusBadge;
               return <tr key={job.id} data-dev-section-key={`job-cards-archive-results-row-${job.id}`} style={{
-                borderTop: "1px solid var(--accentBorder)",
+                borderTop: "1px solid var(--primary-border)",
                 background: "var(--surface)",
                 transition: "background-color 0.18s ease, box-shadow 0.18s ease"
               }} onMouseEnter={event => {
-                event.currentTarget.style.backgroundColor = "var(--accentSurfaceSubtle)";
-                event.currentTarget.style.boxShadow = "inset 4px 0 0 var(--accentMain)";
+                event.currentTarget.style.backgroundColor = "var(--theme)";
+                event.currentTarget.style.boxShadow = "inset 4px 0 0 var(--primary)";
               }} onMouseLeave={event => {
                 event.currentTarget.style.backgroundColor = "var(--surface)";
                 event.currentTarget.style.boxShadow = "none";

@@ -128,14 +128,14 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
       parentKey="accounts-invoices-table"
       backgroundToken={accentSurface ? "accent-surface" : "surface"}
       className="app-section-card"
-      style={{ display: "flex", flexDirection: "column", gap: "16px", ...(accentSurface ? { background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" } : {}) }}
+      style={{ display: "flex", flexDirection: "column", gap: "16px", ...(accentSurface ? { background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" } : {}) }}
     >
       <DevLayoutSection sectionKey="accounts-invoices-table-header" sectionType="content-card" parentKey="accounts-invoices-table-card">
         <header style={{ display: "grid", gridTemplateColumns: "auto minmax(280px, 1fr) auto", alignItems: "center", gap: "12px" }}>
           <DevLayoutSection sectionKey="accounts-invoices-table-title" sectionType="content-card" parentKey="accounts-invoices-table-header">
             <div>
-              <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1.1rem" }}>Invoices</h3>
-              <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", fontSize: "0.92rem" }}>{totalRecords} records</p>
+              <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1.1rem" }}>Invoices</h3>
+              <p style={{ margin: "6px 0 0", color: "var(--text-1)", fontSize: "0.92rem" }}>{totalRecords} records</p>
             </div>
           </DevLayoutSection>
           <DevLayoutSection sectionKey="accounts-invoices-table-filters" sectionType="filter-row" parentKey="accounts-invoices-table-header">
@@ -175,7 +175,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
       <DevLayoutSection sectionKey="accounts-invoices-table-scroll" sectionType="content-card" parentKey="accounts-invoices-table-card">
         <div style={{ overflowX: "auto", overflowY: filteredInvoices.length > 10 ? "auto" : "visible", maxHeight: filteredInvoices.length > 10 ? "640px" : "none" }}>
           <table data-dev-section-key="accounts-invoices-data-table" data-dev-section-type="data-table" data-dev-section-parent="accounts-invoices-table-card" style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead data-dev-section-key="accounts-invoices-data-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="accounts-invoices-data-table" style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-primary)" }}>
+            <thead data-dev-section-key="accounts-invoices-data-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="accounts-invoices-data-table" style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-1)" }}>
             <tr>
               <th style={{ textAlign: "left", padding: "12px" }}>Invoice</th>
               <th style={{ textAlign: "left", padding: "12px" }}>Customer</th>
@@ -189,12 +189,12 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
             <tbody data-dev-section-key="accounts-invoices-data-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="accounts-invoices-data-table">
             {loading && (
               <tr>
-                <td colSpan={7} style={{ padding: "24px", textAlign: "center", color: "var(--text-secondary)" }}>Loading invoices…</td>
+                <td colSpan={7} style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>Loading invoices…</td>
               </tr>
             )}
             {!loading && filteredInvoices.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "var(--text-secondary)" }}>No invoices found.</td>
+                <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "var(--text-1)" }}>No invoices found.</td>
               </tr>
             )}
             {!loading && filteredInvoices.map((invoice) => {
@@ -222,7 +222,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                   <td style={{ padding: "12px" }}>{invoice.job_number || "—"}</td>
                   <td style={{ padding: "12px", fontWeight: 600 }}>{currencyFormatter.format(getInvoiceAmountValue(invoice))}</td>
                   <td style={{ padding: "12px" }}>
-                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: "rgba(var(--primary-rgb), 0.12)", color: "var(--text-primary)", fontWeight: 600 }}>{invoice.payment_status || invoice.status || "Draft"}</span>
+                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: "rgba(var(--primary-rgb), 0.12)", color: "var(--text-1)", fontWeight: 600 }}>{invoice.payment_status || invoice.status || "Draft"}</span>
                   </td>
                   <td style={{ padding: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
                     {getDueDateDisplayValue(invoice)}

@@ -16,29 +16,29 @@ const renderMessageLines = (message) => {
 // Falls back to "info" so unknown tones still render a valid tile.
 const TONE_STYLES = {
   info: {
-    background: "var(--info-surface)",
+    background: "var(--theme)",
     label: "var(--info)",
-    value: "var(--text-primary)",
+    value: "var(--text-1)",
   },
   success: {
     background: "var(--success-surface)",
     label: "var(--success)",
-    value: "var(--text-primary)",
+    value: "var(--text-1)",
   },
   warning: {
     background: "var(--warning-surface)",
     label: "var(--warning-dark)",
-    value: "var(--text-primary)",
+    value: "var(--text-1)",
   },
   accent: {
-    background: "var(--accentSurfaceSubtle)",
+    background: "var(--theme)",
     label: "var(--accentText)",
-    value: "var(--text-primary)",
+    value: "var(--text-1)",
   },
   neutral: {
     background: "var(--surface)",
-    label: "var(--text-secondary)",
-    value: "var(--text-primary)",
+    label: "var(--text-1)",
+    value: "var(--text-1)",
   },
 };
 
@@ -113,7 +113,7 @@ export default function ConfirmationDialog({
                 key={`${line}-${index}`}
                 style={{
                   margin: index === 0 ? "0" : "6px 0 0",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   lineHeight: 1.35,
                   // First line is the headline question, the rest are supporting copy.
                   fontSize: index === 0 ? "1.15rem" : "0.95rem",
@@ -130,7 +130,7 @@ export default function ConfirmationDialog({
           <p
             style={{
               margin: 0,
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               fontSize: "0.9rem",
               lineHeight: 1.5,
             }}
@@ -215,9 +215,9 @@ export default function ConfirmationDialog({
           style={{
             padding: "var(--control-padding)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--border)",
+            border: "1px solid var(--primary-border)",
             backgroundColor: "var(--surface)",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             cursor: "pointer",
             fontWeight: 600,
             minWidth: "96px",
@@ -233,7 +233,7 @@ export default function ConfirmationDialog({
             borderRadius: "var(--radius-sm)",
             border: "1px solid var(--primary)",
             backgroundColor: "var(--primary)",
-            color: "var(--text-inverse)",
+            color: "var(--text-2)",
             cursor: "pointer",
             fontWeight: 600,
             minWidth: "96px",

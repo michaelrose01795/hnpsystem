@@ -27,7 +27,7 @@ function ListRowsSkeleton({ rows = 3 }) {
       <div
         key={i}
         style={{
-          border: "1px solid var(--border)",
+          border: "1px solid var(--primary-border)",
           borderRadius: "var(--radius-sm)",
           padding: "var(--space-3)",
           display: "flex",
@@ -64,7 +64,7 @@ function LeaveContent() {
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <SkeletonKeyframes />
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)" }}>
-        <p style={{ color: "var(--text-secondary)", margin: 0 }}>
+        <p style={{ color: "var(--text-1)", margin: 0 }}>
           Approve leave requests, calculate balances, and track special leave programmes.
         </p>
         <Button variant="primary">+ New Leave Request</Button>
@@ -144,7 +144,7 @@ function LeaveContent() {
             <div
               key={absence.id}
               style={{
-                border: "1px solid var(--border)",
+                border: "1px solid var(--primary-border)",
                 borderRadius: "var(--radius-sm)",
                 padding: "var(--space-3)",
                 display: "flex",
@@ -152,10 +152,10 @@ function LeaveContent() {
                 gap: "var(--space-xs)"
               }}>
               
-                  <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                  <span style={{ fontWeight: 600, color: "var(--text-1)" }}>
                     {absence.employee} • {absence.department}
                   </span>
-                  <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                  <span style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
                     {absence.type} from {new Date(absence.startDate).toLocaleDateString()} to{" "}
                     {new Date(absence.endDate).toLocaleDateString()}
                   </span>
@@ -217,13 +217,13 @@ function LeaveContent() {
               gap: "var(--space-sm)"
             }}>
             
-            <li style={{ color: "var(--text-primary)" }}>
+            <li style={{ color: "var(--text-1)" }}>
               Enable per-department calendar feeds (Google / Outlook) for leave visibility.
             </li>
-            <li style={{ color: "var(--text-primary)" }}>
+            <li style={{ color: "var(--text-1)" }}>
               Configure auto-notifications for approvals, rejections, and upcoming return dates.
             </li>
-            <li style={{ color: "var(--text-primary)" }}>
+            <li style={{ color: "var(--text-1)" }}>
               Sync sickness and unpaid leave with payroll deductions automatically.
             </li>
           </ul>

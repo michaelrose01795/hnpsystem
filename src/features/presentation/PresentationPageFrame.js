@@ -8,7 +8,7 @@ function FallbackPage({ slide }) {
         <div className="app-page-stack">
           <div className="app-section-card">
             <h1 style={{ marginTop: 0 }}>{slide?.title || "Presentation page"}</h1>
-            <p style={{ color: "var(--text-secondary)" }}>
+            <p style={{ color: "var(--text-1)" }}>
               No Presentation mock is registered for <code>{slide?.id}</code>.
               Add one in <code>src/features/presentation/mocks/index.js</code>.
             </p>

@@ -146,35 +146,35 @@ const RequestBlock = ({ request, linkedParts, isEditable = false, onOpenEditor =
     <section
       className={styles.requestBlock}
       onClick={isEditable ? () => onOpenEditor?.(request) : undefined}
-      style={isEditable ? { cursor: "pointer", borderColor: "var(--primary-dark)" } : undefined}
+      style={isEditable ? { cursor: "pointer", borderColor: "var(--primary-selected)" } : undefined}
       title={isEditable ? "Click to edit proforma row overrides" : undefined}
     >
       <div className={styles.requestHeader}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h3 style={{ margin: 0 }}>{`${request.request_label || `Request ${request.request_number}`}: ${request.title}`}</h3>
-          {request.summary && <p style={{ margin: "4px 0 0", color: "var(--text-secondary)" }}>{request.summary}</p>}
+          {request.summary && <p style={{ margin: "4px 0 0", color: "var(--text-1)" }}>{request.summary}</p>}
           {isEditable && (
-            <p style={{ margin: "6px 0 0", color: "var(--primary-dark)", fontSize: "0.8rem", fontWeight: 600 }}>
+            <p style={{ margin: "6px 0 0", color: "var(--primary-selected)", fontSize: "0.8rem", fontWeight: 600 }}>
               Proforma override enabled
             </p>
           )}
         </div>
         <div style={{ display: "flex", gap: "20px", textAlign: "right", flexShrink: 0 }}>
           <div>
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-secondary)" }}>Parts Total</p>
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-1)" }}>Parts Total</p>
             <strong>{formatCurrency(partsNet)}</strong>
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-secondary)" }}>Labour Total</p>
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-1)" }}>Labour Total</p>
             <strong>{formatCurrency(request.labour?.net || 0)}</strong>
-            <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--text-secondary)" }}>{request.labour?.hours || 0}h</p>
+            <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--text-1)" }}>{request.labour?.hours || 0}h</p>
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-secondary)" }}>Tax @20%</p>
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-1)" }}>Tax @20%</p>
             <strong>{formatCurrency(request.totals?.request_total_vat || 0)}</strong>
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-secondary)" }}>Total inc. Tax</p>
+            <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-1)" }}>Total inc. Tax</p>
             <strong style={{ fontSize: "1.05rem" }}>{formatCurrency(request.totals?.request_total_gross || 0)}</strong>
           </div>
         </div>
@@ -245,14 +245,14 @@ const PaymentBlock = ({ payment }) => {
       <div className={styles.paymentGrid}>
         {entries.map((entry) => (
           <div key={entry.label}>
-            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-secondary)", textTransform: "uppercase" }}>
+            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-1)", textTransform: "uppercase" }}>
               {entry.label}
             </p>
             <strong>{entry.value}</strong>
           </div>
         ))}
       </div>
-      <p style={{ marginTop: "12px", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+      <p style={{ marginTop: "12px", fontSize: "0.9rem", color: "var(--text-1)" }}>
         {payment.payment_reference_hint || "Use invoice number as reference"}
       </p>
     </div>
@@ -705,8 +705,8 @@ export default function InvoiceDetail({
                 onClick={onEmail}
                 disabled={emailStatus === "Sending..."}
                 style={{
-                  background: customerEmail ? "var(--primary-dark)" : "var(--grey-accent-light)",
-                  borderColor: customerEmail ? "var(--primary-dark)" : "var(--grey-accent-light)",
+                  background: customerEmail ? "var(--primary-selected)" : "var(--grey-accent-light)",
+                  borderColor: customerEmail ? "var(--primary-selected)" : "var(--grey-accent-light)",
                   cursor: customerEmail ? "pointer" : "not-allowed",
                   opacity: emailStatus === "Sending..." ? 0.7 : 1,
                 }}
@@ -887,7 +887,7 @@ export default function InvoiceDetail({
               <h3 style={{ margin: 0 }}>{editingRequest.request_label || `Request ${editingRequest.request_number}`}</h3>
               <div style={{ display: "grid", gap: "8px" }}>
                 <label style={{ display: "grid", gap: "4px" }}>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Description Override</span>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Description Override</span>
                   <textarea
                     rows={2}
                     value={overrideForm.titleOverride}
@@ -898,7 +898,7 @@ export default function InvoiceDetail({
                   />
                 </label>
                 <label style={{ display: "grid", gap: "4px" }}>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Billing To</span>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Billing To</span>
                   <DropdownField
                     key={`billing-${editingRequest?.proforma_key || editingRequest?.request_number || "row"}-${billingDropdownSeed}`}
                     options={BILLING_OPTIONS.map((option) => ({ value: option, label: option }))}
@@ -928,7 +928,7 @@ export default function InvoiceDetail({
                   ["Total", "totalOverride"],
                 ].map(([label, key]) => (
                   <label key={key} style={{ display: "grid", gap: "4px" }}>
-                    <span style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>{label}</span>
+                    <span style={{ fontSize: "0.76rem", color: "var(--text-1)" }}>{label}</span>
                     <input
                       type="text"
                       inputMode="decimal"
@@ -955,7 +955,7 @@ export default function InvoiceDetail({
                 ))}
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-                <button type="button" onClick={handleCloseProformaEditor} className={styles.printButton} style={{ background: "var(--surface-light)", color: "var(--text-primary)", borderColor: "var(--surface-light)" }}>
+                <button type="button" onClick={handleCloseProformaEditor} className={styles.printButton} style={{ background: "var(--surface)", color: "var(--text-1)", borderColor: "var(--surface)" }}>
                   Cancel
                 </button>
                 <button type="button" onClick={handleSaveProformaOverride} className={styles.printButton} disabled={overrideSaving}>
@@ -973,7 +973,7 @@ export default function InvoiceDetail({
         <section className={styles.paymentDetails}>
           <h3>Payment Activity</h3>
           {payments.length === 0 ? (
-            <p style={{ margin: 0, color: "var(--text-secondary)" }}>
+            <p style={{ margin: 0, color: "var(--text-1)" }}>
               No payment has been captured yet. Use Payment to run the dealership settlement flow.
             </p>
           ) : (

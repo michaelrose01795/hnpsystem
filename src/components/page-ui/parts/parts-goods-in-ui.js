@@ -103,7 +103,7 @@ export default function GoodsInPageUi(props) {
       return <>
       <style jsx>{`
         .bin-suggestions {
-          border: 1px solid var(--surface-light);
+          border: 1px solid var(--surface);
           background: rgba(var(--surface-rgb), 0.98);
           box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
         }
@@ -120,7 +120,7 @@ export default function GoodsInPageUi(props) {
           box-shadow: 0 30px 50px rgba(0, 0, 0, 0.55);
         }
         [data-theme="dark"] .bin-suggestion-button {
-          color: var(--text-primary);
+          color: var(--text-1);
         }
         .add-part-section {
           padding: 20px 22px;
@@ -134,8 +134,8 @@ export default function GoodsInPageUi(props) {
           flex-wrap: wrap;
         }
         .add-part-fields-shell {
-          border: 1px solid var(--surface-light);
-          background: var(--layer-section-level-2);
+          border: 1px solid var(--surface);
+          background: var(--surface);
           border-radius: var(--control-radius);
           padding: 12px;
           overflow: visible;
@@ -170,8 +170,8 @@ export default function GoodsInPageUi(props) {
           gap: 16px;
         }
         .invoice-details-shell {
-          border: 1px solid var(--surface-light);
-          background: var(--layer-section-level-2);
+          border: 1px solid var(--surface);
+          background: var(--surface);
           border-radius: var(--control-radius);
           padding: 12px;
           display: flex;
@@ -211,7 +211,7 @@ export default function GoodsInPageUi(props) {
         {toast && <div style={{
       padding: "12px 16px",
       borderRadius: "var(--radius-sm)",
-      background: toast.type === "error" ? "var(--danger-surface)" : toast.type === "success" ? "var(--success-surface)" : "var(--info-surface)",
+      background: toast.type === "error" ? "var(--danger-surface)" : toast.type === "success" ? "var(--success-surface)" : "var(--theme)",
       color: toast.type === "error" ? "var(--danger)" : toast.type === "success" ? "var(--success-dark)" : "var(--info)"
     }}>
             {toast.message}
@@ -251,7 +251,7 @@ export default function GoodsInPageUi(props) {
                 <label style={labelStyle}>Supplier</label>
                 <input style={inputStyle} value={invoiceForm.supplierName} onChange={event => handleInvoiceChange("supplierName", event.target.value)} placeholder="Supplier name" />
                 {invoiceForm.supplierAccountNumber && <small style={{
-              color: "var(--text-secondary)"
+              color: "var(--text-1)"
             }}>
                     Account #{invoiceForm.supplierAccountNumber}
                   </small>}
@@ -306,12 +306,12 @@ export default function GoodsInPageUi(props) {
               </div>
               <div>
                 <label style={labelStyle}>Notes</label>
-                <textarea style={notesTextareaStyle} value={invoiceForm.notes} onChange={event => handleInvoiceChange("notes", event.target.value)} placeholder="Internal notes" />
+                <textarea className="app-notes-input" style={notesTextareaStyle} value={invoiceForm.notes} onChange={event => handleInvoiceChange("notes", event.target.value)} placeholder="Internal notes" />
               </div>
             </div>
             {invoiceScanPayload && <div style={{
           fontSize: "0.85rem",
-          color: "var(--text-secondary)"
+          color: "var(--text-1)"
         }}>
                 Last scan: {invoiceScanPayload.fileName} ·
                 {invoiceScanPayload.extracted.invoiceNumber && ` Invoice ${invoiceScanPayload.extracted.invoiceNumber}`}
@@ -389,7 +389,7 @@ export default function GoodsInPageUi(props) {
                     {filteredBinLocations.length === 0 ? <div style={{
                 padding: "10px 12px",
                 fontSize: "0.9rem",
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>
                         No matches
                       </div> : filteredBinLocations.map(location => <button key={location} type="button" className="bin-suggestion-button" style={{
@@ -400,7 +400,7 @@ export default function GoodsInPageUi(props) {
                 background: "transparent",
                 cursor: "pointer",
                 fontSize: "0.9rem",
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }} onClick={() => {
                 handlePartChange("binLocation", location);
                 setShowBinSuggestions(false);
@@ -475,7 +475,7 @@ export default function GoodsInPageUi(props) {
                 {activeTab === "dealer" && <div style={fieldGridStyle}>
                     <input style={inputStyle} placeholder="Dealer code" value={partForm.dealerDetails.dealerCode} onChange={event => handleNestedPartChange("dealerDetails", "dealerCode", event.target.value)} />
                     <input style={inputStyle} placeholder="Tier" value={partForm.dealerDetails.tier} onChange={event => handleNestedPartChange("dealerDetails", "tier", event.target.value)} />
-                    <textarea style={textareaStyle} placeholder="Dealer notes" value={partForm.dealerDetails.notes} onChange={event => handleNestedPartChange("dealerDetails", "notes", event.target.value)} />
+                    <textarea className="app-notes-input" placeholder="Dealer notes" value={partForm.dealerDetails.notes} onChange={event => handleNestedPartChange("dealerDetails", "notes", event.target.value)} />
                   </div>}
                 {activeTab === "stock" && <div style={fieldGridStyle}>
                     <input style={inputStyle} placeholder="Reorder point" value={partForm.stockDetails.reorderPoint} onChange={event => handleNestedPartChange("stockDetails", "reorderPoint", event.target.value)} />
@@ -534,7 +534,7 @@ export default function GoodsInPageUi(props) {
                 {activeTab === "audi" && <div style={fieldGridStyle}>
                     <input style={inputStyle} placeholder="Programme" value={partForm.audiMetadata.programme} onChange={event => handleNestedPartChange("audiMetadata", "programme", event.target.value)} />
                     <input style={inputStyle} placeholder="Reference" value={partForm.audiMetadata.reference} onChange={event => handleNestedPartChange("audiMetadata", "reference", event.target.value)} />
-                    <textarea style={textareaStyle} placeholder="Audi notes" value={partForm.audiMetadata.notes} onChange={event => handleNestedPartChange("audiMetadata", "notes", event.target.value)} />
+                    <textarea className="app-notes-input" placeholder="Audi notes" value={partForm.audiMetadata.notes} onChange={event => handleNestedPartChange("audiMetadata", "notes", event.target.value)} />
                   </div>}
                 {activeTab === "additional" && <div style={fieldGridStyle}>
                     <input style={inputStyle} placeholder="Warranty" value={partForm.additionalFields.warranty} onChange={event => handleNestedPartChange("additionalFields", "warranty", event.target.value)} />
@@ -616,13 +616,13 @@ export default function GoodsInPageUi(props) {
               display: "flex",
               gap: "16px",
               fontSize: "0.9rem",
-              color: "var(--text-secondary)"
+              color: "var(--text-1)"
             }}>
                     <span>Total Cost: <strong style={{
-                  color: "var(--text-primary)"
+                  color: "var(--text-1)"
                 }}>{currencyFormatter.format(totalCost)}</strong></span>
                     <span>Total Retail: <strong style={{
-                  color: "var(--text-primary)"
+                  color: "var(--text-1)"
                 }}>{currencyFormatter.format(totalRetail)}</strong></span>
                   </div>;
           })()}
@@ -642,14 +642,14 @@ export default function GoodsInPageUi(props) {
           {goodsInItems.length === 0 ? <div style={{
         padding: "24px",
         textAlign: "center",
-        color: "var(--text-secondary)"
+        color: "var(--text-1)"
       }}>
               No lines yet. Add a part to populate this invoice.
             </div> : <ScrollArea maxHeight="420px" style={{
         borderRadius: "var(--radius-lg)",
         border: "none",
         overflowX: "hidden",
-        background: "var(--layer-section-level-2)"
+        background: "var(--surface)"
       }}>
               <table style={invoiceTableStyles}>
                 <thead>
@@ -677,7 +677,7 @@ export default function GoodsInPageUi(props) {
                 }}>{item.part_number}</td>
                         <td style={{
                   ...invoiceCellStyle,
-                  color: "var(--text-secondary)"
+                  color: "var(--text-1)"
                 }}>{item.description}</td>
                         <td style={invoiceCellStyle}>
                           {item.retail_price ? currencyFormatter.format(item.retail_price) : "--"}

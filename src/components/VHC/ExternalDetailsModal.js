@@ -316,7 +316,7 @@ export default function ExternalDetailsModal({
               alignItems: "center",
               gap: "16px",
               padding: "18px 20px",
-              background: "var(--page-card-bg-alt, var(--surface-light))",
+              background: "var(--theme, var(--surface))",
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
                 <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>

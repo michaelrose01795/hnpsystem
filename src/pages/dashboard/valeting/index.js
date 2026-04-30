@@ -10,7 +10,7 @@ const MetricCard = ({ label, value, helper }) => <div
   className="app-section-card" // surface background from globals.css
   style={{ minWidth: 0 }} // let grid control width so all cards match size
 >
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-dark)" }}>{label}</p> {/* metric label */}
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p> {/* metric label */}
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p> {/* metric value */}
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>} {/* helper text */}
   </div>;
@@ -34,7 +34,7 @@ const TrendBlock = ({ data }) => {
         }}>
         
           <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span> {/* day label */}
-          <div style={{ flex: 1, height: 8, background: "var(--surface-light)", borderRadius: 4 }}> {/* bar track */}
+          <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}> {/* bar track */}
             <div
             style={{
               width: `${Math.round(point.count / max * 100)}%`, // proportional fill
@@ -44,7 +44,7 @@ const TrendBlock = ({ data }) => {
             }} />
           
           </div>
-          <strong style={{ color: "var(--primary-dark)" }}>{point.count}</strong> {/* numeric count */}
+          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong> {/* numeric count */}
         </div>
       )}
     </div>);
@@ -77,9 +77,9 @@ const QueueBoard = ({ queue }) =>
         borderBottom: "1px solid rgba(var(--primary-rgb), 0.14)" // divider line
       }}>
       
-          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-dark)" }}>Vehicle</span> {/* column header */}
-          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-dark)" }}>Status</span> {/* column header */}
-          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-dark)" }}>Queue</span> {/* column header */}
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Vehicle</span> {/* column header */}
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Status</span> {/* column header */}
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Queue</span> {/* column header */}
         </div>
         <div
       style={{
@@ -108,7 +108,7 @@ const QueueBoard = ({ queue }) =>
         }}>
         
               <div style={{ minWidth: 0 }}> {/* vehicle info cell */}
-                <strong style={{ color: "var(--primary-dark)" }}>{job.job_number || "—"}</strong> {/* job number */}
+                <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong> {/* job number */}
                 <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--primary)" }}>{job.vehicle_reg || "Plate"}</p> {/* registration */}
               </div>
               <span style={{ color: "var(--info-dark)", fontSize: "0.9rem" }}>{job.status || "Checked in"}</span> {/* status text */}
@@ -118,7 +118,7 @@ const QueueBoard = ({ queue }) =>
             padding: "6px 10px", // pill padding
             borderRadius: "999px", // pill shape
             background: "rgba(var(--primary-rgb), 0.1)", // soft accent fill
-            color: "var(--primary-dark)", // text colour
+            color: "var(--primary-selected)", // text colour
             fontSize: "0.82rem", // small text
             fontWeight: 600, // semi-bold
             border: "1px solid rgba(var(--primary-rgb), 0.14)" // subtle border

@@ -78,13 +78,13 @@ export default function AccountTable({
   };
 
   return (
-    <DevLayoutSection as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+    <DevLayoutSection as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-primary)" }}>Customer Accounts</h2>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-1)" }}>Customer Accounts</h2>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <span style={{ color: "var(--text-secondary)", fontSize: "0.92rem" }}>
+          <span style={{ color: "var(--text-1)", fontSize: "0.92rem" }}>
             {pagination.total || 0} records
           </span>
           {canExport && (
@@ -101,7 +101,7 @@ export default function AccountTable({
       </div>
       <div style={{ overflowX: "auto", overflowY: accounts.length > 10 ? "auto" : "visible", maxHeight: accounts.length > 10 ? "640px" : "none" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-primary)" }}>
+          <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-1)" }}>
           <tr>
             {columnDefinitions.map((column) => (
               <th
@@ -139,7 +139,7 @@ export default function AccountTable({
                   style={{
                     padding: "28px",
                     textAlign: "center",
-                    color: "var(--text-secondary)",
+                    color: "var(--text-1)",
                   }}
                 >
                   Loading accounts…
@@ -153,7 +153,7 @@ export default function AccountTable({
                   style={{
                     padding: "40px",
                     textAlign: "center",
-                    color: "var(--text-secondary)",
+                    color: "var(--text-1)",
                   }}
                 >
                   No accounts match your filters.

@@ -5,7 +5,7 @@ const toneStyles = {
   success: { bg: "var(--success-surface)", text: "var(--success-strong)" },
   error:   { bg: "var(--danger-surface)",  text: "var(--danger-text)" },
   warning: { bg: "var(--warning-surface)", text: "var(--warning-text)" },
-  info:    { bg: "var(--accent-surface)",  text: "var(--accent-strong)" },
+  info:    { bg: "var(--theme)",  text: "var(--accent-strong)" },
 };
 
 const getTone = (type) => toneStyles[type] || toneStyles.info;

@@ -1,10 +1,10 @@
 /* // file location: src/features/invoices/styles/invoice.module.css */
 .invoiceShell { /* // outer container with padding and print friendly background */
   background: var(--surface); /* // match app surface color */
-  border: 1px solid var(--surface-light); /* // subtle border for print feel */
+  border: 1px solid var(--surface); /* // subtle border for print feel */
   border-radius: var(--radius-md); /* // soften corners */
   padding: 24px; /* // internal spacing */
-  color: var(--text-primary); /* // ensure readable text */
+  color: var(--text-1); /* // ensure readable text */
   display: flex; /* // use flex for vertical layout */
   flex-direction: column; /* // stack children vertically */
   gap: 20px; /* // consistent spacing between sections */
@@ -15,7 +15,7 @@
   justify-content: space-between; /* // separate company and print button */
   flex-wrap: wrap; /* // allow wrap for mobile */
   gap: 16px; /* // spacing between columns */
-  border-bottom: 2px solid var(--surface-light); /* // emphasize top section */
+  border-bottom: 2px solid var(--surface); /* // emphasize top section */
   padding-bottom: 16px; /* // spacing below content */
 } /* // end companyHeader */
 
@@ -39,7 +39,7 @@
   padding: 10px 18px; /* // comfortable touch target */
   border-radius: var(--radius-pill); /* // pill shape */
   border: none; /* // borderless button */
-  background: var(--primary-dark); /* // accent background */
+  background: var(--primary-selected); /* // accent background */
   color: #fff; /* // white text */
   font-weight: 600; /* // bold text */
   cursor: pointer; /* // show clickable */
@@ -49,7 +49,7 @@
   padding: 10px 18px;
   border-radius: var(--radius-pill);
   border: none;
-  background: var(--primary-dark);
+  background: var(--primary-selected);
   color: #fff;
   font-weight: 600;
   cursor: pointer;
@@ -58,9 +58,9 @@
 .secondaryActionButton {
   padding: 10px 18px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--surface-light);
+  border: 1px solid var(--surface);
   background: var(--surface);
-  color: var(--text-primary);
+  color: var(--text-1);
   font-weight: 600;
   cursor: pointer;
 }
@@ -72,7 +72,7 @@
 } /* // end headerGrid */
 
 .headerBox { /* // shared header card */
-  border: 1px solid var(--surface-light); /* // subtle border */
+  border: 1px solid var(--surface); /* // subtle border */
   border-radius: var(--radius-sm); /* // soft corners */
   padding: 16px; /* // internal spacing */
   background: var(--surface-secondary, var(--surface)); /* // support dark mode tokens */
@@ -83,7 +83,7 @@
   font-size: 1rem; /* // uniform heading size */
   text-transform: uppercase; /* // mimic printed invoice style */
   letter-spacing: 0.08em; /* // add spacing */
-  color: var(--text-secondary); /* // softer tone */
+  color: var(--text-1); /* // softer tone */
 } /* // end headerBox h3 */
 
 .headerList { /* // list for info rows */
@@ -100,7 +100,7 @@
   display: grid; /* // grid layout */
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* // responsive columns */
   gap: 12px; /* // spacing between columns */
-  border: 1px solid var(--surface-light); /* // border for emphasis */
+  border: 1px solid var(--surface); /* // border for emphasis */
   border-radius: var(--radius-sm); /* // soft corners */
   padding: 12px; /* // internal spacing */
 } /* // end vehicleRow */
@@ -112,13 +112,13 @@
 } /* // end vehicleItem */
 
 .vehicleItem span { /* // label text */
-  color: var(--text-secondary); /* // muted label */
+  color: var(--text-1); /* // muted label */
   font-size: 0.75rem; /* // small label text */
   text-transform: uppercase; /* // printed invoice feel */
 } /* // end vehicleItem span */
 
 .requestBlock { /* // container for each request section */
-  border: 1px solid var(--surface-light); /* // border to separate requests */
+  border: 1px solid var(--surface); /* // border to separate requests */
   border-radius: var(--control-radius); /* // soft corners */
   padding: 16px; /* // internal spacing */
   display: flex; /* // flex column reflow */
@@ -152,8 +152,8 @@
   font-size: 0.8rem; /* // small header text */
   text-transform: uppercase; /* // printed style */
   letter-spacing: 0.05em; /* // spacing */
-  color: var(--text-secondary); /* // muted color */
-  border-bottom: 1px solid var(--surface-light); /* // underline header */
+  color: var(--text-1); /* // muted color */
+  border-bottom: 1px solid var(--surface); /* // underline header */
   padding: 8px; /* // spacing */
   background: var(--surface-secondary, var(--surface)); /* // subtle background */
   position: sticky; /* // optional sticky header */
@@ -162,7 +162,7 @@
 
 .partsTable td { /* // table cell styling */
   padding: 8px; /* // consistent spacing */
-  border-bottom: 1px solid var(--surface-light); /* // row divider */
+  border-bottom: 1px solid var(--surface); /* // row divider */
   font-size: 0.9rem; /* // text size */
   vertical-align: top; /* // keep multi-line cells aligned from top */
 } /* // end partsTable td */
@@ -223,7 +223,7 @@
   display: grid; /* // use grid for columns */
   grid-template-columns: repeat(auto-fit, minmax(160px, auto)); /* // responsive columns */
   gap: 12px; /* // spacing */
-  border-top: 2px solid var(--primary-dark); /* // accent border top */
+  border-top: 2px solid var(--primary-selected); /* // accent border top */
   padding-top: 12px; /* // spacing above totals */
 } /* // end totalsFooter */
 
@@ -231,13 +231,13 @@
   background: var(--surface-secondary, var(--surface)); /* // subtle background */
   border-radius: var(--control-radius-xs); /* // soft corners */
   padding: 12px; /* // spacing */
-  border: 1px solid var(--surface-light); /* // border */
+  border: 1px solid var(--surface); /* // border */
 } /* // end totalCard */
 
 .totalCard span { /* // label text */
   font-size: 0.75rem; /* // small label */
   text-transform: uppercase; /* // uppercase label */
-  color: var(--text-secondary); /* // muted color */
+  color: var(--text-1); /* // muted color */
 } /* // end totalCard span */
 
 .totalCard strong { /* // amount text */
@@ -247,7 +247,7 @@
 } /* // end totalCard strong */
 
 .paymentDetails { /* // payment/bank detail box */
-  border: 1px solid var(--surface-light); /* // subtle border */
+  border: 1px solid var(--surface); /* // subtle border */
   border-radius: var(--radius-sm); /* // corners */
   padding: 16px; /* // spacing */
   background: var(--surface); /* // solid surface background */
@@ -267,7 +267,7 @@
 } /* // end paymentGrid */
 
 .statusMessage { /* // shared style for error/empty states */
-  border: 1px solid var(--surface-light); /* // border */
+  border: 1px solid var(--surface); /* // border */
   border-radius: var(--radius-sm); /* // corners */
   padding: 18px; /* // spacing */
   text-align: center; /* // center text */
@@ -279,8 +279,8 @@
 } /* // end error */
 
 .info { /* // info modifier for fallback notice */
-  color: var(--primary-dark); /* // informative text color */
-  border-color: var(--primary-dark); /* // highlight border */
+  color: var(--primary-selected); /* // informative text color */
+  border-color: var(--primary-selected); /* // highlight border */
   background: rgba(124, 77, 255, 0.08); /* // subtle tint */
 } /* // end info */
 
@@ -290,7 +290,7 @@
   gap: 6px;
   padding: 6px 12px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--surface-light);
+  border: 1px solid var(--surface);
   font-size: 0.85rem;
   font-weight: 700;
 }
@@ -305,7 +305,7 @@
   gap: var(--layout-card-gap);
   align-items: flex-start;
   padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--primary-border);
 }
 
 .paymentModalGrid {
@@ -347,7 +347,7 @@
   display: grid;
   gap: var(--layout-card-gap);
   align-content: start;
-  background: var(--page-card-bg-alt);
+  background: var(--theme);
   border-radius: var(--radius-md);
   padding: var(--section-card-padding);
   min-height: 0;
@@ -365,10 +365,10 @@
 }
 
 .paymentTestCard {
-  border: 1px dashed var(--accentMain);
+  border: 1px dashed var(--primary);
   border-radius: var(--radius-sm);
   padding: var(--space-3);
-  background: var(--accentSurfaceSubtle, var(--surfaceMain));
+  background: var(--theme, var(--surface));
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -388,7 +388,7 @@
 }
 
 .paymentTestHeader span {
-  color: var(--text-secondary);
+  color: var(--text-1);
   font-size: 0.85rem;
   line-height: 1.45;
 }
@@ -411,20 +411,20 @@
   flex-direction: column;
   gap: 6px;
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .paymentNoteBox {
   border: none;
   border-radius: var(--radius-sm);
   padding: var(--space-3);
-  background: var(--surfaceMain);
-  color: var(--text-primary);
+  background: var(--surface);
+  color: var(--text-1);
 }
 
 .paymentNoteBox p {
   margin: 6px 0 0;
-  color: var(--text-secondary);
+  color: var(--text-1);
   line-height: 1.5;
 }
 
@@ -455,12 +455,12 @@
   border: none;
   border-radius: var(--radius-sm);
   padding: var(--space-3);
-  background: var(--surfaceMain);
+  background: var(--surface);
 }
 
 .activityTimelineItem p {
   margin: 4px 0 0;
-  color: var(--text-secondary);
+  color: var(--text-1);
   font-size: 0.85rem;
 }
 

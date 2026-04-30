@@ -21,20 +21,20 @@ const sectionTitleStyle = {
   fontWeight: 700,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
 };
 
 const labelStyle = {
   fontSize: "0.7rem",
   fontWeight: 600,
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   textTransform: "uppercase",
   letterSpacing: "0.05em",
 };
 
 const valueStyle = {
   fontSize: "0.92rem",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   fontWeight: 600,
 };
 
@@ -47,12 +47,12 @@ function InfoCell({ label, value }) {
   );
 }
 
-function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentColor = "var(--text-primary)" }) {
+function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentColor = "var(--text-1)" }) {
   const safeRows = Array.isArray(rows) ? rows : [];
   return (
     <div
       style={{
-        border: "1px solid rgba(var(--text-primary-rgb), 0.12)",
+        border: "1px solid rgba(var(--text-1-rgb), 0.12)",
         borderRadius: "var(--radius-md, 12px)",
         overflow: "hidden",
         background: "var(--surface)",
@@ -64,10 +64,10 @@ function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentCol
           gridTemplateColumns: "minmax(0,2fr) 80px 80px minmax(80px,1fr)",
           gap: "8px",
           padding: "8px 12px",
-          background: "rgba(var(--text-primary-rgb), 0.04)",
+          background: "rgba(var(--text-1-rgb), 0.04)",
           fontSize: "0.7rem",
           fontWeight: 700,
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           textTransform: "uppercase",
           letterSpacing: "0.05em",
         }}
@@ -78,7 +78,7 @@ function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentCol
         <span style={{ textAlign: "right" }}>Amount</span>
       </div>
       {safeRows.length === 0 ? (
-        <div style={{ padding: "12px", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+        <div style={{ padding: "12px", color: "var(--text-1)", fontSize: "0.85rem" }}>
           {fallbackLabel}
         </div>
       ) : (
@@ -90,20 +90,20 @@ function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentCol
               gridTemplateColumns: "minmax(0,2fr) 80px 80px minmax(80px,1fr)",
               gap: "8px",
               padding: "10px 12px",
-              borderTop: "1px solid rgba(var(--text-primary-rgb), 0.06)",
+              borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)",
               fontSize: "0.88rem",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
             }}
           >
             <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
               {row.label || "—"}
             </span>
-            <span style={{ textAlign: "right", color: "var(--text-secondary)" }}>
+            <span style={{ textAlign: "right", color: "var(--text-1)" }}>
               {row.hours !== undefined && row.hours !== null && row.hours !== ""
                 ? Number(row.hours).toFixed(2)
                 : "—"}
             </span>
-            <span style={{ textAlign: "right", color: "var(--text-secondary)" }}>
+            <span style={{ textAlign: "right", color: "var(--text-1)" }}>
               {row.rate !== undefined && row.rate !== null && row.rate !== ""
                 ? formatCurrency(row.rate)
                 : "—"}
@@ -119,8 +119,8 @@ function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentCol
           display: "flex",
           justifyContent: "space-between",
           padding: "10px 12px",
-          borderTop: "1px solid rgba(var(--text-primary-rgb), 0.12)",
-          background: "rgba(var(--text-primary-rgb), 0.04)",
+          borderTop: "1px solid rgba(var(--text-1-rgb), 0.12)",
+          background: "rgba(var(--text-1-rgb), 0.04)",
           fontWeight: 700,
           color: accentColor,
           fontSize: "0.92rem",
@@ -182,8 +182,8 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
         <div
           style={{
             padding: "20px 24px",
-            background: "var(--accent-surface, var(--surface))",
-            borderBottom: "1px solid rgba(var(--text-primary-rgb), 0.08)",
+            background: "var(--theme, var(--surface))",
+            borderBottom: "1px solid rgba(var(--text-1-rgb), 0.08)",
             display: "flex",
             gap: "16px",
             justifyContent: "space-between",
@@ -193,10 +193,10 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
         >
           <div style={{ display: "grid", gap: "4px" }}>
             <span style={sectionTitleStyle}>Payslip</span>
-            <div style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary)" }}>
+            <div style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-1)" }}>
               {formatPeriodLabel(payslip)}
             </div>
-            <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+            <div style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
               Paid {formatDate(payslip.paidDate)}
               {payslip.reference ? ` · Ref ${payslip.reference}` : ""}
             </div>
@@ -234,7 +234,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
           >
             <div className="app-section-card" style={{ padding: "14px", gap: "10px" }}>
               <span style={sectionTitleStyle}>Employer</span>
-              <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-primary)" }}>
+              <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-1)" }}>
                 <strong style={{ fontSize: "0.95rem" }}>
                   {employerSnapshot?.name || "Humphries & Parks"}
                 </strong>
@@ -242,7 +242,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
                 {employerSnapshot?.email ? <span>{employerSnapshot.email}</span> : null}
                 {employerSnapshot?.phone ? <span>{employerSnapshot.phone}</span> : null}
                 {employerSnapshot?.registration ? (
-                  <span style={{ color: "var(--text-secondary)" }}>
+                  <span style={{ color: "var(--text-1)" }}>
                     Reg {employerSnapshot.registration}
                   </span>
                 ) : null}
@@ -250,16 +250,16 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
             </div>
             <div className="app-section-card" style={{ padding: "14px", gap: "10px" }}>
               <span style={sectionTitleStyle}>Employee</span>
-              <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-primary)" }}>
+              <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-1)" }}>
                 <strong style={{ fontSize: "0.95rem" }}>{employeeSnapshot?.name || "—"}</strong>
                 {employeeSnapshot?.role ? <span>{employeeSnapshot.role}</span> : null}
                 {employeeSnapshot?.department ? <span>{employeeSnapshot.department}</span> : null}
                 {employeeSnapshot?.email ? <span>{employeeSnapshot.email}</span> : null}
                 {payslip.niNumber ? (
-                  <span style={{ color: "var(--text-secondary)" }}>NI {payslip.niNumber}</span>
+                  <span style={{ color: "var(--text-1)" }}>NI {payslip.niNumber}</span>
                 ) : null}
                 {payslip.taxCode ? (
-                  <span style={{ color: "var(--text-secondary)" }}>Tax code {payslip.taxCode}</span>
+                  <span style={{ color: "var(--text-1)" }}>Tax code {payslip.taxCode}</span>
                 ) : null}
               </div>
             </div>
@@ -346,7 +346,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
             </div>
             <div className="app-section-card" style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Taxable pay</span>
-              <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-primary)" }}>
+              <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-1)" }}>
                 {formatCurrency(payslip.taxablePay ?? payslip.grossPay)}
               </span>
             </div>
@@ -358,7 +358,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
             </div>
             <div className="app-section-card" style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Employer pension</span>
-              <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-primary)" }}>
+              <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-1)" }}>
                 {formatCurrency(payslip.pensionEmployer)}
               </span>
             </div>
@@ -386,7 +386,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
           {payslip.notes ? (
             <div className="app-section-card" style={{ padding: "14px", gap: "8px" }}>
               <span style={sectionTitleStyle}>Notes</span>
-              <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-primary)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+              <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-1)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
                 {payslip.notes}
               </p>
             </div>

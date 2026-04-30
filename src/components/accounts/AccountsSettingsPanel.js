@@ -131,8 +131,8 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
   const settingRow = (label, description, control) => (
     <div style={{ border: "none", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", background: embedded ? "var(--surface)" : "transparent" }}>
       <div style={{ flex: "1 1 280px" }}>
-        <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-primary)" }}>{label}</h3>
-        <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>{description}</p>
+        <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-1)" }}>{label}</h3>
+        <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "0.9rem" }}>{description}</p>
       </div>
       <div style={{ flex: "0 0 auto" }}>{control}</div>
     </div>
@@ -175,7 +175,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
               </Button>
             ) : null}
           </div>
-          {loading ? <p style={{ color: "var(--text-secondary)", margin: 0 }}>Loading settings…</p> : (
+          {loading ? <p style={{ color: "var(--text-1)", margin: 0 }}>Loading settings…</p> : (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {settingRow("Manager Approval", "Require accounts manager approval before increasing credit limits over £5k.", toggleControl("requireManagerApproval"))}
               {settingRow("Manager Freeze Access", "Allow service and workshop managers to freeze/unfreeze accounts directly.", toggleControl("allowManagersToFreeze"))}
@@ -210,7 +210,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
           </div>
           {companyMessage && <StatusMessage tone={companyMessage.includes("saved") ? "success" : "danger"}>{companyMessage}</StatusMessage>}
           {companyLoading ? (
-            <p style={{ color: "var(--text-secondary)", margin: 0 }}>Loading company profile…</p>
+            <p style={{ color: "var(--text-1)", margin: 0 }}>Loading company profile…</p>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "12px" }}>
               <input className="app-input" value={companyProfile.company_name} onChange={(event) => handleCompanyInputChange("company_name", event.target.value)} placeholder="Company name" />

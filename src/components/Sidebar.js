@@ -68,9 +68,12 @@ export default function Sidebar({
   const { user, dbUserId } = useUser();
   const { canAccess: canUseDevOverlay, enabled: devOverlayEnabled, toggleEnabled: toggleDevOverlay } =
     useDevLayoutOverlay();
-  const canShowDevItems = canShowDevSidebarItems(user);
-  const canShowDevPagesLink = canShowDevPages();
-  const { unreadCount } = useMessagesBadge(dbUserId);
+  const canShowDevItems = !inPresentationMode && canShowDevSidebarItems(user);
+  const canShowDevPagesLink = !inPresentationMode && canShowDevPages();
+  // In presentation mode the sidebar belongs to the demo role, not the real
+  // signed-in user — pass null to skip the unread-messages query so the badge
+  // doesn't surface the presenter's actual inbox count.
+  const { unreadCount } = useMessagesBadge(inPresentationMode ? null : dbUserId);
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const userRoles =
     Array.isArray(visibleRoles) && visibleRoles.length > 0

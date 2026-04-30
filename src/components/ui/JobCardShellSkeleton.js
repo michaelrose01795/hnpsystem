@@ -277,7 +277,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
           alignItems: "center",
           marginBottom: "12px",
           padding: "12px",
-          backgroundColor: "var(--page-card-bg-alt)",
+          backgroundColor: "var(--theme)",
           borderRadius: radiusXs,
           flexShrink: 0,
         }}
@@ -336,7 +336,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
           gap: "12px",
           marginBottom: "12px",
           padding: "12px",
-          backgroundColor: "var(--page-card-bg-alt)",
+          backgroundColor: "var(--theme)",
           borderRadius: radiusXs,
           flexShrink: 0,
         }}
@@ -349,7 +349,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
             data-dev-section-type="content-card"
             data-dev-section-parent="myjob-quick-stats"
             style={{
-              backgroundColor: "var(--layer-section-level-1)",
+              backgroundColor: "var(--surface)",
               borderRadius: radiusXs,
               padding: "16px",
               display: "flex",
@@ -403,7 +403,7 @@ export function MyJobCardShellSkeleton({ jobNumber }) {
           flexDirection: "column",
           gap: "12px",
           padding: "12px",
-          backgroundColor: "var(--page-card-bg-alt)",
+          backgroundColor: "var(--theme)",
           borderRadius: radiusXs,
           minHeight: "240px",
         }}

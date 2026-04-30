@@ -14,7 +14,7 @@ export const STATUS_OPTIONS = ["Red", "Amber", "Green"];
 
 export const fieldLabelStyle = {
   margin: 0,
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   textTransform: "uppercase",
   fontSize: "var(--text-label)",
   letterSpacing: "var(--tracking-caps)",

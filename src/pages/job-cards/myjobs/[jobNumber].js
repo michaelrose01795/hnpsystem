@@ -73,14 +73,14 @@ import themeConfig, {
 import TechJobDetailPageUi from "@/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui"; // Extracted presentation layer.
 const _p = { // CSS variable token aliases for this layout (matches appTheme palette)
   accent: "var(--primary)", // primary brand colour
-  accentSoft: "var(--surface-light)", // light accent surface
-  accentSurface: "var(--surface-light)", // same as accentSoft in this context
+  accentSoft: "var(--surface)", // light accent surface
+  accentSurface: "var(--surface)", // same as accentSoft in this context
   backgroundGradient: "var(--surface)", // page background
   modalGradient: "var(--surface)", // card/modal background
   surface: "var(--surface)", // default surface
-  border: "var(--border)", // border colour
-  textPrimary: "var(--text-primary)", // primary text colour
-  textMuted: "var(--text-secondary)" // muted/secondary text colour
+  border: "var(--primary-border)", // border colour
+  textPrimary: "var(--text-1)", // primary text colour
+  textMuted: "var(--text-1)" // muted/secondary text colour
 };const _r = { // CSS variable border radius aliases (matches appTheme radii)
   lg: "var(--radius-lg)", // large radius
   xl: "var(--radius-xl)", // extra large radius
@@ -204,12 +204,12 @@ const STATUS_COLORS = {
 
 const STATUS_BADGE_STYLES = {
   "Waiting": { background: "var(--warning-surface)", color: "var(--danger-dark)" },
-  "In Progress": { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  "In Progress": { background: "var(--theme)", color: "var(--accent-purple)" },
   "VHC Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
   "VHC Reopened": { background: "var(--warning-surface)", color: "var(--warning)" },
-  "Write Up Complete": { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  "Write Up Complete": { background: "var(--theme)", color: "var(--accent-purple)" },
   "Complete": { background: "var(--success-surface)", color: "var(--success-dark)" },
-  "Started": { background: "var(--info-surface)", color: "var(--accent-purple)" }
+  "Started": { background: "var(--theme)", color: "var(--accent-purple)" }
 };
 
 const getStatusBadgeStyle = (status, fallbackColor) =>
@@ -274,20 +274,20 @@ const JOB_DOCUMENT_BUCKET = "job-documents";
 const PARTS_STATUS_STYLES = {
   pending: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
   awaiting_stock: { background: "var(--danger-surface)", color: "var(--danger)" },
-  priced: { background: "var(--accent-purple-surface)", color: "var(--accent-purple)" },
+  priced: { background: "var(--theme)", color: "var(--accent-purple)" },
   "pre-pick": { background: "var(--success-surface)", color: "var(--success-dark)" },
   "pre_pick": { background: "var(--success-surface)", color: "var(--success-dark)" },
   "on-order": { background: "var(--warning-surface)", color: "var(--warning)" },
   "on_order": { background: "var(--warning-surface)", color: "var(--warning)" },
   allocated: { background: "var(--success-surface)", color: "var(--success-dark)" },
   picked: { background: "var(--success-surface)", color: "var(--success-dark)" },
-  fitted: { background: "var(--info-surface)", color: "var(--accent-purple)" },
-  cancelled: { background: "var(--info-surface)", color: "var(--info)" }
+  fitted: { background: "var(--theme)", color: "var(--accent-purple)" },
+  cancelled: { background: "var(--theme)", color: "var(--info)" }
 };
 
 const getPartsStatusStyle = (status) => {
-  if (!status) return { background: "var(--info-surface)", color: "var(--info-dark)" };
-  return PARTS_STATUS_STYLES[status.toLowerCase()] || { background: "var(--info-surface)", color: "var(--info-dark)" };
+  if (!status) return { background: "var(--theme)", color: "var(--info-dark)" };
+  return PARTS_STATUS_STYLES[status.toLowerCase()] || { background: "var(--theme)", color: "var(--info-dark)" };
 };
 
 // Helper to get status after clock out
@@ -310,7 +310,7 @@ const getVhcActionButtonStyle = ({ active = false, disabled = false } = {}) => (
   border: "none",
   fontWeight: 600,
   fontSize: "12px",
-  backgroundColor: active ? "var(--accent-purple)" : "var(--accent-purple-surface)",
+  backgroundColor: active ? "var(--accent-purple)" : "var(--theme)",
   color: active ? "var(--surface)" : "var(--accent-purple)",
   cursor: disabled ? "not-allowed" : "pointer",
   opacity: disabled ? 0.5 : 1,
@@ -2030,7 +2030,7 @@ export default function TechJobDetailPage() {
 
   // Helper: Get VHC button color based on state
   const getVhcButtonColor = () => {
-    if (!jobData?.jobCard?.vhcRequired) return "var(--surface-light)";
+    if (!jobData?.jobCard?.vhcRequired) return "var(--surface)";
 
     if (showVhcReopenButton) {
       return "var(--warning)"; // Orange for reopen
@@ -4684,12 +4684,12 @@ export async function getServerSideProps() {
 
 const DOC_TYPE_META = {
   pdf: { label: "PDF", bg: "var(--danger-surface)", color: "var(--danger)" },
-  png: { label: "PNG", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
-  jpg: { label: "JPG", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
-  jpeg: { label: "JPG", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
-  gif: { label: "GIF", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
-  webp: { label: "WEBP", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
-  svg: { label: "SVG", bg: "var(--accent-surface)", color: "var(--accent-strong)" },
+  png: { label: "PNG", bg: "var(--theme)", color: "var(--accent-strong)" },
+  jpg: { label: "JPG", bg: "var(--theme)", color: "var(--accent-strong)" },
+  jpeg: { label: "JPG", bg: "var(--theme)", color: "var(--accent-strong)" },
+  gif: { label: "GIF", bg: "var(--theme)", color: "var(--accent-strong)" },
+  webp: { label: "WEBP", bg: "var(--theme)", color: "var(--accent-strong)" },
+  svg: { label: "SVG", bg: "var(--theme)", color: "var(--accent-strong)" },
   doc: { label: "DOC", bg: "var(--warning-surface)", color: "var(--warning)" },
   docx: { label: "DOCX", bg: "var(--warning-surface)", color: "var(--warning)" },
   xls: { label: "XLS", bg: "var(--success-surface)", color: "var(--success)" },
@@ -4698,7 +4698,7 @@ const DOC_TYPE_META = {
 
 function getDocTypeMeta(mimeOrExt = "") {
   const ext = mimeOrExt.split("/").pop().split(".").pop().toLowerCase();
-  return DOC_TYPE_META[ext] || { label: ext.slice(0, 4).toUpperCase() || "FILE", bg: "var(--surface-light)", color: "var(--text-secondary)" };
+  return DOC_TYPE_META[ext] || { label: ext.slice(0, 4).toUpperCase() || "FILE", bg: "var(--surface)", color: "var(--text-1)" };
 }
 
 function isImageMime(mime = "") {
@@ -4732,7 +4732,7 @@ const previewHeaderButtonStyle = {
   border: "1px solid rgba(var(--primary-rgb), 0.42)",
   borderRadius: "var(--input-radius)",
   backgroundColor: "rgba(var(--primary-rgb), 0.5)",
-  color: "var(--text-inverse)",
+  color: "var(--text-2)",
   fontSize: "13px",
   fontWeight: 600,
   cursor: "pointer",
@@ -4776,7 +4776,7 @@ function DocumentsTab({
       sectionType="section-shell"
       parentKey="myjob-tab-documents"
       backgroundToken="layer-section-level-1"
-      style={{ backgroundColor: "var(--layer-section-level-1)" }}>
+      style={{ backgroundColor: "var(--surface)" }}>
       
       {previewDoc && typeof document !== "undefined" && createPortal(
         <div
@@ -4808,7 +4808,7 @@ function DocumentsTab({
                 display: "flex", alignItems: "center", gap: "10px",
                 padding: "16px 20px",
                 borderBottom: "1px solid rgba(var(--surface-rgb), 0.28)",
-                backgroundColor: "rgba(var(--background-rgb), 0.9)",
+                backgroundColor: "rgba(var(--surface-rgb), 0.9)",
                 backdropFilter: "blur(18px)",
                 WebkitBackdropFilter: "blur(18px)",
                 position: "absolute",
@@ -4840,7 +4840,7 @@ function DocumentsTab({
                     borderRadius: "var(--input-radius)",
                     border: "1px solid var(--primary)",
                     fontSize: "14px", fontWeight: 600,
-                    color: "var(--text-primary)",
+                    color: "var(--text-1)",
                     backgroundColor: "rgba(var(--surface-rgb), 0.78)",
                     backdropFilter: "blur(12px)",
                     WebkitBackdropFilter: "blur(12px)",
@@ -4871,7 +4871,7 @@ function DocumentsTab({
                 </> :
 
               <>
-                  <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
+                  <span style={{ flex: 1, fontSize: "15px", fontWeight: 700, color: "var(--text-1)" }}>
                     {getPreviewHeading(previewDoc)}
                   </span>
                   {typeof onReplaceDocument === "function" && (isImageMime(previewDoc.type || previewDoc.file_type || "") || isVideoMime(previewDoc.type || previewDoc.file_type || "")) &&
@@ -4902,11 +4902,11 @@ function DocumentsTab({
                 type="button"
                 onClick={() => {setPreviewDoc(null);setIsRenamingPreview(false);}}
                 style={{
-                  width: "32px", height: "32px",
+                  width: "44px", height: "44px",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  border: "none", borderRadius: "var(--radius-xs)",
+                  border: "none", borderRadius: "var(--control-radius)",
                   backgroundColor: "rgba(var(--primary-rgb), 0.5)",
-                  color: "var(--text-inverse)",
+                  color: "var(--text-2)",
                   fontSize: "18px", lineHeight: 1,
                   cursor: "pointer", fontWeight: 400, flexShrink: 0,
                   backdropFilter: "blur(12px)",
@@ -4968,7 +4968,7 @@ function DocumentsTab({
           flexWrap: "wrap"
         }}>
         
-        <span style={{ fontSize: "13px", color: "var(--text-secondary)", fontWeight: 500 }}>
+        <span style={{ fontSize: "13px", color: "var(--text-1)", fontWeight: 500 }}>
           {sortedDocuments.length > 0 ? `${sortedDocuments.length} file${sortedDocuments.length !== 1 ? "s" : ""}` : "No documents yet"}
         </span>
         {typeof onManageDocuments === "function" &&
@@ -4977,7 +4977,7 @@ function DocumentsTab({
           onClick={onManageDocuments}
           style={{
             padding: "9px 18px", borderRadius: "var(--radius-sm)", border: "none",
-            backgroundColor: "var(--primary)", color: "var(--text-inverse)",
+            backgroundColor: "var(--primary)", color: "var(--text-2)",
             fontWeight: "600", fontSize: "14px", cursor: "pointer"
           }}>
           
@@ -4995,15 +4995,15 @@ function DocumentsTab({
         style={{
           padding: "48px 24px",
           borderRadius: "var(--radius-md)",
-          border: "2px dashed var(--surface-light)",
+          border: "2px dashed var(--surface)",
           textAlign: "center",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           fontSize: "14px",
           lineHeight: 1.6
         }}>
         
           <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>📄</div>
-          <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-primary)" }}>No documents attached</div>
+          <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-1)" }}>No documents attached</div>
           Upload check-sheets, signed paperwork, or photos to keep everything in one place.
         </DevLayoutSection> :
 
@@ -5027,7 +5027,7 @@ function DocumentsTab({
               key={doc.id || doc.file_id || docUrl}
               style={{
                 borderRadius: "var(--radius-md)",
-                border: "1px solid var(--surface-light)",
+                border: "1px solid var(--surface)",
                 overflow: "hidden",
                 backgroundColor: "var(--surface)",
                 display: "flex",
@@ -5081,22 +5081,22 @@ function DocumentsTab({
                   <div
                   title={docName}
                   style={{
-                    fontSize: "13px", fontWeight: 600, color: "var(--text-primary)",
+                    fontSize: "13px", fontWeight: 600, color: "var(--text-1)",
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
                   }}>
                   
                     {docName}
                   </div>
                   {dateStr &&
-                <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{dateStr}</div>
+                <div style={{ fontSize: "11px", color: "var(--text-1)" }}>{dateStr}</div>
                 }
                 </div>
 
                 <div
                 style={{
                   display: "flex", gap: "6px", padding: "8px 12px",
-                  borderTop: "1px solid var(--surface-light)",
-                  backgroundColor: "var(--surface-light)"
+                  borderTop: "1px solid var(--surface)",
+                  backgroundColor: "var(--surface)"
                 }}>
                 
                   <button
@@ -5106,7 +5106,7 @@ function DocumentsTab({
                   style={{
                     flex: 1, padding: "5px 0",
                     borderRadius: "var(--radius-xs)", border: "none",
-                    backgroundColor: "var(--accent-surface)", color: "var(--accent-strong)",
+                    backgroundColor: "var(--theme)", color: "var(--accent-strong)",
                     fontSize: "12px", fontWeight: 600, cursor: docUrl ? "pointer" : "not-allowed",
                     opacity: docUrl ? 1 : 0.5
                   }}>

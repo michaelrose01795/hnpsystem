@@ -451,7 +451,7 @@ const WIDGET_ACCENTS = {
   red: "var(--danger)",
   amber: "var(--warning)",
   green: "var(--success)",
-  default: "var(--accentMain)",
+  default: "var(--primary)",
 };
 
 function widgetPositionPercent(fraction) {
@@ -703,7 +703,7 @@ const ZOOM_PILL_BASE = {
 };
 
 const ZOOM_PILL_ACTIVE = {
-  background: "var(--accentMain)",
+  background: "var(--primary)",
   border: "1.5px solid rgba(var(--accentMainRgb), 0.55)",
   boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
   color: "var(--onAccentText)",
@@ -870,7 +870,7 @@ function VerticalZoomSlider({ zoomRange, zoomValue, onChange, disabled = false, 
           textAlign: "center",
           fontSize: 11,
           fontWeight: 800,
-          color: "var(--accentMain)",
+          color: "var(--primary)",
           letterSpacing: "var(--tracking-caps)",
           fontVariantNumeric: "tabular-nums",
           padding: "4px 4px",
@@ -931,7 +931,7 @@ function VerticalZoomSlider({ zoomRange, zoomValue, onChange, disabled = false, 
           width: 3,
           height: `${thumbPct}%`,
           transform: "translateX(-50%)",
-          background: "linear-gradient(to top, var(--accentMain), rgba(var(--accentMainRgb), 0.28))",
+          background: "linear-gradient(to top, var(--primary), rgba(var(--accentMainRgb), 0.28))",
           borderRadius: "var(--radius-pill)",
           pointerEvents: "none",
           boxShadow: "0 0 8px rgba(var(--accentMainRgb), 0.40)",
@@ -948,7 +948,7 @@ function VerticalZoomSlider({ zoomRange, zoomValue, onChange, disabled = false, 
             height: 12,
             borderRadius: "50%",
             transform: "translate(-50%, 50%)",
-            background: "var(--accentMain)",
+            background: "var(--primary)",
             border: "2.5px solid rgba(var(--hud-text-rgb), 0.90)",
             boxShadow: dragging
               ? "0 0 0 5px rgba(var(--accentMainRgb), 0.22), var(--hud-shadow-md)"
@@ -1201,7 +1201,7 @@ function CaptureModeToggle({ mode, onChange, disabled, compact = false }) {
               padding,
               borderRadius: "var(--radius-pill)",
               border: "none",
-              background: active ? "var(--accentMain)" : "transparent",
+              background: active ? "var(--primary)" : "transparent",
               color: active ? "var(--onAccentText)" : "var(--hud-text)",
               fontSize,
               fontWeight: 800,
@@ -1606,7 +1606,7 @@ export default function FullScreenCapture({
                 <div style={{
                   padding: "var(--space-sm) var(--space-3)",
                   borderRadius: "var(--radius-pill)",
-                  background: "var(--accentMain)",
+                  background: "var(--primary)",
                   color: "var(--onAccentText)",
                   fontSize: "var(--text-caption)",
                   fontWeight: 700,
@@ -1775,7 +1775,7 @@ export default function FullScreenCapture({
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: "var(--text-h3)",
-                  color: isDenied ? "var(--danger)" : "var(--accentMain)",
+                  color: isDenied ? "var(--danger)" : "var(--primary)",
                 }}>
                   {isDenied ? "⚠" : wantsAudio ? "🎥" : "📷"}
                 </div>
@@ -1841,7 +1841,7 @@ export default function FullScreenCapture({
                       padding: "var(--space-2) var(--space-4)",
                       borderRadius: "var(--radius-pill)",
                       border: "1px solid rgba(var(--accentMainRgb), 0.6)",
-                      background: "var(--accentMain)",
+                      background: "var(--primary)",
                       color: "var(--onAccentText)",
                       fontWeight: 800,
                       fontSize: "var(--text-body-sm)",
@@ -1882,7 +1882,7 @@ export default function FullScreenCapture({
                       padding: "var(--space-2) var(--space-4)",
                       borderRadius: "var(--radius-pill)",
                       border: "1px solid rgba(var(--accentMainRgb), 0.6)",
-                      background: "var(--accentMain)",
+                      background: "var(--primary)",
                       color: "var(--onAccentText)",
                       fontWeight: 800,
                       fontSize: "var(--text-body-sm)",

@@ -221,7 +221,7 @@ export default function AccountsListPage() {
 
 
   const renderFilters = () =>
-  <DevLayoutSection as="section" sectionKey="accounts-filter-panel" sectionType="content-card" parentKey="accounts-page-shell" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+  <DevLayoutSection as="section" sectionKey="accounts-filter-panel" sectionType="content-card" parentKey="accounts-page-shell" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
       <DevLayoutSection sectionKey="accounts-filter-toolbar" sectionType="filter-row" parentKey="accounts-filter-panel">
       <ToolbarRow>
       <SearchBar
@@ -269,7 +269,7 @@ export default function AccountsListPage() {
 
 
   const renderLinkedFinance = () =>
-  <DevLayoutSection as="section" sectionKey="accounts-linked-finance" sectionType="content-card" parentKey="accounts-page-shell" widthMode="full" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "18px", background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+  <DevLayoutSection as="section" sectionKey="accounts-linked-finance" sectionType="content-card" parentKey="accounts-page-shell" widthMode="full" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "18px", background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
       <DevLayoutSection sectionKey="accounts-linked-finance-jump-links" sectionType="toolbar" parentKey="accounts-linked-finance">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
         {financeLinks.map((link) =>
@@ -290,14 +290,14 @@ export default function AccountsListPage() {
           }}>
           
             <div>
-              <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.76rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.76rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                 {link.title}
               </p>
-              <strong style={{ display: "block", marginTop: "8px", color: "var(--text-primary)", fontSize: "1.05rem" }}>
+              <strong style={{ display: "block", marginTop: "8px", color: "var(--text-1)", fontSize: "1.05rem" }}>
                 {link.value}
               </strong>
             </div>
-            <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: 1.5, minHeight: "3em" }}>
+            <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5, minHeight: "3em" }}>
               {link.description}
             </p>
             <Button type="button" variant="secondary" size="sm" onClick={link.onClick}>
@@ -311,23 +311,23 @@ export default function AccountsListPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
         <DevLayoutSection sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" as="article" style={{ borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", background: "var(--surface)", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem" }}>Recent Invoice References</h3>
+            <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Invoice References</h3>
             <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/accounts/invoices")}>
               All invoices
             </Button>
           </div>
-          {linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading links…</p>}
-          {!linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-secondary)" }}>No invoice references available.</p>}
+          {linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading links…</p>}
+          {!linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>No invoice references available.</p>}
           {linkedInvoices.map((invoice) =>
           <div key={invoice.id || invoice.invoice_id} style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
                 <div>
-                  <strong style={{ display: "block", color: "var(--text-primary)" }}>{invoice.invoice_number || invoice.invoice_id || "Invoice"}</strong>
-                  <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                  <strong style={{ display: "block", color: "var(--text-1)" }}>{invoice.invoice_number || invoice.invoice_id || "Invoice"}</strong>
+                  <span style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
                     {invoice.account_id || "No account"} · {currencyFormatter.format(Number(invoice.grand_total || invoice.invoice_total || 0))}
                   </span>
                 </div>
-                <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{formatShortDate(invoice.due_date || invoice.created_at)}</span>
+                <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>{formatShortDate(invoice.due_date || invoice.created_at)}</span>
               </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {invoice.job_number &&
@@ -351,23 +351,23 @@ export default function AccountsListPage() {
         </DevLayoutSection>
         <DevLayoutSection sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" as="article" style={{ borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", background: "var(--surface)", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem" }}>Recent Goods In References</h3>
+            <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Goods In References</h3>
             <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/parts/goods-in")}>
               Goods in
             </Button>
           </div>
-          {linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading links…</p>}
-          {!linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-secondary)" }}>No goods-in references available.</p>}
+          {linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading links…</p>}
+          {!linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>No goods-in references available.</p>}
           {linkedGoodsIn.map((record) =>
           <div key={record.id || record.goods_in_number} style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
                 <div>
-                  <strong style={{ display: "block", color: "var(--text-primary)" }}>{record.goods_in_number || "Goods in"}</strong>
-                  <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                  <strong style={{ display: "block", color: "var(--text-1)" }}>{record.goods_in_number || "Goods in"}</strong>
+                  <span style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
                     {record.supplier_name || "Unknown supplier"}{record.invoice_number ? ` · Inv ${record.invoice_number}` : ""}
                   </span>
                 </div>
-                <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{formatShortDate(record.invoice_date || record.created_at)}</span>
+                <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>{formatShortDate(record.invoice_date || record.created_at)}</span>
               </div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 {record.goods_in_number &&

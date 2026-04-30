@@ -13,15 +13,15 @@ import { showAlert } from "@/lib/notifications/alertBus";
 import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 
 const PANEL_STYLE = {
-  background: "var(--surfaceMain)",
-  border: "1px solid var(--accentBorder)",
+  background: "var(--surface)",
+  border: "1px solid var(--primary-border)",
   borderRadius: "var(--radius-md)",
   padding: "var(--space-4)",
 };
 
 const LABEL_STYLE = {
   fontSize: "var(--text-label)",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   textTransform: "uppercase",
   letterSpacing: "var(--tracking-caps)",
   fontWeight: 700,
@@ -155,7 +155,7 @@ export default function MediaUploadConfirmModal({
         <div
           style={{
             background: "var(--surfaceMutedToken)",
-            border: "1px solid var(--accentBorder)",
+            border: "1px solid var(--primary-border)",
             borderRadius: "var(--radius-md)",
             overflow: "hidden",
             display: "flex",
@@ -178,7 +178,7 @@ export default function MediaUploadConfirmModal({
               style={{ width: "100%", height: "100%", objectFit: "contain" }}
             />
           ) : (
-            <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-body-sm)" }}>
+            <div style={{ color: "var(--text-1)", fontSize: "var(--text-body-sm)" }}>
               Preview unavailable
             </div>
           )}
@@ -201,13 +201,13 @@ export default function MediaUploadConfirmModal({
             }}
           >
             <div style={LABEL_STYLE}>File details</div>
-            <div style={{ fontSize: "var(--text-body)", color: "var(--text-primary)", fontWeight: 700 }}>
+            <div style={{ fontSize: "var(--text-body)", color: "var(--text-1)", fontWeight: 700 }}>
               {mediaFile?.name || "Captured media"}
             </div>
-            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>
+            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>
               {mediaFile?.type || "Unknown type"}
             </div>
-            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>
+            <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>
               {fileSizeMb}
             </div>
           </div>
@@ -232,15 +232,15 @@ export default function MediaUploadConfirmModal({
                 marginTop: 2,
                 width: 18,
                 height: 18,
-                accentColor: "var(--accentMain)",
+                accentColor: "var(--primary)",
                 cursor: "inherit",
               }}
             />
             <div style={{ display: "grid", gap: "var(--space-xs)" }}>
-              <div style={{ fontSize: "var(--text-body)", color: "var(--text-primary)", fontWeight: 700 }}>
+              <div style={{ fontSize: "var(--text-body)", color: "var(--text-1)", fontWeight: 700 }}>
                 Visible to customer
               </div>
-              <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>
                 Turn this off to keep the media internal-only for workshop staff.
               </div>
             </div>

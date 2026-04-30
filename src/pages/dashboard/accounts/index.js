@@ -13,7 +13,7 @@ const MetricCard = ({ label, value, helper }) =>
     minWidth: 180
   }}>
   
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-dark)" }}>{label}</p>
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
   </div>;
@@ -36,7 +36,7 @@ const TrendBlock = ({ data }) => {
             }} />
           
           </div>
-          <strong style={{ color: "var(--primary-dark)" }}>{point.count}</strong>
+          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
       )}
     </div>);
@@ -69,7 +69,7 @@ const JobList = ({ jobs }) =>
     }}>
     
           <div>
-            <strong style={{ color: "var(--primary-dark)" }}>{job.job_number || "—"}</strong>
+            <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
             <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>Vehicle {job.vehicle_reg || "TBC"}</p>
           </div>
           <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{job.status}</span>

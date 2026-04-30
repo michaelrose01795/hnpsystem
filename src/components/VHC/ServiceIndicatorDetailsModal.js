@@ -420,7 +420,7 @@ export default function ServiceIndicatorDetailsModal({
                       padding: "var(--control-padding)",
                       border: "none",
                       background: isActive ? toneColor : "var(--control-bg)",
-                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                      color: isActive ? "var(--text-2)" : "var(--text-1)",
                       fontWeight: 600,
                       fontSize: "var(--control-font-size)",
                       textAlign: "left",
@@ -461,7 +461,7 @@ export default function ServiceIndicatorDetailsModal({
                       borderRadius: "var(--control-radius)",
                       border: "none",
                       background: isActive ? optionBorder : "var(--control-bg)",
-                      color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                      color: isActive ? "var(--text-2)" : "var(--text-1)",
                       fontWeight: 600,
                       cursor: "pointer",
                       transition: "background-color 0.18s ease, color 0.18s ease",
@@ -513,7 +513,7 @@ export default function ServiceIndicatorDetailsModal({
                       borderRadius: "var(--section-card-radius)",
                       border: "none",
                       background: "var(--control-bg)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontWeight: 600,
                       fontSize: "var(--control-font-size)",
                       textAlign: "left",
@@ -587,7 +587,7 @@ export default function ServiceIndicatorDetailsModal({
               alignItems: "center",
               gap: "16px",
               padding: "18px 20px",
-              background: "var(--page-card-bg-alt, var(--surface-light))",
+              background: "var(--theme, var(--surface))",
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
                 <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>
@@ -638,7 +638,7 @@ export default function ServiceIndicatorDetailsModal({
                       padding: "var(--control-padding)",
                       minHeight: "var(--control-height)",
                       fontSize: "var(--control-font-size)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       outline: "none",
                       background: "var(--control-bg)",
                     }}
@@ -657,7 +657,7 @@ export default function ServiceIndicatorDetailsModal({
                       padding: "var(--control-padding)",
                       minHeight: "var(--control-height)",
                       fontSize: "var(--control-font-size)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       outline: "none",
                     }}
                   />
@@ -725,7 +725,7 @@ export default function ServiceIndicatorDetailsModal({
                       padding: "14px",
                       borderRadius: "var(--radius-sm)",
                       border: "none",
-                      background: "var(--page-card-bg-alt, var(--surface-light))",
+                      background: "var(--theme, var(--surface))",
                     }}
                   >
                     <div style={{

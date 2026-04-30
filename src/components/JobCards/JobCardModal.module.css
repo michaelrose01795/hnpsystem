@@ -32,7 +32,7 @@
 
 .button {
   background: var(--primary);
-  color: var(--text-inverse);
+  color: var(--text-2);
   padding: var(--control-padding);
   min-height: var(--control-height);
   border-radius: var(--control-radius);
@@ -43,7 +43,7 @@
 
 .closeButton {
   background: var(--control-bg);
-  color: var(--text-primary);
+  color: var(--text-1);
   padding: var(--control-padding);
   min-height: var(--control-height);
   border-radius: var(--control-radius);
@@ -58,6 +58,6 @@
 
 .jobDetails {
   margin-top: 20px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--primary-border);
   padding-top: 10px;
 }

@@ -1222,13 +1222,13 @@ export default function Appointments() {
     const normalized = (status || "").toLowerCase();
     if (normalized === "waiting") {
       return {
-        backgroundColor: "var(--surface-light)",
+        backgroundColor: "var(--surface)",
         color: "var(--danger)"
       };
     }
     if (normalized === "loan car") {
       return {
-        backgroundColor: "var(--info-surface)",
+        backgroundColor: "var(--theme)",
         color: "var(--info)"
       };
     }

@@ -578,7 +578,7 @@ const sectionBoxStyle = {
   backgroundColor: "var(--layer-section-level-3)",
   padding: "var(--section-card-padding)",
   borderRadius: "var(--radius-md)",
-  border: "1px solid var(--accent-purple-surface)",
+  border: "1px solid var(--theme)",
   display: "flex",
   flexDirection: "column",
   minHeight: "360px",
@@ -587,7 +587,7 @@ const sectionBoxStyle = {
 const darkSectionBoxStyle = {
   ...sectionBoxStyle,
   backgroundColor: "var(--surface)",
-  border: "1px solid var(--surface-muted)",
+  border: "1px solid var(--surface)",
 };
 
 const sectionScrollerStyle = {
@@ -740,7 +740,7 @@ const sectionSubtitleStyle = {
 const statusBadgeStyle = {
   borderRadius: "var(--radius-pill)",
   padding: "6px 14px",
-  backgroundColor: "var(--info-surface)",
+  backgroundColor: "var(--theme)",
   color: "var(--info-dark)",
   fontSize: "12px",
   fontWeight: 600,
@@ -817,7 +817,7 @@ const checkboxStyle = {
 const causeRowStyle = {
   borderRadius: "var(--radius-sm)",
   border: "1px solid var(--accent-purple)",
-  backgroundColor: "var(--accent-purple-surface)",
+  backgroundColor: "var(--theme)",
   padding: "12px",
   display: "flex",
   flexDirection: "column",
@@ -2611,7 +2611,7 @@ function WriteUpForm({
                 marginBottom: "12px",
                 padding: "12px 14px",
                 borderRadius: "var(--radius-xs)",
-                backgroundColor: "var(--info-surface)",
+                backgroundColor: "var(--theme)",
                 color: "var(--info-dark)",
                 fontSize: "13px",
                 fontWeight: 600,
@@ -2726,7 +2726,7 @@ function WriteUpForm({
                   style={{
                     ...sectionBoxStyle,
                     backgroundColor: "var(--surface)",
-                    border: "1px solid var(--accent-purple-surface)",
+                    border: "1px solid var(--theme)",
                   }}
                 >
                   <div style={sectionHeaderStyle}>
@@ -2893,7 +2893,7 @@ function WriteUpForm({
                     gap: "8px"
                   }}
                 >
-                  <label style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-secondary)" }}>
+                  <label style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-1)" }}>
                     {fieldConfig.label}
                   </label>
                     {fieldConfig.type === "textarea" ? (
@@ -2904,7 +2904,7 @@ function WriteUpForm({
                           ...modernTextareaStyle,
                           minHeight: "90px",
                           flex: 1,
-                          backgroundColor: "var(--accent-purple-surface)",
+                          backgroundColor: "var(--theme)",
                         }}
                         onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "var(--info)")}
@@ -2917,7 +2917,7 @@ function WriteUpForm({
                         style={{
                           ...modernInputStyle,
                           flex: 1,
-                          backgroundColor: "var(--accent-purple-surface)",
+                          backgroundColor: "var(--theme)",
                         }}
                         onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
                         onBlur={(e) => (e.currentTarget.style.borderColor = "var(--info)")}

@@ -110,14 +110,14 @@ export default function CustomerDetailWorkspaceUi(props) {
                               key={stat.label}
                               style={{
                                 borderRadius: "var(--radius-sm)",
-                                background: "var(--layer-section-level-1)",
+                                background: "var(--surface)",
                                 padding: "10px",
                               }}
                             >
                               <span
                                 style={{
                                   display: "block",
-                                  color: "var(--text-secondary)",
+                                  color: "var(--text-1)",
                                   fontSize: "0.68rem",
                                   textTransform: "uppercase",
                                   letterSpacing: "0.12em",
@@ -129,7 +129,7 @@ export default function CustomerDetailWorkspaceUi(props) {
                                 style={{
                                   display: "block",
                                   marginTop: "4px",
-                                  color: "var(--text-primary)",
+                                  color: "var(--text-1)",
                                   fontSize: "1.25rem",
                                 }}
                               >
@@ -155,7 +155,7 @@ export default function CustomerDetailWorkspaceUi(props) {
                                 <span
                                   style={{
                                     fontSize: "0.75rem",
-                                    color: "var(--text-secondary)",
+                                    color: "var(--text-1)",
                                     textTransform: "uppercase",
                                     letterSpacing: "0.2em",
                                   }}
@@ -169,7 +169,7 @@ export default function CustomerDetailWorkspaceUi(props) {
                             ))}
                           </ul>
                         ) : (
-                          <span style={{ color: "var(--text-secondary)" }}>No numbers on file</span>
+                          <span style={{ color: "var(--text-1)" }}>No numbers on file</span>
                         )
                       ) : item.href ? (
                         <a
@@ -183,7 +183,7 @@ export default function CustomerDetailWorkspaceUi(props) {
                           {item.value || "—"}
                         </a>
                       ) : (
-                        <span style={{ fontWeight: 600, color: "var(--text-primary)", overflowWrap: "anywhere" }}>
+                        <span style={{ fontWeight: 600, color: "var(--text-1)", overflowWrap: "anywhere" }}>
                           {item.value ?? "—"}
                         </span>
                       )}

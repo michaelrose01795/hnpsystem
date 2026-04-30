@@ -25,18 +25,18 @@ export default function VHCSummaryList({ summaries = [], vehicles = [] }) {
           return (
             <div
               key={summary.id}
-              className="customer-portal-card--muted text-sm text-[var(--text-secondary)]"
+              className="customer-portal-card--muted text-sm text-[var(--text-1)]"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">
+                  <p className="text-sm font-semibold text-[var(--text-1)]">
                     {vehicle?.makeModel || "Vehicle"} • {vehicle?.reg}
                   </p>
-                  <p className="text-xs text-[var(--text-secondary)]">
+                  <p className="text-xs text-[var(--text-1)]">
                     Shared on {summary.createdAt} · {summary.status}
                   </p>
                 </div>
-                <button className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--primary-dark)] hover:bg-[var(--surface-muted)]">
+                <button className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--primary-selected)] hover:bg-[var(--surface)]">
                   View VHC
                 </button>
               </div>

@@ -1682,7 +1682,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           opacity: 0.75;
         }
         .catalog-qty-input {
-          color: var(--text-primary);
+          color: var(--text-1);
         }
       `}</style>
       <DevLayoutSection
@@ -1770,9 +1770,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     width: "100%",
                     padding: "10px",
                     border: "none",
-                    borderBottom: "1px solid var(--surface-light)",
+                    borderBottom: "1px solid var(--surface)",
                     textAlign: "left",
-                    background: isSelected ? "var(--accent-purple-surface)" : "transparent",
+                    background: isSelected ? "var(--theme)" : "transparent",
                     cursor: "pointer",
                   }}
                 >
@@ -1794,7 +1794,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               border: "1px solid var(--accent-purple)",
               borderRadius: "var(--radius-sm)",
               padding: "12px",
-              background: "var(--accent-purple-surface)",
+              background: "var(--theme)",
               marginTop: "12px",
             }}
           >
@@ -1880,7 +1880,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   padding: "10px",
                   borderRadius: "var(--radius-xs)",
                   border: "none",
-                  background: !canAllocateParts ? "var(--surface-light)" : "var(--accent-purple)",
+                  background: !canAllocateParts ? "var(--surface)" : "var(--accent-purple)",
                   color: "white",
                   fontWeight: 600,
                   cursor: !canAllocateParts ? "not-allowed" : "pointer",
@@ -1898,8 +1898,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   padding: "10px",
                   borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--accent-purple)",
-                  background: !canAllocateParts ? "var(--surface-light)" : "var(--surface)",
-                  color: !canAllocateParts ? "var(--text-secondary)" : "var(--accent-purple)",
+                  background: !canAllocateParts ? "var(--surface)" : "var(--surface)",
+                  color: !canAllocateParts ? "var(--text-1)" : "var(--accent-purple)",
                   fontWeight: 600,
                   cursor: !canAllocateParts ? "not-allowed" : "pointer",
                   fontSize: "var(--text-body-sm)",
@@ -1988,7 +1988,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   borderRadius: "var(--radius-xs)",
                   border: "1px solid transparent",
                   background: showBookPartPanel ? "var(--danger)" : "var(--danger-surface)",
-                  color: showBookPartPanel ? "var(--text-inverse)" : "var(--danger)",
+                  color: showBookPartPanel ? "var(--text-2)" : "var(--danger)",
                   fontSize: "var(--text-caption)",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -2006,8 +2006,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   padding: "6px 12px",
                   borderRadius: "var(--radius-xs)",
                   border: "1px solid transparent",
-                  background: showAllocatePanel ? "var(--accent-purple)" : "var(--accent-purple-surface)",
-                  color: showAllocatePanel ? "var(--text-inverse)" : "var(--accent-purple)",
+                  background: showAllocatePanel ? "var(--accent-purple)" : "var(--theme)",
+                  color: showAllocatePanel ? "var(--text-2)" : "var(--accent-purple)",
                   fontSize: "var(--text-caption)",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -2027,7 +2027,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   textAlign: "center",
                   color: "var(--info)",
                   fontSize: "var(--text-label)",
-                  border: "1px dashed var(--surface-light)",
+                  border: "1px dashed var(--surface)",
                   borderRadius: "var(--radius-xs)",
                 }}
               >
@@ -2130,7 +2130,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             background: isRemoved
                               ? "var(--danger)"
                               : assignMode && isSelected
-                              ? "var(--accent-purple-surface)"
+                              ? "var(--theme)"
                               : "var(--surface)",
                             cursor: assignMode ? (isAssignable ? "pointer" : "not-allowed") : "pointer",
                             opacity: isRemoved ? 0.8 : 1,
@@ -2161,7 +2161,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           borderRight: "none",
                           borderTopLeftRadius: "8px",
                           borderBottomLeftRadius: "8px",
-                          borderBottom: "6px solid var(--accent-purple-surface)",
+                          borderBottom: "6px solid var(--theme)",
                         }}>
                           <input
                             type="checkbox"
@@ -2185,7 +2185,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             borderLeft: "none",
                             borderTopLeftRadius: assignMode ? "0" : "10px",
                             borderBottomLeftRadius: assignMode ? "0" : "10px",
-                            borderBottom: "6px solid var(--accent-purple-surface)",
+                            borderBottom: "6px solid var(--theme)",
                           }}>
                             <div style={{
                               display: "flex",
@@ -2195,7 +2195,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             }}>
                               <span style={{
                                 fontWeight: 600,
-                                color: isRemoved ? "var(--text-inverse)" : "var(--accent-purple)",
+                                color: isRemoved ? "var(--text-2)" : "var(--accent-purple)",
                                 textDecoration: isRemoved ? "line-through" : "none",
                               }}>
                                 {part.partNumber}
@@ -2226,7 +2226,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     padding: "2px 8px",
                                     borderRadius: "var(--radius-pill)",
                                     background: "var(--accent-purple)",
-                                    color: "var(--text-inverse)",
+                                    color: "var(--text-2)",
                                     fontSize: "var(--text-caption)",
                                     fontWeight: 700,
                                     textTransform: "uppercase",
@@ -2243,7 +2243,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     alignItems: "center",
                                     padding: "2px 8px",
                                     borderRadius: "var(--radius-pill)",
-                                    background: "var(--info-surface)",
+                                    background: "var(--theme)",
                                     color: "var(--info-dark)",
                                     fontSize: "var(--text-caption)",
                                     fontWeight: 700,
@@ -2257,7 +2257,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             </div>
                             <div style={{
                               fontSize: "var(--text-body-sm)",
-                              color: isRemoved ? "var(--text-inverse)" : "var(--info-dark)",
+                              color: isRemoved ? "var(--text-2)" : "var(--info-dark)",
                               textDecoration: isRemoved ? "line-through" : "none",
                             }}>
                               {part.description || part.name}
@@ -2269,13 +2269,13 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             padding: "9px 12px",
                             textAlign: "right",
                             verticalAlign: "middle",
-                            color: isRemoved ? "var(--text-inverse)" : "var(--text-primary)",
+                            color: isRemoved ? "var(--text-2)" : "var(--text-1)",
                             textDecoration: isRemoved ? "line-through" : "none",
                             border: "none",
                             borderLeft: "none",
                             borderTopRightRadius: "8px",
                             borderBottomRightRadius: "8px",
-                            borderBottom: "6px solid var(--accent-purple-surface)",
+                            borderBottom: "6px solid var(--theme)",
                             fontWeight: 600,
                           }}>
                             {part.quantity}
@@ -2339,9 +2339,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   style={{
                     padding: "6px 10px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface-light)",
+                    border: "1px solid var(--surface)",
                     background: "var(--surface)",
-                    color: "var(--text-secondary)",
+                    color: "var(--text-1)",
                     fontSize: "var(--text-caption)",
                     fontWeight: 600,
                     cursor: allocatingSelection ? "not-allowed" : "pointer",
@@ -2364,14 +2364,14 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   border: "1px solid transparent",
                   background:
                     !canEdit || !hasAssignableParts || allocatingSelection
-                      ? "var(--surface-light)"
+                      ? "var(--surface)"
                       : assignMode
                       ? "var(--success)"
                       : "var(--accent-purple)",
                   color:
                     !canEdit || !hasAssignableParts || allocatingSelection
-                      ? "var(--text-secondary)"
-                      : "var(--text-inverse)",
+                      ? "var(--text-1)"
+                      : "var(--text-2)",
                   fontSize: "var(--text-caption)",
                   fontWeight: 600,
                   cursor:
@@ -2404,7 +2404,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   textAlign: "center",
                   color: "var(--info)",
                   fontSize: "var(--text-label)",
-                  border: "1px dashed var(--surface-light)",
+                  border: "1px dashed var(--surface)",
                   borderRadius: "var(--radius-xs)",
                 }}
               >
@@ -2426,7 +2426,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         Customer Requests
                       </div>
                       {customerRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", border: "1px dashed var(--surface-light)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
+                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", border: "1px dashed var(--surface)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
                           No customer requests reported.
                         </div>
                       ) : (
@@ -2453,7 +2453,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   assignMode && String(assignTargetRequestId) === String(request.id)
                                     ? "1px solid var(--accent-purple)"
                                     : "1px solid transparent",
-                                background: "var(--surface-muted)",
+                                background: "var(--surface)",
                                 cursor: assignMode && request.canAllocate ? "pointer" : "default",
                                 boxShadow:
                                   assignMode && String(assignTargetRequestId) === String(request.id)
@@ -2479,12 +2479,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                       borderRadius: "var(--radius-xs)",
                                       background:
                                         String(assignTargetRequestId) === String(request.id)
-                                          ? "var(--accent-purple-surface)"
-                                          : "var(--surface-light)",
+                                          ? "var(--theme)"
+                                          : "var(--surface)",
                                       color:
                                         String(assignTargetRequestId) === String(request.id)
                                           ? "var(--accent-purple)"
-                                          : "var(--text-secondary)",
+                                          : "var(--text-1)",
                                       fontSize: "var(--text-caption)",
                                       fontWeight: 600,
                                       whiteSpace: "nowrap",
@@ -2500,7 +2500,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     marginTop: "10px",
                                     marginLeft: "14px",
                                     paddingLeft: "12px",
-                                    borderLeft: "2px solid var(--surface-light)",
+                                    borderLeft: "2px solid var(--surface)",
                                   }}
                                 >
                                   <table
@@ -2523,7 +2523,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     </thead>
                                     <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
                                       {allocatedParts.map((part) => (
-                                        <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
+                                        <tr key={part.id} style={{ background: "var(--theme)", borderTop: "1px solid var(--surface)" }}>
                                           <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
                                             <span className="parts-allocate-cell-scroll">
                                               {part.partNumber}
@@ -2552,8 +2552,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                                 padding: "4px 8px",
                                                 borderRadius: "var(--radius-xs)",
                                                 border: "none",
-                                                background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
-                                                color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
+                                                background: !canEdit ? "var(--surface)" : "var(--danger-surface)",
+                                                color: !canEdit ? "var(--text-1)" : "var(--danger)",
                                                 fontSize: "var(--text-caption)",
                                                 fontWeight: 600,
                                                 cursor: !canEdit ? "not-allowed" : "pointer",
@@ -2603,7 +2603,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         VHC Requests
                       </div>
                       {vhcRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", border: "1px dashed var(--surface-light)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
+                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", border: "1px dashed var(--surface)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
                           No VHC requests reported.
                         </div>
                       ) : (
@@ -2642,7 +2642,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                       assignMode && String(assignTargetRequestId) === String(request.id)
                                         ? "1px solid var(--accent-purple)"
                                         : "1px solid transparent",
-                                    background: "var(--surface-muted)",
+                                    background: "var(--surface)",
                                     cursor: assignMode && request.canAllocate ? "pointer" : "default",
                                     boxShadow:
                                       assignMode && String(assignTargetRequestId) === String(request.id)
@@ -2673,12 +2673,12 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                           borderRadius: "var(--radius-xs)",
                                           background:
                                             String(assignTargetRequestId) === String(request.id)
-                                              ? "var(--accent-purple-surface)"
-                                              : "var(--surface-light)",
+                                              ? "var(--theme)"
+                                              : "var(--surface)",
                                           color:
                                             String(assignTargetRequestId) === String(request.id)
                                               ? "var(--accent-purple)"
-                                              : "var(--text-secondary)",
+                                              : "var(--text-1)",
                                           fontSize: "var(--text-caption)",
                                           fontWeight: 600,
                                           whiteSpace: "nowrap",
@@ -2694,7 +2694,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         marginTop: "10px",
                                         marginLeft: "14px",
                                         paddingLeft: "12px",
-                                        borderLeft: "2px solid var(--surface-light)",
+                                        borderLeft: "2px solid var(--surface)",
                                       }}
                                     >
                                       <table
@@ -2717,7 +2717,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         </thead>
                                         <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
                                           {allocatedParts.map((part) => (
-                                            <tr key={part.id} style={{ background: "var(--accent-purple-surface)", borderTop: "1px solid var(--surface-light)" }}>
+                                            <tr key={part.id} style={{ background: "var(--theme)", borderTop: "1px solid var(--surface)" }}>
                                               <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
                                                 <span className="parts-allocate-cell-scroll">
                                                   {part.partNumber}
@@ -2746,8 +2746,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                                     padding: "4px 8px",
                                                     borderRadius: "var(--radius-xs)",
                                                     border: "none",
-                                                    background: !canEdit ? "var(--surface-light)" : "var(--danger-surface)",
-                                                    color: !canEdit ? "var(--text-secondary)" : "var(--danger)",
+                                                    background: !canEdit ? "var(--surface)" : "var(--danger-surface)",
+                                                    color: !canEdit ? "var(--text-1)" : "var(--danger)",
                                                     fontSize: "var(--text-caption)",
                                                     fontWeight: 600,
                                                     cursor: !canEdit ? "not-allowed" : "pointer",
@@ -2829,18 +2829,18 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     width: "100%",
                     borderCollapse: "separate",
                     borderSpacing: "0 8px",
-                    background: "var(--accent-purple-surface)",
+                    background: "var(--theme)",
                   }}
                 >
                   <thead data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="jobcard-parts-on-order-table">
                     <tr style={{ textTransform: "uppercase", color: "var(--info)" }}>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Part Name</th>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Part Number</th>
-                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Qty</th>
-                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Price</th>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>ETA Date</th>
-                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>ETA Time</th>
-                      <th style={{ textAlign: "center", position: "sticky", top: 0, background: "var(--accent-purple-surface)", zIndex: 1 }}>Action</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Part Name</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Part Number</th>
+                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Qty</th>
+                      <th style={{ textAlign: "right", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Price</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>ETA Date</th>
+                      <th style={{ textAlign: "left", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>ETA Time</th>
+                      <th style={{ textAlign: "center", position: "sticky", top: 0, background: "var(--theme)", zIndex: 1 }}>Action</th>
                     </tr>
                   </thead>
                   <tbody data-dev-section="1" data-dev-section-key="jobcard-parts-on-order-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="jobcard-parts-on-order-table">
@@ -2920,7 +2920,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   borderRadius: "var(--radius-xs)",
                                   border: "none",
                                   background: !canEdit
-                                    ? "var(--surface-light)"
+                                    ? "var(--surface)"
                                     : isArrived
                                     ? "var(--success)"
                                     : "var(--warning)",
@@ -2978,7 +2978,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               <div style={{ fontSize: "var(--text-body)", fontWeight: 700, color: "var(--primary)" }}>
                 Set Pre-Picked Location
               </div>
-              <div style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
                 Choose a part already added to this job and assign its pre-pick location.
               </div>
 
@@ -3013,7 +3013,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     borderRadius: "var(--radius-xs)",
                     border: "none",
                     background: "var(--surface)",
-                    color: "var(--text-primary)",
+                    color: "var(--text-1)",
                     fontSize: "var(--text-label)",
                     fontWeight: 600,
                     cursor: "pointer",
@@ -3029,8 +3029,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     padding: "10px 16px",
                     borderRadius: "var(--radius-xs)",
                     border: "none",
-                    background: !selectedPrePickPartId || savingPrePick ? "var(--surface-light)" : "var(--primary)",
-                    color: !selectedPrePickPartId || savingPrePick ? "var(--text-secondary)" : "var(--text-inverse)",
+                    background: !selectedPrePickPartId || savingPrePick ? "var(--surface)" : "var(--primary)",
+                    color: !selectedPrePickPartId || savingPrePick ? "var(--text-1)" : "var(--text-2)",
                     fontSize: "var(--text-label)",
                     fontWeight: 600,
                     cursor: !selectedPrePickPartId || savingPrePick ? "not-allowed" : "pointer",
@@ -3086,7 +3086,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
               <div
                 style={{
                   padding: "12px",
-                  background: "var(--info-surface)",
+                  background: "var(--theme)",
                   borderRadius: "var(--radius-xs)",
                 }}
               >
@@ -3133,7 +3133,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     border: "none",
                     fontSize: "var(--text-label)",
                     background: "var(--surface)",
-                    color: "var(--text-primary)",
+                    color: "var(--text-1)",
                   }}
                 />
               </div>

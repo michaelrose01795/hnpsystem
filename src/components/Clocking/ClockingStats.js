@@ -15,7 +15,7 @@ export default function ClockingStats() {
         border: "1px solid var(--primary)",
         borderRadius: "var(--radius-xs)",
         marginTop: "10px",
-        backgroundColor: "var(--surface-light)",
+        backgroundColor: "var(--surface)",
         color: "var(--primary)",
         fontWeight: "bold",
         display: "inline-block",

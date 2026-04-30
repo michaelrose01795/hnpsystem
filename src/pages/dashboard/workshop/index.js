@@ -17,10 +17,10 @@ const MetricCard = ({ sectionKey, parentKey, label, value, helper }) =>
     minWidth: "140px",
     flex: "1 1 140px",
     background: "var(--surface)",
-    border: "1px solid var(--border)"
+    border: "1px solid var(--primary-border)"
   }}>
   
-    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>
+    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-selected)" }}>
       {label}
     </p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
@@ -35,13 +35,13 @@ const Section = ({ sectionKey, parentKey, title, subtitle, children, style }) =>
   className="app-section-card"
   style={{
     gap: "12px",
-    background: "rgba(var(--primary-rgb), 0.10)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.18)",
     ...style
   }}>
   
     <div>
-      <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>{title}</h2>
+      <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>{title}</h2>
       {subtitle && <p style={{ margin: "6px 0 0", color: "var(--info)" }}>{subtitle}</p>}
     </div>
     {children}
@@ -59,14 +59,14 @@ const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
         border: "1px solid rgba(var(--primary-rgb), 0.18)",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
-        background: "rgba(var(--primary-rgb), 0.14)",
+        background: "var(--theme)",
         display: "flex",
         flexDirection: "column",
         gap: "10px",
         flex: 1
       }}>
       
-      <p style={{ margin: 0, textTransform: "uppercase", color: "var(--primary-dark)", fontSize: "0.75rem" }}>{title}</p>
+      <p style={{ margin: 0, textTransform: "uppercase", color: "var(--primary-selected)", fontSize: "0.75rem" }}>{title}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         {(data || []).map((point) =>
         <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -88,7 +88,7 @@ const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
               }} />
             
             </div>
-            <strong style={{ width: 30, fontSize: "0.85rem", color: "var(--primary-dark)" }}>{point.count}</strong>
+            <strong style={{ width: 30, fontSize: "0.85rem", color: "var(--primary-selected)" }}>{point.count}</strong>
           </div>
         )}
       </div>
@@ -105,7 +105,7 @@ const ProgressBar = ({ completed, target }) => {
         <span>Completed</span>
         <span>{percentage}%</span>
       </div>
-      <div style={{ width: "100%", height: 10, background: "rgba(var(--primary-rgb), 0.14)", borderRadius: 5 }}>
+      <div style={{ width: "100%", height: 10, background: "var(--theme)", borderRadius: 5 }}>
         <div
           style={{
             width: `${percentage}%`,

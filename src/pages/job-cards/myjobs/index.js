@@ -26,12 +26,12 @@ import MyJobsPageUi from "@/components/page-ui/job-cards/myjobs/job-cards-myjobs
 
 const STATUS_BADGE_STYLES = {
   Waiting: { background: "var(--warning-surface)", color: "var(--danger-dark)" },
-  "In Progress": { background: "var(--info-surface)", color: "var(--accent-purple)" },
+  "In Progress": { background: "var(--theme)", color: "var(--accent-purple)" },
   Complete: { background: "var(--success-surface)", color: "var(--success-dark)" }
 };
 
 const getStatusBadgeStyle = (status) =>
-STATUS_BADGE_STYLES[status] || { background: "var(--info-surface)", color: "var(--info-dark)" };
+STATUS_BADGE_STYLES[status] || { background: "var(--theme)", color: "var(--info-dark)" };
 
 const normalizeStatusKey = (status) =>
 typeof status === "string" ? status.trim().toLowerCase() : "";

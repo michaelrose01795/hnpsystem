@@ -38,13 +38,13 @@ export default function CustomerLayout({ children }) {
       <div className="customer-portal-shell flex items-center justify-center">
         <div className="customer-portal-card text-center" style={{ maxWidth: "32rem" }}>
           <div className="space-y-4">
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Customer Portal</h1>
-            <p className="text-[var(--text-secondary)]">
+            <h1 className="text-2xl font-semibold text-[var(--text-1)]">Customer Portal</h1>
+            <p className="text-[var(--text-1)]">
               Please log in with the email you used when booking your vehicle in.
             </p>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-full bg-[var(--primary)] px-5 py-2 font-semibold text-white hover:bg-[var(--primary-dark)]"
+              className="inline-flex items-center justify-center rounded-full bg-[var(--primary)] px-5 py-2 font-semibold text-white hover:bg-[var(--primary-selected)]"
             >
               Go to login
             </Link>
@@ -59,14 +59,14 @@ export default function CustomerLayout({ children }) {
       <div className="customer-portal-shell flex items-center justify-center px-4">
         <div className="customer-portal-card text-center" style={{ maxWidth: "32rem" }}>
           <div className="space-y-4">
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Restricted area</h1>
-            <p className="text-[var(--text-secondary)]">
+            <h1 className="text-2xl font-semibold text-[var(--text-1)]">Restricted area</h1>
+            <p className="text-[var(--text-1)]">
               This part of the platform is dedicated to customers only. Switch to a customer user
               through the developer login to preview the experience.
             </p>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-full bg-[var(--primary)] px-5 py-2 font-semibold text-white hover:bg-[var(--primary-dark)]"
+              className="inline-flex items-center justify-center rounded-full bg-[var(--primary)] px-5 py-2 font-semibold text-white hover:bg-[var(--primary-selected)]"
             >
               Switch user
             </Link>
@@ -96,7 +96,7 @@ export default function CustomerLayout({ children }) {
                 <p className="text-[0.65rem] uppercase tracking-[0.25em] text-[var(--primary)]">
                   Signed in
                 </p>
-                <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">
+                <p className="mt-1 text-sm font-semibold text-[var(--text-1)]">
                   {user.username || "Customer"}
                 </p>
               </div>
@@ -108,7 +108,7 @@ export default function CustomerLayout({ children }) {
                   href={portalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1 inline-flex text-sm font-semibold text-[var(--primary-dark)] underline"
+                  className="mt-1 inline-flex text-sm font-semibold text-[var(--primary-selected)] underline"
                 >
                   Open website
                 </a>
@@ -118,15 +118,15 @@ export default function CustomerLayout({ children }) {
                   <p className="text-[0.65rem] uppercase tracking-[0.25em] text-[var(--primary)]">
                     Session
                   </p>
-                  <span className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--danger)]">
+                  <span className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--danger)]">
                     VHC linked
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">Active</p>
+                  <p className="text-sm font-semibold text-[var(--text-1)]">Active</p>
                   <button
                     onClick={handleLogout}
-                    className="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-dark)]"
+                    className="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-selected)]"
                   >
                     Logout
                   </button>

@@ -16,7 +16,7 @@ export default function ValetingDashboardUi(props) {
       <div>
         {/* Card 3 — accent background section containing equal-sized metric cards */}
         <section style={{
-      background: "rgba(var(--primary-rgb), 0.10)",
+      background: "var(--theme)",
       // accent tint background
       border: "1px solid rgba(var(--primary-rgb), 0.18)",
       // accent border
@@ -33,7 +33,7 @@ export default function ValetingDashboardUi(props) {
           <h2 style={{
         margin: 0,
         fontSize: "1.2rem",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>Wash bay overview</h2> {/* section heading */}
           {loading ?
       // loading state
@@ -57,7 +57,7 @@ export default function ValetingDashboardUi(props) {
 
         {/* Card 7 — accent background section with surface-level rows */}
         <section style={{
-      background: "rgba(var(--primary-rgb), 0.10)",
+      background: "var(--theme)",
       // accent tint background
       border: "1px solid rgba(var(--primary-rgb), 0.18)",
       // accent border
@@ -75,7 +75,7 @@ export default function ValetingDashboardUi(props) {
             <h2 style={{
           margin: 0,
           fontSize: "1.2rem",
-          color: "var(--primary-dark)"
+          color: "var(--primary-selected)"
         }}>Queue trend</h2> {/* section heading */}
             <p style={{
           margin: "6px 0 0",
@@ -100,7 +100,7 @@ export default function ValetingDashboardUi(props) {
             <h2 style={{
           margin: 0,
           fontSize: "1.2rem",
-          color: "var(--primary-dark)"
+          color: "var(--primary-selected)"
         }}>Queue board</h2> {/* section heading */}
             <p style={{
           margin: "6px 0 0",

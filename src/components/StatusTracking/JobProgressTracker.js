@@ -8,8 +8,8 @@ import { DropdownField } from "@/components/ui/dropdownAPI"; // Dropdown filter 
 const COLORS = {
   current: "var(--danger)", // Current status node colour
   complete: "var(--danger)", // Completed status node colour
-  base: "var(--surface-light)", // Default node colour for unknown statuses
-  panelBg: "var(--accentSurface)", // Theme-colour panel background
+  base: "var(--surface)", // Default node colour for unknown statuses
+  panelBg: "var(--secondary)", // Theme-colour panel background
   textDark: "var(--info-dark)", // Primary text colour
   textMuted: "var(--info)", // Muted/secondary text colour
   connector: "var(--accent-purple)", // Timeline connector line colour
@@ -171,7 +171,7 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
               fontWeight: 600, // Slightly lighter badge weight
               textTransform: "uppercase",
               letterSpacing: "0.06em",
-              backgroundColor: "var(--surface-light)", // Subtle badge background
+              backgroundColor: "var(--surface)", // Subtle badge background
               borderRadius: "var(--radius-pill)", // Pill-shaped badge
               padding: "3px 8px", // Tighter badge padding
               color: isEvent ? "var(--accent-orange)" : "var(--grey-accent)", // Event vs status colour
@@ -229,7 +229,7 @@ function TimelineCard({ item, isCompact, isEvent, isCurrent, isHighlighted, perf
                 lineHeight: 1.4,
                 whiteSpace: "normal",
                 wordBreak: "break-word",
-                backgroundColor: "var(--surface-light)", // Subtle background
+                backgroundColor: "var(--surface)", // Subtle background
                 borderRadius: "var(--radius-xs)",
                 padding: "5px 8px", // Tighter padding
                 display: "inline-block",
@@ -312,7 +312,7 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
           alignItems: "center",
           justifyContent: "space-between",
           gap: "8px",
-          backgroundColor: "var(--surface-light)",
+          backgroundColor: "var(--surface)",
           border: "none",
           boxShadow: group.phaseColor ? `inset 3px 0 0 0 ${group.phaseColor}` : "none",
           borderRadius: "var(--radius-xs)",
@@ -346,7 +346,7 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
             gap: "4px",
             marginTop: "4px",
             paddingLeft: "8px", // Indent children slightly
-            borderLeft: `2px solid var(--border)`, // Visual indent marker
+            borderLeft: `2px solid var(--primary-border)`, // Visual indent marker
           }}
         >
           {group.items.map((child, childIndex) => {
@@ -744,7 +744,7 @@ export default function JobProgressTracker({
             padding: "8px",
             fontSize: "10px",
             fontFamily: "var(--font-family-mono)",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-xs)",
             maxHeight: "200px",
             overflowY: "auto",

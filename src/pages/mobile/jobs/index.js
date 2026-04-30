@@ -38,7 +38,7 @@ function MobileJobsInner() {
           key={i}
           style={{
             padding: "10px 0",
-            borderBottom: "1px solid var(--border-subtle, rgba(15,23,42,0.08))",
+            borderBottom: "1px solid var(--primary-border-subtle, rgba(15,23,42,0.08))",
             display: "flex",
             flexDirection: "column",
             gap: "6px"
@@ -53,15 +53,15 @@ function MobileJobsInner() {
 
       <div style={cardStyle}>
           {jobs.length === 0 ? <p>No mobile jobs assigned.</p> : jobs.map((j) =>
-        <div key={j.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--border-subtle)" }}>
+        <div key={j.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--primary-border-subtle)" }}>
               <Link href={`/mobile/jobs/${encodeURIComponent(j.job_number)}`}>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   <strong>{j.job_number}</strong>
                   <ServiceModeBadge mode="mobile" />
-                  <span style={{ color: "var(--text-secondary)" }}>{j.status}</span>
+                  <span style={{ color: "var(--text-1)" }}>{j.status}</span>
                 </div>
                 <div style={{ fontSize: "0.9rem" }}>{j.vehicle_reg} · {j.vehicle_make_model}</div>
-                <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                <div style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
                   {j.service_address} {j.service_postcode}
                 </div>
               </Link>

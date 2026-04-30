@@ -40,11 +40,11 @@ export default function CompanyAccountDetailPageUi(props) {
         borderRadius: "var(--radius-pill)",
         border: "none",
         background: "var(--surface)",
-        color: "var(--text-primary)",
+        color: "var(--text-1)",
         cursor: "pointer",
         transition: "all 0.15s ease"
       }} onMouseEnter={e => {
-        e.currentTarget.style.background = "var(--surface-light)";
+        e.currentTarget.style.background = "var(--surface)";
       }} onMouseLeave={e => {
         e.currentTarget.style.background = "var(--surface)";
       }}>
@@ -75,11 +75,11 @@ export default function CompanyAccountDetailPageUi(props) {
                 <div>
                   <h1 style={{
               margin: 0,
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>{account.company_name}</h1>
                   {account.trading_name && <p style={{
               margin: "4px 0 0 0",
-              color: "var(--text-secondary)"
+              color: "var(--text-1)"
             }}>{account.trading_name}</p>}
                 </div>
                 <div style={{
@@ -89,7 +89,7 @@ export default function CompanyAccountDetailPageUi(props) {
               margin: 0,
               fontWeight: 600,
               fontSize: "1.1rem",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>
                     #{account.account_number}
                   </p>
@@ -100,7 +100,7 @@ export default function CompanyAccountDetailPageUi(props) {
               <div style={{
           display: "flex",
           gap: "8px",
-          borderBottom: "1px solid var(--surface-light)",
+          borderBottom: "1px solid var(--surface)",
           paddingBottom: "8px",
           overflowX: "auto"
         }} className="tabs-scroll-container">
@@ -115,12 +115,12 @@ export default function CompanyAccountDetailPageUi(props) {
               fontWeight: 600,
               cursor: "pointer",
               background: isActive ? "var(--primary)" : "transparent",
-              color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+              color: isActive ? "var(--text-2)" : "var(--text-1)",
               transition: "all 0.15s ease",
               whiteSpace: "nowrap"
             }} onMouseEnter={e => {
               if (!isActive) {
-                e.currentTarget.style.background = "var(--surface-light)";
+                e.currentTarget.style.background = "var(--surface)";
               }
             }} onMouseLeave={e => {
               if (!isActive) {
@@ -144,7 +144,7 @@ export default function CompanyAccountDetailPageUi(props) {
           justifyContent: "flex-end",
           flexWrap: "wrap",
           paddingTop: "12px",
-          borderTop: "1px solid var(--surface-light)"
+          borderTop: "1px solid var(--surface)"
         }}>
                 {permissions.canEditAccount && <>
                     <button type="button" onClick={() => setMode("edit")} style={{
@@ -152,16 +152,16 @@ export default function CompanyAccountDetailPageUi(props) {
               borderRadius: "var(--radius-sm)",
               border: "none",
               background: "var(--surface)",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               cursor: "pointer",
               fontWeight: 600,
               transition: "all 0.15s ease"
             }} onMouseEnter={e => {
-              e.currentTarget.style.background = "var(--surface-light)";
+              e.currentTarget.style.background = "var(--surface)";
               e.currentTarget.style.borderColor = "var(--primary)";
             }} onMouseLeave={e => {
               e.currentTarget.style.background = "var(--surface)";
-              e.currentTarget.style.borderColor = "var(--surface-light)";
+              e.currentTarget.style.borderColor = "var(--surface)";
             }}>
                       Edit
                     </button>
@@ -169,8 +169,8 @@ export default function CompanyAccountDetailPageUi(props) {
               padding: "10px 18px",
               borderRadius: "var(--radius-sm)",
               border: "none",
-              background: saving ? "var(--surface-muted)" : "var(--danger)",
-              color: "var(--text-inverse)",
+              background: saving ? "var(--surface)" : "var(--danger)",
+              color: "var(--text-2)",
               cursor: saving ? "not-allowed" : "pointer",
               fontWeight: 600,
               transition: "all 0.15s ease",

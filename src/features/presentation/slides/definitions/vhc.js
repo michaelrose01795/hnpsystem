@@ -2,7 +2,7 @@ import { WORKFLOW } from "../workflow";
 
 export const vhcSlide = {
   id: "vhc",
-  route: "/customer/vhc",
+  route: "/vhc",
   title: "Vehicle Health Check",
   roles: [
     "admin", "admin manager", "owner", "service", "service manager",

@@ -3,66 +3,51 @@
 
 :root {
   color-scheme: light;
-  --background: #fefefe;
-  --background-rgb: 254, 254, 254;
-  --surfaceMain: #ffffff;
+  --surface: #ffffff;
   --surfaceHover: #f7f7f7;
   --surfaceMutedToken: #f3f3f3;
   --surfaceText: #0f0f0f;
   --surfaceTextMuted: #1f1f1f;
-  --accentMain: #dc2626;
-  --accentHover: #a00000;
-  --accentPressed: #850000;
-  --accentMainRgb: 220, 38, 38;
-  --accentText: var(--accentMain);
+  --primary: #b91c1c;
+  --primary-hover: #981717;
+  --primary-pressed: #7e1313;
+  --primary-selected: var(--primary-pressed);
+  --accentMainRgb: 185, 28, 28;
+  --accentText: var(--primary);
+  --text-accent: var(--accentText);
   --onAccentText: #ffffff;
-  --accentSurface: rgba(var(--accentMainRgb), 0.14);
-  --accentSurfaceHover: rgba(var(--accentMainRgb), 0.22);
-  --accentSurfaceSubtle: rgba(var(--accentMainRgb), 0.08);
-  /* Borders globally removed (except tables + status tokens). Kept as transparent
-     rather than deleted so any remaining consumers degrade to invisible-but-valid. */
-  --accentBorder: transparent;
-  --accentBorderStrong: transparent;
-  --surface: var(--surfaceMain);
+  --secondary: rgba(var(--accentMainRgb), 0.08);
+  --secondary-hover: rgba(var(--accentMainRgb), 0.14);
+  --secondary-pressed: rgba(var(--accentMainRgb), 0.2);
+  --theme: rgba(var(--accentMainRgb), 0.1);
+  --primary-border: var(--primary-hover);
   --surface-rgb: 255, 255, 255;
-  --surface-light: var(--surfaceHover);
-  --surface-muted: var(--surfaceMutedToken);
-  --surface-gradient: var(--surfaceMain);
-  /* Skeleton loading tokens — consumed by SkeletonBlock/InlineLoading so shimmer
-     matches the theme cleanly in light and dark mode. Kept subtle and professional. */
+  --surface-gradient: var(--surface);
   --skeleton-base: #ececef;
   --skeleton-highlight: #f6f6f8;
   --skeleton-border: transparent;
   --skeleton-radius: 8px;
   --skeleton-animation-duration: 1.8s;
-  --border: transparent;
-  /* Table borders still render — tables are the one exception to the global no-border rule. */
   --table-border: 1px solid rgba(var(--accent-base-rgb), 0.14);
-  --text-primary: var(--surfaceText);
-  --text-primary-rgb: 15, 15, 15;
-  --text-secondary: var(--surfaceTextMuted);
-  --text-secondary-rgb: 31, 31, 31;
-  --text-inverse: var(--onAccentText);
-  --text-inverse-rgb: 255, 255, 255;
-  --legacy-marker-purple: var(--accentMain);
+  --text-1: var(--surfaceText);
+  --text-1-rgb: 15, 15, 15;
+  --text-2: var(--onAccentText);
+  --text-2-rgb: 255, 255, 255;
+  --legacy-marker-purple: var(--primary);
   --legacy-marker-purple-rgb: var(--accentMainRgb);
-  --legacy-marker-red: var(--accentMain);
+  --legacy-marker-red: var(--primary);
   --legacy-marker-red-rgb: var(--accentMainRgb);
-  --accent-base: var(--accentSurface);
+  --accent-base: var(--secondary);
   --accent-base-rgb: var(--accentMainRgb);
-  --accent-surface: var(--accentSurfaceSubtle);
-  --accent-base-hover: var(--accentSurfaceHover);
-  --accent-surface-hover: var(--accentSurface);
-  --accent-strong: var(--accentMain);
-  --primary: var(--accentMain);
-  --primary-light: var(--accentHover);
-  --primary-dark: var(--accentPressed);
+  --accent-base-hover: var(--secondary-hover);
+  --theme-hover: rgba(var(--accentMainRgb), 0.16);
+  --accent-strong: var(--primary);
   --primary-rgb: var(--accentMainRgb);
-  --grey-accent: var(--text-secondary);
-  --grey-accent-rgb: var(--text-secondary-rgb);
-  --grey-accent-light: var(--surface-light);
+  --grey-accent: var(--text-1);
+  --grey-accent-rgb: var(--text-1-rgb);
+  --grey-accent-light: var(--surface);
   --grey-accent-light-rgb: var(--surface-rgb);
-  --grey-accent-dark: var(--text-primary);
+  --grey-accent-dark: var(--text-1);
   --successMain: #22c55e;
   --success-base: #22c55e;
   --success-base-hover: #16a34a;
@@ -73,7 +58,6 @@
   --success: var(--success-base);
   --success-dark: var(--success-strong);
   --success-text: var(--success-strong);
-  --success-border: none;
   --success-hover: var(--success-base-hover);
   --authorisedMain: #10b981;
   --authorised-base: #10b981;
@@ -85,7 +69,6 @@
   --authorised: var(--authorised-base);
   --authorised-dark: var(--authorised-strong);
   --authorised-text: var(--authorised-strong);
-  --authorised-border: none;
   --authorised-hover: var(--authorised-base-hover);
   --completeMain: #0d9488;
   --complete-base: #0d9488;
@@ -97,7 +80,6 @@
   --complete: var(--complete-base);
   --complete-dark: var(--complete-strong);
   --complete-text: var(--complete-strong);
-  --complete-border: none;
   --complete-hover: var(--complete-base-hover);
   --warningMain: #f59e0b;
   --warning-base: #f59e0b;
@@ -109,7 +91,6 @@
   --warning: var(--warning-base);
   --warning-dark: var(--warning-strong);
   --warning-text: #92400e;
-  --warning-border: none;
   --warning-hover: var(--warning-base-hover);
   --dangerMain: #ef4444;
   --danger-base: #ef4444;
@@ -122,25 +103,20 @@
   --danger: var(--danger-base);
   --danger-dark: var(--danger-strong);
   --danger-text: var(--danger-strong);
-  --danger-border: none;
   --danger-hover: var(--danger-base-hover);
   --error: var(--danger);
   --error-dark: var(--danger-dark);
   --error-surface: var(--danger-surface);
   --error-rgb: var(--danger-rgb);
   --error-text: var(--danger-text);
-  --error-border: none;
   --error-hover: var(--danger-hover);
   --error-surface-hover: var(--danger-surface-hover);
-  --info: var(--accentMain);
-  --info-dark: var(--accentPressed);
-  --info-surface: var(--accentSurfaceSubtle);
-  --info-rgb: var(--accentMainRgb);
-  --accent-purple: var(--accentMain);
-  --accent-purple-surface: var(--accentSurfaceSubtle);
+  --info: #d96f6f;
+  --info-dark: #bf5656;
+  --info-rgb: 217, 111, 111;
+  --theme-status: rgba(var(--info-rgb), 0.18);
+  --accent-purple: var(--primary);
   --accent-purple-rgb: var(--accentMainRgb);
-  /* Removed legacy accent-layer palette. Kept as bright debug pink so any
-     remaining direct use is immediately visible and can be migrated. */
   --accent-layer-1: #ff00ff;
   --accent-layer-2: #ff00ff;
   --accent-layer-3: #ff00ff;
@@ -151,43 +127,31 @@
   --accent-layer-4-rgb: 255, 0, 255;
   --profile-table-surface: var(--accent-base);
   --profile-table-alt-surface: var(--accent-base-hover);
-  --accent-orange: var(--accentMain);
-  --accent-orange-surface: var(--accentSurfaceSubtle);
+  --accent-orange: var(--primary);
   --accent-orange-rgb: var(--accentMainRgb);
-  --accent-blue: var(--accentMain);
-  --accent-blue-surface: var(--accentSurfaceSubtle);
+  --accent-blue: var(--primary);
   --accent-blue-rgb: var(--accentMainRgb);
   --calendar-selection-border: none;
   --calendar-saturday-row-bg: var(--warning-surface);
-  /* Calendar compatibility aliases. Calendar-specific colours now inherit
-     from the central accent and status tokens. */
   --calendar-amber-selected-bg: var(--warning-text);
   --calendar-red-selected-bg: var(--danger-text);
-  --calendar-today-row-bg: var(--accentSurfaceSubtle);
+  --calendar-today-row-bg: var(--theme);
   --calendar-today-row-border: rgba(var(--accent-base-rgb), 0.35);
-  --calendar-today-pill-bg: var(--accent-surface-hover);
-  --calendar-today-pill-text: var(--text-primary);
+  --calendar-today-pill-bg: var(--theme-hover);
+  --calendar-today-pill-text: var(--text-1);
   --search-surface: var(--surface);
-  --search-surface-muted: var(--surface-light);
-  --search-text: var(--accentPressed);
+  --search-surface-muted: var(--surface);
+  --search-text: var(--primary-pressed);
   --overlay: rgba(15, 23, 42, 0.4);
   --overlay-muted: rgba(15, 23, 42, 0.24);
-
-  /* Layer compatibility aliases. Layer colours now inherit from the central
-     surface and accent tokens. */
-  --layer-section-level-1: var(--surface);
-  --layer-section-level-2: var(--surface-light);
-  --layer-section-level-3: var(--accentSurfaceSubtle);
-  --layer-section-level-4: var(--accentMain);
+  --layer-section-level-3: var(--theme);
+  --layer-section-level-4: var(--primary);
   --row-background: var(--surface);
-  --text-color: var(--text-primary);
-
-  --section-gradient-outer: var(--accentSurfaceHover);
-  --section-gradient-inner: var(--accentSurface);
-  --section-gradient-center: var(--surfaceMain);
-  --layer-gradient: var(--accentSurface);
-
-  /* Shared design tokens — radius scale */
+  --text-color: var(--text-1);
+  --section-gradient-outer: var(--secondary-hover);
+  --section-gradient-inner: var(--secondary);
+  --section-gradient-center: var(--surface);
+  --layer-gradient: var(--secondary);
   --radius-xs: 8px;
   --radius-sm: 12px;
   --radius-md: 16px;
@@ -195,25 +159,18 @@
   --radius-xl: 24px;
   --radius-pill: 999px;
   --radius-full: 50%;
-
-  /* Legacy radius aliases (mapped to scale) */
   --radius-card: var(--radius-xl);
   --radius-panel: var(--radius-lg);
   --radius-control: var(--radius-sm);
-
-  /* Section card tokens */
   --section-card-radius: var(--radius-md);
   --section-card-padding: 20px;
   --section-card-padding-sm: 16px;
-  --section-card-bg: var(--surfaceMain);
+  --section-card-bg: var(--surface);
   --section-card-border: none;
-
-  /* Input tokens */
   --input-radius: var(--control-radius);
   --input-padding: var(--control-padding);
   --input-bg: var(--control-bg);
   --input-border: var(--control-border);
-
   --page-max-width: 1680px;
   --page-content-max-width: 100%;
   --page-gutter-x: 20px;
@@ -226,24 +183,20 @@
   --page-card-padding: 24px;
   --page-card-padding-mobile: 16px;
   --page-card-border: none;
-  --page-card-bg: var(--surfaceMain);
-  --page-card-bg-alt: var(--accentSurfaceSubtle);
-  --page-accent-layer: var(--accentSurface);
-  --page-shell-bg: var(--accentSurface);
-  --nav-shell-bg: var(--accentSurface);
+  --page-card-bg: var(--surface);
+  --page-accent-layer: var(--secondary);
+  --page-shell-bg: var(--secondary);
+  --nav-shell-bg: var(--secondary);
   --nav-shell-border: none;
-  --tab-container-bg: var(--accentSurface);
-  /* Tab item tokens — intentionally kept on a light, neutral palette in both
-     light and dark modes so tab strips read as a secondary-button treatment
-     separate from the main button/control system. */
+  --tab-container-bg: var(--secondary);
   --tab-item-bg: #f3f3f3;
   --tab-item-bg-hover: #e5e7eb;
   --tab-item-text: #0f0f0f;
-  --nav-link-bg: var(--accentSurface);
-  --nav-link-bg-hover: var(--accentSurfaceHover);
-  --nav-link-bg-active: var(--accentMain);
-  --nav-link-border: none;
-  --nav-link-border-active: none;
+  --nav-link-bg: var(--secondary);
+  --nav-link-bg-hover: var(--secondary-hover);
+  --nav-link-bg-active: var(--primary);
+  --nav-link-border: 1px solid var(--primary-border);
+  --nav-link-border-active: 1px solid var(--primary-border);
   --control-height: 44px;
   --control-height-sm: 40px;
   --control-height-xs: 34px;
@@ -265,65 +218,50 @@
   --control-label-size: 0.82rem;
   --control-label-weight: 600;
   --control-gap: 10px;
-  --control-border-color: transparent;
-  --control-border: none;
-  --control-border-hover: transparent;
-  --control-border-focus: transparent;
-  /* Compatibility aliases only. Control/menu/nav colours must be changed via
-     the central surface, accent, text, and border tokens above. */
-  --control-bg: var(--accentSurface);
-  --control-bg-hover: var(--accentSurfaceHover);
-  --control-bg-active: var(--accentSurfaceHover);
-  --control-muted-text: var(--text-secondary);
-  --control-icon: var(--text-secondary);
+  --secondary-border: var(--secondary-hover);
+  --control-border: 1px solid var(--secondary-border);
+  --control-border-hover: var(--secondary-border);
+  --control-border-focus: var(--secondary-border);
+  --control-bg: var(--secondary);
+  --control-bg-hover: var(--secondary-hover);
+  --control-bg-active: var(--secondary-hover);
+  --control-muted-text: var(--text-1);
+  --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);
   --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 0 32px rgba(var(--accentMainRgb), 0.22), 0 0 12px rgba(0, 0, 0, 0.10);
   --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.12);
-  /* Dropdown family — seeded from the current Primary-button look but
-     dedicated so that later reskins of .app-btn--primary / --input-bg /
-     --control-bg don't ripple into dropdowns, calendars, timepickers. */
-  --dropdown-trigger-bg: var(--accentSurface);
-  --dropdown-trigger-color: var(--text-primary);
-  --dropdown-trigger-hover-bg: var(--accentSurfaceHover);
-  --dropdown-menu-bg: var(--surfaceMain);
-  /* Neutral levitation shadow — no accent ring, no accent glow. Two
-     layered drop shadows read as "floating above the page". */
+  --dropdown-trigger-bg: var(--secondary);
+  --dropdown-trigger-color: var(--text-1);
+  --dropdown-trigger-hover-bg: var(--secondary-hover);
+  --dropdown-menu-bg: var(--surface);
   --dropdown-menu-shadow:
     0 0 36px rgba(0, 0, 0, 0.18),
     0 0 12px rgba(0, 0, 0, 0.10);
-  --dropdown-option-bg: var(--accentSurface);
-  --dropdown-option-color: var(--text-primary);
-  --dropdown-option-hover-bg: var(--accentSurfaceHover);
-  --dropdown-option-selected-bg: var(--accentSurfaceHover);
+  --dropdown-option-bg: var(--secondary);
+  --dropdown-option-color: var(--text-1);
+  --dropdown-option-hover-bg: var(--secondary-hover);
+  --dropdown-option-selected-bg: var(--secondary-hover);
   --dropdown-option-selected-color: var(--accentText);
-  /* Calendar day — same copy-not-link pattern: seeded from the Primary
-     (resting/hover) and Secondary (selected) look, but dedicated so the
-     calendar stays stable if those buttons are later reskinned. */
-  --calendar-day-bg: var(--accentSurface);
-  --calendar-day-color: var(--text-primary);
-  --calendar-day-hover-bg: var(--accentSurfaceHover);
-  --calendar-day-selected-bg: var(--accentSurfaceHover);
+  --calendar-day-bg: var(--secondary);
+  --calendar-day-color: var(--text-1);
+  --calendar-day-hover-bg: var(--secondary-hover);
+  --calendar-day-selected-bg: var(--secondary-hover);
   --calendar-day-selected-color: var(--accentText);
-  /* Time picker option — same copy-not-link pattern. Primary at rest,
-     Secondary (accentSurfaceHover + accentText) when selected. */
-  --timepicker-option-bg: var(--accentSurface);
-  --timepicker-option-color: var(--text-primary);
-  --timepicker-option-hover-bg: var(--accentSurfaceHover);
-  --timepicker-option-selected-bg: var(--accentSurfaceHover);
+  --timepicker-option-bg: var(--secondary);
+  --timepicker-option-color: var(--text-1);
+  --timepicker-option-hover-bg: var(--secondary-hover);
+  --timepicker-option-selected-bg: var(--secondary-hover);
   --timepicker-option-selected-color: var(--accentText);
-  /* Now button — Primary-style via its own tokens (copy-not-link). */
-  --timepicker-now-bg: var(--accentSurface);
-  --timepicker-now-color: var(--text-primary);
-  --timepicker-now-hover-bg: var(--accentSurfaceHover);
-  /* Search bar clear / loading button — copy-not-link Primary. */
-  --searchbar-clear-bg: var(--accentSurface);
-  --searchbar-clear-color: var(--text-primary);
-  --searchbar-clear-hover-bg: var(--accentSurfaceHover);
-  /* Tab-group button — copy-not-link from Primary / Secondary. */
-  --tab-button-bg: var(--accentSurfaceSubtle);
-  --tab-button-color: var(--text-primary);
-  --tab-button-hover-bg: var(--accentSurface);
-  --tab-button-selected-bg: var(--accentMain);
+  --timepicker-now-bg: var(--secondary);
+  --timepicker-now-color: var(--text-1);
+  --timepicker-now-hover-bg: var(--secondary-hover);
+  --searchbar-clear-bg: var(--secondary);
+  --searchbar-clear-color: var(--text-1);
+  --searchbar-clear-hover-bg: var(--secondary-hover);
+  --tab-button-bg: var(--theme);
+  --tab-button-color: var(--text-1);
+  --tab-button-hover-bg: var(--secondary-hover);
+  --tab-button-selected-bg: var(--primary-selected);
   --tab-button-selected-color: var(--onAccentText);
   --control-transition:
     background-color 0.18s ease,
@@ -407,7 +345,7 @@
 
   /* Scrollbar colors */
   --scrollbar-thumb: var(--accent-strong);
-  --scrollbar-thumb-hover: var(--primary-light);
+  --scrollbar-thumb-hover: var(--primary-hover);
 
   /* ── Camera HUD tokens ──
      Chrome that floats over the live video feed. Values are
@@ -442,50 +380,47 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --background: #0f0f11;
-  --background-rgb: 15, 15, 17;
-  --surfaceMain: #16161a;
+  --surface: #16161a;
   --surfaceHover: #23232b;
   --surfaceMutedToken: #1d1d24;
   --surfaceText: #f8f7ff;
   --surfaceTextMuted: #f2f2ff;
-  --surface: var(--surfaceMain);
+  --primary: #f87171;
+  --primary-hover: #fa9393;
+  --primary-pressed: #fcb1b1;
+  --primary-selected: var(--primary-pressed);
+  --secondary: rgba(var(--accentMainRgb), 0.16);
+  --secondary-hover: rgba(var(--accentMainRgb), 0.24);
+  --secondary-pressed: rgba(var(--accentMainRgb), 0.32);
+  --theme: rgba(var(--accentMainRgb), 0.18);
   --surface-rgb: 22, 22, 26;
-  --surface-light: var(--surfaceHover);
-  --surface-muted: var(--surfaceMutedToken);
-  --surface-gradient: var(--surfaceMain);
+  --surface-gradient: var(--surface);
   --skeleton-base: #23232c;
   --skeleton-highlight: #2f2f3a;
   --skeleton-border: transparent;
   --skeleton-radius: 8px;
   --skeleton-animation-duration: 1.8s;
-  --border: transparent;
+  --primary-border: var(--primary-hover);
   --table-border: 1px solid rgba(var(--accent-base-rgb), 0.2);
-  --text-primary: var(--surfaceText);
-  --text-primary-rgb: 248, 247, 255;
-  --text-secondary: var(--surfaceTextMuted);
-  --text-secondary-rgb: 242, 242, 255;
-  --text-inverse: #0a0a0c;
-  --text-inverse-rgb: 10, 10, 12;
-  --legacy-marker-purple: var(--accentMain);
+  --text-1: var(--surfaceText);
+  --text-1-rgb: 248, 247, 255;
+  --text-2: #0a0a0c;
+  --text-2-rgb: 10, 10, 12;
+  --text-accent: var(--accentText);
+  --legacy-marker-purple: var(--primary);
   --legacy-marker-purple-rgb: var(--accentMainRgb);
-  --legacy-marker-red: var(--accentMain);
+  --legacy-marker-red: var(--primary);
   --legacy-marker-red-rgb: var(--accentMainRgb);
-  --accent-base: var(--accentSurface);
+  --accent-base: var(--secondary);
   --accent-base-rgb: var(--accentMainRgb);
-  --accent-surface: var(--accentSurfaceSubtle);
-  --accent-base-hover: var(--accentSurfaceHover);
-  --accent-surface-hover: var(--accentSurface);
-  --accent-strong: var(--accentMain);
-  --primary: var(--accentMain);
-  --primary-light: var(--accentHover);
-  --primary-dark: var(--accentPressed);
+  --theme-hover: rgba(var(--accentMainRgb), 0.26);
+  --accent-strong: var(--primary);
   --primary-rgb: var(--accentMainRgb);
-  --grey-accent: var(--text-secondary);
-  --grey-accent-rgb: var(--text-secondary-rgb);
-  --grey-accent-light: var(--surface-light);
+  --grey-accent: var(--text-1);
+  --grey-accent-rgb: var(--text-1-rgb);
+  --grey-accent-light: var(--surface);
   --grey-accent-light-rgb: var(--surface-rgb);
-  --grey-accent-dark: var(--text-primary);
+  --grey-accent-dark: var(--text-1);
   --successMain: #4ade80;
   --success-base: #4ade80;
   --success-base-hover: #86efac;
@@ -496,7 +431,6 @@
   --success: var(--success-base);
   --success-dark: var(--success-strong);
   --success-text: #bbf7d0;
-  --success-border: none;
   --success-hover: var(--success-base-hover);
   --authorisedMain: #34d399;
   --authorised-base: #34d399;
@@ -508,7 +442,6 @@
   --authorised: var(--authorised-base);
   --authorised-dark: var(--authorised-strong);
   --authorised-text: #a7f3d0;
-  --authorised-border: none;
   --authorised-hover: var(--authorised-base-hover);
   --completeMain: #2dd4bf;
   --complete-base: #2dd4bf;
@@ -520,7 +453,6 @@
   --complete: var(--complete-base);
   --complete-dark: var(--complete-strong);
   --complete-text: #99f6e4;
-  --complete-border: none;
   --complete-hover: var(--complete-base-hover);
   --warningMain: #fbbf24;
   --warning-base: #fbbf24;
@@ -532,7 +464,6 @@
   --warning: var(--warning-base);
   --warning-dark: var(--warning-strong);
   --warning-text: #ffd08a;
-  --warning-border: none;
   --warning-hover: var(--warning-base-hover);
   --dangerMain: #f87171;
   --danger-base: #f87171;
@@ -545,22 +476,19 @@
   --danger: var(--danger-base);
   --danger-dark: var(--danger-strong);
   --danger-text: #fecaca;
-  --danger-border: none;
   --danger-hover: var(--danger-base-hover);
   --error: var(--danger);
   --error-dark: var(--danger-dark);
   --error-surface: var(--danger-surface);
   --error-rgb: var(--danger-rgb);
   --error-text: var(--danger-text);
-  --error-border: none;
   --error-hover: var(--danger-hover);
   --error-surface-hover: var(--danger-surface-hover);
-  --info: var(--accentMain);
-  --info-dark: var(--accentPressed);
-  --info-surface: var(--accentSurfaceSubtle);
-  --info-rgb: var(--accentMainRgb);
-  --accent-purple: var(--accentMain);
-  --accent-purple-surface: var(--accentSurfaceSubtle);
+  --info: #f2a3a3;
+  --info-dark: #f7bcbc;
+  --info-rgb: 242, 163, 163;
+  --theme-status: rgba(var(--info-rgb), 0.26);
+  --accent-purple: var(--primary);
   --accent-purple-rgb: var(--accentMainRgb);
   --accent-layer-1: #ff00ff;
   --accent-layer-2: #ff00ff;
@@ -572,124 +500,93 @@
   --accent-layer-4-rgb: 255, 0, 255;
   --profile-table-surface: var(--accent-base);
   --profile-table-alt-surface: var(--accent-base-hover);
-  --accent-orange: var(--accentMain);
-  --accent-orange-surface: var(--accentSurfaceSubtle);
+  --accent-orange: var(--primary);
   --accent-orange-rgb: var(--accentMainRgb);
-  --accent-blue: var(--accentMain);
-  --accent-blue-surface: var(--accentSurfaceSubtle);
+  --accent-blue: var(--primary);
   --accent-blue-rgb: var(--accentMainRgb);
   --calendar-selection-border: none;
   --calendar-saturday-row-bg: var(--warning-surface);
-  /* Calendar compatibility aliases. Calendar-specific colours now inherit
-     from the central accent and status tokens. */
   --calendar-amber-selected-bg: var(--warning-text);
   --calendar-red-selected-bg: var(--danger-text);
-  --calendar-today-row-bg: var(--accentSurfaceSubtle);
+  --calendar-today-row-bg: var(--theme);
   --calendar-today-row-border: rgba(var(--accent-base-rgb), 0.55);
-  --calendar-today-pill-bg: var(--accent-surface-hover);
-  --calendar-today-pill-text: var(--text-primary);
+  --calendar-today-pill-bg: var(--theme-hover);
+  --calendar-today-pill-text: var(--text-1);
   --search-surface: #2a2a32;
-  --search-surface-muted: #3a3a42;
-  --search-text: var(--accentPressed);
+  --search-surface-muted: var(--surface);
+  --search-text: var(--primary-pressed);
   --overlay: rgba(2, 6, 23, 0.72);
   --overlay-muted: rgba(2, 6, 23, 0.5);
-
-  /* Layer compatibility aliases. Layer colours now inherit from the central
-     surface and accent tokens. */
-  --layer-section-level-1: var(--surface);
-  --layer-section-level-2: var(--surface-light);
-  --layer-section-level-3: var(--accentSurfaceSubtle);
-  --layer-section-level-4: var(--accentMain);
+  --layer-section-level-3: var(--theme);
+  --layer-section-level-4: var(--primary);
   --row-background: var(--surface);
-  --text-color: #ffffff;
-
-  --section-gradient-outer: var(--accentSurfaceHover);
-  --section-gradient-inner: var(--accentSurface);
-  --section-gradient-center: var(--surfaceMain);
-  --layer-gradient: var(--accentSurface);
-
-  /* Scrollbar colors */
+  --text-color: var(--text-1);
+  --section-gradient-outer: var(--secondary-hover);
+  --section-gradient-inner: var(--secondary);
+  --section-gradient-center: var(--surface);
+  --layer-gradient: var(--secondary);
   --scrollbar-thumb: var(--accent-strong);
-  --scrollbar-thumb-hover: var(--primary-light);
-  --control-border-color: transparent;
-  --control-border: none;
-  --control-border-hover: transparent;
-  --control-border-focus: transparent;
-  --control-bg: var(--accentSurface);
-  --control-bg-hover: var(--accentSurfaceHover);
-  --control-bg-active: var(--accentSurfaceHover);
-  --control-muted-text: var(--text-secondary);
-  --control-icon: var(--text-secondary);
+  --scrollbar-thumb-hover: var(--primary-hover);
+  --secondary-border: var(--secondary-hover);
+  --control-border: 1px solid var(--secondary-border);
+  --control-border-hover: var(--secondary-border);
+  --control-border-focus: var(--secondary-border);
+  --control-bg: var(--secondary);
+  --control-bg-hover: var(--secondary-hover);
+  --control-bg-active: var(--secondary-hover);
+  --control-muted-text: var(--text-1);
+  --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);
   --control-menu-shadow: 0 0 0 1px rgba(var(--accentMainRgb), 0.18), 0 0 32px rgba(var(--accentMainRgb), 0.22), 0 0 12px rgba(0, 0, 0, 0.10);
   --control-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.18);
-  /* Dropdown family — same token set as light, tuned a little stronger so
-     the glow still reads on the dark surface. */
-  --dropdown-trigger-bg: var(--accentSurface);
-  --dropdown-trigger-color: var(--text-primary);
-  --dropdown-trigger-hover-bg: var(--accentSurfaceHover);
-  --dropdown-menu-bg: var(--surfaceMain);
-  /* Dark mode: pure black shadows need to be stronger to register against
-     a dark surface. A subtle top highlight (1px white at 4%) adds a
-     barely-there edge so the menu still has a defined top even without
-     the accent ring. */
+  --dropdown-trigger-bg: var(--secondary);
+  --dropdown-trigger-color: var(--text-1);
+  --dropdown-trigger-hover-bg: var(--secondary-hover);
+  --dropdown-menu-bg: var(--surface);
   --dropdown-menu-shadow:
     0 0 40px rgba(0, 0, 0, 0.65),
     0 0 16px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  --dropdown-option-bg: var(--accentSurface);
-  --dropdown-option-color: var(--text-primary);
-  --dropdown-option-hover-bg: var(--accentSurfaceHover);
-  --dropdown-option-selected-bg: var(--accentSurfaceHover);
+  --dropdown-option-bg: var(--secondary);
+  --dropdown-option-color: var(--text-1);
+  --dropdown-option-hover-bg: var(--secondary-hover);
+  --dropdown-option-selected-bg: var(--secondary-hover);
   --dropdown-option-selected-color: var(--accentText);
-  /* Calendar day — same copy-not-link pattern: seeded from the Primary
-     (resting/hover) and Secondary (selected) look, but dedicated so the
-     calendar stays stable if those buttons are later reskinned. */
-  --calendar-day-bg: var(--accentSurface);
-  --calendar-day-color: var(--text-primary);
-  --calendar-day-hover-bg: var(--accentSurfaceHover);
-  --calendar-day-selected-bg: var(--accentSurfaceHover);
+  --calendar-day-bg: var(--secondary);
+  --calendar-day-color: var(--text-1);
+  --calendar-day-hover-bg: var(--secondary-hover);
+  --calendar-day-selected-bg: var(--secondary-hover);
   --calendar-day-selected-color: var(--accentText);
-  /* Time picker option — same copy-not-link pattern. Primary at rest,
-     Secondary (accentSurfaceHover + accentText) when selected. */
-  --timepicker-option-bg: var(--accentSurface);
-  --timepicker-option-color: var(--text-primary);
-  --timepicker-option-hover-bg: var(--accentSurfaceHover);
-  --timepicker-option-selected-bg: var(--accentSurfaceHover);
+  --timepicker-option-bg: var(--secondary);
+  --timepicker-option-color: var(--text-1);
+  --timepicker-option-hover-bg: var(--secondary-hover);
+  --timepicker-option-selected-bg: var(--secondary-hover);
   --timepicker-option-selected-color: var(--accentText);
-  /* Now button — Primary-style via its own tokens (copy-not-link). */
-  --timepicker-now-bg: var(--accentSurface);
-  --timepicker-now-color: var(--text-primary);
-  --timepicker-now-hover-bg: var(--accentSurfaceHover);
-  /* Search bar clear / loading button — copy-not-link Primary. */
-  --searchbar-clear-bg: var(--accentSurface);
-  --searchbar-clear-color: var(--text-primary);
-  --searchbar-clear-hover-bg: var(--accentSurfaceHover);
-  /* Tab-group button — copy-not-link from Primary / Secondary. */
-  --tab-button-bg: var(--accentSurfaceSubtle);
-  --tab-button-color: var(--text-primary);
-  --tab-button-hover-bg: var(--accentSurface);
-  --tab-button-selected-bg: var(--accentMain);
+  --timepicker-now-bg: var(--secondary);
+  --timepicker-now-color: var(--text-1);
+  --timepicker-now-hover-bg: var(--secondary-hover);
+  --searchbar-clear-bg: var(--secondary);
+  --searchbar-clear-color: var(--text-1);
+  --searchbar-clear-hover-bg: var(--secondary-hover);
+  --tab-button-bg: var(--theme);
+  --tab-button-color: var(--text-1);
+  --tab-button-hover-bg: var(--secondary-hover);
+  --tab-button-selected-bg: var(--primary-selected);
   --tab-button-selected-color: var(--onAccentText);
   --page-card-border: none;
-  --page-card-bg: var(--surfaceMain);
-  --page-card-bg-alt: var(--accentSurfaceSubtle);
-  --page-accent-layer: var(--accentSurface);
-  --nav-shell-bg: var(--accentSurface);
+  --page-card-bg: var(--surface);
+  --page-accent-layer: var(--secondary);
+  --nav-shell-bg: var(--secondary);
   --nav-shell-border: none;
-  --tab-container-bg: var(--accentSurface);
-  /* Tab items stay on the same light palette in dark mode — tabs intentionally
-     read as a separate, lighter surface than the main button/control system. */
+  --tab-container-bg: var(--secondary);
   --tab-item-bg: #f3f3f3;
   --tab-item-bg-hover: #e5e7eb;
   --tab-item-text: #0f0f0f;
-  --nav-link-bg: var(--accentSurface);
-  --nav-link-bg-hover: var(--accentSurfaceHover);
-  --nav-link-bg-active: var(--accentMain);
-  --nav-link-border: none;
-  --nav-link-border-active: none;
-
-  /* Dark mode shadow overrides */
+  --nav-link-bg: var(--secondary);
+  --nav-link-bg-hover: var(--secondary-hover);
+  --nav-link-bg-active: var(--primary);
+  --nav-link-border: 1px solid var(--primary-border);
+  --nav-link-border-active: 1px solid var(--primary-border);
   --shadow-sm: none;
   --shadow-md: none;
   --shadow-lg: none;

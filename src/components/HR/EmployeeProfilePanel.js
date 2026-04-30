@@ -8,7 +8,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 const mainCardStyle = {
   borderRadius: "var(--radius-md)",
   border: "1px solid rgba(var(--accent-base-rgb), 0.22)",
-  background: "var(--accent-surface)",
+  background: "var(--theme)",
   padding: "20px",
   display: "flex",
   flexDirection: "column",
@@ -29,7 +29,7 @@ const labelStyle = {
   fontSize: "0.72rem",
   letterSpacing: "0.12em",
   textTransform: "uppercase",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   fontWeight: 600,
 };
 
@@ -53,11 +53,11 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
           textAlign: "center",
         }}
       >
-        <p style={{ ...labelStyle, color: "var(--text-primary)", margin: 0 }}>Employee Profile</p>
-        <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+        <p style={{ ...labelStyle, color: "var(--text-1)", margin: 0 }}>Employee Profile</p>
+        <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-1)" }}>
           Select an employee from the list to view their profile.
         </p>
-        <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+        <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-1)" }}>
           Details, documents, and employment information will appear here.
         </p>
       </DevLayoutSection>
@@ -114,7 +114,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
             borderRadius: "var(--radius-sm)",
             border: "1px solid rgba(var(--accent-base-rgb), 0.32)",
             background: "var(--surface)",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             fontWeight: 700,
             cursor: onEdit ? "pointer" : "not-allowed",
           }}
@@ -134,11 +134,11 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <StatusTag label={employee.status} tone={employee.status === "Active" ? "success" : "default"} />
-            <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+            <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.9rem" }}>
               {employee.jobTitle || "Job title"} - {employee.department || "Department"}
             </p>
           </div>
-          <h2 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 700, color: "var(--text-primary)" }}>
+          <h2 style={{ margin: 0, fontSize: "1.6rem", fontWeight: 700, color: "var(--text-1)" }}>
             {displayName}
           </h2>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -155,7 +155,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
                     borderRadius: "var(--radius-pill)",
                     border: "none",
                     background: "rgba(var(--accent-base-rgb), 0.12)",
-                    color: "var(--text-primary)",
+                    color: "var(--text-1)",
                     fontSize: "0.75rem",
                     fontWeight: 600,
                     whiteSpace: "nowrap",
@@ -224,12 +224,12 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 border: "none",
-                background: "rgba(var(--primary-rgb), 0.1)",
+                background: "var(--theme)",
                 padding: "14px",
               }}
             >
               <div style={labelStyle}>Basic Salary</div>
-              <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--text-primary)" }}>
+              <div style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--text-1)" }}>
                 {formatCurrencyValue(employee.annualSalary)}
               </div>
             </DevLayoutSection>
@@ -313,7 +313,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
               borderRadius: "var(--radius-sm)",
               border: "none",
               background: "rgba(var(--primary-rgb), 0.12)",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -346,10 +346,10 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
                   }}
                 >
                   <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                    <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                    <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-1)" }}>
                       {doc.name}
                     </span>
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-1)" }}>
                       Type: {doc.type} - Uploaded {formatDate(doc.uploadedOn)}
                     </span>
                   </div>
@@ -379,7 +379,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
                   borderRadius: "var(--radius-sm)",
                   border: "1px dashed rgba(var(--grey-accent-rgb), 0.4)",
                   padding: "14px",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   fontSize: "0.85rem",
                 }}
               >
@@ -412,7 +412,7 @@ function CardBlock({ title, action = null, children, sectionKey, parentKey }) {
       style={subCardStyle}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)" }}>{title}</div>
+        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-1)" }}>{title}</div>
         {action}
       </div>
       {children}
@@ -435,10 +435,10 @@ function KeyValue({ label, value, helper, actions, sectionKey, parentKey }) {
         <span style={labelStyle}>{label}</span>
         {actions}
       </div>
-      <span style={{ fontSize: "0.98rem", fontWeight: 600, color: "var(--text-primary)" }}>
+      <span style={{ fontSize: "0.98rem", fontWeight: 600, color: "var(--text-1)" }}>
         {value || "-"}
       </span>
-      {helper && <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{helper}</span>}
+      {helper && <span style={{ fontSize: "0.75rem", color: "var(--text-1)" }}>{helper}</span>}
     </DevLayoutSection>
   );
 }

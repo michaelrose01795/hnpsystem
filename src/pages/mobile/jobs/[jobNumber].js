@@ -148,7 +148,7 @@ function MobileJobCardInner() {
         <Link href="/mobile/dashboard">← Back</Link>
         <h1 style={{ margin: 0 }}>{job.job_number}</h1>
         <ServiceModeBadge mode={job.service_mode} />
-        <span style={{ color: "var(--text-secondary)" }}>{job.status}</span>
+        <span style={{ color: "var(--text-1)" }}>{job.status}</span>
       </header>
 
       <section style={cardStyle}>

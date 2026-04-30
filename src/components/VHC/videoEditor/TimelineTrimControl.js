@@ -477,7 +477,7 @@ function Switch({ checked, onChange, disabled }) {
       onClick={() => onChange?.()}
       style={{
         position: "relative",
-        background: checked ? "var(--accentMain)" : "var(--control-bg)",
+        background: checked ? "var(--primary)" : "var(--control-bg)",
         cursor: disabled ? "not-allowed" : "pointer",
         transition: "background 160ms ease",
         flexShrink: 0,
@@ -487,13 +487,14 @@ function Switch({ checked, onChange, disabled }) {
       <span
         style={{
           position: "absolute",
-          top: 2,
+          top: "50%",
           left: checked ? 20 : 2,
           width: 20,
           height: 20,
+          transform: "translateY(-50%)",
           borderRadius: "50%",
           background: "#fff",
-          transition: "left 160ms ease",
+          transition: "left 160ms ease, transform 160ms ease",
           boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
         }}
       />
@@ -503,9 +504,9 @@ function Switch({ checked, onChange, disabled }) {
 
 function ToolButton({ onClick, disabled, tone = "default", children }) {
   const palette = {
-    default: { bg: "var(--control-bg)", color: "var(--surfaceText)", border: "var(--border)" },
+    default: { bg: "var(--control-bg)", color: "var(--surfaceText)", border: "var(--primary-border)" },
     danger: { bg: "rgba(var(--danger-rgb), 0.12)", color: "var(--danger)", border: "transparent" },
-    ghost: { bg: "transparent", color: "var(--surfaceTextMuted)", border: "var(--border)" },
+    ghost: { bg: "transparent", color: "var(--surfaceTextMuted)", border: "var(--primary-border)" },
   }[tone];
 
   return (

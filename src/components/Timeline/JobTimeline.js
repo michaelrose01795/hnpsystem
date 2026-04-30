@@ -33,7 +33,7 @@ export default function JobTimeline({ jobNumber }) {
   }, [jobNumber]);
 
   if (loading) {
-    return <p style={{ color: "var(--border)", padding: "10px" }}>Loading job timeline...</p>;
+    return <p style={{ color: "var(--primary-border)", padding: "10px" }}>Loading job timeline...</p>;
   }
 
   if (error) {
@@ -72,7 +72,7 @@ const styles = {
   container: {
     padding: "16px",
     boxShadow: "inset 3px 0 0 0 var(--danger)",
-    backgroundColor: "var(--text-primary)",
+    backgroundColor: "var(--text-1)",
     color: "var(--surface)",
     borderRadius: "var(--radius-xs)",
     marginTop: "10px",
@@ -94,7 +94,7 @@ const styles = {
   },
   content: { marginLeft: "10px" },
   status: { margin: "0 0 2px", color: "var(--surface)" },
-  note: { margin: "0 0 2px", fontSize: "0.9rem", color: "var(--background)" },
+  note: { margin: "0 0 2px", fontSize: "0.9rem", color: "var(--surface)" },
   meta: { fontSize: "0.8rem", color: "var(--grey-accent-light)" },
 };
 

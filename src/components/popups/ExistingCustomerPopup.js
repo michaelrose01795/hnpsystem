@@ -99,9 +99,9 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
                   padding: "10px 12px",
                   cursor: "pointer",
                   backgroundColor:
-                    selectedCustomer?.id === c.id ? "var(--surface-light)" : "var(--surface)",
-                  color: "var(--text-primary)",
-                  borderBottom: "1px solid var(--surface-light)",
+                    selectedCustomer?.id === c.id ? "var(--surface)" : "var(--surface)",
+                  color: "var(--text-1)",
+                  borderBottom: "1px solid var(--surface)",
                   fontSize: "14px",
                   fontWeight: selectedCustomer?.id === c.id ? 600 : 500,
                 }}
@@ -116,8 +116,8 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
           <div
             style={{
               marginBottom: "16px",
-              backgroundColor: "var(--surface-light)",
-              color: "var(--text-primary)",
+              backgroundColor: "var(--surface)",
+              color: "var(--text-1)",
               padding: "16px",
               borderRadius: "var(--input-radius)",
               border: "none",
@@ -150,8 +150,8 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
             style={{
               flex: 1,
               padding: "12px",
-              backgroundColor: "var(--surface-light)",
-              color: "var(--text-primary)",
+              backgroundColor: "var(--surface)",
+              color: "var(--text-1)",
               border: "none",
               borderRadius: "var(--radius-xs)",
               cursor: "pointer",
@@ -167,7 +167,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
               flex: 1,
               padding: "12px",
               backgroundColor: "var(--primary)",
-              color: "var(--text-inverse)",
+              color: "var(--text-2)",
               border: "none",
               borderRadius: "var(--radius-xs)",
               cursor: canUsePrimary ? "pointer" : "not-allowed",

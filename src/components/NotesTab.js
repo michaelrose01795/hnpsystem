@@ -363,7 +363,7 @@ export default function NotesTabNew({
 
   if (loading) {
     return (
-      <div style={{ padding: "20px", textAlign: "center", color: "var(--text-secondary)" }}>
+      <div style={{ padding: "20px", textAlign: "center", color: "var(--text-1)" }}>
         Loading notes...
       </div>
     );
@@ -396,7 +396,7 @@ export default function NotesTabNew({
       {canEdit && (
         <>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showAddNote ? "12px" : "20px" }}>
-            <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+            <div style={{ fontSize: "13px", color: "var(--text-1)" }}>
               {notes.length} note{notes.length === 1 ? "" : "s"}
             </div>
             <button
@@ -404,7 +404,7 @@ export default function NotesTabNew({
               style={{
                 padding: "10px 20px",
                 backgroundColor: "var(--primary)",
-                color: "var(--text-inverse)",
+                color: "var(--text-2)",
                 border: "1px solid var(--primary)",
                 borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
@@ -427,7 +427,7 @@ export default function NotesTabNew({
                 marginBottom: "20px",
               }}
             >
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "12px" }}>
+              <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)", marginBottom: "12px" }}>
                 Add New Note
               </div>
               <textarea
@@ -452,12 +452,12 @@ export default function NotesTabNew({
                   resize: "none",
                   overflowY: "auto",
                   backgroundColor: "var(--surface)",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   marginBottom: "12px",
                 }}
               />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-secondary)", cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-1)", cursor: "pointer" }}>
                   <input
                     type="checkbox"
                     checked={newNoteHidden}
@@ -490,9 +490,9 @@ export default function NotesTabNew({
                     disabled={!newNoteText.trim() || savingNewNote}
                     style={{
                       padding: "10px 18px",
-                      backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface-light)" : "var(--primary)",
-                      color: !newNoteText.trim() || savingNewNote ? "var(--text-secondary)" : "white",
-                      border: "1px solid var(--primary-dark)",
+                      backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface)" : "var(--primary)",
+                      color: !newNoteText.trim() || savingNewNote ? "var(--text-1)" : "white",
+                      border: "1px solid var(--primary-selected)",
                       borderRadius: "var(--radius-xs)",
                       cursor: !newNoteText.trim() || savingNewNote ? "not-allowed" : "pointer",
                       fontSize: "14px",
@@ -525,10 +525,10 @@ export default function NotesTabNew({
             }}
           >
             <div style={{ fontSize: "48px", marginBottom: "12px" }}>📝</div>
-            <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>
+            <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--text-1)", marginBottom: "4px" }}>
               No Notes Yet
             </div>
-            <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0 }}>
+            <p style={{ color: "var(--text-1)", fontSize: "14px", margin: 0 }}>
               {canEdit ? "Add your first note above" : "No notes have been added to this job"}
             </p>
           </div>
@@ -558,7 +558,7 @@ export default function NotesTabNew({
                           padding: "3px 8px",
                           borderRadius: "var(--radius-pill)",
                           backgroundColor: "var(--control-bg-hover)",
-                          color: "var(--text-primary)",
+                          color: "var(--text-1)",
                           fontSize: "10px",
                           fontWeight: 700,
                         }}
@@ -580,15 +580,15 @@ export default function NotesTabNew({
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-1)" }}>
                       {note.createdBy}
                       {note.createdByEmail && (
-                        <span style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 400, marginLeft: "6px" }}>
+                        <span style={{ fontSize: "11px", color: "var(--text-1)", fontWeight: 400, marginLeft: "6px" }}>
                           ({note.createdByEmail})
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
+                    <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "2px" }}>
                       Created: {formatDateTime(note.createdAt)}
                       {note.updatedAt !== note.createdAt && (
                         <span style={{ marginLeft: "8px" }}>
@@ -637,7 +637,7 @@ export default function NotesTabNew({
                         resize: "none",
                         overflowY: "auto",
                         backgroundColor: "var(--surface)",
-                        color: "var(--text-primary)",
+                        color: "var(--text-1)",
                         marginBottom: "10px",
                       }}
                     />
@@ -649,7 +649,7 @@ export default function NotesTabNew({
                           borderRadius: "var(--radius-xs)",
                           border: "none",
                           backgroundColor: "var(--primary)",
-                          color: "var(--text-inverse)",
+                          color: "var(--text-2)",
                           fontWeight: 700,
                           fontSize: "13px",
                           cursor: "pointer",
@@ -663,8 +663,8 @@ export default function NotesTabNew({
                           padding: "8px 16px",
                           borderRadius: "var(--radius-xs)",
                           border: "none",
-                          backgroundColor: "var(--surface-light)",
-                          color: "var(--text-primary)",
+                          backgroundColor: "var(--surface)",
+                          color: "var(--text-1)",
                           fontWeight: 700,
                           fontSize: "13px",
                           cursor: "pointer",
@@ -678,7 +678,7 @@ export default function NotesTabNew({
                   <div
                     style={{
                       fontSize: "14px",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       lineHeight: 1.7,
                       whiteSpace: "pre-wrap",
                       marginBottom: "12px",
@@ -690,14 +690,14 @@ export default function NotesTabNew({
 
                 {/* Actions */}
                 {canEdit && !isEditing && (
-                  <div style={{ display: "flex", gap: "12px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--surface-light)" }}>
+                  <div style={{ display: "flex", gap: "12px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--surface)" }}>
                     <button
                       onClick={() => handleEditNote(note)}
                       style={{
                         padding: "6px 12px",
                         borderRadius: "var(--radius-xs)",
                         border: "none",
-                        backgroundColor: "var(--surface-light)",
+                        backgroundColor: "var(--surface)",
                         color: "var(--primary)",
                         fontWeight: 700,
                         fontSize: "12px",
@@ -712,8 +712,8 @@ export default function NotesTabNew({
                         padding: "6px 12px",
                         borderRadius: "var(--radius-xs)",
                         border: "none",
-                        backgroundColor: "var(--surface-light)",
-                        color: "var(--text-primary)",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--text-1)",
                         fontWeight: 700,
                         fontSize: "12px",
                         cursor: "pointer",
@@ -727,8 +727,8 @@ export default function NotesTabNew({
                         padding: "6px 12px",
                         borderRadius: "var(--radius-xs)",
                         border: "none",
-                        backgroundColor: "var(--surface-light)",
-                        color: "var(--text-primary)",
+                        backgroundColor: "var(--surface)",
+                        color: "var(--text-1)",
                         fontWeight: 700,
                         fontSize: "12px",
                         cursor: "pointer",

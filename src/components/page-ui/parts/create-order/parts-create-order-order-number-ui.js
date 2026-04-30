@@ -54,7 +54,7 @@ export default function PartsOrderDetailUi(props) {
             <div>
               <h1 style={{
             margin: "6px 0 0",
-            color: "var(--primary-dark)"
+            color: "var(--primary-selected)"
           }}>
                 {order?.order_number || resolvedOrderNumber || "Loading…"}
               </h1>
@@ -91,7 +91,7 @@ export default function PartsOrderDetailUi(props) {
         <div className="app-section-card" style={sectionCard}>
           <h2 style={{
         margin: "0 0 12px",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>Customer & Vehicle</h2>
           <div style={infoGrid}>
             <InfoCell label="Customer" value={order?.customer_name || "—"} />

@@ -184,7 +184,7 @@ export default function CompanyAccountsIndexPage() {
         </div>
       </DevLayoutSection>
       {ledgerFeedback && !ledgerAccounts.length && !ledgerLoading &&
-    <p style={{ margin: 0, color: "var(--text-secondary)" }}>{ledgerFeedback}</p>
+    <p style={{ margin: 0, color: "var(--text-1)" }}>{ledgerFeedback}</p>
     }
       <DevLayoutSection sectionKey="company-accounts-ledger-table" sectionType="data-table" parentKey="company-accounts-ledger-panel">
         <AccountTable
@@ -253,7 +253,7 @@ export default function CompanyAccountsIndexPage() {
             
             <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "12px", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", flex: "1 1 260px", minWidth: 0 }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "var(--text-primary)", whiteSpace: "nowrap" }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "var(--text-1)", whiteSpace: "nowrap" }}>
                   {account.company_name || "Unnamed company"}
                 </p>
                 {account.trading_name && account.trading_name !== account.company_name &&

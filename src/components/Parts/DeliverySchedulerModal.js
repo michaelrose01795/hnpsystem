@@ -144,7 +144,7 @@ export default function DeliverySchedulerModal({
           }}
         >
           <div>
-            <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--primary-dark)" }}>
+            <p style={{ margin: 0, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--primary-selected)" }}>
               Schedule delivery
             </p>
             <h3 style={{ margin: "6px 0 0", fontSize: "1.25rem", color: "var(--primary)" }}>
@@ -204,7 +204,7 @@ export default function DeliverySchedulerModal({
                 border: "none",
                 padding: "10px 12px",
                 fontWeight: 600,
-                color: "var(--primary-dark)",
+                color: "var(--primary-selected)",
               }}
             >
               <option value="">Select a delivery</option>
@@ -332,7 +332,7 @@ export default function DeliverySchedulerModal({
                 ...buttonStyle,
                 border: "none",
                 background: "var(--surface)",
-                color: "var(--primary-dark)",
+                color: "var(--primary-selected)",
                 flex: "1 1 140px",
                 minWidth: "140px",
               }}

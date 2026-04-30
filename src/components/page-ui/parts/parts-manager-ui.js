@@ -42,7 +42,7 @@ export default function PartsManagerDashboardUi(props) {
         <div style={{
     padding: "48px",
     textAlign: "center",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   }}>
           Only the parts manager can view this dashboard.
         </div>
@@ -102,7 +102,7 @@ export default function PartsManagerDashboardUi(props) {
         </div> : error ? <div style={{
     padding: "48px",
     textAlign: "center",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   }}>{error}</div> : <>
           <PartsOpsDashboard title="Parts Manager Dashboard" subtitle="Live queue, inbound deliveries and inventory status pulled from Supabase" data={dashboardData} />
 
@@ -266,7 +266,7 @@ export default function PartsManagerDashboardUi(props) {
               }}>{bucket.status}</div>
                       <div style={{
                 fontSize: "0.8rem",
-                color: "var(--primary-dark)",
+                color: "var(--primary-selected)",
                 marginTop: "4px"
               }}>{bucket.window}</div>
                     </div>)}
@@ -287,7 +287,7 @@ export default function PartsManagerDashboardUi(props) {
               }}>{item.detail}</div>
                       <div style={{
                 fontSize: "0.8rem",
-                color: "var(--primary-dark)",
+                color: "var(--primary-selected)",
                 marginTop: "4px"
               }}>{item.owner}</div>
                     </div>)}

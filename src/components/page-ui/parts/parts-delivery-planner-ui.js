@@ -128,7 +128,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 <div>
                   <div style={{
               fontSize: "0.75rem",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>Upcoming runs</div>
                   <strong style={{
               fontSize: "1.6rem"
@@ -137,7 +137,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 <div>
                   <div style={{
               fontSize: "0.75rem",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>Total mileage</div>
                   <strong style={{
               fontSize: "1.6rem"
@@ -146,7 +146,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 <div>
                   <div style={{
               fontSize: "0.75rem",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>Fuel estimate</div>
                   <strong style={{
               fontSize: "1.6rem"
@@ -182,7 +182,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 </p>
                 <h2 style={{
             margin: "6px 0 0",
-            color: "var(--primary-dark)"
+            color: "var(--primary-selected)"
           }}>Scheduled drop offs</h2>
                 <p style={{
             margin: "4px 0 0",
@@ -215,7 +215,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
               alignItems: "center"
             }}>
                         <strong style={{
-                color: "var(--primary-dark)"
+                color: "var(--primary-selected)"
               }}>
                           {date === "unscheduled" ? "Date not set" : formatDate(date)}
                         </strong>
@@ -254,7 +254,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                     }}>
                                   <span style={{
                         fontWeight: 600,
-                        color: "var(--primary-dark)"
+                        color: "var(--primary-selected)"
                       }}>
                                     {job.invoice_number || job.job_id || "Invoice"}
                                   </span>
@@ -269,7 +269,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                                 </div>
                                 <div style={{
                       fontWeight: 600,
-                      color: "var(--primary-dark)"
+                      color: "var(--primary-selected)"
                     }}>
                                   {job.part_name || "Parts order"} · Qty {qty}
                                 </div>
@@ -324,7 +324,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
               borderRadius: "var(--radius-xs)",
               border: "none",
               fontSize: "0.9rem",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>
                     <option value="">All days</option>
                     {dateOptions.map(option => <option key={option.value} value={option.value}>
@@ -337,7 +337,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
             borderRadius: "var(--radius-pill)",
             border: "none",
             background: "var(--danger-surface)",
-            color: "var(--primary-dark)",
+            color: "var(--primary-selected)",
             fontWeight: 600,
             fontSize: "0.85rem",
             cursor: "pointer"
@@ -371,7 +371,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                         <div>
                           <h3 style={{
                   margin: 0,
-                  color: "var(--primary-dark)"
+                  color: "var(--primary-selected)"
                 }}>{cardLabel}</h3>
                           <p style={{
                   margin: "4px 0 0",
@@ -384,7 +384,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                         <span style={{
                 fontSize: "0.85rem",
                 fontWeight: 600,
-                color: "var(--primary-dark)",
+                color: "var(--primary-selected)",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em"
               }}>
@@ -405,7 +405,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                               <div>
                                 <div style={{
                       fontWeight: 600,
-                      color: "var(--primary-dark)"
+                      color: "var(--primary-selected)"
                     }}>{jobNumber}</div>
                                 <div style={{
                       fontSize: "0.9rem",
@@ -529,7 +529,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                     <thead>
                       <tr style={{
                 background: "var(--surface)",
-                borderBottom: "2px solid var(--surface-light)"
+                borderBottom: "2px solid var(--surface)"
               }}>
                         {["Day / Date", "Collections", "Total parts", "Earliest slot", "Load"].map(heading => <th key={heading} style={{
                   textAlign: "left",
@@ -559,11 +559,11 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 }}>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface-light)"
+                    borderTop: "1px solid var(--surface)"
                   }}>
                               <div style={{
                       fontWeight: 600,
-                      color: "var(--primary-dark)"
+                      color: "var(--primary-selected)"
                     }}>
                                 {summary.date === todayKey ? "Today" : formatShortDate(summary.date)}
                               </div>
@@ -576,25 +576,25 @@ export default function PartsDeliveryPlannerPageUi(props) {
                             </td>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface-light)"
+                    borderTop: "1px solid var(--surface)"
                   }}>
                               {summary.jobCount}
                             </td>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface-light)"
+                    borderTop: "1px solid var(--surface)"
                   }}>
                               {summary.totalQuantity}
                             </td>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface-light)"
+                    borderTop: "1px solid var(--surface)"
                   }}>
                               {summary.earliestWindow ? formatTime(summary.earliestWindow) : "TBC"}
                             </td>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface-light)"
+                    borderTop: "1px solid var(--surface)"
                   }}>
                               <span style={{
                       padding: "6px 12px",
@@ -634,7 +634,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                   </p>
                   <strong style={{
               fontSize: "1.2rem",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>
                     {formatDate(selectedCollectionDate)}
                   </strong>
@@ -652,7 +652,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                   </p>
                   <strong style={{
               fontSize: "1.2rem",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>
                     {selectedCollectionJobs.length}
                   </strong>
@@ -670,7 +670,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                   </p>
                   <strong style={{
               fontSize: "1.2rem",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>
                     {selectedCollectionQuantity}
                   </strong>
@@ -688,7 +688,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                   </p>
                   <strong style={{
               fontSize: "1.2rem",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>
                     {selectedCollectionWindow ? formatTime(selectedCollectionWindow) : "TBC"}
                   </strong>
@@ -722,7 +722,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
               flexWrap: "wrap"
             }}>
                           <strong style={{
-                color: "var(--primary-dark)"
+                color: "var(--primary-selected)"
               }}>
                             {job.customer_name || "Customer"}
                           </strong>

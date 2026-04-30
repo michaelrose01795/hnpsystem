@@ -18,7 +18,7 @@ export default function AfterSalesDashboardUi(props) {
         <div style={{
     padding: "48px",
     textAlign: "center",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   }}>
           You do not have access to the after sales dashboard.
         </div>
@@ -28,19 +28,19 @@ export default function AfterSalesDashboardUi(props) {
       return <>
       <div>
         <header className="app-section-card" style={{
-      background: "var(--surface-light)"
+      background: "var(--surface)"
     }}>
           <p style={{
         margin: 0,
         letterSpacing: "0.12em",
         textTransform: "uppercase",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>
             After sales performance
           </p>
           <h1 style={{
         margin: "6px 0 0",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>Combined workshop + VHC view</h1>
           <p style={{
         margin: "6px 0 0",

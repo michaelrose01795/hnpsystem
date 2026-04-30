@@ -183,7 +183,7 @@ export default function CookieBanner() {
       margin: "0 auto",
       // Surface, padding, radius and (no) border all flow from the
       // .app-section-card token system declared in globals.css.
-      color: "var(--text-primary)",
+      color: "var(--text-1)",
       fontFamily: "var(--font-family, system-ui, sans-serif)",
     }),
     []
@@ -198,12 +198,12 @@ export default function CookieBanner() {
     borderRadius: "var(--radius-xs, 6px)",
     fontWeight: 600,
     cursor: "pointer",
-    background: "var(--accentMain)",
+    background: "var(--primary)",
     color: "var(--onAccentText)",
   };
 
   // Ghost (Customise, Reject All, Save Choices): no border, transparent
-  // surface, and text follows --text-primary so it flips with light/dark.
+  // surface, and text follows --text-1 so it flips with light/dark.
   const buttonGhost = {
     minHeight: 40,
     padding: "10px 14px",
@@ -212,7 +212,7 @@ export default function CookieBanner() {
     fontWeight: 600,
     cursor: "pointer",
     background: "transparent",
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
   };
 
   if (!mounted || !open) return null;
@@ -220,7 +220,7 @@ export default function CookieBanner() {
   return (
     <div role="dialog" aria-label="Cookie consent" className="app-section-card" style={containerStyle}>
       <h2 style={{ margin: "0 0 6px", fontSize: "1.05rem" }}>Cookies on this site</h2>
-      <p style={{ margin: "0 0 12px", fontSize: "0.9rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+      <p style={{ margin: "0 0 12px", fontSize: "0.9rem", color: "var(--text-1)", lineHeight: 1.5 }}>
         We use essential cookies to make the site work. With your permission we&apos;d
         also like to use other cookies to remember preferences, measure usage, and improve
         the service. You can change your choice at any time on the privacy page.
@@ -254,12 +254,12 @@ export default function CookieBanner() {
                 <span style={{ display: "block", fontWeight: 600 }}>
                   {cat.label}
                   {cat.locked && (
-                    <span style={{ marginLeft: 8, fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                    <span style={{ marginLeft: 8, fontSize: "0.75rem", color: "var(--text-1)" }}>
                       (always on)
                     </span>
                   )}
                 </span>
-                <span style={{ display: "block", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                <span style={{ display: "block", fontSize: "0.82rem", color: "var(--text-1)" }}>
                   {cat.description}
                 </span>
               </span>

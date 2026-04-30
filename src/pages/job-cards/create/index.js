@@ -498,22 +498,22 @@ export default function CreateJobCardPage() {
 
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
-    let baseColor = "var(--info-surface)"; // light grey background
+    let baseColor = "var(--theme)"; // light grey background
     switch (status) {
       case "Waiting":
         baseColor = "var(--danger-surface)"; // red tint for waiting
         break;
       case "Loan Car":
-        baseColor = "var(--info-surface)"; // blue tint for loan car
+        baseColor = "var(--theme)"; // blue tint for loan car
         break;
       case "Collection":
         baseColor = "var(--success-surface)"; // green tint for collection
         break;
       default:
-        baseColor = "var(--info-surface)"; // default background
+        baseColor = "var(--theme)"; // default background
     }
     if (source === "Warranty") {// check if job source is warranty
-      if (baseColor === "var(--info-surface)") return "var(--warning-surface)"; // add orange tint when neutral
+      if (baseColor === "var(--theme)") return "var(--warning-surface)"; // add orange tint when neutral
       return baseColor; // keep existing tint otherwise
     }
     return baseColor; // return computed background
@@ -600,7 +600,7 @@ export default function CreateJobCardPage() {
   }; // append new empty request
 
   const sectionCardStyle = {
-    background: "var(--accent-surface)",
+    background: "var(--theme)",
     border: "none"
   };
 
@@ -641,7 +641,7 @@ export default function CreateJobCardPage() {
     padding: "var(--control-padding)",
     borderRadius: "var(--control-radius)",
     border: "none",
-    backgroundColor: isSelected ? "var(--accentMain)" : "var(--control-bg)",
+    backgroundColor: isSelected ? "var(--primary)" : "var(--control-bg)",
     color: isSelected ? "var(--onAccentText)" : "var(--accentText)",
     transition: "var(--control-transition)",
     fontWeight: 600,

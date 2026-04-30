@@ -24,7 +24,7 @@ export default function HrAttendanceUi(props) {
     gap: "var(--space-1)"
   }}>
         <p style={{
-      color: "var(--text-secondary)",
+      color: "var(--text-1)",
       margin: 0
     }}>
           Monitor time logs, absences, late arrivals, and overtime activity across the team.
@@ -90,7 +90,7 @@ export default function HrAttendanceUi(props) {
           gap: "var(--space-3)"
         }}>
                 {overtimeSummaries.map(record => <div key={record.id} style={{
-            border: "1px solid var(--border)",
+            border: "1px solid var(--primary-border)",
             borderRadius: "var(--radius-sm)",
             padding: "var(--space-3)",
             display: "flex",
@@ -104,13 +104,13 @@ export default function HrAttendanceUi(props) {
             }}>
                       <span style={{
                 fontWeight: 600,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>{record.employee}</span>
                       <StatusTag label={record.status} tone={record.status === "Ready" ? "success" : "warning"} />
                     </div>
                     <span style={{
               fontSize: "var(--text-label)",
-              color: "var(--text-secondary)"
+              color: "var(--text-1)"
             }}>
                       {new Date(record.periodStart).toLocaleDateString()} -{" "}
                       {new Date(record.periodEnd).toLocaleDateString()}
@@ -119,7 +119,7 @@ export default function HrAttendanceUi(props) {
               display: "flex",
               gap: "var(--space-md)",
               fontSize: "var(--text-body-sm)",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>
                       <span>{record.overtimeHours} hrs</span>
                       <span>OT rate £{Number(record.overtimeRate).toFixed(2)}</span>

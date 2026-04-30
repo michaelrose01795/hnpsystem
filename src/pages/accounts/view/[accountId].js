@@ -82,8 +82,8 @@ export default function ViewAccountPage() {
 
   const detailCard = (label, value) =>
   <div style={{ background: "var(--surface)", borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", padding: "16px" }}>
-      <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
-      <strong style={{ display: "block", marginTop: "10px", fontSize: "1.35rem", color: "var(--text-primary)" }}>{value}</strong>
+      <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+      <strong style={{ display: "block", marginTop: "10px", fontSize: "1.35rem", color: "var(--text-1)" }}>{value}</strong>
     </div>;
 
 

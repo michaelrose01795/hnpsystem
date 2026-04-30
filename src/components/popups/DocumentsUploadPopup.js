@@ -339,7 +339,7 @@ export default function DocumentsUploadPopup({
           <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "var(--primary)" }}>
             Upload Documents
           </h3>
-          <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--text-secondary)" }}>
+          <p style={{ margin: "6px 0 0", fontSize: "13px", color: "var(--text-1)" }}>
             {uploadProgress.length > 0 ? "Upload in progress..." : "Attach PDFs or images and upload immediately."}
           </p>
         </div>
@@ -354,8 +354,8 @@ export default function DocumentsUploadPopup({
                 padding: "28px",
                 textAlign: "center",
                 cursor: "pointer",
-                backgroundColor: "var(--surface-light)",
-                color: "var(--text-primary)",
+                backgroundColor: "var(--surface)",
+                color: "var(--text-1)",
                 fontWeight: "600",
                 fontSize: "14px"
               }}
@@ -386,7 +386,7 @@ export default function DocumentsUploadPopup({
                     key={`${file.name}-${idx}`}
                     style={{
                       padding: "8px",
-                      borderBottom: "1px solid var(--surface-light)"
+                      borderBottom: "1px solid var(--surface)"
                     }}
                   >
                     {renamingIndex === idx ? (
@@ -406,7 +406,7 @@ export default function DocumentsUploadPopup({
                             borderRadius: "var(--input-radius)",
                             border: "1px solid var(--primary)",
                             fontSize: "13px",
-                            color: "var(--text-primary)",
+                            color: "var(--text-1)",
                             backgroundColor: "var(--surface)",
                             outline: "none",
                           }}
@@ -418,7 +418,7 @@ export default function DocumentsUploadPopup({
                             border: "none",
                             borderRadius: "var(--input-radius)",
                             backgroundColor: "var(--primary)",
-                            color: "var(--text-inverse)",
+                            color: "var(--text-2)",
                             fontSize: "12px",
                             fontWeight: "600",
                             cursor: "pointer",
@@ -432,7 +432,7 @@ export default function DocumentsUploadPopup({
                           style={{
                             border: "none",
                             background: "transparent",
-                            color: "var(--text-secondary)",
+                            color: "var(--text-1)",
                             fontSize: "13px",
                             cursor: "pointer",
                           }}
@@ -444,10 +444,10 @@ export default function DocumentsUploadPopup({
                       /* Normal row */
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div>
-                          <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-primary)" }}>
+                          <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--text-1)" }}>
                             {file.name}
                           </div>
-                          <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{formatBytes(file.size)}</div>
+                          <div style={{ fontSize: "12px", color: "var(--text-1)" }}>{formatBytes(file.size)}</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                           <button
@@ -490,8 +490,8 @@ export default function DocumentsUploadPopup({
                   padding: "12px",
                   borderRadius: "var(--input-radius)",
                   border: "none",
-                  backgroundColor: "var(--surface-light)",
-                  color: "var(--text-primary)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text-1)",
                   fontWeight: "600",
                   cursor: "pointer"
                 }}
@@ -507,7 +507,7 @@ export default function DocumentsUploadPopup({
                   borderRadius: "var(--input-radius)",
                   border: "none",
                   background: "var(--primary)",
-                  color: "var(--text-inverse)",
+                  color: "var(--text-2)",
                   fontWeight: "600",
                   cursor: isUploading ? "not-allowed" : "pointer",
                   opacity: isUploading ? 0.7 : 1
@@ -575,7 +575,7 @@ export default function DocumentsUploadPopup({
                         key={`progress-${idx}`}
                         style={{
                           padding: "12px",
-                          backgroundColor: "var(--info-surface)",
+                          backgroundColor: "var(--theme)",
                           borderRadius: "var(--input-radius)",
                           border: `1px solid ${statusColor}`
                         }}
@@ -668,7 +668,7 @@ export default function DocumentsUploadPopup({
               {existingDocuments.length > 0 && (
                 <>
                   {uploadProgress.length > 0 && (
-                    <div style={{ borderTop: "1px solid var(--surface-light)", margin: "4px 0" }} />
+                    <div style={{ borderTop: "1px solid var(--surface)", margin: "4px 0" }} />
                   )}
                   <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--primary)" }}>
                     Uploaded Documents ({existingDocuments.length})
@@ -689,7 +689,7 @@ export default function DocumentsUploadPopup({
                             padding: "8px",
                             borderRadius: "var(--input-radius)",
                             border: "none",
-                            backgroundColor: "var(--info-surface)"
+                            backgroundColor: "var(--theme)"
                           }}
                         >
                           {thumbUrl ? (
@@ -712,7 +712,7 @@ export default function DocumentsUploadPopup({
                                 height: "48px",
                                 borderRadius: "var(--radius-xs)",
                                 flexShrink: 0,
-                                backgroundColor: "var(--surface-light)",
+                                backgroundColor: "var(--surface)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -726,10 +726,10 @@ export default function DocumentsUploadPopup({
                             </div>
                           )}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {docName}
                             </div>
-                            <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                            <div style={{ fontSize: "11px", color: "var(--text-1)" }}>
                               {docType.split("/").pop() || "file"}
                             </div>
                           </div>

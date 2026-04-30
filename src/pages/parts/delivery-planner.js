@@ -165,9 +165,9 @@ const modalFieldColumnStyle = {
 
 const plannerTabButton = (active) => ({
   borderRadius: "var(--radius-pill)",
-  border: active ? "1px solid var(--primary)" : "1px solid var(--surface-light)",
+  border: active ? "1px solid var(--primary)" : "1px solid var(--surface)",
   background: active ? "var(--primary)" : "var(--surface)",
-  color: active ? "var(--surface)" : "var(--primary-dark)",
+  color: active ? "var(--surface)" : "var(--primary-selected)",
   padding: "8px 18px",
   fontWeight: 600,
   cursor: "pointer"
@@ -1458,7 +1458,7 @@ function DeliveryJobModal({
                 
               Delivery job
             </p>
-            <h3 style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>
+            <h3 style={{ margin: "6px 0 0", color: "var(--primary-selected)" }}>
               {job.invoice_number || "Select invoice"}
             </h3>
           </div>
@@ -1482,7 +1482,7 @@ function DeliveryJobModal({
         </div>
 
         <label style={{ display: "block" }}>
-          <span style={{ fontWeight: 600, color: "var(--primary-dark)", fontSize: "0.85rem" }}>
+          <span style={{ fontWeight: 600, color: "var(--primary-selected)", fontSize: "0.85rem" }}>
             Search invoice number
           </span>
           <input
@@ -1570,7 +1570,7 @@ function DeliveryJobModal({
                   padding: "8px 14px",
                   cursor: "pointer",
                   background: job.is_paid ? "rgba(var(--success-rgb,34,139,34),0.12)" : "var(--danger-surface)",
-                  color: job.is_paid ? "var(--success, #297C3B)" : "var(--primary-dark)",
+                  color: job.is_paid ? "var(--success, #297C3B)" : "var(--primary-selected)",
                   fontWeight: 600
                 }}>
                 

@@ -12,7 +12,7 @@
   border-radius: var(--radius-pill);
   border: none;
   background: var(--primary);
-  color: var(--text-inverse);
+  color: var(--text-2);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
   font-weight: 700;
   cursor: grab;
@@ -42,12 +42,12 @@
 
 .bubbleOpen {
   background: var(--primary);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .bubbleOpen .bubbleLabel,
 .bubble:active .bubbleLabel {
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .panel {
@@ -60,7 +60,7 @@
     0 28px 52px -18px rgba(0, 0, 0, 0.34),
     0 14px 28px -14px rgba(0, 0, 0, 0.22),
     0 4px 10px -6px rgba(0, 0, 0, 0.16);
-  color: var(--text-primary);
+  color: var(--text-1);
   overflow: hidden;
   min-width: 260px;
   min-height: 220px;
@@ -166,14 +166,14 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .headerButton,
 .primaryAction {
   border: none;
   background: var(--control-bg);
-  color: var(--text-primary);
+  color: var(--text-1);
   border-radius: var(--control-radius);
   padding: 7px 10px;
   cursor: pointer;
@@ -209,7 +209,7 @@
 .tab {
   border: none;
   background: var(--control-bg);
-  color: var(--text-primary);
+  color: var(--text-1);
   border-radius: var(--radius-pill);
   padding: 6px 10px;
   font-size: 12px;
@@ -233,7 +233,7 @@
 
 .tabActive {
   background: var(--primary);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .tabAdd {
@@ -247,7 +247,7 @@
   font-weight: 700;
   line-height: 1;
   background: var(--primary);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .tabTitle {
@@ -267,7 +267,7 @@
 .tabClose {
   border: 0;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--text-1);
   cursor: pointer;
   font-size: 15px;
   line-height: 1;
@@ -301,7 +301,7 @@
 
 .label {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-1);
   font-family: inherit;
 }
 
@@ -335,7 +335,7 @@
   border-radius: var(--control-radius);
   border: none;
   background: var(--control-bg);
-  color: var(--text-primary);
+  color: var(--text-1);
   padding: var(--control-padding);
   outline: none;
   font-family: inherit;
@@ -364,7 +364,7 @@
   border-radius: var(--control-radius);
   border: none;
   background: var(--control-bg);
-  color: var(--text-primary);
+  color: var(--text-1);
   padding: 9px 11px;
   font-family: inherit;
   font-size: 16px;
@@ -393,7 +393,7 @@
 }
 
 .richEditorReadOnly {
-  background: var(--surface-light);
+  background: var(--surface);
 }
 
 .titleInput {
@@ -440,7 +440,7 @@
 
 .commandSuggestionCmd {
   font-size: 12px;
-  color: var(--text-primary);
+  color: var(--text-1);
 }
 
 /* AI button in the Title row — positioned to the left of Share */
@@ -460,14 +460,14 @@
 
 .aiButton:hover {
   background: var(--primary);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 /* AI tab in the header tab bar — always present */
 .tabAi {
   /* Slightly differentiated from note tabs: softer background until active */
   background: rgba(var(--primary-rgb), 0.1);
-  color: var(--text-primary);
+  color: var(--text-1);
   font-weight: 600;
   letter-spacing: 0.02em;
   font-size: 11px;
@@ -483,7 +483,7 @@
 .shareButton {
   border: none;
   background: rgba(var(--primary-rgb), 0.14);
-  color: var(--text-primary);
+  color: var(--text-1);
   border-radius: var(--control-radius);
   padding: 6px 10px;
   font-size: 12px;
@@ -502,7 +502,7 @@
   border-radius: var(--control-radius);
   border: none !important;
   background: var(--control-bg) !important;
-  color: var(--text-secondary) !important;
+  color: var(--text-1) !important;
   position: relative;
   cursor: pointer;
   padding: var(--control-padding);
@@ -525,11 +525,11 @@
 
 .visibilitySwitchOn {
   background: var(--primary) !important;
-  color: var(--text-inverse) !important;
+  color: var(--text-2) !important;
 }
 
 .visibilitySwitchOn:hover {
-  background: var(--primary-light) !important;
+  background: var(--primary-hover) !important;
 }
 
 .visibilitySwitch:disabled {
@@ -545,7 +545,7 @@
   gap: 8px;
   flex-wrap: wrap;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .readOnly {
@@ -559,7 +559,7 @@
 
 .emptyState {
   height: 100%;
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--primary-border);
   border-radius: var(--control-radius);
   background: rgba(var(--primary-rgb), 0.05);
   display: grid;
@@ -576,7 +576,7 @@
 
 .emptyState p {
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-1);
   max-width: 320px;
 }
 
@@ -639,7 +639,7 @@
   border: none;
   border-radius: var(--control-radius);
   background: var(--control-bg);
-  color: var(--text-primary);
+  color: var(--text-1);
   padding: 8px 126px 8px 10px;
   font-size: var(--control-font-size);
 }
@@ -650,7 +650,7 @@
   top: 50%;
   transform: translateY(-50%);
   font-size: 10px;
-  color: var(--text-secondary);
+  color: var(--text-1);
   pointer-events: none;
   white-space: nowrap;
 }
@@ -658,7 +658,7 @@
 .shareCloseButton {
   border: none;
   background: var(--control-bg);
-  color: var(--text-primary);
+  color: var(--text-1);
   border-radius: var(--control-radius);
   padding: 8px 10px;
   font-size: 12px;
@@ -689,7 +689,7 @@
 
 .shareUserName {
   font-size: 13px;
-  color: var(--text-primary);
+  color: var(--text-1);
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -699,7 +699,7 @@
 .shareUserEmail {
   grid-column: 2 / 3;
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-1);
   line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -709,7 +709,7 @@
 .shareEmpty {
   padding: 12px;
   font-size: 12px;
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 @media (max-width: 640px) {

@@ -70,8 +70,8 @@ export default function ConcernPickerModal({ isOpen, title = "Link capture to a 
             style={{
               padding: "var(--space-3)",
               borderRadius: "var(--radius-sm)",
-              background: "var(--surface-light)",
-              color: "var(--text-secondary)",
+              background: "var(--surface)",
+              color: "var(--text-1)",
               fontSize: "var(--text-body-sm)",
               textAlign: "center",
             }}
@@ -87,7 +87,7 @@ export default function ConcernPickerModal({ isOpen, title = "Link capture to a 
                 style={{
                   fontSize: "var(--text-caption)",
                   fontWeight: 700,
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   letterSpacing: "var(--tracking-caps)",
                   textTransform: "uppercase",
                   paddingLeft: "var(--space-xs)",
@@ -110,9 +110,9 @@ export default function ConcernPickerModal({ isOpen, title = "Link capture to a 
                   width: "100%",
                   padding: "var(--space-3)",
                   borderRadius: "var(--radius-sm)",
-                  border: `1px solid ${STATUS_BORDER[concern.status] || "var(--control-border-color)"}`,
+                  border: `1px solid ${STATUS_BORDER[concern.status] || "var(--secondary-border)"}`,
                   background: STATUS_BG[concern.status] || "var(--surface)",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   textAlign: "left",
                   cursor: "pointer",
                   fontFamily: "var(--font-family)",
@@ -125,7 +125,7 @@ export default function ConcernPickerModal({ isOpen, title = "Link capture to a 
                     width: 12,
                     height: 12,
                     borderRadius: "var(--radius-pill)",
-                    background: STATUS_DOT[concern.status] || "var(--text-secondary)",
+                    background: STATUS_DOT[concern.status] || "var(--text-1)",
                   }}
                 />
                 <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
@@ -147,7 +147,7 @@ export default function ConcernPickerModal({ isOpen, title = "Link capture to a 
                     <span
                       style={{
                         fontSize: "var(--text-caption)",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-1)",
                         lineHeight: "var(--leading-tight)",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
@@ -164,7 +164,7 @@ export default function ConcernPickerModal({ isOpen, title = "Link capture to a 
                     fontWeight: 800,
                     padding: "var(--space-1) var(--space-2)",
                     borderRadius: "var(--radius-pill)",
-                    background: STATUS_DOT[concern.status] || "var(--text-secondary)",
+                    background: STATUS_DOT[concern.status] || "var(--text-1)",
                     color: "var(--onAccentText)",
                     letterSpacing: "var(--tracking-caps)",
                     textTransform: "uppercase",

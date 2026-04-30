@@ -4,7 +4,7 @@
 export const mockCellStyle = {
   padding: "10px 12px",
   fontSize: 13,
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
 };
 
 export const mockHeaderCellStyle = {
@@ -13,7 +13,7 @@ export const mockHeaderCellStyle = {
   fontWeight: 700,
   fontSize: 12,
   textTransform: "uppercase",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
 };
 
 const STATUS_COLORS = {
@@ -53,8 +53,8 @@ export function PageShell({ title, subtitle, children }) {
         <div className="app-page-stack">
           {(title || subtitle) && (
             <div className="app-section-card">
-              {title && <h1 style={{ margin: 0, color: "var(--accentText, var(--text-primary))", fontSize: 22 }}>{title}</h1>}
-              {subtitle && <div style={{ color: "var(--text-secondary)", marginTop: 4, fontSize: 14 }}>{subtitle}</div>}
+              {title && <h1 style={{ margin: 0, color: "var(--accentText, var(--text-1))", fontSize: 22 }}>{title}</h1>}
+              {subtitle && <div style={{ color: "var(--text-1)", marginTop: 4, fontSize: 14 }}>{subtitle}</div>}
             </div>
           )}
           {children}
@@ -67,9 +67,9 @@ export function PageShell({ title, subtitle, children }) {
 export function KpiTile({ label, value, hint }) {
   return (
     <div className="app-section-card" style={{ minWidth: 160 }}>
-      <div style={{ fontSize: 12, color: "var(--text-secondary)", textTransform: "uppercase" }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 800, color: "var(--text-primary)", margin: "6px 0 2px" }}>{value}</div>
-      {hint && <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{hint}</div>}
+      <div style={{ fontSize: 12, color: "var(--text-1)", textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, color: "var(--text-1)", margin: "6px 0 2px" }}>{value}</div>
+      {hint && <div style={{ fontSize: 12, color: "var(--text-1)" }}>{hint}</div>}
     </div>
   );
 }
@@ -77,14 +77,14 @@ export function KpiTile({ label, value, hint }) {
 export function Field({ label, value, full }) {
   return (
     <div style={{ gridColumn: full ? "1 / -1" : undefined }}>
-      <div style={{ fontSize: 11, textTransform: "uppercase", color: "var(--text-secondary)", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 11, textTransform: "uppercase", color: "var(--text-1)", marginBottom: 4 }}>{label}</div>
       <div
         style={{
           padding: "10px 12px",
           background: "var(--surface, #fff)",
           borderRadius: 6,
           fontSize: 14,
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           minHeight: 18,
         }}
       >

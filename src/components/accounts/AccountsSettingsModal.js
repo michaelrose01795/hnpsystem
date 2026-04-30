@@ -15,7 +15,7 @@ export default function AccountsSettingsModal({ isOpen, onClose }) {
         overflow: "hidden",
       }}
     >
-      <div style={{ maxHeight: "90vh", overflowY: "auto", background: "rgba(var(--primary-rgb), 0.05)" }}>
+      <div style={{ maxHeight: "90vh", overflowY: "auto", background: "var(--theme)" }}>
         <AccountsSettingsPanel embedded onClose={onClose} />
       </div>
     </PopupModal>

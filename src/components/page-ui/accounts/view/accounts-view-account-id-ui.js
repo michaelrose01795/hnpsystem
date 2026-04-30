@@ -45,7 +45,7 @@ export default function ViewAccountPageUi(props) {
             display: "flex",
             flexDirection: "column",
             gap: 14,
-            background: "rgba(var(--primary-rgb), 0.08)",
+            background: "var(--theme)",
             border: "1px solid rgba(var(--primary-rgb), 0.16)"
           }}>
                 <div style={{
@@ -70,7 +70,7 @@ export default function ViewAccountPageUi(props) {
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: 16,
-            background: "rgba(var(--primary-rgb), 0.08)",
+            background: "var(--theme)",
             border: "1px solid rgba(var(--primary-rgb), 0.16)"
           }}>
                 {Array.from({
@@ -94,7 +94,7 @@ export default function ViewAccountPageUi(props) {
             display: "flex",
             flexDirection: "column",
             gap: "16px",
-            background: "rgba(var(--primary-rgb), 0.08)",
+            background: "var(--theme)",
             border: "1px solid rgba(var(--primary-rgb), 0.16)"
           }}>
                 <div style={{
@@ -108,7 +108,7 @@ export default function ViewAccountPageUi(props) {
                     <h1 style={{
                   margin: 0,
                   fontSize: "2rem",
-                  color: "var(--text-primary)"
+                  color: "var(--text-1)"
                 }}>{account.billing_name || account.account_id}</h1>
                   </div>
                   <div style={{
@@ -142,7 +142,7 @@ export default function ViewAccountPageUi(props) {
                 cursor: "default",
                 ...(statusBadgeStyles[account.status] || {
                   background: "var(--surface)",
-                  color: "var(--text-primary)"
+                  color: "var(--text-1)"
                 })
               }}>{account.status}</span>
                 </div>
@@ -151,7 +151,7 @@ export default function ViewAccountPageUi(props) {
             display: "flex",
             flexDirection: "column",
             gap: "18px",
-            background: "rgba(var(--primary-rgb), 0.08)",
+            background: "var(--theme)",
             border: "1px solid rgba(var(--primary-rgb), 0.16)"
           }}>
                 <DevLayoutSection sectionKey="account-view-metrics-grid" sectionType="content-card" parentKey="account-view-overview-card">
@@ -178,7 +178,7 @@ export default function ViewAccountPageUi(props) {
               }}>
                   <h2 style={{
                   margin: 0,
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   fontSize: "1.2rem"
                 }}>Billing Information</h2>
                   <div style={{
@@ -188,47 +188,47 @@ export default function ViewAccountPageUi(props) {
                 }}>
                     <div><p style={{
                       margin: 0,
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
                       fontSize: "0.75rem"
                     }}>Name</p><strong style={{
                       display: "block",
                       marginTop: "6px",
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>{account.billing_name || "—"}</strong></div>
                     <div><p style={{
                       margin: 0,
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
                       fontSize: "0.75rem"
                     }}>Email</p><strong style={{
                       display: "block",
                       marginTop: "6px",
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>{account.billing_email || "—"}</strong></div>
                     <div><p style={{
                       margin: 0,
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
                       fontSize: "0.75rem"
                     }}>Phone</p><strong style={{
                       display: "block",
                       marginTop: "6px",
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>{account.billing_phone || "—"}</strong></div>
                     <div><p style={{
                       margin: 0,
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       textTransform: "uppercase",
                       letterSpacing: "0.08em",
                       fontSize: "0.75rem"
                     }}>Address</p><strong style={{
                       display: "block",
                       marginTop: "6px",
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>{[account.billing_address_line1, account.billing_address_line2, account.billing_city, account.billing_postcode, account.billing_country].filter(Boolean).join(", ") || "—"}</strong></div>
                   </div>
                 </div>
@@ -245,12 +245,12 @@ export default function ViewAccountPageUi(props) {
               }}>
                   <h2 style={{
                   margin: 0,
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   fontSize: "1.2rem"
                 }}>Internal Notes</h2>
                   <p style={{
                   margin: 0,
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   lineHeight: 1.6
                 }}>{account.notes || "No notes recorded."}</p>
                 </div>

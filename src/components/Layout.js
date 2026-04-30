@@ -223,12 +223,17 @@ export default function Layout({
   const techsList = usersByRole?.["Techs"] || [];
   const motTestersList = usersByRole?.["MOT Tester"] || [];
   const allowedTechNames = new Set([...techsList, ...motTestersList]);
-  const normalizedUsername = typeof user?.username === "string" ? user.username.trim() : "";
+  // In presentation mode the real user's identity must NOT bleed through —
+  // the topbar greeting, name-derived flags and welcome-quote keying should
+  // all be driven by the picked demo role, never the actual logged-in user.
+  const realUsername = typeof user?.username === "string" ? user.username.trim() : "";
+  const normalizedUsername = presentationShell ? "" : realUsername;
   const fallbackName = presentationShell
     ? activePresentationRole?.demoName || "Demo User"
-    : typeof user?.username === "string" && user.username.trim() ? user.username.trim() : "Guest";
-  const firstName =
-    normalizedUsername.split(/\s+/).filter(Boolean)[0] || fallbackName;
+    : realUsername || "Guest";
+  const firstName = presentationShell
+    ? fallbackName
+    : normalizedUsername.split(/\s+/).filter(Boolean)[0] || fallbackName;
   const userIdForQuote = presentationShell
     ? null
     :
@@ -238,7 +243,9 @@ export default function Layout({
     normalizedUsername ||
     null;
   const hasTechRole = userRoles.some((role) => role.includes("tech") || role.includes("mot"));
-  const isTech = (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
+  const isTech = presentationShell
+    ? hasTechRole
+    : (normalizedUsername && allowedTechNames.has(normalizedUsername)) || hasTechRole;
   const canViewStatusSidebar = presentationShell || userRoles.some((role) =>
     statusSidebarRoles.includes(role)
   );
@@ -934,7 +941,7 @@ export default function Layout({
                   style={{
                     position: "absolute",
                     inset: 0,
-                    background: "rgba(var(--text-primary-rgb), 0.65)",
+                    background: "rgba(var(--text-1-rgb), 0.65)",
                   }}
                 />
                 <div
@@ -1092,14 +1099,17 @@ export default function Layout({
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       <DropdownField
                         className="app-topbar-dropdown app-topbar-dropdown--status"
-                        value={status}
-                        onChange={(e) => handleStatusChange(e.target.value)}
+                        value={presentationShell ? "Waiting for Job" : status}
+                        onChange={(e) => {
+                          if (presentationShell) return; // demo deck — don't mutate real session
+                          handleStatusChange(e.target.value);
+                        }}
                       >
                         <option>Waiting for Job</option>
                         <option>In Progress</option>
                         <option>Tea Break</option>
                       </DropdownField>
-                      {currentJob?.jobNumber ? (
+                      {!presentationShell && currentJob?.jobNumber ? (
                         <Link
                           href={`/job-cards/myjobs/${currentJob.jobNumber}`}
                           className="app-btn app-btn--primary"
@@ -1117,7 +1127,10 @@ export default function Layout({
                       )}
                       <button
                         type="button"
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => {
+                          if (presentationShell) return;
+                          setIsModalOpen(true);
+                        }}
                         className="app-btn app-btn--control"
                       >
                         Start Job

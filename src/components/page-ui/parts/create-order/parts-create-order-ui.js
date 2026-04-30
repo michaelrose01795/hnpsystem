@@ -62,7 +62,7 @@ export default function PartsJobCardPageUi(props) {
         <div style={{
     padding: "48px",
     textAlign: "center",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   }}>
           You do not have permission to access parts orders.
         </div>
@@ -120,7 +120,7 @@ export default function PartsJobCardPageUi(props) {
                     borderRadius: "var(--radius-sm)",
                     border: "none",
                     background: "var(--surface)",
-                    color: "var(--primary-dark)",
+                    color: "var(--primary-selected)",
                     padding: "8px 14px",
                     fontWeight: 600,
                     cursor: savingCustomerDetails ? "not-allowed" : "pointer",
@@ -547,7 +547,7 @@ export default function PartsJobCardPageUi(props) {
               </p>
               <h3 style={{
               margin: "4px 0 0",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>Search catalog</h3>
             </div>
             <div style={{
@@ -605,7 +605,7 @@ export default function PartsJobCardPageUi(props) {
               gap: "4px"
             }}>
                     <strong style={{
-                color: "var(--primary-dark)"
+                color: "var(--primary-selected)"
               }}>
                       {part.part_number} · {part.name}
                     </strong>
@@ -624,7 +624,7 @@ export default function PartsJobCardPageUi(props) {
                     </span>
                     <span style={{
                 fontSize: "0.85rem",
-                color: "var(--primary-dark)",
+                color: "var(--primary-selected)",
                 fontWeight: 600
               }}>
                       Unit price: £{unitPrice.toFixed(2)}

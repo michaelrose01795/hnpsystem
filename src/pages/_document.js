@@ -166,7 +166,7 @@ function buildClientRuntimeExpression() {
   return `(function() {
     var hexToRgbObject = function(hexColor) {
       var hex = String(hexColor || "").replace("#", "");
-      if (!/^[0-9a-fA-F]{6}$/.test(hex)) return { r: 220, g: 38, b: 38 };
+      if (!/^[0-9a-fA-F]{6}$/.test(hex)) return { r: 185, g: 28, b: 28 };
       return {
         r: parseInt(hex.slice(0, 2), 16),
         g: parseInt(hex.slice(2, 4), 16),
@@ -200,13 +200,11 @@ function buildClientRuntimeExpression() {
     var surfaceAnchor = resolvedMode === "dark" ? { r: 22, g: 22, b: 26 } : white;
     var accentHover = rgbToHex(resolvedMode === "dark" ? blend(accentRgbObject, white, 0.18) : blend(accentRgbObject, black, 0.18));
     var accentPressed = rgbToHex(resolvedMode === "dark" ? blend(accentRgbObject, white, 0.34) : blend(accentRgbObject, black, 0.32));
-    var accentSurface = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.22)" : "rgba(" + accentRgb + ", 0.14)";
-    var accentSurfaceHover = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.3)" : "rgba(" + accentRgb + ", 0.22)";
-    var accentSurfaceSubtle = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.16)" : "rgba(" + accentRgb + ", 0.08)";
-    var accentBorder = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.28)" : "rgba(" + accentRgb + ", 0.18)";
-    var accentBorderStrong = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.42)" : "rgba(" + accentRgb + ", 0.32)";
+    var accentSurface = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.16)" : "rgba(" + accentRgb + ", 0.08)";
+    var accentSurfaceHover = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.24)" : "rgba(" + accentRgb + ", 0.14)";
+    var themeColour = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.18)" : "rgba(" + accentRgb + ", 0.1)";
+    var themeColourHover = resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.26)" : "rgba(" + accentRgb + ", 0.16)";
     var shellBackground = rgbToHex(blend(accentRgbObject, surfaceAnchor, resolvedMode === "dark" ? 0.78 : 0.86));
-    var borderTone = rgbToHex(resolvedMode === "dark" ? blend(accentRgbObject, white, 0.45) : blend(accentRgbObject, black, 0.22));
     var surfaceMain = resolvedMode === "dark" ? "#16161a" : "#ffffff";
     var surfaceHover = resolvedMode === "dark" ? "#23232b" : "#f7f7f7";
     var surfaceMuted = resolvedMode === "dark" ? "#1d1d24" : "#f3f3f3";
@@ -218,46 +216,40 @@ function buildClientRuntimeExpression() {
     return {
       shellBackground: shellBackground,
       legacy: {
-        "--accentMain": resolvedAccent,
-        "--accentHover": accentHover,
-        "--accentPressed": accentPressed,
+        "--primary": resolvedAccent,
+        "--primary-hover": accentHover,
+        "--primary-pressed": accentPressed,
+        "--primary-selected": accentPressed,
         "--accentMainRgb": accentRgb,
         "--accentText": resolvedAccent,
+        "--text-accent": resolvedAccent,
         "--onAccentText": onAccentText,
-        "--accentSurface": accentSurface,
-        "--accentSurfaceHover": accentSurfaceHover,
-        "--accentSurfaceSubtle": accentSurfaceSubtle,
-        "--accentBorder": accentBorder,
-        "--accentBorderStrong": accentBorderStrong,
-        "--surfaceMain": surfaceMain,
+        "--secondary": accentSurface,
+        "--secondary-hover": accentSurfaceHover,
+        "--secondary-pressed": resolvedMode === "dark" ? "rgba(" + accentRgb + ", 0.32)" : "rgba(" + accentRgb + ", 0.2)",
+        "--theme": themeColour,
+        "--primary-border": accentHover,
         "--surfaceHover": surfaceHover,
         "--surfaceMutedToken": surfaceMuted,
         "--surfaceText": surfaceText,
         "--surfaceTextMuted": surfaceTextMuted,
         "--surface": surfaceMain,
         "--surface-rgb": hexToRgbString(surfaceMain),
-        "--surface-light": surfaceHover,
-        "--surface-muted": surfaceMuted,
-        "--text-primary": surfaceText,
-        "--text-primary-rgb": hexToRgbString(surfaceText),
-        "--text-secondary": surfaceTextMuted,
-        "--text-secondary-rgb": hexToRgbString(surfaceTextMuted),
-        "--text-inverse": onAccentText,
-        "--text-inverse-rgb": hexToRgbString(onAccentText),
-        "--border": borderTone,
+        "--text-1": surfaceText,
+        "--text-1-rgb": hexToRgbString(surfaceText),
+        "--text-2": onAccentText,
+        "--text-2-rgb": hexToRgbString(onAccentText),
         "--overlay": overlayBackdrop,
         "--overlay-muted": overlayMuted,
         "--page-shell-bg": shellBackground,
         "--nav-shell-bg": accentSurface,
         "--page-card-bg": surfaceMain,
-        "--page-card-bg-alt": accentSurfaceSubtle,
         "--section-card-bg": surfaceMain,
-        "--nav-link-border": "1px solid " + accentBorder,
-        "--nav-link-border-active": "1px solid " + accentBorderStrong,
-        "--control-border-color": accentBorder,
-        "--control-border": "1px solid " + accentBorder,
-        "--control-border-hover": accentBorderStrong,
-        "--control-border-focus": accentBorderStrong,
+        "--nav-link-border-active": "1px solid " + accentHover,
+        "--secondary-border": accentSurfaceHover,
+        "--control-border": "1px solid " + accentSurfaceHover,
+        "--control-border-hover": accentSurfaceHover,
+        "--control-border-focus": accentSurfaceHover,
         "--control-ring": "0 0 0 3px rgba(" + accentRgb + ", " + (resolvedMode === "dark" ? "0.18" : "0.12") + ")",
         "--control-menu-shadow": "none",
         "--row-background": surfaceMain,
@@ -268,32 +260,26 @@ function buildClientRuntimeExpression() {
         "--profile-table-surface": accentSurface,
         "--profile-table-alt-surface": accentSurfaceHover,
         "--search-surface": resolvedMode === "dark" ? "#2a2a32" : surfaceMain,
-        "--search-surface-muted": resolvedMode === "dark" ? "#3a3a42" : surfaceHover,
+        "--search-surface-muted": surfaceMain,
+        "--nav-link-border": "1px solid " + accentHover,
         "--search-text": accentPressed,
         "--scrollbar-thumb": resolvedAccent,
         "--scrollbar-thumb-hover": accentHover,
         "--accent-base": accentSurface,
         "--accent-base-rgb": accentRgb,
-        "--accent-surface": accentSurfaceSubtle,
         "--accent-base-hover": accentSurfaceHover,
-        "--accent-surface-hover": accentSurface,
+        "--theme-hover": themeColourHover,
         "--accent-strong": resolvedAccent,
-        "--primary": resolvedAccent,
-        "--primary-light": accentHover,
-        "--primary-dark": accentPressed,
         "--primary-rgb": accentRgb,
-        "--info": resolvedAccent,
-        "--info-dark": accentPressed,
-        "--info-surface": accentSurfaceSubtle,
-        "--info-rgb": accentRgb,
+        "--info": resolvedMode === "dark" ? "#f2a3a3" : "#d96f6f",
+        "--info-dark": resolvedMode === "dark" ? "#f7bcbc" : "#bf5656",
+        "--info-rgb": resolvedMode === "dark" ? "242, 163, 163" : "217, 111, 111",
+        "--theme-status": resolvedMode === "dark" ? "rgba(242, 163, 163, 0.26)" : "rgba(217, 111, 111, 0.18)",
         "--accent-purple": resolvedAccent,
-        "--accent-purple-surface": accentSurfaceSubtle,
         "--accent-purple-rgb": accentRgb,
         "--accent-blue": resolvedAccent,
-        "--accent-blue-surface": accentSurfaceSubtle,
         "--accent-blue-rgb": accentRgb,
         "--accent-orange": resolvedAccent,
-        "--accent-orange-surface": accentSurfaceSubtle,
         "--accent-orange-rgb": accentRgb
       }
     };

@@ -40,7 +40,7 @@ export default function ComplianceLayout({ title, children }) {
                   flexWrap: "wrap",
                   gap: 6,
                   paddingBottom: 8,
-                  borderBottom: "1px solid var(--border)",
+                  borderBottom: "1px solid var(--primary-border)",
                 }}
               >
                 {TABS.map((tab) => {
@@ -56,10 +56,10 @@ export default function ComplianceLayout({ title, children }) {
                         padding: "8px 12px",
                         borderRadius: "var(--radius-xs, 6px)",
                         textDecoration: "none",
-                        background: active ? "var(--accentMain)" : "transparent",
-                        color: active ? "var(--onAccentText)" : "var(--text-primary)",
+                        background: active ? "var(--primary)" : "transparent",
+                        color: active ? "var(--onAccentText)" : "var(--text-1)",
                         fontWeight: active ? 700 : 500,
-                        border: active ? "none" : "1px solid var(--border)",
+                        border: active ? "none" : "1px solid var(--primary-border)",
                       }}
                     >
                       {tab.label}

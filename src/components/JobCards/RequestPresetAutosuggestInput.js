@@ -205,7 +205,7 @@ export default function RequestPresetAutosuggestInput({
           }}
         >
           {loading ? (
-            <div style={{ padding: "14px 16px", fontSize: "0.85rem", color: "var(--text-primary)" }}>Searching presets…</div>
+            <div style={{ padding: "14px 16px", fontSize: "0.85rem", color: "var(--text-1)" }}>Searching presets…</div>
           ) : (
             suggestions.map((suggestion, index) => {
               const active = index === activeIndex || index === hoveredIndex;
@@ -229,7 +229,7 @@ export default function RequestPresetAutosuggestInput({
                         ? "none"
                         : "1px solid rgba(var(--primary-rgb), 0.14)",
                     backgroundColor: active ? "rgba(var(--primary-rgb), 0.14)" : "transparent",
-                    color: active ? "var(--primary)" : "var(--text-primary)",
+                    color: active ? "var(--primary)" : "var(--text-1)",
                     cursor: "pointer",
                     textAlign: "left",
                   }}
@@ -246,7 +246,7 @@ export default function RequestPresetAutosuggestInput({
                         padding: "4px 8px",
                         borderRadius: "var(--radius-pill)",
                         backgroundColor: active ? "var(--primary)" : "rgba(var(--primary-rgb), 0.12)",
-                        color: active ? "var(--text-inverse)" : "var(--primary-dark)",
+                        color: active ? "var(--text-2)" : "var(--primary-selected)",
                         textTransform: "uppercase",
                         fontWeight: 700,
                         letterSpacing: "0.05em",

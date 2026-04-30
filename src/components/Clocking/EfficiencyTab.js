@@ -818,7 +818,7 @@ export default function EfficiencyTab({
     borderRadius: "var(--input-radius)",
     border: "none",
     background: "var(--surface)",
-    color: "var(--primary-dark)",
+    color: "var(--primary-selected)",
     fontWeight: 600,
     fontSize: "0.85rem",
     cursor: "pointer",
@@ -836,14 +836,14 @@ export default function EfficiencyTab({
 
   const themedSectionStyle = {
     ...sectionStyle,
-    background: "var(--accent-surface)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
   };
 
   const statCardStyle = {
     borderRadius: "var(--radius-md)",
     padding: "16px",
-    background: "var(--accent-purple-surface)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
     display: "flex",
     flexDirection: "column",
@@ -868,22 +868,22 @@ export default function EfficiencyTab({
     textTransform: "uppercase",
     letterSpacing: "0.08em",
     color: "var(--grey-accent)",
-    background: "var(--surface-light)",
-    borderBottom: "1px solid var(--surface-light)",
+    background: "var(--surface)",
+    borderBottom: "1px solid var(--surface)",
     padding: "12px 16px",
   };
 
   const tdStyle = {
     padding: "12px 16px",
-    borderBottom: "1px solid var(--surface-light)",
+    borderBottom: "1px solid var(--surface)",
     color: "var(--text-color)",
   };
 
   const themedTableHeadingStyle = {
     ...thStyle,
-    background: "var(--accent-surface-hover)",
+    background: "var(--theme-hover)",
     borderBottom: "1px solid rgba(var(--accent-base-rgb), 0.24)",
-    color: "var(--primary-dark)",
+    color: "var(--primary-selected)",
   };
 
   const themedTableRowStyle = {
@@ -1078,7 +1078,7 @@ export default function EfficiencyTab({
           flexWrap: "wrap",
           padding: "16px 18px",
           borderRadius: "var(--radius-lg)",
-          background: "var(--accent-surface)",
+          background: "var(--theme)",
           border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
         }}
       >
@@ -1122,7 +1122,7 @@ export default function EfficiencyTab({
             <button type="button" style={monthBtnStyle} onClick={handlePrevMonth}>
               &lsaquo; Prev
             </button>
-            <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--primary-dark)", minWidth: "150px", textAlign: "center" }}>
+            <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--primary-selected)", minWidth: "150px", textAlign: "center" }}>
               {MONTHS[selectedMonth - 1]} {selectedYear}
             </span>
             <button type="button" style={monthBtnStyle} onClick={handleNextMonth}>
@@ -1147,7 +1147,7 @@ export default function EfficiencyTab({
                   borderRadius: "var(--radius-sm)",
                   border: "none",
                   background: "var(--surface)",
-                  color: "var(--primary-dark)",
+                  color: "var(--primary-selected)",
                   fontWeight: 600,
                   fontSize: "0.85rem",
                   cursor: "pointer",
@@ -1301,7 +1301,7 @@ export default function EfficiencyTab({
             backgroundToken="surface-summary-card"
             style={themedSectionStyle}
           >
-            <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
+            <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-selected)" }}>
               Overall Efficiency - {activeFilterHeading}
             </h3>
             <div
@@ -1379,7 +1379,7 @@ export default function EfficiencyTab({
             backgroundToken="surface-table-card"
             style={themedSectionStyle}
           >
-            <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
+            <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-selected)" }}>
               Technician Breakdown
             </h3>
             <div
@@ -1391,7 +1391,7 @@ export default function EfficiencyTab({
               data-dev-section-parent="tech-efficiency-overall-breakdown"
             >
               <table style={tableStyle}>
-                <thead style={{ background: "var(--accent-surface-hover)" }}>
+                <thead style={{ background: "var(--theme-hover)" }}>
                   <tr>
                     <th style={themedTableHeadingStyle}>Technician</th>
                     <th style={themedTableHeadingStyle}>Weight</th>
@@ -1418,7 +1418,7 @@ export default function EfficiencyTab({
                         data-dev-section-parent="tech-efficiency-overall-breakdown-table"
                         onClick={() => openDetailPopup(tech.user_id)}
                         style={{ ...themedTableRowStyle, cursor: "pointer", transition: "background 0.15s ease" }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-light)"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface)"; }}
                       >
                         <td style={{ ...tdStyle, fontWeight: 600 }}>{tech.first_name}</td>
@@ -1453,7 +1453,7 @@ export default function EfficiencyTab({
             backgroundToken="surface-summary-card"
             style={themedSectionStyle}
           >
-            <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-dark)" }}>
+            <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-selected)" }}>
               {activeSummary.tech.first_name} - {activeFilterHeading}
             </h3>
             <div
@@ -1519,7 +1519,7 @@ export default function EfficiencyTab({
             backgroundToken="surface-table-card"
             style={themedSectionStyle}
           >
-            <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--primary-dark)" }}>
+            <h3 style={{ margin: 0, fontSize: "1.05rem", color: "var(--primary-selected)" }}>
               Entries
             </h3>
             <div
@@ -1532,7 +1532,7 @@ export default function EfficiencyTab({
             >
               <div style={{ maxHeight: "520px", overflowY: "auto" }}>
                 <table style={tableStyle}>
-                  <thead style={{ background: "var(--accent-surface-hover)" }}>
+                  <thead style={{ background: "var(--theme-hover)" }}>
                     <tr>
                       <th style={themedTableHeadingStyle}>Date</th>
                       <th style={themedTableHeadingStyle}>Job Number</th>
@@ -1612,7 +1612,7 @@ export default function EfficiencyTab({
                               fontSize: "0.75rem",
                               fontWeight: 600,
                               textTransform: "capitalize",
-                              background: entry.day_type === "saturday" ? "var(--info-surface)" : "var(--success-surface)",
+                              background: entry.day_type === "saturday" ? "var(--theme)" : "var(--success-surface)",
                               color: entry.day_type === "saturday" ? "var(--info)" : "var(--success-dark)",
                               border: "none",
                             }}>
@@ -1662,7 +1662,7 @@ export default function EfficiencyTab({
                   <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                     Efficiency Detail
                   </p>
-                  <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-dark)" }}>
+                  <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-selected)" }}>
                     {detailPopupSummary.tech.first_name} - {MONTHS[selectedMonth - 1]} {selectedYear}
                   </h3>
                 </div>
@@ -1694,7 +1694,7 @@ export default function EfficiencyTab({
                         width: "var(--control-height-xs)",
                         height: "var(--control-height-xs)",
                         borderRadius: "var(--input-radius)",
-                        border: detailEditMode ? "1px solid var(--primary)" : "1px solid var(--surface-light)",
+                        border: detailEditMode ? "1px solid var(--primary)" : "1px solid var(--surface)",
                         background: detailEditMode ? "var(--primary)" : "var(--surface)",
                         color: detailEditMode ? "var(--surface)" : "var(--primary)",
                         fontSize: "0.95rem",
@@ -1773,10 +1773,10 @@ export default function EfficiencyTab({
                         style={{
                           borderRadius: "var(--input-radius)",
                           border: "none",
-                          background: "var(--surface-light)",
+                          background: "var(--surface)",
                           padding: "10px 12px",
                           fontSize: "0.9rem",
-                          color: "var(--text-primary)",
+                          color: "var(--text-1)",
                           outline: "none",
                           cursor: "not-allowed",
                           opacity: 0.8,
@@ -1800,7 +1800,7 @@ export default function EfficiencyTab({
                           background: "var(--surface)",
                           padding: "10px 12px",
                           fontSize: "0.9rem",
-                          color: "var(--text-primary)",
+                          color: "var(--text-1)",
                           outline: "none",
                         }}
                       />
@@ -1834,7 +1834,7 @@ export default function EfficiencyTab({
                   <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                     Actual Hours
                   </span>
-                  <strong style={{ fontSize: "1.3rem", color: "var(--primary-dark)" }}>
+                  <strong style={{ fontSize: "1.3rem", color: "var(--primary-selected)" }}>
                     {detailPopupSummary.totals.actualHours}h
                   </strong>
                 </div>
@@ -1842,7 +1842,7 @@ export default function EfficiencyTab({
                   <span style={{ fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                     Target Hours
                   </span>
-                  <strong style={{ fontSize: "1.3rem", color: "var(--primary-dark)" }}>
+                  <strong style={{ fontSize: "1.3rem", color: "var(--primary-selected)" }}>
                     {detailPopupSummary.totals.targetHours}h
                   </strong>
                 </div>
@@ -1926,7 +1926,7 @@ export default function EfficiencyTab({
                                 fontSize: "0.75rem",
                                 fontWeight: 600,
                                 textTransform: "capitalize",
-                                background: entry.day_type === "saturday" ? "var(--info-surface)" : "var(--success-surface)",
+                                background: entry.day_type === "saturday" ? "var(--theme)" : "var(--success-surface)",
                                 color: entry.day_type === "saturday" ? "var(--info)" : "var(--success-dark)",
                                 border: "none",
                               }}>
@@ -1987,7 +1987,7 @@ export default function EfficiencyTab({
                   <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--grey-accent)" }}>
                     Job Entry
                   </p>
-                  <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-dark)" }}>
+                  <h3 style={{ margin: "4px 0 0", fontSize: "1.3rem", color: "var(--primary-selected)" }}>
                     {editingEntry ? (editingEntry._source === "job_clocking" ? "View Job Entry" : "Edit Job Entry") : "New Job Entry"}
                   </h3>
                 </div>
@@ -2032,7 +2032,7 @@ export default function EfficiencyTab({
                   <div style={{
                     borderRadius: "var(--radius-md)",
                     padding: "10px 14px",
-                    background: "var(--info-surface)",
+                    background: "var(--theme)",
                     color: "var(--info)",
                     fontSize: "0.82rem",
                     fontWeight: 500,
@@ -2071,7 +2071,7 @@ export default function EfficiencyTab({
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyJobNumber"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
                     >
                       Job Number
                     </label>
@@ -2088,10 +2088,10 @@ export default function EfficiencyTab({
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
-                        background: "var(--surface-light)",
+                        background: "var(--surface)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
-                        color: "var(--text-primary)",
+                        color: "var(--text-1)",
                         outline: "none",
                         ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
                       }}
@@ -2135,7 +2135,7 @@ export default function EfficiencyTab({
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyAllocatedHours"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
                     >
                       Allocated Hours
                     </label>
@@ -2154,10 +2154,10 @@ export default function EfficiencyTab({
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
-                        background: "var(--surface-light)",
+                        background: "var(--surface)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
-                        color: "var(--text-primary)",
+                        color: "var(--text-1)",
                         outline: "none",
                         ...(formError.toLowerCase().includes("allocated hours") ? popupFieldErrorStyle : {}),
                         ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
@@ -2167,7 +2167,7 @@ export default function EfficiencyTab({
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyHours"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
                     >
                       Total Clocked
                     </label>
@@ -2187,10 +2187,10 @@ export default function EfficiencyTab({
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
-                        background: "var(--surface-light)",
+                        background: "var(--surface)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
-                        color: "var(--text-primary)",
+                        color: "var(--text-1)",
                         outline: "none",
                         ...(formError.toLowerCase().includes("total clocked") ? popupFieldErrorStyle : {}),
                         ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
@@ -2204,7 +2204,7 @@ export default function EfficiencyTab({
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyJobDescription"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
                     >
                       Job Description
                     </label>
@@ -2218,10 +2218,10 @@ export default function EfficiencyTab({
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
-                        background: "var(--surface-light)",
+                        background: "var(--surface)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
-                        color: "var(--text-primary)",
+                        color: "var(--text-1)",
                         outline: "none",
                         resize: "vertical",
                         minHeight: "64px",
@@ -2233,7 +2233,7 @@ export default function EfficiencyTab({
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <label
                       htmlFor="efficiencyNotes"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-primary)" }}
+                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
                     >
                       Notes
                     </label>
@@ -2247,10 +2247,10 @@ export default function EfficiencyTab({
                       style={{
                         borderRadius: "var(--radius-md)",
                         border: "none",
-                        background: "var(--surface-light)",
+                        background: "var(--surface)",
                         padding: "12px 14px",
                         fontSize: "0.95rem",
-                        color: "var(--text-primary)",
+                        color: "var(--text-1)",
                         outline: "none",
                         resize: "vertical",
                         minHeight: "64px",

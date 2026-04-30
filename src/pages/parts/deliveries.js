@@ -461,7 +461,7 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
     <article style={pageStyles.jobRow(isCompleted)}>
       <button type="button" style={pageStyles.jobInfoButton} onClick={() => onView(job)}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
-          <div style={{ fontWeight: 700, color: "var(--primary-dark)" }}>{job.invoice_number || "Invoice"}</div>
+          <div style={{ fontWeight: 700, color: "var(--primary-selected)" }}>{job.invoice_number || "Invoice"}</div>
           <span style={statusChipStyle(job.status)}>
             {job.status === "completed" ? "Completed" : job.status === "en_route" ? "En Route" : "Scheduled"}
           </span>
@@ -559,7 +559,7 @@ function DeliveryJobViewModal({ job, onClose }) {
                 
               Delivery details
             </p>
-            <h3 style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>{job.invoice_number || "Invoice"}</h3>
+            <h3 style={{ margin: "6px 0 0", color: "var(--primary-selected)" }}>{job.invoice_number || "Invoice"}</h3>
           </div>
           <button
               type="button"
@@ -641,7 +641,7 @@ function DeliveryJobViewModal({ job, onClose }) {
           {items.length === 0 ?
             <p style={{ color: "var(--info)", margin: 0 }}>Invoice items not available.</p> :
 
-            <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "var(--primary-dark)" }}>
+            <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "var(--primary-selected)" }}>
               {items.map((item) =>
               <li key={item.key || `${item.description}-${item.quantity || 1}`}>
                   {item.description} · Qty {item.quantity || 1} · {formatCurrency(item.total || 0)}

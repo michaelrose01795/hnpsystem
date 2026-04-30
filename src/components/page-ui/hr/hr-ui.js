@@ -34,7 +34,7 @@ export default function HrDashboardUi(props) {
       gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
       gap: "var(--layout-card-gap)"
     }}>
-            {formattedMetrics.map(metric => <MetricCard key={metric.label} {...metric} accentColor="var(--accentMain)" />)}
+            {formattedMetrics.map(metric => <MetricCard key={metric.label} {...metric} accentColor="var(--primary)" />)}
           </section>
 
           <section style={{
@@ -88,7 +88,7 @@ export default function HrDashboardUi(props) {
               alignItems: "center",
               justifyContent: "space-between",
               paddingBottom: "var(--space-3)",
-              borderBottom: "1px solid var(--border)",
+              borderBottom: "1px solid var(--primary-border)",
               gap: "var(--space-3)"
             }}>
                       <div style={{
@@ -98,11 +98,11 @@ export default function HrDashboardUi(props) {
               }}>
                         <span style={{
                   fontWeight: 600,
-                  color: "var(--text-primary)"
+                  color: "var(--text-1)"
                 }}>{renewal.course}</span>
                         <span style={{
                   fontSize: "var(--text-label)",
-                  color: "var(--text-secondary)"
+                  color: "var(--text-1)"
                 }}>
                           {renewal.employee}
                         </span>
@@ -115,7 +115,7 @@ export default function HrDashboardUi(props) {
               }}>
                         <span style={{
                   fontSize: "var(--text-label)",
-                  color: "var(--text-secondary)"
+                  color: "var(--text-1)"
                 }}>
                           Due {new Date(renewal.dueDate).toLocaleDateString()}
                         </span>
@@ -185,7 +185,7 @@ export default function HrDashboardUi(props) {
             flexDirection: "column",
             gap: "var(--space-1)",
             paddingBottom: "var(--space-3)",
-            borderBottom: "1px solid var(--border)"
+            borderBottom: "1px solid var(--primary-border)"
           }}>
                     <div style={{
               display: "flex",
@@ -194,25 +194,25 @@ export default function HrDashboardUi(props) {
             }}>
                       <span style={{
                 fontWeight: 600,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>{warning.employee}</span>
                       <StatusTag label={warning.level} tone={warning.level.includes("Final") ? "danger" : "warning"} />
                     </div>
                     <span style={{
               fontSize: "var(--text-label)",
-              color: "var(--text-secondary)"
+              color: "var(--text-1)"
             }}>
                       {warning.department}
                     </span>
                     <span style={{
               fontSize: "var(--text-label)",
-              color: "var(--text-secondary)"
+              color: "var(--text-1)"
             }}>
                       Issued {new Date(warning.issuedOn).toLocaleDateString()}
                     </span>
                     <span style={{
               fontSize: "var(--text-body-sm)",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>
                       {warning.notes}
                     </span>

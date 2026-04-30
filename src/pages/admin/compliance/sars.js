@@ -86,32 +86,32 @@ export default function SarsPage() {
           </p>
         )}
         {rows === null ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading...</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
         ) : rows.length === 0 ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>No subject requests on record.</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>No subject requests on record.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
-                <tr style={{ textAlign: "left", color: "var(--text-secondary)" }}>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Type</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Subject</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Status</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Received</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Due</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Action</th>
+                <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Type</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Subject</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Status</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Received</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Due</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                       {row.request_type}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                       {row.subject_email || `#${row.subject_user_id || "—"}`}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                       <select
                         value={row.status}
                         disabled={busyId === row.id}
@@ -126,9 +126,9 @@ export default function SarsPage() {
                         ))}
                       </select>
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>{fmt(row.received_at)}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>{fmt(row.due_at)}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{fmt(row.received_at)}</td>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{fmt(row.due_at)}</td>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                       {row.status !== "fulfilled" && row.status !== "rejected" && (
                         <Button
                           type="button"

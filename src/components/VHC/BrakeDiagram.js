@@ -42,12 +42,12 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
   const isRearActive = activeKey === "rear" || activeKey === "nsr" || activeKey === "osr";
   const unknownFill = "var(--primary)";
   const statusPalette = {
-    critical: { fill: "var(--danger)", text: "var(--text-inverse)", label: "var(--danger)" },
-    advisory: { fill: "var(--warning)", text: "var(--text-inverse)", label: "var(--warning)" },
-    good: { fill: "var(--success)", text: "var(--text-inverse)", label: "var(--success)" },
+    critical: { fill: "var(--danger)", text: "var(--text-2)", label: "var(--danger)" },
+    advisory: { fill: "var(--warning)", text: "var(--text-2)", label: "var(--warning)" },
+    good: { fill: "var(--success)", text: "var(--text-2)", label: "var(--success)" },
     unknown: {
       fill: "rgba(var(--primary-rgb), 0.22)",
-      text: "var(--text-primary)",
+      text: "var(--text-1)",
       label: unknownFill,
     },
   };
@@ -56,7 +56,7 @@ export default function BrakeDiagram({ brakes = {}, activeBrake, onSelect, inval
 
   const containerStyle = {
     width: "100%",
-    background: "var(--accent-surface)",
+    background: "var(--theme)",
     padding: "4px",
     borderRadius: "var(--section-card-radius)",
     display: "flex",

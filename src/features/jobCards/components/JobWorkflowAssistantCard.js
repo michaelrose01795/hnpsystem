@@ -18,7 +18,7 @@ export default function JobWorkflowAssistantCard({
     borderRadius: "var(--radius-sm)",
     fontSize: "12px",
     fontWeight: 600,
-    backgroundColor: "var(--info-surface)",
+    backgroundColor: "var(--theme)",
     color: "var(--info-dark)",
   };
 
@@ -27,7 +27,7 @@ export default function JobWorkflowAssistantCard({
       style={{
         padding: "14px 16px",
         borderRadius: "var(--radius-sm)",
-        border: "1px solid var(--accent-purple-surface)",
+        border: "1px solid var(--theme)",
         backgroundColor: "var(--surface)",
         display: "flex",
         flexDirection: "column",
@@ -46,7 +46,7 @@ export default function JobWorkflowAssistantCard({
         <span style={badgeStyle}>Owner: {guidance.ownerRole}</span>
       </div>
 
-      <p style={{ margin: 0, fontSize: "14px", color: "var(--text-secondary)" }}>
+      <p style={{ margin: 0, fontSize: "14px", color: "var(--text-1)" }}>
         <strong>Next action:</strong> {guidance.action}
       </p>
       <p style={{ margin: 0, fontSize: "13px", color: "var(--grey-accent-dark)" }}>

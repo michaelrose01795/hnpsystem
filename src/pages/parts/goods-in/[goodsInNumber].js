@@ -29,7 +29,7 @@ const fieldGridStyle = {
 const labelStyle = {
   fontWeight: 600,
   fontSize: "0.85rem",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   textTransform: "uppercase",
   letterSpacing: "0.06em"
 };
@@ -46,21 +46,21 @@ const invoiceHeaderCellStyle = {
   fontSize: "0.75rem",
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "var(--text-secondary)",
-  background: "var(--layer-section-level-2)"
+  color: "var(--text-1)",
+  background: "var(--surface)"
 };
 
 const invoiceCellStyle = {
   padding: "16px",
   fontSize: "0.95rem",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap"
 };
 
 const invoiceRowStyle = {
-  background: "var(--layer-section-level-1)",
+  background: "var(--surface)",
   borderRadius: "var(--radius-md)",
   boxShadow: "var(--shadow-lg)"
 };

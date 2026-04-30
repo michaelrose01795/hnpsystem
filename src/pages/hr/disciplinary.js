@@ -10,7 +10,7 @@ function DisciplinaryContent() {
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <header>
-        <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-1)" }}>
+        <p style={{ color: "var(--text-1)", marginTop: "var(--space-1)" }}>
           Log warnings, track follow-ups, and maintain audit trails for workplace incidents.
         </p>
       </header>
@@ -26,7 +26,7 @@ function DisciplinaryContent() {
           title="Active Warnings"
           subtitle="Warnings that still require follow-up or monitoring.">
           
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
+          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
             TODO: Fetch active warnings from Supabase disciplinary table. Display employee name, department, warning level, reported date, status, and notes for each open case.
           </p>
         </SectionCard>
@@ -35,7 +35,7 @@ function DisciplinaryContent() {
           title="Incident Log"
           subtitle="Recent case entries and their current outcome.">
           
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
+          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
             TODO: Fetch incident log from Supabase. Display incident type, job number, recorded by, outcome status, and export functionality.
           </p>
         </SectionCard>
@@ -87,7 +87,7 @@ function DisciplinaryContent() {
         <p
           style={{
             fontSize: "var(--text-caption)",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             fontStyle: "italic",
             marginTop: "var(--space-5)"
           }}>
@@ -109,7 +109,7 @@ const labelStyle = {
   flexDirection: "column",
   gap: "var(--space-xs)",
   fontSize: "var(--text-label)",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   fontWeight: "var(--control-label-weight)",
   textTransform: "uppercase",
   letterSpacing: "var(--tracking-caps)",

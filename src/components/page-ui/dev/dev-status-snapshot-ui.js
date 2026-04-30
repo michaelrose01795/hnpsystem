@@ -26,7 +26,7 @@ export default function StatusSnapshotDevPageUi(props) {
       <h1>Status Snapshot (Dev)</h1>
       <p style={{
     marginBottom: "16px",
-    color: "var(--text-secondary)"
+    color: "var(--text-1)"
   }}>
         Enter a job number or job id to view the snapshot response.
       </p>
@@ -46,7 +46,7 @@ export default function StatusSnapshotDevPageUi(props) {
       borderRadius: "var(--radius-xs)",
       border: "none",
       background: "var(--primary)",
-      color: "var(--text-inverse)",
+      color: "var(--text-2)",
       fontWeight: 600,
       cursor: "pointer"
     }}>
@@ -58,7 +58,7 @@ export default function StatusSnapshotDevPageUi(props) {
     marginBottom: "16px"
   }}>{error}</div>}
       {snapshot && <pre style={{
-    background: "var(--surface-light)",
+    background: "var(--surface)",
     padding: "16px",
     borderRadius: "var(--radius-xs)",
     overflowX: "auto"

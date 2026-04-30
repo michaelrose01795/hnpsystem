@@ -12,7 +12,7 @@ function EmptyState() {
       <div className="app-page-card">
         <div className="app-section-card">
           <h2 style={{ marginTop: 0 }}>No slides available for your role</h2>
-          <p style={{ color: "var(--text-secondary)" }}>
+          <p style={{ color: "var(--text-1)" }}>
             Presentation Mode has no pages matching your assigned roles. Try a role with broader access, or contact an administrator.
           </p>
         </div>

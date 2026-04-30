@@ -123,7 +123,7 @@ const formatCustomerStatus = (value) => {
 
 const jobDetailsPopupPrimaryButtonStyle = {
   backgroundColor: "var(--accent-purple)",
-  color: "var(--text-inverse)",
+  color: "var(--text-2)",
   padding: "12px 16px",
   borderRadius: "var(--radius-xs)",
   cursor: "pointer",
@@ -135,7 +135,7 @@ const jobDetailsPopupPrimaryButtonStyle = {
 
 const jobDetailsPopupSecondaryButtonStyle = {
   ...jobDetailsPopupPrimaryButtonStyle,
-  backgroundColor: "var(--accent-purple-surface)",
+  backgroundColor: "var(--theme)",
   color: "var(--accent-purple)"
 };
 
@@ -148,9 +148,9 @@ const jobDetailsPopupWarningButtonStyle = {
 
 const jobDetailsPopupQuietButtonStyle = {
   ...jobDetailsPopupPrimaryButtonStyle,
-  backgroundColor: "var(--surface-light)",
+  backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
-  border: "1px solid var(--accent-purple-surface)"
+  border: "1px solid var(--theme)"
 };
 
 const getJobRequestsCountFromPayload = (payload) => {
@@ -1366,8 +1366,8 @@ export default function NextJobsPage() {
     if (currentClocking?.customer) clockingSubtitleParts.push(currentClocking.customer);
     const clockingSubtitle = clockingSubtitleParts.join(" • ");
     const clockInLabel = currentClocking ? formatClockInTime(currentClocking.clockIn) : "";
-    const techJobRowBackground = "var(--accent-surface)";
-    const techJobRowHoverBackground = "var(--accent-surface-hover)";
+    const techJobRowBackground = "var(--theme)";
+    const techJobRowHoverBackground = "var(--theme-hover)";
     return (
       <div
         key={panelKey}
@@ -1381,7 +1381,7 @@ export default function NextJobsPage() {
           border:
           activeDropTarget === panelKey ?
           "3px solid var(--primary)" :
-          "1px solid var(--surface-light)",
+          "1px solid var(--surface)",
           borderRadius: "var(--radius-xs)",
           padding: "16px",
           display: "flex",
@@ -1396,7 +1396,7 @@ export default function NextJobsPage() {
           "0 2px 4px rgba(var(--shadow-rgb),0.14)",
           transition: "all 0.2s ease",
           backgroundColor:
-          activeDropTarget === panelKey ? "var(--surface-light)" : "var(--surface)"
+          activeDropTarget === panelKey ? "var(--surface)" : "var(--surface)"
         }}>
         
       <p style={{
@@ -1418,7 +1418,7 @@ export default function NextJobsPage() {
             padding: "12px",
             borderRadius: "var(--radius-xs)",
             border: "none",
-            backgroundColor: currentClocking ? "var(--success-surface)" : "var(--layer-section-level-1)",
+            backgroundColor: currentClocking ? "var(--success-surface)" : "var(--surface)",
             cursor: currentClocking ? "pointer" : "default"
           }}
           onClick={() => handleOpenCurrentClocking(currentClocking, assignee.name)}>
@@ -1441,7 +1441,7 @@ export default function NextJobsPage() {
                 margin: "0 0 4px 0",
                 fontSize: "14px",
                 fontWeight: 600,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
               
               {currentClocking.jobNumber || "Job pending"}
@@ -1451,7 +1451,7 @@ export default function NextJobsPage() {
               style={{
                 margin: "0 0 4px 0",
                 fontSize: "12px",
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
               
               {clockingSubtitle}
@@ -1461,7 +1461,7 @@ export default function NextJobsPage() {
               style={{
                 margin: 0,
                 fontSize: "12px",
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
               
               {clockInLabel ?
@@ -1500,7 +1500,7 @@ export default function NextJobsPage() {
           }}>
             {assignee.jobs.length === 0 ?
           <p style={{
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             fontSize: "14px",
             margin: 0
           }}>

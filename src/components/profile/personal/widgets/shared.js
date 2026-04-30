@@ -30,7 +30,7 @@ export const widgetInputStyle = {
   borderRadius: "var(--control-radius)",
   border: "var(--control-border)",
   background: "var(--control-bg)",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   padding: "var(--control-padding-sm)",
   fontSize: "var(--control-font-size)",
   fontWeight: "var(--control-font-weight)",
@@ -49,7 +49,7 @@ export const widgetTextAreaStyle = {
 };
 
 export const widgetAccentSurfaceStyle = {
-  background: "var(--accent-surface)",
+  background: "var(--theme)",
   border: "1px solid rgba(var(--accent-base-rgb), 0.24)",
   borderRadius: "var(--radius-md)",
 };
@@ -93,11 +93,11 @@ export function getWidgetModalCardStyle(isMobile = false, overrides = {}) {
 /* ── Dashboard primitives ──────────────────────────────────── */
 
 /** Large featured value with a small label above. */
-export function Headline({ label, value, accent = "var(--text-primary)", size = "large" }) {
+export function Headline({ label, value, accent = "var(--text-1)", size = "large" }) {
   const valueSizes = { large: "1.45rem", medium: "1.1rem" };
   return (
     <div style={{ display: "grid", gap: "2px" }}>
-      <span style={{ fontSize: "0.66rem", fontWeight: 600, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+      <span style={{ fontSize: "0.66rem", fontWeight: 600, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
         {label}
       </span>
       <span style={{ fontSize: valueSizes[size] || valueSizes.large, fontWeight: 800, color: accent, lineHeight: 1.2 }}>
@@ -121,8 +121,8 @@ export function DataRow({ label, value, accent, muted = false }) {
         borderBottom: "1px solid rgba(var(--accent-base-rgb), 0.12)",
       }}
     >
-      <span style={{ color: muted ? "var(--text-secondary)" : "var(--text-primary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-      <span style={{ fontWeight: 700, color: accent || "var(--text-primary)", whiteSpace: "nowrap", flexShrink: 0 }}>{value}</span>
+      <span style={{ color: muted ? "var(--text-1)" : "var(--text-1)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+      <span style={{ fontWeight: 700, color: accent || "var(--text-1)", whiteSpace: "nowrap", flexShrink: 0 }}>{value}</span>
     </div>
   );
 }
@@ -141,7 +141,7 @@ export function MetricPill({ label, value, accent = "var(--accent-base)" }) {
         borderLeft: `2px solid ${accent}`,
       }}
     >
-      <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+      <span style={{ fontSize: "0.66rem", color: "var(--text-1)", fontWeight: 600 }}>
         {label}
       </span>
       <span style={{ fontSize: "0.88rem", color: accent, fontWeight: 700 }}>
@@ -169,7 +169,7 @@ export function SectionLabel({ children }) {
         fontWeight: 700,
         letterSpacing: "0.06em",
         textTransform: "uppercase",
-        color: "var(--text-secondary)",
+        color: "var(--text-1)",
         paddingTop: "2px",
       }}
     >
@@ -186,7 +186,7 @@ export function EmptyState({ children }) {
         padding: "12px 14px",
         background: "var(--surface)",
         border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
-        color: "var(--text-secondary)",
+        color: "var(--text-1)",
         fontSize: "0.8rem",
         lineHeight: 1.5,
       }}
@@ -221,11 +221,11 @@ export function StatusBadge({ children, tone = "info", style = {} }) {
       color: "var(--warningMain)",
     },
     neutral: {
-      background: "var(--accentSurfaceSubtle)",
+      background: "var(--theme)",
       color: "var(--surfaceTextMuted)",
     },
     info: {
-      background: "var(--accentSurfaceSubtle)",
+      background: "var(--theme)",
       color: "var(--accentText)",
     },
   };

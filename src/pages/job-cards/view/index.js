@@ -105,7 +105,7 @@ const popupPrimaryActionButtonStyle = {
   flex: 1,
   padding: "12px 20px",
   backgroundColor: "var(--accent-purple)",
-  color: "var(--text-inverse)",
+  color: "var(--text-2)",
   border: "1px solid var(--accent-purple)",
   borderRadius: "var(--radius-xs)",
   cursor: "pointer",
@@ -116,7 +116,7 @@ const popupPrimaryActionButtonStyle = {
 
 const popupSecondaryActionButtonStyle = {
   ...popupPrimaryActionButtonStyle,
-  backgroundColor: "var(--accent-purple-surface)",
+  backgroundColor: "var(--theme)",
   color: "var(--accent-purple)"
 };
 
@@ -124,9 +124,9 @@ const popupQuietActionButtonStyle = {
   width: "100%",
   marginTop: "16px",
   padding: "12px 20px",
-  backgroundColor: "var(--surface-light)",
+  backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
-  border: "1px solid var(--accent-purple-surface)",
+  border: "1px solid var(--theme)",
   borderRadius: "var(--radius-xs)",
   cursor: "pointer",
   fontSize: "14px",
@@ -1310,7 +1310,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
   const jobDivisionLabel = job.jobDivision || "Retail";
   const isSalesDivision = jobDivisionLabel.toLowerCase() === "sales";
   const divisionBadgeStyles = {
-    backgroundColor: isSalesDivision ? "var(--info-surface)" : "var(--success-surface)",
+    backgroundColor: isSalesDivision ? "var(--theme)" : "var(--success-surface)",
     color: isSalesDivision ? "var(--info)" : "var(--success-dark)"
   };
 
@@ -1347,7 +1347,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
         event.currentTarget.style.boxShadow = "none";
-        event.currentTarget.style.borderColor = "var(--surface-light)";
+        event.currentTarget.style.borderColor = "var(--surface)";
         event.currentTarget.style.zIndex = "0";
       }}>
       
@@ -1409,7 +1409,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
             style={{
               padding: "4px 12px",
               borderRadius: "var(--control-radius-xs)",
-              backgroundColor: "var(--accent-purple-surface)",
+              backgroundColor: "var(--theme)",
               color: "var(--accent-purple)",
               fontWeight: 600,
               fontSize: "12px",
@@ -1464,7 +1464,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
         style={{
           padding: "8px 10px",
           borderRadius: "var(--radius-xs)",
-          backgroundColor: "var(--info-surface)",
+          backgroundColor: "var(--theme)",
           border: "none"
         }}>
         
@@ -1521,7 +1521,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
         event.currentTarget.style.boxShadow = "none";
-        event.currentTarget.style.borderColor = "var(--surface-light)";
+        event.currentTarget.style.borderColor = "var(--surface)";
         event.currentTarget.style.zIndex = "0";
       }}>
       
@@ -1549,7 +1549,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
           style={{
             padding: "4px 10px",
             borderRadius: "var(--control-radius)",
-            backgroundColor: "var(--accent-purple-surface)",
+            backgroundColor: "var(--theme)",
             color: "var(--accent-purple)",
             fontWeight: 600,
             fontSize: "12px",
@@ -1605,7 +1605,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
         style={{
           padding: "8px 10px",
           borderRadius: "var(--radius-xs)",
-          backgroundColor: "var(--info-surface)",
+          backgroundColor: "var(--theme)",
           border: "none"
         }}>
         

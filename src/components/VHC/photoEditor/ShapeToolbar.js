@@ -43,7 +43,7 @@ export const PALETTE = [
   { id: "danger", token: "--dangerMain", fallback: "#ef4444", label: "Red" },
   { id: "warning", token: "--warningMain", fallback: "#f59e0b", label: "Amber" },
   { id: "success", token: "--successMain", fallback: "#22c55e", label: "Green" },
-  { id: "accent", token: "--accentMain", fallback: "#3b82f6", label: "Blue" },
+  { id: "accent", token: "--primary", fallback: "#3b82f6", label: "Blue" },
 ];
 
 const BAR_BASE = {
@@ -51,8 +51,8 @@ const BAR_BASE = {
   gap: "var(--space-2)",
   alignItems: "center",
   padding: "var(--space-2)",
-  background: "var(--surfaceMain)",
-  border: "1px solid var(--accentBorder)",
+  background: "var(--surface)",
+  border: "1px solid var(--primary-border)",
   borderRadius: "var(--radius-md)",
   boxShadow: "var(--shadow-md)",
   backdropFilter: "saturate(1.2) blur(6px)",
@@ -62,7 +62,7 @@ const BAR_BASE = {
 const DIVIDER = {
   width: 1,
   alignSelf: "stretch",
-  background: "var(--accentBorder)",
+  background: "var(--primary-border)",
   margin: "0 var(--space-1)",
 };
 
@@ -76,15 +76,15 @@ function ToolButton({ active, disabled, onClick, title, children }) {
       onClick={onClick}
       disabled={disabled}
       style={{
-        width: 38,
-        height: 38,
+        width: 44,
+        height: 44,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: "var(--radius-sm)",
-        border: `1px solid ${active ? "var(--accentBorderStrong)" : "transparent"}`,
-        background: active ? "var(--accentSurfaceHover)" : "transparent",
-        color: active ? "var(--accentMain)" : "var(--text-primary)",
+        borderRadius: "var(--control-radius)",
+        border: `1px solid ${active ? "var(--primary-border)" : "transparent"}`,
+        background: active ? "var(--secondary-hover)" : "transparent",
+        color: active ? "var(--primary)" : "var(--text-1)",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.45 : 1,
         transition: "var(--control-transition)",
@@ -104,13 +104,13 @@ function Swatch({ color, active, onClick, label }) {
       aria-pressed={active || undefined}
       onClick={onClick}
       style={{
-        width: 26,
-        height: 26,
+        width: 44,
+        height: 44,
         borderRadius: "50%",
         background: color,
         border: active
-          ? "3px solid var(--text-primary)"
-          : "2px solid var(--accentBorder)",
+          ? "3px solid var(--text-1)"
+          : "2px solid var(--primary-border)",
         cursor: "pointer",
         padding: 0,
         transition: "var(--control-transition)",

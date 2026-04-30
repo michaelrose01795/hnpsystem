@@ -135,7 +135,7 @@ export default function StockCataloguePageUi(props) {
             marginBottom: "16px"
           }}>
                     <div style={{
-              background: "var(--surface-light)",
+              background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
               padding: "14px",
               border: "none"
@@ -154,7 +154,7 @@ export default function StockCataloguePageUi(props) {
                       <div>{jobData.description || "No description"}</div>
                     </div>
                     <div style={{
-              background: "var(--surface-light)",
+              background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
               padding: "14px",
               border: "none"
@@ -170,7 +170,7 @@ export default function StockCataloguePageUi(props) {
                       <div>{jobData.makeModel || `${jobData.make} ${jobData.model}`}</div>
                     </div>
                     <div style={{
-              background: "var(--surface-light)",
+              background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
               padding: "14px",
               border: "none"
@@ -220,7 +220,7 @@ export default function StockCataloguePageUi(props) {
               gap: "2px",
               cursor: "pointer",
               fontWeight: 600,
-              color: selectedPipelineStage === "all" ? "var(--primary)" : "var(--primary-dark)"
+              color: selectedPipelineStage === "all" ? "var(--primary)" : "var(--primary-selected)"
             }}>
                         <span>All Parts</span>
                         <small style={{
@@ -241,7 +241,7 @@ export default function StockCataloguePageUi(props) {
               gap: "2px",
               cursor: "pointer",
               fontWeight: 600,
-              color: selectedPipelineStage === stage.id ? "var(--primary)" : "var(--primary-dark)"
+              color: selectedPipelineStage === stage.id ? "var(--primary)" : "var(--primary-selected)"
             }}>
                           <span>{stage.label}</span>
                           <small style={{
@@ -267,8 +267,8 @@ export default function StockCataloguePageUi(props) {
                     </div>}
 
                   {jobParts.length === 0 ? <div style={{
-            background: "var(--surface-light)",
-            border: "1px dashed var(--primary-light)",
+            background: "var(--surface)",
+            border: "1px dashed var(--primary-hover)",
             borderRadius: "var(--radius-xs)",
             padding: "16px",
             color: "var(--danger)",
@@ -281,7 +281,7 @@ export default function StockCataloguePageUi(props) {
                       <table style={tableStyle}>
                         <thead>
                           <tr style={{
-                  background: "var(--surface-light)",
+                  background: "var(--surface)",
                   color: "var(--danger)"
                 }}>
                             <th style={{
@@ -315,7 +315,7 @@ export default function StockCataloguePageUi(props) {
                   const stageId = mapPartStatusToPipelineId(part.status);
                   const stageMeta = getPipelineStageMeta(stageId);
                   return <tr key={part.id} style={{
-                    borderBottom: "1px solid var(--surface-light)"
+                    borderBottom: "1px solid var(--surface)"
                   }}>
                               <td style={{
                       padding: "10px",
@@ -376,7 +376,7 @@ export default function StockCataloguePageUi(props) {
                         borderRadius: "var(--radius-pill)",
                         fontSize: "var(--text-label)",
                         fontWeight: 600,
-                        backgroundColor: "var(--surface-light)",
+                        backgroundColor: "var(--surface)",
                         color: "var(--danger)",
                         marginBottom: "6px"
                       }}>
@@ -495,7 +495,7 @@ export default function StockCataloguePageUi(props) {
                     const sourceMeta = resolveSourceMeta(request.source);
                     const statusMeta = resolveStatusStyles(request.status);
                     return <tr key={request.request_id} style={{
-                      borderBottom: "1px solid var(--surface-light)"
+                      borderBottom: "1px solid var(--surface)"
                     }}>
                                   <td style={{
                         padding: "10px"
@@ -545,8 +545,8 @@ export default function StockCataloguePageUi(props) {
                       this VHC. Ensure orders are raised or picked.
                     </div>}
                 </> : <div style={{
-          background: "var(--surface-light)",
-          border: "1px dashed var(--primary-light)",
+          background: "var(--surface)",
+          border: "1px dashed var(--primary-hover)",
           borderRadius: "var(--radius-xs)",
           padding: "16px",
           color: "var(--danger)",
@@ -587,8 +587,8 @@ export default function StockCataloguePageUi(props) {
             padding: "12px",
             borderRadius: "var(--radius-xs)",
             border: "none",
-            background: "var(--layer-section-level-1)",
-            color: "var(--text-primary)",
+            background: "var(--surface)",
+            color: "var(--text-1)",
             fontSize: "var(--text-body)",
             minWidth: "140px"
           }}>
@@ -600,8 +600,8 @@ export default function StockCataloguePageUi(props) {
             padding: "12px",
             borderRadius: "var(--radius-xs)",
             border: "none",
-            background: "var(--layer-section-level-1)",
-            color: "var(--text-primary)",
+            background: "var(--surface)",
+            color: "var(--text-1)",
             fontSize: "var(--text-body)",
             minWidth: "140px"
           }}>
@@ -621,8 +621,8 @@ export default function StockCataloguePageUi(props) {
               padding: "12px",
               borderRadius: "var(--radius-xs)",
               border: "none",
-              background: "var(--layer-section-level-1)",
-              color: "var(--text-primary)",
+              background: "var(--surface)",
+              color: "var(--text-1)",
               fontSize: "var(--text-body)",
               minWidth: "140px",
               outline: "none"
@@ -649,13 +649,13 @@ export default function StockCataloguePageUi(props) {
               }} style={{
                 padding: "10px 12px",
                 cursor: "pointer",
-                borderBottom: "1px solid var(--surface-light)",
+                borderBottom: "1px solid var(--surface)",
                 fontWeight: locationFilter === "all" ? 600 : 400,
-                background: locationFilter === "all" ? "var(--surface-light)" : "transparent"
+                background: locationFilter === "all" ? "var(--surface)" : "transparent"
               }} onMouseEnter={e => {
-                e.currentTarget.style.background = "var(--surface-light)";
+                e.currentTarget.style.background = "var(--surface)";
               }} onMouseLeave={e => {
-                e.currentTarget.style.background = locationFilter === "all" ? "var(--surface-light)" : "transparent";
+                e.currentTarget.style.background = locationFilter === "all" ? "var(--surface)" : "transparent";
               }}>
                       All Locations
                     </div>
@@ -667,11 +667,11 @@ export default function StockCataloguePageUi(props) {
                 padding: "10px 12px",
                 cursor: "pointer",
                 fontWeight: locationFilter === code ? 600 : 400,
-                background: locationFilter === code ? "var(--surface-light)" : "transparent"
+                background: locationFilter === code ? "var(--surface)" : "transparent"
               }} onMouseEnter={e => {
-                e.currentTarget.style.background = "var(--surface-light)";
+                e.currentTarget.style.background = "var(--surface)";
               }} onMouseLeave={e => {
-                e.currentTarget.style.background = locationFilter === code ? "var(--surface-light)" : "transparent";
+                e.currentTarget.style.background = locationFilter === code ? "var(--surface)" : "transparent";
               }}>
                           {code}
                         </div>)}
@@ -703,7 +703,7 @@ export default function StockCataloguePageUi(props) {
           }}>
                   <thead>
                     <tr style={{
-                background: "var(--surface-light)",
+                background: "var(--surface)",
                 color: "var(--danger)"
               }}>
                       <th style={{
@@ -743,11 +743,11 @@ export default function StockCataloguePageUi(props) {
                 setSelectedPart(part);
                 setIsPartModalOpen(true);
               }} style={{
-                borderBottom: "1px solid var(--surface-light)",
+                borderBottom: "1px solid var(--surface)",
                 cursor: "pointer",
                 transition: "background 0.15s ease"
               }} onMouseEnter={e => {
-                e.currentTarget.style.background = "var(--surface-light)";
+                e.currentTarget.style.background = "var(--surface)";
               }} onMouseLeave={e => {
                 e.currentTarget.style.background = "transparent";
               }}>
@@ -763,7 +763,7 @@ export default function StockCataloguePageUi(props) {
                 }}>{part.name}</td>
                           <td style={{
                   padding: "10px",
-                  color: "var(--text-secondary)"
+                  color: "var(--text-1)"
                 }}>
                             {part.storage_location || "—"}
                           </td>
@@ -838,7 +838,7 @@ export default function StockCataloguePageUi(props) {
           justifyContent: "space-between",
           alignItems: "center",
           paddingBottom: "16px",
-          borderBottom: "1px solid var(--surface-light)",
+          borderBottom: "1px solid var(--surface)",
           marginBottom: "20px"
         }}>
                 <div style={{
@@ -854,7 +854,7 @@ export default function StockCataloguePageUi(props) {
                   </h2>
                   <p style={{
               margin: "6px 0 0 0",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               fontSize: "var(--text-body)"
             }}>
                     {selectedPart.name}
@@ -877,7 +877,7 @@ export default function StockCataloguePageUi(props) {
                       Edit
                     </button> : <>
                       <button onClick={handleSavePart} disabled={isSavingPart} style={{
-                background: isSavingPart ? "var(--surface-light)" : "var(--success)",
+                background: isSavingPart ? "var(--surface)" : "var(--success)",
                 color: "white",
                 border: "none",
                 borderRadius: "var(--radius-xs)",
@@ -889,8 +889,8 @@ export default function StockCataloguePageUi(props) {
                         {isSavingPart ? "Saving..." : "Save"}
                       </button>
                       <button onClick={handleCancelEdit} disabled={isSavingPart} style={{
-                background: "var(--surface-light)",
-                color: "var(--text-primary)",
+                background: "var(--surface)",
+                color: "var(--text-1)",
                 border: "none",
                 borderRadius: "var(--radius-xs)",
                 padding: "8px 16px",
@@ -906,12 +906,12 @@ export default function StockCataloguePageUi(props) {
               setIsEditMode(false);
               setEditedPart(null);
             }} style={{
-              background: "var(--surface-light)",
+              background: "var(--surface)",
               border: "none",
               borderRadius: "var(--radius-xs)",
               fontSize: "var(--text-h2)",
               cursor: "pointer",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               padding: "8px",
               width: "var(--control-height-xs)",
               height: "var(--control-height-xs)",
@@ -923,8 +923,8 @@ export default function StockCataloguePageUi(props) {
               e.currentTarget.style.background = "var(--danger-light)";
               e.currentTarget.style.color = "var(--danger)";
             }} onMouseLeave={e => {
-              e.currentTarget.style.background = "var(--surface-light)";
-              e.currentTarget.style.color = "var(--text-secondary)";
+              e.currentTarget.style.background = "var(--surface)";
+              e.currentTarget.style.color = "var(--text-1)";
             }}>
                   ×
                 </button>
@@ -948,7 +948,7 @@ export default function StockCataloguePageUi(props) {
                   <div>
                     {/* Stock Overview Card */}
                     <div style={{
-                background: "var(--layer-section-level-1)",
+                background: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 padding: "16px",
                 marginBottom: "16px",
@@ -957,7 +957,7 @@ export default function StockCataloguePageUi(props) {
                       <h3 style={{
                   fontSize: "var(--text-body)",
                   fontWeight: 600,
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   marginBottom: "12px",
                   textTransform: "uppercase",
                   letterSpacing: "0.5px"
@@ -972,7 +972,7 @@ export default function StockCataloguePageUi(props) {
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px"
                     }}>On Hand</div>
                           {isEditMode ? <input type="number" value={editedPart?.qty_in_stock ?? selectedPart.qty_in_stock} onChange={e => setEditedPart(prev => ({
@@ -983,7 +983,7 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
@@ -996,7 +996,7 @@ export default function StockCataloguePageUi(props) {
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px"
                     }}>Reserved</div>
                           {isEditMode ? <input type="number" value={editedPart?.qty_reserved ?? selectedPart.qty_reserved ?? 0} onChange={e => setEditedPart(prev => ({
@@ -1007,7 +1007,7 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
@@ -1019,7 +1019,7 @@ export default function StockCataloguePageUi(props) {
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px"
                     }}>On Order</div>
                           {isEditMode ? <input type="number" value={editedPart?.qty_on_order ?? selectedPart.qty_on_order ?? 0} onChange={e => setEditedPart(prev => ({
@@ -1030,7 +1030,7 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
@@ -1042,7 +1042,7 @@ export default function StockCataloguePageUi(props) {
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px"
                     }}>Min Level</div>
                           {isEditMode ? <input type="number" value={editedPart?.reorder_level ?? selectedPart.reorder_level ?? 0} onChange={e => setEditedPart(prev => ({
@@ -1053,7 +1053,7 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
@@ -1066,7 +1066,7 @@ export default function StockCataloguePageUi(props) {
                       <div style={{
                   marginTop: "12px",
                   paddingTop: "12px",
-                  borderTop: "1px solid var(--surface-light)",
+                  borderTop: "1px solid var(--surface)",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center"
@@ -1074,7 +1074,7 @@ export default function StockCataloguePageUi(props) {
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)"
+                      color: "var(--text-1)"
                     }}>Linked Jobs</div>
                           <div style={{
                       fontSize: "var(--text-h3)",
@@ -1096,7 +1096,7 @@ export default function StockCataloguePageUi(props) {
 
                     {/* Pricing Card */}
                     <div style={{
-                background: "var(--layer-section-level-1)",
+                background: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 padding: "16px",
                 border: "none"
@@ -1104,7 +1104,7 @@ export default function StockCataloguePageUi(props) {
                       <h3 style={{
                   fontSize: "var(--text-body)",
                   fontWeight: 600,
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   marginBottom: "12px",
                   textTransform: "uppercase",
                   letterSpacing: "0.5px"
@@ -1123,7 +1123,7 @@ export default function StockCataloguePageUi(props) {
                   }}>
                           <span style={{
                       fontSize: "var(--text-body-sm)",
-                      color: "var(--text-secondary)"
+                      color: "var(--text-1)"
                     }}>Cost Price</span>
                           {isEditMode ? <input type="number" step="0.01" value={editedPart?.unit_cost ?? selectedPart.unit_cost} onChange={e => setEditedPart(prev => ({
                       ...prev,
@@ -1133,7 +1133,7 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
@@ -1149,7 +1149,7 @@ export default function StockCataloguePageUi(props) {
                   }}>
                           <span style={{
                       fontSize: "var(--text-body-sm)",
-                      color: "var(--text-secondary)"
+                      color: "var(--text-1)"
                     }}>Sell Price</span>
                           {isEditMode ? <input type="number" step="0.01" value={editedPart?.unit_price ?? selectedPart.unit_price} onChange={e => setEditedPart(prev => ({
                       ...prev,
@@ -1159,7 +1159,7 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
@@ -1174,11 +1174,11 @@ export default function StockCataloguePageUi(props) {
                     justifyContent: "space-between",
                     alignItems: "center",
                     paddingTop: "8px",
-                    borderTop: "1px solid var(--surface-light)"
+                    borderTop: "1px solid var(--surface)"
                   }}>
                           <span style={{
                       fontSize: "var(--text-body-sm)",
-                      color: "var(--text-secondary)"
+                      color: "var(--text-1)"
                     }}>Margin</span>
                           <span style={{
                       fontSize: "var(--text-h3)",
@@ -1195,7 +1195,7 @@ export default function StockCataloguePageUi(props) {
                   {/* Right Column - Part Info */}
                   <div>
                     <div style={{
-                background: "var(--layer-section-level-1)",
+                background: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 padding: "16px",
                 border: "none",
@@ -1204,7 +1204,7 @@ export default function StockCataloguePageUi(props) {
                       <h3 style={{
                   fontSize: "var(--text-body)",
                   fontWeight: 600,
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   marginBottom: "12px",
                   textTransform: "uppercase",
                   letterSpacing: "0.5px"
@@ -1220,7 +1220,7 @@ export default function StockCataloguePageUi(props) {
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px",
                       fontWeight: 600
                     }}>DESCRIPTION</div>
@@ -1232,18 +1232,18 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
                     }} /> : <div style={{
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>{selectedPart.name || "—"}</div>}
                         </div>
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px",
                       fontWeight: 600
                     }}>STORAGE LOCATION</div>
@@ -1255,12 +1255,12 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
                     }} /> : <div style={{
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontWeight: 600,
                       fontSize: "var(--text-h4)"
                     }}>{selectedPart.storage_location || "—"}</div>}
@@ -1268,7 +1268,7 @@ export default function StockCataloguePageUi(props) {
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px",
                       fontWeight: 600
                     }}>SERVICE DEFAULT</div>
@@ -1280,18 +1280,18 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
                     }} /> : <div style={{
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>{selectedPart.service_default_zone || "—"}</div>}
                         </div>
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px",
                       fontWeight: 600
                     }}>SUPPLIER</div>
@@ -1303,18 +1303,18 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
                     }} /> : <div style={{
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>{selectedPart.supplier || "Unknown"}</div>}
                         </div>
                         <div>
                           <div style={{
                       fontSize: "var(--text-caption)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px",
                       fontWeight: 600
                     }}>CATEGORY</div>
@@ -1326,12 +1326,12 @@ export default function StockCataloguePageUi(props) {
                       borderRadius: "var(--radius-xs)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       fontSize: "var(--text-h4)",
                       fontWeight: 600,
                       width: "100%"
                     }} /> : <div style={{
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>{selectedPart.category || "Uncategorised"}</div>}
                         </div>
                       </div>
@@ -1341,7 +1341,7 @@ export default function StockCataloguePageUi(props) {
 
                 {/* Linked Jobs Table */}
                 <div style={{
-            background: "var(--layer-section-level-1)",
+            background: "var(--surface)",
             borderRadius: "var(--radius-sm)",
             padding: "16px",
             border: "none"
@@ -1356,7 +1356,7 @@ export default function StockCataloguePageUi(props) {
                     <h3 style={{
                 fontSize: "var(--text-body)",
                 fontWeight: 600,
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 margin: 0,
                 textTransform: "uppercase",
                 letterSpacing: "0.5px"
@@ -1388,7 +1388,7 @@ export default function StockCataloguePageUi(props) {
                         <thead>
                           <tr style={{
                     background: "var(--surface)",
-                    color: "var(--text-secondary)",
+                    color: "var(--text-1)",
                     fontSize: "var(--text-caption)",
                     textTransform: "uppercase"
                   }}>
@@ -1419,7 +1419,7 @@ export default function StockCataloguePageUi(props) {
                     const sourceMeta = resolveSourceMeta(link.source);
                     const statusMeta = resolveStatusStyles(link.status);
                     return <tr key={`${link.type}-${link.job_id}-${link.request_id || ""}-${link.status}`} style={{
-                      borderBottom: "1px solid var(--surface-light)",
+                      borderBottom: "1px solid var(--surface)",
                       transition: "background 0.15s ease"
                     }} onMouseEnter={e => {
                       e.currentTarget.style.background = "var(--surface)";
@@ -1465,7 +1465,7 @@ export default function StockCataloguePageUi(props) {
                     </div> : <div style={{
               padding: "24px",
               textAlign: "center",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               background: "var(--surface)",
               borderRadius: "var(--radius-xs)",
               fontSize: "var(--text-body)"

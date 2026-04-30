@@ -29,7 +29,7 @@ export default function CustomerPartsPage() {
         </div>
       )}
       {activeVehicle && (
-        <div className="mb-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-3 text-xs text-[var(--text-secondary)]">
+        <div className="mb-4 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-xs text-[var(--text-1)]">
           Showing accessories for <strong>{activeVehicle.makeModel}</strong> · {activeVehicle.reg}
         </div>
       )}

@@ -97,7 +97,7 @@ const getWashIndicatorMeta = (state) => {
   }
   return {
     symbol: "",
-    color: "var(--text-secondary)",
+    color: "var(--text-1)",
     borderColor: "rgba(var(--grey-accent-rgb), 0.35)",
     background: "var(--surface)",
     label: "Wash not set"
@@ -379,9 +379,9 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
   const etaMainColor = useMemo(() => {
     if (smartEta?.status === "completed") return "var(--success)";
     if (smartEta?.status === "awaiting_data" || smartEta?.status === "not_started") {
-      return "var(--text-secondary)";
+      return "var(--text-1)";
     }
-    return "var(--text-primary)";
+    return "var(--text-1)";
   }, [smartEta?.status]);
   const etaTitle = useMemo(() => {
     if (!smartEta?.reasoning) return smartEta?.displayText || "";
@@ -409,7 +409,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
         border: "none",
         padding: "12px 16px",
         borderRadius: "var(--radius-sm)",
-        backgroundColor: "var(--accent-purple-surface)",
+        backgroundColor: "var(--theme)",
         boxShadow: "none",
         display: "grid",
         gridTemplateColumns: VALET_TABLE_COLUMNS,
@@ -418,7 +418,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
         width: "100%",
         minHeight: VALET_ROW_HEIGHT,
         boxSizing: "border-box",
-        color: cancelled ? "var(--text-secondary)" : "inherit",
+        color: cancelled ? "var(--text-1)" : "inherit",
         textDecoration: cancelled ? "line-through" : "none",
         opacity: cancelled ? 0.72 : 1
       }}>
@@ -465,7 +465,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
       <span
         style={{
           fontSize: "14px",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           minWidth: 0,
           whiteSpace: "nowrap",
           overflow: "hidden",
@@ -571,7 +571,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               fontSize: "0.8rem",
               lineHeight: 1,
               pointerEvents: "none"
@@ -586,7 +586,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
       <span
         style={{
           fontSize: "13px",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           fontWeight: 600,
           textAlign: "right",
           display: "flex",
@@ -611,13 +611,13 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           
             <span>{smartEta.displayText}</span>
             {etaSecondaryLabel ?
-          <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+          <span style={{ fontSize: "11px", color: "var(--text-1)" }}>
                 {etaSecondaryLabel}
               </span> :
           null}
           </span> :
 
-        <span style={{ color: "var(--text-secondary)" }}>Awaiting timing data</span>
+        <span style={{ color: "var(--text-1)" }}>Awaiting timing data</span>
         }
       </span>
     </div>);

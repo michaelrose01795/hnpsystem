@@ -59,7 +59,7 @@ export default function GoodsInDetailPageUi(props) {
             </div>
             <div style={{
           textAlign: "right",
-          color: "var(--text-secondary)"
+          color: "var(--text-1)"
         }}>
               <div>{goodsIn?.status ? `Status: ${goodsIn.status}` : "Status: --"}</div>
               <div>{goodsIn?.invoice_date ? `Invoice date: ${goodsIn.invoice_date}` : ""}</div>
@@ -84,17 +84,17 @@ export default function GoodsInDetailPageUi(props) {
                 <div style={labelStyle}>Supplier</div>
                 <div>{goodsIn.supplier_name || "--"}</div>
                 <div style={{
-            color: "var(--text-secondary)"
+            color: "var(--text-1)"
           }}>{goodsIn.supplier_address || ""}</div>
                 <div style={{
-            color: "var(--text-secondary)"
+            color: "var(--text-1)"
           }}>{goodsIn.supplier_contact || ""}</div>
               </div>
               <div>
                 <div style={labelStyle}>Invoice</div>
                 <div>{goodsIn.invoice_number || "--"}</div>
                 <div style={{
-            color: "var(--text-secondary)"
+            color: "var(--text-1)"
           }}>
                   Delivery note: {goodsIn.delivery_note_number || "--"}
                 </div>
@@ -103,7 +103,7 @@ export default function GoodsInDetailPageUi(props) {
                 <div style={labelStyle}>Price Level</div>
                 <div>{goodsIn.price_level || "--"}</div>
                 <div style={{
-            color: "var(--text-secondary)"
+            color: "var(--text-1)"
           }}>Supplier account: {goodsIn.supplier_account_id || "--"}</div>
               </div>
             </div>}
@@ -116,14 +116,14 @@ export default function GoodsInDetailPageUi(props) {
           {items.length === 0 ? <div style={{
         padding: "24px",
         textAlign: "center",
-        color: "var(--text-secondary)"
+        color: "var(--text-1)"
       }}>
               No invoice lines found.
             </div> : <ScrollArea maxHeight="420px" style={{
         borderRadius: "var(--radius-lg)",
         border: "none",
         overflowX: "hidden",
-        background: "var(--layer-section-level-2)"
+        background: "var(--surface)"
       }}>
               <table style={invoiceTableStyles}>
                 <thead>
@@ -148,7 +148,7 @@ export default function GoodsInDetailPageUi(props) {
               }}>{item.part_number}</td>
                       <td style={{
                 ...invoiceCellStyle,
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>{item.description}</td>
                       <td style={invoiceCellStyle}>{item.quantity}</td>
                       <td style={invoiceCellStyle}>
@@ -199,7 +199,7 @@ export default function GoodsInDetailPageUi(props) {
               <div style={labelStyle}>Added to job</div>
               {jobItems.length === 0 ? <div style={{
             marginTop: "8px",
-            color: "var(--text-secondary)"
+            color: "var(--text-1)"
           }}>No parts allocated to jobs.</div> : <div style={{
             marginTop: "8px"
           }}>
@@ -212,7 +212,7 @@ export default function GoodsInDetailPageUi(props) {
                         <strong>{item.part_number}</strong> · {item.description}
                       </div>
                       <div style={{
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>
                         Line {item.line_number || "--"} · Qty {item.quantity} · Job {item.job_number || "--"}
                       </div>
@@ -223,7 +223,7 @@ export default function GoodsInDetailPageUi(props) {
               <div style={labelStyle}>Added to stock</div>
               {stockItems.length === 0 ? <div style={{
             marginTop: "8px",
-            color: "var(--text-secondary)"
+            color: "var(--text-1)"
           }}>No parts added to stock.</div> : <div style={{
             marginTop: "8px"
           }}>
@@ -236,7 +236,7 @@ export default function GoodsInDetailPageUi(props) {
                         <strong>{item.part_number}</strong> · {item.description}
                       </div>
                       <div style={{
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>
                         Line {item.line_number || "--"} · Qty {item.quantity}
                       </div>

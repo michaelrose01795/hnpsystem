@@ -106,7 +106,7 @@ export default function ConsumablesTrackerPageUi(props) {
       textAlign: "center"
     }}>
             <h1 style={{
-        color: "var(--text-primary)",
+        color: "var(--text-1)",
         marginBottom: "16px"
       }}>
               Workshop Manager Access Only
@@ -142,7 +142,7 @@ export default function ConsumablesTrackerPageUi(props) {
               <div style={duplicateModalStyle}>
                 <h3 style={{
             margin: 0,
-            color: "var(--text-primary)"
+            color: "var(--text-1)"
           }}>
                   Potential Duplicate Consumables
                 </h3>
@@ -191,7 +191,7 @@ export default function ConsumablesTrackerPageUi(props) {
                 </button>
                 <h3 style={{
             margin: "0 0 6px",
-            color: "var(--text-primary)"
+            color: "var(--text-1)"
           }}>
                   {historyModalConsumable.name} History
                 </h3>
@@ -233,7 +233,7 @@ export default function ConsumablesTrackerPageUi(props) {
                 </button>
                 <h3 style={{
             margin: "0 0 6px",
-            color: "var(--text-primary)"
+            color: "var(--text-1)"
           }}>
                   Order {orderModalConsumable.name}
                 </h3>
@@ -294,7 +294,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   </button>
                 </div>
                 {orderModalError && <p style={{
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             marginTop: "12px"
           }}>
                     {orderModalError}
@@ -305,7 +305,7 @@ export default function ConsumablesTrackerPageUi(props) {
                     <div style={orderModalFormGroupStyle}>
                       <label style={{
                 fontWeight: 600,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
                         Quantity
                       </label>
@@ -314,7 +314,7 @@ export default function ConsumablesTrackerPageUi(props) {
                     <div style={orderModalFormGroupStyle}>
                       <label style={{
                 fontWeight: 600,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
                         Unit Cost (£)
                       </label>
@@ -323,7 +323,7 @@ export default function ConsumablesTrackerPageUi(props) {
                     <div style={orderModalFormGroupStyle}>
                       <label style={{
                 fontWeight: 600,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
                         Supplier
                       </label>
@@ -367,7 +367,7 @@ export default function ConsumablesTrackerPageUi(props) {
                     <h1 style={{
                   margin: 0,
                   fontSize: "1.4rem",
-                  color: "var(--text-primary)"
+                  color: "var(--text-1)"
                 }}>
                       Workshop Consumables Tracker
                     </h1>
@@ -381,7 +381,7 @@ export default function ConsumablesTrackerPageUi(props) {
                       </p>
                       <strong style={{
                     fontSize: "1.4rem",
-                    color: "var(--text-primary)"
+                    color: "var(--text-1)"
                   }}>
                         {financialLoading ? <InlineLoading width={90} height={18} label="Loading budget" /> : formatCurrency(totals.monthlyBudget)}
                       </strong>
@@ -409,7 +409,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--primary)",
                   background: "var(--surface)",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   fontWeight: 600,
                   cursor: "pointer"
                 }}>
@@ -417,7 +417,7 @@ export default function ConsumablesTrackerPageUi(props) {
                     </button>
                     <span style={{
                   fontWeight: 600,
-                  color: "var(--text-primary)"
+                  color: "var(--text-1)"
                 }}>
                       {monthLabel}
                     </span>
@@ -426,7 +426,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   borderRadius: "var(--radius-sm)",
                   border: "1px solid var(--primary)",
                   background: canAdvanceToNextMonth ? "var(--surface)" : "rgba(var(--primary-rgb),0.2)",
-                  color: canAdvanceToNextMonth ? "var(--text-primary)" : "var(--text-primary)",
+                  color: canAdvanceToNextMonth ? "var(--text-1)" : "var(--text-1)",
                   fontWeight: 600,
                   cursor: canAdvanceToNextMonth ? "pointer" : "not-allowed"
                 }}>
@@ -471,7 +471,7 @@ export default function ConsumablesTrackerPageUi(props) {
                       </p>}
                     {budgetSaveError && <p style={{
                   margin: 0,
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   textAlign: "right"
                 }}>
                         {budgetSaveError}
@@ -487,7 +487,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   </div>
                   {financialError && <p style={{
                 margin: 0,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>{financialError}</p>}
                 </div>
               </div>
@@ -504,7 +504,7 @@ export default function ConsumablesTrackerPageUi(props) {
                 <h2 style={{
               margin: 0,
               fontSize: "1.3rem",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>
                   Monthly Logs
                 </h2>
@@ -518,7 +518,7 @@ export default function ConsumablesTrackerPageUi(props) {
               ...cardStyle,
               padding: "12px",
               boxShadow: "none",
-              backgroundColor: "var(--surface-light)",
+              backgroundColor: "var(--surface)",
               border: "var(--section-card-border)"
             }}>
                   <p style={{
@@ -536,7 +536,7 @@ export default function ConsumablesTrackerPageUi(props) {
               ...cardStyle,
               padding: "12px",
               boxShadow: "none",
-              backgroundColor: "var(--surface-light)",
+              backgroundColor: "var(--surface)",
               border: "var(--section-card-border)"
             }}>
                   <p style={{
@@ -554,7 +554,7 @@ export default function ConsumablesTrackerPageUi(props) {
               ...cardStyle,
               padding: "12px",
               boxShadow: "none",
-              backgroundColor: "var(--surface-light)",
+              backgroundColor: "var(--surface)",
               border: "var(--section-card-border)"
             }}>
                   <p style={{
@@ -572,7 +572,7 @@ export default function ConsumablesTrackerPageUi(props) {
               ...cardStyle,
               padding: "12px",
               boxShadow: "none",
-              backgroundColor: "var(--surface-light)",
+              backgroundColor: "var(--surface)",
               border: "var(--section-card-border)"
             }}>
                   <p style={{
@@ -589,7 +589,7 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
               {logsError && <p style={{
             margin: "12px 0 0",
-            color: "var(--text-primary)"
+            color: "var(--text-1)"
           }}>{logsError}</p>}
               <div style={{
             overflowX: "auto"
@@ -656,7 +656,7 @@ export default function ConsumablesTrackerPageUi(props) {
                           <td style={{
                     padding: "12px",
                     fontWeight: 600,
-                    color: "var(--text-secondary)"
+                    color: "var(--text-1)"
                   }}>
                             {log.itemName || "—"}
                           </td>
@@ -694,7 +694,7 @@ export default function ConsumablesTrackerPageUi(props) {
             ...cardStyle,
             padding: "16px",
             boxShadow: "none",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             border: "var(--section-card-border)"
           }}>
                   <p style={{
@@ -707,7 +707,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   <h2 style={{
               margin: "6px 0 0",
               fontSize: "1.4rem",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>
                     {financialLoading ? <InlineLoading width={110} height={22} label="Loading month spend" /> : formatCurrency(totals.monthSpend)}
                   </h2>
@@ -716,7 +716,7 @@ export default function ConsumablesTrackerPageUi(props) {
             ...cardStyle,
             padding: "16px",
             boxShadow: "none",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             border: "var(--section-card-border)"
           }}>
                   <p style={{
@@ -729,7 +729,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   <h2 style={{
               margin: "6px 0 0",
               fontSize: "1.4rem",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>
                     {financialLoading ? <InlineLoading width={110} height={22} label="Loading projected spend" /> : formatCurrency(totals.projectedSpend)}
                   </h2>
@@ -738,7 +738,7 @@ export default function ConsumablesTrackerPageUi(props) {
             ...cardStyle,
             padding: "16px",
             boxShadow: "none",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             border: "var(--section-card-border)"
           }}>
                   <p style={{
@@ -751,7 +751,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   <h2 style={{
               margin: "6px 0 0",
               fontSize: "1.4rem",
-              color: totals.monthSpend > totals.monthlyBudget ? "var(--text-primary)" : "var(--success-dark)"
+              color: totals.monthSpend > totals.monthlyBudget ? "var(--text-1)" : "var(--success-dark)"
             }}>
                     {financialLoading ? <InlineLoading width={110} height={22} label="Loading budget remaining" /> : formatCurrency(Math.max(totals.budgetRemaining, -999999))}
                   </h2>
@@ -837,7 +837,7 @@ export default function ConsumablesTrackerPageUi(props) {
                       </tr> : consumablesError ? <tr>
                         <td colSpan={8} style={{
                     padding: "14px",
-                    color: "var(--text-primary)"
+                    color: "var(--text-1)"
                   }}>
                           {consumablesError}
                         </td>
@@ -869,7 +869,7 @@ export default function ConsumablesTrackerPageUi(props) {
                     }}>
                               <strong style={{
                         display: "block",
-                        color: "var(--text-primary)"
+                        color: "var(--text-1)"
                       }}>
                                 {item.name}
                               </strong>
@@ -941,12 +941,12 @@ export default function ConsumablesTrackerPageUi(props) {
               <h2 style={{
             margin: 0,
             fontSize: "1.3rem",
-            color: "var(--text-primary)"
+            color: "var(--text-1)"
           }}>
                 Requests
               </h2>
               <span style={{
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             fontSize: "0.9rem"
           }}>
                 {requestsLoading ? <InlineLoading width={90} label="Loading requests" /> : `${techRequests.length} requests`}
@@ -954,7 +954,7 @@ export default function ConsumablesTrackerPageUi(props) {
             </div>
             {requestsError && <p style={{
           margin: "0 0 12px",
-          color: "var(--text-primary)"
+          color: "var(--text-1)"
         }}>
                 {requestsError}
               </p>}

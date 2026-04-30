@@ -34,6 +34,16 @@ const px = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+// Short, human-readable snippet of a section's own text content. Used on the
+// floating labels and the panel title so an inspector can identify a section
+// by what it says on screen, not just by its auto-generated index — those
+// indexes reshuffle whenever a sibling is added or removed.
+const truncateLabel = (text, max = 36) => {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "";
+  return cleaned.length > max ? `${cleaned.slice(0, max - 1)}…` : cleaned;
+};
+
 const sanitizeKey = (value) =>
   String(value || "")
     .trim()
@@ -366,8 +376,11 @@ const buildPrompts = (section) => {
     : "Suggested actions: standardize with nearest shared layout primitives only if mismatch is confirmed.";
   const prefix = `On ${section.route}, section ${section.number} (${section.key})`;
 
+  const previewForRef = truncateLabel(section.textPreview, 60);
   return {
-    reference: `${section.route} :: ${section.number} (${section.key})`,
+    reference: previewForRef
+      ? `${section.route} :: ${section.number} (${section.key}) — “${previewForRef}”`
+      : `${section.route} :: ${section.number} (${section.key})`,
     debug: `${prefix}. Parent ${section.parentNumber || "none"} (${section.parentKey || "none"}). ${metadata} ${issues} ${suggestedAction} ${childSummary}`,
     codex: `${prefix}, standardise this section using existing page-shell/section/card primitives while preserving current business behaviour. ${metadata} ${issues} ${suggestedAction} ${childSummary}`,
     claude: `${prefix}, refactor layout structure for consistency and wrapper cleanup, keeping logic and data flow unchanged. ${metadata} ${issues} ${suggestedAction} ${childSummary}`,
@@ -911,7 +924,13 @@ export default function DevLayoutOverlay() {
               </h3>
               <p className={styles.subtitle}>
                 {scopedSelected
-                  ? `${scopedSelected.type} · ${scopedSelected.source}`
+                  ? [
+                      truncateLabel(scopedSelected.textPreview, 80) ? `“${truncateLabel(scopedSelected.textPreview, 80)}”` : null,
+                      scopedSelected.type,
+                      scopedSelected.source,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
                   : `Route ${currentRoute} · ${stats.total} section${stats.total === 1 ? "" : "s"} detected`}
               </p>
             </div>
@@ -1191,7 +1210,7 @@ export default function DevLayoutOverlay() {
                           fontSize: 11,
                           borderRadius: 999,
                           border: "1px solid rgba(255,255,255,0.18)",
-                          background: auditDraft.status === option.id ? "var(--accentMain)" : "transparent",
+                          background: auditDraft.status === option.id ? "var(--primary)" : "transparent",
                           color: auditDraft.status === option.id ? "var(--onAccentText)" : "inherit",
                           cursor: "pointer",
                         }}
@@ -1264,11 +1283,16 @@ export default function DevLayoutOverlay() {
         const sidebarSection = fullScreen && isSidebarSection(section);
         const primarySidebarSection = fullScreen && isPrimarySidebarSection(section);
         const sidebarColumnSection = fullScreen && isSidebarColumnSection(section);
+        const previewSnippet = truncateLabel(section.textPreview, 36);
         const labelText = mode === "labels"
           ? section.number
           : isJobCardsCreateRoute
-            ? `${section.number} · ${section.type}`
-            : `${section.number} · ${section.type} · ${section.backgroundToken}`;
+            ? [section.number, previewSnippet ? `“${previewSnippet}”` : null, section.type]
+                .filter(Boolean)
+                .join(" · ")
+            : [section.number, previewSnippet ? `“${previewSnippet}”` : null, section.type, section.backgroundToken]
+                .filter(Boolean)
+                .join(" · ");
         const localRect = overlayBounds ? toLocalRect(section.rect, overlayBounds) : section.rect;
         const labelStyle = isJobCardsCreateRoute
           ? {

@@ -83,7 +83,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
+    <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5">
       <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
         <p className="text-xs uppercase tracking-[0.35em] text-white">My details</p>
         <h3 className="text-xl font-semibold text-white">Keep your profile up to date</h3>
@@ -103,84 +103,84 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
         )}
 
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-[var(--text-secondary)]">
+          <label className="text-xs font-semibold text-[var(--text-1)]">
             First name
             <input
               type="text"
               value={formState.firstname}
               onChange={(event) => handleInputChange("firstname", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
-          <label className="text-xs font-semibold text-[var(--text-secondary)]">
+          <label className="text-xs font-semibold text-[var(--text-1)]">
             Last name
             <input
               type="text"
               value={formState.lastname}
               onChange={(event) => handleInputChange("lastname", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-[var(--text-secondary)]">
+          <label className="text-xs font-semibold text-[var(--text-1)]">
             Email address
             <input
               type="email"
               value={formState.email}
               onChange={(event) => handleInputChange("email", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
-          <label className="text-xs font-semibold text-[var(--text-secondary)]">
+          <label className="text-xs font-semibold text-[var(--text-1)]">
             Mobile phone
             <input
               type="tel"
               value={formState.mobile}
               onChange={(event) => handleInputChange("mobile", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-[var(--text-secondary)]">
+          <label className="text-xs font-semibold text-[var(--text-1)]">
             Landline
             <input
               type="tel"
               value={formState.telephone}
               onChange={(event) => handleInputChange("telephone", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
-          <label className="text-xs font-semibold text-[var(--text-secondary)]">
+          <label className="text-xs font-semibold text-[var(--text-1)]">
             Postcode
             <input
               type="text"
               value={formState.postcode}
               onChange={(event) => handleInputChange("postcode", event.target.value.toUpperCase())}
-              className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
             />
           </label>
         </div>
 
-        <label className="text-xs font-semibold text-[var(--text-secondary)]">
+        <label className="text-xs font-semibold text-[var(--text-1)]">
           Address
           <textarea
             value={formState.address}
             onChange={(event) => handleInputChange("address", event.target.value)}
             rows={3}
-            className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
           />
         </label>
 
-        <label className="text-xs font-semibold text-[var(--text-secondary)]">
+        <label className="text-xs font-semibold text-[var(--text-1)]">
           Contact preference
           <select
             value={formState.contactPreference}
             onChange={(event) => handleInputChange("contactPreference", event.target.value)}
-            className="mt-1 w-full rounded-xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus:border-[var(--primary)] focus:outline-none"
+            className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
           >
             {CONTACT_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -194,7 +194,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
+            className="rounded-full border border-[var(--surface)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
           >
             {saving ? "Saving..." : "Save changes"}
           </button>

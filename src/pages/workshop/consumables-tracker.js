@@ -18,10 +18,10 @@ import ConsumablesTrackerPageUi from "@/components/page-ui/workshop/workshop-con
 // Page layout follows the canonical PageShell > ContentWidth > app-section-card
 // hierarchy from globals.css (via @/components/ui), so no local layout shells.
 
-// Cards use the theme accent surface so they are visibly themed against the
-// page card; the token follows the active theme (light/dark) automatically.
+// Cards use the active theme surface unless a nested card explicitly opts into
+// --surface.
 const cardStyle = {
-  backgroundColor: "var(--accentSurface)",
+  backgroundColor: "var(--theme)",
   borderRadius: "var(--section-card-radius)",
   padding: "var(--section-card-padding)",
   border: "var(--section-card-border)"
@@ -30,7 +30,7 @@ const cardStyle = {
 const sectionTitleStyle = {
   fontSize: "1.1rem",
   fontWeight: 700,
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   marginBottom: "12px"
 };
 
@@ -58,7 +58,7 @@ const orderHistoryContainerStyle = {
   marginTop: "12px",
   borderRadius: "var(--radius-sm)",
   border: "none",
-  background: "var(--surface-light)",
+  background: "var(--surface)",
   padding: "12px",
   maxHeight: "190px",
   overflowY: "auto"
@@ -76,7 +76,7 @@ const orderHistoryHeaderStyle = {
   fontSize: "0.7rem",
   textTransform: "uppercase",
   letterSpacing: "0.1em",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   marginBottom: "8px"
 };
 
@@ -111,7 +111,7 @@ const orderModalCloseButtonStyle = {
   background: "transparent",
   border: "none",
   fontSize: "1rem",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   cursor: "pointer"
 };
 
@@ -128,7 +128,7 @@ const orderModalSecondaryButtonStyle = {
   ...orderModalButtonStyle,
   background: "var(--surface)",
   border: "none",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   boxShadow: "none"
 };
 
@@ -161,7 +161,7 @@ const stockCheckButtonStyle = {
   borderRadius: "var(--radius-pill)",
   border: "1px solid var(--primary)",
   background: "var(--surface)",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   fontWeight: 600,
   cursor: "pointer",
   boxShadow: "none"
@@ -252,7 +252,7 @@ function toneToStyles(tone) {
     return {
       ...badgeBaseStyle,
       backgroundColor: "rgba(var(--primary-rgb),0.12)",
-      color: "var(--text-primary)",
+      color: "var(--text-1)",
       border: "none"
     };
   }
@@ -294,7 +294,7 @@ const statusBadgeStyles = {
   },
   urgent: {
     backgroundColor: "rgba(var(--primary-rgb),0.12)",
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
     border: "none"
   },
   ordered: {
@@ -366,19 +366,19 @@ function ConsumablesTrackerPage() {
   });
   const statusNotificationCacheRef = useRef(new Map());
 
-  const mutedTextColor = "var(--text-secondary)";
-  const quietLabelColor = "var(--text-secondary)";
+  const mutedTextColor = "var(--text-1)";
+  const quietLabelColor = "var(--text-1)";
   const highlightRowBackground = isDark ? "rgba(var(--accent-purple-rgb),0.22)" : "var(--danger-surface)";
-  const tableHeaderColor = "var(--text-secondary)";
+  const tableHeaderColor = "var(--text-1)";
   const accentDashedBorder = isDark ?
   "1px dashed rgba(var(--accent-purple-rgb),0.35)" :
-  "1px dashed var(--surface-light)";
+  "1px dashed var(--surface)";
   const themedBudgetInputStyle = useMemo(
     () => ({
       ...budgetInputStyle,
       border: isDark ? "1px solid rgba(var(--accent-purple-rgb),0.45)" : budgetInputStyle.border,
-      background: isDark ? "var(--surface-light)" : "var(--surface)",
-      color: "var(--text-primary)"
+      background: isDark ? "var(--surface)" : "var(--surface)",
+      color: "var(--text-1)"
     }),
     [isDark]
   );
@@ -388,7 +388,7 @@ function ConsumablesTrackerPage() {
       border: isDark ?
       "1px solid rgba(var(--accent-purple-rgb),0.25)" :
       orderHistoryContainerStyle.border,
-      background: isDark ? "var(--surface-light)" : orderHistoryContainerStyle.background
+      background: isDark ? "var(--surface)" : orderHistoryContainerStyle.background
     }),
     [isDark]
   );

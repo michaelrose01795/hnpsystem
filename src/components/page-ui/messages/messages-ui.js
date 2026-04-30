@@ -169,7 +169,7 @@ export default function MessagesPageUi(props) {
       }}>
             <DevLayoutSection sectionKey="messages-threads-card" parentKey="messages-threads-panel" sectionType="content-card" backgroundToken="messages-thread-card-shell" style={{
           ...cardStyle,
-          background: "var(--accent-purple-surface)",
+          background: "var(--theme)",
           flex: 1,
           minHeight: 0
         }}>
@@ -204,7 +204,7 @@ export default function MessagesPageUi(props) {
                     width: "var(--space-sm)",
                     height: "var(--space-sm)",
                     borderRadius: "var(--radius-full)",
-                    backgroundColor: "var(--accentMain)",
+                    backgroundColor: "var(--primary)",
                     display: "inline-block"
                   }} />}
                           </span>
@@ -297,7 +297,7 @@ export default function MessagesPageUi(props) {
                       display: "block",
                       marginTop: "var(--space-1)",
                       fontSize: "var(--text-label)",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       lineHeight: 1.45
                     }}>
                                   <span style={{
@@ -343,7 +343,7 @@ export default function MessagesPageUi(props) {
 
           <DevLayoutSection sectionKey="messages-conversation-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-conversation-panel" style={{
         ...cardStyle,
-        background: "var(--accent-purple-surface)",
+        background: "var(--theme)",
         flex: 1,
         minHeight: 0,
         display: isMobileView && mobilePanelView !== "conversation" ? "none" : "flex" // hide conversation panel when thread list is active in portrait phone view
@@ -633,7 +633,7 @@ export default function MessagesPageUi(props) {
                 cursor: "pointer",
                 transition: "background-color 0.15s"
               }} onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = "var(--info-surface)";
+                e.currentTarget.style.backgroundColor = "var(--theme)";
               }} onMouseLeave={e => {
                 e.currentTarget.style.backgroundColor = "var(--surface)";
               }}>
@@ -1186,7 +1186,7 @@ export default function MessagesPageUi(props) {
               </p>
               <div style={{
             padding: "8px 12px",
-            backgroundColor: "var(--accent-surface)",
+            backgroundColor: "var(--theme)",
             borderRadius: radii.lg,
             borderLeft: `3px solid ${palette.accent}`,
             fontSize: "var(--text-body-sm)"
@@ -1225,16 +1225,16 @@ export default function MessagesPageUi(props) {
                 }}>
                         {commands.map((cmd, idx) => <div key={idx} onClick={() => handleInsertCommandFromHelp(cmd)} style={{
                     padding: "10px 12px",
-                    backgroundColor: "var(--info-surface)",
+                    backgroundColor: "var(--theme)",
                     borderRadius: radii.lg,
                     borderLeft: `3px solid ${palette.accent}`,
                     cursor: "pointer",
                     transition: "all 0.15s ease"
                   }} onMouseEnter={e => {
-                    e.currentTarget.style.backgroundColor = "var(--accent-surface)";
+                    e.currentTarget.style.backgroundColor = "var(--theme)";
                     e.currentTarget.style.transform = "translateX(4px)";
                   }} onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = "var(--info-surface)";
+                    e.currentTarget.style.backgroundColor = "var(--theme)";
                     e.currentTarget.style.transform = "translateX(0)";
                   }}>
                             <strong style={{
@@ -1357,7 +1357,7 @@ export default function MessagesPageUi(props) {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px",
-              backgroundColor: "var(--info-surface)",
+              backgroundColor: "var(--theme)",
               borderRadius: radii.lg
             }}>
                     <div>

@@ -23,62 +23,62 @@ const MOT_ROLE_SET = new Set(MOT_ROLES.map((role) => role.toLowerCase()));
 
 const SUMMARY_CARD_STYLES = {
   total: {
-    background: "var(--layer-section-level-2)",
+    background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-dark)"
+    valueColor: "var(--primary-selected)"
   },
   inProgress: {
-    background: "var(--layer-section-level-2)",
+    background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-dark)"
+    valueColor: "var(--primary-selected)"
   },
   onMot: {
-    background: "var(--layer-section-level-2)",
+    background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-dark)"
+    valueColor: "var(--primary-selected)"
   },
   teaBreak: {
-    background: "var(--layer-section-level-2)",
+    background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-dark)"
+    valueColor: "var(--primary-selected)"
   },
   waiting: {
-    background: "var(--layer-section-level-2)",
+    background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-dark)"
+    valueColor: "var(--primary-selected)"
   },
   notClocked: {
-    background: "var(--layer-section-level-2)",
+    background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-dark)"
+    valueColor: "var(--primary-selected)"
   }
 };
 
 const TECH_STATUS_STYLES = {
   "Not Clocked In": {
-    background: "rgba(var(--primary-rgb), 0.10)",
+    background: "var(--theme)",
     border: "none",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   },
   "Waiting for Job": {
-    background: "rgba(var(--primary-rgb), 0.10)",
+    background: "var(--theme)",
     border: "none",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   },
   "Tea Break": {
-    background: "rgba(var(--primary-rgb), 0.10)",
+    background: "var(--theme)",
     border: "none",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   },
   "In Progress": {
-    background: "rgba(var(--primary-rgb), 0.10)",
+    background: "var(--theme)",
     border: "none",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   },
   "On MOT": {
-    background: "rgba(var(--primary-rgb), 0.10)",
+    background: "var(--theme)",
     border: "none",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   }
 };
 
@@ -523,7 +523,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
         shell
         backgroundToken="accent"
         style={{
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "10px",
           border: "none",
@@ -534,7 +534,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
         }}>
         
         <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>
             Summary Statistics
           </h2>
           <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
@@ -812,7 +812,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
         shell
         backgroundToken="accent"
         style={{
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "10px",
           border: "none",
@@ -823,7 +823,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
         }}>
         
         <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-dark)" }}>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>
             Technician Status
           </h2>
         </div>
@@ -912,7 +912,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   style={{
                     borderRadius: "var(--radius-md)",
                     padding: "20px",
-                    background: "var(--background)",
+                    background: "var(--surface)",
                     border: "none",
                     boxShadow: "none",
                     display: "flex",
@@ -948,7 +948,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           margin: 0,
                           fontSize: "1.1rem",
                           fontWeight: 600,
-                          color: "var(--primary-dark)"
+                          color: "var(--primary-selected)"
                         }}>
                         
                           {tech.name}
@@ -1022,7 +1022,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           margin: "6px 0 0",
                           fontSize: "1rem",
                           fontWeight: 600,
-                          color: "var(--primary-dark)"
+                          color: "var(--primary-selected)"
                         }}>
                         
                         {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber ?
@@ -1055,7 +1055,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           margin: "6px 0 0",
                           fontSize: "1rem",
                           fontWeight: 600,
-                          color: "var(--primary-dark)"
+                          color: "var(--primary-selected)"
                         }}>
                         
                         {tech.timeOnActivity}
@@ -1092,7 +1092,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                         padding: "var(--control-padding)",
                         borderRadius: "var(--control-radius)",
                         background: "var(--primary)",
-                        color: "var(--text-inverse)",
+                        color: "var(--text-2)",
                         fontSize: "var(--control-font-size)",
                         fontWeight: 600,
                         minHeight: "var(--control-height)"
@@ -1145,7 +1145,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <p style={{ margin: 0, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                 {selectedTechnician.name} · {selectedTechnician.role}
               </p>
-              <h3 id="clocking-modal-title" style={{ margin: "6px 0 4px", fontSize: "1.3rem", color: "var(--primary-dark)" }}>
+              <h3 id="clocking-modal-title" style={{ margin: "6px 0 4px", fontSize: "1.3rem", color: "var(--primary-selected)" }}>
                 Clocking control
               </h3>
               {!modalTechClockedIn && <div style={{ height: "8px" }} />}
@@ -1171,7 +1171,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               style={{
                 borderRadius: "var(--radius-md)",
                 border: "none",
-                background: "var(--surface-light)",
+                background: "var(--surface)",
                 padding: "16px",
                 display: "grid",
                 gap: "10px"
@@ -1208,7 +1208,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   background: "var(--control-bg)",
                   padding: "var(--control-padding)",
                   fontSize: "var(--control-font-size)",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   minHeight: "var(--control-height)"
                 }} />
               
@@ -1224,8 +1224,8 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   padding: "var(--control-padding)",
                   borderRadius: "var(--control-radius)",
                   border: "none",
-                  background: "rgba(var(--primary-rgb), 0.08)",
-                  color: "var(--primary-dark)",
+                  background: "var(--theme)",
+                  color: "var(--primary-selected)",
                   fontSize: "var(--control-font-size)",
                   fontWeight: 600,
                   minHeight: "var(--control-height)"
@@ -1243,7 +1243,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   borderRadius: "var(--control-radius)",
                   border: "none",
                   background: "var(--primary)",
-                  color: "var(--text-inverse)",
+                  color: "var(--text-2)",
                   fontSize: "var(--control-font-size)",
                   fontWeight: 600,
                   minHeight: "var(--control-height)",
@@ -1278,7 +1278,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
         :global(.clocking-modal-btn-secondary),
         :global(.clocking-modal-btn-secondary:hover) {
           background: rgba(var(--primary-rgb), 0.08) !important;
-          color: var(--primary-dark) !important;
+          color: var(--primary-selected) !important;
           border: none !important;
           transform: none !important;
           box-shadow: none !important;
@@ -1292,7 +1292,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           box-shadow: none !important;
         }
         :global(.clocking-modal-btn-primary:hover) {
-          background: var(--primary-light) !important;
+          background: var(--primary-hover) !important;
         }
       `}</style>
     </DevLayoutSection>);

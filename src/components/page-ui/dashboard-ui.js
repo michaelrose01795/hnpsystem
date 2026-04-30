@@ -95,23 +95,23 @@ export default function DashboardUi(props) {
               }}>
                 <th style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>Job Number</th>
                 <th style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>Customer</th>
                 <th style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>Vehicle</th>
                 <th style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>Status</th>
                 <th style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>Technician</th>
               </tr>
             </thead>
@@ -119,25 +119,25 @@ export default function DashboardUi(props) {
               {jobs.map(job => <tr key={job.id}>
                   <td style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>{job.jobNumber}</td>
                   <td style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>{job.customer}</td>
                   <td style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>
                     {job.make} {job.model} ({job.reg})
                   </td>
                   <td style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>{job.status}</td>
                   <td style={{
                   padding: "8px",
-                  border: "1px solid var(--primary-light)"
+                  border: "1px solid var(--primary-hover)"
                 }}>{job.technician}</td>
                 </tr>)}
             </tbody>
@@ -183,8 +183,8 @@ export default function DashboardUi(props) {
             <button onClick={() => setShowSearch(false)} style={{
         width: "100%",
         padding: "10px",
-        backgroundColor: "var(--info-surface)",
-        color: "var(--text-secondary)",
+        backgroundColor: "var(--theme)",
+        color: "var(--text-1)",
         border: "none",
         borderRadius: "var(--radius-xs)",
         cursor: "pointer"
@@ -205,7 +205,7 @@ export default function DashboardUi(props) {
         }}>
                   {searchResults.map(job => <li key={job.id} style={{
             padding: "10px",
-            borderBottom: "1px solid var(--surface-light)"
+            borderBottom: "1px solid var(--surface)"
           }}>
                       <strong>{job.jobNumber}</strong> - {job.customer} ({job.reg})
                     </li>)}

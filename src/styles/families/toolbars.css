@@ -17,7 +17,7 @@
 /* Variant modifiers */
 .app-toolbar--filter {
   padding: 10px 12px;
-  background: var(--layer-section-level-1);
+  background: var(--surface);
   border-radius: var(--radius-sm);
 }
 

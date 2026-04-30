@@ -31,7 +31,7 @@ const STAGE_STYLE = {
   height: "100%",
   minHeight: 0,
   background: "var(--surfaceMutedToken, var(--surfaceMuted))",
-  border: "1px solid var(--accentBorder)",
+  border: "1px solid var(--primary-border)",
   borderRadius: "var(--radius-md)",
   overflow: "hidden",
   display: "flex",
@@ -378,7 +378,7 @@ export default function PhotoEditorCanvas({
         <div
           style={{
             textAlign: "center",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             fontFamily: "var(--font-family)",
             fontSize: "var(--text-body-sm)",
           }}

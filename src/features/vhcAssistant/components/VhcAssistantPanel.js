@@ -40,14 +40,14 @@ export default function VhcAssistantPanel({
           shape so padding, min-height, radius, font-size and weight are all owned
           by the design system — previously each <span> hardcoded these values.
           Status-specific colours come from existing semantic theme tokens
-          (--success-surface, --warning-surface, --danger-surface, --surface-light
+          (--success-surface, --warning-surface, --danger-surface, --surface
           + matching --*-dark text tokens), driven by the `scoreTone` helper.
           `cursor: default` keeps the read-only semantics since these are status
           indicators, not interactive buttons. */}
       <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", flex: 1, minWidth: 0 }}>
           <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "var(--primary)", whiteSpace: "nowrap" }}>{title}</h3>
-          <p style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)", fontWeight: 600 }}>
+          <p style={{ margin: 0, fontSize: "12px", color: "var(--text-1)", fontWeight: 600 }}>
             {state?.stageLabel || "VHC status"}
           </p>
         </div>
@@ -87,7 +87,7 @@ export default function VhcAssistantPanel({
         </span>
         <span
           className="app-btn app-btn--xs app-btn--pill"
-          style={{ color: "var(--text-secondary)", background: "var(--surface-light)", cursor: "default" }}
+          style={{ color: "var(--text-1)", background: "var(--surface)", cursor: "default" }}
         >
           Awaiting decision {state?.counters?.awaitingCustomerDecision || 0}
         </span>
@@ -105,22 +105,22 @@ export default function VhcAssistantPanel({
             Summary
           </p>
           {messages.summary.slice(0, compact ? 2 : 5).map((row) => (
-            <p key={row} style={{ margin: 0, fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.4 }}>• {row}</p>
+            <p key={row} style={{ margin: 0, fontSize: "12px", color: "var(--text-1)", lineHeight: 1.4 }}>• {row}</p>
           ))}
         </div>
 
         {/* Next action column */}
         <div style={{
           borderRadius: "var(--radius-xs)",
-          border: "1px solid var(--surface-light)",
-          backgroundColor: "var(--layer-section-level-1)",
+          border: "1px solid var(--surface)",
+          backgroundColor: "var(--surface)",
           padding: "12px",
           alignSelf: "start",
         }}>
           <p style={{ margin: "0 0 6px 0", fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--grey-accent)", fontWeight: 700 }}>
             Next best action
           </p>
-          <p style={{ margin: 0, fontSize: "12px", color: "var(--text-primary)", fontWeight: 600, lineHeight: 1.4 }}>
+          <p style={{ margin: 0, fontSize: "12px", color: "var(--text-1)", fontWeight: 600, lineHeight: 1.4 }}>
             {messages.nextActions[0] || "Continue with the current VHC workflow."}
           </p>
         </div>
@@ -142,8 +142,8 @@ export default function VhcAssistantPanel({
 
       {showWhy && (
         <details>
-          <summary style={{ cursor: "pointer", fontSize: "12px", color: "var(--text-secondary)" }}>Why this status?</summary>
-          <p style={{ margin: "8px 0 0 0", fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.4 }}>{messages.stageExplainer}</p>
+          <summary style={{ cursor: "pointer", fontSize: "12px", color: "var(--text-1)" }}>Why this status?</summary>
+          <p style={{ margin: "8px 0 0 0", fontSize: "12px", color: "var(--text-1)", lineHeight: 1.4 }}>{messages.stageExplainer}</p>
         </details>
       )}
     </section>

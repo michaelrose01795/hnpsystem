@@ -8,7 +8,7 @@ import React from "react";
 // Inline style constants using CSS variables for consistency with the tracker.
 const STYLES = {
   container: {
-    backgroundColor: "var(--accentSurface)", // Theme-colour section background
+    backgroundColor: "var(--secondary)", // Theme-colour section background
     borderRadius: "var(--radius-sm)", // Consistent border radius
     border: "none",
     boxShadow: "none",
@@ -38,7 +38,7 @@ const STYLES = {
     fontSize: "13px",
     fontWeight: 700,
     color: color || "var(--info)",
-    backgroundColor: "var(--surface-light)",
+    backgroundColor: "var(--surface)",
     borderRadius: "var(--radius-pill)",
     padding: "4px 12px",
   }),
@@ -51,7 +51,7 @@ const STYLES = {
   }),
   latestUpdate: {
     fontSize: "12px",
-    color: "var(--text-secondary, var(--grey-accent))",
+    color: "var(--text-1, var(--grey-accent))",
     fontWeight: 500,
   },
   infoGrid: {
@@ -63,7 +63,7 @@ const STYLES = {
     alignItems: "center",
     gap: "8px",
     fontSize: "13px",
-    color: "var(--text-primary, var(--info-dark))",
+    color: "var(--text-1, var(--info-dark))",
   },
   infoLabel: {
     fontSize: "11px",
@@ -76,11 +76,11 @@ const STYLES = {
   infoValue: {
     fontSize: "13px",
     fontWeight: 500,
-    color: "var(--text-primary, var(--info-dark))",
+    color: "var(--text-1, var(--info-dark))",
   },
   nextStepCard: {
     borderLeft: "3px solid var(--accent-purple)", // Accent left border for emphasis
-    backgroundColor: "var(--surface-light)",
+    backgroundColor: "var(--surface)",
     borderRadius: "0 var(--radius-xs) var(--radius-xs) 0",
     padding: "10px 12px",
     display: "flex",
@@ -97,7 +97,7 @@ const STYLES = {
   nextStepTitle: {
     fontSize: "14px",
     fontWeight: 700,
-    color: "var(--text-primary, var(--info-dark))",
+    color: "var(--text-1, var(--info-dark))",
   },
   nextStepDescription: {
     fontSize: "12px",
@@ -106,12 +106,12 @@ const STYLES = {
   },
   jobStory: {
     fontSize: "13px",
-    color: "var(--text-primary, var(--info-dark))",
+    color: "var(--text-1, var(--info-dark))",
     lineHeight: 1.5,
   },
   summarySentence: {
     fontSize: "12px",
-    color: "var(--text-secondary, var(--grey-accent))",
+    color: "var(--text-1, var(--grey-accent))",
     lineHeight: 1.5,
     fontStyle: "italic",
   },

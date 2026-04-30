@@ -18,33 +18,33 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
         {invoices.map((invoice) => (
           <div
             key={invoice.id}
-            className="customer-portal-card--muted text-[var(--text-secondary)]"
+            className="customer-portal-card--muted text-[var(--text-1)]"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">
+                <p className="text-sm font-semibold text-[var(--text-1)]">
                   Invoice #{invoice.id.slice(0, 8)}
                 </p>
-                <p className="text-xs text-[var(--text-secondary)]">
+                <p className="text-xs text-[var(--text-1)]">
                   Job: {invoice.jobId || "N/A"} · Issued {invoice.createdAt}
                 </p>
               </div>
-              <span className="text-base font-semibold text-[var(--text-primary)]">
+              <span className="text-base font-semibold text-[var(--text-1)]">
                 £{invoice.total.toFixed(2)}
               </span>
             </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-secondary)]">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-1)]">
               <p>VAT included: £{invoice.vat.toFixed(2)}</p>
               <button
                 onClick={() => handlePayInvoice(invoice)}
                 disabled={!invoice.paymentLink}
-                className="rounded-full border border-[var(--surface-light)] bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)] disabled:text-white/70"
+                className="rounded-full border border-[var(--surface)] bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:bg-[var(--danger)] disabled:text-white/70"
               >
                 {invoice.paymentLink ? "Pay now" : "Payment link unavailable"}
               </button>
             </div>
             {!invoice.paymentLink && (
-              <p className="mt-2 text-[11px] text-[var(--text-secondary)]">
+              <p className="mt-2 text-[11px] text-[var(--text-1)]">
                 Please contact the service team to request a new payment link.
               </p>
             )}

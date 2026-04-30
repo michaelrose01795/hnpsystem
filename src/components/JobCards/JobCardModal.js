@@ -378,7 +378,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
             style={{
               marginBottom: "24px", // Space below
               padding: "16px", // Inner padding
-              backgroundColor: "var(--surface-light)", // Light red bg
+              backgroundColor: "var(--surface)", // Light red bg
               borderRadius: "var(--radius-xs)", // Rounded
               border: "2px solid var(--primary)" // Accent border
             }}
@@ -403,7 +403,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   justifyContent: "space-between", // Space between cols
                   alignItems: "center", // Vertically center
                   padding: "12px", // Inner spacing
-                  backgroundColor: "var(--surface-light)", // Card bg
+                  backgroundColor: "var(--surface)", // Card bg
                   borderRadius: "var(--radius-xs)", // Rounded
                   marginBottom: "8px", // Gap between items
                   cursor: "pointer", // ✅ NEW: Show it's clickable
@@ -415,7 +415,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   e.currentTarget.style.borderColor = "var(--primary)";
                 }}
                 onMouseLeave={(e) => { // ✅ NEW: Remove hover effect
-                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
                   e.currentTarget.style.borderColor = "transparent";
                 }}
               >
@@ -442,7 +442,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   disabled={loading || dbUserId == null} // Disable if busy or unmapped
                 style={{
                   padding: "8px 16px", // Button padding
-                  backgroundColor: loading ? "var(--background)" : "var(--danger)", // Grey when loading
+                  backgroundColor: loading ? "var(--surface)" : "var(--danger)", // Grey when loading
                   color: "white", // Text colour
                   border: "none", // No border
                   borderRadius: "var(--radius-xs)", // Rounded
@@ -467,7 +467,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               marginBottom: "8px", // Gap below
               fontSize: "14px", // Label size
               fontWeight: "600", // Bold
-              color: "var(--text-secondary)" // Text colour
+              color: "var(--text-1)" // Text colour
             }}
           >
             Enter Job Number: {/* Label text */}
@@ -538,7 +538,7 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               width: "100%", // Full width
               padding: "12px", // Button padding
               backgroundColor:
-                loading || !jobNumber.trim() || dbUserId == null ? "var(--background)" : "var(--primary)", // Grey when disabled
+                loading || !jobNumber.trim() || dbUserId == null ? "var(--surface)" : "var(--primary)", // Grey when disabled
               color: "white", // Text colour
               border: "none", // No border
               borderRadius: "var(--radius-xs)", // Rounded

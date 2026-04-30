@@ -66,7 +66,7 @@ function PerformanceContent() {
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <SkeletonKeyframes />
       <header>
-        <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-1)" }}>
+        <p style={{ color: "var(--text-1)", marginTop: "var(--space-1)" }}>
           Track reviews, ratings, development plans, and upcoming appraisals.
         </p>
       </header>
@@ -132,7 +132,7 @@ function PerformanceContent() {
             }}>
             
               {performanceReviews.map((review) =>
-            <li key={review.id} style={{ color: "var(--text-primary)" }}>
+            <li key={review.id} style={{ color: "var(--text-1)" }}>
                   <strong>{review.employee}:</strong> {review.developmentFocus}
                 </li>
             )}
@@ -193,7 +193,7 @@ function PerformanceContent() {
         title="Create Performance Review"
         subtitle="Kick off a new review cycle or log a mid-year check-in.">
         
-        <p style={{ color: "var(--text-primary)", marginBottom: "var(--space-4)" }}>
+        <p style={{ color: "var(--text-1)", marginBottom: "var(--space-4)" }}>
           Select an employee to start drafting their performance review. You can attach supporting documents and invite
           co-reviewers.
         </p>
@@ -244,7 +244,7 @@ const labelStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "var(--space-xs)",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   fontSize: "var(--text-label)",
   fontWeight: "var(--control-label-weight)",
   textTransform: "uppercase",

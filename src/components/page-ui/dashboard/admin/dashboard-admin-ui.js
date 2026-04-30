@@ -16,19 +16,19 @@ export default function AdminDashboardUi(props) {
       return <>
       <div>
         <header className="app-section-card" style={{
-      border: "1px solid var(--accent-purple-surface)"
+      border: "1px solid var(--theme)"
     }}>
           <p style={{
         margin: 0,
         letterSpacing: "0.12em",
         textTransform: "uppercase",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>
             Admin pulse
           </p>
           <h1 style={{
         margin: "6px 0 0",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>System health</h1>
           <p style={{
         margin: "6px 0 0",

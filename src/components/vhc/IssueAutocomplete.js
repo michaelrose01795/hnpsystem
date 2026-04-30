@@ -13,7 +13,7 @@ const baseInputStyle = {
   border: "none",
   backgroundColor: "var(--surface)",
   fontSize: "14px",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   outline: "none",
 };
 
@@ -44,19 +44,19 @@ const rowStyle = {
   textAlign: "left",
   padding: "10px 12px",
   fontSize: "13px",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   cursor: "pointer",
 };
 
 const mutedRowStyle = {
   ...rowStyle,
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   cursor: "default",
 };
 
 const hintRowStyle = {
   ...mutedRowStyle,
-  borderTop: "1px solid var(--border)",
+  borderTop: "1px solid var(--primary-border)",
   fontWeight: 600,
 };
 
@@ -264,7 +264,7 @@ export default function IssueAutocomplete({
                   onMouseEnter={() => setActiveIndex(index)}
                   style={{
                     ...rowStyle,
-                    backgroundColor: isActive ? "var(--accent-surface)" : "transparent",
+                    backgroundColor: isActive ? "var(--theme)" : "transparent",
                   }}
                 >
                   {parts.map((part, partIndex) =>

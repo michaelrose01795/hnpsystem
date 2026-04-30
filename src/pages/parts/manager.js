@@ -29,7 +29,7 @@ const sectionTitleStyle = {
   fontSize: "0.95rem",
   fontWeight: 700,
   letterSpacing: "0.05em",
-  color: "var(--primary-dark)",
+  color: "var(--primary-selected)",
   marginBottom: "14px",
   textTransform: "uppercase"
 };

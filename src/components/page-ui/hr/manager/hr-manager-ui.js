@@ -21,7 +21,7 @@ export default function HRManagerDashboardUi(props) {
   alignItems: "center",
   justifyContent: "center",
   minHeight: "50vh",
-  color: "var(--text-secondary)"
+  color: "var(--text-1)"
 }}>
         Checking access…
       </div>; // render extracted page section.

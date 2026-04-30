@@ -183,7 +183,7 @@ export default function JobCardDetailPageUi(props) {
             <button onClick={() => router.push("/job-cards/view")} style={{
         padding: "var(--control-padding)",
         backgroundColor: "var(--primary)",
-        color: "var(--text-inverse)",
+        color: "var(--text-2)",
         border: "none",
         borderRadius: "var(--control-radius)",
         cursor: "pointer",
@@ -191,7 +191,7 @@ export default function JobCardDetailPageUi(props) {
         fontSize: "var(--control-font-size)",
         minHeight: "var(--control-height)",
         transition: "background-color 0.2s"
-      }} onMouseEnter={e => e.target.style.backgroundColor = "var(--primary-dark)"} onMouseLeave={e => e.target.style.backgroundColor = "var(--primary)"}>
+      }} onMouseEnter={e => e.target.style.backgroundColor = "var(--primary-selected)"} onMouseLeave={e => e.target.style.backgroundColor = "var(--primary)"}>
               View All Job Cards
             </button>
           </div>
@@ -210,7 +210,7 @@ export default function JobCardDetailPageUi(props) {
         padding: "12px 16px",
         borderRadius: "var(--radius-sm)",
         border: "none",
-        backgroundColor: "var(--surface-light)",
+        backgroundColor: "var(--surface)",
         color: "var(--danger-dark)",
         fontSize: "0.95rem",
         fontWeight: 600
@@ -222,8 +222,8 @@ export default function JobCardDetailPageUi(props) {
         padding: "12px 16px",
         borderRadius: "var(--radius-sm)",
         border: "none",
-        backgroundColor: "var(--surface-light)",
-        color: "var(--text-secondary)",
+        backgroundColor: "var(--surface)",
+        color: "var(--text-1)",
         fontSize: "0.95rem",
         fontWeight: 600
       }}>
@@ -271,7 +271,7 @@ export default function JobCardDetailPageUi(props) {
               padding: "0 16px",
               display: "inline-flex",
               alignItems: "center",
-              backgroundColor: overallStatusLabel === "Open" ? "var(--success-surface)" : overallStatusLabel === "Released" ? "var(--success-surface)" : overallStatusLabel === "Complete" ? "var(--info-surface)" : "var(--warning-surface)",
+              backgroundColor: overallStatusLabel === "Open" ? "var(--success-surface)" : overallStatusLabel === "Released" ? "var(--success-surface)" : overallStatusLabel === "Complete" ? "var(--theme)" : "var(--warning-surface)",
               color: overallStatusLabel === "Open" ? "var(--success-dark)" : overallStatusLabel === "Released" ? "var(--success-dark)" : overallStatusLabel === "Complete" ? "var(--info)" : "var(--danger)",
               borderRadius: "var(--control-radius-xs)",
               fontWeight: "600",
@@ -301,7 +301,7 @@ export default function JobCardDetailPageUi(props) {
               padding: "0 16px",
               display: "inline-flex",
               alignItems: "center",
-              backgroundColor: jobDivisionLower === "sales" ? "var(--info-surface)" : "var(--success-surface)",
+              backgroundColor: jobDivisionLower === "sales" ? "var(--theme)" : "var(--success-surface)",
               color: jobDivisionLower === "sales" ? "var(--info)" : "var(--success-dark)",
               borderRadius: "var(--control-radius-xs)",
               fontWeight: "600",
@@ -355,7 +355,7 @@ export default function JobCardDetailPageUi(props) {
             {(isOpenStatus || isBookedStatus) && !isCheckedIn && <button onClick={handleCheckIn} disabled={checkingIn || !canEdit} style={{
               padding: "var(--control-padding)",
               backgroundColor: "var(--primary)",
-              color: "var(--text-inverse)",
+              color: "var(--text-2)",
               border: "none",
               borderRadius: "var(--control-radius)",
               cursor: checkingIn || !canEdit ? "not-allowed" : "pointer",
@@ -366,7 +366,7 @@ export default function JobCardDetailPageUi(props) {
               opacity: checkingIn || !canEdit ? 0.7 : 1
             }} onMouseEnter={e => {
               if (!checkingIn && canEdit) {
-                e.target.style.backgroundColor = "var(--primary-light)";
+                e.target.style.backgroundColor = "var(--primary-hover)";
               }
             }} onMouseLeave={e => {
               if (!checkingIn && canEdit) {
@@ -383,7 +383,7 @@ export default function JobCardDetailPageUi(props) {
             }} style={{
               padding: "var(--control-padding)",
               backgroundColor: "var(--success)",
-              color: "var(--text-inverse)",
+              color: "var(--text-2)",
               border: "none",
               borderRadius: "var(--control-radius)",
               cursor: "pointer",
@@ -455,7 +455,7 @@ export default function JobCardDetailPageUi(props) {
             }}>
                 <span style={{
                 fontSize: "11px",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 fontWeight: "500"
               }}>Mileage</span>
                 <input type="text" inputMode="numeric" maxLength={7} value={vehicleMileageInput} onChange={event => {
@@ -546,7 +546,7 @@ export default function JobCardDetailPageUi(props) {
               </div>
               <div style={{
               width: "1px",
-              backgroundColor: "var(--surface-light)",
+              backgroundColor: "var(--surface)",
               flexShrink: 0
             }} />
               <div style={{
@@ -594,7 +594,7 @@ export default function JobCardDetailPageUi(props) {
           }}>
               <div style={{
               fontSize: "11px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               marginBottom: "4px"
             }}>
                 Key location
@@ -602,7 +602,7 @@ export default function JobCardDetailPageUi(props) {
               <div style={{
               fontSize: "13px",
               fontWeight: "700",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap"
@@ -612,7 +612,7 @@ export default function JobCardDetailPageUi(props) {
             </div>
             <div style={{
             width: "1px",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             flexShrink: 0
           }} />
             <div style={{
@@ -622,7 +622,7 @@ export default function JobCardDetailPageUi(props) {
           }}>
               <div style={{
               fontSize: "11px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               marginBottom: "4px"
             }}>
                 Car location
@@ -630,7 +630,7 @@ export default function JobCardDetailPageUi(props) {
               <div style={{
               fontSize: "13px",
               fontWeight: "700",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap"
@@ -885,7 +885,7 @@ export default function JobCardDetailPageUi(props) {
                 <button type="button" onClick={handleCreateInvoice} disabled={creatingInvoice} style={{
               padding: "var(--control-padding)",
               backgroundColor: "var(--primary)",
-              color: "var(--text-inverse)",
+              color: "var(--text-2)",
               border: "none",
               borderRadius: "var(--control-radius)",
               cursor: creatingInvoice ? "not-allowed" : "pointer",
@@ -895,7 +895,7 @@ export default function JobCardDetailPageUi(props) {
               transition: "background-color 0.2s",
               opacity: creatingInvoice ? 0.7 : 1
             }} onMouseEnter={e => {
-              if (!creatingInvoice) e.currentTarget.style.backgroundColor = "var(--primary-light)";
+              if (!creatingInvoice) e.currentTarget.style.backgroundColor = "var(--primary-hover)";
             }} onMouseLeave={e => {
               if (!creatingInvoice) e.currentTarget.style.backgroundColor = "var(--primary)";
             }}>

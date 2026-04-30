@@ -72,7 +72,7 @@ export default function DeliveryRoutePageUi(props) {
         <div style={{
     padding: "48px",
     textAlign: "center",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   }}>
           You do not have access to delivery planning.
         </div>
@@ -93,7 +93,7 @@ export default function DeliveryRoutePageUi(props) {
       gap: "12px"
     }}>
           <Link href="/parts/deliveries" style={{
-        color: "var(--primary-dark)",
+        color: "var(--primary-selected)",
         fontWeight: 600
       }}>
             ← Back to deliveries
@@ -119,7 +119,7 @@ export default function DeliveryRoutePageUi(props) {
         margin: 0,
         textTransform: "uppercase",
         letterSpacing: "0.08em",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>
             Route overview
           </p>
@@ -349,7 +349,7 @@ export default function DeliveryRoutePageUi(props) {
                   padding: "10px 12px",
                   cursor: "pointer",
                   fontWeight: 600,
-                  color: "var(--primary-dark)"
+                  color: "var(--primary-selected)"
                 }}>
                           {label}
                           <span style={{
@@ -406,7 +406,7 @@ export default function DeliveryRoutePageUi(props) {
               ...buttonStyle,
               background: "var(--surface)",
               border: "none",
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>
                   Cancel
                 </button>
@@ -437,7 +437,7 @@ export default function DeliveryRoutePageUi(props) {
           ...buttonStyle,
           background: "var(--surface)",
           border: "none",
-          color: "var(--primary-dark)",
+          color: "var(--primary-selected)",
           opacity: actionLoading || !nextPlannedStop ? 0.6 : 1
         }}>
               Start Route
@@ -515,7 +515,7 @@ export default function DeliveryRoutePageUi(props) {
         }} draggable onDragStart={handleDragStart(stop.id)} onDragOver={handleDragOver(stop.id)} onDrop={handleDrop(stop.id)} onDragEnd={handleDragEnd}>
                   <div style={{
             ...stopCardStyle,
-            borderColor: isDropTarget ? "var(--primary)" : "var(--surface-light)",
+            borderColor: isDropTarget ? "var(--primary)" : "var(--surface)",
             opacity: isDragging ? 0.7 : 1
           }}>
                     <div style={{
@@ -594,7 +594,7 @@ export default function DeliveryRoutePageUi(props) {
                 border: "none",
                 padding: "8px 12px",
                 fontWeight: 600,
-                color: "var(--primary-dark)",
+                color: "var(--primary-selected)",
                 minWidth: "160px",
                 background: "var(--surface)"
               }}>
@@ -624,7 +624,7 @@ export default function DeliveryRoutePageUi(props) {
                 borderRadius: "var(--radius-xs)",
                 border: "none",
                 background: "var(--surface)",
-                color: "var(--primary-dark)",
+                color: "var(--primary-selected)",
                 padding: "6px 12px",
                 fontWeight: 600,
                 cursor: "pointer"
@@ -724,7 +724,7 @@ export default function DeliveryRoutePageUi(props) {
                   ...buttonStyle,
                   background: "var(--surface)",
                   border: "none",
-                  color: "var(--primary-dark)",
+                  color: "var(--primary-selected)",
                   padding: "6px 12px"
                 }}>
                             Cancel

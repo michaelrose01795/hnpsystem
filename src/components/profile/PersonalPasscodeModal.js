@@ -60,7 +60,7 @@ export default function PersonalPasscodeModal({
           <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>
             {mode === "setup" ? setupTitle : unlockTitle}
           </div>
-          <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.5 }}>
+          <div style={{ color: "var(--text-1)", fontSize: "0.9rem", lineHeight: 1.5 }}>
             {mode === "setup" ? setupHint : unlockHint}
           </div>
         </div>

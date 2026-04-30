@@ -88,7 +88,7 @@ export default function VhcCustomerDescriptionModal({
           width: "100%",
           maxWidth: 640,
           background: "var(--page-card-bg, var(--surface))",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           border: "none",
           borderRadius: "var(--radius-sm)",
           boxShadow: "0 24px 60px rgba(15, 23, 42, 0.24)",
@@ -104,7 +104,7 @@ export default function VhcCustomerDescriptionModal({
           style={{
             padding: "18px 20px 14px",
             borderBottom: "none",
-            background: "var(--page-card-bg-alt, var(--surface-light))",
+            background: "var(--theme, var(--surface))",
           }}
         >
           <div
@@ -122,7 +122,7 @@ export default function VhcCustomerDescriptionModal({
               margin: "4px 0 0",
               fontSize: "1.05rem",
               fontWeight: 700,
-              color: "var(--accentMain, var(--primary))",
+              color: "var(--primary, var(--primary))",
             }}
           >
             {itemLabel || "Edit customer description"}
@@ -130,7 +130,7 @@ export default function VhcCustomerDescriptionModal({
         </div>
 
         <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--text-1)", lineHeight: 1.5 }}>
             This is the customer-facing wording used in the Summary tab, preview,
             share link and send flows. The technician's original VHC note stays unchanged.
           </p>
@@ -140,7 +140,7 @@ export default function VhcCustomerDescriptionModal({
               style={{
                 padding: "12px 14px",
                 borderRadius: "var(--radius-sm)",
-                background: "var(--info-surface, var(--surface-muted))",
+                background: "var(--theme, var(--surface))",
                 border: "none",
               }}
             >
@@ -155,7 +155,7 @@ export default function VhcCustomerDescriptionModal({
               >
                 Technician's description
               </div>
-              <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.45 }}>
+              <div style={{ fontSize: 13, color: "var(--text-1)", lineHeight: 1.45 }}>
                 {technicianDescription}
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function VhcCustomerDescriptionModal({
               flexDirection: "column",
               gap: 6,
               fontSize: 12,
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               textTransform: "uppercase",
               letterSpacing: "0.06em",
             }}
@@ -187,8 +187,8 @@ export default function VhcCustomerDescriptionModal({
                 minHeight: 130,
                 borderRadius: "var(--radius-xs)",
                 border: "none",
-                background: "var(--page-card-bg-alt, var(--surface-light))",
-                color: "var(--text-primary)",
+                background: "var(--theme, var(--surface))",
+                color: "var(--text-1)",
                 fontSize: 14,
                 lineHeight: 1.5,
                 fontFamily: "inherit",
@@ -221,7 +221,7 @@ export default function VhcCustomerDescriptionModal({
             flexWrap: "wrap",
             padding: "14px 20px 18px",
             borderTop: "none",
-            background: "var(--page-card-bg-alt, var(--surface-light))",
+            background: "var(--theme, var(--surface))",
           }}
         >
           <button
@@ -233,7 +233,7 @@ export default function VhcCustomerDescriptionModal({
               minHeight: 40,
               borderRadius: "var(--radius-xs)",
               border: "none",
-              background: "var(--accentMain, var(--primary))",
+              background: "var(--primary, var(--primary))",
               color: "var(--onAccentText, #fff)",
               fontWeight: 700,
               fontSize: 13,
@@ -255,7 +255,7 @@ export default function VhcCustomerDescriptionModal({
                 borderRadius: "var(--radius-xs)",
                 border: "none",
                 background: "var(--surface)",
-                color: "var(--text-primary)",
+                color: "var(--text-1)",
                 fontWeight: 600,
                 fontSize: 13,
                 cursor: saving ? "not-allowed" : "pointer",
@@ -272,7 +272,7 @@ export default function VhcCustomerDescriptionModal({
                 minHeight: 40,
                 borderRadius: "var(--radius-xs)",
                 border: "none",
-                background: "var(--accentMain, var(--primary))",
+                background: "var(--primary, var(--primary))",
                 color: "var(--onAccentText, #fff)",
                 fontWeight: 700,
                 fontSize: 13,

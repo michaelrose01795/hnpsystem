@@ -95,7 +95,7 @@ const LoginCard = ({
       
         <h2
         style={{
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           fontSize: "1.5rem",
           fontWeight: 600,
           letterSpacing: "-0.01em",
@@ -107,7 +107,7 @@ const LoginCard = ({
         {subtitle &&
       <p
         style={{
-          color: "var(--text-secondary, #64748b)",
+          color: "var(--text-1, #64748b)",
           fontSize: "0.95rem",
           margin: 0
         }}>

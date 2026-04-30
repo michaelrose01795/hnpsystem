@@ -9,7 +9,7 @@ function SettingsContent() {
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <header>
-        <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-1)" }}>
+        <p style={{ color: "var(--text-1)", marginTop: "var(--space-1)" }}>
           Upload policy documents, configure shift patterns, and manage role-based access for HR tools.
         </p>
       </header>
@@ -52,7 +52,7 @@ function SettingsContent() {
           <p
             style={{
               fontSize: "var(--text-caption)",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               fontStyle: "italic",
               marginTop: "var(--space-md)"
             }}>
@@ -100,7 +100,7 @@ function SettingsContent() {
         title="Role-Based Access"
         subtitle="Control which roles can access HR functionality.">
         
-        <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
+        <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
           TODO: Fetch role permissions from Supabase policy tables. Display editable access matrix with roles (HR Manager, Admin, Manager, Employee) and toggles for each HR module (Dashboard, Records, Payroll, Leave, Recruitment).
         </p>
       </SectionCard>
@@ -146,10 +146,10 @@ function ToggleSetting({ label, defaultChecked }) {
         gap: "var(--space-2)",
         padding: "var(--space-3)",
         borderRadius: "var(--radius-sm)",
-        border: "1px solid var(--border)",
+        border: "1px solid var(--primary-border)",
         background: "var(--surface)",
         fontWeight: 600,
-        color: "var(--text-primary)"
+        color: "var(--text-1)"
       }}>
       
       <input type="checkbox" defaultChecked={defaultChecked} />

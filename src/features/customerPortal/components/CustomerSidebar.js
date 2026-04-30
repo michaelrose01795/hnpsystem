@@ -37,8 +37,8 @@ export default function CustomerSidebar() {
               <div
                 className={`mb-3 flex items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm font-semibold ${
                   isActive
-                    ? "bg-[var(--primary)] text-[var(--text-inverse)]"
-                    : "bg-[var(--surface-light)] text-[var(--primary-dark)]"
+                    ? "bg-[var(--primary)] text-[var(--text-2)]"
+                    : "bg-[var(--surface)] text-[var(--primary-selected)]"
                 }`}
               >
                 <div className="flex flex-1 items-center justify-between gap-2">

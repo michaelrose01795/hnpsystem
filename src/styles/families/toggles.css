@@ -31,13 +31,13 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--surfaceMain);
+  background: var(--surface);
   transition: transform 0.18s ease;
 }
 
 .app-toggle--switch[aria-checked="true"],
 .app-toggle--switch.is-checked {
-  background: var(--accentMain);
+  background: var(--primary);
 }
 
 .app-toggle--switch[aria-checked="true"]::after,
@@ -52,7 +52,7 @@
   height: 18px;
   border: 2px solid var(--control-bg-hover);
   border-radius: var(--radius-xs);
-  background: var(--surfaceMain);
+  background: var(--surface);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -61,8 +61,8 @@
 }
 
 .app-toggle--checkbox:checked {
-  background: var(--accentMain);
-  border-color: var(--accentMain);
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .app-toggle--checkbox:checked::after {
@@ -81,7 +81,7 @@
   height: 18px;
   border: 2px solid var(--control-bg-hover);
   border-radius: 50%;
-  background: var(--surfaceMain);
+  background: var(--surface);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -89,7 +89,7 @@
 }
 
 .app-toggle--radio:checked {
-  border-color: var(--accentMain);
+  border-color: var(--primary);
 }
 
 .app-toggle--radio:checked::after {
@@ -97,7 +97,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--accentMain);
+  background: var(--primary);
 }
 
 /* -------------------------------------------------------------------------- */

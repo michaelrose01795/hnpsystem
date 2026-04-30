@@ -118,7 +118,7 @@ function ProfileCard({
             ...headerStyle,
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>
+          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-1)" }}>
             {title}
           </div>
           {action ? <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>{action}</div> : null}
@@ -184,15 +184,15 @@ function KpiCard(props) {
   const cardContent = (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <span style={{ fontSize: "0.76rem", fontWeight: 600, color: "var(--text-secondary)" }}>
+        <span style={{ fontSize: "0.76rem", fontWeight: 600, color: "var(--text-1)" }}>
           {label}
         </span>
       </div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 700, color: accentColor || "var(--text-primary)" }}>
+      <div style={{ fontSize: "1.55rem", fontWeight: 700, color: accentColor || "var(--text-1)" }}>
         {primary}
       </div>
       {secondary ? (
-        <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)" }}>{secondary}</div>
+        <div style={{ fontSize: "0.74rem", color: "var(--text-1)" }}>{secondary}</div>
       ) : null}
     </>
   );
@@ -325,7 +325,7 @@ function LeaveRequestModal({
       }}
     >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)" }}>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, color: "var(--text-1)" }}>
             {mode === "edit" ? "Edit Leave Request" : "Request Leave"}
           </h2>
           <button
@@ -336,7 +336,7 @@ function LeaveRequestModal({
               border: "none",
               fontSize: "1.4rem",
               cursor: "pointer",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               padding: "4px 8px",
             }}
           >
@@ -420,14 +420,14 @@ function LeaveRequestModal({
               borderRadius: "var(--radius-sm)",
               background: "rgba(var(--accent-purple-rgb), 0.08)",
               fontSize: "0.85rem",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               fontWeight: 500,
               display: "flex",
               flexDirection: "column",
               gap: "4px",
             }}>
               <div>
-                Leave dates: <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+                Leave dates: <span style={{ fontWeight: 700, color: "var(--text-1)" }}>
                   {new Date(`${form.startDate}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
                   {" - "}
                   {new Date(`${form.endDate}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
@@ -504,15 +504,15 @@ const modalLabelStyle = {
   gap: "6px",
   fontSize: "0.85rem",
   fontWeight: 600,
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
 };
 
 const modalInputStyle = {
   padding: "10px 12px",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--border, #ccc)",
-  background: "var(--background)",
-  color: "var(--text-primary)",
+  border: "1px solid var(--primary-border, #ccc)",
+  background: "var(--surface)",
+  color: "var(--text-1)",
   fontSize: "0.9rem",
   fontWeight: 500,
 };
@@ -530,7 +530,7 @@ const modalStatStyle = {
 const modalStatLabelStyle = {
   fontSize: "0.74rem",
   fontWeight: 700,
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   letterSpacing: "0.04em",
   textTransform: "uppercase",
 };
@@ -538,12 +538,12 @@ const modalStatLabelStyle = {
 const modalStatValueStyle = {
   fontSize: "1rem",
   fontWeight: 700,
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
 };
 
 const modalStatHintStyle = {
   fontSize: "0.76rem",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
 };
 
 // Day labels for recurring overtime rules — Mon-Sat only (no Sundays)
@@ -695,7 +695,7 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
     border: "none",
     borderBottom: active ? "2px solid var(--accent-purple, #7c3aed)" : "2px solid transparent",
     background: "none",
-    color: active ? "var(--text-primary)" : "var(--text-secondary)",
+    color: active ? "var(--text-1)" : "var(--text-1)",
     cursor: "pointer",
     transition: "color 0.15s, border-color 0.15s",
   });
@@ -716,7 +716,7 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>
             <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>Add overtime</h3>
-            <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+            <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--text-1)" }}>
               {mode === "single"
                 ? "Type is saved as overtime. Logout or total hours can be calculated from the other fields."
                 : "Add a lump sum of overtime hours. Only total hours will appear in the attendance table."}
@@ -725,13 +725,13 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
           <button
             type="button"
             onClick={onClose}
-            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-secondary)" }}
+            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-1)" }}
           >
             &times;
           </button>
         </div>
 
-        <div style={{ display: "flex", borderBottom: "1px solid var(--border, #e5e7eb)" }}>
+        <div style={{ display: "flex", borderBottom: "1px solid var(--primary-border, #e5e7eb)" }}>
           <button type="button" style={tabStyle(mode === "single")} onClick={() => { setMode("single"); setError(null); }}>
             Single Entry
           </button>
@@ -796,13 +796,13 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
                   borderRadius: "var(--radius-sm)",
                   background: "rgba(var(--accent-purple-rgb), 0.08)",
                   fontSize: "0.8rem",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                 }}
               >
-                <div>Type: <strong style={{ color: "var(--text-primary)" }}>Overtime</strong></div>
-                <div>Login: <strong style={{ color: "var(--text-primary)" }}>{form.login || "-"}</strong></div>
-                <div>Logout: <strong style={{ color: "var(--text-primary)" }}>{form.logout || "-"}</strong></div>
-                <div>Total hours: <strong style={{ color: "var(--text-primary)" }}>{form.totalHours || "-"}</strong></div>
+                <div>Type: <strong style={{ color: "var(--text-1)" }}>Overtime</strong></div>
+                <div>Login: <strong style={{ color: "var(--text-1)" }}>{form.login || "-"}</strong></div>
+                <div>Logout: <strong style={{ color: "var(--text-1)" }}>{form.logout || "-"}</strong></div>
+                <div>Total hours: <strong style={{ color: "var(--text-1)" }}>{form.totalHours || "-"}</strong></div>
               </div>
             </>
           ) : (
@@ -840,12 +840,12 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
                   borderRadius: "var(--radius-sm)",
                   background: "rgba(var(--accent-purple-rgb), 0.08)",
                   fontSize: "0.8rem",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                 }}
               >
-                <div>Type: <strong style={{ color: "var(--text-primary)" }}>Overtime (Bulk)</strong></div>
-                <div>Total hours: <strong style={{ color: "var(--text-primary)" }}>{bulkHours || "-"}</strong></div>
-                {bulkNote ? <div>Note: <strong style={{ color: "var(--text-primary)" }}>{bulkNote}</strong></div> : null}
+                <div>Type: <strong style={{ color: "var(--text-1)" }}>Overtime (Bulk)</strong></div>
+                <div>Total hours: <strong style={{ color: "var(--text-1)" }}>{bulkHours || "-"}</strong></div>
+                {bulkNote ? <div>Note: <strong style={{ color: "var(--text-1)" }}>{bulkNote}</strong></div> : null}
               </div>
             </>
           )}
@@ -1103,9 +1103,9 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 cursor: "pointer",
-                border: "1px dashed var(--border, rgba(0,0,0,0.12))",
+                border: "1px dashed var(--primary-border, rgba(0,0,0,0.12))",
                 background: "var(--surface)",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
               }}
             >
               {preset.label}
@@ -1126,9 +1126,9 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
               borderRadius: "var(--radius-sm)",
               border: formData.days[dow]
                 ? "1px solid var(--accent-purple)"
-                : "1px solid var(--border, rgba(0,0,0,0.12))",
+                : "1px solid var(--primary-border, rgba(0,0,0,0.12))",
               background: formData.days[dow] ? "var(--accent-purple)" : "var(--surface)",
-              color: formData.days[dow] ? "white" : "var(--text-primary)",
+              color: formData.days[dow] ? "white" : "var(--text-1)",
               fontWeight: 600,
               fontSize: "0.82rem",
               cursor: "pointer",
@@ -1150,9 +1150,9 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             fontWeight: 600,
             fontSize: "0.82rem",
             cursor: "pointer",
-            border: formData.patternType === "weekly" ? "1px solid var(--accent-purple)" : "1px solid var(--border, rgba(0,0,0,0.12))",
+            border: formData.patternType === "weekly" ? "1px solid var(--accent-purple)" : "1px solid var(--primary-border, rgba(0,0,0,0.12))",
             background: formData.patternType === "weekly" ? "var(--accent-purple)" : "var(--surface)",
-            color: formData.patternType === "weekly" ? "white" : "var(--text-primary)",
+            color: formData.patternType === "weekly" ? "white" : "var(--text-1)",
           }}
         >
           Every week
@@ -1166,9 +1166,9 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             fontWeight: 600,
             fontSize: "0.82rem",
             cursor: "pointer",
-            border: formData.patternType === "alternate" ? "1px solid var(--accent-purple)" : "1px solid var(--border, rgba(0,0,0,0.12))",
+            border: formData.patternType === "alternate" ? "1px solid var(--accent-purple)" : "1px solid var(--primary-border, rgba(0,0,0,0.12))",
             background: formData.patternType === "alternate" ? "var(--accent-purple)" : "var(--surface)",
-            color: formData.patternType === "alternate" ? "white" : "var(--text-primary)",
+            color: formData.patternType === "alternate" ? "white" : "var(--text-1)",
           }}
         >
           Every other week
@@ -1188,15 +1188,15 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
                   fontSize: "0.80rem",
                   fontWeight: 600,
                   cursor: "pointer",
-                  border: formData.weekParity === parity ? "1px solid var(--accent-purple)" : "1px solid var(--border, rgba(0,0,0,0.12))",
+                  border: formData.weekParity === parity ? "1px solid var(--accent-purple)" : "1px solid var(--primary-border, rgba(0,0,0,0.12))",
                   background: formData.weekParity === parity ? "var(--accent-purple)" : "var(--surface)",
-                  color: formData.weekParity === parity ? "white" : "var(--text-primary)",
+                  color: formData.weekParity === parity ? "white" : "var(--text-1)",
                 }}
               >
                 {PARITY_LABELS[parity]}
               </button>
             ))}
-            <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>(within 26th–25th cycle)</span>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-1)" }}>(within 26th–25th cycle)</span>
           </>
         )}
       </div>
@@ -1215,13 +1215,13 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             flex: 1,
             padding: "var(--control-padding)",
             borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--accent-purple-surface)",
+            border: "1px solid var(--theme)",
             fontWeight: 500,
             height: "var(--control-height)",
             boxSizing: "border-box",
           }}
         />
-        <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>hours</span>
+        <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>hours</span>
       </div>
 
       {/* Overlap detection warning — soft, non-blocking */}
@@ -1232,7 +1232,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
           background: "rgba(249, 115, 22, 0.08)",
           border: "1px solid rgba(249, 115, 22, 0.25)",
           fontSize: "0.78rem",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
         }}>
           <strong style={{ color: "rgb(249, 115, 22)" }}>Overlap notice</strong>
           {overlapWarnings.map((w, i) => (
@@ -1249,9 +1249,9 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
           borderRadius: "var(--radius-xs)",
           background: "rgba(var(--accent-purple-rgb), 0.03)",
           fontSize: "0.78rem",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
         }}>
-          <strong style={{ color: "var(--text-primary)" }}>Preview</strong>
+          <strong style={{ color: "var(--text-1)" }}>Preview</strong>
           {previewEntries.map((entry, i) => (
             <div key={i} style={{ marginTop: "2px" }}>
               {entry.date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} — {entry.totalHours.toFixed(2)}h
@@ -1286,9 +1286,9 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
           style={{
             padding: "8px 14px",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--border, rgba(0,0,0,0.12))",
+            border: "1px solid var(--primary-border, rgba(0,0,0,0.12))",
             background: "var(--surface)",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             fontWeight: 600,
             cursor: "pointer",
             fontSize: "0.85rem",
@@ -1340,14 +1340,14 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700 }}>Recurring Overtime Rules</h3>
-            <p style={{ margin: "4px 0 0", fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.4 }}>
+            <p style={{ margin: "4px 0 0", fontSize: "0.78rem", color: "var(--text-1)", lineHeight: 1.4 }}>
               Set overtime rules that auto-log hours on matching days. Period runs from the 26th to the 25th.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-secondary)", padding: "4px", flexShrink: 0 }}
+            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-1)", padding: "4px", flexShrink: 0 }}
           >
             ✕
           </button>
@@ -1363,11 +1363,11 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             background: "rgba(var(--accent-purple-rgb), 0.04)",
             border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
             fontSize: "0.80rem",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             flexWrap: "wrap",
             alignItems: "center",
           }}>
-            <span><strong style={{ color: "var(--text-primary)" }}>{summary.totalWeeklyHours.toFixed(2)}h</strong> avg/week</span>
+            <span><strong style={{ color: "var(--text-1)" }}>{summary.totalWeeklyHours.toFixed(2)}h</strong> avg/week</span>
             <span>{summary.activePatterns} pattern{summary.activePatterns !== 1 ? "s" : ""}</span>
             {upcoming.length > 0 && (
               <span>
@@ -1381,9 +1381,9 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
 
         {/* Grouped rules list — click-to-edit, no Edit button */}
         {isLoading ? (
-          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-secondary)" }}>Loading rules…</div>
+          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-1)" }}>Loading rules…</div>
         ) : grouped.length === 0 && !formMode ? (
-          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+          <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-1)", fontSize: "0.85rem" }}>
             <div style={{ marginBottom: "4px" }}>No recurring overtime rules set yet.</div>
             <div style={{ fontSize: "0.78rem" }}>Add a rule to auto-log regular overtime.</div>
           </div>
@@ -1419,14 +1419,14 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1, minWidth: 0, flexWrap: "wrap" }}>
-                    <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-primary)" }}>
+                    <span style={{ fontWeight: 600, fontSize: "0.88rem", color: "var(--text-1)" }}>
                       {dayLabel}
                     </span>
                     <span style={{ fontSize: "0.92rem", fontWeight: 700, color: "var(--accent-purple)" }}>
                       {Number(group.hours).toFixed(2)}h
                     </span>
                     {/* Pattern label */}
-                    <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-1)", fontStyle: "italic" }}>
                       {group.patternType === "alternate"
                         ? `${PARITY_LABELS[group.weekParity] || "alternate"} only`
                         : "every week"}
@@ -1438,7 +1438,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
                         padding: "1px 7px",
                         borderRadius: "var(--radius-pill)",
                         background: "rgba(0,0,0,0.08)",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-1)",
                         fontWeight: 600,
                       }}>
                         Inactive
@@ -1455,7 +1455,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
                       borderRadius: "var(--radius-xs)",
                       border: "1px solid transparent",
                       background: "transparent",
-                      color: "var(--text-secondary)",
+                      color: "var(--text-1)",
                       fontWeight: 600,
                       fontSize: "0.75rem",
                       cursor: "pointer",
@@ -1485,12 +1485,12 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             borderRadius: "var(--radius-xs)",
             background: "rgba(var(--accent-purple-rgb), 0.03)",
             fontSize: "0.78rem",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
           }}>
-            <strong style={{ color: "var(--text-primary)", fontSize: "0.80rem" }}>Next 3 auto-log entries</strong>
+            <strong style={{ color: "var(--text-1)", fontSize: "0.80rem" }}>Next 3 auto-log entries</strong>
             {upcoming.map((entry, i) => (
               <div key={i} style={{ marginTop: "3px", display: "flex", gap: "6px" }}>
-                <span style={{ fontWeight: 600, color: "var(--text-primary)", minWidth: "100px" }}>
+                <span style={{ fontWeight: 600, color: "var(--text-1)", minWidth: "100px" }}>
                   {entry.date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
                 </span>
                 <span>{entry.totalHours.toFixed(2)}h</span>
@@ -1527,9 +1527,9 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             style={{
               padding: "8px 14px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--border, rgba(0,0,0,0.12))",
+              border: "1px solid var(--primary-border, rgba(0,0,0,0.12))",
               background: "var(--surface)",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               fontWeight: 600,
               cursor: "pointer",
               fontSize: "0.85rem",
@@ -1981,7 +1981,7 @@ export function ProfileWorkTab({
 
   if (!user && !session?.user && !previewUserParam) {
     const fallback = (
-      <div style={{ padding: "24px", color: "var(--text-secondary)" }}>
+      <div style={{ padding: "24px", color: "var(--text-1)" }}>
         You need to be signed in to view your profile.
       </div>
     );
@@ -1989,7 +1989,7 @@ export function ProfileWorkTab({
   }
 
   const profileSectionShellStyle = {
-    background: "var(--accent-purple-surface)",
+    background: "var(--theme)",
     border: "var(--section-card-border)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--section-card-padding)",
@@ -2053,19 +2053,19 @@ export function ProfileWorkTab({
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-primary)" }}>
+                <span style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-1)" }}>
                   {formatDate(entry.date)}
                 </span>
                 <StatusTag label={entryType} tone={tone} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Login</span>
-                  <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-primary)" }}>{formatTime(entry.clockIn)}</span>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Login</span>
+                  <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-1)" }}>{formatTime(entry.clockIn)}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Logout</span>
-                  <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Logout</span>
+                  <span style={{ fontSize: "0.86rem", fontWeight: 600, color: "var(--text-1)" }}>
                     {entry.clockOut ? (
                       <>
                         {formatTime(entry.clockOut)}
@@ -2079,8 +2079,8 @@ export function ProfileWorkTab({
                   </span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-end" }}>
-                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Hours</span>
-                  <span style={{ fontSize: "0.86rem", fontWeight: 700, color: nextDay ? "var(--warning)" : "var(--text-primary)" }}>
+                  <span style={{ fontSize: "0.68rem", fontWeight: 600, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Hours</span>
+                  <span style={{ fontSize: "0.86rem", fontWeight: 700, color: nextDay ? "var(--warning)" : "var(--text-1)" }}>
                     {nextDay ? "Next Day" : `${Number(entry.totalHours ?? 0).toFixed(2)}h`}
                   </span>
                 </div>
@@ -2089,7 +2089,7 @@ export function ProfileWorkTab({
           );
         })}
         {records.length === 0 && (
-          <div style={{ padding: "18px 14px", color: "var(--text-secondary)", textAlign: "center" }}>
+          <div style={{ padding: "18px 14px", color: "var(--text-1)", textAlign: "center" }}>
             {emptyLabel}
           </div>
         )}
@@ -2135,7 +2135,7 @@ export function ProfileWorkTab({
           >
             <tr
               style={{
-                color: "var(--text-inverse, #ffffff)",
+                color: "var(--text-2, #ffffff)",
                 fontSize: "0.72rem",
                 textTransform: "uppercase",
                 letterSpacing: "0.04em",
@@ -2199,7 +2199,7 @@ export function ProfileWorkTab({
             })}
             {records.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ padding: "18px 14px", color: "var(--text-secondary)", textAlign: "center" }}>
+                <td colSpan={5} style={{ padding: "18px 14px", color: "var(--text-1)", textAlign: "center" }}>
                   {emptyLabel}
                 </td>
               </tr>
@@ -2218,7 +2218,7 @@ export function ProfileWorkTab({
         gap: "10px",
         padding: "0",
         background: "transparent",
-        color: "var(--text-primary)",
+        color: "var(--text-1)",
         minHeight: "100%",
       }}
     >
@@ -2228,7 +2228,7 @@ export function ProfileWorkTab({
             <div
               style={{
                 background: "rgba(var(--info-rgb), 0.08)",
-                color: "var(--text-primary)",
+                color: "var(--text-1)",
                 padding: "10px 14px",
                 borderRadius: "var(--radius-sm)",
                 fontWeight: 600,
@@ -2272,7 +2272,7 @@ export function ProfileWorkTab({
           <ProfileCard title="Failed to load profile data">
             <span style={{ color: "var(--danger)" }}>{error.message}</span>
             {!shouldUseHrData && (
-              <div style={{ marginTop: "12px", color: "var(--text-secondary)" }}>
+              <div style={{ marginTop: "12px", color: "var(--text-1)" }}>
                 If you continue to see this error, please contact HR to ensure your employee profile has been created.
               </div>
             )}
@@ -2320,19 +2320,19 @@ export function ProfileWorkTab({
                     flex: 1,
                   }}>
                     <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Work</div>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-1)" }}>Work</div>
                       <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accent-purple)" }}>
                         {aggregatedStats?.monthlyWeekdayHours?.toFixed(2) ?? "0.00"}h
                       </div>
                     </div>
                     <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Overtime</div>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-1)" }}>Overtime</div>
                       <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
                         {aggregatedStats?.monthlyOvertimeHours?.toFixed(2) ?? "0.00"}h
                       </div>
                     </div>
                     <div style={{ padding: "6px 8px", textAlign: "center" }}>
-                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-secondary)" }}>Weekend</div>
+                      <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-1)" }}>Weekend</div>
                       <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--info, #1e88e5)" }}>
                         {aggregatedStats?.monthlyWeekendHours?.toFixed(2) ?? "0.00"}h
                       </div>
@@ -2347,8 +2347,8 @@ export function ProfileWorkTab({
                     borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.15)",
                     background: "var(--surface)",
                   }}>
-                    <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-secondary)" }}>Total</span>
-                    <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-1)" }}>Total</span>
+                    <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-1)" }}>
                       {aggregatedStats?.monthlyTotalHours?.toFixed(2) ?? "0.00"}h
                     </span>
                   </div>
@@ -2463,7 +2463,7 @@ export function ProfileWorkTab({
                       <div
                         style={{
                           ...emergencyInfoCardStyle,
-                          background: "var(--accent-purple-surface)",
+                          background: "var(--theme)",
                           border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
                         }}
                       >
@@ -2480,11 +2480,11 @@ export function ProfileWorkTab({
                           gap: "10px",
                           padding: "12px 14px",
                           borderRadius: "var(--radius-md)",
-                          background: "var(--accent-purple-surface)",
+                          background: "var(--theme)",
                           border: "1px solid rgba(var(--accent-purple-rgb), 0.1)",
                         }}
                       >
-                        <span style={{ fontSize: "0.78rem", color: "var(--text-primary)", fontWeight: 700 }}>
+                        <span style={{ fontSize: "0.78rem", color: "var(--text-1)", fontWeight: 700 }}>
                           Recent requests
                         </span>
                         {leaveRequests.slice(0, 4).map((request) => {
@@ -2514,7 +2514,7 @@ export function ProfileWorkTab({
                               }}
                             >
                               <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-                                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                                <span style={{ fontWeight: 600, color: "var(--text-1)" }}>
                                   {request.type} · {new Date(`${request.startDate}T00:00:00`).toLocaleDateString("en-GB")}
                                 </span>
                                 <span
@@ -2527,7 +2527,7 @@ export function ProfileWorkTab({
                                       ? "var(--success-surface)"
                                       : isDeclined
                                       ? "var(--danger-surface)"
-                                      : "var(--info-surface)",
+                                      : "var(--theme)",
                                     color: isApproved
                                       ? "var(--success)"
                                       : isDeclined
@@ -2539,7 +2539,7 @@ export function ProfileWorkTab({
                                 </span>
                               </div>
                               {request.requestNotes ? (
-                                <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                                <span style={{ fontSize: "0.8rem", color: "var(--text-1)" }}>
                                   {request.requestNotes}
                                 </span>
                               ) : null}
@@ -2600,7 +2600,7 @@ export function ProfileWorkTab({
                     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                       <div style={{ display: "grid", gap: "10px" }}>
                         <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Name</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)" }}>Name</span>
                           <input
                             className="app-input"
                             type="text"
@@ -2611,7 +2611,7 @@ export function ProfileWorkTab({
                           />
                         </label>
                         <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Phone</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)" }}>Phone</span>
                           <input
                             className="app-input"
                             type="tel"
@@ -2622,7 +2622,7 @@ export function ProfileWorkTab({
                           />
                         </label>
                         <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Relationship</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)" }}>Relationship</span>
                           <input
                             className="app-input"
                             type="text"
@@ -2633,7 +2633,7 @@ export function ProfileWorkTab({
                           />
                         </label>
                         <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-secondary)" }}>Address</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)" }}>Address</span>
                           <input
                             className="app-input"
                             type="text"
@@ -2690,7 +2690,7 @@ export function ProfileWorkTab({
                           gap: "10px",
                           padding: "12px 14px",
                           borderRadius: "var(--radius-md)",
-                          background: "var(--accent-purple-surface)",
+                          background: "var(--theme)",
                           border: "1px solid rgba(var(--accent-purple-rgb), 0.1)",
                         }}
                       >
@@ -2711,10 +2711,10 @@ export function ProfileWorkTab({
                           EC
                         </span>
                         <div style={{ display: "grid", gap: "4px" }}>
-                          <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                          <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>
                             Keep these details up to date
                           </span>
-                          <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                          <span style={{ fontSize: "0.82rem", color: "var(--text-1)" }}>
                             This contact may be used if HR or management need to reach someone in an emergency.
                           </span>
                         </div>
@@ -2891,21 +2891,21 @@ const emergencyInfoCardStyle = {
   padding: "12px 14px",
   borderRadius: "var(--radius-md)",
   border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
-  background: "var(--accent-purple-surface)",
+  background: "var(--theme)",
   alignContent: "start",
   minHeight: "78px",
 };
 
 const emergencyInfoLabelStyle = {
   fontSize: "0.74rem",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   fontWeight: 700,
   letterSpacing: "0.03em",
   textTransform: "uppercase",
 };
 
 const emergencyInfoValueStyle = {
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   fontWeight: 600,
   lineHeight: 1.45,
   wordBreak: "break-word",

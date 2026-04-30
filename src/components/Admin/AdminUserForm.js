@@ -196,7 +196,7 @@ const labelStyle = {
 
 const inputStyle = {
   borderRadius: "var(--control-radius-xs)",
-  border: "1px solid var(--accent-purple-surface)",
+  border: "1px solid var(--theme)",
   padding: "10px 12px",
   fontWeight: 500,
   color: "var(--accent-purple)",

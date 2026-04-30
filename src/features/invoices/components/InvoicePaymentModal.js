@@ -40,7 +40,7 @@ const toneStyle = (tone) => {
     };
   }
   return {
-    background: "var(--info-surface)",
+    background: "var(--theme)",
     color: "var(--info-dark)",
     borderColor: "transparent",
   };
@@ -332,8 +332,8 @@ export default function InvoicePaymentModal({
     >
       <header className={styles.paymentModalHeader}>
         <div>
-          <h2 style={{ margin: 0, color: "var(--accentMain)" }}>Payment Journey</h2>
-          <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>
+          <h2 style={{ margin: 0, color: "var(--primary)" }}>Payment Journey</h2>
+          <p style={{ margin: "6px 0 0", color: "var(--text-1)" }}>
             {invoice?.invoice_number || "Invoice"} · {formatCurrency(invoiceTotal)}
           </p>
         </div>
@@ -379,7 +379,7 @@ export default function InvoicePaymentModal({
                 <div className={styles.paymentPanelHeading}>
                   <div>
                     <h3 style={{ margin: 0 }}>{methodSummary.title}</h3>
-                    <p style={{ margin: "6px 0 0", color: "var(--text-secondary)" }}>
+                    <p style={{ margin: "6px 0 0", color: "var(--text-1)" }}>
                       {methodSummary.description}
                     </p>
                   </div>
@@ -510,7 +510,7 @@ export default function InvoicePaymentModal({
               <div className={styles.paymentPanelCard}>
                 <h3 style={{ margin: 0 }}>Transaction activity</h3>
                 {activityLog.length === 0 ? (
-                  <p style={{ margin: 0, color: "var(--text-secondary)" }}>
+                  <p style={{ margin: 0, color: "var(--text-1)" }}>
                     Waiting for Run command.
                   </p>
                 ) : (

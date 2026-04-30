@@ -190,8 +190,8 @@ function Switch({ checked, onChange, disabled }) {
       style={{
         position: "relative",
         width: 48,
-        height: 28,
-        borderRadius: 999,
+        height: 44,
+        borderRadius: "var(--control-radius)",
         border: "1px solid var(--hud-divider)",
         background: checked ? "rgba(59,130,246,0.85)" : "rgba(255,255,255,0.12)",
         cursor: disabled ? "not-allowed" : "pointer",
@@ -203,13 +203,14 @@ function Switch({ checked, onChange, disabled }) {
       <span
         style={{
           position: "absolute",
-          top: 2,
+          top: "50%",
           left: checked ? 22 : 2,
           width: 22,
           height: 22,
+          transform: "translateY(-50%)",
           borderRadius: "50%",
           background: "#fff",
-          transition: "left 160ms ease",
+          transition: "left 160ms ease, transform 160ms ease",
           boxShadow: "0 2px 6px rgba(0,0,0,0.35)",
         }}
       />

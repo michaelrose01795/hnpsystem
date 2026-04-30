@@ -38,7 +38,7 @@ const checkboxLabelStyle = {
   alignItems: "center",
   gap: "8px",
   fontWeight: 600,
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
 };
 
 const buttonPrimaryStyle = {
@@ -57,7 +57,7 @@ const buttonSecondaryStyle = {
   borderRadius: "var(--input-radius)",
   border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
   background: "var(--surface)",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   fontWeight: 600,
   cursor: "pointer",
   boxShadow: "none",
@@ -68,21 +68,21 @@ const inputFieldStyle = {
   borderRadius: "var(--input-radius)",
   border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
   background: "var(--surface)",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
 };
 
 const subtleSectionStyle = {
   ...sectionCardStyle,
-  background: "var(--accent-surface)",
+  background: "var(--theme)",
 };
 
 const sectionHeadingStyle = {
   margin: 0,
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
 };
 
 const mutedTextStyle = {
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
 };
 
 const requestStatusTone = {
@@ -98,7 +98,7 @@ const requestStatusTone = {
   },
   rejected: {
     background: "rgba(var(--primary-rgb), 0.12)",
-    color: "var(--primary-dark)",
+    color: "var(--primary-selected)",
     label: "Rejected",
   },
 };
@@ -550,7 +550,7 @@ function StockCheckPopup({
             ? "1px solid rgba(var(--accent-base-rgb), 0.26)"
             : "1px solid rgba(var(--accent-base-rgb), 0.12)",
           borderRadius: "var(--radius-sm)",
-          background: checked ? "var(--accent-surface)" : "var(--surface-light)",
+          background: checked ? "var(--theme)" : "var(--surface)",
         }}
       >
         <div
@@ -657,7 +657,7 @@ function StockCheckPopup({
           }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Stock Check</h2>
+            <h2 style={{ margin: 0, color: "var(--text-1)" }}>Stock Check</h2>
           </div>
           <div
             style={{
@@ -673,7 +673,7 @@ function StockCheckPopup({
                 padding: "6px 12px",
                 borderRadius: "var(--radius-pill)",
                 background: "rgba(var(--accent-base-rgb), 0.14)",
-                color: "var(--text-primary)",
+                color: "var(--text-1)",
                 fontSize: "0.85rem",
                 fontWeight: 600,
               }}
@@ -699,8 +699,8 @@ function StockCheckPopup({
               onClick={closePopup}
               style={{
                 ...buttonSecondaryStyle,
-                width: "40px",
-                height: "40px",
+                width: "44px",
+                height: "44px",
                 padding: 0,
                 fontSize: "1.1rem",
                 lineHeight: 1,
@@ -775,7 +775,7 @@ function StockCheckPopup({
                     width: "100%",
                   }}
                 >
-                  <label style={{ fontWeight: 600, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontWeight: 600, color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "6px" }}>
                     Item name
                     <input
                       type="text"
@@ -786,7 +786,7 @@ function StockCheckPopup({
                       required
                     />
                   </label>
-                  <label style={{ fontWeight: 600, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontWeight: 600, color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "6px" }}>
                     Default supplier
                     <input
                       type="text"
@@ -796,7 +796,7 @@ function StockCheckPopup({
                       style={inputFieldStyle}
                     />
                   </label>
-                  <label style={{ fontWeight: 600, color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <label style={{ fontWeight: 600, color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "6px" }}>
                     Default unit cost (£)
                     <input
                       type="number"
@@ -974,12 +974,12 @@ function StockCheckPopup({
                     gap: "8px",
                     padding: "12px",
                     borderRadius: "var(--radius-sm)",
-                    background: "var(--surface-light)",
+                    background: "var(--surface)",
                     border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                    <strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>
+                    <strong style={{ color: "var(--text-1)", fontSize: "0.95rem" }}>
                       Possible items
                     </strong>
                     {hasAppliedSearch && (
@@ -1039,7 +1039,7 @@ function StockCheckPopup({
           }}
         >
           <div>
-            <strong style={{ color: "var(--text-primary)", fontSize: "1rem" }}>
+            <strong style={{ color: "var(--text-1)", fontSize: "1rem" }}>
               {selectedCount} item{selectedCount === 1 ? "" : "s"} selected
             </strong>
           </div>

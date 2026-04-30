@@ -87,7 +87,7 @@ export default function PasswordResetNewPage() {
         style={{
           minHeight: "100dvh",
           background: "var(--page-shell-bg)",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -101,8 +101,8 @@ export default function PasswordResetNewPage() {
             width: "100%",
             maxWidth: 480,
             background: "var(--page-card-bg)",
-            border: "1px solid var(--border)",
-            borderTop: "4px solid var(--accentMain)",
+            border: "1px solid var(--primary-border)",
+            borderTop: "4px solid var(--primary)",
             borderRadius: "var(--radius-md, 12px)",
             padding: 24,
             boxShadow: "var(--shadow-xl, 0 24px 48px rgba(0,0,0,0.18))",
@@ -113,7 +113,7 @@ export default function PasswordResetNewPage() {
             style={{
               margin: "0 0 6px",
               fontSize: "1.5rem",
-              color: "var(--accentMain)",
+              color: "var(--primary)",
               textAlign: "center",
             }}
           >
@@ -122,7 +122,7 @@ export default function PasswordResetNewPage() {
           <p
             style={{
               margin: "0 0 20px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               textAlign: "center",
               lineHeight: 1.5,
             }}
@@ -140,7 +140,7 @@ export default function PasswordResetNewPage() {
                   display: "inline-block",
                   padding: "12px 18px",
                   borderRadius: "var(--radius-xs, 6px)",
-                  background: "var(--accentMain)",
+                  background: "var(--primary)",
                   color: "var(--onAccentText)",
                   fontWeight: 700,
                   textDecoration: "none",
@@ -155,7 +155,7 @@ export default function PasswordResetNewPage() {
                 style={{
                   display: "block",
                   fontSize: "0.8rem",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   marginBottom: 6,
                 }}
               >
@@ -174,9 +174,9 @@ export default function PasswordResetNewPage() {
                   padding: "10px 12px",
                   minHeight: 44,
                   borderRadius: "var(--radius-xs, 6px)",
-                  border: "1px solid var(--border)",
-                  background: "var(--surfaceMain)",
-                  color: "var(--text-primary)",
+                  border: "1px solid var(--primary-border)",
+                  background: "var(--surface)",
+                  color: "var(--text-1)",
                   fontSize: "0.95rem",
                   marginBottom: 12,
                 }}
@@ -186,7 +186,7 @@ export default function PasswordResetNewPage() {
                 style={{
                   display: "block",
                   fontSize: "0.8rem",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   marginBottom: 6,
                 }}
               >
@@ -205,9 +205,9 @@ export default function PasswordResetNewPage() {
                   padding: "10px 12px",
                   minHeight: 44,
                   borderRadius: "var(--radius-xs, 6px)",
-                  border: "1px solid var(--border)",
-                  background: "var(--surfaceMain)",
-                  color: "var(--text-primary)",
+                  border: "1px solid var(--primary-border)",
+                  background: "var(--surface)",
+                  color: "var(--text-1)",
                   fontSize: "0.95rem",
                   marginBottom: 12,
                 }}
@@ -219,7 +219,7 @@ export default function PasswordResetNewPage() {
                   alignItems: "center",
                   gap: 8,
                   fontSize: "0.85rem",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   marginBottom: 14,
                   cursor: "pointer",
                 }}
@@ -236,7 +236,7 @@ export default function PasswordResetNewPage() {
                 style={{
                   margin: "0 0 14px",
                   fontSize: "0.78rem",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   lineHeight: 1.5,
                 }}
               >
@@ -270,7 +270,7 @@ export default function PasswordResetNewPage() {
                   padding: "12px 14px",
                   border: "none",
                   borderRadius: "var(--radius-xs, 6px)",
-                  background: "var(--accentMain)",
+                  background: "var(--primary)",
                   color: "var(--onAccentText)",
                   fontWeight: 700,
                   fontSize: "0.95rem",

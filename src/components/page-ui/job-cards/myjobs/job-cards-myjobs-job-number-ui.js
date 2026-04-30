@@ -205,7 +205,7 @@ export default function TechJobDetailPageUi(props) {
     const isInternal = normalized === "internal";
     const isDanger = normalized === "insurance" || normalized === "lease company";
     return {
-      backgroundColor: isCustomer ? "var(--success-surface)" : isWarranty || isInternal ? "var(--warning-surface)" : isDanger ? "var(--danger-surface)" : isGoodwill ? "var(--info-surface)" : "var(--control-bg)",
+      backgroundColor: isCustomer ? "var(--success-surface)" : isWarranty || isInternal ? "var(--warning-surface)" : isDanger ? "var(--danger-surface)" : isGoodwill ? "var(--theme)" : "var(--control-bg)",
       color: isCustomer ? "var(--success-text)" : isWarranty || isInternal ? "var(--warning-text)" : isDanger ? "var(--danger-text)" : isGoodwill ? "var(--info)" : "var(--accentText)"
     };
   };
@@ -238,7 +238,7 @@ export default function TechJobDetailPageUi(props) {
       map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1)).
       join(" ") || "Not Started",
       style: {
-        backgroundColor: isSuccess ? "var(--success-surface)" : isDanger ? "var(--danger-surface)" : isWarning ? "var(--warning-surface)" : "var(--info-surface)",
+        backgroundColor: isSuccess ? "var(--success-surface)" : isDanger ? "var(--danger-surface)" : isWarning ? "var(--warning-surface)" : "var(--theme)",
         color: isSuccess ? "var(--success-text)" : isDanger ? "var(--danger-text)" : isWarning ? "var(--warning-text)" : "var(--info)"
       }
     };
@@ -268,7 +268,7 @@ export default function TechJobDetailPageUi(props) {
   };
   const overviewRequestRowStyle = {
     padding: "14px",
-    color: "var(--text-inverse)",
+    color: "var(--text-2)",
     border: "none",
     borderRadius: "var(--control-radius)",
     marginBottom: "12px",
@@ -363,7 +363,7 @@ export default function TechJobDetailPageUi(props) {
       alignItems: "center",
       marginBottom: "12px",
       padding: "12px",
-      backgroundColor: "var(--page-card-bg-alt)",
+      backgroundColor: "var(--theme)",
       borderRadius: "var(--radius-xs)",
       flexShrink: 0
     }}>
@@ -462,7 +462,7 @@ export default function TechJobDetailPageUi(props) {
       gap: "12px",
       marginBottom: "12px",
       padding: "12px",
-      backgroundColor: "var(--page-card-bg-alt)",
+      backgroundColor: "var(--theme)",
       borderRadius: "var(--radius-xs)",
       flexShrink: 0
     }}>
@@ -485,7 +485,7 @@ export default function TechJobDetailPageUi(props) {
             stat.onClick();
           }
         }} style={{
-          backgroundColor: "var(--layer-section-level-1)",
+          backgroundColor: "var(--surface)",
           border: "none",
           borderRadius: "var(--radius-xs)",
           padding: "16px",
@@ -554,7 +554,7 @@ export default function TechJobDetailPageUi(props) {
         const completeBackground = isActive ? "var(--success)" : "var(--success-surface)";
         const amberBackground = isActive ? "var(--warning)" : "var(--warning-surface, rgba(245, 158, 11, 0.1))";
         const background = tabTone === "success" ? completeBackground : tabTone === "warning" ? amberBackground : baseBackground;
-        const color = tabTone === "success" ? isActive ? "var(--text-inverse)" : "var(--success-dark)" : tabTone === "warning" ? isActive ? "var(--text-inverse)" : "var(--warning-dark)" : isActive ? "var(--text-inverse)" : "var(--text-primary)";
+        const color = tabTone === "success" ? isActive ? "var(--text-2)" : "var(--success-dark)" : tabTone === "warning" ? isActive ? "var(--text-2)" : "var(--warning-dark)" : isActive ? "var(--text-2)" : "var(--text-1)";
         return <button key={tab} onClick={() => setActiveTab(tab)} style={{
           flex: "0 0 auto",
           borderRadius: "var(--control-radius)",
@@ -582,7 +582,7 @@ export default function TechJobDetailPageUi(props) {
       flex: 1,
       borderRadius: "var(--radius-xs)",
       border: "none",
-      backgroundColor: "var(--page-card-bg-alt)",
+      backgroundColor: "var(--theme)",
       padding: "24px",
       overflow: "hidden",
       display: "flex",
@@ -645,7 +645,7 @@ export default function TechJobDetailPageUi(props) {
                               <span style={overviewRequestSubtitleStyle}>Request {i + 1}</span>
                               <span style={{
                         fontSize: "14px",
-                        color: "var(--text-secondary)"
+                        color: "var(--text-1)"
                       }}>
                                 {req.text}
                               </span>
@@ -717,13 +717,13 @@ export default function TechJobDetailPageUi(props) {
                               <span style={overviewRequestSubtitleStyle}>Authorised {i + 1}</span>
                               <span style={{
                         fontSize: "14px",
-                        color: "var(--text-secondary)"
+                        color: "var(--text-1)"
                       }}>
                                 {row.text}
                               </span>
                               {rowDetail ? <span style={{
                         fontSize: "13px",
-                        color: "var(--text-secondary)"
+                        color: "var(--text-1)"
                       }}>
                                   - {rowDetail}
                                 </span> : null}
@@ -778,9 +778,9 @@ export default function TechJobDetailPageUi(props) {
             }}>
                   <div style={{
                 padding: "16px",
-                backgroundColor: "var(--info-surface)",
+                backgroundColor: "var(--theme)",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--accent-purple-surface)"
+                border: "1px solid var(--theme)"
               }}>
                     <div style={{
                   fontSize: "13px",
@@ -1050,7 +1050,7 @@ export default function TechJobDetailPageUi(props) {
               }}>
                       {saveStatus === "saving" && <span style={{
                   fontSize: "13px",
-                  color: "var(--text-secondary)"
+                  color: "var(--text-1)"
                 }}>Saving...</span>}
                       {saveStatus === "saved" && <span style={{
                   fontSize: "13px",
@@ -1081,7 +1081,7 @@ export default function TechJobDetailPageUi(props) {
                   fontWeight: 600,
                   fontSize: "12px",
                   lineHeight: 1,
-                  background: "var(--accent-purple-surface)",
+                  background: "var(--theme)",
                   color: "var(--accent-purple)",
                   transition: "all 0.18s ease"
                 }} onUploadComplete={() => {
@@ -1144,7 +1144,7 @@ export default function TechJobDetailPageUi(props) {
                     fontSize: "12px",
                     fontWeight: "normal",
                     marginLeft: "8px",
-                    color: "var(--text-secondary)"
+                    color: "var(--text-1)"
                   }}>
                     (Optional)
                   </span>
@@ -1156,8 +1156,8 @@ export default function TechJobDetailPageUi(props) {
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title">External</h4>
                       {getOptionalCount("externalInspection") > 0 && <span className="app-badge app-badge--control app-badge--uppercase" style={{
-                        backgroundColor: "var(--primary-light)",
-                        color: "var(--text-inverse)"
+                        backgroundColor: "var(--primary-hover)",
+                        color: "var(--text-2)"
                       }}>
                           {getOptionalCount("externalInspection")} items
                         </span>}
@@ -1170,8 +1170,8 @@ export default function TechJobDetailPageUi(props) {
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title">Internal & Electrics</h4>
                       {getOptionalCount("internalElectrics") > 0 && <span className="app-badge app-badge--control app-badge--uppercase" style={{
-                        backgroundColor: "var(--primary-light)",
-                        color: "var(--text-inverse)"
+                        backgroundColor: "var(--primary-hover)",
+                        color: "var(--text-2)"
                       }}>
                           {getOptionalCount("internalElectrics")} items
                         </span>}
@@ -1184,8 +1184,8 @@ export default function TechJobDetailPageUi(props) {
                     <div className="vhc-card__header">
                       <h4 className="vhc-card__title">Underside</h4>
                       {getOptionalCount("underside") > 0 && <span className="app-badge app-badge--control app-badge--uppercase" style={{
-                        backgroundColor: "var(--primary-light)",
-                        color: "var(--text-inverse)"
+                        backgroundColor: "var(--primary-hover)",
+                        color: "var(--text-2)"
                       }}>
                           {getOptionalCount("underside")} items
                         </span>}
@@ -1212,7 +1212,7 @@ export default function TechJobDetailPageUi(props) {
                     fontSize: "12px",
                     fontWeight: "normal",
                     marginLeft: "8px",
-                    color: "var(--text-secondary)"
+                    color: "var(--text-1)"
                   }}>
                         Review all items reported across sections
                       </span>
@@ -1284,7 +1284,7 @@ export default function TechJobDetailPageUi(props) {
                           <span style={{
                       marginLeft: "auto",
                       fontSize: "12px",
-                      color: "var(--text-secondary)"
+                      color: "var(--text-1)"
                     }}>
                             {showGreenItems ? "Hide" : "Show"}
                           </span>
@@ -1304,7 +1304,7 @@ export default function TechJobDetailPageUi(props) {
                     {vhcSummaryItems.red.length === 0 && vhcSummaryItems.amber.length === 0 && vhcSummaryItems.green.length === 0 && <p style={{
                   margin: 0,
                   fontSize: "14px",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   textAlign: "center",
                   padding: "20px"
                 }}>
@@ -1395,7 +1395,7 @@ export default function TechJobDetailPageUi(props) {
             }} placeholder="e.g. Front right brake pad set (OEM) for MK3 1.6 diesel." style={{
               width: "100%",
               borderRadius: "var(--control-radius-xs)",
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--theme)",
               padding: "12px",
               fontSize: "14px",
               resize: "vertical",
@@ -1405,7 +1405,7 @@ export default function TechJobDetailPageUi(props) {
             }} onFocus={e => {
               e.currentTarget.style.borderColor = "var(--warning)";
             }} onBlur={e => {
-              e.currentTarget.style.borderColor = "var(--accent-purple-surface)";
+              e.currentTarget.style.borderColor = "var(--theme)";
             }} />
                 <div style={{
               display: "flex",
@@ -1429,7 +1429,7 @@ export default function TechJobDetailPageUi(props) {
                   width: "80px",
                   padding: "6px 10px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--theme)",
                   fontSize: "14px"
                 }} />
                   </label>
@@ -1444,7 +1444,7 @@ export default function TechJobDetailPageUi(props) {
                   marginTop: "4px",
                   padding: "6px 10px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--theme)",
                   fontSize: "14px",
                   maxWidth: "240px"
                 }}>
@@ -1456,7 +1456,7 @@ export default function TechJobDetailPageUi(props) {
                     </label>}
                   <button type="button" onClick={handlePartsRequestSubmit} disabled={partsSubmitting} style={{
                 padding: "10px 22px",
-                backgroundColor: partsSubmitting ? "var(--border)" : "var(--warning)",
+                backgroundColor: partsSubmitting ? "var(--primary-border)" : "var(--warning)",
                 color: "white",
                 border: "none",
                 borderRadius: "var(--control-radius-xs)",
@@ -1481,7 +1481,7 @@ export default function TechJobDetailPageUi(props) {
               <DevLayoutSection as="div" sectionKey="myjob-parts-active-requests" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" style={{
             backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--accent-purple-surface)",
+            border: "1px solid var(--theme)",
             padding: "20px",
             display: "flex",
             flexDirection: "column",
@@ -1539,9 +1539,9 @@ export default function TechJobDetailPageUi(props) {
                 const sourceLabel = request.requested_by ? `Tech${requesterName ? ` (${requesterName})` : ""}` : "VHC";
                 return <div key={request.request_id} style={{
                   padding: "16px",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--theme)",
                   borderRadius: "var(--control-radius-xs)",
-                  backgroundColor: "var(--accent-purple-surface)",
+                  backgroundColor: "var(--theme)",
                   display: "flex",
                   flexDirection: "column",
                   gap: "6px"
@@ -1740,7 +1740,7 @@ export default function TechJobDetailPageUi(props) {
                         borderRadius: "var(--control-radius)",
                         fontSize: "11px",
                         fontWeight: "600",
-                        backgroundColor: isComplete ? "var(--info-surface)" : "var(--success-surface)",
+                        backgroundColor: isComplete ? "var(--theme)" : "var(--success-surface)",
                         color: isComplete ? "var(--info)" : "var(--success-dark)",
                         border: "none"
                       }}>
@@ -1795,7 +1795,7 @@ export default function TechJobDetailPageUi(props) {
                 <button onClick={() => setShowAddNote(true)} style={{
               padding: "10px 20px",
               backgroundColor: "var(--primary)",
-              color: "var(--text-inverse)",
+              color: "var(--text-2)",
               border: "1px solid var(--primary)",
               borderRadius: "var(--radius-xs)",
               cursor: "pointer",
@@ -1842,7 +1842,7 @@ export default function TechJobDetailPageUi(props) {
                     </button>
                     <button onClick={handleAddNote} disabled={notesSubmitting} style={{
                 padding: "10px 18px",
-                backgroundColor: notesSubmitting ? "var(--border)" : "var(--info)",
+                backgroundColor: notesSubmitting ? "var(--primary-border)" : "var(--info)",
                 color: "white",
                 border: "none",
                 borderRadius: "var(--radius-xs)",
@@ -1910,7 +1910,7 @@ export default function TechJobDetailPageUi(props) {
                             <span style={{
                       padding: "4px 10px",
                       borderRadius: "var(--control-radius)",
-                      backgroundColor: "var(--info-surface)",
+                      backgroundColor: "var(--theme)",
                       color: "var(--info)",
                       fontSize: "11px",
                       fontWeight: 700
@@ -1931,7 +1931,7 @@ export default function TechJobDetailPageUi(props) {
                         </div>
                         <p style={{
                   margin: 0,
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   whiteSpace: "pre-wrap"
                 }}>
                           {note.noteText || note.note_text}
@@ -1949,7 +1949,7 @@ export default function TechJobDetailPageUi(props) {
           flexDirection: "column",
           borderRadius: "var(--radius-sm)",
           border: "none",
-          backgroundColor: "var(--layer-section-level-2)"
+          backgroundColor: "var(--surface)"
         }}>
             <DevLayoutSection as="div" sectionKey="myjob-writeup-form-shell" sectionType="content-card" parentKey="myjob-tab-writeup" backgroundToken="transparent" style={{
             flex: 1,
@@ -2052,7 +2052,7 @@ export default function TechJobDetailPageUi(props) {
                   {detectedJobTypes.map((jobType, index) => <div key={`${jobType}-${index}`} style={{
               border: "none",
               borderRadius: "var(--radius-sm)",
-              backgroundColor: "var(--surface-light)",
+              backgroundColor: "var(--surface)",
               padding: "12px 14px",
               display: "flex",
               justifyContent: "space-between",
@@ -2062,7 +2062,7 @@ export default function TechJobDetailPageUi(props) {
                       <span style={{
                 fontSize: "14px",
                 fontWeight: 600,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
                         {jobType}
                       </span>

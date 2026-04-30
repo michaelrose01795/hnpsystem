@@ -45,7 +45,7 @@ function TrainingContent() {
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <SkeletonKeyframes />
       <header>
-        <p style={{ color: "var(--text-secondary)", marginTop: "var(--space-1)" }}>
+        <p style={{ color: "var(--text-1)", marginTop: "var(--space-1)" }}>
           Monitor mandatory training, certificate uploads, and renewal reminders.
         </p>
       </header>
@@ -104,7 +104,7 @@ function TrainingContent() {
           title="Training Catalogue"
           subtitle="Courses available to assign">
           
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
+          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
             TODO: Fetch course catalogue from LMS/Supabase. Display course name, duration, mandatory flag, and an "Add course" action.
           </p>
         </SectionCard>
@@ -155,7 +155,7 @@ function TrainingContent() {
       </SectionCard>
 
       <SectionCard title="Training Compliance Snapshot" subtitle="High-level view of overall compliance rates.">
-        <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
+        <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
           TODO: Calculate compliance percentages per department from Supabase training records. Show percentage cards for each department with on-track/behind status.
         </p>
       </SectionCard>
@@ -172,7 +172,7 @@ const labelStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "var(--space-xs)",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   fontSize: "var(--text-label)",
   fontWeight: "var(--control-label-weight)",
   textTransform: "uppercase",

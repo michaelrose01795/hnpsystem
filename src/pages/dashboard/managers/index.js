@@ -17,14 +17,15 @@ const MANAGER_ROLES = [
 "owner"];
 
 
-const MetricCard = ({ label, value, helper }) =>
+const MetricCard = ({ label, value, helper, style }) =>
 <div
   className="app-section-card"
   style={{
-    minWidth: 180
+    minWidth: 180,
+    ...style
   }}>
-  
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-dark)" }}>{label}</p>
+
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
   </div>;
@@ -69,7 +70,7 @@ const TrendBlock = ({ data }) => {
             }} />
           
           </div>
-          <strong style={{ color: "var(--primary-dark)" }}>{point.count}</strong>
+          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
       )}
     </div>);

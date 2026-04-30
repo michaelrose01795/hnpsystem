@@ -157,7 +157,7 @@ export default function TyresSection({
             gap: "12px",
             padding: "12px",
             borderRadius: "var(--radius-sm)",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             border: "none",
           }}
         >

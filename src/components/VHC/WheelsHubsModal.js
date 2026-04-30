@@ -95,7 +95,7 @@ export default function WheelsHubsModal({
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
             gap: "16px",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             borderRadius: "var(--control-radius)",
             border: "none",
             padding: "16px",
@@ -144,7 +144,7 @@ export default function WheelsHubsModal({
               border: `1px solid ${palette.border}`,
               borderRadius: "var(--control-radius)",
               padding: "16px",
-              background: "var(--info-surface)",
+              background: "var(--theme)",
             }}
           >
             <Detail label="Make" value={selectedTyre.make} />

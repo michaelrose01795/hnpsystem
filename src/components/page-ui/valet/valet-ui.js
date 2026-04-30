@@ -111,7 +111,7 @@ export default function ValetDashboardUi(props) {
           borderRadius: "var(--radius-sm)",
           border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
           background: "var(--surface)",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           fontWeight: 600,
           cursor: "pointer"
         }}>
@@ -122,7 +122,7 @@ export default function ValetDashboardUi(props) {
           borderRadius: "var(--radius-sm)",
           border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
           background: "var(--surface)",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           fontWeight: 600,
           cursor: "pointer"
         }}>
@@ -145,7 +145,7 @@ export default function ValetDashboardUi(props) {
         alignItems: "center",
         fontSize: "11px",
         fontWeight: 700,
-        color: "var(--text-secondary)",
+        color: "var(--text-1)",
         textTransform: "uppercase",
         letterSpacing: "0.03em"
       }}>

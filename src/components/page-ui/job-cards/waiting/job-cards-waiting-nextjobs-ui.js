@@ -94,8 +94,8 @@ export default function NextJobsPageUi(props) {
       minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
       flexShrink: 0,
       transition: "all 0.2s ease",
-      backgroundColor: activeDropTarget === "outstanding" ? "var(--accent-surface)" : "var(--page-card-bg-alt)",
-      color: "var(--text-primary)"
+      backgroundColor: activeDropTarget === "outstanding" ? "var(--theme)" : "var(--theme)",
+      color: "var(--text-1)"
     }}>
           <div data-dev-section-key="nextjobs-outstanding-header" data-dev-section-parent="nextjobs-outstanding" data-dev-section-type="toolbar" style={{
         display: "flex",
@@ -131,7 +131,7 @@ export default function NextJobsPageUi(props) {
         }}>
               {filteredOutstandingJobs.length === 0 ? <>
                   <p style={{
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               fontSize: "14px",
               margin: 0
             }}>
@@ -172,8 +172,8 @@ export default function NextJobsPageUi(props) {
                   padding: "14px",
                   position: "relative",
                   borderRadius: "var(--radius-md)",
-                  border: draggingJob?.jobNumber === job.jobNumber ? "2px dashed var(--primary)" : isSearchHighlighted ? "none" : "1px solid var(--surface-light)",
-                  backgroundColor: draggingJob?.jobNumber === job.jobNumber ? "var(--surface-light)" : isSearchHighlighted ? "var(--success-surface)" : "var(--surface)",
+                  border: draggingJob?.jobNumber === job.jobNumber ? "2px dashed var(--primary)" : isSearchHighlighted ? "none" : "1px solid var(--surface)",
+                  backgroundColor: draggingJob?.jobNumber === job.jobNumber ? "var(--surface)" : isSearchHighlighted ? "var(--success-surface)" : "var(--surface)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "border 0.2s, background-color 0.2s, transform 0.2s",
                   touchAction: "none",
@@ -195,7 +195,7 @@ export default function NextJobsPageUi(props) {
                               </div>
                               <div style={{
                         fontSize: "13px",
-                        color: "var(--text-primary)"
+                        color: "var(--text-1)"
                       }}>
                                 {job.reg || "Reg TBC"}
                               </div>
@@ -229,7 +229,7 @@ export default function NextJobsPageUi(props) {
                     overflowY: "auto",
                     padding: "12px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--accent-purple-surface)",
+                    border: "1px solid var(--theme)",
                     backgroundColor: "var(--surface)",
                     boxShadow: "0 12px 28px rgba(var(--shadow-rgb), 0.18)",
                     zIndex: 3
@@ -254,7 +254,7 @@ export default function NextJobsPageUi(props) {
                         gap: "8px",
                         alignItems: "flex-start",
                         fontSize: "12px",
-                        color: "var(--text-primary)",
+                        color: "var(--text-1)",
                         lineHeight: "1.4"
                       }}>
                                     <span style={{
@@ -271,7 +271,7 @@ export default function NextJobsPageUi(props) {
                             </div> : null}
                           <div style={{
                     fontSize: "13px",
-                    color: "var(--text-primary)"
+                    color: "var(--text-1)"
                   }}>
                             {job.customer || "Unknown customer"}
                           </div>
@@ -280,7 +280,7 @@ export default function NextJobsPageUi(props) {
                     flexWrap: "wrap",
                     gap: "8px",
                     fontSize: "12px",
-                    color: "var(--text-primary)"
+                    color: "var(--text-1)"
                   }}>
                             <span>
                               <strong>Requests:</strong> {requestsCount}
@@ -303,14 +303,14 @@ export default function NextJobsPageUi(props) {
                       borderRadius: "var(--radius-sm)",
                       fontSize: "11px",
                       fontWeight: 600,
-                      backgroundColor: "var(--surface-light)",
+                      backgroundColor: "var(--surface)",
                       color: "var(--accent-purple)"
                     }}>
                               {customerStatus}
                             </span>
                             <span style={{
                       fontSize: "12px",
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>
                               {job.status || "Status pending"}
                             </span>
@@ -339,7 +339,7 @@ export default function NextJobsPageUi(props) {
             <div className="app-layout-card" data-dev-section-key="nextjobs-technicians" data-dev-section-parent="app-layout-page-card" data-dev-shell="1" data-dev-section-type="content-card" data-dev-background-token="page-card-bg-alt" style={{
       flex: "1 0 auto",
       borderRadius: "var(--section-card-radius)",
-      backgroundColor: "var(--page-card-bg-alt)",
+      backgroundColor: "var(--theme)",
       padding: "24px",
       display: "flex",
       flexDirection: "column",
@@ -400,7 +400,7 @@ export default function NextJobsPageUi(props) {
             </div>
             <div style={{
         fontSize: "12px",
-        color: "var(--text-primary)"
+        color: "var(--text-1)"
       }}>
               {draggingJob.reg || "Reg TBC"}
             </div>
@@ -447,7 +447,7 @@ export default function NextJobsPageUi(props) {
             padding: "12px 14px",
             borderRadius: "var(--radius-xs)",
             backgroundColor: feedbackMessage.type === "error" ? "var(--danger-surface)" : "var(--success)",
-            color: feedbackMessage.type === "error" ? "var(--danger)" : "var(--text-primary)",
+            color: feedbackMessage.type === "error" ? "var(--danger)" : "var(--text-1)",
             fontSize: "14px",
             fontWeight: 600,
             border: "none"
@@ -476,7 +476,7 @@ export default function NextJobsPageUi(props) {
               }].map(item => <div key={item.label} style={{
                 padding: "12px",
                 borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--accent-purple-surface)"
+                backgroundColor: "var(--theme)"
               }}>
                       <div style={{
                   fontSize: "11px",
@@ -490,7 +490,7 @@ export default function NextJobsPageUi(props) {
                       </div>
                       <div style={{
                   fontSize: "14px",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   fontWeight: 600
                 }}>
                         {item.value}
@@ -516,7 +516,7 @@ export default function NextJobsPageUi(props) {
               }].map(item => <div key={item.label} style={{
                 padding: "12px",
                 borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--accent-purple-surface)"
+                backgroundColor: "var(--theme)"
               }}>
                       <div style={{
                   fontSize: "11px",
@@ -530,7 +530,7 @@ export default function NextJobsPageUi(props) {
                       </div>
                       <div style={{
                   fontSize: "14px",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   fontWeight: 600
                 }}>
                         {item.value}
@@ -541,7 +541,7 @@ export default function NextJobsPageUi(props) {
                 <div style={{
               padding: "14px",
               borderRadius: "var(--radius-sm)",
-              backgroundColor: "var(--accent-purple-surface)"
+              backgroundColor: "var(--theme)"
             }}>
                   <div style={{
                 fontSize: "11px",
@@ -569,7 +569,7 @@ export default function NextJobsPageUi(props) {
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
                   backgroundColor: "var(--surface)",
-                  border: "1px solid var(--accent-purple-surface)"
+                  border: "1px solid var(--theme)"
                 }}>
                           <div style={{
                     fontSize: "12px",
@@ -580,7 +580,7 @@ export default function NextJobsPageUi(props) {
                           </div>
                           <div style={{
                     fontSize: "13px",
-                    color: "var(--text-primary)",
+                    color: "var(--text-1)",
                     lineHeight: "1.45"
                   }}>
                             {row.text}
@@ -588,7 +588,7 @@ export default function NextJobsPageUi(props) {
                         </div>)}
                     </div> : <div style={{
                 fontSize: "14px",
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
                       No request details recorded.
                     </div>}
@@ -601,8 +601,8 @@ export default function NextJobsPageUi(props) {
             gap: "12px"
           }}>
                 <button style={jobDetailsPopupPrimaryButtonStyle} onClick={handleViewSelectedJobCard} onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = "var(--primary-dark)";
-              e.currentTarget.style.borderColor = "var(--primary-dark)";
+              e.currentTarget.style.backgroundColor = "var(--primary-selected)";
+              e.currentTarget.style.borderColor = "var(--primary-selected)";
             }} onMouseLeave={e => {
               e.currentTarget.style.backgroundColor = "var(--accent-purple)";
               e.currentTarget.style.borderColor = "var(--accent-purple)";
@@ -612,7 +612,7 @@ export default function NextJobsPageUi(props) {
                 {selectedJob.assignedTech && <button style={jobDetailsPopupWarningButtonStyle} onClick={unassignTechFromJob} // Unassign technician
             onMouseEnter={e => {
               e.currentTarget.style.backgroundColor = "var(--warning)";
-              e.currentTarget.style.color = "var(--text-inverse)";
+              e.currentTarget.style.color = "var(--text-2)";
             }} onMouseLeave={e => {
               e.currentTarget.style.backgroundColor = "var(--warning-surface)";
               e.currentTarget.style.color = "var(--warning-dark)";
@@ -621,10 +621,10 @@ export default function NextJobsPageUi(props) {
                   </button>}
                 <button style={jobDetailsPopupSecondaryButtonStyle} onClick={handleCloseJobDetails} // Close popup
             onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = "var(--surface-light)";
+              e.currentTarget.style.backgroundColor = "var(--surface)";
               e.currentTarget.style.borderColor = "var(--accent-purple)";
             }} onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+              e.currentTarget.style.backgroundColor = "var(--theme)";
               e.currentTarget.style.borderColor = "var(--accent-purple)";
             }}>
                   Close

@@ -187,7 +187,7 @@ const baseInputStyle = {
   backgroundColor: "var(--control-bg)",
   fontSize: "var(--control-font-size)",
   fontWeight: "var(--control-font-weight)",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   outline: "none",
   transition: "background-color 0.18s ease, box-shadow 0.18s ease",
 };
@@ -205,7 +205,7 @@ const pillButton = ({ active = false } = {}) => ({
   borderRadius: "var(--control-radius)",
   border: "none",
   background: active ? "var(--primary)" : "var(--control-bg)",
-  color: active ? "var(--text-inverse)" : "var(--text-primary)",
+  color: active ? "var(--text-2)" : "var(--text-1)",
   fontSize: "var(--control-font-size)",
   fontWeight: 600,
   cursor: "pointer",
@@ -303,7 +303,7 @@ function AutoCompleteInput({ value, onChange, options, placeholder, onSelect }) 
         maxHeight: "240px",
         overflowY: "auto",
         backgroundColor: "var(--surface)",
-        border: "1px solid var(--border)",
+        border: "1px solid var(--primary-border)",
         borderRadius: "var(--radius-sm)",
         zIndex: 99999,
         boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
@@ -317,11 +317,11 @@ function AutoCompleteInput({ value, onChange, options, placeholder, onSelect }) 
             padding: "10px 12px",
             fontSize: "14px",
             cursor: "pointer",
-            color: "var(--text-primary)",
-            backgroundColor: opt === value ? "var(--surface-light)" : "transparent",
+            color: "var(--text-1)",
+            backgroundColor: opt === value ? "var(--surface)" : "transparent",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--surface-light)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = opt === value ? "var(--surface-light)" : "transparent"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--surface)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = opt === value ? "var(--surface)" : "transparent"; }}
         >
           {opt}
         </div>
@@ -1024,7 +1024,7 @@ export default function WheelsTyresDetailsModal({
                           fontWeight: 600,
                           cursor: "pointer",
                           background: isActive ? "var(--primary)" : "transparent",
-                          color: isActive ? "var(--text-inverse)" : "var(--text-primary)",
+                          color: isActive ? "var(--text-2)" : "var(--text-1)",
                           transition: "background-color 0.18s ease, color 0.18s ease",
                           whiteSpace: "nowrap",
                         }}
@@ -1328,7 +1328,7 @@ export default function WheelsTyresDetailsModal({
               alignItems: "center",
               gap: "16px",
               padding: "18px 20px",
-              background: "var(--page-card-bg-alt, var(--surface-light))",
+              background: "var(--theme, var(--surface))",
             }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--info)", fontWeight: 700 }}>

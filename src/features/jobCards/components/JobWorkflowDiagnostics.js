@@ -28,7 +28,7 @@ export default function JobWorkflowDiagnostics({ diagnostics = null }) {
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
           fontSize: "12px",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
         }}
       >
         {JSON.stringify(diagnostics, null, 2)}

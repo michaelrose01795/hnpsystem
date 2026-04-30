@@ -52,7 +52,7 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
     <div
       style={{
         padding: "14px 14px",
-        borderBottom: "1px solid var(--info-surface)",
+        borderBottom: "1px solid var(--theme)",
         background: rowBg,
         display: "flex",
         flexDirection: "column",
@@ -126,9 +126,9 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
               minHeight: 44,
               padding: "10px 12px",
               borderRadius: "var(--radius-sm)",
-              border: isAuthorized ? "2px solid var(--success)" : "1px solid var(--info-surface)",
+              border: isAuthorized ? "2px solid var(--success)" : "1px solid var(--theme)",
               background: isAuthorized ? "var(--success-surface)" : "var(--surface)",
-              color: isAuthorized ? "var(--success)" : "var(--text-primary)",
+              color: isAuthorized ? "var(--success)" : "var(--text-1)",
               fontWeight: 600,
               fontSize: 13,
               cursor: isUpdating ? "not-allowed" : "pointer",
@@ -146,9 +146,9 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
               minHeight: 44,
               padding: "10px 12px",
               borderRadius: "var(--radius-sm)",
-              border: isDeclined ? "2px solid var(--danger)" : "1px solid var(--info-surface)",
+              border: isDeclined ? "2px solid var(--danger)" : "1px solid var(--theme)",
               background: isDeclined ? "var(--danger-surface)" : "var(--surface)",
-              color: isDeclined ? "var(--danger)" : "var(--text-primary)",
+              color: isDeclined ? "var(--danger)" : "var(--text-1)",
               fontWeight: 600,
               fontSize: 13,
               cursor: isUpdating ? "not-allowed" : "pointer",
@@ -196,7 +196,7 @@ function Section({ title, items, severity, interactive, onUpdateStatus, updating
           textTransform: "uppercase",
           letterSpacing: "0.06em",
           fontSize: 12,
-          borderBottom: "1px solid var(--info-surface)",
+          borderBottom: "1px solid var(--theme)",
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "space-between",
@@ -281,7 +281,7 @@ function PhotosTab({ photoFiles }) {
         style={{
           padding: 18,
           borderRadius: "var(--radius-sm)",
-          background: "var(--info-surface)",
+          background: "var(--theme)",
           color: "var(--info)",
           fontSize: 13
         }}
@@ -307,7 +307,7 @@ function PhotosTab({ photoFiles }) {
             overflow: "hidden"
           }}
         >
-          <div style={{ position: "relative", paddingTop: "75%", background: "var(--info-surface)" }}>
+          <div style={{ position: "relative", paddingTop: "75%", background: "var(--theme)" }}>
             <img
               src={file.file_url}
               alt={file.file_name || "Photo"}
@@ -347,7 +347,7 @@ function VideosTab({ videoFiles }) {
         style={{
           padding: 18,
           borderRadius: "var(--radius-sm)",
-          background: "var(--info-surface)",
+          background: "var(--theme)",
           color: "var(--info)",
           fontSize: 13
         }}
@@ -441,7 +441,7 @@ export default function VhcCustomerView({
         style={{
           minHeight: "100vh",
           minHeight: "100dvh",
-          background: "var(--surface-light)",
+          background: "var(--surface)",
           display: "flex",
           flexDirection: "column"
         }}
@@ -452,7 +452,7 @@ export default function VhcCustomerView({
         <header
           style={{
             background: "var(--surface)",
-            borderBottom: "1px solid var(--info-surface)",
+            borderBottom: "1px solid var(--theme)",
             position: "sticky",
             top: 0,
             zIndex: 50,
@@ -501,9 +501,9 @@ export default function VhcCustomerView({
                   minHeight: 36,
                   padding: "8px 14px",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--border)",
+                  border: "1px solid var(--primary-border)",
                   background: "var(--surface)",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   fontWeight: 600,
                   fontSize: 13,
                   cursor: "pointer"
@@ -520,7 +520,7 @@ export default function VhcCustomerView({
               display: "flex",
               gap: 4,
               marginTop: 10,
-              borderBottom: "1px solid var(--info-surface)",
+              borderBottom: "1px solid var(--theme)",
               marginLeft: -14,
               marginRight: -14,
               padding: "0 14px",
@@ -628,7 +628,7 @@ export default function VhcCustomerView({
         <footer
           style={{
             background: "var(--surface)",
-            borderTop: "1px solid var(--info-surface)",
+            borderTop: "1px solid var(--theme)",
             padding: "12px 14px",
             textAlign: "center"
           }}

@@ -37,8 +37,8 @@ function resolvePresetColors() {
 }
 
 const PANEL_STYLE = {
-  background: "var(--surfaceMain)",
-  border: "1px solid var(--accentBorder)",
+  background: "var(--surface)",
+  border: "1px solid var(--primary-border)",
   borderRadius: "var(--radius-md)",
   padding: "var(--space-4)",
 };
@@ -46,7 +46,7 @@ const PANEL_STYLE = {
 const SECTION_LABEL_STYLE = {
   fontSize: "var(--text-label)",
   fontWeight: 700,
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   letterSpacing: "var(--tracking-wide)",
   textTransform: "uppercase",
   marginBottom: "var(--space-sm)",
@@ -388,9 +388,9 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
         aria-pressed={active}
         style={{
           ...TOOL_BUTTON_STYLE,
-          border: `1px solid ${active ? "var(--accentBorderStrong)" : "var(--accentBorder)"}`,
-          background: active ? "var(--accentSurfaceHover)" : "var(--surfaceMain)",
-          color: active ? "var(--accentMain)" : "var(--text-primary)",
+          border: `1px solid ${active ? "var(--primary-border)" : "var(--primary-border)"}`,
+          background: active ? "var(--secondary-hover)" : "var(--surface)",
+          color: active ? "var(--primary)" : "var(--text-1)",
           fontWeight: active ? 700 : 500,
         }}
       >
@@ -456,12 +456,12 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                     aria-pressed={active}
                     style={{
                       width: "100%",
-                      height: 36,
-                      borderRadius: "var(--radius-sm)",
+                      height: 44,
+                      borderRadius: "var(--control-radius)",
                       background: c,
                       border: active
-                        ? "3px solid var(--accentMain)"
-                        : "1px solid var(--accentBorder)",
+                        ? "3px solid var(--primary)"
+                        : "1px solid var(--primary-border)",
                       cursor: "pointer",
                       transition: "var(--control-transition)",
                     }}
@@ -480,9 +480,9 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 flex: 1,
                 padding: "var(--space-sm)",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--accentBorder)",
-                background: "var(--surfaceMain)",
-                color: canUndo ? "var(--text-primary)" : "var(--text-secondary)",
+                border: "1px solid var(--primary-border)",
+                background: "var(--surface)",
+                color: canUndo ? "var(--text-1)" : "var(--text-1)",
                 fontSize: "var(--text-body-sm)",
                 fontWeight: 600,
                 cursor: canUndo ? "pointer" : "not-allowed",
@@ -502,9 +502,9 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 flex: 1,
                 padding: "var(--space-sm)",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--accentBorder)",
-                background: "var(--surfaceMain)",
-                color: canRedo ? "var(--text-primary)" : "var(--text-secondary)",
+                border: "1px solid var(--primary-border)",
+                background: "var(--surface)",
+                color: canRedo ? "var(--text-1)" : "var(--text-1)",
                 fontSize: "var(--text-body-sm)",
                 fontWeight: 600,
                 cursor: canRedo ? "pointer" : "not-allowed",
@@ -523,7 +523,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
           style={{
             background: "var(--surfaceMutedToken)",
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--accentBorder)",
+            border: "1px solid var(--primary-border)",
             overflow: "hidden",
             display: "flex",
             alignItems: "center",
@@ -560,7 +560,7 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 alignItems: "center",
                 justifyContent: "center",
                 textAlign: "center",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 pointerEvents: "none",
                 fontSize: "var(--text-body-sm)",
               }}

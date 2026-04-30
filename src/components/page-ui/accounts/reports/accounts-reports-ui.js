@@ -52,7 +52,7 @@ export default function AccountsReportsPageUi(props) {
           </DevLayoutSection>
 
           {loading && <p style={{
-        color: "var(--text-secondary)",
+        color: "var(--text-1)",
         margin: 0
       }}>Loading reports…</p>}
 
@@ -80,7 +80,7 @@ export default function AccountsReportsPageUi(props) {
                   <ul style={{
               margin: 0,
               paddingLeft: "20px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               lineHeight: 1.6
             }}>
                     <li>{current.newAccounts ?? 0} new accounts opened during this period.</li>

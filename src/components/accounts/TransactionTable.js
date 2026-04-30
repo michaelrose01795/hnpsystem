@@ -46,9 +46,9 @@ export default function TransactionTable({ transactions, loading, filters, onFil
   }, [transactions, filters]);
 
   return (
-    <section className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", ...(accentSurface ? { background: "rgba(var(--primary-rgb), 0.08)", border: "1px solid rgba(var(--primary-rgb), 0.16)" } : {}) }}>
+    <section className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", ...(accentSurface ? { background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" } : {}) }}>
       <header style={{ display: "grid", gridTemplateColumns: "auto minmax(280px, 1fr) auto", alignItems: "center", gap: "12px" }}>
-        <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-primary)" }}>Transactions</h3>
+        <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-1)" }}>Transactions</h3>
         <ToolbarRow style={{ minWidth: 0 }}>
           <SearchBar
             name="search"
@@ -88,7 +88,7 @@ export default function TransactionTable({ transactions, loading, filters, onFil
       </header>
       <div style={{ overflowX: "auto", overflowY: filteredTransactions.length > 10 ? "auto" : "visible", maxHeight: filteredTransactions.length > 10 ? "640px" : "none" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-primary)" }}>
+          <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-1)" }}>
             <tr>
               <th style={{ textAlign: "left", padding: "12px" }}>Date</th>
               <th style={{ textAlign: "left", padding: "12px" }}>Transaction ID</th>
@@ -102,12 +102,12 @@ export default function TransactionTable({ transactions, loading, filters, onFil
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} style={{ padding: "24px", textAlign: "center", color: "var(--text-secondary)" }}>Loading transactions…</td>
+                <td colSpan={7} style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>Loading transactions…</td>
               </tr>
             )}
             {!loading && filteredTransactions.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "var(--text-secondary)" }}>No transactions found for this period.</td>
+                <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "var(--text-1)" }}>No transactions found for this period.</td>
               </tr>
             )}
             {!loading && filteredTransactions.map((txn) => (

@@ -25,7 +25,7 @@ export default function VhcCustomerViewPageUi(props) {
       gap: "12px"
     }}>
           {!isCustomer ? <button type="button" onClick={handleBack} style={{
-        border: "1px solid var(--accent-purple-surface)",
+        border: "1px solid var(--theme)",
         borderRadius: "var(--radius-sm)",
         padding: "8px 16px",
         background: "var(--surface)",

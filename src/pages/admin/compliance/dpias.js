@@ -67,7 +67,7 @@ function NewDpiaForm({ onCreated }) {
 
   return (
     <form onSubmit={submit} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         System or feature
         <input
           type="text"
@@ -78,7 +78,7 @@ function NewDpiaForm({ onCreated }) {
           style={{ marginTop: 4, width: "100%", minHeight: 40 }}
         />
       </label>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Description
         <textarea
           value={description}
@@ -88,7 +88,7 @@ function NewDpiaForm({ onCreated }) {
           style={{ marginTop: 4, width: "100%" }}
         />
       </label>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Initial risk level
         <select
           value={riskLevel}
@@ -161,7 +161,7 @@ export default function DpiasPage() {
   return (
     <ComplianceLayout title="DPIAs">
       <Section title="New DPIA">
-        <p style={{ margin: "0 0 10px", color: "var(--text-secondary)" }}>
+        <p style={{ margin: "0 0 10px", color: "var(--text-1)" }}>
           Required for high-risk processing: employee monitoring, CCTV, AI-assisted features
           on PII, marketing profiling, finance application processing, and the internal auth
           system itself.
@@ -172,25 +172,25 @@ export default function DpiasPage() {
       <Section title="DPIA Register">
         {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base, #ef4444)" }}>{error}</p>}
         {rows === null ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading...</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
         ) : rows.length === 0 ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>No DPIAs on record.</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>No DPIAs on record.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
-                <tr style={{ textAlign: "left", color: "var(--text-secondary)" }}>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>System / Feature</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Status</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Risk</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Next review</th>
+                <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>System / Feature</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Status</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Risk</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Next review</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>{row.system_or_feature}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.system_or_feature}</td>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                       <select
                         value={row.status}
                         disabled={busyId === row.id}
@@ -203,7 +203,7 @@ export default function DpiasPage() {
                         ))}
                       </select>
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                       <select
                         value={row.risk_level || "medium"}
                         disabled={busyId === row.id}
@@ -216,7 +216,7 @@ export default function DpiasPage() {
                         ))}
                       </select>
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>{fmt(row.next_review)}</td>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{fmt(row.next_review)}</td>
                   </tr>
                 ))}
               </tbody>

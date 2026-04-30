@@ -71,7 +71,7 @@ export default function UserClockingHistoryUi(props) {
           {error && <div style={{
           borderRadius: "var(--radius-md)",
           border: "none",
-          background: "var(--layer-section-level-1)",
+          background: "var(--surface)",
           padding: "14px 18px",
           color: "var(--danger-dark)",
           fontSize: "0.9rem"
@@ -91,14 +91,14 @@ export default function UserClockingHistoryUi(props) {
                 <h2 style={{
                 margin: 0,
                 fontSize: "1.25rem",
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
                   Live technician activity
                 </h2>
               </div>
               <span style={{
               ...badgeBaseStyle,
-              background: "var(--layer-section-level-1)",
+              background: "var(--surface)",
               border: "none",
               color: "var(--success-dark)"
             }}>
@@ -141,7 +141,7 @@ export default function UserClockingHistoryUi(props) {
                           padding: "6px 14px",
                           fontSize: "0.7rem",
                           ...(chipStyle || {
-                            background: "var(--surface-light)",
+                            background: "var(--surface)",
                             border: "none",
                             color: "var(--grey-accent)"
                           })
@@ -176,7 +176,7 @@ export default function UserClockingHistoryUi(props) {
                   <h2 style={{
                 margin: 0,
                 fontSize: "1.2rem",
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
                     Manual clocking entry
                   </h2>
@@ -189,7 +189,7 @@ export default function UserClockingHistoryUi(props) {
               {formError && <div style={{
             borderRadius: "var(--radius-md)",
             border: "none",
-            background: "var(--layer-section-level-1)",
+            background: "var(--surface)",
             padding: "12px 14px",
             color: "var(--danger-dark)",
             fontSize: "0.9rem"
@@ -199,7 +199,7 @@ export default function UserClockingHistoryUi(props) {
               {selectedJobLockedMessage && !formError && <div style={{
             borderRadius: "var(--radius-md)",
             border: "none",
-            background: "var(--layer-section-level-1)",
+            background: "var(--surface)",
             padding: "12px 14px",
             color: "var(--warning-dark)",
             fontSize: "0.9rem"
@@ -209,7 +209,7 @@ export default function UserClockingHistoryUi(props) {
               {formSuccess && <div style={{
             borderRadius: "var(--radius-md)",
             border: "none",
-            background: "var(--layer-section-level-1)",
+            background: "var(--surface)",
             padding: "12px 14px",
             color: "var(--success-dark)",
             fontSize: "0.9rem"

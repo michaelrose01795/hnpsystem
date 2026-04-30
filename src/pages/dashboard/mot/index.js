@@ -13,7 +13,7 @@ const MetricCard = ({ label, value, helper }) =>
     minWidth: 160
   }}>
   
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-dark)" }}>{label}</p>
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
   </div>;
@@ -36,7 +36,7 @@ const TrendBlock = ({ data }) => {
             }} />
           
           </div>
-          <strong style={{ color: "var(--primary-dark)" }}>{point.count}</strong>
+          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
       )}
     </div>);
@@ -55,7 +55,7 @@ const CardList = ({ title, items }) =>
     background: "var(--surface)"
   }}>
   
-    <p style={{ margin: 0, fontWeight: 600, color: "var(--primary-dark)" }}>{title}</p>
+    <p style={{ margin: 0, fontWeight: 600, color: "var(--primary-selected)" }}>{title}</p>
     {items.length === 0 ?
   <p style={{ margin: 0, color: "var(--info)" }}>No records.</p> :
 
@@ -65,7 +65,7 @@ const CardList = ({ title, items }) =>
     style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--info-dark)" }}>
     
           <div>
-            <strong style={{ color: "var(--primary-dark)" }}>{job.job_number || "—"}</strong>
+            <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
             <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{job.vehicle_reg || "Plate"}</p>
           </div>
           <span style={{ color: "var(--info)" }}>{job.completion_status || "Pending"}</span>

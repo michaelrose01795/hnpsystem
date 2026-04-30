@@ -352,7 +352,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         padding: "20px 24px",
         borderRadius: "var(--radius-sm)",
         border: "none",
-        background: isHighlighted ? "rgba(var(--danger-rgb), 0.08)" : "var(--accent-surface)",
+        background: isHighlighted ? "rgba(var(--danger-rgb), 0.08)" : "var(--theme)",
         boxShadow: "none",
         display: "flex",
         flexDirection: "column",
@@ -371,7 +371,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
           style={{
             fontSize: "clamp(0.78rem, 1.4vw, var(--text-h3))",
             fontWeight: 700,
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             display: "block",
             whiteSpace: "nowrap",
             overflow: "hidden",
@@ -526,7 +526,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               flexWrap: "wrap"
             }}>
             
-              <strong style={{ color: "var(--text-primary)" }}>{option.label}</strong>
+              <strong style={{ color: "var(--text-1)" }}>{option.label}</strong>
               <Button variant="secondary" size="sm" onClick={() => onSelect(option)}>
                 Use location
               </Button>
@@ -1018,7 +1018,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h2 style={{ margin: "0 0 var(--space-xs) 0" }}>Vehicle & Key Tracking</h2>
-            <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--text-secondary)" }}>
+            <p style={{ margin: 0, fontSize: "var(--text-body-sm)", color: "var(--text-1)" }}>
               Track vehicle and key locations
             </p>
           </div>
@@ -1033,29 +1033,29 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
             gap: "var(--space-3)",
             padding: "var(--space-md)",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--border)"
+            border: "1px solid var(--primary-border)"
           }}>
           
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Job Number</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Job Number</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.jobNumber || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Registration</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Registration</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.reg || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Make & Model</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Make & Model</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.makeModel || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Colour</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Colour</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.colour || "—"}</div>
           </div>
           <div>
-            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", marginBottom: "var(--space-xs)" }}>Customer</div>
+            <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Customer</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.customer || "—"}</div>
           </div>
         </div>
@@ -1115,7 +1115,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           </Button>
         </form>
 
-        <div style={{ height: "1px", backgroundColor: "var(--border)" }} />
+        <div style={{ height: "1px", backgroundColor: "var(--primary-border)" }} />
 
         <Button
           type="button"
@@ -2207,7 +2207,7 @@ export default function TrackingDashboard() {
               padding: "20px 24px",
               borderRadius: "var(--radius-sm)",
               border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-              background: "var(--accent-surface)",
+              background: "var(--theme)",
               boxShadow: "none",
               display: "flex",
               flexDirection: "column",
@@ -2237,7 +2237,7 @@ export default function TrackingDashboard() {
                     display: "block",
                     fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
                     fontWeight: 700,
-                    color: "var(--text-primary)",
+                    color: "var(--text-1)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis"
@@ -2409,7 +2409,7 @@ export default function TrackingDashboard() {
               padding: "20px 24px",
               borderRadius: "var(--radius-sm)",
               border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-              background: "var(--accent-surface)",
+              background: "var(--theme)",
               boxShadow: "none",
               display: "flex",
               flexDirection: "column",
@@ -2439,7 +2439,7 @@ export default function TrackingDashboard() {
                     display: "block",
                     fontSize: "clamp(0.85rem, 1.3vw, var(--text-h3))",
                     fontWeight: 700,
-                    color: "var(--text-primary)",
+                    color: "var(--text-1)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis"

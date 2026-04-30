@@ -79,7 +79,7 @@ function NewBreachForm({ onCreated }) {
 
   return (
     <form onSubmit={submit} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Category
         <input
           type="text"
@@ -91,7 +91,7 @@ function NewBreachForm({ onCreated }) {
           style={{ marginTop: 4, width: "100%", minHeight: 40 }}
         />
       </label>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Severity
         <select
           value={severity}
@@ -106,7 +106,7 @@ function NewBreachForm({ onCreated }) {
           ))}
         </select>
       </label>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Root cause / what happened
         <textarea
           value={rootCause}
@@ -191,21 +191,21 @@ export default function BreachesPage() {
           </p>
         )}
         {rows === null ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading...</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
         ) : rows.length === 0 ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>No breaches on record.</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>No breaches on record.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
-                <tr style={{ textAlign: "left", color: "var(--text-secondary)" }}>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Detected</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Hours elapsed</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Category</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Severity</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Status</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>ICO ref</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Action</th>
+                <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Detected</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Hours elapsed</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Category</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Severity</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Status</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>ICO ref</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,17 +214,17 @@ export default function BreachesPage() {
                   const overdue = elapsed > 72 && !row.ico_notified_at && row.status !== "closed";
                   return (
                     <tr key={row.id}>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>{fmt(row.detected_at)}</td>
+                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{fmt(row.detected_at)}</td>
                       <td style={{
                         padding: 8,
-                        borderBottom: "1px solid var(--border)",
+                        borderBottom: "1px solid var(--primary-border)",
                         color: overdue ? "var(--danger-base, #ef4444)" : "inherit",
                         fontWeight: overdue ? 700 : 400,
                       }}>
                         {elapsed}h{overdue ? " ⚠" : ""}
                       </td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>{row.category || "—"}</td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.category || "—"}</td>
+                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                         <select
                           value={row.severity || "medium"}
                           disabled={busyId === row.id}
@@ -237,7 +237,7 @@ export default function BreachesPage() {
                           ))}
                         </select>
                       </td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                         <select
                           value={row.status}
                           disabled={busyId === row.id}
@@ -250,7 +250,7 @@ export default function BreachesPage() {
                           ))}
                         </select>
                       </td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                         <input
                           type="text"
                           defaultValue={row.ico_reference || ""}
@@ -268,7 +268,7 @@ export default function BreachesPage() {
                           style={{ minHeight: 32, width: 130 }}
                         />
                       </td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                         {row.status !== "closed" && (
                           <Button
                             type="button"

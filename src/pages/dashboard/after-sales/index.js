@@ -15,7 +15,7 @@ const MetricCard = ({ label, value, helper }) =>
     minWidth: 180
   }}>
   
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-dark)" }}>{label}</p>
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
   </div>;
@@ -60,7 +60,7 @@ const TrendBlock = ({ data }) => {
             }} />
           
           </div>
-          <strong style={{ color: "var(--primary-dark)" }}>{point.count}</strong>
+          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
       )}
     </div>);
@@ -85,7 +85,7 @@ const FollowUpList = ({ items }) =>
   items.map((entry) =>
   <div key={entry.id} style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>
           <div>
-            <strong style={{ color: "var(--primary-dark)" }}>{entry.job?.job_number || "Job"}</strong>
+            <strong style={{ color: "var(--primary-selected)" }}>{entry.job?.job_number || "Job"}</strong>
             <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{entry.status}</p>
           </div>
           <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>{entry.job?.vehicle_reg || "Vehicle"}</span>

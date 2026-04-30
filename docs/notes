@@ -1,6 +1,7 @@
 update the "# Role Page Access Draft" page with the edits
 
-
+laptop
+npm install bcryptjs
 
 Presentation!!!!!!!!!
 /create card doesnt use the create ui for Presentation 
@@ -8,10 +9,6 @@ Presentation!!!!!!!!!
 
 what is the height of the tab buttons? 32px
 
-
-
-CHECK
-Have it so the buttons in the sidebar which are "Security, Privacy" move these buttons intot he top middle section of the "/profile :: 1.2.2.1.1.1 (profile-tab-toolbar)" instead of being wihin the sidebar
 
 
 

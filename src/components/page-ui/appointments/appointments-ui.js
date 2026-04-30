@@ -69,7 +69,7 @@ export default function AppointmentsUi(props) {
       padding: "10px",
       alignItems: "center",
       overflowX: "hidden",
-      backgroundColor: "rgba(var(--primary-rgb), 0.16)",
+      backgroundColor: "var(--theme)",
       boxShadow: "none"
     }}>
           <div style={{
@@ -98,7 +98,7 @@ export default function AppointmentsUi(props) {
             <button onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])} disabled={isLoading} style={{
         width: "100%",
         minHeight: "var(--control-height-sm)",
-        backgroundColor: isLoading ? "var(--background)" : "var(--primary)",
+        backgroundColor: isLoading ? "var(--surface)" : "var(--primary)",
         color: "white",
         border: "none",
         borderRadius: "var(--control-radius-sm)",
@@ -110,7 +110,7 @@ export default function AppointmentsUi(props) {
       }} onMouseEnter={e => {
         if (isLoading) return;
         const isDarkTheme = document?.documentElement?.getAttribute("data-theme") === "dark";
-        e.currentTarget.style.backgroundColor = isDarkTheme ? "var(--primary-dark)" : "var(--danger)";
+        e.currentTarget.style.backgroundColor = isDarkTheme ? "var(--primary-selected)" : "var(--danger)";
       }} onMouseLeave={e => !isLoading && (e.currentTarget.style.backgroundColor = "var(--primary)")}>
               {isLoading ? "Booking..." : "Book Appointment"}
             </button>
@@ -141,7 +141,7 @@ export default function AppointmentsUi(props) {
           width: "100%",
           minWidth: "100%",
           tableLayout: "fixed",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           background: "var(--surface)",
           borderCollapse: "separate",
           borderSpacing: 0
@@ -222,7 +222,7 @@ export default function AppointmentsUi(props) {
                 whiteSpace: "nowrap",
                 padding: idx === 0 ? "12px 10px 12px 14px" : idx === arr.length - 1 ? "12px 14px 12px 10px" : "12px 10px",
                 background: "var(--page-shell-bg)",
-                color: "var(--text-primary)",
+                color: "var(--text-1)",
                 fontSize: "0.72rem",
                 fontWeight: 700,
                 textTransform: "uppercase",
@@ -252,7 +252,7 @@ export default function AppointmentsUi(props) {
               const isToday = isSameDate(date, new Date());
               const severityBorderLeft = !isCalmDay && severityStyle?.borderColor ? `4px solid ${severityStyle.borderColor}` : "4px solid var(--success)";
               const bookingPercentDisplay = Number.isFinite(bookingPercent) ? bookingPercent.toFixed(0) : "0";
-              const availabilityLabelColor = isCalmDay ? "var(--success-dark)" : severityStyle?.textColor || "var(--text-primary)";
+              const availabilityLabelColor = isCalmDay ? "var(--success-dark)" : severityStyle?.textColor || "var(--text-1)";
 
               // Row background — alternating like the global .app-table-shell--with-headings, with overrides for Saturday / selected / today.
               let rowBg = "var(--surface)";
@@ -317,7 +317,7 @@ export default function AppointmentsUi(props) {
                     </td>
                     <td style={{
                   ...tdBase,
-                  color: counts.totalHours > 0 ? "var(--text-primary)" : "var(--grey-accent-light)",
+                  color: counts.totalHours > 0 ? "var(--text-1)" : "var(--grey-accent-light)",
                   fontWeight: counts.totalHours > 0 ? "700" : "500",
                   whiteSpace: "nowrap",
                   textAlign: "center"
@@ -392,7 +392,7 @@ export default function AppointmentsUi(props) {
       marginBottom: "8px",
       padding: "16px",
       overflowY: "auto",
-      background: "var(--page-card-bg-alt)"
+      background: "var(--theme)"
     }}>
           <div style={{
         display: "flex",
@@ -418,7 +418,7 @@ export default function AppointmentsUi(props) {
           border: "none",
           fontSize: "13px",
           fontWeight: "700",
-          color: "var(--text-secondary)"
+          color: "var(--text-1)"
         }}>
               {sortedJobs.length} job{sortedJobs.length !== 1 ? 's' : ''}
             </span>
@@ -429,7 +429,7 @@ export default function AppointmentsUi(props) {
           overflowX: "auto",
           border: "var(--control-border)",
           borderRadius: "var(--radius-md)",
-          background: "var(--page-card-bg-alt)"
+          background: "var(--theme)"
         }}>
                 <table id="appointments-auto-data-table-3" data-dev-section-key="appointments-auto-data-table-3" data-dev-section-type="data-table" style={{
             width: "100%",
@@ -442,14 +442,14 @@ export default function AppointmentsUi(props) {
               position: "sticky",
               top: 0,
               zIndex: 1,
-              background: "var(--accent-surface-hover)"
+              background: "var(--theme-hover)"
             }}>
                 <tr>
                 {["Time", "Job #", "Reg", "Vehicle", "Customer", "Job Type", "Customer Status", "EST Time", "Check-In"].map(head => <th key={head} style={{
                   textAlign: head === "Check-In" ? "center" : "left",
                   padding: "12px 14px",
-                  background: "var(--accent-surface-hover)",
-                  color: "var(--text-primary)",
+                  background: "var(--theme-hover)",
+                  color: "var(--text-1)",
                   fontWeight: "700",
                   fontSize: "11px",
                   letterSpacing: "0.05em",
@@ -475,7 +475,7 @@ export default function AppointmentsUi(props) {
                   transition: "background-color 0.2s ease"
                 }} onMouseEnter={e => {
                   if (highlightJob !== job.jobNumber) {
-                    e.currentTarget.style.backgroundColor = "var(--accent-surface-hover)";
+                    e.currentTarget.style.backgroundColor = "var(--theme-hover)";
                   }
                 }} onMouseLeave={e => {
                   if (highlightJob !== job.jobNumber) {
@@ -503,7 +503,7 @@ export default function AppointmentsUi(props) {
                       padding: "6px 12px",
                       minHeight: 0,
                       borderRadius: "var(--radius-xs)",
-                      background: "var(--accent-surface)",
+                      background: "var(--theme)",
                       border: "none",
                       color: "var(--primary)",
                       fontWeight: "700",
@@ -518,7 +518,7 @@ export default function AppointmentsUi(props) {
                           fontSize: "10px",
                           padding: "2px 6px",
                           borderRadius: "var(--radius-xs)",
-                          backgroundColor: "var(--accent-surface)",
+                          backgroundColor: "var(--theme)",
                           color: "var(--accent-strong)",
                           fontWeight: "700",
                           whiteSpace: "nowrap"
@@ -623,7 +623,7 @@ export default function AppointmentsUi(props) {
                       padding: isCompactMobile ? "8px 12px" : "8px 16px",
                       minWidth: isCompactMobile ? "90px" : "110px",
                       minHeight: "unset",
-                      backgroundColor: isCurrentlyCheckingIn ? "var(--background)" : "var(--primary)",
+                      backgroundColor: isCurrentlyCheckingIn ? "var(--surface)" : "var(--primary)",
                       color: "white",
                       border: "none",
                       borderRadius: "var(--radius-xs)",
@@ -634,7 +634,7 @@ export default function AppointmentsUi(props) {
                       transition: "background-color 0.2s"
                     }} onMouseEnter={e => {
                       if (!isCurrentlyCheckingIn) {
-                        e.currentTarget.style.backgroundColor = "var(--primary-dark)";
+                        e.currentTarget.style.backgroundColor = "var(--primary-selected)";
                       }
                     }} onMouseLeave={e => {
                       if (!isCurrentlyCheckingIn) {
@@ -680,7 +680,7 @@ export default function AppointmentsUi(props) {
         fontFamily: "inherit",
         resize: "vertical",
         outline: "none"
-      }} value={currentNote} onChange={e => setCurrentNote(e.target.value)} placeholder="Enter notes about this day's schedule..." onFocus={e => e.target.style.borderColor = "var(--primary)"} onBlur={e => e.target.style.borderColor = "var(--surface-light)"} />
+      }} value={currentNote} onChange={e => setCurrentNote(e.target.value)} placeholder="Enter notes about this day's schedule..." onFocus={e => e.target.style.borderColor = "var(--primary)"} onBlur={e => e.target.style.borderColor = "var(--surface)"} />
           <div style={{
         display: "flex",
         justifyContent: "space-between",
@@ -732,7 +732,7 @@ export default function AppointmentsUi(props) {
             margin: "0 0 8px",
             fontSize: "16px",
             fontWeight: "700",
-            color: "var(--text-primary)"
+            color: "var(--text-1)"
           }}>
               Staff Off
             </h3>
@@ -741,7 +741,7 @@ export default function AppointmentsUi(props) {
             alignItems: "center",
             padding: "3px 10px",
             borderRadius: "var(--radius-pill)",
-            background: "var(--accent-surface)",
+            background: "var(--theme)",
             color: "var(--accent-strong)",
             fontSize: "12px",
             fontWeight: "600"
@@ -767,8 +767,8 @@ export default function AppointmentsUi(props) {
               bg: "var(--success-surface)",
               text: "var(--success-dark)"
             } : {
-              bg: "var(--accent-surface)",
-              text: "var(--text-secondary)"
+              bg: "var(--theme)",
+              text: "var(--text-1)"
             };
             const initial = (entry.name || "?").charAt(0).toUpperCase();
             return <div key={`${entry.id}-${index}`} style={{
@@ -786,7 +786,7 @@ export default function AppointmentsUi(props) {
                 width: "36px",
                 height: "36px",
                 borderRadius: "50%",
-                background: "var(--accent-surface)",
+                background: "var(--theme)",
                 color: "var(--accent-strong)",
                 display: "flex",
                 alignItems: "center",
@@ -805,7 +805,7 @@ export default function AppointmentsUi(props) {
                       <div style={{
                   fontWeight: "600",
                   fontSize: "14px",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis"
@@ -814,7 +814,7 @@ export default function AppointmentsUi(props) {
                       </div>
                       <div style={{
                   fontSize: "11px",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   marginTop: "2px"
                 }}>
                         {entry.role}
@@ -844,7 +844,7 @@ export default function AppointmentsUi(props) {
                       </span>
                       {entry.unavailableHours != null && <span style={{
                   fontSize: "11px",
-                  color: "var(--text-secondary)"
+                  color: "var(--text-1)"
                 }}>
                           {entry.unavailableHours}h off
                         </span>}
@@ -854,7 +854,7 @@ export default function AppointmentsUi(props) {
             </div> : <div style={{
           padding: "32px 16px",
           textAlign: "center",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           fontSize: "13px"
         }}>
               <div style={{

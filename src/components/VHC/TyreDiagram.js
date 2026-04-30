@@ -21,25 +21,25 @@ const TYRE_KEYS = [
 const statusPalette = {
   unknown: {
     fill: "rgba(var(--primary-rgb), 0.2)",
-    text: "var(--text-primary)",
+    text: "var(--text-1)",
     label: "var(--primary)",
     border: "rgba(var(--primary-rgb), 0.5)",
   },
   danger: {
     fill: "var(--danger)",
-    text: "var(--text-inverse)",
+    text: "var(--text-2)",
     label: "var(--danger-dark)",
     border: "none",
   },
   advisory: {
     fill: "var(--warning)",
-    text: "var(--text-inverse)",
+    text: "var(--text-2)",
     label: "var(--warning-dark)",
     border: "none",
   },
   good: {
     fill: "var(--success)",
-    text: "var(--text-inverse)",
+    text: "var(--text-2)",
     label: "var(--success-dark)",
     border: "none",
   },
@@ -80,7 +80,7 @@ export default function TyreDiagram({
 
   const containerStyle = {
     width: "100%",
-    background: "var(--accent-surface)",
+    background: "var(--theme)",
     padding: "4px",
     borderRadius: "var(--section-card-radius)",
     display: "flex",
@@ -254,7 +254,7 @@ export default function TyreDiagram({
             : spareActive
               ? "var(--primary)"
               : "var(--control-bg-hover)",
-          color: invalidSpare ? "var(--danger)" : spareActive ? "var(--text-inverse)" : "var(--text-primary)",
+          color: invalidSpare ? "var(--danger)" : spareActive ? "var(--text-2)" : "var(--text-1)",
           fontWeight: 600,
           fontSize: "15px",
           cursor: onSpareSelect ? "pointer" : "default",

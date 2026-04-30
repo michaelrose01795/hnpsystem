@@ -37,7 +37,7 @@ export default function TabSwitcher({ activeTab, onChange, personalDisabled = fa
         <div
           style={{
             fontSize: "0.82rem",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
           }}
         >
           Personal dashboard access is only available on your own profile.

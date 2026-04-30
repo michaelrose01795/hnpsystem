@@ -17,22 +17,22 @@ export default function PartsAccessCard({ parts = [] }) {
         {parts.map((part) => (
           <div
             key={part.id}
-            className="customer-portal-card--muted text-sm text-[var(--text-secondary)]"
+            className="customer-portal-card--muted text-sm text-[var(--text-1)]"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">{part.title}</p>
-                <p className="text-xs text-[var(--text-secondary)]">
+                <p className="text-sm font-semibold text-[var(--text-1)]">{part.title}</p>
+                <p className="text-xs text-[var(--text-1)]">
                   Applies to: {part.appliesTo.join(", ")}
                 </p>
               </div>
-              <span className="text-base font-semibold text-[var(--text-primary)]">
+              <span className="text-base font-semibold text-[var(--text-1)]">
                 {part.price}
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--text-1)]">
               <span>{part.availability}</span>
-              <button className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-1 font-semibold text-[var(--primary-dark)]">
+              <button className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-1 font-semibold text-[var(--primary-selected)]">
                 Request quote
               </button>
             </div>

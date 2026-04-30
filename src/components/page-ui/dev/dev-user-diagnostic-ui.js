@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
+import ProfileThemeControls from "@/components/profile/ProfileThemeControls";
+import Button from "@/components/ui/Button";
 
 const mainPitchSections = [
   {
@@ -239,50 +241,15 @@ export default function UserDiagnosticDevPageUi(props) {
         marginBottom: "24px",
         flexWrap: "wrap"
       }}>
-        <button type="button" onClick={() => router.back()} style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "6px",
-          padding: "6px 14px",
-          borderRadius: "var(--radius-xs)",
-          border: "none",
-          background: "transparent",
-          color: "var(--text-secondary)",
-          fontWeight: 600,
-          fontSize: "13px",
-          cursor: "pointer"
-        }}>
+        <Button type="button" variant="ghost" size="sm" onClick={() => router.back()}>
           &larr; Back
-        </button>
-        <button type="button" onClick={onOpenDeveloping} style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "6px",
-          padding: "7px 14px",
-          borderRadius: "var(--radius-xs)",
-          border: "1px solid var(--accentBorder)",
-          background: "var(--surface)",
-          color: "var(--text-primary)",
-          fontWeight: 700,
-          fontSize: "13px",
-          cursor: "pointer",
-          textTransform: "lowercase"
-        }}>
+        </Button>
+        <Button type="button" variant="secondary" size="sm" onClick={onOpenDeveloping}>
           developing
-        </button>
-        <button type="button" onClick={runAllTests} disabled={running || userLoading} style={{
-          padding: "10px 20px",
-          borderRadius: "var(--radius-xs)",
-          border: "none",
-          background: running ? "var(--text-secondary)" : "var(--primary)",
-          color: "var(--text-inverse)",
-          fontWeight: 600,
-          cursor: running || userLoading ? "not-allowed" : "pointer",
-          fontSize: "14px"
-        }}>
+        </Button>
+        <Button type="button" variant="primary" size="sm" onClick={runAllTests} disabled={running || userLoading}>
           {userLoading ? "Waiting for user context..." : running ? "Running deep diagnostic…" : "Run Deep Diagnostic"}
-        </button>
+        </Button>
         {results && results.some(r => !r.pass) && <button type="button" onClick={() => {
           const failed = results.filter(r => !r.pass);
           const sections = [...new Set(failed.map(r => r.section))];
@@ -317,7 +284,7 @@ export default function UserDiagnosticDevPageUi(props) {
           borderRadius: "var(--radius-xs)",
           border: "none",
           background: promptCopied ? "var(--success)" : "var(--surface)",
-          color: promptCopied ? "var(--text-inverse)" : "var(--danger)",
+          color: promptCopied ? "var(--text-2)" : "var(--danger)",
           fontWeight: 600,
           cursor: "pointer",
           fontSize: "13px",
@@ -325,6 +292,7 @@ export default function UserDiagnosticDevPageUi(props) {
         }}>
             {promptCopied ? "Copied!" : `Copy Fix Prompt (${results.filter(r => !r.pass).length} failed)`}
           </button>}
+        <ProfileThemeControls style={{ marginLeft: "auto" }} />
       </div>
       </DevLayoutSection>
 
@@ -337,9 +305,9 @@ export default function UserDiagnosticDevPageUi(props) {
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.05em",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           marginBottom: "10px",
-          borderBottom: "1px solid var(--surface-light)",
+          borderBottom: "1px solid var(--surface)",
           paddingBottom: "6px"
         }}>
             {group.section}
@@ -385,7 +353,7 @@ export default function UserDiagnosticDevPageUi(props) {
                 padding: "4px 10px",
                 cursor: "pointer",
                 fontSize: "12px",
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>
                       {expanded[result._index] ? "Hide" : "Details"}
                     </button>}
@@ -393,7 +361,7 @@ export default function UserDiagnosticDevPageUi(props) {
                 <p style={{
               margin: "6px 0 0 34px",
               fontSize: "14px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               overflowWrap: "anywhere"
             }}>
                   {result.detail}
@@ -401,7 +369,7 @@ export default function UserDiagnosticDevPageUi(props) {
                 {expanded[result._index] && result.data && <pre style={{
               marginTop: "10px",
               marginLeft: "34px",
-              background: "var(--surface-light)",
+              background: "var(--surface)",
               padding: "12px",
               borderRadius: "var(--radius-xs)",
               overflowX: "auto",
@@ -421,7 +389,7 @@ export default function UserDiagnosticDevPageUi(props) {
         marginTop: "24px",
         padding: "16px",
         background: passCount === totalCount ? "var(--success)" : "var(--danger)",
-        color: "var(--text-inverse)",
+        color: "var(--text-2)",
         borderRadius: "var(--radius-xs)",
         fontWeight: 600,
         fontSize: "16px"
@@ -473,25 +441,20 @@ export default function UserDiagnosticDevPageUi(props) {
               margin: 0,
               fontSize: "clamp(18px, 2vw, 24px)",
               lineHeight: 1.2,
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>
               Development Proposal
             </h2>
           </div>
-          <button type="button" onClick={onCloseDeveloping} aria-label="Close developing details" style={{
-            width: "34px",
-            height: "34px",
-            flex: "0 0 auto",
-            borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--accentBorder)",
-            background: "var(--surface-light)",
-            color: "var(--text-primary)",
-            cursor: "pointer",
-            fontSize: "20px",
-            lineHeight: 1
-          }}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onCloseDeveloping}
+            aria-label="Close developing details"
+            style={{ width: "44px", flex: "0 0 auto" }}>
             &times;
-          </button>
+          </Button>
         </div>
         <div style={{
           display: "grid",
@@ -502,7 +465,7 @@ export default function UserDiagnosticDevPageUi(props) {
           {mainPitchSections.map(section => <section key={section.title} style={{
             border: "none",
             borderRadius: "var(--radius-xs)",
-            background: "var(--accentSurface)",
+            background: "var(--secondary)",
             padding: "16px",
             minWidth: 0,
             boxShadow: "0 10px 26px rgba(15, 23, 42, 0.08)"
@@ -511,7 +474,7 @@ export default function UserDiagnosticDevPageUi(props) {
               margin: "0 0 10px",
               fontSize: "15px",
               lineHeight: 1.25,
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>
               {section.title}
             </h3>
@@ -521,7 +484,7 @@ export default function UserDiagnosticDevPageUi(props) {
               display: "flex",
               flexDirection: "column",
               gap: "7px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               fontSize: "13px",
               lineHeight: 1.38
             }}>
@@ -534,24 +497,14 @@ export default function UserDiagnosticDevPageUi(props) {
           justifyContent: "center",
           marginTop: "18px"
         }}>
-          <button type="button" onClick={() => setPitchMoreOpen(open => !open)} aria-expanded={pitchMoreOpen} style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            minHeight: "38px",
-            padding: "9px 16px",
-            borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--accentBorder)",
-            background: "var(--surface)",
-            color: "var(--text-primary)",
-            fontWeight: 700,
-            fontSize: "13px",
-            cursor: "pointer",
-            transition: "background 0.2s, border-color 0.2s, color 0.2s"
-          }}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setPitchMoreOpen(open => !open)}
+            aria-expanded={pitchMoreOpen}>
             {pitchMoreOpen ? "Hide sections" : "More sections"}
-          </button>
+          </Button>
         </div>
         <div aria-hidden={!pitchMoreOpen} style={{
           maxHeight: pitchMoreOpen ? "4200px" : 0,
@@ -568,7 +521,7 @@ export default function UserDiagnosticDevPageUi(props) {
             {supportingPitchSections.map(section => <section key={section.title} style={{
               border: "none",
               borderRadius: "var(--radius-xs)",
-              background: "var(--accentSurface)",
+              background: "var(--secondary)",
               padding: "16px",
               minWidth: 0
             }}>
@@ -576,7 +529,7 @@ export default function UserDiagnosticDevPageUi(props) {
                 margin: "0 0 10px",
                 fontSize: "14px",
                 lineHeight: 1.25,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>
                 {section.title}
               </h3>
@@ -586,7 +539,7 @@ export default function UserDiagnosticDevPageUi(props) {
                 display: "flex",
                 flexDirection: "column",
                 gap: "7px",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 fontSize: "13px",
                 lineHeight: 1.38
               }}>

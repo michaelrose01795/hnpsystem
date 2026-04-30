@@ -959,12 +959,12 @@ function StockCataloguePage() {
                 resetAddToJobModal();
               }}
               style={{
-                background: "var(--surface-light)",
+                background: "var(--surface)",
                 border: "none",
                 borderRadius: "var(--radius-xs)",
                 fontSize: "var(--text-h3)",
                 cursor: "pointer",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 padding: "6px 10px"
               }}>
               
@@ -982,7 +982,7 @@ function StockCataloguePage() {
             }}>
             
             <div style={{ fontWeight: 600, color: "var(--primary)" }}>{selectedPart.part_number}</div>
-            <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-body)" }}>
+            <div style={{ color: "var(--text-1)", fontSize: "var(--text-body)" }}>
               {selectedPart.name || "Unnamed part"}
             </div>
           </div>
@@ -1016,7 +1016,7 @@ function StockCataloguePage() {
                   style={{
                     ...buttonStyle,
                     padding: "10px 16px",
-                    background: addToJobSearching ? "var(--surface-light)" : "var(--primary)",
+                    background: addToJobSearching ? "var(--surface)" : "var(--primary)",
                     cursor: addToJobSearching ? "not-allowed" : "pointer"
                   }}>
                   
@@ -1044,7 +1044,7 @@ function StockCataloguePage() {
                 <div style={{ fontWeight: 700, color: "var(--primary)" }}>
                   Job #{addToJobResult.jobNumber}
                 </div>
-                <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-body)", marginTop: "4px" }}>
+                <div style={{ color: "var(--text-1)", fontSize: "var(--text-body)", marginTop: "4px" }}>
                   {[addToJobResult.reg, addToJobResult.makeModel].filter(Boolean).join(" • ")}
                 </div>
                 {addToJobResult.description &&
@@ -1080,7 +1080,7 @@ function StockCataloguePage() {
               style={{
                 ...buttonStyle,
                 width: "100%",
-                background: !addToJobResult || addToJobSearching || addToJobSubmitting ? "var(--surface-light)" : "var(--primary)",
+                background: !addToJobResult || addToJobSearching || addToJobSubmitting ? "var(--surface)" : "var(--primary)",
                 cursor: !addToJobResult || addToJobSearching || addToJobSubmitting ? "not-allowed" : "pointer"
               }}>
               
@@ -1199,12 +1199,12 @@ function StockCataloguePage() {
                       textAlign: "left",
                       padding: "10px 12px",
                       border: "none",
-                      borderBottom: "1px solid var(--surface-light)",
-                      background: isSelected ? "var(--surface-light)" : "transparent",
+                      borderBottom: "1px solid var(--surface)",
+                      background: isSelected ? "var(--surface)" : "transparent",
                       cursor: "pointer"
                     }}>
                     
-                        <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
+                        <div style={{ fontWeight: 600, color: "var(--primary-selected)" }}>
                           {part.part_number || "—"}
                         </div>
                         <div style={{ fontSize: "var(--text-body-sm)", color: "var(--info-dark)" }}>
@@ -1423,8 +1423,8 @@ function StockCataloguePage() {
                     textAlign: "left",
                     padding: "6px 10px",
                     border: "none",
-                    borderBottom: "1px solid var(--surface-light)",
-                    background: cat.name === newPartForm.category ? "var(--surface-light)" : "transparent",
+                    borderBottom: "1px solid var(--surface)",
+                    background: cat.name === newPartForm.category ? "var(--surface)" : "transparent",
                     cursor: "pointer",
                     fontWeight: cat.name === newPartForm.category ? 700 : 500
                   }}>
@@ -1537,10 +1537,10 @@ function StockCataloguePage() {
                       textAlign: "left",
                       padding: "6px 10px",
                       border: "none",
-                      borderBottom: "1px solid var(--surface-light)",
+                      borderBottom: "1px solid var(--surface)",
                       background:
                       code === newPartForm.storageLocation ?
-                      "var(--surface-light)" :
+                      "var(--surface)" :
                       "transparent",
                       cursor: "pointer",
                       fontWeight: code === newPartForm.storageLocation ? 700 : 500

@@ -48,7 +48,7 @@ export default function PresentationHighlight({ anchor }) {
         width: rect.width + 14,
         height: rect.height + 14,
         borderRadius: "var(--radius-md)",
-        outline: "2px solid var(--accentMain)",
+        outline: "2px solid var(--primary)",
         outlineOffset: 0,
         boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.42), 0 10px 28px rgba(0, 0, 0, 0.24)",
         pointerEvents: "none",

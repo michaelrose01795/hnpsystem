@@ -73,7 +73,7 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
     label: "Mortgage",
     description: "Tracks mortgage-related goals and recurring outgoings.",
     category: "goals",
-    accent: "var(--text-primary)",
+    accent: "var(--text-1)",
     defaultData: { monthlyPayment: 0 },
   }),
   holiday: createDefinition({
@@ -112,7 +112,7 @@ export const PERSONAL_WIDGET_DEFINITIONS = {
     label: "Notes",
     description: "Stores private notes and reminders.",
     category: "notes",
-    accent: "var(--text-primary)",
+    accent: "var(--text-1)",
   }),
   attachments: createDefinition({
     type: "attachments",

@@ -81,7 +81,7 @@ export default function HRDashboardTab() {
             </thead>
             <tbody>
               {departmentPerformance.map((dept) => (
-                <tr key={dept.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                <tr key={dept.id} style={{ borderTop: "1px solid var(--surface)" }}>
                   <td style={{ padding: "14px 0", fontWeight: 600 }}>{dept.department}</td>
                   <td>{dept.productivity}%</td>
                   <td>{dept.quality}%</td>
@@ -113,7 +113,7 @@ export default function HRDashboardTab() {
                     alignItems: "center",
                     justifyContent: "space-between",
                     paddingBottom: "12px",
-                    borderBottom: "1px solid var(--info-surface)",
+                    borderBottom: "1px solid var(--theme)",
                     gap: "12px",
                   }}
                 >
@@ -151,7 +151,7 @@ export default function HRDashboardTab() {
             </thead>
             <tbody>
               {upcomingAbsences.map((absence) => (
-                <tr key={absence.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                <tr key={absence.id} style={{ borderTop: "1px solid var(--surface)" }}>
                   <td style={{ padding: "12px 0", fontWeight: 600 }}>{absence.employee}</td>
                   <td>{absence.department}</td>
                   <td>{absence.type}</td>
@@ -178,7 +178,7 @@ export default function HRDashboardTab() {
                   flexDirection: "column",
                   gap: "6px",
                   paddingBottom: "12px",
-                  borderBottom: "1px solid var(--info-surface)",
+                  borderBottom: "1px solid var(--theme)",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

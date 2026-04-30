@@ -155,7 +155,7 @@ export default function PrePickLocationModal({
           style={{
             padding: "12px",
             borderRadius: "var(--radius-xs)",
-            background: "var(--info-surface)",
+            background: "var(--theme)",
             fontSize: "13px",
             color: "var(--info-dark)",
           }}

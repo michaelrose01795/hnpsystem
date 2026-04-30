@@ -45,9 +45,9 @@ function PayslipRow({ kind, payslip, onClick }) {
     gap: "10px",
     alignItems: "center",
     padding: "8px 12px",
-    borderTop: "1px solid rgba(var(--text-primary-rgb), 0.06)",
+    borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)",
     background: "transparent",
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
     textAlign: "left",
     width: "100%",
     minHeight: "44px",
@@ -79,7 +79,7 @@ function PayslipRow({ kind, payslip, onClick }) {
         <span
           style={{
             fontSize: "0.72rem",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -263,10 +263,10 @@ export default function PayslipsCard({
             cursor: "pointer",
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>
+          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-1)" }}>
             Payslips
           </div>
-          <span style={{ fontSize: "0.7rem", color: "var(--text-secondary)" }}>
+          <span style={{ fontSize: "0.7rem", color: "var(--text-1)" }}>
             {isUnlocked ? "View all" : "Locked"}
           </span>
         </div>
@@ -316,7 +316,7 @@ export default function PayslipsCard({
               style={{
                 padding: "6px 14px",
                 fontSize: "0.72rem",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
               }}
             >
               Loading…

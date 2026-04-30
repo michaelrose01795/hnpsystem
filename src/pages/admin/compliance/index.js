@@ -60,17 +60,17 @@ export default function ComplianceDashboardPage() {
     <div
       style={{
         padding: 16,
-        border: "1px solid var(--border)",
+        border: "1px solid var(--primary-border)",
         borderRadius: "var(--radius-sm, 8px)",
         background: "var(--section-card-bg, var(--surface))",
         minWidth: 180,
         flex: "1 1 180px",
       }}
     >
-      <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{label}</div>
+      <div style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>{label}</div>
       <div style={{ fontSize: "1.6rem", fontWeight: 700, marginTop: 4 }}>{count}</div>
       {hint && (
-        <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: 6 }}>{hint}</div>
+        <div style={{ fontSize: "0.78rem", color: "var(--text-1)", marginTop: 6 }}>{hint}</div>
       )}
     </div>
   );
@@ -92,7 +92,7 @@ export default function ComplianceDashboardPage() {
 
       <Section title="Nearest SAR Deadlines">
         {openSars.length === 0 ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>No open subject requests.</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>No open subject requests.</p>
         ) : (
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {openSars
@@ -110,7 +110,7 @@ export default function ComplianceDashboardPage() {
 
       <Section title="Open Breaches — ICO 72h Window">
         {openBreaches.length === 0 ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>No open breaches.</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>No open breaches.</p>
         ) : (
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {openBreaches.map((b) => {

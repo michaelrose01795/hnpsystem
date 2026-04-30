@@ -156,15 +156,15 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
     marginBottom: "8px",
     fontSize: "13px",
     fontWeight: "700",
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
   };
   const fieldInputStyle = {
     width: "100%",
     padding: "12px 16px",
     borderRadius: "var(--input-radius)",
-    border: "2px solid var(--surface-light)",
-    backgroundColor: "var(--surface-light)",
-    color: "var(--text-primary)",
+    border: "2px solid var(--surface)",
+    backgroundColor: "var(--surface)",
+    color: "var(--text-1)",
     fontSize: "15px",
     transition: "border-color 0.2s",
   };
@@ -181,7 +181,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
       <>
         <style>{`
           .new-customer-popup__input::placeholder {
-            color: rgba(var(--text-secondary-rgb), 0.58);
+            color: rgba(var(--text-1-rgb), 0.58);
             opacity: 1;
           }
         `}</style>
@@ -216,7 +216,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   placeholder="Enter first name"
                   style={fieldInputStyle}
                   onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                 />
               </div>
               <div>
@@ -231,7 +231,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   placeholder="Enter last name"
                   style={fieldInputStyle}
                   onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                 />
               </div>
             </div>
@@ -265,7 +265,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     placeholder="No."
                     style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
                 <div>
@@ -280,7 +280,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     placeholder="Street name"
                     style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
               </div>
@@ -297,7 +297,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     placeholder="Town or city"
                     style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
                 <div>
@@ -312,7 +312,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     placeholder="County"
                     style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
               </div>
@@ -330,7 +330,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                       placeholder="Enter postcode"
                       style={{ ...fieldInputStyle, flex: 1, minWidth: 0 }}
                       onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                      onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                      onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                     />
                     <button
                       type="button"
@@ -366,7 +366,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     placeholder="Country"
                     style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
               </div>
@@ -389,7 +389,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               {lookupState.suggestions.length > 0 && (
                 <div
                   style={{
-                    border: "2px solid var(--surface-light)",
+                    border: "2px solid var(--surface)",
                     borderRadius: "var(--input-radius)",
                     maxHeight: "200px",
                     overflowY: "auto",
@@ -405,14 +405,14 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                         width: "100%",
                         padding: "14px 16px",
                         border: "none",
-                        borderBottom: index < lookupState.suggestions.length - 1 ? "1px solid var(--surface-light)" : "none",
+                        borderBottom: index < lookupState.suggestions.length - 1 ? "1px solid var(--surface)" : "none",
                         textAlign: "left",
                         backgroundColor: "var(--surface)",
                         cursor: "pointer",
                         fontSize: "14px",
                         transition: "background-color 0.2s",
                       }}
-                      onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--surface-light)")}
+                      onMouseEnter={(e) => (e.target.style.backgroundColor = "var(--surface)")}
                       onMouseLeave={(e) => (e.target.style.backgroundColor = "var(--surface)")}
                     >
                       {suggestion.label}
@@ -450,7 +450,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   placeholder="customer@example.com"
                   style={fieldInputStyle}
                   onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                  onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                 />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -466,7 +466,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     placeholder="Mobile number"
                     style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
                 <div>
@@ -481,7 +481,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     placeholder="Telephone number"
                     style={fieldInputStyle}
                     onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface-light)")}
+                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
               </div>
@@ -493,7 +493,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
         <div
           style={{
             padding: "24px 32px",
-            borderTop: "1px solid var(--surface-light)",
+            borderTop: "1px solid var(--surface)",
             display: "flex",
             justifyContent: "flex-end",
             gap: "12px",
@@ -505,20 +505,20 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             style={{
               padding: "12px 24px",
               borderRadius: "var(--input-radius)",
-              border: "2px solid var(--surface-light)",
+              border: "2px solid var(--surface)",
               backgroundColor: "transparent",
               fontSize: "15px",
               fontWeight: "bold",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               cursor: "pointer",
               transition: "all 0.2s",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "var(--primary)";
-              e.currentTarget.style.backgroundColor = "var(--surface-light)";
+              e.currentTarget.style.backgroundColor = "var(--surface)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--surface-light)";
+              e.currentTarget.style.borderColor = "var(--surface)";
               e.currentTarget.style.backgroundColor = "transparent";
             }}
           >
@@ -531,7 +531,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             style={{
               padding: "12px 24px",
               borderRadius: "var(--input-radius)",
-              border: "2px solid var(--primary-dark)",
+              border: "2px solid var(--primary-selected)",
               backgroundColor: "var(--primary)",
               color: "white",
               fontSize: "15px",

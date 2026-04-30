@@ -72,7 +72,7 @@ export default function PresentationControls({ onExport, exportBusy }) {
           style={{
             fontSize: 13,
             fontWeight: 700,
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -80,7 +80,7 @@ export default function PresentationControls({ onExport, exportBusy }) {
         >
           {currentSlide?.title || "Presentation"}
         </div>
-        <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+        <div style={{ fontSize: 11, color: "var(--text-1)" }}>
           Slide {slideIndex + 1} of {slideCount} | Step {stepIndex + 1} of {stepCount} | Role: {primaryRole}
         </div>
       </div>

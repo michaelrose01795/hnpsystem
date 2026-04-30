@@ -55,7 +55,7 @@ export default function TechConsumableRequestPageUi(props) {
       textAlign: "center"
     }}>
             <h1 style={{
-        color: "var(--primary-dark)",
+        color: "var(--primary-selected)",
         marginBottom: "16px"
       }}>
               Technician Access Only
@@ -94,7 +94,7 @@ export default function TechConsumableRequestPageUi(props) {
               <h1 style={{
             margin: 0,
             fontSize: "1.6rem",
-            color: "var(--primary-dark)"
+            color: "var(--primary-selected)"
           }}></h1>
             </div>
             <DevLayoutSection as="div" sectionKey="tech-consumables-stock-check-action" parentKey="tech-consumables-request-header" sectionType="floating-action" backgroundToken="transparent">
@@ -103,7 +103,7 @@ export default function TechConsumableRequestPageUi(props) {
             borderRadius: "var(--control-radius)",
             border: "1px solid var(--primary)",
             background: "var(--surface)",
-            color: "var(--primary-dark)",
+            color: "var(--primary-selected)",
             fontWeight: 600,
             cursor: "pointer",
             width: isMobile ? "100%" : "auto"
@@ -128,7 +128,7 @@ export default function TechConsumableRequestPageUi(props) {
             border: "none",
             borderRadius: "var(--control-radius)",
             padding: "8px",
-            background: "var(--surface-lightest)",
+            background: "var(--surfaceest)",
             display: "flex",
             flexDirection: "column",
             gap: "6px"
@@ -157,7 +157,7 @@ export default function TechConsumableRequestPageUi(props) {
                   background: "var(--surface)",
                   cursor: "pointer",
                   fontSize: "0.9rem",
-                  color: "var(--primary-dark)"
+                  color: "var(--primary-selected)"
                 }}>
                             {item.name}
                           </button>)}
@@ -173,7 +173,7 @@ export default function TechConsumableRequestPageUi(props) {
               borderRadius: "var(--control-radius)",
               border: "1px solid var(--primary)",
               background: addingTemporaryItem ? "rgba(var(--primary-rgb),0.35)" : "var(--surface)",
-              color: "var(--primary-dark)",
+              color: "var(--primary-selected)",
               fontWeight: 600,
               cursor: addingTemporaryItem ? "not-allowed" : "pointer",
               alignSelf: "flex-start"
@@ -181,7 +181,7 @@ export default function TechConsumableRequestPageUi(props) {
                       {addingTemporaryItem ? "Adding…" : `Add "${requestForm.partName.trim()}" to stock`}
                     </button>}
                   {stockError && <span style={{
-              color: "var(--primary-dark)",
+              color: "var(--primary-selected)",
               fontSize: "0.8rem"
             }}>{stockError}</span>}
                 </DevLayoutSection>}
@@ -225,7 +225,7 @@ export default function TechConsumableRequestPageUi(props) {
             <h2 style={{
           margin: 0,
           fontSize: "1.2rem",
-          color: "var(--primary-dark)"
+          color: "var(--primary-selected)"
         }}>Requests</h2>
             <DevLayoutSection as="div" sectionKey="tech-consumables-requests-search" parentKey="tech-consumables-requests-toolbar" sectionType="filter-row" backgroundToken="search-surface" style={{
           maxWidth: isMobile ? "100%" : "240px",
@@ -244,7 +244,7 @@ export default function TechConsumableRequestPageUi(props) {
             </DevLayoutSection>}
           {requestError && <DevLayoutSection as="p" sectionKey="tech-consumables-error-banner" parentKey="tech-consumables-requests-panel" sectionType="state-banner" backgroundToken="danger-surface" style={{
         margin: "0 0 12px",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>
               {requestError}
             </DevLayoutSection>}
@@ -257,7 +257,7 @@ export default function TechConsumableRequestPageUi(props) {
               {loadingRequests ? <div style={{
           ...requestCardStyle,
           textAlign: "center",
-          color: "var(--text-secondary)"
+          color: "var(--text-1)"
         }}>
                   Loading requests…
                 </div> : filteredRequests.length > 0 ? filteredRequests.map(request => <article key={request.id} data-dev-section="1" data-dev-section-key={`tech-consumables-request-mobile-card-${request.id}`} data-dev-section-type="content-card" data-dev-section-parent="tech-consumables-request-mobile-list" style={requestCardStyle}>
@@ -272,7 +272,7 @@ export default function TechConsumableRequestPageUi(props) {
             }}>
                         <div style={{
                 fontWeight: 700,
-                color: "var(--text-primary)",
+                color: "var(--text-1)",
                 wordBreak: "break-word"
               }}>
                           {request.itemName}
@@ -300,7 +300,7 @@ export default function TechConsumableRequestPageUi(props) {
                         <div style={fieldLabelStyle}>Quantity</div>
                         <div style={{
                 marginTop: "4px",
-                color: "var(--text-primary)",
+                color: "var(--text-1)",
                 fontWeight: 600
               }}>
                           {request.quantity}
@@ -312,7 +312,7 @@ export default function TechConsumableRequestPageUi(props) {
                         <div style={fieldLabelStyle}>Requested</div>
                         <div style={{
                 marginTop: "4px",
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>
                           {request.requestedAt ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
                   day: "2-digit",
@@ -328,7 +328,7 @@ export default function TechConsumableRequestPageUi(props) {
                         <div style={fieldLabelStyle}>Requested By</div>
                         <div style={{
                 marginTop: "4px",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 wordBreak: "break-word"
               }}>
                           {request.requestedByName || "—"}
@@ -338,7 +338,7 @@ export default function TechConsumableRequestPageUi(props) {
                   </article>) : <div style={{
           ...requestCardStyle,
           textAlign: "center",
-          color: "var(--text-secondary)"
+          color: "var(--text-1)"
         }}>
                   No consumable requests match the current filter.
                 </div>}
@@ -354,7 +354,7 @@ export default function TechConsumableRequestPageUi(props) {
           background: "var(--surface)"
         }}>
                 <thead data-dev-section="1" data-dev-section-key="tech-consumables-request-auto-data-table-1-headings" data-dev-section-type="table-headings" data-dev-section-parent="tech-consumables-request-auto-data-table-1" style={{
-            background: "var(--accent-surface-hover)"
+            background: "var(--theme-hover)"
           }}>
                   <tr>
                     <th style={tableHeaderStyle}>Status</th>
@@ -370,7 +370,7 @@ export default function TechConsumableRequestPageUi(props) {
             }}>
                       <td colSpan={5} style={{
                 padding: "18px 12px",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 textAlign: "center"
               }}>
                         Loading requests…
@@ -398,15 +398,15 @@ export default function TechConsumableRequestPageUi(props) {
                         <td style={{
                 padding: "12px",
                 fontWeight: 600,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>{request.itemName}</td>
                         <td style={{
                 padding: "12px",
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>{request.quantity}</td>
                         <td style={{
                 padding: "12px",
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>
                           {request.requestedAt ? new Date(request.requestedAt).toLocaleDateString("en-GB", {
                   day: "2-digit",
@@ -416,14 +416,14 @@ export default function TechConsumableRequestPageUi(props) {
                         </td>
                         <td style={{
                 padding: "12px",
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>{request.requestedByName || "—"}</td>
                       </tr>) : <tr data-dev-section="1" data-dev-section-key="tech-consumables-requests-empty-row" data-dev-section-type="empty-state" data-dev-section-parent="tech-consumables-request-auto-data-table-1-rows" style={{
               background: "var(--surface)"
             }}>
                       <td colSpan={5} style={{
                 padding: "18px 12px",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 textAlign: "center"
               }}>
                         No consumable requests match the current filter.

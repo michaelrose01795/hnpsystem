@@ -83,7 +83,7 @@ export default function ServiceManagerDashboard() {
         shell
         className="app-section-card"
         style={{
-          background: "var(--info-surface)",
+          background: "var(--theme)",
           border: "none",
           gap: "6px",
         }}
@@ -201,7 +201,7 @@ export default function ServiceManagerDashboard() {
                   gridTemplateColumns: "1.2fr repeat(4, 1fr)",
                   gap: "12px",
                   alignItems: "center",
-                  background: "var(--info-surface)",
+                  background: "var(--theme)",
                 }}
               >
                 <strong style={{ fontSize: "1rem", color: "var(--info-dark)" }}>{advisor.advisor}</strong>
@@ -252,7 +252,7 @@ export default function ServiceManagerDashboard() {
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
                   border: "none",
-                  background: "var(--info-surface)",
+                  background: "var(--theme)",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>
@@ -355,7 +355,7 @@ export default function ServiceManagerDashboard() {
                   border: "none",
                   borderRadius: "var(--radius-sm)",
                   padding: "14px",
-                  background: "var(--info-surface)",
+                  background: "var(--theme)",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>

@@ -182,8 +182,8 @@ export default function InvoiceBuilderPopup({
             body { font-family: Arial, sans-serif; color: var(--accent-purple); padding: 24px; }
             h1 { color: var(--info-dark); margin-bottom: 0; }
             table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-            th, td { padding: 8px; border: 1px solid var(--accent-purple-surface); }
-            th { background: var(--info-surface); text-align: left; }
+            th, td { padding: 8px; border: 1px solid var(--theme); }
+            th { background: var(--theme); text-align: left; }
           </style>
         </head>
         <body>
@@ -328,7 +328,7 @@ export default function InvoiceBuilderPopup({
             <div
               key={line.id}
               style={{
-                border: "1px solid var(--accent-purple-surface)",
+                border: "1px solid var(--theme)",
                 borderRadius: "var(--input-radius)",
                 padding: "12px",
                 marginBottom: "10px",
@@ -385,7 +385,7 @@ export default function InvoiceBuilderPopup({
             <div
               style={{
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--accent-purple-surface)",
+                border: "1px solid var(--theme)",
                 overflow: "hidden"
               }}
             >
@@ -394,7 +394,7 @@ export default function InvoiceBuilderPopup({
                   display: "grid",
                   gridTemplateColumns: "2fr 1fr 1fr 1fr",
                   padding: "10px 12px",
-                  background: "var(--info-surface)",
+                  background: "var(--theme)",
                   fontSize: "13px",
                   fontWeight: 600
                 }}
@@ -411,7 +411,7 @@ export default function InvoiceBuilderPopup({
                     display: "grid",
                     gridTemplateColumns: "2fr 1fr 1fr 1fr",
                     padding: "12px",
-                    borderTop: "1px solid var(--info-surface)",
+                    borderTop: "1px solid var(--theme)",
                     fontSize: "14px"
                   }}
                 >
@@ -441,7 +441,7 @@ export default function InvoiceBuilderPopup({
           <div
             style={{
               borderRadius: "var(--input-radius)",
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--theme)",
               padding: "12px",
               background: "var(--surface)"
             }}
@@ -468,7 +468,7 @@ export default function InvoiceBuilderPopup({
           <div
             style={{
               borderRadius: "var(--input-radius)",
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--theme)",
               padding: "12px",
               background: "var(--surface)"
             }}
@@ -502,8 +502,8 @@ export default function InvoiceBuilderPopup({
               marginBottom: "18px",
               padding: "16px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--accent-purple-surface)",
-              background: "var(--info-surface)"
+              border: "1px solid var(--theme)",
+              background: "var(--theme)"
             }}
           >
             <h3 style={{ margin: "0 0 10px 0" }}>Invoice Actions</h3>
@@ -606,9 +606,9 @@ export default function InvoiceBuilderPopup({
           <div
             style={{
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--theme)",
               padding: "14px",
-              background: "var(--info-surface)",
+              background: "var(--theme)",
               display: previewOpen ? "block" : "none"
             }}
           >
@@ -674,7 +674,7 @@ export default function InvoiceBuilderPopup({
             style={{
               padding: "10px 18px",
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--theme)",
               background: "var(--surface)",
               cursor: "pointer"
             }}

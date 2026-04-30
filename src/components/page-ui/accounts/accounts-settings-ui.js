@@ -10,7 +10,7 @@ export default function AccountsSettingsRedirectPageUi(props) {
     case "section1":
       return <ProtectedRoute allowedRoles={SETTINGS_ROLES}>
       <p style={{
-    color: "var(--text-secondary)"
+    color: "var(--text-1)"
   }}>Redirecting to account settings…</p>
     </ProtectedRoute>; // render extracted page section.
     default:

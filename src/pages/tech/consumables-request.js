@@ -39,7 +39,7 @@ const inputStyle = {
 
 const tableHeaderStyle = {
   textAlign: "left", // Left align headers for readability
-  color: "var(--text-primary)", // High-contrast header colour for readability
+  color: "var(--text-1)", // High-contrast header colour for readability
   fontSize: "0.8rem", // Smaller uppercase header text
   textTransform: "uppercase", // Uppercase for header emphasis
   letterSpacing: "0.08em", // Add tracking to uppercase text
@@ -51,7 +51,7 @@ const fieldLabelStyle = {
   fontWeight: 700,
   letterSpacing: "0.04em",
   textTransform: "uppercase",
-  color: "var(--text-secondary)"
+  color: "var(--text-1)"
 };
 
 const requestCardStyle = {
@@ -60,7 +60,7 @@ const requestCardStyle = {
   gap: "12px",
   padding: "14px",
   borderRadius: "var(--radius-md)",
-  border: "1px solid var(--border-subtle, rgba(15, 23, 42, 0.08))",
+  border: "1px solid var(--primary-border-subtle, rgba(15, 23, 42, 0.08))",
   background: "var(--surface)"
 };
 
@@ -73,7 +73,7 @@ const requestCardMetaGridStyle = {
 const statusBadgeStyles = {
   pending: {
     backgroundColor: "rgba(var(--primary-rgb),0.12)", // Pale red for pending requests
-    color: "var(--primary-dark)", // Deep red text colour
+    color: "var(--primary-selected)", // Deep red text colour
     border: "none" // Border to define badge
   },
   urgent: {

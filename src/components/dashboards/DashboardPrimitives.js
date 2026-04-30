@@ -3,7 +3,7 @@
 // SectionCard re-export has been removed — all consumers now import it from @/components/Section directly.
 import React from "react";
 
-export const MetricPill = ({ label, value, accent = "var(--primary-dark)", helper }) => (
+export const MetricPill = ({ label, value, accent = "var(--primary-selected)", helper }) => (
   <div
     style={{
       borderRadius: "var(--control-radius)",

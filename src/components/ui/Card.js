@@ -46,7 +46,7 @@ export default function Card({
               <div
                 style={{
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   marginTop: "var(--space-xs)",
                 }}
               >

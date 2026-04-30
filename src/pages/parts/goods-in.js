@@ -54,7 +54,8 @@ const ADVANCED_TABS = [
 
 
 const sectionCardStyle = {
-  gap: "18px"
+  gap: "18px",
+  background: "var(--theme)"
 };
 
 const fieldGridStyle = {
@@ -73,24 +74,20 @@ const splitFieldRowStyle = {
 const labelStyle = {
   fontWeight: 600,
   fontSize: "0.9rem",
-  color: "var(--text-secondary)"
+  color: "var(--text-1)"
 };
 
+// Surface (background, border, radius, padding, height) is intentionally left
+// to the global input rules in src/styles/globals.css so this page matches the
+// rest of the app. Only typography props are kept here.
 const inputStyle = {
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  padding: "var(--control-padding)",
   fontSize: "0.95rem",
   fontFamily: "inherit",
-  background: "var(--layer-section-level-1)",
-  color: "var(--text-primary)"
+  color: "var(--text-1)"
 };
 
 const addPartInputStyle = {
-  ...inputStyle,
-  height: "var(--control-height)",
-  minHeight: "var(--control-height)",
-  padding: "8px 12px"
+  ...inputStyle
 };
 
 const addPartFieldStyle = {
@@ -105,20 +102,17 @@ const textareaStyle = {
   minHeight: "96px"
 };
 
-const notesTextareaStyle = {
-  ...textareaStyle,
-  minHeight: "56px",
-  height: "56px",
-  resize: "vertical"
-};
+// Notes textareas use the global .app-notes-input class for sizing/resize/bg —
+// keep this object empty so it does not override the class via inline style.
+const notesTextareaStyle = {};
 
 const addressFieldStyle = {
   padding: "var(--control-padding)",
-  borderRadius: "var(--radius-sm)",
+  borderRadius: "var(--control-radius)",
   border: "none",
-  background: "var(--layer-section-level-1)",
-  color: "var(--text-primary)",
-  minHeight: "56px",
+  background: "var(--control-bg)",
+  color: "var(--text-1)",
+  minHeight: "var(--control-height)",
   display: "flex",
   alignItems: "center"
 };
@@ -144,8 +138,8 @@ const primaryButtonStyle = (disabled = false) => ({
   fontWeight: 600,
   fontSize: "0.95rem",
   cursor: disabled ? "not-allowed" : "pointer",
-  background: disabled ? "var(--surface-light)" : "var(--primary)",
-  color: disabled ? "var(--text-secondary)" : "white"
+  background: disabled ? "var(--surface)" : "var(--primary)",
+  color: disabled ? "var(--text-1)" : "white"
 });
 
 const secondaryButtonStyle = {
@@ -182,21 +176,21 @@ const invoiceHeaderCellStyle = {
   fontSize: "0.75rem",
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "var(--text-secondary)",
-  background: "var(--layer-section-level-2)"
+  color: "var(--text-1)",
+  background: "var(--surface)"
 };
 
 const invoiceCellStyle = {
   padding: "16px",
   fontSize: "0.95rem",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap"
 };
 
 const invoiceRowStyle = {
-  background: "var(--layer-section-level-1)",
+  background: "var(--surface)",
   borderRadius: "var(--radius-md)",
   boxShadow: "var(--shadow-lg)"
 };
@@ -1731,8 +1725,8 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
     const city = result.billing_city || "Unknown city";
     const phone = result.phone || result.telephone || result.mobile || "";
     const restingBorder = missingLinkedAccount ?
-    "1px solid color-mix(in srgb, var(--danger) 30%, var(--surface-light))" :
-    "1px solid var(--surface-light)";
+    "1px solid color-mix(in srgb, var(--danger) 30%, var(--surface))" :
+    "1px solid var(--surface)";
     const restingBackground =
     "var(--surface)";
 
@@ -1749,7 +1743,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           marginBottom: index === results.length - 1 ? 0 : "10px",
           cursor: "pointer",
           background: restingBackground,
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           boxShadow: "var(--shadow-sm)",
           transition: "background 0.15s ease, border-color 0.15s ease, transform 0.15s ease",
           display: "flex",
@@ -1779,14 +1773,14 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
         }}>
         
           <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
-            <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>{displayName}</div>
+            <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-1)" }}>{displayName}</div>
             <div
             style={{
               fontSize: "0.75rem",
               fontWeight: 700,
               color: "var(--primary)",
               background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--primary) 28%, var(--surface-light))",
+              border: "1px solid color-mix(in srgb, var(--primary) 28%, var(--surface))",
               borderRadius: "var(--radius-pill)",
               padding: "3px 8px",
               whiteSpace: "nowrap"
@@ -1798,8 +1792,8 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px", fontSize: "0.8rem" }}>
             <span
             style={{
-              color: "var(--text-secondary)",
-              background: "var(--layer-section-level-1)",
+              color: "var(--text-1)",
+              background: "var(--surface)",
               border: "none",
               borderRadius: "var(--radius-pill)",
               padding: "2px 8px"
@@ -1810,8 +1804,8 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
             {phone ?
           <span
             style={{
-              color: "var(--text-secondary)",
-              background: "var(--layer-section-level-1)",
+              color: "var(--text-1)",
+              background: "var(--surface)",
               border: "none",
               borderRadius: "var(--radius-pill)",
               padding: "2px 8px"
@@ -1827,8 +1821,8 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
               "color-mix(in srgb, var(--danger) 10%, transparent)" :
               "color-mix(in srgb, var(--success) 10%, transparent)",
               border: missingLinkedAccount ?
-              "1px solid color-mix(in srgb, var(--danger) 28%, var(--surface-light))" :
-              "1px solid color-mix(in srgb, var(--success) 28%, var(--surface-light))",
+              "1px solid color-mix(in srgb, var(--danger) 28%, var(--surface))" :
+              "1px solid color-mix(in srgb, var(--success) 28%, var(--surface))",
               borderRadius: "var(--radius-pill)",
               padding: "2px 8px",
               fontWeight: 600
@@ -1861,7 +1855,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
         }}>
         
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Supplier accounts</h3>
+          <h3 style={{ margin: 0, color: "var(--text-1)" }}>Supplier accounts</h3>
           <button onClick={onClose} style={{ ...secondaryButtonStyle, borderRadius: "var(--radius-sm)" }}>
             Close
           </button>
@@ -1886,7 +1880,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           style={{
             border: "none",
             borderRadius: "var(--radius-md)",
-            background: "var(--layer-section-level-1)",
+            background: "var(--surface)",
             padding: "10px",
             minHeight: "392px",
             maxHeight: "392px",
@@ -1901,7 +1895,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           results.length ?
           renderSupplierResults() :
 
-          <div style={{ padding: "12px", color: "var(--text-secondary)" }}>
+          <div style={{ padding: "12px", color: "var(--text-1)" }}>
                 No supplier accounts available.
               </div> :
 
@@ -1991,7 +1985,7 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
           value={query}
           onChange={(event) => setQuery(event.target.value)} />
         
-        <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "8px" }}>
+        <div style={{ fontSize: "0.85rem", color: "var(--text-1)", marginTop: "8px" }}>
           {loading ? <InlineLoading width={140} label="Searching" /> : "Results update automatically as you type"}
         </div>
         {error && <div style={{ color: "var(--danger)", marginTop: "10px" }}>{error}</div>}
@@ -2013,8 +2007,8 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
               <div style={{ fontWeight: 600 }}>
                 {part.part_number} · {part.name}
               </div>
-              <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{part.description}</div>
-              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>{part.description}</div>
+              <div style={{ fontSize: "0.8rem", color: "var(--text-1)" }}>
                 {part.storage_location || "No bin"} · {part.supplier || "No supplier"}
               </div>
             </button>
@@ -2342,8 +2336,8 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
     padding: "12px",
     marginBottom: "8px",
     cursor: "pointer",
-    background: isSelected ? "var(--layer-section-level-2)" : "var(--surface)",
-    color: "var(--text-primary)"
+    background: isSelected ? "var(--surface)" : "var(--surface)",
+    color: "var(--text-1)"
   });
 
   const formatJobType = (value = "") => {
@@ -2400,7 +2394,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                     <div style={{ fontWeight: 700 }}>
                       {job.job_number || "No job"} · {job.vehicle_reg || "No reg"} · {job.customer || "Unknown customer"}
                     </div>
-                    <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+                    <div style={{ fontSize: "0.9rem", color: "var(--text-1)" }}>
                       Job type: {formatJobType(job.type)}
                     </div>
                   </button>);
@@ -2408,7 +2402,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               })}
             </div>
             {selectedJob &&
-            <div style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
+            <div style={{ fontSize: "0.9rem", color: "var(--text-1)" }}>
                 Selected job: <strong>{selectedJob.job_number}</strong>
               </div>
             }
@@ -2434,7 +2428,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               </div>
             </div>
             {availableItems.length === 0 ?
-            <div style={{ color: "var(--text-secondary)" }}>
+            <div style={{ color: "var(--text-1)" }}>
                 All parts from this goods-in are already linked to a job.
               </div> :
             selectedRows.length === 0 ? null :
@@ -2446,7 +2440,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               }}>
               
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead style={{ background: "var(--layer-section-level-2)" }}>
+                  <thead style={{ background: "var(--surface)" }}>
                     <tr>
                       <th style={{ ...invoiceHeaderCellStyle, width: "90px" }}>Remove</th>
                       <th style={invoiceHeaderCellStyle}>Part number</th>
@@ -2456,7 +2450,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                   </thead>
                   <tbody>
                     {selectedRows.map(({ item, selectedQty }) =>
-                  <tr key={item.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                  <tr key={item.id} style={{ borderTop: "1px solid var(--surface)" }}>
                         <td style={{ ...invoiceCellStyle, width: "90px" }}>
                           <button
                         type="button"
@@ -2468,7 +2462,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                           </button>
                         </td>
                         <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
-                        <td style={{ ...invoiceCellStyle, color: "var(--text-secondary)" }}>{item.description}</td>
+                        <td style={{ ...invoiceCellStyle, color: "var(--text-1)" }}>{item.description}</td>
                         <td style={{ ...invoiceCellStyle, width: "100px" }}>
                           <input
                         type="number"
@@ -2488,7 +2482,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
             }
             <div style={{ marginTop: "12px", fontWeight: 600 }}>Available to select</div>
             {remainingRows.length === 0 ?
-            <div style={{ color: "var(--text-secondary)" }}>No remaining quantities to select.</div> :
+            <div style={{ color: "var(--text-1)" }}>No remaining quantities to select.</div> :
 
             <div
               style={{
@@ -2498,7 +2492,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               }}>
               
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead style={{ background: "var(--layer-section-level-2)" }}>
+                  <thead style={{ background: "var(--surface)" }}>
                     <tr>
                       <th style={{ ...invoiceHeaderCellStyle, width: "90px" }}>Add</th>
                       <th style={invoiceHeaderCellStyle}>Part number</th>
@@ -2511,7 +2505,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                     {remainingRows.map(({ item, remainingQty }) => {
                     const pendingValue = pendingQuantities.get(item.id) ?? "1";
                     return (
-                      <tr key={item.id} style={{ borderTop: "1px solid var(--surface-light)" }}>
+                      <tr key={item.id} style={{ borderTop: "1px solid var(--surface)" }}>
                           <td style={{ ...invoiceCellStyle, width: "90px" }}>
                             <button
                             type="button"
@@ -2526,7 +2520,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                             </button>
                           </td>
                           <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
-                          <td style={{ ...invoiceCellStyle, color: "var(--text-secondary)" }}>{item.description}</td>
+                          <td style={{ ...invoiceCellStyle, color: "var(--text-1)" }}>{item.description}</td>
                           <td style={{ ...invoiceCellStyle, width: "90px" }}>{remainingQty}</td>
                           <td style={{ ...invoiceCellStyle, width: "110px" }}>
                             <input

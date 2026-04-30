@@ -349,10 +349,10 @@ export default function RetailManagersDashboard({ user }) {
           gap: "8px",
         }}
       >
-        <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem", color: "var(--primary-dark)" }}>
+        <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem", color: "var(--primary-selected)" }}>
           Retail Workshop Control Room
         </span>
-        <h1 style={{ margin: 0, color: "var(--primary-dark)", fontSize: "1.6rem" }}>
+        <h1 style={{ margin: 0, color: "var(--primary-selected)", fontSize: "1.6rem" }}>
           {user?.username ? `${user.username}'s Dashboard` : "Retail Dashboard"}
         </h1>
         <p style={{ margin: 0, color: "var(--info)" }}>Live view for retail managers · {todayLabel}</p>
@@ -410,7 +410,7 @@ export default function RetailManagersDashboard({ user }) {
               }}
             >
               <div>
-                <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>{panel.role}</h3>
+                <h3 style={{ margin: 0, color: "var(--primary-selected)" }}>{panel.role}</h3>
                 {panel.owners.length > 0 && (
                   <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
                     Owners: {panel.owners.join(", ")}
@@ -422,7 +422,7 @@ export default function RetailManagersDashboard({ user }) {
                 {Object.entries(panel.kpis).map(([label, value]) => (
                   <div key={label} style={{ flex: 1 }}>
                     <span style={{ color: "var(--info)", fontSize: "0.75rem", textTransform: "uppercase" }}>{label}</span>
-                    <p style={{ margin: 0, fontWeight: 700, color: "var(--primary-dark)" }}>
+                    <p style={{ margin: 0, fontWeight: 700, color: "var(--primary-selected)" }}>
                       {typeof value === "number" && value < 1 ? value.toFixed(1) : `${value}%`}
                     </p>
                   </div>
@@ -473,7 +473,7 @@ export default function RetailManagersDashboard({ user }) {
                   display: "flex",
                   flexDirection: "column",
                   gap: "6px",
-                  background: "rgba(var(--primary-rgb), 0.12)",
+                  background: "var(--theme)",
                   border: "1px solid rgba(var(--primary-rgb), 0.18)",
                   borderRadius: "var(--radius-sm)",
                   padding: "12px",
@@ -487,7 +487,7 @@ export default function RetailManagersDashboard({ user }) {
                   style={{
                     height: "10px",
                     borderRadius: "var(--radius-pill)",
-                    background: "var(--surface-light)",
+                    background: "var(--surface)",
                     overflow: "hidden",
                   }}
                 >
@@ -521,11 +521,11 @@ export default function RetailManagersDashboard({ user }) {
                   border: "1px solid rgba(var(--primary-rgb), 0.18)",
                   borderRadius: "var(--radius-sm)",
                   padding: "12px",
-                  background: "rgba(var(--primary-rgb), 0.12)",
+                  background: "var(--theme)",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                  <strong style={{ color: "var(--primary-dark)" }}>{job.jobNumber}</strong>
+                  <strong style={{ color: "var(--primary-selected)" }}>{job.jobNumber}</strong>
                   <span style={{ color: "var(--info)", fontSize: "0.85rem" }}>{job.eta}</span>
                 </div>
                 <p style={{ margin: 0, color: "var(--info-dark)" }}>{job.concern}</p>

@@ -854,7 +854,7 @@ export default function CustomerMessagesPage() {
         <div className="space-y-4">
           {mobileView === "threads" ? (
             /* ── Thread list view (like iOS Messages inbox) ── */
-            <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-4">
+            <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-4">
               <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-white">Messages</p>
@@ -876,7 +876,7 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={fetchThreads}
                     disabled={threadsLoading}
-                    className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {threadsLoading ? "…" : "Refresh"}
                   </button>
@@ -896,23 +896,23 @@ export default function CustomerMessagesPage() {
                 <button
                   type="button"
                   onClick={openSystemNotificationsThread}
-                  className="w-full text-left rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm transition"
+                  className="w-full text-left rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-sm transition"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-[var(--text-primary)]">System notifications</p>
+                    <p className="font-semibold text-[var(--text-1)]">System notifications</p>
                     <div className="flex items-center gap-1">
                       {hasSystemUnread && (
                         <span className="rounded-full bg-[var(--primary)] px-2 py-0.5 text-[0.6rem] font-semibold text-white">
                           New
                         </span>
                       )}
-                      <span className="rounded-full border border-[var(--surface-light)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--danger)]">
+                      <span className="rounded-full border border-[var(--surface)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--danger)]">
                         Read only
                       </span>
                     </div>
                   </div>
-                  <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-1">{systemPreview}</p>
-                  <p className="text-[0.6rem] text-[var(--text-secondary)]">{systemTimestampLabel}</p>
+                  <p className="mt-1 text-xs text-[var(--text-1)] line-clamp-1">{systemPreview}</p>
+                  <p className="text-[0.6rem] text-[var(--text-1)]">{systemTimestampLabel}</p>
                 </button>
 
                 {/* Thread list */}
@@ -925,24 +925,24 @@ export default function CustomerMessagesPage() {
                           key={thread.id}
                           type="button"
                           onClick={() => openThread(thread)}
-                          className="w-full text-left rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 transition active:bg-[var(--surface-light)]"
+                          className="w-full text-left rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 transition active:bg-[var(--surface)]"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-[var(--text-primary)] line-clamp-1">
+                            <p className="text-sm font-semibold text-[var(--text-1)] line-clamp-1">
                               {thread.title || "Conversation"}
                             </p>
                             <div className="flex items-center gap-1 shrink-0">
                               {thread.hasUnread && (
                                 <span className="h-2.5 w-2.5 rounded-full bg-[var(--primary)]" />
                               )}
-                              <span className="text-[0.6rem] text-[var(--text-secondary)]">
+                              <span className="text-[0.6rem] text-[var(--text-1)]">
                                 {thread.lastMessage?.createdAt
                                   ? formatMessageTimestamp(thread.lastMessage.createdAt)
                                   : ""}
                               </span>
                             </div>
                           </div>
-                          <p className="mt-0.5 text-xs text-[var(--text-secondary)] line-clamp-1">
+                          <p className="mt-0.5 text-xs text-[var(--text-1)] line-clamp-1">
                             {thread.lastMessage?.sender?.name || "Team"}: {preview.length > 60 ? `${preview.slice(0, 60)}…` : preview}
                           </p>
                         </button>
@@ -950,7 +950,7 @@ export default function CustomerMessagesPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-[var(--text-secondary)]">
+                  <p className="text-sm text-[var(--text-1)]">
                     No conversations yet. Tap + New to start one.
                   </p>
                 )}
@@ -958,7 +958,7 @@ export default function CustomerMessagesPage() {
             </section>
           ) : (
             /* ── Chat view (like iOS Messages conversation) ── */
-            <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-4">
+            <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-4">
               {/* Back button */}
               <button
                 type="button"
@@ -971,7 +971,7 @@ export default function CustomerMessagesPage() {
               {isSystemThreadActive ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-[var(--text-primary)]">System notifications</h4>
+                    <h4 className="text-lg font-semibold text-[var(--text-1)]">System notifications</h4>
                     <span className="rounded-full bg-[var(--danger-surface)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--danger)]">
                       Read only
                     </span>
@@ -992,17 +992,17 @@ export default function CustomerMessagesPage() {
                       <p className="text-sm text-[var(--danger)]">{systemError}</p>
                     )}
                     {!systemLoading && !systemError && systemNotifications.length === 0 && (
-                      <p className="text-sm text-[var(--text-secondary)]">No system notifications yet.</p>
+                      <p className="text-sm text-[var(--text-1)]">No system notifications yet.</p>
                     )}
                     {!systemLoading && !systemError && systemNotifications.length > 0 && (
                       <div className="space-y-2">
                         {systemNotifications.map((note) => (
                           <article
                             key={`system-${note.notification_id}`}
-                            className="space-y-1 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-3 py-2 text-sm"
+                            className="space-y-1 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm"
                           >
-                            <p className="text-sm text-[var(--text-primary)]">{note.message || "System update"}</p>
-                            <p className="text-[0.6rem] text-[var(--text-secondary)]">
+                            <p className="text-sm text-[var(--text-1)]">{note.message || "System update"}</p>
+                            <p className="text-[0.6rem] text-[var(--text-1)]">
                               {formatNotificationTimestamp(note.created_at)}
                             </p>
                           </article>
@@ -1014,8 +1014,8 @@ export default function CustomerMessagesPage() {
               ) : activeThread ? (
                 <div className="flex flex-col" style={{ maxHeight: "calc(100dvh - 200px)" }}>
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-base font-semibold text-[var(--text-primary)] line-clamp-1">{activeThread.title}</h4>
-                    <span className="shrink-0 text-[0.6rem] text-[var(--text-secondary)]">
+                    <h4 className="text-base font-semibold text-[var(--text-1)] line-clamp-1">{activeThread.title}</h4>
+                    <span className="shrink-0 text-[0.6rem] text-[var(--text-1)]">
                       {formatMessageTimestamp(threadMessages[threadMessages.length - 1]?.createdAt)}
                     </span>
                   </div>
@@ -1047,7 +1047,7 @@ export default function CustomerMessagesPage() {
                       <p className="text-sm text-[var(--danger)]">{messagesError}</p>
                     )}
                     {!messagesLoading && !messagesError && threadMessages.length === 0 && (
-                      <p className="text-sm text-[var(--text-secondary)]">No messages yet. Start below.</p>
+                      <p className="text-sm text-[var(--text-1)]">No messages yet. Start below.</p>
                     )}
                     {!messagesLoading && !messagesError && (
                       <div className="space-y-2">
@@ -1075,20 +1075,20 @@ export default function CustomerMessagesPage() {
                                 className={`rounded-2xl px-3 py-2 text-sm ${
                                   isMine
                                     ? "ml-8 bg-[var(--primary)] text-white"
-                                    : "mr-8 border border-[var(--surface-light)] bg-[var(--background)]"
+                                    : "mr-8 border border-[var(--surface)] bg-[var(--surface)]"
                                 }`}
                               >
                                 {!isMine && (
-                                  <p className="text-xs font-semibold text-[var(--text-primary)] mb-0.5">{senderName}</p>
+                                  <p className="text-xs font-semibold text-[var(--text-1)] mb-0.5">{senderName}</p>
                                 )}
-                                <p className={isMine ? "text-white" : "text-[var(--text-secondary)]"}>
+                                <p className={isMine ? "text-white" : "text-[var(--text-1)]"}>
                                   {renderMessageContentWithLinks(message.content)}
                                 </p>
-                                <p className={`text-[0.6rem] mt-0.5 ${isMine ? "text-white/70" : "text-[var(--text-secondary)]"}`}>
+                                <p className={`text-[0.6rem] mt-0.5 ${isMine ? "text-white/70" : "text-[var(--text-1)]"}`}>
                                   {formatMessageTimestamp(message.createdAt)}
                                 </p>
                                 {message.metadata?.jobNumber && (
-                                  <p className={`text-[0.6rem] ${isMine ? "text-white/70" : "text-[var(--text-secondary)]"}`}>
+                                  <p className={`text-[0.6rem] ${isMine ? "text-white/70" : "text-[var(--text-1)]"}`}>
                                     Job #{message.metadata.jobNumber}
                                   </p>
                                 )}
@@ -1121,13 +1121,13 @@ export default function CustomerMessagesPage() {
                             key={idx}
                             type="button"
                             onClick={() => handleSelectCommand(cmd)}
-                            className="w-full bg-[var(--background)] px-3 py-2 text-left hover:bg-[var(--surface-light)]"
+                            className="w-full bg-[var(--surface)] px-3 py-2 text-left hover:bg-[var(--surface)]"
                             style={{
-                              borderBottom: idx < commandSuggestions.length - 1 ? "1px solid var(--surface-light)" : "none",
+                              borderBottom: idx < commandSuggestions.length - 1 ? "1px solid var(--surface)" : "none",
                             }}
                           >
                             <span className="text-sm font-bold text-[var(--primary)]">{cmd.command}</span>
-                            <span className="ml-2 text-xs text-[var(--text-secondary)]">{cmd.description}</span>
+                            <span className="ml-2 text-xs text-[var(--text-1)]">{cmd.description}</span>
                           </button>
                         ))}
                       </div>
@@ -1139,7 +1139,7 @@ export default function CustomerMessagesPage() {
                         value={messageDraft}
                         onChange={handleMessageDraftChange}
                         placeholder="Message…"
-                        className="flex-1 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+                        className="flex-1 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
                         style={{ resize: "none", maxHeight: "80px" }}
                       />
                       <button
@@ -1156,7 +1156,7 @@ export default function CustomerMessagesPage() {
                   </form>
                 </div>
               ) : (
-                <p className="text-sm text-[var(--text-secondary)]">
+                <p className="text-sm text-[var(--text-1)]">
                   Select a conversation to view messages.
                 </p>
               )}
@@ -1166,7 +1166,7 @@ export default function CustomerMessagesPage() {
       ) : (
       /* ── Desktop: existing 2-column layout ── */
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
+        <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5">
           <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-white">Message centre</p>
@@ -1178,13 +1178,13 @@ export default function CustomerMessagesPage() {
           </header>
 
           <div className="mt-4 space-y-6">
-            <div className="space-y-3 rounded-2xl border border-[var(--surface-light)] bg-[var(--danger-surface)] p-4">
+            <div className="space-y-3 rounded-2xl border border-[var(--surface)] bg-[var(--danger-surface)] p-4">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">
                     Live conversations
                   </p>
-                  <h4 className="text-lg font-semibold text-[var(--text-primary)]">Your messages</h4>
+                  <h4 className="text-lg font-semibold text-[var(--text-1)]">Your messages</h4>
                 </div>
                 <div className="flex gap-3">
                   <button
@@ -1199,13 +1199,13 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={fetchThreads}
                     disabled={threadsLoading}
-                    className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {threadsLoading ? "Refreshing…" : "Refresh"}
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-[var(--text-secondary)]">
+              <p className="text-sm text-[var(--text-1)]">
                 System alerts stay pinned above your chats so you never miss a stock or VHC update.
               </p>
               {conversationFeedback && (
@@ -1224,14 +1224,14 @@ export default function CustomerMessagesPage() {
                   onClick={openSystemNotificationsThread}
                   className={`w-full text-left rounded-2xl border px-4 py-3 text-sm transition ${
                     isSystemThreadActive
-                      ? "border-[var(--primary)] bg-[var(--surface-light)]"
-                      : "border-[var(--surface-light)] bg-[var(--background)]"
+                      ? "border-[var(--primary)] bg-[var(--surface)]"
+                      : "border-[var(--surface)] bg-[var(--surface)]"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-[var(--text-primary)]">System notifications</p>
-                      <p className="text-xs text-[var(--text-secondary)]">{systemPreview}</p>
+                      <p className="font-semibold text-[var(--text-1)]">System notifications</p>
+                      <p className="text-xs text-[var(--text-1)]">{systemPreview}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {hasSystemUnread && (
@@ -1239,12 +1239,12 @@ export default function CustomerMessagesPage() {
                           Unread
                         </span>
                       )}
-                      <span className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--danger)]">
+                      <span className="rounded-full border border-[var(--surface)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--danger)]">
                         Read only
                       </span>
                     </div>
                   </div>
-                  <p className="text-[0.65rem] text-[var(--text-secondary)]">Latest {systemTimestampLabel}</p>
+                  <p className="text-[0.65rem] text-[var(--text-1)]">Latest {systemTimestampLabel}</p>
                 </button>
                 {threads.length ? (
                   <div className="space-y-3">
@@ -1258,12 +1258,12 @@ export default function CustomerMessagesPage() {
                           onClick={() => openThread(thread)}
                           className={`w-full text-left rounded-2xl border px-4 py-3 transition ${
                             isActiveThread
-                              ? "border-[var(--primary)] bg-[var(--surface-light)]"
-                              : "border-[var(--surface-light)] bg-[var(--background)]"
+                              ? "border-[var(--primary)] bg-[var(--surface)]"
+                              : "border-[var(--surface)] bg-[var(--surface)]"
                           }`}
                         >
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-[var(--text-primary)]">
+                            <p className="text-sm font-semibold text-[var(--text-1)]">
                               {thread.title || "Conversation"}
                             </p>
                             {thread.hasUnread && (
@@ -1272,7 +1272,7 @@ export default function CustomerMessagesPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-[var(--text-secondary)]">
+                          <p className="text-xs text-[var(--text-1)]">
                             {thread.lastMessage?.sender?.name || "Team"} · {preview.length > 80 ? `${preview.slice(0, 80)}…` : preview}
                           </p>
                         </button>
@@ -1280,7 +1280,7 @@ export default function CustomerMessagesPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-[var(--text-secondary)]">
+                  <p className="text-sm text-[var(--text-1)]">
                     No open conversations yet. Start one with the button above.
                   </p>
                 )}
@@ -1288,11 +1288,11 @@ export default function CustomerMessagesPage() {
             </div>
 
             {isSystemThreadActive ? (
-              <div className="space-y-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] p-4">
+              <div className="space-y-4 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">System thread</p>
-                    <h4 className="text-lg font-semibold text-[var(--text-primary)]">System notifications</h4>
+                    <h4 className="text-lg font-semibold text-[var(--text-1)]">System notifications</h4>
                   </div>
                   <span className="rounded-full bg-[var(--danger-surface)] px-3 py-1 text-xs font-semibold text-[var(--danger)]">
                     Read only
@@ -1300,23 +1300,23 @@ export default function CustomerMessagesPage() {
                 </div>
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {systemLoading && (
-                    <p className="text-sm text-[var(--text-secondary)]">Loading notifications…</p>
+                    <p className="text-sm text-[var(--text-1)]">Loading notifications…</p>
                   )}
                   {!systemLoading && systemError && (
                     <p className="text-sm text-[var(--danger)]">{systemError}</p>
                   )}
                   {!systemLoading && !systemError && systemNotifications.length === 0 && (
-                    <p className="text-sm text-[var(--text-secondary)]">No system notifications yet.</p>
+                    <p className="text-sm text-[var(--text-1)]">No system notifications yet.</p>
                   )}
                   {!systemLoading && !systemError && systemNotifications.length > 0 && (
                     <div className="space-y-3">
                       {systemNotifications.map((note) => (
                         <article
                           key={`system-${note.notification_id}`}
-                          className="space-y-1 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-3 text-sm"
+                          className="space-y-1 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-sm"
                         >
-                          <p className="text-sm text-[var(--text-primary)]">{note.message || "System update"}</p>
-                          <p className="text-[0.65rem] text-[var(--text-secondary)]">
+                          <p className="text-sm text-[var(--text-1)]">{note.message || "System update"}</p>
+                          <p className="text-[0.65rem] text-[var(--text-1)]">
                             {formatNotificationTimestamp(note.created_at)}
                           </p>
                         </article>
@@ -1324,30 +1324,30 @@ export default function CustomerMessagesPage() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-[var(--text-secondary)]">
+                <p className="text-xs text-[var(--text-1)]">
                   Only the system posts here; this thread cannot be deleted or renamed.
                 </p>
               </div>
             ) : activeThread ? (
-              <div className="space-y-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] p-4">
+              <div className="space-y-4 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Active thread</p>
-                    <h4 className="text-lg font-semibold text-[var(--text-primary)]">{activeThread.title}</h4>
+                    <h4 className="text-lg font-semibold text-[var(--text-1)]">{activeThread.title}</h4>
                   </div>
-                  <span className="text-xs text-[var(--text-secondary)]">
+                  <span className="text-xs text-[var(--text-1)]">
                     {formatMessageTimestamp(threadMessages[threadMessages.length - 1]?.createdAt)}
                   </span>
                 </div>
                 <div className="space-y-3 max-h-60 overflow-y-auto pb-2">
                   {messagesLoading && (
-                    <p className="text-sm text-[var(--text-secondary)]">Loading conversation…</p>
+                    <p className="text-sm text-[var(--text-1)]">Loading conversation…</p>
                   )}
                   {!messagesLoading && messagesError && (
                     <p className="text-sm text-[var(--danger)]">{messagesError}</p>
                   )}
                   {!messagesLoading && !messagesError && threadMessages.length === 0 && (
-                    <p className="text-sm text-[var(--text-secondary)]">No messages yet. Start the conversation below.</p>
+                    <p className="text-sm text-[var(--text-1)]">No messages yet. Start the conversation below.</p>
                   )}
                   {!messagesLoading && !messagesError && (
                     <div className="space-y-3">
@@ -1377,34 +1377,34 @@ export default function CustomerMessagesPage() {
                             )}
                           <div
                             className={`space-y-1 rounded-2xl border px-4 py-3 text-sm ${
-                              isMine ? "border-[var(--surface-light)] bg-[var(--surface-light)]" : "border-[var(--surface-light)] bg-[var(--background)]"
+                              isMine ? "border-[var(--surface)] bg-[var(--surface)]" : "border-[var(--surface)] bg-[var(--surface)]"
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-semibold text-[var(--text-primary)]">{senderName}</span>
-                              <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-secondary)]">
+                              <span className="text-xs font-semibold text-[var(--text-1)]">{senderName}</span>
+                              <span className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-1)]">
                                 {formatMessageTimestamp(message.createdAt)}
                               </span>
                             </div>
-                            <p className="text-[var(--text-secondary)]">{renderMessageContentWithLinks(message.content)}</p>
+                            <p className="text-[var(--text-1)]">{renderMessageContentWithLinks(message.content)}</p>
                             {message.metadata?.jobNumber && (
-                              <p className="text-[0.65rem] text-[var(--text-secondary)]">
+                              <p className="text-[0.65rem] text-[var(--text-1)]">
                                 Linked job #{message.metadata.jobNumber}
                               </p>
                             )}
                             {message.metadata?.customerId && (
-                              <p className="text-[0.65rem] text-[var(--text-secondary)]">
+                              <p className="text-[0.65rem] text-[var(--text-1)]">
                                 Linked customer profile
                               </p>
                             )}
                             {message.metadata?.vehicleId && (
-                              <p className="text-[0.65rem] text-[var(--text-secondary)]">
+                              <p className="text-[0.65rem] text-[var(--text-1)]">
                                 Linked vehicle {vehicles?.find((v) => v.id === message.metadata.vehicleId)?.reg || "(vehicle data)"}
                               </p>
                             )}
                             <div className="flex flex-wrap items-center gap-2">
                               {message.savedForever ? (
-                                <span className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--primary)]">
+                                <span className="rounded-full border border-[var(--surface)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--primary)]">
                                   Saved forever
                                 </span>
                               ) : (
@@ -1412,7 +1412,7 @@ export default function CustomerMessagesPage() {
                                   type="button"
                                   onClick={() => handleSaveMessage(message)}
                                   disabled={savingMessageId === message.id}
-                                  className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="rounded-full border border-[var(--surface)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   {savingMessageId === message.id ? "Saving…" : "Save forever"}
                                 </button>
@@ -1449,16 +1449,16 @@ export default function CustomerMessagesPage() {
                           key={index}
                           type="button"
                           onClick={() => handleSelectCommand(cmd)}
-                          className="w-full border-b border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-left hover:bg-[var(--surface-light)]"
+                          className="w-full border-b border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-left hover:bg-[var(--surface)]"
                           style={{
-                            borderBottom: index < commandSuggestions.length - 1 ? "1px solid var(--surface-light)" : "none",
+                            borderBottom: index < commandSuggestions.length - 1 ? "1px solid var(--surface)" : "none",
                           }}
                         >
                           <div className="flex flex-col gap-1">
                             <span className="text-sm font-bold text-[var(--primary)]">
                               {cmd.command}
                             </span>
-                            <span className="text-xs text-[var(--text-secondary)]">
+                            <span className="text-xs text-[var(--text-1)]">
                               {cmd.description}
                             </span>
                           </div>
@@ -1476,13 +1476,13 @@ export default function CustomerMessagesPage() {
                     value={messageDraft}
                     onChange={handleMessageDraftChange}
                     placeholder="Type your message… (type / for commands)"
-                    className="w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--background)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+                    className="w-full rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
                   />
                   <div className="flex justify-end">
                     <button
                       type="submit"
                       disabled={!dbUserId || sendingMessage || !messageDraft.trim()}
-                      className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
+                      className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
                     >
                       {sendingMessage ? "Sending…" : "Send"}
                     </button>
@@ -1490,7 +1490,7 @@ export default function CustomerMessagesPage() {
                 </form>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-[var(--surface-light)] bg-[var(--background)] p-6 text-sm text-[var(--text-secondary)]">
+              <div className="rounded-2xl border border-dashed border-[var(--surface)] bg-[var(--surface)] p-6 text-sm text-[var(--text-1)]">
                 Select a conversation to view messages and replies.
               </div>
             )}
@@ -1502,25 +1502,25 @@ export default function CustomerMessagesPage() {
       {/* Composer modal (shared between mobile & desktop) */}
       {composerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className={`w-full rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-6 ${isMobile ? "max-w-full mx-2" : "max-w-2xl"}`}>
+          <div className={`w-full rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-6 ${isMobile ? "max-w-full mx-2" : "max-w-2xl"}`}>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Compose</p>
-                <h3 className={`font-semibold text-[var(--text-primary)] ${isMobile ? "text-lg" : "text-xl"}`}>Create a group chat</h3>
-                <p className="text-sm text-[var(--text-secondary)]">
+                <h3 className={`font-semibold text-[var(--text-1)] ${isMobile ? "text-lg" : "text-xl"}`}>Create a group chat</h3>
+                <p className="text-sm text-[var(--text-1)]">
                   Search by name, check the people you need, and create a new thread.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setComposerOpen(false)}
-                className="rounded-full border border-[var(--surface-light)] px-3 py-1 text-xs font-semibold text-[var(--primary)]"
+                className="rounded-full border border-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--primary)]"
               >
                 Close
               </button>
             </div>
             <div className="mt-4 space-y-3">
-              <label className="text-xs font-semibold uppercase text-[var(--text-secondary)]">Search users</label>
+              <label className="text-xs font-semibold uppercase text-[var(--text-1)]">Search users</label>
               <SearchBar
                 value={composerSearch}
                 onChange={(event) => setComposerSearch(event.target.value)}
@@ -1545,7 +1545,7 @@ export default function CustomerMessagesPage() {
                       return (
                         <label
                           key={user.id}
-                          className="flex cursor-pointer items-center justify-between rounded-2xl border border-[var(--danger-surface)] bg-[var(--background)] px-3 py-2 text-sm transition hover:border-[var(--primary)]"
+                          className="flex cursor-pointer items-center justify-between rounded-2xl border border-[var(--danger-surface)] bg-[var(--surface)] px-3 py-2 text-sm transition hover:border-[var(--primary)]"
                         >
                           <div className="flex items-center gap-2">
                             <input
@@ -1555,13 +1555,13 @@ export default function CustomerMessagesPage() {
                               className="h-4 w-4 rounded border-[var(--primary)]"
                             />
                             <div>
-                              <p className="font-semibold text-[var(--text-primary)]">{user.name}</p>
-                              <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-secondary)]">
+                              <p className="font-semibold text-[var(--text-1)]">{user.name}</p>
+                              <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-1)]">
                                 {user.role || "Team member"}
                               </p>
                             </div>
                           </div>
-                          <span className="text-xs text-[var(--text-secondary)]">{user.email}</span>
+                          <span className="text-xs text-[var(--text-1)]">{user.email}</span>
                         </label>
                       );
                     })}
@@ -1570,7 +1570,7 @@ export default function CustomerMessagesPage() {
               </div>
             </div>
             <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm text-[var(--text-secondary)]">
+              <span className="text-sm text-[var(--text-1)]">
                 Selected {composerSelection.length} colleague
                 {composerSelection.length === 1 ? "" : "s"}
               </span>
@@ -1578,7 +1578,7 @@ export default function CustomerMessagesPage() {
                 type="button"
                 onClick={handleCreateGroup}
                 disabled={composerCreating || composerSelection.length === 0}
-                className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {composerCreating ? "Creating…" : "Create chat"}
               </button>

@@ -304,7 +304,7 @@ const GlobalSearch = ({
   };
 
   const dropdownBackground = "var(--control-menu-bg)";
-  const textColor = isDarkMode ? "var(--search-text)" : "var(--text-primary)";
+  const textColor = isDarkMode ? "var(--search-text)" : "var(--text-1)";
   const placeholderColor = isDarkMode ? "rgba(var(--primary-rgb), 0.7)" : "rgba(var(--primary-rgb), 0.7)";
   const drawerBorderColor = isDarkMode ? "rgba(var(--accent-purple-rgb), 0.45)" : "var(--surface)";
 
@@ -390,7 +390,7 @@ const GlobalSearch = ({
                       <span
                         style={{
                           fontSize: "0.8rem",
-                          color: isDarkMode ? "var(--border)" : "var(--grey-accent)",
+                          color: isDarkMode ? "var(--primary-border)" : "var(--grey-accent)",
                         }}
                       >
                         {item.subtitle}
@@ -403,7 +403,7 @@ const GlobalSearch = ({
                       padding: "4px 8px",
                       borderRadius: "var(--radius-pill)",
                       backgroundColor: active ? accentColor : "rgba(var(--primary-rgb), 0.12)",
-                      color: active ? "var(--text-inverse)" : "var(--primary-dark)",
+                      color: active ? "var(--text-2)" : "var(--primary-selected)",
                       textTransform: "uppercase",
                       fontWeight: 700,
                       letterSpacing: "0.05em",

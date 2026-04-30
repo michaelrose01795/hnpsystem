@@ -221,7 +221,7 @@ function CheckboxRow({ label, checked, onChange }) {
 }
 
 function FieldLabel({ children }) {
-  return <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)", fontWeight: 600, marginBottom: "4px" }}>{children}</div>;
+  return <div style={{ fontSize: "0.76rem", color: "var(--text-1)", fontWeight: 600, marginBottom: "4px" }}>{children}</div>;
 }
 
 function Section({ title, description = "", children }) {
@@ -241,7 +241,7 @@ function Section({ title, description = "", children }) {
             fontWeight: 700,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
           }}
         >
           {title}
@@ -275,7 +275,7 @@ function SegmentedTabs({ value, options = [], onChange }) {
               borderRadius: "10px",
               padding: "10px 12px",
               background: isActive ? "rgba(var(--primary-rgb), 0.12)" : "transparent",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               fontSize: "0.82rem",
               fontWeight: 700,
               cursor: "pointer",
@@ -444,7 +444,7 @@ function MortgageModeEditor({ finance, isMobile, settings, updateSetting }) {
               {!linkedPaymentSourceId ? (
                 <input className="app-input" type="number" value={settings.monthlyContribution} onChange={(e) => updateSetting("monthlyContribution", e.target.value)} />
               ) : (
-                <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-1)" }}>
                   Auto-updated from linked contribution source
                 </div>
               )}
@@ -494,7 +494,7 @@ function MortgageModeEditor({ finance, isMobile, settings, updateSetting }) {
               {!linkedPaymentSourceId ? (
                 <input className="app-input" type="number" value={settings.mortgageMonthlyPayment} onChange={(e) => updateSetting("mortgageMonthlyPayment", e.target.value)} />
               ) : (
-                <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-1)" }}>
                   Auto-updated from linked payment source
                 </div>
               )}
@@ -562,7 +562,7 @@ function FinanceCollectionEditor({
   return (
     <Section title={title}>
       {rows.length === 0 ? (
-        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           {emptyLabel}
         </div>
       ) : (
@@ -617,7 +617,7 @@ function CreditCardEditor({ finance, isMobile }) {
             gap: "4px",
             gridTemplateColumns: "1.4fr 1fr 1fr auto auto",
             fontSize: "0.74rem",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             fontWeight: 600,
             padding: "0 2px",
           }}
@@ -629,11 +629,11 @@ function CreditCardEditor({ finance, isMobile }) {
           <span />
         </div>
       ) : null}
-      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
         Credit card names
       </div>
       {accounts.length === 0 ? (
-        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No credit card names added yet.
         </div>
       ) : (
@@ -665,11 +665,11 @@ function CreditCardEditor({ finance, isMobile }) {
       <Button type="button" variant="secondary" size="sm" pill onClick={() => finance?.addCreditCardAccount("")} style={{ justifySelf: "start" }}>
         Add credit card name
       </Button>
-      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase" }}>
         {formatMonthLabel(finance?.model?.selectedMonthKey || getCurrentMonthKey())} balances
       </div>
       {rows.length === 0 ? (
-        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No credit cards added yet.
         </div>
       ) : (
@@ -741,7 +741,7 @@ function StatGrid({ children, isMobile }) {
 function Stat({ label, children }) {
   return (
     <div style={{ fontSize: "0.82rem" }}>
-      <span style={{ color: "var(--text-secondary)" }}>{label}: </span>
+      <span style={{ color: "var(--text-1)" }}>{label}: </span>
       <strong>{children}</strong>
     </div>
   );
@@ -805,7 +805,7 @@ function PayAndWorkEditor({ finance, isMobile }) {
         </label>
       </div>
 
-      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
         Tax and NI overrides
       </div>
       <CheckboxRow
@@ -813,7 +813,7 @@ function PayAndWorkEditor({ finance, isMobile }) {
         checked={Boolean(month.monthState.useManualTax)}
         onChange={(checked) => finance.updateMonthTaxOverride("useManualTax", checked)}
       />
-      <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--text-1)", lineHeight: 1.5 }}>
         These overrides are saved against the selected month only and never update other months.
       </div>
       {month.monthState.useManualTax ? (
@@ -1132,7 +1132,7 @@ function RecurringRulesEditor({ isMobile }) {
                         display: "flex",
                         alignItems: "center",
                         padding: "0 12px",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-1)",
                         fontSize: "0.82rem",
                       }}
                     >
@@ -1164,7 +1164,7 @@ function RecurringRulesEditor({ isMobile }) {
           </div>
 
           {message ? (
-            <div style={{ fontSize: "0.8rem", color: message.includes("saved") ? "var(--text-secondary)" : "var(--danger, #c62828)" }}>
+            <div style={{ fontSize: "0.8rem", color: message.includes("saved") ? "var(--text-1)" : "var(--danger, #c62828)" }}>
               {message}
             </div>
           ) : null}
@@ -1207,7 +1207,7 @@ function LeaveEditor({ finance, isMobile }) {
             >
               <div>
                 <div style={{ fontWeight: 700, fontSize: "0.84rem" }}>{request.type || "Leave"}</div>
-                <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>
+                <div style={{ fontSize: "0.76rem", color: "var(--text-1)" }}>
                   {formatDate(request.startDate)} → {formatDate(request.endDate)}
                 </div>
               </div>
@@ -1270,8 +1270,8 @@ function HolidayPaymentLinkEditor({ finance, isMobile, settings = {}, updateSett
                   }}
                 >
                   <div style={{ display: "grid", gap: "3px", minWidth: 0 }}>
-                    <div style={{ fontSize: "0.84rem", fontWeight: 700, color: "var(--text-primary)" }}>{plan.name || "Unnamed plan"}</div>
-                    <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)" }}>
+                    <div style={{ fontSize: "0.84rem", fontWeight: 700, color: "var(--text-1)" }}>{plan.name || "Unnamed plan"}</div>
+                    <div style={{ fontSize: "0.74rem", color: "var(--text-1)" }}>
                       {plan.startMonth} → {plan.endMonth} · This month {formatCurrency(plan.thisMonthAmount || 0)} · Total {formatCurrency(plan.totalAcrossMonths || 0)}
                     </div>
                   </div>
@@ -1331,7 +1331,7 @@ function PlannedPaymentPlansEditor({ finance, isMobile }) {
       description="Recurring payments with start and end months. Set a different amount for each month within the range."
     >
       {plans.length === 0 ? (
-        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No payment schedules added yet.
         </div>
       ) : (
@@ -1374,7 +1374,7 @@ function PlannedPaymentPlansEditor({ finance, isMobile }) {
                 </div>
 
                 {!isMobile && plans.length > 0 && (
-                  <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr auto", gap: "8px", fontSize: "0.68rem", color: "var(--text-secondary)", fontWeight: 600, padding: "0 2px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr auto", gap: "8px", fontSize: "0.68rem", color: "var(--text-1)", fontWeight: 600, padding: "0 2px" }}>
                     <span>Name</span><span>Start month</span><span>End month</span><span />
                   </div>
                 )}
@@ -1405,7 +1405,7 @@ function PlannedPaymentPlansEditor({ finance, isMobile }) {
                           background: mk === finance.model.selectedMonthKey ? "rgba(var(--primary-rgb), 0.08)" : "transparent",
                         }}
                       >
-                        <span style={{ fontSize: "0.8rem", fontWeight: mk === finance.model.selectedMonthKey ? 700 : 500, color: "var(--text-primary)" }}>
+                        <span style={{ fontSize: "0.8rem", fontWeight: mk === finance.model.selectedMonthKey ? 700 : 500, color: "var(--text-1)" }}>
                           {formatMonthLabel(mk)}
                         </span>
                         <input
@@ -1421,7 +1421,7 @@ function PlannedPaymentPlansEditor({ finance, isMobile }) {
                 )}
 
                 {detail && (
-                  <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>
+                  <div style={{ fontSize: "0.76rem", color: "var(--text-1)" }}>
                     Total across all months: <strong>{formatCurrency(detail.totalAcrossMonths)}</strong>
                     {detail.isActiveThisMonth ? ` · This month: ${formatCurrency(detail.thisMonthAmount)}` : " · Not active this month"}
                   </div>
@@ -1568,7 +1568,7 @@ function FuelEntriesEditor({ finance, isMobile }) {
                 ...widgetInsetSurfaceStyle,
               }}
             >
-              <div style={{ fontSize: "0.82rem", color: "var(--text-primary)", minWidth: 0 }}>
+              <div style={{ fontSize: "0.82rem", color: "var(--text-1)", minWidth: 0 }}>
                 {`${formatCurrency(entry.cost || 0)} · ${Number(entry.litres || 0).toFixed(2)}L · ${entry.costPerLitre ? Number(entry.costPerLitre).toFixed(3) : "—"}`}
               </div>
               <Button type="button" variant="secondary" size="sm" pill onClick={() => finance.removeFuelEntry(entry.id)}>
@@ -1627,7 +1627,7 @@ function SavingsAccountsEditor({ finance, isMobile }) {
             gap: "4px",
             gridTemplateColumns: "1.2fr 1fr 0.8fr 1fr auto",
             fontSize: "0.74rem",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             fontWeight: 600,
             padding: "0 2px",
           }}
@@ -1640,7 +1640,7 @@ function SavingsAccountsEditor({ finance, isMobile }) {
         </div>
       ) : null}
       {accounts.length === 0 ? (
-        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No savings accounts added yet.
         </div>
       ) : (
@@ -1699,23 +1699,23 @@ function SavingsAccountsEditor({ finance, isMobile }) {
 
       {accountBalances.length > 0 && (
         <>
-          <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+          <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
             Current balances
           </div>
           <div style={{ display: "grid", gap: "10px" }}>
             {accountGroups.map((group) => (
               <div key={group.id} style={{ display: "grid", gap: "8px", ...widgetInsetSurfaceStyle, padding: "10px 12px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                  <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-1)" }}>
                     {group.name} total
                   </div>
-                  <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                  <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-1)" }}>
                     {formatCurrency(group.currentBalance)}
                   </div>
                 </div>
                 <div style={{ display: "grid", gap: "6px" }}>
                   {group.accounts.map((account) => (
-                    <div key={account.id} style={{ display: "flex", justifyContent: "space-between", gap: "10px", fontSize: "0.78rem", color: "var(--text-secondary)", flexWrap: "wrap" }}>
+                    <div key={account.id} style={{ display: "flex", justifyContent: "space-between", gap: "10px", fontSize: "0.78rem", color: "var(--text-1)", flexWrap: "wrap" }}>
                       <span>{account.name || "Unnamed"}</span>
                       <span>{formatCurrency(account.currentBalance)}</span>
                     </div>
@@ -1753,13 +1753,13 @@ function SavingsTransactionsEditor({ finance, isMobile }) {
       </StatGrid>
 
       {accounts.length === 0 ? (
-        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           Add a savings account first before logging transactions.
         </div>
       ) : (
         <>
           {transactions.length === 0 ? (
-            <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+            <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
               No savings transactions this month.
             </div>
           ) : (
@@ -1796,7 +1796,7 @@ function SavingsTransactionsEditor({ finance, isMobile }) {
                         left: "10px",
                         top: "50%",
                         transform: "translateY(-50%)",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-1)",
                         fontSize: "0.82rem",
                         pointerEvents: "none",
                       }}
@@ -1877,7 +1877,7 @@ function UserAccountsEditor({ finance, isMobile }) {
             gap: "4px",
             gridTemplateColumns: "1.4fr 1fr 1fr 0.6fr auto",
             fontSize: "0.74rem",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             fontWeight: 600,
             padding: "0 2px",
           }}
@@ -1890,7 +1890,7 @@ function UserAccountsEditor({ finance, isMobile }) {
         </div>
       ) : null}
       {accounts.length === 0 ? (
-        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+        <div style={{ ...widgetInsetSurfaceStyle, padding: "10px 12px", fontSize: "0.82rem", color: "var(--text-1)" }}>
           No accounts added yet.
         </div>
       ) : (
@@ -1942,7 +1942,7 @@ function UserAccountsEditor({ finance, isMobile }) {
 
       {accounts.some((a) => a.type === "credit-card") ? (
         <div style={{ display: "grid", gap: "8px" }}>
-          <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+          <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
             Credit limits (optional)
           </div>
           {accounts.filter((a) => a.type === "credit-card").map((account) => (
@@ -1956,7 +1956,7 @@ function UserAccountsEditor({ finance, isMobile }) {
                 ...widgetInsetSurfaceStyle,
               }}
             >
-              <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-primary)", display: "flex", alignItems: "center" }}>
+              <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-1)", display: "flex", alignItems: "center" }}>
                 {account.name || "Unnamed"}
               </div>
               <input

@@ -352,13 +352,13 @@ export default function StatusSidebar({
   const showFloatingToggle = showToggleButton && !compactMode && !isDocked;
   const toggleButtonStyle = compactMode
     ? {
-        width: '56px',
-        height: '56px',
+        width: '50px',
+        height: '50px',
         position: 'fixed',
         right: '16px',
         bottom: '16px',
         backgroundColor: 'var(--primary)',
-        color: 'var(--text-inverse)',
+        color: 'var(--text-2)',
         border: 'none',
         borderRadius: 'var(--radius-full)',
 
@@ -379,7 +379,7 @@ export default function StatusSidebar({
         top: '50%',
         transform: 'translateY(-50%)',
         backgroundColor: 'var(--primary)',
-        color: 'var(--text-inverse)',
+        color: 'var(--text-2)',
         border: 'none',
         borderTopLeftRadius: 'var(--radius-xs)',
         borderBottomLeftRadius: 'var(--radius-xs)',
@@ -450,7 +450,7 @@ export default function StatusSidebar({
 
   const handleToggleMouseEnter = (e) => {
     if (compactMode || isDocked) return;
-    e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+    e.currentTarget.style.backgroundColor = 'var(--primary-selected)';
     e.currentTarget.style.transform = 'translateY(-50%) translateX(-2px)';
   };
 
@@ -483,10 +483,10 @@ export default function StatusSidebar({
         {/* Header */}
         <div style={{
           background: 'rgba(var(--surface-rgb), 0.92)',
-          color: 'var(--text-primary)',
+          color: 'var(--text-1)',
           padding: compactMode ? '10px 12px' : '0 16px',
           borderRadius: isDocked ? 'var(--radius-md) var(--radius-md) 0 0' : '0',
-          borderBottom: '1px solid var(--surface-light)',
+          borderBottom: '1px solid var(--surface)',
           minHeight: compactMode ? '64px' : '75px',
           display: 'flex',
           alignItems: 'center',
@@ -531,7 +531,7 @@ export default function StatusSidebar({
                 fontSize: compactMode ? '18px' : '20px',
                 fontWeight: 800,
                 margin: 0,
-                color: 'var(--text-primary)',
+                color: 'var(--text-1)',
                 lineHeight: 1.15,
                 whiteSpace: 'nowrap',
               }}
@@ -584,11 +584,11 @@ export default function StatusSidebar({
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                  <span style={{ fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span style={{ fontWeight: '700', color: 'var(--text-1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {displayJobId}
                   </span>
                 </div>
-                <div id="job-progress-total-time" style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                <div id="job-progress-total-time" style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-1)', whiteSpace: 'nowrap' }}>
                   Total Time: {formatTime(liveClockingSeconds)}
                 </div>
               </div>
@@ -607,7 +607,7 @@ export default function StatusSidebar({
                     width: compactMode ? 'auto' : '460px',
                     borderRadius: 'var(--radius-sm)',
                     backgroundColor: 'var(--surface)',
-                    border: '1px solid var(--surface-light)',
+                    border: '1px solid var(--surface)',
                     boxShadow: 'var(--dropdown-menu-shadow)',
                     overflow: 'hidden',
                     zIndex: 6,
@@ -618,7 +618,7 @@ export default function StatusSidebar({
                       style={{
                         padding: '10px 12px',
                         fontSize: '12px',
-                        color: 'var(--text-secondary)',
+                        color: 'var(--text-1)',
                       }}
                     >
                       Searching jobs...
@@ -652,7 +652,7 @@ export default function StatusSidebar({
                       style={{
                         padding: '10px 12px',
                         fontSize: '12px',
-                        color: 'var(--text-secondary)',
+                        color: 'var(--text-1)',
                       }}
                     >
                       No jobs match that search yet.

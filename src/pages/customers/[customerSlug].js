@@ -46,7 +46,7 @@ const detailCardStyles = {
   container: {
     borderRadius: "var(--radius-md)",
     border: "none",
-    background: "var(--accent-surface)",
+    background: "var(--theme)",
     padding: "var(--page-card-padding)",
     display: "flex",
     flexDirection: "column",
@@ -62,7 +62,7 @@ const detailCardStyles = {
     fontSize: "1.65rem",
     fontWeight: 700,
     margin: 0,
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
     wordBreak: "break-word"
   },
   metaItem: {
@@ -83,7 +83,7 @@ const detailCardStyles = {
   },
   metaValue: {
     fontWeight: 600,
-    color: "var(--text-primary)"
+    color: "var(--text-1)"
   }
 };
 
@@ -92,7 +92,7 @@ const tabPanelStyles = {
   container: {
     borderRadius: "var(--radius-md)",
     border: "none",
-    background: "var(--accent-surface)",
+    background: "var(--theme)",
     padding: "24px",
     display: "flex",
     flexDirection: "column",
@@ -120,11 +120,11 @@ const detailGridStyles = {
     textTransform: "uppercase",
     letterSpacing: "0.2em",
     fontSize: "0.65rem",
-    color: "var(--text-secondary)"
+    color: "var(--text-1)"
   },
   value: {
     fontWeight: 600,
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
     wordBreak: "break-word"
   }
 };
@@ -195,7 +195,7 @@ const ContactPreferenceToggle = ({ label, checked, disabled, onChange }) => (
       onChange={(event) => onChange?.(event.target.checked)}
       style={{ width: "16px", height: "16px", accentColor: "var(--primary)" }}
     />
-    <span style={{ fontSize: "13px", color: disabled ? "var(--text-secondary)" : "var(--text-primary)", fontWeight: 600 }}>
+    <span style={{ fontSize: "13px", color: disabled ? "var(--text-1)" : "var(--text-1)", fontWeight: 600 }}>
       {label}
     </span>
   </label>
@@ -327,7 +327,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
   };
   const previewValueStyle = {
     fontWeight: 600,
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
     fontSize: "13px"
   };
 
@@ -366,7 +366,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
         style={{
           borderRadius: "var(--radius-md)",
           border: "none",
-          background: "var(--accent-surface)",
+          background: "var(--theme)",
           padding: "20px",
           display: "flex",
           flexDirection: "column",
@@ -435,7 +435,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
                   {newReg.trim().toUpperCase()}
                 </span>
                 <span style={{ color: "var(--grey-accent)" }}>|</span>
-                <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                <span style={{ fontWeight: 600, color: "var(--text-1)" }}>
                   {[dvlaData.make, dvlaData.model].filter(Boolean).join(" ") || "Unknown"}
                 </span>
               </div>
@@ -481,10 +481,10 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
         data-dev-section-parent="customer-profile-insights-vehicles"
         data-dev-background-token="transparent"
         style={{
-          border: "1px dashed var(--surface-light)",
+          border: "1px dashed var(--surface)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
-          background: "var(--accent-surface)",
+          background: "var(--theme)",
           textAlign: "center",
           color: "var(--grey-accent)"
         }}>
@@ -519,7 +519,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
               style={{
                 borderRadius: "var(--radius-lg)",
                 border: "none",
-                background: "var(--accent-surface)",
+                background: "var(--theme)",
                 padding: "20px",
                 display: "flex",
                 flexDirection: "column",
@@ -551,10 +551,10 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
                 </div>
 
                 <div>
-                  <p style={{ margin: 0, fontWeight: 600, color: "var(--text-primary)" }}>
+                  <p style={{ margin: 0, fontWeight: 600, color: "var(--text-1)" }}>
                     {makeModel}
                   </p>
-                  <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                  <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.9rem" }}>
                     {vehicle.year ? `Year ${vehicle.year}` : "Year unknown"}
                   </p>
                 </div>
@@ -597,7 +597,7 @@ const VehicleField = ({ label, value }) =>
     
       {label}
     </span>
-    <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{value || "—"}</span>
+    <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{value || "—"}</span>
   </div>;
 
 
@@ -616,7 +616,7 @@ const CustomerDocumentsSection = ({ jobs }) => {
       data-dev-background-token="surface"
       style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}
     >
-      <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem" }}>Documents, photos and videos</h3>
+      <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Documents, photos and videos</h3>
       {!files.length ? (
         <div
           className="app-section-card"
@@ -625,7 +625,7 @@ const CustomerDocumentsSection = ({ jobs }) => {
           data-dev-section-type="empty-state"
           data-dev-section-parent="customer-profile-insights-documents"
           data-dev-background-token="accent-surface"
-          style={{ borderRadius: "var(--radius-md)", background: "var(--accent-surface)", padding: "18px", color: "var(--text-secondary)" }}
+          style={{ borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "18px", color: "var(--text-1)" }}
         >
           No uploaded files across this customer's jobs yet.
         </div>
@@ -654,7 +654,7 @@ const CustomerDocumentsSection = ({ jobs }) => {
                 data-dev-section-type="content-card"
                 data-dev-section-parent="customer-profile-insights-documents-grid"
                 data-dev-background-token="accent-surface"
-                style={{ borderRadius: "var(--radius-md)", background: "var(--accent-surface)", padding: "12px", minHeight: "160px", textDecoration: "none", color: "var(--text-primary)", display: "flex", flexDirection: "column", gap: "10px" }}
+                style={{ borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "12px", minHeight: "160px", textDecoration: "none", color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "10px" }}
               >
                 <div style={{ height: "86px", borderRadius: "var(--radius-sm)", background: "var(--surface)", overflow: "hidden", display: "grid", placeItems: "center" }}>
                   {isImage ? (
@@ -662,11 +662,11 @@ const CustomerDocumentsSection = ({ jobs }) => {
                   ) : isVideo ? (
                     <video src={file.file_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted />
                   ) : (
-                    <span style={{ color: "var(--text-secondary)", fontWeight: 700 }}>File</span>
+                    <span style={{ color: "var(--text-1)", fontWeight: 700 }}>File</span>
                   )}
                 </div>
                 <strong style={{ fontSize: "13px", overflowWrap: "anywhere" }}>{file.file_name || "Uploaded file"}</strong>
-                <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>Job {file.jobNumber} · {formatDate(file.uploaded_at)}</span>
+                <span style={{ fontSize: "12px", color: "var(--text-1)" }}>Job {file.jobNumber} · {formatDate(file.uploaded_at)}</span>
               </a>
             );
           })}
@@ -695,7 +695,7 @@ const CustomerScheduleSection = ({ jobs }) => {
       data-dev-background-token="surface"
       style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}
     >
-      <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: "1rem" }}>Schedule</h3>
+      <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Schedule</h3>
       {!appointments.length ? (
         <div
           className="app-section-card"
@@ -704,7 +704,7 @@ const CustomerScheduleSection = ({ jobs }) => {
           data-dev-section-type="empty-state"
           data-dev-section-parent="customer-profile-insights-schedule"
           data-dev-background-token="accent-surface"
-          style={{ borderRadius: "var(--radius-md)", background: "var(--accent-surface)", padding: "18px", color: "var(--text-secondary)" }}
+          style={{ borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "18px", color: "var(--text-1)" }}
         >
           No appointments recorded for this customer.
         </div>
@@ -726,7 +726,7 @@ const CustomerScheduleSection = ({ jobs }) => {
               data-dev-section-type="content-card"
               data-dev-section-parent="customer-profile-insights-schedule-list"
               data-dev-background-token="accent-surface"
-              style={{ borderRadius: "var(--radius-md)", background: "var(--accent-surface)", padding: "14px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}
+              style={{ borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "14px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}
             >
               <VehicleField label="When" value={formatDateTime(appointment.scheduled_time)} />
               <VehicleField label="Status" value={appointment.status || "Booked"} />
@@ -766,9 +766,9 @@ const HistoryTab = ({ jobs }) => {
         data-dev-section-parent="customer-profile-tab-history"
         data-dev-background-token="accent-surface"
         style={{
-          border: "1px dashed var(--surface-light)",
+          border: "1px dashed var(--surface)",
           borderRadius: "var(--radius-md)",
-          background: "var(--accent-surface)",
+          background: "var(--theme)",
           padding: "24px",
           textAlign: "center",
           color: "var(--grey-accent)"
@@ -839,7 +839,7 @@ const HistoryTab = ({ jobs }) => {
                   padding: "6px 16px",
                   border: "1px solid var(--surface)",
                   background: "var(--surface)",
-                  color: "var(--primary-dark)",
+                  color: "var(--primary-selected)",
                   fontWeight: 600,
                   textTransform: "capitalize"
                 }}>
@@ -869,7 +869,7 @@ const HistoryTab = ({ jobs }) => {
             </div>
 
             {requestSummary &&
-            <p style={{ margin: 0, color: "var(--text-secondary)" }}>{requestSummary}</p>
+            <p style={{ margin: 0, color: "var(--text-1)" }}>{requestSummary}</p>
             }
 
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
@@ -889,7 +889,7 @@ const HistoryTab = ({ jobs }) => {
                   borderRadius: "var(--radius-pill)",
                   padding: "10px 18px",
                   border: "1px solid var(--surface)",
-                  color: "var(--text-secondary)"
+                  color: "var(--text-1)"
                 }}>
                 
                   Reg: {job.vehicle_reg}
@@ -929,9 +929,9 @@ const PaymentTab = ({ paymentMethods, jobs }) => {
         data-dev-background-token="surface"
         style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}
       >
-        <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-primary)" }}>Payment method</h3>
+        <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-1)" }}>Payment method</h3>
         {!paymentMethods.length ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>No saved payment methods.</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>No saved payment methods.</p>
         ) : (
           paymentMethods.map((method) => (
             <div
@@ -942,11 +942,11 @@ const PaymentTab = ({ paymentMethods, jobs }) => {
               data-dev-section-type="content-card"
               data-dev-section-parent="customer-profile-payment-methods"
               data-dev-background-token="accent-surface"
-              style={{ borderRadius: "var(--radius-sm)", background: "var(--accent-surface)", padding: "12px", display: "flex", justifyContent: "space-between", gap: "12px" }}
+              style={{ borderRadius: "var(--radius-sm)", background: "var(--theme)", padding: "12px", display: "flex", justifyContent: "space-between", gap: "12px" }}
             >
               <div>
-                <strong style={{ color: "var(--text-primary)" }}>{method.nickname || method.card_brand || "Card"}</strong>
-                <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "13px" }}>
+                <strong style={{ color: "var(--text-1)" }}>{method.nickname || method.card_brand || "Card"}</strong>
+                <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "13px" }}>
                   {method.card_brand || "Card"} ending {method.last4} · Expires {method.expiry_month}/{method.expiry_year}
                 </p>
               </div>
@@ -965,9 +965,9 @@ const PaymentTab = ({ paymentMethods, jobs }) => {
         data-dev-background-token="surface"
         style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}
       >
-        <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-primary)" }}>Previous payments made</h3>
+        <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-1)" }}>Previous payments made</h3>
         {!payments.length ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>No captured payments found.</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>No captured payments found.</p>
         ) : (
           payments.map((payment) => (
             <div
@@ -978,7 +978,7 @@ const PaymentTab = ({ paymentMethods, jobs }) => {
               data-dev-section-type="content-card"
               data-dev-section-parent="customer-profile-payment-previous"
               data-dev-background-token="accent-surface"
-              style={{ borderRadius: "var(--radius-sm)", background: "var(--accent-surface)", padding: "12px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}
+              style={{ borderRadius: "var(--radius-sm)", background: "var(--theme)", padding: "12px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}
             >
               <VehicleField label="Amount" value={formatCurrency(payment.amount)} />
               <VehicleField label="Method" value={payment.payment_method || payment.invoice.payment_method} />
@@ -1100,7 +1100,7 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
   };
 
   if (!dbUserId) {
-    return <div style={{ color: "var(--text-secondary)" }}>Sign in to use customer messages.</div>;
+    return <div style={{ color: "var(--text-1)" }}>Sign in to use customer messages.</div>;
   }
 
   return (
@@ -1113,7 +1113,7 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
       data-dev-background-token="surface"
       style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "14px" }}
     >
-      {loading && <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading messages...</p>}
+      {loading && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading messages...</p>}
       {error && <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p>}
       <div
         data-dev-section="1"
@@ -1121,9 +1121,9 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         data-dev-section-type="section-shell"
         data-dev-section-parent="customer-profile-messages-panel"
         data-dev-background-token="accent-surface"
-        style={{ minHeight: "260px", maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", borderRadius: "var(--radius-md)", background: "var(--accent-surface)", padding: "12px" }}
+        style={{ minHeight: "260px", maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "12px" }}
       >
-        {!loading && !messages.length && <p style={{ margin: 0, color: "var(--text-secondary)" }}>No messages yet.</p>}
+        {!loading && !messages.length && <p style={{ margin: 0, color: "var(--text-1)" }}>No messages yet.</p>}
         {messages.map((message) => {
           const mine = Number(message.senderId) === Number(dbUserId);
           return (
@@ -1137,8 +1137,8 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
               data-dev-background-token={mine ? "customer-profile-message-own" : "surface"}
               style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "min(680px, 88%)", borderRadius: "var(--radius-md)", background: mine ? "rgba(var(--primary-rgb), 0.14)" : "var(--surface)", padding: "10px 12px" }}
             >
-              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>{mine ? "You" : message.sender?.name || "Team member"} · {formatDateTime(message.createdAt)}</div>
-              <div style={{ color: "var(--text-primary)", whiteSpace: "pre-wrap" }}>{message.content}</div>
+              <div style={{ fontSize: "12px", color: "var(--text-1)", marginBottom: "4px" }}>{mine ? "You" : message.sender?.name || "Team member"} · {formatDateTime(message.createdAt)}</div>
+              <div style={{ color: "var(--text-1)", whiteSpace: "pre-wrap" }}>{message.content}</div>
             </div>
           );
         })}
@@ -1244,7 +1244,7 @@ const CustomerNotesTab = ({ jobs, dbUserId }) => {
           data-dev-section-type="content-card"
           data-dev-section-parent="customer-profile-tab-notes"
           data-dev-background-token="surface"
-          style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", color: "var(--text-secondary)" }}
+          style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", color: "var(--text-1)" }}
         >
           No notes recorded across this customer's jobs.
         </div>
@@ -1263,10 +1263,10 @@ const CustomerNotesTab = ({ jobs, dbUserId }) => {
               style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "14px" }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", marginBottom: "8px" }}>
-                <strong style={{ color: "var(--text-primary)" }}>Job {note.jobNumber}</strong>
-                <span style={{ color: "var(--text-secondary)", fontSize: "12px" }}>{author || "Unknown"} · {formatDateTime(note.created_at)}</span>
+                <strong style={{ color: "var(--text-1)" }}>Job {note.jobNumber}</strong>
+                <span style={{ color: "var(--text-1)", fontSize: "12px" }}>{author || "Unknown"} · {formatDateTime(note.created_at)}</span>
               </div>
-              <p style={{ margin: 0, color: "var(--text-primary)", whiteSpace: "pre-wrap" }}>{note.note_text}</p>
+              <p style={{ margin: 0, color: "var(--text-1)", whiteSpace: "pre-wrap" }}>{note.note_text}</p>
             </article>
           );
         })

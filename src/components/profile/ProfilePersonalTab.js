@@ -109,7 +109,7 @@ function PasscodeModal({
           <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>
             {mode === "setup" ? "Create your personal passcode" : "Unlock personal dashboard"}
           </div>
-          <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem", lineHeight: 1.5 }}>
+          <div style={{ color: "var(--text-1)", fontSize: "0.9rem", lineHeight: 1.5 }}>
             {mode === "setup"
               ? "Set a 4-digit passcode to protect your personal dashboard."
               : "Enter your 4-digit passcode to open the personal dashboard."}
@@ -205,7 +205,7 @@ function MonthPicker({
       }}
     >
       {showLabel ? (
-        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
           Month
         </div>
       ) : null}
@@ -251,7 +251,7 @@ function InsightCard({ insight, onAction }) {
           {insight.type}
         </StatusBadge>
       </div>
-      <div style={{ fontSize: "0.82rem", fontWeight: 600, lineHeight: 1.5, color: "var(--text-primary)" }}>
+      <div style={{ fontSize: "0.82rem", fontWeight: 600, lineHeight: 1.5, color: "var(--text-1)" }}>
         {insight.message}
       </div>
       {hasAction ? (
@@ -290,10 +290,10 @@ function InsightPanel({ finance, onAction }) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
         <div style={{ display: "grid", gap: "2px" }}>
-          <div style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-secondary)" }}>
+          <div style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-1)" }}>
             Insights
           </div>
-          <div style={{ fontSize: "0.86rem", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.35 }}>
+          <div style={{ fontSize: "0.86rem", fontWeight: 700, color: "var(--text-1)", lineHeight: 1.35 }}>
             {headline}
           </div>
         </div>
@@ -362,7 +362,7 @@ function AddWidgetModal({
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: "1rem", fontWeight: 700 }}>Edit widgets</div>
-            <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "2px", lineHeight: 1.4 }}>
+            <div style={{ fontSize: "0.78rem", color: "var(--text-1)", marginTop: "2px", lineHeight: 1.4 }}>
               Show or hide widgets on your dashboard.
             </div>
           </div>
@@ -401,7 +401,7 @@ function AddWidgetModal({
                     ? "rgba(var(--primary-rgb), 0.08)"
                     : "var(--surface)",
                   padding: "11px 13px",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   cursor: "pointer",
                   transition: "var(--control-transition)",
                 }}
@@ -420,7 +420,7 @@ function AddWidgetModal({
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: "0.84rem" }}>{definition.label}</div>
-                  <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)", lineHeight: 1.4, marginTop: "2px" }}>
+                  <div style={{ fontSize: "0.72rem", color: "var(--text-1)", lineHeight: 1.4, marginTop: "2px" }}>
                     {definition.description}
                   </div>
                 </div>
@@ -496,7 +496,7 @@ function PersonalDashboard({ dashboard, finance }) {
   const neutralPanelStyle = useMemo(
     () => ({
       background: "var(--surface)",
-      border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
+      border: "1px solid rgba(var(--text-1-rgb), 0.08)",
       borderRadius: "var(--radius-md)",
     }),
     []
@@ -577,7 +577,7 @@ function PersonalDashboard({ dashboard, finance }) {
             ...neutralPanelStyle,
             borderStyle: "dashed",
             padding: isMobile ? "20px 16px" : "28px 20px",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             fontSize: "0.84rem",
             textAlign: "center",
             lineHeight: 1.5,
@@ -757,10 +757,10 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
         shell
         style={{
           background: "var(--surface)",
-          border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
+          border: "1px solid rgba(var(--text-1-rgb), 0.08)",
           borderRadius: "14px",
           padding: "24px",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           fontSize: "0.88rem",
           lineHeight: 1.5,
         }}
@@ -833,7 +833,7 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
           shell
           style={{
             background: "var(--surface)",
-            border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
+            border: "1px solid rgba(var(--text-1-rgb), 0.08)",
             borderRadius: "14px",
             padding: "24px",
             display: "grid",

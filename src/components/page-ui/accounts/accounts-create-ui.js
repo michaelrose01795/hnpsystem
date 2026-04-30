@@ -14,7 +14,7 @@ export default function CreateAccountRouteShimUi(props) {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: "var(--text-secondary)"
+    color: "var(--text-1)"
   }}>
         Opening account form…
       </div>

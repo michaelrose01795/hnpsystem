@@ -206,7 +206,7 @@ export default function CreateJobCardPageUi(props) {
               minWidth: 0,
               flex: "0 1 auto",
               fontSize: "12px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis"
@@ -226,7 +226,7 @@ export default function CreateJobCardPageUi(props) {
               fontSize: "11px",
               fontWeight: "700",
               color: "var(--accent-strong)",
-              background: "var(--accent-surface)",
+              background: "var(--theme)",
               borderRadius: "999px",
               padding: "4px 8px"
             }}>
@@ -273,7 +273,7 @@ export default function CreateJobCardPageUi(props) {
       display: "flex",
       alignItems: "center",
       gap: "12px",
-      border: "1px solid var(--primary-light)"
+      border: "1px solid var(--primary-hover)"
     }}>
             <span style={{
         fontSize: "18px"
@@ -289,7 +289,7 @@ export default function CreateJobCardPageUi(props) {
               </span>
               <span style={{
           marginLeft: "12px",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           fontSize: "13px"
         }}>
                 Customer and vehicle details are inherited from the prime job
@@ -350,7 +350,7 @@ export default function CreateJobCardPageUi(props) {
                   <h3 style={{
                 fontSize: "16px",
                 fontWeight: "600",
-                color: "var(--text-primary)",
+                color: "var(--text-1)",
                 margin: 0
               }}>
                     Job Information
@@ -366,7 +366,7 @@ export default function CreateJobCardPageUi(props) {
                   <label style={{
                 fontSize: "13px",
                 fontWeight: "600",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 display: "block",
                 marginBottom: "10px"
               }}>
@@ -389,7 +389,7 @@ export default function CreateJobCardPageUi(props) {
                   <label style={{
                 fontSize: "13px",
                 fontWeight: "600",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 display: "block",
                 marginBottom: "10px"
               }}>
@@ -434,7 +434,7 @@ export default function CreateJobCardPageUi(props) {
               <h3 style={{
             fontSize: "16px",
             fontWeight: "600",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             marginTop: 0,
             marginBottom: "16px"
           }}>
@@ -484,7 +484,7 @@ export default function CreateJobCardPageUi(props) {
                 <label style={{
               fontSize: "13px",
               fontWeight: "500",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               display: "block",
               marginBottom: "6px"
             }}>
@@ -511,11 +511,11 @@ export default function CreateJobCardPageUi(props) {
               }} onFocus={e => {
                 e.target.style.borderColor = "var(--primary)";
               }} onBlur={e => {
-                e.target.style.borderColor = "var(--surface-light)";
+                e.target.style.borderColor = "var(--surface)";
               }} />
                   <button onClick={handleFetchVehicleData} disabled={isLoadingVehicle} style={{
                 padding: "10px 20px",
-                backgroundColor: isLoadingVehicle ? "var(--background)" : "var(--primary)",
+                backgroundColor: isLoadingVehicle ? "var(--surface)" : "var(--primary)",
                 color: "white",
                 border: "none",
                 borderRadius: "var(--radius-xs)",
@@ -524,7 +524,7 @@ export default function CreateJobCardPageUi(props) {
                 cursor: isLoadingVehicle ? "not-allowed" : "pointer",
                 transition: "all 0.2s"
               }} onMouseEnter={e => {
-                if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary-dark)";
+                if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary-selected)";
               }} onMouseLeave={e => {
                 if (!isLoadingVehicle) e.target.style.backgroundColor = "var(--primary)";
               }}>
@@ -561,7 +561,7 @@ export default function CreateJobCardPageUi(props) {
                       <label style={{
                   fontSize: "13px",
                   fontWeight: "500",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   display: "block",
                   marginBottom: "4px"
                 }}>
@@ -572,7 +572,7 @@ export default function CreateJobCardPageUi(props) {
                   backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-xs)",
                   fontSize: "14px",
-                  color: vehicle[key] ? "var(--text-primary)" : "var(--text-secondary)",
+                  color: vehicle[key] ? "var(--text-1)" : "var(--text-1)",
                   fontWeight: vehicle[key] ? 400 : 500
                 }}>
                         {vehicle[key] || "Not available"}
@@ -584,7 +584,7 @@ export default function CreateJobCardPageUi(props) {
                   <label style={{
                 fontSize: "13px",
                 fontWeight: "500",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 display: "block",
                 marginBottom: "6px"
               }}>
@@ -605,7 +605,7 @@ export default function CreateJobCardPageUi(props) {
               }} onFocus={e => {
                 e.target.style.borderColor = "var(--primary)";
               }} onBlur={e => {
-                e.target.style.borderColor = "var(--surface-light)";
+                e.target.style.borderColor = "var(--surface)";
               }} />
                 </div>
               </div>
@@ -628,7 +628,7 @@ export default function CreateJobCardPageUi(props) {
               <h3 style={{
             fontSize: "16px",
             fontWeight: "600",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             marginTop: 0,
             marginBottom: "16px"
           }}>
@@ -688,7 +688,7 @@ export default function CreateJobCardPageUi(props) {
                           <label style={{
                   fontSize: "13px",
                   fontWeight: "500",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   display: "block",
                   marginBottom: "6px"
                 }}>
@@ -706,7 +706,7 @@ export default function CreateJobCardPageUi(props) {
                   fontSize: "14px",
                   outline: "none",
                   transition: "border-color 0.2s",
-                  backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "transparent",
+                  backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface)" : "transparent",
                   resize: input.field === "address" ? "none" : "vertical",
                   minHeight: input.field === "address" ? "40px" : "unset",
                   overflow: "hidden",
@@ -714,14 +714,14 @@ export default function CreateJobCardPageUi(props) {
                 }} onFocus={e => {
                   e.target.style.borderColor = "var(--primary)";
                 }} onBlur={e => {
-                  e.target.style.borderColor = "var(--surface-light)";
+                  e.target.style.borderColor = "var(--surface)";
                 }} /> : input.type === "multi-select" ? <div style={{
                   display: "flex",
                   gap: "8px",
                   flexWrap: "wrap",
                   padding: "6px",
                   borderRadius: "var(--control-radius)",
-                  backgroundColor: isCustomerEditing ? "var(--surface-light)" : "transparent",
+                  backgroundColor: isCustomerEditing ? "var(--surface)" : "transparent",
                   border: "none",
                   width: "100%"
                 }}>
@@ -732,7 +732,7 @@ export default function CreateJobCardPageUi(props) {
                       borderRadius: "var(--control-radius)",
                       border: active ? "1px solid var(--primary)" : "1px solid transparent",
                       backgroundColor: active ? "var(--surface)" : "transparent",
-                      color: active ? "var(--text-primary)" : "var(--text-secondary)",
+                      color: active ? "var(--text-1)" : "var(--text-1)",
                       fontSize: "13px",
                       fontWeight: active ? "600" : "500",
                       cursor: "pointer",
@@ -751,12 +751,12 @@ export default function CreateJobCardPageUi(props) {
                   fontSize: "14px",
                   outline: "none",
                   transition: "border-color 0.2s",
-                  backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface-light)" : "transparent",
+                  backgroundColor: isCustomerEditing && !isSavingCustomer ? "var(--surface)" : "transparent",
                   color: input.type === "tel" ? "#000" : "inherit"
                 }} onFocus={e => {
                   e.target.style.borderColor = "var(--primary)";
                 }} onBlur={e => {
-                  e.target.style.borderColor = "var(--surface-light)";
+                  e.target.style.borderColor = "var(--surface)";
                 }} />}
                         </div>)}
                     </div> : <div style={{
@@ -775,7 +775,7 @@ export default function CreateJobCardPageUi(props) {
                             <div style={{
                   fontSize: "11px",
                   fontWeight: "700",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
                   marginBottom: "4px"
@@ -785,7 +785,7 @@ export default function CreateJobCardPageUi(props) {
                             <div style={{
                   fontSize: input.field === "email" ? "14px" : "13px",
                   fontWeight: "600",
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   lineHeight: 1.4,
                   wordBreak: "break-word"
                 }}>
@@ -806,7 +806,7 @@ export default function CreateJobCardPageUi(props) {
                   padding: "12px",
                   fontSize: "14px",
                   backgroundColor: "var(--primary)",
-                  color: "var(--text-inverse)",
+                  color: "var(--text-2)",
                   border: "none",
                   borderRadius: "var(--radius-xs)",
                   cursor: isSavingCustomer ? "not-allowed" : "pointer",
@@ -815,7 +815,7 @@ export default function CreateJobCardPageUi(props) {
                   opacity: isSavingCustomer ? 0.7 : 1
                 }} onMouseEnter={e => {
                   if (!isSavingCustomer) {
-                    e.target.style.backgroundColor = "var(--primary-dark)";
+                    e.target.style.backgroundColor = "var(--primary-selected)";
                   }
                 }} onMouseLeave={e => {
                   e.target.style.backgroundColor = "var(--primary)";
@@ -826,8 +826,8 @@ export default function CreateJobCardPageUi(props) {
                   flex: 1,
                   padding: "12px",
                   fontSize: "14px",
-                  backgroundColor: "var(--surface-light)",
-                  color: "var(--text-primary)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text-1)",
                   border: "none",
                   borderRadius: "var(--radius-xs)",
                   cursor: isSavingCustomer ? "not-allowed" : "pointer",
@@ -836,10 +836,10 @@ export default function CreateJobCardPageUi(props) {
                   opacity: isSavingCustomer ? 0.7 : 1
                 }} onMouseEnter={e => {
                   if (!isSavingCustomer) {
-                    e.target.style.backgroundColor = "var(--surface-muted)";
+                    e.target.style.backgroundColor = "var(--surface)";
                   }
                 }} onMouseLeave={e => {
-                  e.target.style.backgroundColor = "var(--surface-light)";
+                  e.target.style.backgroundColor = "var(--surface)";
                 }}>
                           Cancel
                         </button>
@@ -850,7 +850,7 @@ export default function CreateJobCardPageUi(props) {
                   padding: "14px",
                   fontSize: "14px",
                   backgroundColor: "var(--primary)",
-                  color: "var(--text-inverse)",
+                  color: "var(--text-2)",
                   border: "none",
                   borderRadius: "var(--radius-xs)",
                   cursor: "pointer",
@@ -858,7 +858,7 @@ export default function CreateJobCardPageUi(props) {
                   transition: "all 0.2s",
                   alignSelf: "center"
                 }} onMouseEnter={e => {
-                  e.target.style.backgroundColor = "var(--primary-dark)";
+                  e.target.style.backgroundColor = "var(--primary-selected)";
                 }} onMouseLeave={e => {
                   e.target.style.backgroundColor = "var(--primary)";
                 }}>
@@ -869,7 +869,7 @@ export default function CreateJobCardPageUi(props) {
                   maxWidth: "320px",
                   padding: "12px 16px",
                   fontSize: "14px",
-                  backgroundColor: "var(--accent-purple-surface)",
+                  backgroundColor: "var(--theme)",
                   color: "var(--accent-purple)",
                   border: "1px solid var(--accent-purple)",
                   borderRadius: "var(--radius-xs)",
@@ -881,10 +881,10 @@ export default function CreateJobCardPageUi(props) {
                 }} onMouseEnter={e => {
                   if (!isSavingCustomer) {
                     e.target.style.backgroundColor = "var(--accent-purple)";
-                    e.target.style.color = "var(--text-inverse)";
+                    e.target.style.color = "var(--text-2)";
                   }
                 }} onMouseLeave={e => {
-                  e.target.style.backgroundColor = "var(--accent-purple-surface)";
+                  e.target.style.backgroundColor = "var(--theme)";
                   e.target.style.color = "var(--accent-purple)";
                 }}>
                           Clear Customer
@@ -897,8 +897,8 @@ export default function CreateJobCardPageUi(props) {
               maxWidth: "320px",
               padding: "12px",
               fontSize: "14px",
-              backgroundColor: "var(--surface-light)",
-              color: "var(--text-primary)",
+              backgroundColor: "var(--surface)",
+              color: "var(--text-1)",
               border: "none",
               borderRadius: "var(--radius-xs)",
               cursor: isSavingCustomer ? "not-allowed" : "pointer",
@@ -908,10 +908,10 @@ export default function CreateJobCardPageUi(props) {
               alignSelf: "center"
             }} onMouseEnter={e => {
               if (!isSavingCustomer) {
-                e.target.style.backgroundColor = "var(--surface-muted)";
+                e.target.style.backgroundColor = "var(--surface)";
               }
             }} onMouseLeave={e => {
-              e.target.style.backgroundColor = "var(--surface-light)";
+              e.target.style.backgroundColor = "var(--surface)";
             }}>
                       Clear Customer
                     </button>}
@@ -927,14 +927,14 @@ export default function CreateJobCardPageUi(props) {
               padding: "14px",
               fontSize: "14px",
               backgroundColor: "var(--primary)",
-              color: "var(--text-inverse)",
+              color: "var(--text-2)",
               border: "none",
               borderRadius: "var(--radius-xs)",
               cursor: "pointer",
               fontWeight: "600",
               transition: "all 0.2s"
             }} onMouseEnter={e => {
-              e.target.style.backgroundColor = "var(--primary-dark)";
+              e.target.style.backgroundColor = "var(--primary-selected)";
             }} onMouseLeave={e => {
               e.target.style.backgroundColor = "var(--primary)";
             }}>
@@ -945,7 +945,7 @@ export default function CreateJobCardPageUi(props) {
               maxWidth: "320px",
               padding: "12px 16px",
               fontSize: "14px",
-              backgroundColor: "var(--accent-purple-surface)",
+              backgroundColor: "var(--theme)",
               color: "var(--accent-purple)",
               border: "1px solid var(--accent-purple)",
               borderRadius: "var(--radius-xs)",
@@ -954,9 +954,9 @@ export default function CreateJobCardPageUi(props) {
               transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease"
             }} onMouseEnter={e => {
               e.target.style.backgroundColor = "var(--accent-purple)";
-              e.target.style.color = "var(--text-inverse)";
+              e.target.style.color = "var(--text-2)";
             }} onMouseLeave={e => {
-              e.target.style.backgroundColor = "var(--accent-purple-surface)";
+              e.target.style.backgroundColor = "var(--theme)";
               e.target.style.color = "var(--accent-purple)";
             }}>
                     Search Existing Customer
@@ -974,7 +974,7 @@ export default function CreateJobCardPageUi(props) {
             <h3 style={{
           fontSize: "16px",
           fontWeight: "600",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           marginTop: 0,
           marginBottom: "16px"
         }}>
@@ -996,7 +996,7 @@ export default function CreateJobCardPageUi(props) {
                   <div style={{
               fontSize: "13px",
               fontWeight: "600",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               marginBottom: "10px"
             }}>
                     Request {i + 1}
@@ -1031,7 +1031,7 @@ export default function CreateJobCardPageUi(props) {
                 fontSize: "14px",
                 outline: "none",
                 transition: "border-color 0.2s",
-                backgroundColor: "var(--accent-surface)"
+                backgroundColor: "var(--theme)"
               }} />
                     <div style={{
                 position: "relative",
@@ -1055,7 +1055,7 @@ export default function CreateJobCardPageUi(props) {
                   right: "9px",
                   top: "50%",
                   transform: "translateY(-50%)",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   fontSize: "var(--control-font-size)",
                   fontWeight: 700,
                   lineHeight: 1
@@ -1103,7 +1103,7 @@ export default function CreateJobCardPageUi(props) {
                 <h4 style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               margin: 0
             }}>
                   Cosmetic Damage
@@ -1126,11 +1126,11 @@ export default function CreateJobCardPageUi(props) {
             outline: "none",
             transition: "border-color 0.2s",
             backgroundColor: "var(--surface)",
-            color: "var(--text-primary)"
+            color: "var(--text-1)"
           }} onFocus={e => {
             e.target.style.borderColor = "var(--primary)";
           }} onBlur={e => {
-            e.target.style.borderColor = "var(--surface-light)";
+            e.target.style.borderColor = "var(--surface)";
           }} />}
             </DevLayoutSection>
             <DevLayoutSection sectionKey="job-cards-create-wash" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" style={{
@@ -1151,7 +1151,7 @@ export default function CreateJobCardPageUi(props) {
                 <h4 style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               margin: 0
             }}>
                   Wash
@@ -1180,7 +1180,7 @@ export default function CreateJobCardPageUi(props) {
                 <h4 style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               margin: 0
             }}>
                   VHC Required?
@@ -1210,7 +1210,7 @@ export default function CreateJobCardPageUi(props) {
                 <h4 style={{
               fontSize: "14px",
               fontWeight: "600",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               margin: 0
             }}>
                   Documents
@@ -1226,7 +1226,7 @@ export default function CreateJobCardPageUi(props) {
               cursor: "pointer",
               transition: "background-color 0.2s, transform 0.2s"
             }} onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = "var(--primary-dark)";
+              e.currentTarget.style.backgroundColor = "var(--primary-selected)";
               e.currentTarget.style.transform = "translateY(-1px)";
               e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
             }} onMouseLeave={e => {
@@ -1308,7 +1308,7 @@ export default function CreateJobCardPageUi(props) {
               return <div key={`detected-request-popup-${request.index}`} style={{
                 border: "none",
                 borderRadius: "var(--radius-sm)",
-                backgroundColor: "var(--surface-light)",
+                backgroundColor: "var(--surface)",
                 padding: "14px 16px",
                 display: "grid",
                 gap: "10px"
@@ -1323,7 +1323,7 @@ export default function CreateJobCardPageUi(props) {
                           <span style={{
                     fontSize: "14px",
                     fontWeight: 700,
-                    color: "var(--text-primary)"
+                    color: "var(--text-1)"
                   }}>
                             Request {request.index + 1}
                           </span>
@@ -1343,7 +1343,7 @@ export default function CreateJobCardPageUi(props) {
                         <div style={{
                   fontSize: "13px",
                   lineHeight: 1.5,
-                  color: "var(--text-primary)",
+                  color: "var(--text-1)",
                   whiteSpace: "pre-wrap"
                 }}>
                           {request.text}

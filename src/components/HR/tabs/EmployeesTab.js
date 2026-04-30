@@ -20,10 +20,10 @@ const defaultFilters = { department: "all", status: "all", employmentType: "all"
 const surfaceButtonStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--input-radius)",
-  border: "1px solid var(--surface-light)",
+  border: "1px solid var(--surface)",
   background: "var(--surface)",
   fontWeight: 600,
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   cursor: "pointer",
 };
 
@@ -31,12 +31,12 @@ const primaryButtonStyle = {
   ...surfaceButtonStyle,
   border: "1px solid rgba(var(--primary-rgb), 0.18)",
   background: "var(--primary)",
-  color: "var(--text-inverse)",
+  color: "var(--text-2)",
 };
 
 const accentFieldSurface = {
   background: "var(--surface)",
-  border: "1px solid var(--surface-light)",
+  border: "1px solid var(--surface)",
 };
 
 const buildUniqueList = (items = []) => {
@@ -767,9 +767,9 @@ export default function EmployeesTab() {
                 style={{
                   padding: "16px",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px dashed var(--surface-light)",
+                  border: "1px dashed var(--surface)",
                   textAlign: "center",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   background: "var(--surface)",
                 }}
               >
@@ -1107,12 +1107,12 @@ function SearchableListDropdown({
                   padding: "10px 12px",
                   cursor: "pointer",
                   background: value === item ? "rgba(var(--primary-rgb), 0.1)" : "var(--surface)",
-                  color: value === item ? "var(--primary)" : "var(--text-primary)",
+                  color: value === item ? "var(--primary)" : "var(--text-1)",
                   fontWeight: value === item ? 600 : 400,
                 }}
                 onMouseEnter={(e) => {
                   if (value !== item) {
-                    e.currentTarget.style.background = "var(--surface-light)";
+                    e.currentTarget.style.background = "var(--surface)";
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -1204,7 +1204,7 @@ function SearchableMultiSelect({
           minHeight: "42px",
           padding: "8px 10px",
           borderRadius: "var(--radius-xs)",
-          border: hasError ? "none" : "1px solid var(--surface-light)",
+          border: hasError ? "none" : "1px solid var(--surface)",
           boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
           background: "var(--surface)",
           display: "flex",
@@ -1260,7 +1260,7 @@ function SearchableMultiSelect({
             border: "none",
             outline: "none",
             background: "var(--surface)",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             fontSize: "0.9rem",
             padding: 0,
           }}
@@ -1279,7 +1279,7 @@ function SearchableMultiSelect({
             borderRadius: "var(--radius-xs)",
             marginTop: "4px",
             zIndex: 1000,
-            border: "1px solid var(--surface-light)",
+            border: "1px solid var(--surface)",
           }}
         >
           <div style={{ maxHeight: "210px", overflowY: "auto" }}>
@@ -1303,11 +1303,11 @@ function SearchableMultiSelect({
                       gap: "2px",
                     }}
                   >
-                    <span style={{ fontWeight: isSelected ? 700 : 600, color: isSelected ? "var(--primary)" : "var(--text-primary)" }}>
+                    <span style={{ fontWeight: isSelected ? 700 : 600, color: isSelected ? "var(--primary)" : "var(--text-1)" }}>
                       {item.label}
                     </span>
                     {item.description ? (
-                      <span style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                      <span style={{ fontSize: "0.78rem", color: "var(--text-1)" }}>
                         {item.description}
                       </span>
                     ) : null}
@@ -1379,9 +1379,9 @@ function EmployeeDetailsFields({
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--surface-light)",
+    border: "1px solid var(--surface)",
     background: "var(--surface)",
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
   };
   const applyFieldErrorStyle = (field, baseStyle = inputStyle) =>
     fieldErrors[field]
@@ -1404,10 +1404,10 @@ function EmployeeDetailsFields({
   const getSectionShellStyle = (section) => {
     const hasError = Boolean(sectionErrors[section]?.length);
     return {
-      border: hasError ? "none" : "1px solid var(--surface-light)",
+      border: hasError ? "none" : "1px solid var(--surface)",
       borderRadius: "var(--radius-sm)",
       padding: "12px",
-      background: hasError ? "rgba(var(--danger-rgb), 0.06)" : "var(--surface-light)",
+      background: hasError ? "rgba(var(--danger-rgb), 0.06)" : "var(--surface)",
       boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.08)" : "none",
     };
   };
@@ -1537,7 +1537,7 @@ function EmployeeDetailsFields({
               step="0.01"
               value={values.annualSalary}
               readOnly
-              style={{ ...applyFieldErrorStyle("annualSalary"), background: "var(--surface-light)", cursor: "not-allowed" }}
+              style={{ ...applyFieldErrorStyle("annualSalary"), background: "var(--surface)", cursor: "not-allowed" }}
               placeholder="Auto-calculated"
             />
           </FormField>
@@ -1647,7 +1647,7 @@ function AddressSearchField({ value, onChange }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--surface-light)",
+    border: "1px solid var(--surface)",
     background: "var(--surface)",
     fontSize: "0.9rem",
   };
@@ -1696,7 +1696,7 @@ function AddressSearchField({ value, onChange }) {
               right: 0,
               zIndex: 20,
               background: "var(--surface)",
-              border: "1px solid var(--surface-light)",
+              border: "1px solid var(--surface)",
               borderRadius: "var(--radius-xs)",
               marginTop: "4px",
               maxHeight: "200px",
@@ -1711,9 +1711,9 @@ function AddressSearchField({ value, onChange }) {
                   padding: "8px 12px",
                   cursor: "pointer",
                   fontSize: "0.85rem",
-                  borderBottom: i < results.length - 1 ? "1px solid var(--surface-light)" : "none",
+                  borderBottom: i < results.length - 1 ? "1px solid var(--surface)" : "none",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-light)")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface)")}
               >
                 {addr}
@@ -1750,7 +1750,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--surface-light)",
+    border: "1px solid var(--surface)",
     background: "var(--surface)",
     fontSize: "0.9rem",
   };
@@ -1758,7 +1758,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
   return (
     <div
       style={{
-        border: "1px solid var(--surface-light)",
+        border: "1px solid var(--surface)",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
         background: "var(--surface)",
@@ -1768,7 +1768,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)" }}>
+        <span style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-1)" }}>
           Emergency Contact
         </span>
         {userId && (
@@ -1847,7 +1847,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
         border: "1px solid rgba(var(--primary-rgb), 0.14)",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
-        background: "var(--surface-light)",
+        background: "var(--surface)",
         display: "flex",
         flexDirection: "column",
         gap: "12px",
@@ -1867,7 +1867,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
         style={{
           padding: "12px",
           borderRadius: "var(--input-radius)",
-          border: "1px solid var(--surface-light)",
+          border: "1px solid var(--surface)",
           background: "var(--surface)",
           resize: "vertical",
         }}

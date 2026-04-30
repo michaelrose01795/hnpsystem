@@ -70,14 +70,14 @@ function ProfileSummary({ profile }) {
             gridTemplateColumns: "minmax(160px, 1fr) 2fr",
             gap: 12,
             padding: "8px 0",
-            borderBottom: "1px solid var(--border)",
+            borderBottom: "1px solid var(--primary-border)",
           }}
         >
-          <span style={{ color: "var(--text-secondary)" }}>{label}</span>
+          <span style={{ color: "var(--text-1)" }}>{label}</span>
           <span>{value}</span>
         </div>
       ))}
-      <p style={{ margin: "12px 0 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <p style={{ margin: "12px 0 0", fontSize: "0.85rem", color: "var(--text-1)" }}>
         Need to correct anything? Use{" "}
         <strong>Rectification</strong> below to file a request, or contact your manager.
       </p>
@@ -141,13 +141,13 @@ function ConsentManager({ initial, onUpdated }) {
               alignItems: "center",
               gap: 12,
               padding: "10px 12px",
-              border: "1px solid var(--border)",
+              border: "1px solid var(--primary-border)",
               borderRadius: "var(--radius-xs, 6px)",
             }}
           >
             <div>
               <div style={{ fontWeight: 600 }}>{label}</div>
-              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "0.8rem", color: "var(--text-1)" }}>
                 {granted ? "You have given consent." : "No consent on record."}
               </div>
             </div>
@@ -213,11 +213,11 @@ function SubjectRequestForm({ onCreated }) {
       ? "var(--danger-base, #ef4444)"
       : statusType === "success"
       ? "var(--success-base, #16a34a)"
-      : "var(--text-secondary)";
+      : "var(--text-1)";
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Request type
         <select
           value={requestType}
@@ -232,7 +232,7 @@ function SubjectRequestForm({ onCreated }) {
           ))}
         </select>
       </label>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Details (optional)
         <textarea
           value={details}
@@ -260,7 +260,7 @@ function SubjectRequestForm({ onCreated }) {
 function RequestsList({ requests }) {
   if (!requests || requests.length === 0) {
     return (
-      <p style={{ margin: 0, color: "var(--text-secondary)" }}>
+      <p style={{ margin: 0, color: "var(--text-1)" }}>
         You have not filed any subject requests.
       </p>
     );
@@ -269,26 +269,26 @@ function RequestsList({ requests }) {
     <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
         <thead>
-          <tr style={{ textAlign: "left", color: "var(--text-secondary)" }}>
-            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--border)" }}>Type</th>
-            <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Status</th>
-            <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Filed</th>
-            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--border)" }}>Due by</th>
+          <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
+            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--primary-border)" }}>Type</th>
+            <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Status</th>
+            <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Filed</th>
+            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--primary-border)" }}>Due by</th>
           </tr>
         </thead>
         <tbody>
           {requests.map((row) => (
             <tr key={row.id}>
-              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--border)" }}>
+              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--primary-border)" }}>
                 {REQUEST_TYPE_LABELS[row.request_type] || row.request_type}
               </td>
-              <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+              <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                 {STATUS_LABELS[row.status] || row.status}
               </td>
-              <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+              <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                 {formatDate(row.received_at)}
               </td>
-              <td style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--border)" }}>
+              <td style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--primary-border)" }}>
                 {formatDate(row.due_at)}
               </td>
             </tr>
@@ -299,7 +299,7 @@ function RequestsList({ requests }) {
   );
 }
 
-export default function PrivacyHubPage() {
+export function PrivacyPanel() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [tick, setTick] = useState(0);
@@ -327,82 +327,88 @@ export default function PrivacyHubPage() {
   }, [tick]);
 
   return (
+    <div className="app-page-card" style={{ padding: "8px 8px 32px" }}>
+      <div className="app-page-stack">
+        <Section title="Privacy">
+          <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5 }}>
+            This page summarises the personal data we hold about you and lets you
+            manage your consents or file a request under UK GDPR. Account security
+            controls (password change, recent sign-in activity) are on{" "}
+            <Link href="/account/security">/account/security</Link>.
+          </p>
+          {error && (
+            <p role="alert" style={{ margin: "10px 0 0", color: "var(--danger-base, #ef4444)" }}>
+              {error}
+            </p>
+          )}
+        </Section>
+
+        <Section title="Your Profile Data">
+          {data ? (
+            <ProfileSummary profile={data.profile} />
+          ) : (
+            <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          )}
+        </Section>
+
+        <Section title="Download a Copy">
+          <p style={{ margin: "0 0 12px", color: "var(--text-1)" }}>
+            Get a JSON file containing the data we hold against your account
+            (profile, consents, subject requests, recent sign-in events).
+          </p>
+          <a
+            href="/api/privacy/export"
+            style={{
+              display: "inline-block",
+              padding: "10px 14px",
+              minHeight: 40,
+              borderRadius: "var(--radius-xs, 6px)",
+              background: "var(--primary)",
+              color: "var(--onAccentText)",
+              fontWeight: 700,
+              textDecoration: "none",
+            }}
+          >
+            Download my data (JSON)
+          </a>
+          <p style={{ margin: "10px 0 0", fontSize: "0.8rem", color: "var(--text-1)" }}>
+            For a full subject access request including all linked records, file an
+            Access request below — staff will fulfil within 30 days.
+          </p>
+        </Section>
+
+        <Section title="Marketing &amp; Communication Consents">
+          {data ? (
+            <ConsentManager
+              initial={data.consents}
+              onUpdated={() => setTick((n) => n + 1)}
+            />
+          ) : (
+            <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          )}
+        </Section>
+
+        <Section title="File a Subject Request">
+          <SubjectRequestForm onCreated={() => setTick((n) => n + 1)} />
+        </Section>
+
+        <Section title="Your Open Requests">
+          <RequestsList requests={data?.requests || []} />
+        </Section>
+      </div>
+    </div>
+  );
+}
+
+export default function PrivacyHubPage() {
+  return (
     <ProtectedRoute>
       <Head>
         <title>Privacy · HNP System</title>
       </Head>
       <Layout>
         <div className="app-page-shell">
-          <div className="app-page-card" style={{ padding: "8px 8px 32px" }}>
-            <div className="app-page-stack">
-              <Section title="Privacy">
-                <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                  This page summarises the personal data we hold about you and lets you
-                  manage your consents or file a request under UK GDPR. Account security
-                  controls (password change, recent sign-in activity) are on{" "}
-                  <Link href="/account/security">/account/security</Link>.
-                </p>
-                {error && (
-                  <p role="alert" style={{ margin: "10px 0 0", color: "var(--danger-base, #ef4444)" }}>
-                    {error}
-                  </p>
-                )}
-              </Section>
-
-              <Section title="Your Profile Data">
-                {data ? (
-                  <ProfileSummary profile={data.profile} />
-                ) : (
-                  <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading...</p>
-                )}
-              </Section>
-
-              <Section title="Download a Copy">
-                <p style={{ margin: "0 0 12px", color: "var(--text-secondary)" }}>
-                  Get a JSON file containing the data we hold against your account
-                  (profile, consents, subject requests, recent sign-in events).
-                </p>
-                <a
-                  href="/api/privacy/export"
-                  style={{
-                    display: "inline-block",
-                    padding: "10px 14px",
-                    minHeight: 40,
-                    borderRadius: "var(--radius-xs, 6px)",
-                    background: "var(--accentMain)",
-                    color: "var(--onAccentText)",
-                    fontWeight: 700,
-                    textDecoration: "none",
-                  }}
-                >
-                  Download my data (JSON)
-                </a>
-                <p style={{ margin: "10px 0 0", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                  For a full subject access request including all linked records, file an
-                  Access request below — staff will fulfil within 30 days.
-                </p>
-              </Section>
-
-              <Section title="Marketing &amp; Communication Consents">
-                {data ? (
-                  <ConsentManager
-                    initial={data.consents}
-                    onUpdated={() => setTick((n) => n + 1)}
-                  />
-                ) : (
-                  <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading...</p>
-                )}
-              </Section>
-
-              <Section title="File a Subject Request">
-                <SubjectRequestForm onCreated={() => setTick((n) => n + 1)} />
-              </Section>
-
-              <Section title="Your Open Requests">
-                <RequestsList requests={data?.requests || []} />
-              </Section>
-            </div>
-          </div>
+          <PrivacyPanel />
         </div>
       </Layout>
     </ProtectedRoute>

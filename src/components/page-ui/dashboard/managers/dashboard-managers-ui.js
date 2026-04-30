@@ -18,7 +18,7 @@ export default function ManagersDashboardUi(props) {
         <div style={{
     padding: "48px",
     textAlign: "center",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   }}>
           You do not have access to the Managers dashboard.
         </div>
@@ -27,30 +27,7 @@ export default function ManagersDashboardUi(props) {
     case "section2":
       return <>
       <div>
-        <header className="app-section-card" style={{
-      background: "var(--surface-light)"
-    }}>
-          <p style={{
-        margin: 0,
-        letterSpacing: "0.12em",
-        textTransform: "uppercase",
-        color: "var(--primary-dark)"
-      }}>
-            Managers dashboard
-          </p>
-          <h1 style={{
-        margin: "6px 0 0",
-        color: "var(--primary-dark)"
-      }}>Executive service & workshop view</h1>
-          <p style={{
-        margin: "6px 0 0",
-        color: "var(--info)"
-      }}>
-            Consolidated metrics across workshop, VHC, and approvals for leadership.
-          </p>
-        </header>
-
-        <Section title="Combined performance">
+        <Section title="Combined performance" style={{ background: "var(--theme)" }}>
           {loading ? <p style={{
         color: "var(--info)"
       }}>Gathering completion statistics…</p> : error ? <p style={{
@@ -65,26 +42,26 @@ export default function ManagersDashboardUi(props) {
             </div>}
         </Section>
 
-        <Section title="Approvals & follow ups">
+        <Section title="Approvals & follow ups" style={{ background: "var(--theme)" }}>
           <div style={{
         display: "flex",
         flexWrap: "wrap",
         gap: "16px"
       }}>
-            <MetricCard label="Parts approvals" value={data.counts.pendingParts} helper="Pending" />
+            <MetricCard label="Parts approvals" value={data.counts.pendingParts} helper="Pending" style={{ background: "var(--surface)" }} />
             <MetricCard label="VHC sign-off" value={data.counts.pendingVhc} helper="Awaiting auth" />
           </div>
         </Section>
 
-        <Section title="Escalations" subtitle="Latest notifications">
+        <Section title="Escalations" subtitle="Latest notifications" style={{ background: "var(--theme)" }}>
           <EscalationList items={data.escalations} />
         </Section>
 
-        <Section title="Progress" subtitle="Jobs completed vs started">
+        <Section title="Progress" subtitle="Jobs completed vs started" style={{ background: "var(--theme)" }}>
           <ProgressBar completed={data.progress.completed} target={data.progress.scheduled} />
         </Section>
 
-        <Section title="Completion trend" subtitle="Last 7 days">
+        <Section title="Completion trend" subtitle="Last 7 days" style={{ background: "var(--theme)" }}>
           <TrendBlock data={data.trend.jobsCompletedLast7} />
         </Section>
       </div>

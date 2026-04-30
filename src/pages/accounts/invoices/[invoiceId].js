@@ -10,7 +10,7 @@ const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", cu
 
 const statusBadgeStyles = {
   Paid: { background: "rgba(var(--success-rgb), 0.16)", color: "var(--success-text)" },
-  Draft: { background: "rgba(var(--primary-rgb), 0.14)", color: "var(--primary-dark)" },
+  Draft: { background: "rgba(var(--primary-rgb), 0.14)", color: "var(--primary-selected)" },
   Overdue: { background: "rgba(var(--warning-rgb), 0.18)", color: "var(--warning-text)" },
   Cancelled: { background: "rgba(var(--danger-rgb), 0.16)", color: "var(--danger-dark)" }
 };
@@ -92,8 +92,8 @@ export default function InvoiceDetailPage() {
   }, [invoiceId]);
   const infoRow = (label, value) =>
   <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid rgba(var(--primary-rgb), 0.08)" }}>
-      <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{label}</span>
-      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{value || "—"}</span>
+      <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{label}</span>
+      <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{value || "—"}</span>
     </div>;
 
   return <InvoiceDetailPageUi view="section1" Button={Button} currencyFormatter={currencyFormatter} DETAIL_ROLES={DETAIL_ROLES} getAccountDisplayValue={getAccountDisplayValue} getCustomerDisplayValue={getCustomerDisplayValue} getDueDateDisplayValue={getDueDateDisplayValue} getInvoiceAmountValue={getInvoiceAmountValue} infoRow={infoRow} invoice={invoice} invoiceId={invoiceId} job={job} loading={loading} payments={payments} ProtectedRoute={ProtectedRoute} router={router} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} statusBadgeStyles={statusBadgeStyles} />;

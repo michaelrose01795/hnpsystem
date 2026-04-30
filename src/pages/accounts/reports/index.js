@@ -24,7 +24,7 @@ const metricSurfaceStyle = {
 
 const metricsShellStyle = {
   gap: "16px",
-  background: "rgba(var(--primary-rgb), 0.1)",
+  background: "var(--theme)",
   border: "1px solid rgba(var(--primary-rgb), 0.2)"
 };
 
@@ -70,7 +70,7 @@ export default function AccountsReportsPage() {
     className="app-section-card"
     style={metricSurfaceStyle}>
     
-      <p style={{ margin: 0, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.8rem" }}>{label}</p>
+      <p style={{ margin: 0, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.8rem" }}>{label}</p>
       <strong style={{ display: "block", marginTop: "10px", fontSize: "1.8rem", color: accent }}>{value}</strong>
     </DevLayoutSection>;
 

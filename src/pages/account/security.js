@@ -97,11 +97,11 @@ function PasswordChangeForm() {
       ? "var(--danger-base, #ef4444)"
       : statusType === "success"
       ? "var(--success-base, #16a34a)"
-      : "var(--text-secondary)";
+      : "var(--text-1)";
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12, maxWidth: 420 }}>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Current password
         <input
           type="password"
@@ -113,7 +113,7 @@ function PasswordChangeForm() {
           style={{ marginTop: 4, width: "100%" }}
         />
       </label>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         New password
         <input
           type="password"
@@ -126,7 +126,7 @@ function PasswordChangeForm() {
           style={{ marginTop: 4, width: "100%" }}
         />
       </label>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Confirm new password
         <input
           type="password"
@@ -139,7 +139,7 @@ function PasswordChangeForm() {
           style={{ marginTop: 4, width: "100%" }}
         />
       </label>
-      <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+      <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-1)" }}>
         Use at least {PASSWORD_MIN_LENGTH} characters. Avoid passwords reused on other sites.
       </p>
       {statusMessage && (
@@ -185,48 +185,63 @@ function RecentActivity() {
   }, []);
 
   if (events === null) {
-    return <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading recent activity...</p>;
+    return <p style={{ margin: 0, color: "var(--text-1)" }}>Loading recent activity...</p>;
   }
   if (error) {
     return <p style={{ margin: 0, color: "var(--danger-base, #ef4444)" }}>{error}</p>;
   }
   if (events.length === 0) {
-    return <p style={{ margin: 0, color: "var(--text-secondary)" }}>No recent sign-in activity recorded.</p>;
+    return <p style={{ margin: 0, color: "var(--text-1)" }}>No recent sign-in activity recorded.</p>;
   }
 
   return (
     <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
         <thead>
-          <tr style={{ textAlign: "left", color: "var(--text-secondary)" }}>
-            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--border)" }}>When</th>
-            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--border)" }}>Event</th>
-            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--border)" }}>IP</th>
-            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--border)" }}>Device</th>
+          <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
+            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--primary-border)" }}>When</th>
+            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--primary-border)" }}>Event</th>
+            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--primary-border)" }}>IP</th>
+            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--primary-border)" }}>Device</th>
           </tr>
         </thead>
         <tbody>
           {events.map((event) => (
             <tr key={event.id}>
-              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--border)" }}>
+              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--primary-border)" }}>
                 {formatTimestamp(event.occurredAt)}
               </td>
-              <td style={{ padding: "8px 8px", borderBottom: "1px solid var(--border)" }}>
+              <td style={{ padding: "8px 8px", borderBottom: "1px solid var(--primary-border)" }}>
                 {ACTION_LABELS[event.action] || event.action}
               </td>
-              <td style={{ padding: "8px 8px", borderBottom: "1px solid var(--border)", fontFamily: "var(--font-family-mono, monospace)", fontSize: "0.8rem" }}>
+              <td style={{ padding: "8px 8px", borderBottom: "1px solid var(--primary-border)", fontFamily: "var(--font-family-mono, monospace)", fontSize: "0.8rem" }}>
                 {event.ip || "—"}
               </td>
-              <td style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--border)", fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              <td style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--primary-border)", fontSize: "0.8rem", color: "var(--text-1)" }}>
                 {event.userAgent ? event.userAgent.slice(0, 80) : "—"}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <p style={{ marginTop: 12, fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+      <p style={{ marginTop: 12, fontSize: "0.78rem", color: "var(--text-1)" }}>
         If you see an event you do not recognise, change your password immediately and contact your manager.
       </p>
+    </div>
+  );
+}
+
+export function SecurityPanel() {
+  return (
+    <div className="app-page-card" style={{ padding: "8px 8px 32px" }}>
+      <div className="app-page-stack">
+        <Section title="Change Password">
+          <PasswordChangeForm />
+        </Section>
+        <Section title="Recent Sign-In Activity">
+          <RecentActivity />
+        </Section>
+      </div>
     </div>
   );
 }
@@ -239,16 +254,7 @@ export default function AccountSecurityPage() {
       </Head>
       <Layout>
         <div className="app-page-shell">
-          <div className="app-page-card" style={{ padding: "8px 8px 32px" }}>
-            <div className="app-page-stack">
-              <Section title="Change Password">
-                <PasswordChangeForm />
-              </Section>
-              <Section title="Recent Sign-In Activity">
-                <RecentActivity />
-              </Section>
-            </div>
-          </div>
+          <SecurityPanel />
         </div>
       </Layout>
     </ProtectedRoute>

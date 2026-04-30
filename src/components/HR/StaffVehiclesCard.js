@@ -522,10 +522,10 @@ export default function StaffVehiclesCard({
               boxShadow: "none",
             }}
           >
-            <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>
+            <div style={{ fontWeight: 700, color: "var(--text-1)" }}>
               Remove vehicle?
             </div>
-            <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+            <div style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
               This will remove the vehicle and its repair history from your profile.
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
@@ -538,7 +538,7 @@ export default function StaffVehiclesCard({
                   padding: "var(--control-padding)",
                   background: "rgba(var(--surface-rgb, 255, 255, 255), 0.4)",
                   fontWeight: 600,
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                   cursor: "pointer",
                 }}
               >
@@ -593,7 +593,7 @@ export default function StaffVehiclesCard({
               borderRadius: "var(--radius-md)",
               padding: "var(--page-card-padding)",
               textAlign: "center",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               fontSize: "0.95rem",
             }}
           >
@@ -622,7 +622,7 @@ export default function StaffVehiclesCard({
                 padding: "16px",
                 borderRadius: "var(--radius-md)",
                 border: "none",
-                background: "var(--accent-surface)",
+                background: "var(--theme)",
                 width: "100%",
                 display: "flex",
                 flexDirection: "column",
@@ -640,7 +640,7 @@ export default function StaffVehiclesCard({
               >
                 <div style={{ flex: "1 1 260px", minWidth: "220px", display: "grid", gap: "8px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                    <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-primary)", lineHeight: 1.2 }}>
+                    <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-1)", lineHeight: 1.2 }}>
                       {vehicle.make || "Vehicle"} {vehicle.model}
                     </h3>
                     <span
@@ -659,7 +659,7 @@ export default function StaffVehiclesCard({
                       {vehicle.registration || "No reg"}
                     </span>
                   </div>
-                  <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.86rem", lineHeight: 1.45 }}>
+                  <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.86rem", lineHeight: 1.45 }}>
                     {vehicle.vin ? `VIN ${vehicle.vin}` : "VIN not recorded"}
                   </p>
                 </div>
@@ -673,10 +673,10 @@ export default function StaffVehiclesCard({
                       border: vehicle.payrollDeductionEnabled
                         ? "1px solid rgba(var(--success-rgb), 0.28)"
                         : "1px solid rgba(var(--primary-rgb), 0.22)",
-                      color: vehicle.payrollDeductionEnabled ? "var(--success)" : "var(--text-secondary)",
+                      color: vehicle.payrollDeductionEnabled ? "var(--success)" : "var(--text-1)",
                       background: vehicle.payrollDeductionEnabled
                         ? "rgba(var(--success-rgb), 0.14)"
-                        : "rgba(var(--text-primary-rgb), 0.08)",
+                        : "rgba(var(--text-1-rgb), 0.08)",
                     }}
                   >
                     {vehicle.payrollDeductionEnabled ? "Payroll deductions on" : "Payroll deductions off"}
@@ -728,7 +728,7 @@ export default function StaffVehiclesCard({
                     marginTop: "18px",
                   }}
                 >
-                  <p style={{ fontWeight: 700, fontSize: "0.9rem", margin: 0, color: "var(--text-primary)" }}>
+                  <p style={{ fontWeight: 700, fontSize: "0.9rem", margin: 0, color: "var(--text-1)" }}>
                     Edit vehicle details
                   </p>
                   <div
@@ -855,7 +855,7 @@ export default function StaffVehiclesCard({
             flexWrap: "wrap",
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-primary)" }}>History</div>
+          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-1)" }}>History</div>
           <button
             type="button"
             onClick={() => setShowHistoryForm((prev) => !prev)}
@@ -877,7 +877,7 @@ export default function StaffVehiclesCard({
               padding: "8px 0",
             }}
           >
-            <p style={{ fontWeight: 700, fontSize: "0.9rem", margin: 0, color: "var(--text-primary)" }}>
+            <p style={{ fontWeight: 700, fontSize: "0.9rem", margin: 0, color: "var(--text-1)" }}>
               Log new repair
             </p>
             <div
@@ -1005,9 +1005,9 @@ export default function StaffVehiclesCard({
                 borderRadius: "var(--radius-sm)",
                 padding: "18px",
                 textAlign: "center",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 fontSize: "0.85rem",
-                background: "var(--accent-surface)",
+                background: "var(--theme)",
               }}
             >
               No repair history yet.
@@ -1043,7 +1043,7 @@ export default function StaffVehiclesCard({
               >
                 <tr
                   style={{
-                    color: "var(--text-inverse, #ffffff)",
+                    color: "var(--text-2, #ffffff)",
                     fontSize: "0.72rem",
                     textTransform: "uppercase",
                     letterSpacing: "0.04em",
@@ -1079,16 +1079,16 @@ export default function StaffVehiclesCard({
                         : "var(--profile-table-alt-surface)",
                     }}
                   >
-                    <td style={{ padding: "14px 10px 14px 14px", fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", verticalAlign: "middle" }}>
+                    <td style={{ padding: "14px 10px 14px 14px", fontWeight: 600, color: "var(--text-1)", whiteSpace: "nowrap", verticalAlign: "middle" }}>
                       {entry.vehicle?.registration || "-"}
                     </td>
-                    <td style={{ padding: "14px 8px", fontWeight: 600, color: "var(--text-primary)", verticalAlign: "middle", lineHeight: 1.4 }}>
+                    <td style={{ padding: "14px 8px", fontWeight: 600, color: "var(--text-1)", verticalAlign: "middle", lineHeight: 1.4 }}>
                       {entry.description || "Workshop visit"}
                     </td>
-                    <td style={{ padding: "14px 8px 14px 12px", color: "var(--text-secondary)", whiteSpace: "nowrap", verticalAlign: "middle" }}>
+                    <td style={{ padding: "14px 8px 14px 12px", color: "var(--text-1)", whiteSpace: "nowrap", verticalAlign: "middle" }}>
                       {entry.recordedAt ? new Date(entry.recordedAt).toLocaleDateString() : "Pending"}
                     </td>
-                    <td style={{ padding: "14px 8px", color: "var(--text-secondary)", textAlign: "center", verticalAlign: "middle" }}>
+                    <td style={{ padding: "14px 8px", color: "var(--text-1)", textAlign: "center", verticalAlign: "middle" }}>
                       {entry.deductFromPayroll ? "Deduct" : "Manual"}
                     </td>
                     <td style={{ padding: "14px 8px", textAlign: "right", fontWeight: 600, verticalAlign: "middle" }}>
@@ -1129,10 +1129,10 @@ export default function StaffVehiclesCard({
             padding: "16px",
             borderRadius: "var(--radius-sm)",
             border: "1px solid rgba(var(--primary-rgb), 0.2)",
-            background: "rgba(var(--primary-rgb), 0.08)",
+            background: "var(--theme)",
           }}
         >
-          <div style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "12px" }}>
+          <div style={{ fontWeight: 700, color: "var(--text-1)", marginBottom: "12px" }}>
             Add vehicle
           </div>
           <form onSubmit={submitVehicle}>
@@ -1214,7 +1214,7 @@ export default function StaffVehiclesCard({
                 />
               </label>
             </div>
-            <p style={{ fontSize: "0.75rem", color: "var(--text-secondary)", marginTop: "10px" }}>
+            <p style={{ fontSize: "0.75rem", color: "var(--text-1)", marginTop: "10px" }}>
               Enabling this means workshop-approved repairs for this vehicle will be forwarded directly to payroll for
               deduction from your next payslip.
             </p>
@@ -1249,7 +1249,7 @@ export default function StaffVehiclesCard({
 const historyLabelStyle = {
   fontSize: "0.8rem",
   fontWeight: 600,
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   display: "flex",
   flexDirection: "column",
   gap: "6px",
@@ -1262,7 +1262,7 @@ const historyInputStyle = {
   fontSize: "0.9rem",
   fontWeight: 500,
   background: "rgba(var(--surface-rgb, 255, 255, 255), 0.86)",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
 };
 
 const primaryActionButton = {
@@ -1281,7 +1281,7 @@ const secondaryActionButton = {
   borderRadius: "var(--input-radius)",
   padding: "var(--control-padding)",
   background: "rgba(var(--surface-rgb, 255, 255, 255), 0.38)",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   fontWeight: 600,
   fontSize: "0.8rem",
   cursor: "pointer",
@@ -1306,10 +1306,10 @@ const staffVehiclesCardStyle = {
 function VehicleInfo({ label, value }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: 600, letterSpacing: "0.02em" }}>
+      <span style={{ fontSize: "0.75rem", color: "var(--text-1)", fontWeight: 600, letterSpacing: "0.02em" }}>
         {label}
       </span>
-      <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{value}</span>
+      <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{value}</span>
     </div>
   );
 }

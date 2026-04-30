@@ -3,15 +3,15 @@
 
 // Persisted accent choices that users can select from the profile theme controls.
 export const ACCENT_PALETTES = {
-  red: { label: "Red", light: "#dc2626", dark: "#f87171" },
-  beige: { label: "Beige", light: "#d2b48c", dark: "#c2a27b" },
-  grey: { label: "Grey", light: "#6b7280", dark: "#9ca3af" },
+  red: { label: "Red", light: "#b91c1c", dark: "#f87171" },
+  beige: { label: "Stone", light: "#78716c", dark: "#a8a29e" },
+  grey: { label: "Slate", light: "#475569", dark: "#94a3b8" },
   blue: { label: "Blue", light: "#2563eb", dark: "#60a5fa" },
-  green: { label: "Green", light: "#16a34a", dark: "#4ade80" },
-  yellow: { label: "Yellow", light: "#ca8a04", dark: "#facc15" },
-  pink: { label: "Pink", light: "#db2777", dark: "#f472b6" },
-  orange: { label: "Orange", light: "#ea580c", dark: "#fb923c" },
-  purple: { label: "Purple", light: "#7c3aed", dark: "#a78bfa" },
+  green: { label: "Green", light: "#15803d", dark: "#4ade80" },
+  yellow: { label: "Amber", light: "#b45309", dark: "#fbbf24" },
+  pink: { label: "Pink", light: "#be185d", dark: "#f472b6" },
+  orange: { label: "Orange", light: "#c2410c", dark: "#fb923c" },
+  purple: { label: "Purple", light: "#6d28d9", dark: "#a78bfa" },
 };
 
 // The default accent used when nothing valid has been stored yet.
@@ -27,7 +27,7 @@ export const hexToRgbObject = (hexColor) => {
 
   // Fall back to the app's default accent red when the input is malformed.
   if (!/^[0-9a-fA-F]{6}$/.test(hex)) {
-    return { r: 220, g: 38, b: 38 };
+    return { r: 185, g: 28, b: 28 };
   }
 
   // Return the parsed red, green, and blue channels.
@@ -143,28 +143,26 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
     resolvedMode === "dark" ? blend(accentRgbObject, white, 0.34) : blend(accentRgbObject, black, 0.32)
   );
 
-  // Match the sidebar's soft resting accent surface.
-  const accentSurface = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.22)` : `rgba(${accentRgb}, 0.14)`;
+  // Keep accent surfaces subtle because they are used for rows, cards, panels, and controls.
+  const accentSurface = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.16)` : `rgba(${accentRgb}, 0.08)`;
 
-  // Match the sidebar's soft hover accent surface.
-  const accentSurfaceHover = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.3)` : `rgba(${accentRgb}, 0.22)`;
+  // Use a clearer hover/selected wash without turning large surfaces into solid colour blocks.
+  const accentSurfaceHover = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.24)` : `rgba(${accentRgb}, 0.14)`;
 
   // Keep a lighter accent wash for cards, highlights, and subtle accents.
-  const accentSurfaceSubtle = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.16)` : `rgba(${accentRgb}, 0.08)`;
+  const accentSurfaceSubtle = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.1)` : `rgba(${accentRgb}, 0.05)`;
 
-  // Build a subtle accent border tone that still follows the chosen accent.
-  const accentBorder = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.28)` : `rgba(${accentRgb}, 0.18)`;
+  // Define the reusable theme colour separately from pressed controls; it is the app-wide accent background.
+  const themeColour = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.18)` : `rgba(${accentRgb}, 0.1)`;
+
+  // Define the app-wide hover colour for subtle themed surfaces.
+  const themeColourHover = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.26)` : `rgba(${accentRgb}, 0.16)`;
 
   // Build a stronger accent border for selected and focused states.
   const accentBorderStrong = resolvedMode === "dark" ? `rgba(${accentRgb}, 0.42)` : `rgba(${accentRgb}, 0.32)`;
 
   // Derive the app shell colour from the accent, matching the sidebar-led shell treatment.
   const shellBackground = rgbToHex(blend(accentRgbObject, surfaceAnchor, resolvedMode === "dark" ? 0.78 : 0.86));
-
-  // Build the accent-driven neutral border colour that the shell has historically used.
-  const borderTone = rgbToHex(
-    resolvedMode === "dark" ? blend(accentRgbObject, white, 0.45) : blend(accentRgbObject, black, 0.22)
-  );
 
   // Define the neutral surface colours used for cards, panels, and inputs.
   const surfaceMain = resolvedMode === "dark" ? "#16161a" : "#ffffff";
@@ -205,7 +203,6 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
     accentSurface,
     accentSurfaceHover,
     accentSurfaceSubtle,
-    accentBorder,
     accentBorderStrong,
 
     // Core semantic neutral surface tokens.
@@ -215,52 +212,45 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
     surfaceText,
     surfaceTextMuted,
     shellBackground,
-    borderTone,
     overlayBackdrop,
     overlayMuted,
 
     // Compatibility aliases that keep older code following the same semantic system.
     legacy: {
-      "--accentMain": accentMain,
-      "--accentHover": accentHover,
-      "--accentPressed": accentPressed,
+      "--primary": accentMain,
+      "--primary-hover": accentHover,
+      "--primary-pressed": accentPressed,
+      "--primary-selected": accentPressed,
       "--accentMainRgb": accentRgb,
       "--accentText": accentText,
+      "--text-accent": accentText,
       "--onAccentText": onAccentText,
-      "--accentSurface": accentSurface,
-      "--accentSurfaceHover": accentSurfaceHover,
-      "--accentSurfaceSubtle": accentSurfaceSubtle,
-      "--accentBorder": accentBorder,
-      "--accentBorderStrong": accentBorderStrong,
-      "--surfaceMain": surfaceMain,
+      "--secondary": accentSurface,
+      "--secondary-hover": accentSurfaceHover,
+      "--secondary-pressed": resolvedMode === "dark" ? `rgba(${accentRgb}, 0.32)` : `rgba(${accentRgb}, 0.2)`,
+      "--theme": themeColour,
+      "--primary-border": accentHover,
       "--surfaceHover": surfaceHover,
       "--surfaceMutedToken": surfaceMuted,
       "--surfaceText": surfaceText,
       "--surfaceTextMuted": surfaceTextMuted,
       "--surface": surfaceMain,
       "--surface-rgb": hexToRgbString(surfaceMain),
-      "--surface-light": surfaceHover,
-      "--surface-muted": surfaceMuted,
-      "--text-primary": surfaceText,
-      "--text-primary-rgb": hexToRgbString(surfaceText),
-      "--text-secondary": surfaceTextMuted,
-      "--text-secondary-rgb": hexToRgbString(surfaceTextMuted),
-      "--text-inverse": onAccentText,
-      "--text-inverse-rgb": hexToRgbString(onAccentText),
-      "--border": borderTone,
+      "--text-1": surfaceText,
+      "--text-1-rgb": hexToRgbString(surfaceText),
+      "--text-2": onAccentText,
+      "--text-2-rgb": hexToRgbString(onAccentText),
       "--overlay": overlayBackdrop,
       "--overlay-muted": overlayMuted,
       "--page-shell-bg": shellBackground,
       "--nav-shell-bg": accentSurface,
       "--page-card-bg": surfaceMain,
-      "--page-card-bg-alt": accentSurfaceSubtle,
       "--section-card-bg": surfaceMain,
-      "--nav-link-border": `1px solid ${accentBorder}`,
-      "--nav-link-border-active": `1px solid ${accentBorderStrong}`,
-      "--control-border-color": accentBorder,
-      "--control-border": `1px solid ${accentBorder}`,
-      "--control-border-hover": accentBorderStrong,
-      "--control-border-focus": accentBorderStrong,
+      "--nav-link-border-active": `1px solid ${accentHover}`,
+      "--secondary-border": accentSurfaceHover,
+      "--control-border": `1px solid ${accentSurfaceHover}`,
+      "--control-border-hover": accentSurfaceHover,
+      "--control-border-focus": accentSurfaceHover,
       "--control-ring": `0 0 0 3px rgba(${accentRgb}, ${resolvedMode === "dark" ? "0.18" : "0.12"})`,
       "--control-menu-shadow": "none",
       "--row-background": surfaceMain,
@@ -271,32 +261,26 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
       "--profile-table-surface": accentSurface,
       "--profile-table-alt-surface": accentSurfaceHover,
       "--search-surface": resolvedMode === "dark" ? "#2a2a32" : surfaceMain,
-      "--search-surface-muted": resolvedMode === "dark" ? "#3a3a42" : surfaceHover,
+      "--search-surface-muted": surfaceMain,
+      "--nav-link-border": `1px solid ${accentHover}`,
       "--search-text": accentPressed,
       "--scrollbar-thumb": accentMain,
       "--scrollbar-thumb-hover": accentHover,
       "--accent-base": accentSurface,
       "--accent-base-rgb": accentRgb,
-      "--accent-surface": accentSurfaceSubtle,
       "--accent-base-hover": accentSurfaceHover,
-      "--accent-surface-hover": accentSurface,
+      "--theme-hover": themeColourHover,
       "--accent-strong": accentMain,
-      "--primary": accentMain,
-      "--primary-light": accentHover,
-      "--primary-dark": accentPressed,
       "--primary-rgb": accentRgb,
-      "--info": accentMain,
-      "--info-dark": accentPressed,
-      "--info-surface": accentSurfaceSubtle,
-      "--info-rgb": accentRgb,
+      "--info": resolvedMode === "dark" ? "#f2a3a3" : "#d96f6f",
+      "--info-dark": resolvedMode === "dark" ? "#f7bcbc" : "#bf5656",
+      "--info-rgb": resolvedMode === "dark" ? "242, 163, 163" : "217, 111, 111",
+      "--theme-status": resolvedMode === "dark" ? "rgba(242, 163, 163, 0.26)" : "rgba(217, 111, 111, 0.18)",
       "--accent-purple": accentMain,
-      "--accent-purple-surface": accentSurfaceSubtle,
       "--accent-purple-rgb": accentRgb,
       "--accent-blue": accentMain,
-      "--accent-blue-surface": accentSurfaceSubtle,
       "--accent-blue-rgb": accentRgb,
       "--accent-orange": accentMain,
-      "--accent-orange-surface": accentSurfaceSubtle,
       "--accent-orange-rgb": accentRgb,
     },
   };

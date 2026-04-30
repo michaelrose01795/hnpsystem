@@ -90,7 +90,7 @@ function resolveWidgetPalette() {
     red: read("--danger", WIDGET_FALLBACKS.red),
     amber: read("--warning", WIDGET_FALLBACKS.amber),
     green: read("--success", WIDGET_FALLBACKS.green),
-    default: read("--accentMain", WIDGET_FALLBACKS.default),
+    default: read("--primary", WIDGET_FALLBACKS.default),
     surface: read("--hud-surface-glass", WIDGET_FALLBACKS.surface),
     text: read("--hud-text", WIDGET_FALLBACKS.text),
     textMuted: `rgba(${textRgb}, 0.92)`,

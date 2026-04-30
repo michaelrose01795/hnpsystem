@@ -158,7 +158,7 @@ function EmployeesVariant() {
                     display: "flex",
                     flexDirection: "column",
                     gap: "8px",
-                    background: "rgba(var(--primary-rgb), 0.08)",
+                    background: "var(--theme)",
                     borderRadius: "var(--radius-md)",
                     padding: "14px",
                   }}

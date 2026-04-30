@@ -20,13 +20,13 @@ const baseStyle = {
 const modeStyles = {
   mobile: {
     backgroundColor: "rgba(var(--primary-rgb, 59,130,246), 0.15)",
-    color: "var(--primary-dark, #1d4ed8)",
+    color: "var(--primary-selected, #1d4ed8)",
     borderColor: "rgba(var(--primary-rgb, 59,130,246), 0.35)",
   },
   workshop: {
-    backgroundColor: "var(--surface-muted, #f1f5f9)",
-    color: "var(--text-secondary, #475569)",
-    borderColor: "var(--border-subtle, rgba(15,23,42,0.1))",
+    backgroundColor: "var(--surface, #f1f5f9)",
+    color: "var(--text-1, #475569)",
+    borderColor: "var(--primary-border-subtle, rgba(15,23,42,0.1))",
   },
 };
 

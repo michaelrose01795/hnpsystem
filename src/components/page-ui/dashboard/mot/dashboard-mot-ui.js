@@ -16,19 +16,19 @@ export default function MotDashboardUi(props) {
       return <>
       <div>
         <header className="app-section-card" style={{
-      background: "var(--surface-light)"
+      background: "var(--surface)"
     }}>
           <p style={{
         margin: 0,
         letterSpacing: "0.1em",
         textTransform: "uppercase",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>
             MOT workspace
           </p>
           <h1 style={{
         margin: "6px 0 0",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>Today's test board</h1>
           <p style={{
         margin: "6px 0 0",

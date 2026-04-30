@@ -18,19 +18,19 @@ export default function ServiceDashboardUi(props) {
       return <>
       <div>
         <header className="app-section-card" style={{
-      background: "var(--surface-light)"
+      background: "var(--surface)"
     }}>
           <p style={{
         margin: 0,
         letterSpacing: "0.12em",
         textTransform: "uppercase",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>
             Service dashboard
           </p>
           <h1 style={{
         margin: "6px 0 0",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>Advisor cockpit</h1>
           <p style={{
         margin: "6px 0 0",
@@ -123,7 +123,7 @@ export default function ServiceDashboardUi(props) {
                       </div>
                     </div>
                     <strong style={{
-              color: "var(--primary-dark)",
+              color: "var(--primary-selected)",
               fontSize: "0.85rem"
             }}>{total}</strong>
                   </div>;

@@ -24,10 +24,10 @@ export default function AccountSummary({ summary }) {
     <section className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <div>
-          <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
             Overview
           </p>
-          <h2 style={{ margin: "6px 0 0", fontSize: "1.2rem", color: "var(--text-primary)" }}>Account Snapshot</h2>
+          <h2 style={{ margin: "6px 0 0", fontSize: "1.2rem", color: "var(--text-1)" }}>Account Snapshot</h2>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "14px" }}>
@@ -41,13 +41,13 @@ export default function AccountSummary({ summary }) {
               borderRadius: "var(--control-radius)",
               border: "1px solid rgba(var(--primary-rgb), 0.08)",
               padding: "16px",
-              background: card.emphasize ? "rgba(var(--primary-rgb), 0.08)" : "var(--surface-2, var(--surface-light))",
+              background: card.emphasize ? "var(--theme)" : "var(--surface-2, var(--surface))",
             }}
           >
             <p
               style={{
                 margin: 0,
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 fontSize: "0.8rem",
                 letterSpacing: "0.05em",
                 textTransform: "uppercase",
@@ -60,7 +60,7 @@ export default function AccountSummary({ summary }) {
                 marginTop: "10px",
                 display: "block",
                 fontSize: card.emphasize ? "1.8rem" : "1.4rem",
-                color: card.emphasize ? "var(--primary)" : "var(--text-primary)",
+                color: card.emphasize ? "var(--primary)" : "var(--text-1)",
                 fontWeight: card.emphasize ? 800 : 600,
               }}
             >

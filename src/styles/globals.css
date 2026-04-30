@@ -120,7 +120,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 
 .personal-widget-board--move {
   border: none;
-  background: var(--accent-surface);
+  background: var(--theme);
   padding: 10px;
 }
 
@@ -252,7 +252,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   gap: var(--space-4);
   padding: var(--section-card-padding);
   border-radius: var(--section-card-radius);
-  background: var(--page-card-bg-alt);
+  background: var(--theme);
   border: var(--section-card-border);
   box-shadow: none;
   background-image: none;
@@ -280,7 +280,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   gap: var(--space-3);
   padding: var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--accent-surface);
+  background: var(--theme);
   border: none;
   box-shadow: none;
   background-image: none;
@@ -289,7 +289,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 }
 
 .app-layout-surface-accent {
-  --profile-card-bg: var(--accent-surface);
+  --profile-card-bg: var(--theme);
   --profile-card-border: none;
   display: flex;
   flex-direction: column;
@@ -305,7 +305,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 }
 
 .app-profile-accent-card {
-  --profile-card-bg: var(--accent-surface);
+  --profile-card-bg: var(--theme);
   --profile-card-border: none;
 }
 
@@ -339,7 +339,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   min-height: 110px;
   padding: var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--accent-surface);
+  background: var(--theme);
   border: none;
 }
 
@@ -518,7 +518,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 .app-sidebar__header {
   background: var(--surface);
   padding: var(--space-md) var(--space-5);
-  color: var(--text-primary);
+  color: var(--text-1);
   border-bottom: none;
 }
 
@@ -815,7 +815,7 @@ input[type="checkbox"]:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   border-color: var(--grey-accent-light);
-  background: var(--surface-light);
+  background: var(--surface);
 }
 
 input[type="checkbox"]:disabled:checked {
@@ -917,7 +917,7 @@ a {
   z-index: 0;
 }
 a:hover {
-  color: var(--primary-light);
+  color: var(--primary-hover);
   text-decoration: underline;
   z-index: var(--hover-surface-z);
 }
@@ -963,7 +963,7 @@ a.tab-api__item:active {
 
 button:not(.app-btn) {
   background: var(--accent-strong);
-  color: var(--text-inverse);
+  color: var(--text-2);
   border: none;
   border-radius: var(--control-radius);
   min-height: var(--control-height);
@@ -1006,7 +1006,7 @@ input[type="search"] {
   border: none;
   background: var(--control-bg);
   box-shadow: none;
-  color: var(--text-primary);
+  color: var(--text-1);
 }
 
 input[type="search"]::placeholder {
@@ -1029,7 +1029,7 @@ select:focus {
 /* Placeholder style */
 input::placeholder,
 textarea::placeholder {
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .employee-form input::placeholder,
@@ -1057,7 +1057,7 @@ textarea::placeholder {
   /* Value text stays in the surface body-text tone (black in light mode,
      white in dark mode) — never the accent. Locked with !important so no
      page-level cascade can tint the value red. */
-  color: var(--text-primary) !important;
+  color: var(--text-1) !important;
   outline: none;
   transition: var(--control-transition);
 }
@@ -1076,7 +1076,7 @@ textarea::placeholder {
 label {
   font-size: var(--text-label);
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-1);
   display: block;
   margin-bottom: 2px;
 }
@@ -1090,9 +1090,9 @@ label {
 }
 
 .app-status-message--info {
-  background: var(--info-surface);
+  background: var(--theme);
   border: none;
-  color: var(--text-primary);
+  color: var(--text-1);
 }
 
 .app-status-message--success {
@@ -1123,7 +1123,7 @@ label {
 
 .app-tone-success-strong {
   background: var(--success);
-  color: var(--text-inverse);
+  color: var(--text-2);
   border: none;
 }
 
@@ -1135,7 +1135,7 @@ label {
 
 .app-tone-warning-strong {
   background: var(--warning);
-  color: var(--text-inverse);
+  color: var(--text-2);
   border: none;
 }
 
@@ -1147,19 +1147,19 @@ label {
 
 .app-tone-danger-strong {
   background: var(--danger);
-  color: var(--text-inverse);
+  color: var(--text-2);
   border: none;
 }
 
 .app-tone-info {
-  background: var(--info-surface);
+  background: var(--theme);
   color: var(--info);
   border: none;
 }
 
 .app-tone-info-strong {
   background: var(--info);
-  color: var(--text-inverse);
+  color: var(--text-2);
   border: none;
 }
 
@@ -1182,8 +1182,8 @@ label {
 }
 
 .app-data-table thead th {
-  background: var(--surface-light);
-  color: var(--text-secondary);
+  background: var(--surface);
+  color: var(--text-1);
   font-size: var(--text-label);
   font-weight: 700;
 }
@@ -1229,23 +1229,23 @@ label {
 
 .app-badge--neutral {
   background: rgba(var(--grey-accent-rgb), 0.18);
-  color: var(--text-primary);
+  color: var(--text-1);
 }
 
 .app-badge--accent-strong {
   background: var(--accent-strong);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .app-badge--accent-soft {
-  background: var(--accent-surface);
+  background: var(--theme);
   color: var(--accent-strong);
   border: none;
 }
 
 .app-badge--accent-hover {
-  background: var(--accent-surface-hover);
-  color: var(--text-primary);
+  background: var(--theme-hover);
+  color: var(--text-1);
   transition: background-color 0.2s ease;
 }
 .app-badge--accent-hover:hover {
@@ -1260,7 +1260,7 @@ label {
 
 .app-badge--danger-strong {
   background: var(--danger);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .app-badge--warning {
@@ -1271,7 +1271,7 @@ label {
 
 .app-badge--warning-strong {
   background: var(--warning);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .app-badge--success {
@@ -1282,7 +1282,7 @@ label {
 
 .app-badge--success-strong {
   background: var(--success);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 /* Active-tab override — when a jobcard tab badge sits inside an active tab
@@ -1323,7 +1323,7 @@ label {
 
 .customer-portal-shell {
   min-height: 100vh;
-  background: var(--accentSurfaceSubtle);
+  background: var(--theme);
 }
 
 .customer-portal-layout {
@@ -1355,7 +1355,7 @@ label {
 .customer-portal-card--muted {
   border-radius: var(--radius-lg);
   border: var(--control-border);
-  background: var(--surface-light);
+  background: var(--surface);
   padding: var(--space-md);
   box-shadow: none;
 }
@@ -1368,7 +1368,7 @@ label {
   gap: var(--space-3);
   border-radius: var(--radius-lg);
   background: var(--accent-base);
-  color: var(--text-primary);
+  color: var(--text-1);
   padding: var(--space-3) var(--space-md);
 }
 
@@ -1382,7 +1382,7 @@ label {
   border: none;
   padding: var(--space-md) var(--space-lg);
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 @media (min-width: 1024px) {
@@ -1399,7 +1399,7 @@ section {
   border-radius: var(--radius-card);
   padding: var(--layout-card-padding);
   margin-bottom: var(--layout-card-gap);
-  background: var(--layer-section-level-2);
+  background: var(--surface);
   border: none;
   transition: all 0.2s ease;
   position: relative;
@@ -1412,7 +1412,7 @@ div.news-card {
   border-radius: var(--radius-card);
   padding: var(--layout-card-padding);
   margin-bottom: var(--layout-card-gap);
-  background: var(--layer-section-level-1);
+  background: var(--surface);
   border: none;
   transition: all 0.2s ease;
   position: relative;
@@ -1455,19 +1455,19 @@ div.card h3 {
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-xs);
   text-decoration: none;
-  color: var(--text-secondary); /* default muted color */
+  color: var(--text-1); /* default muted color */
   transition: background-color 0.2s, color 0.2s;
   display: block;
 }
 
 .sidebar-link:hover {
   background-color: var(--accent-base-hover); /* subtle hover effect */
-  color: var(--text-primary);
+  color: var(--text-1);
 }
 
 .sidebar-link.active {
   background-color: var(--accent-strong); /* accent when active page */
-  color: var(--text-inverse); /* contrast */
+  color: var(--text-2); /* contrast */
 }
 
 .sidebar-action {
@@ -1493,20 +1493,20 @@ div.card h3 {
 hr {
   border: none;
   height: 1px;
-  background: var(--surface-light);
+  background: var(--surface);
   margin: 10px 0;
 }
 
 .bg-core-purple,
 [class*="bg-[var(--primary)"] {
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 [class*="bg-[var(--primary)"] * {
   color: inherit !important;
 }
 [style*="background: var(--primary)"],
 [style*="background-color: var(--primary)"] {
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .text-gradient {
@@ -1569,19 +1569,19 @@ div#main-content {
   font-size: 0.8rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(var(--text-secondary-rgb), 0.8);
+  color: rgba(var(--text-1-rgb), 0.8);
   font-weight: 600;
 }
 
 .redirect-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-1);
 }
 
 .redirect-sub {
   font-size: 0.95rem;
-  color: rgba(var(--text-secondary-rgb), 0.85);
+  color: rgba(var(--text-1-rgb), 0.85);
 }
 
 .redirect-dots {
@@ -1711,7 +1711,7 @@ body:has(.login-page-wrapper) {
 .login-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .login-input,
@@ -1722,7 +1722,7 @@ body:has(.login-page-wrapper) {
   background: var(--control-bg);
   padding: 12px 16px;
   font-size: 0.95rem;
-  color: var(--text-primary);
+  color: var(--text-1);
   box-shadow: none;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -1905,7 +1905,7 @@ body:has(.login-page-wrapper) {
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.95rem;
-  color: var(--text-secondary);
+  color: var(--text-1);
   pointer-events: none;
   transition: all 0.2s ease;
   background: transparent;
@@ -1924,12 +1924,12 @@ body:has(.login-page-wrapper) {
 }
 
 .login-select-wrapper.has-value .login-select-label {
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .login-loading-text {
   font-size: 0.75rem;
-  color: rgba(var(--text-secondary-rgb), 0.7);
+  color: rgba(var(--text-1-rgb), 0.7);
   min-height: 18px;
 }
 
@@ -2017,7 +2017,7 @@ body:has(.login-page-wrapper) {
   flex: 0 0 auto;
   border-radius: 18px;
   border: none;
-  background: var(--accent-surface);
+  background: var(--theme);
   box-shadow: none;
 }
 
@@ -2026,7 +2026,7 @@ body:has(.login-page-wrapper) {
   position: absolute;
   inset: 8px;
   border-radius: var(--radius-sm);
-  background: var(--accent-surface);
+  background: var(--theme);
   border: none;
 }
 
@@ -2068,7 +2068,7 @@ body:has(.login-page-wrapper) {
   width: 46px;
   height: 46px;
   border-radius: var(--radius-pill);
-  background: var(--accent-surface);
+  background: var(--theme);
   border: none;
   color: rgba(var(--accent-base-rgb), 0.9);
   font-size: 1.6rem;
@@ -2171,7 +2171,7 @@ body:has(.login-page-wrapper) {
 .timepicker-api__label {
   font-size: var(--control-label-size);
   font-weight: var(--control-label-weight);
-  color: var(--text-primary);
+  color: var(--text-1);
   transition: color 0.2s ease;
 }
 
@@ -2406,7 +2406,7 @@ textarea:disabled {
   padding: 11px 12px;
   background: transparent;
   border: none;
-  color: var(--text-inverse);
+  color: var(--text-2);
   text-align: left;
   cursor: pointer;
   display: flex;
@@ -2468,7 +2468,7 @@ textarea:disabled {
   border-radius: var(--control-radius-sm);
   border: none;
   background: var(--control-bg);
-  color: var(--text-primary);
+  color: var(--text-1);
   font-size: var(--control-font-size);
   line-height: 1.2;
   outline: none;
@@ -2543,6 +2543,14 @@ button.dropdown-api__option.is-selected:focus-visible {
   display: flex;
   align-items: center;
   font-weight: 600;
+}
+
+.multiselect-dropdown-api__option .dropdown-api__option-label {
+  flex: 1 1 auto;
+  justify-content: center;
+  text-align: center;
+  padding-left: 30px;
+  padding-right: 30px;
 }
 
 select {
@@ -2626,7 +2634,7 @@ select {
   min-width: 0;
   min-height: 0 !important;
   height: 100%;
-  color: var(--text-primary) !important;
+  color: var(--text-1) !important;
   font-size: var(--control-font-size);
   outline: none !important;
 }
@@ -2639,12 +2647,12 @@ select {
    `button:not(.app-btn)` reset so the chevron doesn't inherit the solid
    brand button fill. Square hit target, transparent background. */
 button.multiselect-dropdown-api__chevron {
-  width: 32px;
-  height: 32px;
+  width: var(--control-height);
+  height: var(--control-height);
   min-height: 0;
   padding: 0;
   border: none;
-  border-radius: var(--control-radius-sm);
+  border-radius: var(--control-radius);
   background: transparent;
   color: var(--dropdown-trigger-color);
   cursor: pointer;
@@ -2671,8 +2679,10 @@ button.multiselect-dropdown-api__chevron:disabled {
 .multiselect-dropdown-api__option {
   flex-direction: row !important;
   align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+  text-align: center;
 }
 
 .multiselect-dropdown-api__checkbox {
@@ -2682,6 +2692,12 @@ button.multiselect-dropdown-api__chevron:disabled {
   accent-color: var(--accent-strong);
   flex-shrink: 0;
   margin: 0;
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 .multiselect-dropdown-api__option:hover .multiselect-dropdown-api__checkbox {
@@ -2870,10 +2886,10 @@ button.calendar-api__picker-cell {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 36px;
+  min-height: var(--control-height);
   padding: 0 8px;
   border: none;
-  border-radius: var(--control-radius-sm);
+  border-radius: var(--control-radius);
   background: var(--calendar-day-bg);
   color: var(--calendar-day-color);
   font-size: 0.875rem;
@@ -2898,7 +2914,7 @@ button.calendar-api__picker-cell.is-selected {
 .timepicker-api__display {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-1);
 }
 
 /* Today button — Primary at rest, Secondary on hover / focus / active,
@@ -3069,13 +3085,13 @@ button.calendar-api__day.is-highlighted:not(.is-selected) {
 
 button.calendar-api__day:disabled,
 button.calendar-api__day.is-disabled {
-  color: var(--text-secondary);
+  color: var(--text-1);
   opacity: 0.3;
   cursor: not-allowed;
 }
 
 [data-theme="dark"] .calendar-api__today-button {
-  background: var(--accent-surface-hover);
+  background: var(--theme-hover);
 }
 
 /* ========================================================= */
@@ -3210,7 +3226,7 @@ input[type="search"]::-webkit-search-results-decoration {
   border-radius: 0 !important;
   background: transparent !important;
   background-color: transparent !important;
-  color: var(--text-primary) !important;
+  color: var(--text-1) !important;
   font-size: var(--control-font-size);
   font-weight: var(--control-font-weight);
   outline: none !important;
@@ -3250,7 +3266,7 @@ button.searchbar-api__clear {
   border: none;
   border-radius: 0;
   background: transparent;
-  color: var(--text-primary);
+  color: var(--text-1);
   font-size: 1.15rem;
   font-weight: 500;
   line-height: 1;
@@ -3274,7 +3290,7 @@ button.searchbar-api__clear:focus-visible {
 }
 
 .status-sidebar__searchbar {
-  background: var(--accentSurface);
+  background: var(--secondary);
   color: var(--accentText);
   box-shadow: none;
   padding-right: 48px;
@@ -3282,44 +3298,44 @@ button.searchbar-api__clear:focus-visible {
 
 .status-sidebar__searchbar:hover,
 .status-sidebar__searchbar:focus-within {
-  background: var(--accentSurfaceHover);
+  background: var(--secondary-hover);
   box-shadow: none;
 }
 
 .status-sidebar__searchbar .searchbar-api__input,
 .status-sidebar__searchbar-input {
-  color: var(--text-primary);
+  color: var(--text-1);
   padding-right: 58px !important;
 }
 
 .status-sidebar__searchbar .searchbar-api__input::placeholder,
 .status-sidebar__searchbar-input::placeholder {
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .status-sidebar__searchbar .searchbar-api__clear {
-  background: var(--surface-light);
-  color: var(--text-secondary);
+  background: var(--surface);
+  color: var(--text-1);
 }
 
 .status-sidebar__searchbar .searchbar-api__clear:hover,
 .status-sidebar__searchbar .searchbar-api__clear:focus-visible {
-  background: var(--accentSurfaceHover);
-  color: var(--text-primary);
+  background: var(--secondary-hover);
+  color: var(--text-1);
 }
 
 .status-sidebar__search-submit {
   position: absolute;
   top: 50%;
   right: 6px;
-  width: 32px;
-  height: 32px;
-  min-height: 32px;
+  width: var(--control-height);
+  height: var(--control-height);
+  min-height: var(--control-height);
   padding: 0;
   border: none;
-  border-radius: var(--radius-pill);
+  border-radius: var(--control-radius);
   background: var(--primary);
-  color: var(--text-inverse);
+  color: var(--text-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3330,7 +3346,7 @@ button.searchbar-api__clear:focus-visible {
 
 .status-sidebar__search-submit:hover,
 .status-sidebar__search-submit:focus-visible {
-  background: var(--primary-dark);
+  background: var(--primary-selected);
   outline: none;
 }
 
@@ -3503,7 +3519,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .tab-api__item[data-tone="success"].is-active {
   background: var(--success);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .hr-manager-shell {
@@ -3592,7 +3608,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .hr-employees-kicker {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--text-1);
   text-transform: uppercase;
   font-size: var(--text-label);
   letter-spacing: var(--tracking-caps);
@@ -3607,7 +3623,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .hr-employees-subtitle {
   margin: 0;
-  color: var(--text-secondary);
+  color: var(--text-1);
   max-width: 720px;
 }
 
@@ -3628,7 +3644,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 .hr-employees-directory-card {
   gap: 16px;
   min-width: 0;
-  background: var(--accent-surface);
+  background: var(--theme);
   border: none;
 }
 
@@ -3661,8 +3677,8 @@ a.tab-api__item:focus-visible:not(.is-active) {
   padding: 11px 126px 11px 14px;
   border-radius: var(--input-radius);
   border: none;
-  background: var(--accent-surface);
-  color: var(--text-primary);
+  background: var(--theme);
+  color: var(--text-1);
   font-size: 0.92rem;
   outline: none;
 }
@@ -3678,7 +3694,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.72rem;
-  color: var(--text-secondary);
+  color: var(--text-1);
   pointer-events: none;
   white-space: nowrap;
 }
@@ -3695,7 +3711,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   padding: 12px 14px;
   border-radius: var(--radius-sm);
   border: none;
-  background: var(--accent-surface);
+  background: var(--theme);
 }
 
 .hr-employees-summary-label {
@@ -3703,12 +3719,12 @@ a.tab-api__item:focus-visible:not(.is-active) {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .hr-employees-summary-value {
   font-size: 1.15rem;
-  color: var(--text-primary);
+  color: var(--text-1);
 }
 
 .hr-employees-list {
@@ -3782,7 +3798,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .hr-employees-row-name {
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-1);
   font-size: 1.02rem;
   line-height: 1.2;
 }
@@ -3790,7 +3806,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 .hr-employees-row-email,
 .hr-employees-row-role,
 .hr-employees-row-meta {
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .hr-employees-row-email {
@@ -3800,7 +3816,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 .hr-employees-row-role {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-1);
 }
 
 .hr-employees-row-meta {
@@ -3831,7 +3847,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .hr-employees-row-chevron {
-  color: var(--text-secondary);
+  color: var(--text-1);
   font-size: 1rem;
   line-height: 1;
 }
@@ -3940,7 +3956,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .tab-api__item[data-tone="warning"].is-active {
   background: var(--warning);
-  color: var(--text-inverse);
+  color: var(--text-2);
 }
 
 .dropdown-api--sm .dropdown-api__control,
@@ -4043,7 +4059,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   text-align: left;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-1);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   white-space: nowrap;
@@ -4051,8 +4067,8 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .table-api tbody tr td {
   padding: 12px;
-  background: var(--surface-light);
-  color: var(--text-primary);
+  background: var(--surface);
+  color: var(--text-1);
   font-size: var(--control-font-size);
   vertical-align: middle;
   border: none;
@@ -4070,15 +4086,15 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .table-api tbody tr:hover td {
-  background: var(--accent-surface);
+  background: var(--theme);
 }
 
 [data-theme="dark"] .table-api tbody tr td {
-  background: var(--layer-section-level-1);
+  background: var(--surface);
 }
 
 [data-theme="dark"] .table-api tbody tr:hover td {
-  background: var(--accent-surface-hover);
+  background: var(--theme-hover);
 }
 
 /* ========================================================= */
@@ -4099,7 +4115,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   font-size: 0.7rem;
   font-weight: 600;
   color: var(--info);
-  background: var(--info-surface);
+  background: var(--theme);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -4114,17 +4130,17 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .vhc-parts-identified-table tbody tr {
-  background: var(--surface-light);
+  background: var(--surface);
   transition: background-color 0.18s ease;
 }
 
 .vhc-parts-identified-table tbody tr td {
   padding: 12px;
   background: transparent;
-  color: var(--text-primary);
+  color: var(--text-1);
   vertical-align: middle;
   border: none;
-  border-bottom: 1px solid var(--info-surface);
+  border-bottom: 1px solid var(--theme);
   transition: background-color 0.18s ease;
 }
 
@@ -4141,7 +4157,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
    keep their existing inline styles. */
 .vhc-parts-identified-expanded {
   padding: 20px 24px 24px;
-  border-top: 1px solid var(--accent-surface);
+  border-top: 1px solid var(--theme);
   /* background is set inline per-row to match the clicked row's hover colour */
 }
 
@@ -4167,7 +4183,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .app-table-shell {
   width: 100%;
-  color: var(--text-primary);
+  color: var(--text-1);
   background: var(--surface) !important;
   background-image: none !important;
   border: none;
@@ -4215,7 +4231,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 .app-table-shell--with-headings thead th {
   background: var(--page-shell-bg) !important;
   background-image: none !important;
-  color: var(--text-primary) !important;
+  color: var(--text-1) !important;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -4242,7 +4258,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .app-table-shell--with-headings tbody tr:nth-child(even) {
-  background: var(--surface-light, var(--surface)) !important;
+  background: var(--surface, var(--surface)) !important;
 }
 
 .app-table-shell--with-headings tbody td {
@@ -4272,7 +4288,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .app-table-shell--rows-only tbody tr:nth-child(even) {
-  background: var(--surface-light, var(--surface)) !important;
+  background: var(--surface, var(--surface)) !important;
 }
 
 .app-table-shell--rows-only tbody td {
@@ -4302,7 +4318,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 [data-theme="dark"] .app-table-shell--with-headings tbody tr:nth-child(even),
 [data-theme="dark"] .app-table-shell--rows-only tbody tr:nth-child(even) {
-  background: var(--layer-section-level-1, var(--surface-light)) !important;
+  background: var(--surface) !important;
 }
 
 /* ---------- Mobile / vertical phone view ----------
@@ -4679,9 +4695,9 @@ a.tab-api__item:focus-visible:not(.is-active) {
 .video-editor-popup {
   width: min(100%, var(--video-editor-max-width, 520px));
   max-width: min(var(--video-editor-max-width, 520px), calc(100vw - (var(--popup-viewport-gap) * 2)));
-  background: var(--surfaceMain);
+  background: var(--surface);
   color: var(--surfaceText);
-  border: 1px solid var(--border);
+  border: 1px solid var(--primary-border);
   border-radius: var(--radius-xl);
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
   display: grid;
@@ -4692,7 +4708,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .video-editor-popup__header {
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--primary-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4728,7 +4744,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-3) var(--space-5) calc(var(--space-3) + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--primary-border);
   background: var(--control-bg);
   flex-wrap: wrap;
 }
@@ -4823,9 +4839,9 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .video-editor-timeline {
-  background: var(--surfaceMain);
+  background: var(--surface);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
+  border: 1px solid var(--primary-border);
   padding: var(--space-4);
   color: var(--surfaceText);
 }
@@ -4853,7 +4869,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   height: 56px;
   border-radius: var(--radius-md);
   background: var(--control-bg);
-  border: 1px solid var(--border);
+  border: 1px solid var(--primary-border);
   margin-bottom: 18px;
 }
 
@@ -4864,15 +4880,15 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .video-editor-timeline__switch {
   width: 44px;
-  height: 26px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
+  height: var(--control-height);
+  border-radius: var(--control-radius);
+  border: 1px solid var(--primary-border);
 }
 
 .video-editor-timeline__tool-button {
-  min-height: 32px;
+  min-height: var(--control-height);
   padding: 0 var(--space-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--control-radius);
   font-size: var(--text-caption);
   font-weight: 700;
   letter-spacing: var(--tracking-wide);
@@ -4909,7 +4925,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .start-new-chat-popup .chat-user-option:hover,
 .start-new-chat-popup .chat-user-option:focus-visible {
-  background-color: var(--accent-surface) !important;
+  background-color: var(--theme) !important;
   border-color: rgba(var(--accent-base-rgb), 0.4) !important;
 }
 
@@ -4930,7 +4946,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* Light mode: white background */
 .cosmetic-notes-active {
   background-color: var(--surface) !important;
-  color: var(--text-primary) !important;
+  color: var(--text-1) !important;
 }
 
 .job-cards-create-bottom-row {
@@ -4960,7 +4976,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* Dark mode: dark grey background with white text */
 [data-theme="dark"] .cosmetic-notes-active {
   background-color: var(--surface) !important;
-  color: var(--text-primary) !important;
+  color: var(--text-1) !important;
 }
 
 /* ========================================================= */
@@ -5337,7 +5353,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 #appointments-auto-data-table-2 thead th {
   background: var(--page-shell-bg) !important;
-  color: var(--text-primary) !important;
+  color: var(--text-1) !important;
 }
 
 #appointments-auto-data-table-2 tbody tr {
@@ -5363,19 +5379,19 @@ a.tab-api__item:focus-visible:not(.is-active) {
 #appointments-auto-data-table-2 tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row),
 #appointments-auto-data-table-2 tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row) td {
   background: rgba(var(--primary-rgb), 0.25) !important;
-  color: var(--text-primary) !important;
+  color: var(--text-1) !important;
 }
 
 #appointments-auto-data-table-2 tr.appt-sat-row.appt-selected-row,
 #appointments-auto-data-table-2 tr.appt-sat-row.appt-selected-row td {
   background: var(--warning-text) !important;
-  color: var(--text-inverse) !important;
+  color: var(--text-2) !important;
 }
 
 #appointments-auto-data-table-2 tr.appt-today-row.appt-selected-row,
 #appointments-auto-data-table-2 tr.appt-today-row.appt-selected-row td {
   background: var(--success-text) !important;
-  color: var(--text-inverse) !important;
+  color: var(--text-2) !important;
 }
 
 #appointments-auto-data-table-2 tr.appt-sat-row *,
@@ -5403,7 +5419,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 #appointments-auto-data-table-2 tbody tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row):hover td {
-  background: var(--accent-surface-hover) !important;
+  background: var(--theme-hover) !important;
   box-shadow: none !important;
 }
 
@@ -5417,4 +5433,36 @@ a.tab-api__item:focus-visible:not(.is-active) {
   background: var(--success-surface-hover) !important;
   color: var(--success-text) !important;
   box-shadow: none !important;
+}
+
+/* ========================================================= */
+/* === Notes Textarea — compact auto-growing notes field === */
+/* === Single-line height by default, grows up to 2 lines  === */
+/* === Same surface treatment as a standard input          === */
+/* ========================================================= */
+.app-notes-input {
+  /* Match the global input surface so this reads as an input, not a textarea. */
+  background: var(--control-bg);
+  resize: none;
+  /* Start at one input row; cap at exactly double so the field grows once,
+     then scrolls — keeps the form layout stable. */
+  min-height: var(--control-height);
+  max-height: calc(var(--control-height) * 2);
+  height: var(--control-height);
+  /* field-sizing makes the textarea auto-grow to its content height in modern
+     browsers (Chromium 123+, Safari 17.4+). Older browsers stay at min-height. */
+  field-sizing: content;
+  line-height: 1.4;
+  overflow: auto;
+}
+
+.app-notes-input:hover {
+  background: var(--control-bg-hover);
+}
+
+.app-notes-input:focus,
+.app-notes-input:focus-visible {
+  background: var(--control-bg-hover);
+  box-shadow: var(--control-ring);
+  outline: none;
 }

@@ -256,7 +256,7 @@ export default function JobClockingCard() {
           <h2 style={{
             fontSize: "24px",
             fontWeight: "700",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             margin: 0
           }}>
             Job Clocking - {user.first_name} {user.last_name}
@@ -267,7 +267,7 @@ export default function JobClockingCard() {
             disabled={loading}
             style={{
               padding: "10px 20px",
-              backgroundColor: loading ? "var(--background)" : "var(--primary)",
+              backgroundColor: loading ? "var(--surface)" : "var(--primary)",
               color: "white",
               border: "none",
               borderRadius: "var(--radius-xs)",
@@ -276,7 +276,7 @@ export default function JobClockingCard() {
               fontWeight: "600",
               transition: "background-color 0.2s"
             }}
-            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "var(--primary-dark)")}
+            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = "var(--primary-selected)")}
             onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = "var(--primary)")}
           >
             {loading ? "Refreshing..." : "🔄 Refresh"}
@@ -292,14 +292,14 @@ export default function JobClockingCard() {
           }}>
             <div style={{
               padding: "16px",
-              backgroundColor: "var(--info-surface)",
+              backgroundColor: "var(--theme)",
               borderRadius: "var(--radius-sm)",
               border: "none"
             }}>
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Total Hours Today
               </p>
-              <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
+              <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-1)", margin: 0 }}>
                 {dailySummary.totalHours}h
               </p>
             </div>
@@ -313,7 +313,7 @@ export default function JobClockingCard() {
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Active Jobs
               </p>
-              <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
+              <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-1)", margin: 0 }}>
                 {dailySummary.activeJobs}
               </p>
             </div>
@@ -327,7 +327,7 @@ export default function JobClockingCard() {
               <p style={{ fontSize: "13px", color: "var(--grey-accent)", margin: "0 0 8px 0" }}>
                 Completed Today
               </p>
-              <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-primary)", margin: 0 }}>
+              <p style={{ fontSize: "32px", fontWeight: "700", color: "var(--text-1)", margin: 0 }}>
                 {dailySummary.completedJobs}
               </p>
             </div>
@@ -346,7 +346,7 @@ export default function JobClockingCard() {
         <h3 style={{
           fontSize: "18px",
           fontWeight: "600",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           margin: "0 0 20px 0"
         }}>
           Currently Working On
@@ -377,7 +377,7 @@ export default function JobClockingCard() {
                   justifyContent: "space-between",
                   alignItems: "center",
                   padding: "16px",
-                  backgroundColor: "var(--surface-light)",
+                  backgroundColor: "var(--surface)",
                   border: "2px solid var(--primary)",
                   borderRadius: "var(--radius-sm)"
                 }}
@@ -417,7 +417,7 @@ export default function JobClockingCard() {
                   disabled={loading}
                   style={{
                     padding: "10px 20px",
-                    backgroundColor: loading ? "var(--background)" : "var(--danger)",
+                    backgroundColor: loading ? "var(--surface)" : "var(--danger)",
                     color: "white",
                     border: "none",
                     borderRadius: "var(--radius-xs)",
@@ -454,7 +454,7 @@ export default function JobClockingCard() {
           <h3 style={{
             fontSize: "18px",
             fontWeight: "600",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             margin: 0
           }}>
             Clock Into Job
@@ -504,7 +504,7 @@ export default function JobClockingCard() {
               outline: "none"
             }}
             onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-            onBlur={(e) => e.target.style.borderColor = "var(--surface-light)"}
+            onBlur={(e) => e.target.style.borderColor = "var(--surface)"}
           />
 
           <select
@@ -529,7 +529,7 @@ export default function JobClockingCard() {
             disabled={loading || !selectedJobNumber}
             style={{
               padding: "12px 24px",
-              backgroundColor: loading || !selectedJobNumber ? "var(--background)" : "var(--info)",
+              backgroundColor: loading || !selectedJobNumber ? "var(--surface)" : "var(--info)",
               color: "white",
               border: "none",
               borderRadius: "var(--radius-xs)",
@@ -571,7 +571,7 @@ export default function JobClockingCard() {
                 <thead style={{
                   position: "sticky",
                   top: 0,
-                  backgroundColor: "var(--info-surface)",
+                  backgroundColor: "var(--theme)",
                   zIndex: 1
                 }}>
                   <tr>
@@ -599,10 +599,10 @@ export default function JobClockingCard() {
                       <tr
                         key={job.id}
                         style={{
-                          borderBottom: "1px solid var(--info-surface)",
+                          borderBottom: "1px solid var(--theme)",
                           transition: "background-color 0.2s"
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--info-surface)"}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--theme)"}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
                       >
                         <td style={tableCellStyle}>
@@ -696,7 +696,7 @@ const tableHeaderStyle = {
   color: "var(--info)",
   textTransform: "uppercase",
   letterSpacing: "0.5px",
-  borderBottom: "2px solid var(--surface-light)"
+  borderBottom: "2px solid var(--surface)"
 };
 
 const tableCellStyle = {

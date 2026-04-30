@@ -28,7 +28,7 @@ const sectionTitleStyle = {
   fontSize: "0.95rem",
   fontWeight: 700,
   letterSpacing: "0.05em",
-  color: "var(--primary-dark)",
+  color: "var(--primary-selected)",
   marginBottom: "14px",
   textTransform: "uppercase",
 };
@@ -75,7 +75,7 @@ export default function PartsDashboardGrid({
         <p
           style={{
             marginBottom: "4px",
-            color: "var(--primary-dark)",
+            color: "var(--primary-selected)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             fontWeight: 700,
@@ -93,7 +93,7 @@ export default function PartsDashboardGrid({
       <div style={summaryGridStyle}>
         {summaryCards.map((card) => (
           <div key={card.label} className="app-section-card" style={summaryCardStyle}>
-            <div style={{ fontSize: "0.85rem", color: "var(--primary-dark)", fontWeight: 600 }}>{card.label}</div>
+            <div style={{ fontSize: "0.85rem", color: "var(--primary-selected)", fontWeight: 600 }}>{card.label}</div>
             <div style={{ fontSize: "1.9rem", fontWeight: 700, color: "var(--primary)", margin: "8px 0" }}>
               {card.value}
             </div>
@@ -135,7 +135,7 @@ export default function PartsDashboardGrid({
                           fontSize: "0.8rem",
                           fontWeight: 600,
                           background: job.statusColor || "rgba(var(--primary-rgb),0.08)",
-                          color: job.statusTextColor || "var(--primary-dark)",
+                          color: job.statusTextColor || "var(--primary-selected)",
                         }}
                       >
                         {job.status}
@@ -170,16 +170,16 @@ export default function PartsDashboardGrid({
                       marginBottom: "12px",
                       borderRadius: "var(--radius-sm)",
                       border: "1px dashed rgba(var(--primary-rgb),0.3)",
-                      background: "rgba(var(--primary-rgb),0.03)",
+                      background: "var(--theme)",
                     }}
                   >
-                    <div style={{ fontWeight: 600, color: "var(--primary-dark)" }}>
+                    <div style={{ fontWeight: 600, color: "var(--primary-selected)" }}>
                       {alert.partNumber ? `${alert.partNumber} · ${alert.name || ""}` : alert.part || "Part"}
                     </div>
                     <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>
                       Supplier: {alert.supplier || "—"} · Location: {alert.location || "Not set"}
                     </div>
-                    <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "var(--primary-dark)" }}>
+                    <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "var(--primary-selected)" }}>
                       {statusLabel} · Stock {alert.inStock ?? 0} / Min {alert.reorderLevel ?? 0} · On order {alert.qtyOnOrder ?? 0}
                     </div>
                     <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
@@ -204,7 +204,7 @@ export default function PartsDashboardGrid({
                 >
                   <div style={{ fontWeight: 600 }}>{item.title}</div>
                   <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{item.detail}</div>
-                  <div style={{ fontSize: "0.8rem", color: "var(--primary-dark)", marginTop: "4px" }}>{item.owner}</div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--primary-selected)", marginTop: "4px" }}>{item.owner}</div>
                 </div>
               ))}
             </div>
@@ -222,12 +222,12 @@ export default function PartsDashboardGrid({
                   borderRadius: "var(--radius-sm)",
                   border: "none",
                   marginBottom: "12px",
-                  background: "rgba(var(--primary-rgb),0.02)",
+                  background: "var(--theme)",
                 }}
               >
                 <div style={{ fontWeight: 600 }}>{entry.name}</div>
                 <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{entry.role}</div>
-                <div style={{ fontSize: "0.8rem", color: "var(--primary-dark)", marginTop: "6px" }}>
+                <div style={{ fontSize: "0.8rem", color: "var(--primary-selected)", marginTop: "6px" }}>
                   {entry.status} • {entry.window}
                 </div>
               </div>
@@ -247,7 +247,7 @@ export default function PartsDashboardGrid({
                 <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>
                   ETA {delivery.eta} • {delivery.items} lines
                 </div>
-                <div style={{ fontSize: "0.8rem", color: "var(--primary-dark)", marginTop: "4px" }}>
+                <div style={{ fontSize: "0.8rem", color: "var(--primary-selected)", marginTop: "4px" }}>
                   {delivery.reference}
                 </div>
               </div>

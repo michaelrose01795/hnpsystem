@@ -68,12 +68,12 @@ function MobileAppointmentsInner() {
             {day === "unscheduled" ? "Unscheduled" : new Date(day).toLocaleDateString([], { weekday: "long", day: "numeric", month: "short" })}
           </h2>
           {list.map((j) =>
-        <div key={j.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--border-subtle)" }}>
+        <div key={j.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--primary-border-subtle)" }}>
               <Link href={`/mobile/jobs/${encodeURIComponent(j.job_number)}`}>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   <strong>{j.job_number}</strong>
                   <ServiceModeBadge mode="mobile" />
-                  <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+                  <span style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
                     {j.appointment_window_start ? new Date(j.appointment_window_start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
                     {j.appointment_window_end ? ` → ${new Date(j.appointment_window_end).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""}
                   </span>

@@ -104,7 +104,7 @@ export default function CompanyAccountDetailPage() {
     if (!value) return null;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>{label}</span>
+        <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>{label}</span>
         <strong>{value}</strong>
       </div>);
 
@@ -141,7 +141,7 @@ export default function CompanyAccountDetailPage() {
       </div>
       {(account.billing_address_line1 || account.billing_address_line2) &&
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Billing Address</span>
+          <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Billing Address</span>
           <div>
             {account.billing_address_line1 && <p style={{ margin: 0 }}>{account.billing_address_line1}</p>}
             {account.billing_address_line2 && <p style={{ margin: 0 }}>{account.billing_address_line2}</p>}
@@ -155,18 +155,18 @@ export default function CompanyAccountDetailPage() {
   <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {(account.linked_account_label || account.linked_account_id) &&
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Linked Ledger Account</span>
+          <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Linked Ledger Account</span>
           <strong>{account.linked_account_label || account.linked_account_id}</strong>
         </div>
     }
       {account.notes &&
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>Notes</span>
+          <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Notes</span>
           <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{account.notes}</p>
         </div>
     }
       {!account.notes && !(account.linked_account_label || account.linked_account_id) &&
-    <p style={{ color: "var(--text-secondary)", fontStyle: "italic" }}>No billing information or notes available.</p>
+    <p style={{ color: "var(--text-1)", fontStyle: "italic" }}>No billing information or notes available.</p>
     }
     </div>;
 
@@ -201,7 +201,7 @@ export default function CompanyAccountDetailPage() {
                 prefetchJob(job.job_number); // warm SWR cache on hover
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--surface-light)";
+                e.currentTarget.style.borderColor = "var(--surface)";
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.zIndex = "0";
               }}>
@@ -217,15 +217,15 @@ export default function CompanyAccountDetailPage() {
                         borderRadius: "var(--radius-pill)",
                         fontSize: "0.75rem",
                         fontWeight: 600,
-                        background: "var(--surface-light)",
-                        color: "var(--text-primary)"
+                        background: "var(--surface)",
+                        color: "var(--text-1)"
                       }}>
                       
                             {job.status}
                           </span>
                     }
                       </div>
-                      {job.customer && <p style={{ margin: "4px 0", color: "var(--text-secondary)" }}>{job.customer}</p>}
+                      {job.customer && <p style={{ margin: "4px 0", color: "var(--text-1)" }}>{job.customer}</p>}
                       {job.vehicle_reg &&
                   <p style={{ margin: "4px 0", fontSize: "0.9rem" }}>
                           <strong>{job.vehicle_reg}</strong>
@@ -233,17 +233,17 @@ export default function CompanyAccountDetailPage() {
                         </p>
                   }
                       {job.job_source &&
-                  <p style={{ margin: "4px 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                  <p style={{ margin: "4px 0", fontSize: "0.85rem", color: "var(--text-1)" }}>
                           Source: {job.job_source}
                         </p>
                   }
                     </div>
                     <div style={{ textAlign: "right", minWidth: "120px" }}>
-                      <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>Created</p>
+                      <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "var(--text-1)" }}>Created</p>
                       <p style={{ margin: 0, fontWeight: 600 }}>{formatDate(job.created_at)}</p>
                       {job.completed_at &&
                   <>
-                          <p style={{ margin: "8px 0 4px 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>Completed</p>
+                          <p style={{ margin: "8px 0 4px 0", fontSize: "0.85rem", color: "var(--text-1)" }}>Completed</p>
                           <p style={{ margin: 0, fontWeight: 600 }}>{formatDate(job.completed_at)}</p>
                         </>
                   }
@@ -253,7 +253,7 @@ export default function CompanyAccountDetailPage() {
             )}
             </div> :
 
-          <p style={{ color: "var(--text-secondary)", fontStyle: "italic" }}>No job cards found for this account.</p>
+          <p style={{ color: "var(--text-1)", fontStyle: "italic" }}>No job cards found for this account.</p>
           }
         </div>
 
@@ -280,7 +280,7 @@ export default function CompanyAccountDetailPage() {
                 e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--surface-light)";
+                e.currentTarget.style.borderColor = "var(--surface)";
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.zIndex = "0";
               }}>
@@ -301,20 +301,20 @@ export default function CompanyAccountDetailPage() {
                         "var(--success-surface)" :
                         invoice.payment_status === "Overdue" ?
                         "var(--danger-surface)" :
-                        "var(--surface-light)",
+                        "var(--surface)",
                         color:
                         invoice.payment_status === "Paid" ?
                         "var(--success)" :
                         invoice.payment_status === "Overdue" ?
                         "var(--danger)" :
-                        "var(--text-primary)"
+                        "var(--text-1)"
                       }}>
                       
                             {invoice.payment_status}
                           </span>
                     }
                       </div>
-                      {invoice.invoice_to && <p style={{ margin: "4px 0", color: "var(--text-secondary)" }}>{invoice.invoice_to}</p>}
+                      {invoice.invoice_to && <p style={{ margin: "4px 0", color: "var(--text-1)" }}>{invoice.invoice_to}</p>}
                       <div style={{ display: "flex", gap: "16px", marginTop: "8px", fontSize: "0.85rem" }}>
                         {invoice.job_number && <span>Job: #{invoice.job_number}</span>}
                         {invoice.order_number && <span>Order: #{invoice.order_number}</span>}
@@ -323,17 +323,17 @@ export default function CompanyAccountDetailPage() {
                     <div style={{ textAlign: "right", minWidth: "120px" }}>
                       {invoice.invoice_total &&
                   <>
-                          <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>Total</p>
+                          <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "var(--text-1)" }}>Total</p>
                           <p style={{ margin: "0 0 12px 0", fontSize: "1.2rem", fontWeight: 700, color: "var(--primary)" }}>
                             £{parseFloat(invoice.invoice_total).toFixed(2)}
                           </p>
                         </>
                   }
-                      <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>Invoice Date</p>
+                      <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "var(--text-1)" }}>Invoice Date</p>
                       <p style={{ margin: 0, fontWeight: 600 }}>{formatDate(invoice.invoice_date)}</p>
                       {invoice.due_date &&
                   <>
-                          <p style={{ margin: "8px 0 4px 0", fontSize: "0.85rem", color: "var(--text-secondary)" }}>Due Date</p>
+                          <p style={{ margin: "8px 0 4px 0", fontSize: "0.85rem", color: "var(--text-1)" }}>Due Date</p>
                           <p style={{ margin: 0, fontWeight: 600 }}>{formatDate(invoice.due_date)}</p>
                         </>
                   }
@@ -343,7 +343,7 @@ export default function CompanyAccountDetailPage() {
             )}
             </div> :
 
-          <p style={{ color: "var(--text-secondary)", fontStyle: "italic" }}>No invoices found for this account.</p>
+          <p style={{ color: "var(--text-1)", fontStyle: "italic" }}>No invoices found for this account.</p>
           }
         </div>
       </div>);

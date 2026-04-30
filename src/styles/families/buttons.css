@@ -88,7 +88,7 @@
      read as one family. --input-bg resolves to --control-bg (pale accent
      tint in whichever theme colour the user has chosen). */
   background: var(--input-bg) !important;
-  color: var(--text-primary) !important;
+  color: var(--text-1) !important;
   border: none !important;
 }
 .app-btn--primary:hover,
@@ -98,7 +98,7 @@
 
 .app-btn--secondary {
   background: var(--control-bg) !important;
-  color: var(--accentText) !important;
+  color: var(--text-accent) !important;
   border: none !important;
 }
 .app-btn--secondary:hover,
@@ -109,7 +109,7 @@
 .app-btn--ghost {
   background: transparent !important;
   color: var(--accentText) !important;
-  border: 1px solid var(--accentMain) !important;
+  border: 1px solid var(--primary) !important;
 }
 .app-btn--ghost:hover,
 .app-btn--ghost:focus-visible {
@@ -156,7 +156,7 @@
    fill so it reads on the accent background without needing a border. */
 .app-btn--on-primary {
   background: rgba(var(--surface-rgb), 0.18) !important;
-  color: var(--text-inverse) !important;
+  color: var(--text-2) !important;
   border: none !important;
 }
 .app-btn--on-primary:hover,
@@ -173,10 +173,10 @@
 /* === Not for production code.                             === */
 /* ========================================================= */
 .app-btn[data-demo-state="hover"] {
-  background: var(--accentHover) !important;
+  background: var(--primary-hover) !important;
 }
 .app-btn[data-demo-state="active"] {
-  background: var(--accentPressed) !important;
+  background: var(--primary-pressed) !important;
 }
 .app-btn[data-demo-state="focus"] {
   box-shadow: var(--control-ring) !important;
@@ -190,7 +190,7 @@
 /* === it is declared after them in this file.             === */
 /* ========================================================= */
 .app-btn.is-active {
-  background: var(--accentMain) !important;
+  background: var(--primary) !important;
   color: var(--onAccentText) !important;
 }
 

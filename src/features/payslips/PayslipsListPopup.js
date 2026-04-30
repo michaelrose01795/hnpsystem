@@ -18,14 +18,14 @@ import {
   filterPayslips,
 } from "./payslipUtils";
 
-function SummaryStat({ label, value, tone = "var(--text-primary)" }) {
+function SummaryStat({ label, value, tone = "var(--text-1)" }) {
   return (
     <div
       style={{
         padding: "12px",
         borderRadius: "var(--radius-md, 12px)",
         background: "var(--surface)",
-        border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
+        border: "1px solid rgba(var(--text-1-rgb), 0.08)",
         display: "grid",
         gap: "4px",
       }}
@@ -36,7 +36,7 @@ function SummaryStat({ label, value, tone = "var(--text-primary)" }) {
           fontWeight: 700,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
         }}
       >
         {label}
@@ -75,7 +75,7 @@ export default function PayslipsListPopup({
         <div
           style={{
             padding: "20px 24px",
-            borderBottom: "1px solid rgba(var(--text-primary-rgb), 0.08)",
+            borderBottom: "1px solid rgba(var(--text-1-rgb), 0.08)",
             display: "grid",
             gap: "16px",
           }}
@@ -88,12 +88,12 @@ export default function PayslipsListPopup({
                   fontWeight: 700,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
-                  color: "var(--text-secondary)",
+                  color: "var(--text-1)",
                 }}
               >
                 Payslips
               </span>
-              <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)" }}>
+              <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--text-1)" }}>
                 {payslips.length} payslip{payslips.length === 1 ? "" : "s"} on record
               </div>
             </div>
@@ -181,7 +181,7 @@ export default function PayslipsListPopup({
         {/* List */}
         <div style={{ overflowY: "auto", padding: "12px 16px 20px" }}>
           {loading ? (
-            <div style={{ padding: "24px", textAlign: "center", color: "var(--text-secondary)" }}>
+            <div style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>
               Loading payslips…
             </div>
           ) : error ? (
@@ -202,7 +202,7 @@ export default function PayslipsListPopup({
               style={{
                 padding: "32px",
                 textAlign: "center",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 fontSize: "0.9rem",
               }}
             >
@@ -226,22 +226,22 @@ export default function PayslipsListPopup({
                       alignItems: "center",
                       padding: "12px 14px",
                       borderRadius: "var(--radius-md, 12px)",
-                      border: "1px solid rgba(var(--text-primary-rgb), 0.08)",
+                      border: "1px solid rgba(var(--text-1-rgb), 0.08)",
                       background: "var(--surface)",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       cursor: "pointer",
                       textAlign: "left",
                       width: "100%",
                     }}
                   >
                     <span style={{ fontWeight: 700 }}>{formatDate(slip.paidDate)}</span>
-                    <span style={{ color: "var(--text-secondary)", fontSize: "0.88rem", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <span style={{ color: "var(--text-1)", fontSize: "0.88rem", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {formatPeriodLabel(slip)}
                     </span>
                     <span style={{ fontWeight: 700, color: "var(--accentText, var(--accent))", textAlign: "right" }}>
                       {formatCurrency(slip.netPay)}
                     </span>
-                    <span style={{ color: "var(--text-secondary)", fontSize: "0.82rem", textAlign: "right" }}>
+                    <span style={{ color: "var(--text-1)", fontSize: "0.82rem", textAlign: "right" }}>
                       {slip.reference || "—"}
                     </span>
                     <span

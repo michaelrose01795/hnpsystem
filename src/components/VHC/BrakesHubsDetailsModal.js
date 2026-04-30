@@ -224,7 +224,7 @@ const buildTabPillStyle = (active = false) => ({
   fontWeight: 600,
   cursor: "pointer",
   background: active ? "var(--primary)" : "transparent",
-  color: active ? "var(--text-inverse)" : "var(--text-primary)",
+  color: active ? "var(--text-2)" : "var(--text-1)",
   transition: "background-color 0.18s ease, color 0.18s ease",
   display: "flex",
   alignItems: "center",
@@ -443,7 +443,7 @@ const DrumBrakesSection = ({
               onClick={() => onStatusChange?.(label)}
               style={{
                 backgroundColor: active ? palette.accent : "var(--control-bg)",
-                color: active ? "var(--text-inverse)" : "var(--text-primary)",
+                color: active ? "var(--text-2)" : "var(--text-1)",
                 border: "none",
               }}
             >
@@ -664,7 +664,7 @@ export default function BrakesHubsDetailsModal({
     borderRadius: "var(--control-radius)",
     border: "none",
     backgroundColor: "var(--control-bg)",
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
     fontSize: "var(--control-font-size)",
     outline: "none",
   };
@@ -1283,7 +1283,7 @@ export default function BrakesHubsDetailsModal({
               <div style={popupCardStyle}>
                 <div style={{
                   padding: "18px 20px",
-                  background: "var(--page-card-bg-alt, var(--surface-light))",
+                  background: "var(--theme, var(--surface))",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",

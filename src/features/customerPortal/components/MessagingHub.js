@@ -3,7 +3,7 @@ import React from "react";
 
 export default function MessagingHub({ contacts = [] }) {
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5">
+    <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5">
       <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-white">Message centre</p>
@@ -18,19 +18,19 @@ export default function MessagingHub({ contacts = [] }) {
         {contacts.map((contact) => (
           <div
             key={contact.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-4 text-sm"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-4 text-sm"
           >
             <div>
-              <p className="text-sm font-semibold text-[var(--text-primary)]">{contact.label}</p>
-              <p className="text-xs text-[var(--text-secondary)]">{contact.name}</p>
+              <p className="text-sm font-semibold text-[var(--text-1)]">{contact.label}</p>
+              <p className="text-xs text-[var(--text-1)]">{contact.name}</p>
             </div>
-            <button className="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-dark)]">
+            <button className="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-selected)]">
               Message
             </button>
           </div>
         ))}
         {contacts.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-[var(--surface-light)] px-4 py-8 text-center text-sm text-[var(--text-secondary)]">
+          <p className="rounded-2xl border border-dashed border-[var(--surface)] px-4 py-8 text-center text-sm text-[var(--text-1)]">
             Select a job card or VHC to start a conversation with the team.
           </p>
         )}

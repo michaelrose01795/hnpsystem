@@ -16,19 +16,19 @@ export default function AccountsDashboardUi(props) {
       return <>
       <div>
         <header className="app-section-card" style={{
-      border: "1px solid var(--accent-purple-surface)"
+      border: "1px solid var(--theme)"
     }}>
           <p style={{
         margin: 0,
         letterSpacing: "0.12em",
         textTransform: "uppercase",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>
             Accounts cockpit
           </p>
           <h1 style={{
         margin: "6px 0 0",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>Invoice performance</h1>
           <p style={{
         margin: "6px 0 0",

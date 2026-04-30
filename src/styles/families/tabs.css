@@ -36,7 +36,7 @@
 
 .app-tab[aria-selected="true"],
 .app-tab.is-active {
-  background: var(--accentMain);
+  background: var(--primary);
   color: var(--onAccentText);
 }
 

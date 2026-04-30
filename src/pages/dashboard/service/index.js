@@ -12,7 +12,7 @@ const MetricCard = ({ label, value, helper }) =>
     minWidth: 160
   }}>
   
-    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-dark)" }}>{label}</p>
+    <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.8rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
   </div>;
@@ -48,7 +48,7 @@ const PieChart = ({ breakdown }) => {
             }} />
           
           </div>
-          <strong style={{ color: "var(--primary-dark)" }}>{segment.value}</strong>
+          <strong style={{ color: "var(--primary-selected)" }}>{segment.value}</strong>
         </div>
       )}
     </div>);
@@ -82,7 +82,7 @@ const TrendBlock = ({ data }) => {
             }} />
           
           </div>
-          <strong style={{ color: "var(--primary-dark)" }}>{point.count}</strong>
+          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
       )}
     </div>);
@@ -124,7 +124,7 @@ const QueueItem = ({ job }) =>
   }}>
   
     <div>
-      <strong style={{ color: "var(--primary-dark)" }}>{job.job_number || "—"}</strong>
+      <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
       <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
         {job.vehicle_reg || "Plate missing"}
       </p>

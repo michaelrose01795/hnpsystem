@@ -30,7 +30,7 @@ export default function PartsDeliveriesPageUi(props) {
         <div style={{
     padding: "48px",
     textAlign: "center",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   }}>
           You do not have access to delivery planning.
         </div>
@@ -49,7 +49,7 @@ export default function PartsDeliveriesPageUi(props) {
           margin: 0,
           textTransform: "uppercase",
           letterSpacing: "0.08em",
-          color: "var(--primary-dark)",
+          color: "var(--primary-selected)",
           fontSize: "0.85rem"
         }}>
               Driver view
@@ -71,7 +71,7 @@ export default function PartsDeliveriesPageUi(props) {
               <div style={{
             fontSize: "0.9rem",
             fontWeight: 600,
-            color: "var(--primary-dark)"
+            color: "var(--primary-selected)"
           }}>Selected day</div>
               <div style={{
             fontSize: "1.1rem",
@@ -83,7 +83,7 @@ export default function PartsDeliveriesPageUi(props) {
             borderRadius: "var(--radius-sm)",
             border: "none",
             background: "var(--surface)",
-            color: "var(--primary-dark)",
+            color: "var(--primary-selected)",
             padding: "var(--control-padding)",
             cursor: "pointer",
             fontWeight: 600
@@ -94,7 +94,7 @@ export default function PartsDeliveriesPageUi(props) {
               <button type="button" onClick={() => setSelectedDate(prev => adjustIsoDate(prev, 1))} style={{
             borderRadius: "var(--radius-sm)",
             border: "none",
-            background: "var(--primary-dark)",
+            background: "var(--primary-selected)",
             color: "var(--surface)",
             padding: "var(--control-padding)",
             cursor: "pointer",
@@ -139,7 +139,7 @@ export default function PartsDeliveriesPageUi(props) {
       }}>
             <h2 style={{
           margin: 0,
-          color: "var(--primary-dark)"
+          color: "var(--primary-selected)"
         }}>Delivery list</h2>
             <p style={{
           margin: 0,

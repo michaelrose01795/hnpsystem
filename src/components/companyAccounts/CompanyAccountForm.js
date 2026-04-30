@@ -183,7 +183,7 @@ export default function CompanyAccountForm({
           style={{
             ...inputStyles,
             padding: "10px 14px",
-            background: computedDisabled ? "var(--surface-light)" : "white",
+            background: computedDisabled ? "var(--surface)" : "white",
             ...customStyle,
           }}
         />
@@ -240,11 +240,11 @@ export default function CompanyAccountForm({
               >
                 Apply data
               </button>
-              <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>Press Tab in the box or click Apply to fill the form.</span>
+              <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>Press Tab in the box or click Apply to fill the form.</span>
             </div>
           </DevLayoutSection>
           {bulkFeedback && (
-            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)" }}>{bulkFeedback}</p>
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-1)" }}>{bulkFeedback}</p>
           )}
         </label>
       </DevLayoutSection>
@@ -310,9 +310,9 @@ export default function CompanyAccountForm({
             style={{
               padding: "10px 16px",
               borderRadius: "var(--control-radius-xs)",
-              border: "1px solid var(--surface-border, var(--surface-light))",
-              background: "var(--surface-light)",
-              color: "var(--text-primary)",
+              border: "1px solid var(--surface-border, var(--surface))",
+              background: "var(--surface)",
+              color: "var(--text-1)",
             }}
           >
             Cancel

@@ -78,7 +78,7 @@ function RuleIcon({ ok }) {
         height: "20px",
         borderRadius: "var(--radius-pill)",
         background: "var(--control-bg)",
-        color: "var(--text-secondary)",
+        color: "var(--text-1)",
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -142,7 +142,7 @@ export default function MobileMechanicEligibility({
     if (verdict.status === "pending") {
       return {
         label: "Checking…",
-        fg: "var(--text-secondary)",
+        fg: "var(--text-1)",
         bg: "var(--control-bg)",
       };
     }
@@ -159,7 +159,7 @@ export default function MobileMechanicEligibility({
         style={{
           fontSize: "13px",
           fontWeight: "600",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           display: "block",
           marginBottom: "10px",
         }}
@@ -195,7 +195,7 @@ export default function MobileMechanicEligibility({
         >
           {statusMeta.label}
         </span>
-        <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+        <span style={{ fontSize: "12px", color: "var(--text-1)" }}>
           Rules: service · Suzuki · ≤ 3 yrs · ≤ 40 min drive
         </span>
       </div>
@@ -220,14 +220,14 @@ export default function MobileMechanicEligibility({
               gap: "10px",
               fontSize: "12px",
               lineHeight: 1.4,
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
             }}
           >
             <RuleIcon ok={rule.ok} />
             <span style={{ flex: 1 }}>
               <span style={{ fontWeight: 600 }}>{rule.label}</span>
               {rule.detail ? (
-                <span style={{ color: "var(--text-secondary)", marginLeft: "6px" }}>
+                <span style={{ color: "var(--text-1)", marginLeft: "6px" }}>
                   — {rule.detail}
                 </span>
               ) : null}
@@ -247,7 +247,7 @@ export default function MobileMechanicEligibility({
           flexWrap: "wrap",
         }}
       >
-        <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+        <span style={{ fontSize: "12px", color: "var(--text-1)" }}>
           Send as Mobile Mechanic?
         </span>
         <div
@@ -297,7 +297,7 @@ export default function MobileMechanicEligibility({
           style={{
             marginTop: "10px",
             fontSize: "12px",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             backgroundColor: "var(--success-surface, var(--surface))",
             borderRadius: "var(--radius-sm)",
             padding: "8px 10px",

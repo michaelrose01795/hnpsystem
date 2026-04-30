@@ -31,16 +31,16 @@ export default function NewsFeedUi(props) {
   }}>
         {canManageUpdates && <div className="flex justify-end items-center" style={{
       width: "100%",
-      paddingBottom: "48px"
+      paddingBottom: "16px"
     }}>
             <button onClick={() => {
         resetModal();
         setModalOpen(true);
       }} className="px-5 py-2 font-semibold text-white rounded-xl  transition-all hover:-translate-y-0.5 hover:shadow-lg" style={{
         backgroundColor: "var(--primary)",
-        border: "1px solid var(--primary-dark)"
+        border: "1px solid var(--primary-selected)"
       }} type="button">
-              + Add Update
+              Add Update
             </button>
           </div>}
 
@@ -77,10 +77,10 @@ export default function NewsFeedUi(props) {
         {!loading && accessibleUpdates.length === 0 && <div className="text-center py-16" style={{
       border: "none",
       borderRadius: "var(--radius-md)",
-      backgroundColor: "var(--layer-section-level-1)"
+      backgroundColor: "var(--surface)"
     }}>
             <p className="text-sm" style={{
-        color: "var(--text-secondary)",
+        color: "var(--text-1)",
         opacity: 0.7
       }}>
               No updates published for your departments yet.
@@ -96,7 +96,7 @@ export default function NewsFeedUi(props) {
         padding: "20px 24px",
         border: "none",
         borderRadius: "var(--radius-sm)",
-        backgroundColor: "var(--accent-surface)",
+        backgroundColor: "var(--theme)",
         cursor: "pointer",
         transition: "transform 0.3s ease, box-shadow 0.3s ease",
         maxWidth: "100%",
@@ -116,7 +116,7 @@ export default function NewsFeedUi(props) {
           fontSize: "22px",
           fontWeight: "bold",
           marginBottom: "8px",
-          color: "var(--text-primary)"
+          color: "var(--text-1)"
         }}>
                 {update.title}
               </h2>
@@ -128,7 +128,7 @@ export default function NewsFeedUi(props) {
           display: "flex",
           alignItems: "center",
           gap: "8px",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           opacity: 0.7
         }}>
                 <span>{update.author || "System"}</span>
@@ -140,7 +140,7 @@ export default function NewsFeedUi(props) {
               <div style={{
           fontSize: "15px",
           lineHeight: "1.6",
-          color: "var(--text-primary)",
+          color: "var(--text-1)",
           opacity: 0.9,
           maxHeight: "calc(1.6em * 20)",
           overflowY: "auto"
@@ -170,24 +170,34 @@ export default function NewsFeedUi(props) {
             <div style={{
           padding: "32px"
         }}>
-              <h3 style={{
-            margin: "0 0 24px 0",
-            fontSize: "28px",
-            fontWeight: "bold",
-            color: "var(--primary)"
-          }}>
-                Share an Update
-              </h3>
-              {/* Departments Field */}
+              {/* Heading row with Departments dropdown */}
               <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
             marginBottom: "24px"
           }}>
-                <MultiSelectDropdown label="Visible to Departments" placeholder="Add departments" options={AVAILABLE_DEPARTMENTS} value={formState.departments} onChange={selectedDepartments => {
-              setFormState(prev => ({
-                ...prev,
-                departments: selectedDepartments
-              }));
-            }} emptyState="No departments available" />
+                <h3 style={{
+              margin: 0,
+              fontSize: "28px",
+              fontWeight: "bold",
+              color: "var(--primary)"
+            }}>
+                  Share an Update
+                </h3>
+                <div style={{
+              display: "flex",
+              justifyContent: "flex-start",
+              minWidth: "260px"
+            }}>
+                  <MultiSelectDropdown searchPlaceholder="Visible to Departments" placeholder="Visible to Departments" options={AVAILABLE_DEPARTMENTS} value={formState.departments} onChange={selectedDepartments => {
+                setFormState(prev => ({
+                  ...prev,
+                  departments: selectedDepartments
+                }));
+              }} emptyState="No departments available" />
+                </div>
               </div>
 
               {/* Title Field */}
@@ -212,11 +222,10 @@ export default function NewsFeedUi(props) {
               width: "100%",
               padding: "12px 16px",
               borderRadius: "var(--radius-sm)",
-              border: "2px solid var(--surface-light)",
-              backgroundColor: "var(--surface-light)",
-              fontSize: "15px",
-              transition: "border-color 0.2s"
-            }} onFocus={e => e.target.style.borderColor = "var(--primary)"} onBlur={e => e.target.style.borderColor = "var(--surface-light)"} />
+              border: "none",
+              backgroundColor: "var(--theme)",
+              fontSize: "15px"
+            }} />
               </div>
 
               {/* Description Field */}
@@ -241,12 +250,11 @@ export default function NewsFeedUi(props) {
               width: "100%",
               padding: "12px 16px",
               borderRadius: "var(--radius-sm)",
-              border: "2px solid var(--surface-light)",
-              backgroundColor: "var(--surface-light)",
+              border: "none",
+              backgroundColor: "var(--theme)",
               fontSize: "15px",
-              transition: "border-color 0.2s",
               resize: "none"
-            }} onFocus={e => e.target.style.borderColor = "var(--primary)"} onBlur={e => e.target.style.borderColor = "var(--surface-light)"} />
+            }} />
               </div>
 
               {/* Error Message */}
@@ -266,7 +274,7 @@ export default function NewsFeedUi(props) {
             {/* Footer Actions */}
             <div style={{
           padding: "24px 32px",
-          borderTop: "1px solid var(--surface-light)",
+          borderTop: "1px solid var(--surface)",
           display: "flex",
           justifyContent: "flex-end",
           gap: "12px"
@@ -277,18 +285,18 @@ export default function NewsFeedUi(props) {
           }} style={{
             padding: "12px 24px",
             borderRadius: "var(--radius-sm)",
-            border: "2px solid var(--surface-light)",
+            border: "2px solid var(--surface)",
             backgroundColor: "transparent",
             fontSize: "15px",
             fontWeight: "bold",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             cursor: "pointer",
             transition: "all 0.2s"
           }} onMouseEnter={e => {
             e.currentTarget.style.borderColor = "var(--primary)";
-            e.currentTarget.style.backgroundColor = "var(--surface-light)";
+            e.currentTarget.style.backgroundColor = "var(--surface)";
           }} onMouseLeave={e => {
-            e.currentTarget.style.borderColor = "var(--surface-light)";
+            e.currentTarget.style.borderColor = "var(--surface)";
             e.currentTarget.style.backgroundColor = "transparent";
           }}>
                 Cancel
@@ -296,7 +304,7 @@ export default function NewsFeedUi(props) {
               <button type="button" onClick={handleCreateUpdate} disabled={saving} style={{
             padding: "12px 24px",
             borderRadius: "var(--radius-sm)",
-            border: "2px solid var(--primary-dark)",
+            border: "2px solid var(--primary-selected)",
             backgroundColor: "var(--primary)",
             color: "white",
             fontSize: "15px",

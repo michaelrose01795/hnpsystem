@@ -185,18 +185,18 @@ const getWidgetTitle = (widget) => {
 function DashboardShellCard({ title, eyebrow, children, actions, fullWidth = false }) {
   return (
     <section
-      className={`rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 shadow-sm ${
+      className={`rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5 shadow-sm ${
         fullWidth ? "xl:col-span-2" : ""
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           {eyebrow ? (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--text-secondary)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[var(--text-1)]">
               {eyebrow}
             </p>
           ) : null}
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h3>
+          <h3 className="text-lg font-semibold text-[var(--text-1)]">{title}</h3>
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
@@ -209,12 +209,12 @@ function MetricTile({ label, value, tone = "default" }) {
   const toneClass =
     tone === "accent"
       ? "border-[color:color-mix(in_srgb,var(--primary)_28%,white)] bg-[color:color-mix(in_srgb,var(--primary)_8%,white)]"
-      : "border-[var(--surface-light)] bg-[var(--surface-light)]";
+      : "border-[var(--surface)] bg-[var(--surface)]";
 
   return (
     <div className={`rounded-2xl border px-4 py-3 ${toneClass}`}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">{value}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-1)]">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-[var(--text-1)]">{value}</p>
     </div>
   );
 }
@@ -237,18 +237,18 @@ function WidgetEditModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-xl rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 shadow-2xl">
+      <div className="w-full max-w-xl rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--text-secondary)]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--text-1)]">
               Widget settings
             </p>
-            <h3 className="text-xl font-semibold text-[var(--text-primary)]">{getWidgetTitle(widget)}</h3>
+            <h3 className="text-xl font-semibold text-[var(--text-1)]">{getWidgetTitle(widget)}</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-[var(--surface-light)] px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)]"
+            className="rounded-full border border-[var(--surface)] px-3 py-1.5 text-sm font-medium text-[var(--text-1)]"
           >
             Close
           </button>
@@ -256,22 +256,22 @@ function WidgetEditModal({
 
         {isCustomSummary ? (
           <div className="mt-5 space-y-4">
-            <label className="block text-sm font-medium text-[var(--text-primary)]">
+            <label className="block text-sm font-medium text-[var(--text-1)]">
               Title
               <input
                 type="text"
                 value={draft.title || ""}
                 onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
-                className="mt-1 w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+                className="mt-1 w-full rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-1)] outline-none focus:border-[var(--primary)]"
               />
             </label>
 
-            <label className="block text-sm font-medium text-[var(--text-primary)]">
+            <label className="block text-sm font-medium text-[var(--text-1)]">
               Summary source
               <select
                 value={draft.source || "tracking"}
                 onChange={(event) => setDraft((current) => ({ ...current, source: event.target.value }))}
-                className="mt-1 w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+                className="mt-1 w-full rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-1)] outline-none focus:border-[var(--primary)]"
               >
                 {CUSTOM_SUMMARY_SOURCE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -281,13 +281,13 @@ function WidgetEditModal({
               </select>
             </label>
 
-            <label className="block text-sm font-medium text-[var(--text-primary)]">
+            <label className="block text-sm font-medium text-[var(--text-1)]">
               Note
               <textarea
                 value={draft.note || ""}
                 onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))}
                 rows={4}
-                className="mt-1 w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+                className="mt-1 w-full rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-1)] outline-none focus:border-[var(--primary)]"
                 placeholder="Optional context shown under the summary."
               />
             </label>
@@ -296,44 +296,44 @@ function WidgetEditModal({
 
         {isUserDefined ? (
           <div className="mt-5 space-y-4">
-            <label className="block text-sm font-medium text-[var(--text-primary)]">
+            <label className="block text-sm font-medium text-[var(--text-1)]">
               Title
               <input
                 type="text"
                 value={draft.title || ""}
                 onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
-                className="mt-1 w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+                className="mt-1 w-full rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-1)] outline-none focus:border-[var(--primary)]"
               />
             </label>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="block text-sm font-medium text-[var(--text-primary)]">
+              <label className="block text-sm font-medium text-[var(--text-1)]">
                 Metric label
                 <input
                   type="text"
                   value={draft.metricLabel || ""}
                   onChange={(event) => setDraft((current) => ({ ...current, metricLabel: event.target.value }))}
-                  className="mt-1 w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+                  className="mt-1 w-full rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-1)] outline-none focus:border-[var(--primary)]"
                 />
               </label>
-              <label className="block text-sm font-medium text-[var(--text-primary)]">
+              <label className="block text-sm font-medium text-[var(--text-1)]">
                 Metric value
                 <input
                   type="text"
                   value={draft.metricValue || ""}
                   onChange={(event) => setDraft((current) => ({ ...current, metricValue: event.target.value }))}
-                  className="mt-1 w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+                  className="mt-1 w-full rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-1)] outline-none focus:border-[var(--primary)]"
                 />
               </label>
             </div>
 
-            <label className="block text-sm font-medium text-[var(--text-primary)]">
+            <label className="block text-sm font-medium text-[var(--text-1)]">
               Body
               <textarea
                 value={draft.body || ""}
                 onChange={(event) => setDraft((current) => ({ ...current, body: event.target.value }))}
                 rows={5}
-                className="mt-1 w-full rounded-2xl border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--primary)]"
+                className="mt-1 w-full rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--text-1)] outline-none focus:border-[var(--primary)]"
                 placeholder="Add free-form notes, reminders, or a custom summary."
               />
             </label>
@@ -344,7 +344,7 @@ function WidgetEditModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-[var(--surface-light)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)]"
+            className="rounded-full border border-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--text-1)]"
           >
             Cancel
           </button>
@@ -506,7 +506,7 @@ export default function CustomerDashboardPage() {
             <MetricTile label="Plans" value={String(financeStats.planCount)} />
             <MetricTile label="Saved cards" value={String(financeStats.savedMethods)} />
           </div>
-          {note ? <p className="mt-4 text-sm text-[var(--text-secondary)]">{note}</p> : null}
+          {note ? <p className="mt-4 text-sm text-[var(--text-1)]">{note}</p> : null}
         </DashboardShellCard>
       );
     }
@@ -519,7 +519,7 @@ export default function CustomerDashboardPage() {
             <MetricTile label="Next visit" value={nextVisit || "TBC"} />
             <MetricTile label="Parts shown" value={String(parts?.length || 0)} />
           </div>
-          {note ? <p className="mt-4 text-sm text-[var(--text-secondary)]">{note}</p> : null}
+          {note ? <p className="mt-4 text-sm text-[var(--text-1)]">{note}</p> : null}
         </DashboardShellCard>
       );
     }
@@ -533,7 +533,7 @@ export default function CustomerDashboardPage() {
             <MetricTile label="With media" value={String(readyCount)} />
             <MetricTile label="Pending" value={String(trackingStats.pendingVhc)} />
           </div>
-          {note ? <p className="mt-4 text-sm text-[var(--text-secondary)]">{note}</p> : null}
+          {note ? <p className="mt-4 text-sm text-[var(--text-1)]">{note}</p> : null}
         </DashboardShellCard>
       );
     }
@@ -546,7 +546,7 @@ export default function CustomerDashboardPage() {
             <MetricTile label="Primary" value={contacts?.[0]?.label || "N/A"} />
             <MetricTile label="Customer" value={customer?.firstname || "Profile"} />
           </div>
-          {note ? <p className="mt-4 text-sm text-[var(--text-secondary)]">{note}</p> : null}
+          {note ? <p className="mt-4 text-sm text-[var(--text-1)]">{note}</p> : null}
         </DashboardShellCard>
       );
     }
@@ -558,7 +558,7 @@ export default function CustomerDashboardPage() {
           <MetricTile label="Timeline items" value={String(timeline?.length || 0)} />
           <MetricTile label="Vehicles" value={String(trackingStats.vehicleCount)} />
         </div>
-        {note ? <p className="mt-4 text-sm text-[var(--text-secondary)]">{note}</p> : null}
+        {note ? <p className="mt-4 text-sm text-[var(--text-1)]">{note}</p> : null}
       </DashboardShellCard>
     );
   };
@@ -607,21 +607,21 @@ export default function CustomerDashboardPage() {
               <MetricTile label="Saved cards" value={String(financeStats.savedMethods)} />
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+              <div className="rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-1)]">
                   Payment plans
                 </p>
-                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                <p className="mt-2 text-sm text-[var(--text-1)]">
                   {financeStats.planCount
                     ? `${financeStats.planCount} active plan${financeStats.planCount === 1 ? "" : "s"} with £${financeStats.planBalance.toFixed(2)} remaining.`
                     : "No active payment plans on this account."}
                 </p>
               </div>
-              <div className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+              <div className="rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-1)]">
                   Next action
                 </p>
-                <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                <p className="mt-2 text-sm text-[var(--text-1)]">
                   {outstandingInvoices?.[0]?.paymentLink
                     ? `Latest payment link ready for invoice ${String(outstandingInvoices[0].id).slice(0, 8)}.`
                     : "No active online payment link found for the latest invoice."}
@@ -639,8 +639,8 @@ export default function CustomerDashboardPage() {
               <MetricTile label="Vehicles" value={String(trackingStats.vehicleCount)} />
               <MetricTile label="Next visit" value={trackingStats.nextVisit} />
             </div>
-            <div className="mt-4 rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+            <div className="mt-4 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-1)]">
                 Recent movement
               </p>
               {trackingStats.recentTimeline.length ? (
@@ -648,15 +648,15 @@ export default function CustomerDashboardPage() {
                   {trackingStats.recentTimeline.map((event) => (
                     <div key={event.id} className="flex items-start justify-between gap-3 text-sm">
                       <div>
-                        <p className="font-medium text-[var(--text-primary)]">{event.label}</p>
-                        <p className="text-[var(--text-secondary)]">{event.description}</p>
+                        <p className="font-medium text-[var(--text-1)]">{event.label}</p>
+                        <p className="text-[var(--text-1)]">{event.description}</p>
                       </div>
-                      <span className="whitespace-nowrap text-xs text-[var(--text-secondary)]">{event.timestamp}</span>
+                      <span className="whitespace-nowrap text-xs text-[var(--text-1)]">{event.timestamp}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-[var(--text-secondary)]">No recent service updates yet.</p>
+                <p className="mt-2 text-sm text-[var(--text-1)]">No recent service updates yet.</p>
               )}
             </div>
           </DashboardShellCard>
@@ -672,7 +672,7 @@ export default function CustomerDashboardPage() {
                 value={widget.config?.metricValue || "0"}
                 tone="accent"
               />
-              <div className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] px-4 py-4 text-sm text-[var(--text-secondary)]">
+              <div className="rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-4 text-sm text-[var(--text-1)]">
                 {widget.config?.body || "Use Edit to add your own note, process summary, or customer-specific prompt."}
               </div>
             </div>
@@ -681,7 +681,7 @@ export default function CustomerDashboardPage() {
       default:
         return (
           <DashboardShellCard title="Unavailable widget" eyebrow="Widget">
-            <p className="text-sm text-[var(--text-secondary)]">
+            <p className="text-sm text-[var(--text-1)]">
               This widget type is no longer supported. Remove it and add a replacement from the widget library.
             </p>
           </DashboardShellCard>
@@ -697,19 +697,19 @@ export default function CustomerDashboardPage() {
         </div>
       ) : null}
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] px-5 py-4">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-[var(--surface)] bg-[var(--surface)] px-5 py-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-secondary)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-1)]">
             Customer settings widgets
           </p>
-          <h2 className="text-xl font-semibold text-[var(--text-primary)]">Configure your dashboard</h2>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
+          <h2 className="text-xl font-semibold text-[var(--text-1)]">Configure your dashboard</h2>
+          <p className="mt-1 text-sm text-[var(--text-1)]">
             Add, remove, and customise the widgets shown in your customer portal.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {widgetsSaving ? (
-            <span className="rounded-full bg-[var(--surface-light)] px-3 py-2 text-xs font-medium text-[var(--text-secondary)]">
+            <span className="rounded-full bg-[var(--surface)] px-3 py-2 text-xs font-medium text-[var(--text-1)]">
               Saving layout...
             </span>
           ) : null}
@@ -724,18 +724,18 @@ export default function CustomerDashboardPage() {
       </div>
 
       {!isLoading && isLibraryOpen ? (
-        <section className="mb-6 rounded-3xl border border-[var(--surface-light)] bg-[var(--surface)] p-5 shadow-sm">
+        <section className="mb-6 rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-secondary)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--text-1)]">
                 Widget library
               </p>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Available widget types</h3>
+              <h3 className="text-lg font-semibold text-[var(--text-1)]">Available widget types</h3>
             </div>
             <button
               type="button"
               onClick={() => setIsLibraryOpen(false)}
-              className="rounded-full border border-[var(--surface-light)] px-3 py-1.5 text-sm font-medium text-[var(--text-secondary)]"
+              className="rounded-full border border-[var(--surface)] px-3 py-1.5 text-sm font-medium text-[var(--text-1)]"
             >
               Close
             </button>
@@ -745,27 +745,27 @@ export default function CustomerDashboardPage() {
             {availableWidgets.map((widget) => (
               <div
                 key={widget.type}
-                className="rounded-2xl border border-[var(--surface-light)] bg-[var(--surface-light)] p-4"
+                className="rounded-2xl border border-[var(--surface)] bg-[var(--surface)] p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-secondary)]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--text-1)]">
                       {widget.category}
                     </p>
-                    <h4 className="text-base font-semibold text-[var(--text-primary)]">{widget.name}</h4>
+                    <h4 className="text-base font-semibold text-[var(--text-1)]">{widget.name}</h4>
                   </div>
                   {!widget.allowMultiple ? (
-                    <span className="rounded-full bg-[var(--surface)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-secondary)]">
+                    <span className="rounded-full bg-[var(--surface)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-1)]">
                       Single
                     </span>
                   ) : null}
                 </div>
-                <p className="mt-2 text-sm text-[var(--text-secondary)]">{widget.description}</p>
+                <p className="mt-2 text-sm text-[var(--text-1)]">{widget.description}</p>
                 <button
                   type="button"
                   disabled={widget.disabled || widgetsSaving}
                   onClick={() => handleAddWidget(widget.type)}
-                  className="mt-4 rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 rounded-full border border-[var(--surface)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--text-1)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {widget.disabled ? "Already added" : "Add widget"}
                 </button>
@@ -789,7 +789,7 @@ export default function CustomerDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setEditingWidgetId(widget.id)}
-                      className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)]"
+                      className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-1)]"
                     >
                       Edit
                     </button>
@@ -798,11 +798,11 @@ export default function CustomerDashboardPage() {
                     type="button"
                     onClick={() => handleRemoveWidget(widget.id)}
                     disabled={widgetsSaving}
-                    className="rounded-full border border-[var(--surface-light)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-1)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Remove
                   </button>
-                  <span className="rounded-full bg-[var(--surface-light)] px-3 py-1.5 text-[11px] font-medium text-[var(--text-secondary)]">
+                  <span className="rounded-full bg-[var(--surface)] px-3 py-1.5 text-[11px] font-medium text-[var(--text-1)]">
                     {definition?.category || "Widget"}
                   </span>
                 </div>

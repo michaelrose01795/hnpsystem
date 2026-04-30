@@ -54,7 +54,7 @@ export default function TechsDashboardUi(props) {
         margin: 0
       }}>Access Denied</h2>
             <p style={{
-        color: "var(--text-secondary)",
+        color: "var(--text-1)",
         margin: 0
       }}>
               This page is only for technicians.
@@ -70,7 +70,7 @@ export default function TechsDashboardUi(props) {
       return <>
       <DevLayoutSection sectionKey="tech-dashboard-page" parentKey="app-layout-page-card" sectionType="page-shell" shell backgroundToken="surface" className="app-layout-page-shell" style={pageShellStyle}>
         <DevLayoutSection sectionKey="tech-dashboard-stats-grid" parentKey="tech-dashboard-page" sectionType="section-shell" shell style={statsGridStyle}>
-          <StatCard sectionKey="tech-dashboard-stat-assigned" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--accent-surface)", "var(--accentBorderStrong)")}>
+          <StatCard sectionKey="tech-dashboard-stat-assigned" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--theme)", "var(--primary-border)")}>
             <div style={{
           fontSize: "28px",
           fontWeight: "700",
@@ -80,7 +80,7 @@ export default function TechsDashboardUi(props) {
             </div>
             <div style={{
           fontSize: "14px",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           fontWeight: "600"
         }}>
               Jobs Assigned
@@ -103,11 +103,11 @@ export default function TechsDashboardUi(props) {
             </div>
           </StatCard>
 
-          <StatCard sectionKey="tech-dashboard-stat-current-job" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--page-card-bg-alt)")}>
+          <StatCard sectionKey="tech-dashboard-stat-current-job" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--theme)")}>
             <div style={{
           fontSize: "16px",
           fontWeight: "600",
-          color: "var(--text-primary)"
+          color: "var(--text-1)"
         }}>
               Current Job
             </div>
@@ -120,7 +120,7 @@ export default function TechsDashboardUi(props) {
             </div>
           </StatCard>
 
-          <StatCard sectionKey="tech-dashboard-stat-hours" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--page-card-bg-alt)")}>
+          <StatCard sectionKey="tech-dashboard-stat-hours" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--theme)")}>
             <div style={{
           fontSize: "28px",
           fontWeight: "700",
@@ -130,7 +130,7 @@ export default function TechsDashboardUi(props) {
             </div>
             <div style={{
           fontSize: "14px",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           fontWeight: "600"
         }}>
               Hours Today
@@ -159,7 +159,7 @@ export default function TechsDashboardUi(props) {
                 <p style={{
             fontSize: "24px",
             fontWeight: "700",
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             margin: 0
           }}>
                   {currentJob.jobNumber}
@@ -243,7 +243,7 @@ export default function TechsDashboardUi(props) {
       }}>
               <p style={{
           fontSize: "16px",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           margin: 0
         }}>
                 No jobs assigned yet.
@@ -274,14 +274,14 @@ export default function TechsDashboardUi(props) {
                       </p>
                       <p style={{
                 fontSize: "14px",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 margin: 0
               }}>
                         {job.customer} | {job.reg}
                       </p>
                       <p style={{
                 fontSize: "13px",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 margin: 0
               }}>
                         {job.makeModel || "Vehicle details missing"}
@@ -308,7 +308,7 @@ export default function TechsDashboardUi(props) {
                 <div style={{
             fontSize: "16px",
             fontWeight: "700",
-            color: "var(--text-primary)"
+            color: "var(--text-1)"
           }}>
                   {action.label}
                 </div>
@@ -324,7 +324,7 @@ export default function TechsDashboardUi(props) {
           border-radius: var(--radius-sm);
           padding: 14px 20px;
           background: var(--primary);
-          color: var(--text-inverse);
+          color: var(--text-2);
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
@@ -334,7 +334,7 @@ export default function TechsDashboardUi(props) {
 
         .tech-dashboard-primary-button:hover,
         .tech-dashboard-primary-button:focus-visible {
-          background: var(--primary-dark);
+          background: var(--primary-selected);
           transform: translateY(-1px);
         }
 
@@ -371,13 +371,13 @@ export default function TechsDashboardUi(props) {
         .tech-dashboard-surface-button:hover,
         .tech-dashboard-surface-button:focus-visible {
           border-color: rgba(var(--accent-base-rgb), 0.3);
-          background: var(--accent-surface);
+          background: var(--theme);
         }
 
         .tech-dashboard-action-button:hover,
         .tech-dashboard-action-button:focus-visible {
           border-color: rgba(var(--accent-base-rgb), 0.3);
-          background: var(--accent-surface);
+          background: var(--theme);
           z-index: var(--hover-surface-z, 80);
         }
       `}</style>

@@ -43,7 +43,7 @@ export function formatStatusLabel(status) {
 const STATUS_TONE = {
   paid: { bg: "rgba(67, 160, 71, 0.14)", color: "var(--success, #2e7d32)" },
   issued: { bg: "rgba(30, 136, 229, 0.14)", color: "var(--info, #1565c0)" },
-  draft: { bg: "rgba(120, 120, 120, 0.16)", color: "var(--text-secondary)" },
+  draft: { bg: "rgba(120, 120, 120, 0.16)", color: "var(--text-1)" },
   void: { bg: "rgba(229, 57, 53, 0.14)", color: "var(--danger, #c62828)" },
 };
 

@@ -43,7 +43,7 @@ export default function CompanyAccountsIndexPageUi(props) {
             }}>Company Accounts</h1>
             <p style={{
               margin: 0,
-              color: "var(--text-secondary)"
+              color: "var(--text-1)"
             }}>Central directory of partner businesses linked to accounts.</p>
             </div>
           </DevLayoutSection>
@@ -103,7 +103,7 @@ export default function CompanyAccountsIndexPageUi(props) {
                   </DevLayoutSection>
                   {feedback && !accounts.length && !loading && <p style={{
               margin: 0,
-              color: "var(--text-secondary)"
+              color: "var(--text-1)"
             }}>{feedback}</p>}
                   {renderList()}
                 </>}

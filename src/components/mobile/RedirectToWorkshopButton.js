@@ -76,7 +76,7 @@ export default function RedirectToWorkshopButton({ jobNumber, onRedirected }) {
         <div style={modalOverlayStyle} role="dialog" aria-modal="true">
           <div style={modalStyle}>
             <h3 style={{ margin: 0 }}>Redirect {jobNumber} to workshop</h3>
-            <p style={{ margin: 0, color: "var(--text-secondary)" }}>
+            <p style={{ margin: 0, color: "var(--text-1)" }}>
               The job, its notes and parts history will be preserved. The mobile assignment will be cleared.
             </p>
             <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -85,7 +85,7 @@ export default function RedirectToWorkshopButton({ jobNumber, onRedirected }) {
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={4}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--primary-border-subtle)" }}
                 placeholder="e.g. part not available on van, vehicle requires ramp access"
               />
             </label>

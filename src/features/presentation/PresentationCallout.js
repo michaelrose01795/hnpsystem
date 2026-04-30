@@ -212,7 +212,7 @@ export default function PresentationCallout({ step }) {
           style={{
             fontSize: 11,
             textTransform: "uppercase",
-            color: "var(--accentMain)",
+            color: "var(--primary)",
             fontWeight: 800,
           }}
         >
@@ -228,10 +228,10 @@ export default function PresentationCallout({ step }) {
         />
       </div>
 
-      <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.25 }}>
+      <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-1)", lineHeight: 1.25 }}>
         {step?.title}
       </div>
-      <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--text-secondary)" }}>
+      <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--text-1)" }}>
         {step?.body}
       </div>
       {step?.anchor && !anchorFound && (
@@ -248,8 +248,8 @@ export default function PresentationCallout({ step }) {
         </div>
       )}
 
-      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 2 }}>
-        <strong style={{ color: "var(--text-primary)" }}>{currentSlide?.title}</strong>
+      <div style={{ fontSize: 11, color: "var(--text-1)", marginTop: 2 }}>
+        <strong style={{ color: "var(--text-1)" }}>{currentSlide?.title}</strong>
         {" | "}Slide {slideIndex + 1}/{slideCount}
         {" | "}Step {stepIndex + 1}/{stepCount}
         {" | "}Role: {primaryRole}
@@ -312,7 +312,7 @@ export default function PresentationCallout({ step }) {
           borderTop: "1px solid rgba(var(--primary-rgb), 0.14)",
           paddingTop: 8,
           fontSize: 11,
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           lineHeight: 1.45,
         }}
       >

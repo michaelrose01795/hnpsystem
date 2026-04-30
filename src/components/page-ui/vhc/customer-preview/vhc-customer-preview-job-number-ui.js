@@ -25,7 +25,7 @@ export default function CustomerPreviewPageUi(props) {
     case "section1":
       return <div style={{
   minHeight: "100vh",
-  background: "var(--surface-light)",
+  background: "var(--surface)",
   padding: "24px 16px"
 }}>
         <SkeletonKeyframes />
@@ -83,7 +83,7 @@ export default function CustomerPreviewPageUi(props) {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  background: "var(--surface-light)"
+  background: "var(--surface)"
 }}>
         <div style={{
     textAlign: "center",
@@ -123,12 +123,12 @@ export default function CustomerPreviewPageUi(props) {
 
       <div style={{
     minHeight: "100vh",
-    background: "var(--surface-light)"
+    background: "var(--surface)"
   }}>
         {/* Header */}
         <header style={{
       background: "var(--surface)",
-      borderBottom: "1px solid var(--info-surface)",
+      borderBottom: "1px solid var(--theme)",
       padding: "16px 24px",
       position: "sticky",
       top: 0,
@@ -219,7 +219,7 @@ export default function CustomerPreviewPageUi(props) {
           padding: "10px 20px",
           background: "var(--surface)",
           color: "var(--accent-purple)",
-          border: "1px solid var(--accent-purple-surface)",
+          border: "1px solid var(--theme)",
           borderRadius: "var(--radius-sm)",
           fontWeight: 600,
           cursor: "pointer",
@@ -234,7 +234,7 @@ export default function CustomerPreviewPageUi(props) {
         {/* Tab Navigation */}
         <div style={{
       background: "var(--surface)",
-      borderBottom: "1px solid var(--info-surface)"
+      borderBottom: "1px solid var(--theme)"
     }}>
           <div style={{
         maxWidth: "1200px",
@@ -259,7 +259,7 @@ export default function CustomerPreviewPageUi(props) {
                   {tab.label}
                   {tab.id === "photos" && photoFiles.length > 0 && <span style={{
               marginLeft: "8px",
-              background: "var(--info-surface)",
+              background: "var(--theme)",
               padding: "2px 8px",
               borderRadius: "var(--radius-sm)",
               fontSize: "12px"
@@ -268,7 +268,7 @@ export default function CustomerPreviewPageUi(props) {
                     </span>}
                   {tab.id === "videos" && videoFiles.length > 0 && <span style={{
               marginLeft: "8px",
-              background: "var(--info-surface)",
+              background: "var(--theme)",
               padding: "2px 8px",
               borderRadius: "var(--radius-sm)",
               fontSize: "12px"
@@ -294,7 +294,7 @@ export default function CustomerPreviewPageUi(props) {
         {/* Footer */}
         <footer style={{
       background: "var(--surface)",
-      borderTop: "1px solid var(--info-surface)",
+      borderTop: "1px solid var(--theme)",
       padding: "16px 24px",
       marginTop: "auto"
     }}>

@@ -36,7 +36,7 @@ const findStatusTone = (text = "") => {
   if (normalized.includes("wait") || normalized.includes("hold")) {
     return "var(--danger)";
   }
-  return "var(--primary-dark)";
+  return "var(--primary-selected)";
 };
 
 export default function WorkshopManagerDashboard() {
@@ -251,13 +251,13 @@ export default function WorkshopManagerDashboard() {
         label: "Technicians Clocked In",
         value: `${dashboardData.technicianAvailability.onJobs} / ${dashboardData.technicianAvailability.totalTechnicians}`,
         helper: `${dashboardData.technicianAvailability.available} available`,
-        accent: "var(--primary-dark)",
+        accent: "var(--primary-selected)",
       },
       {
         label: "Awaiting Parts",
         value: awaitingParts,
         helper: awaitingParts ? "Waiting on suppliers" : "All parts allocated",
-        accent: "var(--primary-light)",
+        accent: "var(--primary-hover)",
       },
       {
         label: "QC / Road Test",
@@ -340,7 +340,7 @@ export default function WorkshopManagerDashboard() {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "16px",
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
@@ -420,7 +420,7 @@ export default function WorkshopManagerDashboard() {
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: "18px",
           alignItems: "stretch",
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
@@ -448,7 +448,7 @@ export default function WorkshopManagerDashboard() {
                     gridTemplateColumns: "minmax(0, 1.2fr) auto",
                     gap: "8px 16px",
                     alignItems: "center",
-                    background: "rgba(var(--primary-rgb), 0.12)",
+                    background: "var(--theme)",
                     minHeight: "104px",
                   }}
                 >
@@ -491,7 +491,7 @@ export default function WorkshopManagerDashboard() {
                     gridTemplateColumns: "minmax(0, 1.2fr) auto",
                     gap: "8px 16px",
                     alignItems: "center",
-                    background: "rgba(var(--primary-rgb), 0.12)",
+                    background: "var(--theme)",
                     minHeight: "104px",
                   }}
                 >
@@ -515,7 +515,7 @@ export default function WorkshopManagerDashboard() {
         backgroundToken="accent"
         style={{
           marginBottom: "32px",
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
@@ -529,7 +529,7 @@ export default function WorkshopManagerDashboard() {
           <div
             style={{
               padding: "12px",
-              backgroundColor: "var(--surface-light)",
+              backgroundColor: "var(--surface)",
               borderRadius: "var(--radius-xs)",
               color: "var(--info)",
             }}
@@ -540,11 +540,11 @@ export default function WorkshopManagerDashboard() {
           <div
             style={{
               padding: "12px",
-              backgroundColor: "var(--surface-light)",
+              backgroundColor: "var(--surface)",
               borderRadius: "var(--radius-xs)",
             }}
           >
-            <p style={{ margin: "0 0 6px", color: "var(--primary-dark)", fontWeight: 600 }}>
+            <p style={{ margin: "0 0 6px", color: "var(--primary-selected)", fontWeight: 600 }}>
               {dashboardData.technicianAvailability.onJobs} technicians clocked in
             </p>
             <p style={{ margin: 0, color: "var(--info)" }}>
@@ -564,7 +564,7 @@ export default function WorkshopManagerDashboard() {
         backgroundToken="accent"
         style={{
           marginBottom: "32px",
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
@@ -577,7 +577,7 @@ export default function WorkshopManagerDashboard() {
         <div
           style={{
             padding: "12px",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-xs)",
             display: "flex",
             justifyContent: "space-between",
@@ -618,7 +618,7 @@ export default function WorkshopManagerDashboard() {
         shell
         backgroundToken="accent"
         style={{
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
@@ -631,7 +631,7 @@ export default function WorkshopManagerDashboard() {
         <div
           style={{
             padding: "12px",
-            backgroundColor: "var(--surface-light)",
+            backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-xs)",
             display: "flex",
             flexDirection: "column",
@@ -647,7 +647,7 @@ export default function WorkshopManagerDashboard() {
           ) : (
             formattedNotices.map((notice) => (
               <div key={notice.id} style={{ color: "var(--info)" }}>
-                <strong style={{ color: "var(--primary-dark)" }}>
+                <strong style={{ color: "var(--primary-selected)" }}>
                   {dayjs(notice.createdAt).format("DD MMM HH:mm")}
                 </strong>
                 <span style={{ marginLeft: 8 }}>{notice.message}</span>
@@ -686,7 +686,7 @@ export default function WorkshopManagerDashboard() {
                   }}
                 >
               <div>
-                <h2 style={{ margin: 0, color: "var(--primary-dark)" }}>
+                <h2 style={{ margin: 0, color: "var(--primary-selected)" }}>
                   Workshop Consumable Orders
                 </h2>
                 <p style={{ margin: "6px 0 0", color: "var(--grey-accent-dark)" }}>
@@ -701,7 +701,7 @@ export default function WorkshopManagerDashboard() {
                   background: "transparent",
                   fontSize: "1.2rem",
                   cursor: "pointer",
-                  color: "var(--primary-dark)",
+                  color: "var(--primary-selected)",
                 }}
                 aria-label="Close consumables modal"
               >
@@ -719,7 +719,7 @@ export default function WorkshopManagerDashboard() {
             >
               <label
                 htmlFor="consumable-month"
-                style={{ fontWeight: 600, color: "var(--primary-dark)" }}
+                style={{ fontWeight: 600, color: "var(--primary-selected)" }}
               >
                 Month
               </label>
@@ -732,7 +732,7 @@ export default function WorkshopManagerDashboard() {
                   borderRadius: "var(--control-radius-xs)",
                   border: "none",
                   fontSize: "0.95rem",
-                  background: "var(--surface-light)",
+                  background: "var(--surface)",
                 }}
               >
                 {monthOptions.map((month) => (
@@ -762,7 +762,7 @@ export default function WorkshopManagerDashboard() {
                         style={{
                           textAlign: "left",
                           padding: "8px",
-                          color: "var(--primary-dark)",
+                          color: "var(--primary-selected)",
                           fontSize: "0.8rem",
                           textTransform: "uppercase",
                           letterSpacing: "0.08em",
@@ -809,7 +809,7 @@ export default function WorkshopManagerDashboard() {
                           borderRadius: "var(--radius-sm)",
                         }}
                       >
-                        <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)" }}>
+                        <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-1)" }}>
                           {item.name}
                         </td>
                         <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>

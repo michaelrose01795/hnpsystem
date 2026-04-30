@@ -233,18 +233,18 @@ export default function ViewJobCardsUi(props) {
               padding: "32px",
               textAlign: "center",
               color: "var(--info)",
-              border: "1px dashed var(--accent-purple-surface)",
+              border: "1px dashed var(--theme)",
               borderRadius: "var(--radius-sm)",
-              background: "var(--info-surface)"
+              background: "var(--theme)"
             }}>
                   Loading orders...
                 </DevLayoutSection> : sortedJobs.length === 0 ? <DevLayoutSection sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" style={{
               padding: "32px",
               textAlign: "center",
               color: "var(--info)",
-              border: "1px dashed var(--accent-purple-surface)",
+              border: "1px dashed var(--theme)",
               borderRadius: "var(--radius-sm)",
-              background: "var(--info-surface)"
+              background: "var(--theme)"
             }}>
                   {emptyStateMessage}
                 </DevLayoutSection> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} onNavigate={() => handleCardNavigation(job.jobNumber)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
@@ -278,7 +278,7 @@ export default function ViewJobCardsUi(props) {
                     <h2 style={{
                       fontSize: "24px",
                       fontWeight: "700",
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       marginBottom: "4px"
                     }}>
                       {popupJob.jobNumber}
@@ -300,7 +300,7 @@ export default function ViewJobCardsUi(props) {
                     justifyContent: "flex-end"
                   }}>
                     {popupJob.jobDivision && <span style={{
-                      backgroundColor: popupJob.jobDivision.toLowerCase() === "sales" ? "var(--info-surface)" : "var(--success-surface)",
+                      backgroundColor: popupJob.jobDivision.toLowerCase() === "sales" ? "var(--theme)" : "var(--success-surface)",
                       color: popupJob.jobDivision.toLowerCase() === "sales" ? "var(--info)" : "var(--success-dark)",
                       padding: "8px 16px",
                       borderRadius: "var(--control-radius-xs)",
@@ -401,8 +401,8 @@ export default function ViewJobCardsUi(props) {
                     marginTop: "6px"
                   }}>
                       {popupJob.jobCategories.map((category, idx) => <span key={idx} style={{
-                      backgroundColor: "var(--surface-light)",
-                      color: "var(--text-secondary)",
+                      backgroundColor: "var(--surface)",
+                      color: "var(--text-1)",
                       padding: "4px 10px",
                       borderRadius: "var(--radius-xs)",
                       fontSize: "12px",
@@ -473,7 +473,7 @@ export default function ViewJobCardsUi(props) {
                 flexWrap: "wrap"
               }}>
                 <div style={{
-                  backgroundColor: "var(--info-surface)",
+                  backgroundColor: "var(--theme)",
                   color: "var(--info-dark)",
                   padding: "8px 16px",
                   borderRadius: "var(--radius-xs)",
@@ -504,7 +504,7 @@ export default function ViewJobCardsUi(props) {
                 </div>
                 {/* ✅ Files Badge */}
                 {popupJob.files && popupJob.files.length > 0 && <div style={{
-                  backgroundColor: "var(--accent-purple-surface)",
+                  backgroundColor: "var(--theme)",
                   color: "var(--accent-purple)",
                   padding: "8px 16px",
                   borderRadius: "var(--radius-xs)",
@@ -515,7 +515,7 @@ export default function ViewJobCardsUi(props) {
                   </div>}
                 {/* ✅ VHC Required Badge */}
                 {popupJob.vhcRequired && <div style={{
-                  backgroundColor: "var(--surface-light)",
+                  backgroundColor: "var(--surface)",
                   color: "var(--accent-purple)",
                   padding: "8px 16px",
                   borderRadius: "var(--radius-xs)",
@@ -561,8 +561,8 @@ export default function ViewJobCardsUi(props) {
                 flexWrap: "wrap"
               }}>
                 <button onClick={() => goToJobCard(popupJob.jobNumber)} style={popupPrimaryActionButtonStyle} onMouseEnter={e => {
-                  e.currentTarget.style.backgroundColor = "var(--primary-dark)";
-                  e.currentTarget.style.borderColor = "var(--primary-dark)";
+                  e.currentTarget.style.backgroundColor = "var(--primary-selected)";
+                  e.currentTarget.style.borderColor = "var(--primary-selected)";
                 }} onMouseLeave={e => {
                   e.currentTarget.style.backgroundColor = "var(--accent-purple)";
                   e.currentTarget.style.borderColor = "var(--accent-purple)";
@@ -571,20 +571,20 @@ export default function ViewJobCardsUi(props) {
                 </button>
 
                 <button onClick={() => router.push(`/job-cards/myjobs/${popupJob.jobNumber}?tab=vhc`)} style={popupSecondaryActionButtonStyle} onMouseEnter={e => {
-                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
                   e.currentTarget.style.borderColor = "var(--accent-purple)";
                 }} onMouseLeave={e => {
-                  e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                  e.currentTarget.style.backgroundColor = "var(--theme)";
                   e.currentTarget.style.borderColor = "var(--accent-purple)";
                 }}>
                   View VHC
                 </button>
 
                 <button onClick={() => router.push(`/job-cards/${popupJob.jobNumber}?tab=write-up`)} style={popupSecondaryActionButtonStyle} onMouseEnter={e => {
-                  e.currentTarget.style.backgroundColor = "var(--surface-light)";
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
                   e.currentTarget.style.borderColor = "var(--accent-purple)";
                 }} onMouseLeave={e => {
-                  e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                  e.currentTarget.style.backgroundColor = "var(--theme)";
                   e.currentTarget.style.borderColor = "var(--accent-purple)";
                 }}>
                   Write-Up
@@ -593,11 +593,11 @@ export default function ViewJobCardsUi(props) {
 
               {/* Close Button */}
               <button onClick={() => setPopupJob(null)} style={popupQuietActionButtonStyle} onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = "var(--accent-purple-surface)";
+                e.currentTarget.style.backgroundColor = "var(--theme)";
                 e.currentTarget.style.borderColor = "var(--accent-purple)";
               }} onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = "var(--surface-light)";
-                e.currentTarget.style.borderColor = "var(--accent-purple-surface)";
+                e.currentTarget.style.backgroundColor = "var(--surface)";
+                e.currentTarget.style.borderColor = "var(--theme)";
               }}>
                 Close
               </button>

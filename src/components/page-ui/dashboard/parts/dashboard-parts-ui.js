@@ -22,7 +22,7 @@ export default function PartsDashboardUi(props) {
         <div style={{
     padding: "48px",
     textAlign: "center",
-    color: "var(--primary-dark)"
+    color: "var(--primary-selected)"
   }}>
           You do not have access to the Parts dashboard.
         </div>
@@ -38,11 +38,11 @@ export default function PartsDashboardUi(props) {
         margin: 0,
         textTransform: "uppercase",
         letterSpacing: "0.1em",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>Parts desk</p>
           <h1 style={{
         margin: "6px 0 0",
-        color: "var(--primary-dark)"
+        color: "var(--primary-selected)"
       }}>Operations overview</h1>
           <p style={{
         margin: "6px 0 0",
@@ -114,7 +114,7 @@ export default function PartsDashboardUi(props) {
           }}>
                     <p style={{
               margin: 0,
-              color: "var(--primary-dark)"
+              color: "var(--primary-selected)"
             }}>{part.inStock}</p>
                     <p style={{
               margin: "4px 0 0",
@@ -151,7 +151,7 @@ export default function PartsDashboardUi(props) {
             color: "var(--info)"
           }}>{row.status}</p>
                   <strong style={{
-            color: "var(--primary-dark)"
+            color: "var(--primary-selected)"
           }}>{row.count}</strong>
                 </div>)}
             </div>}

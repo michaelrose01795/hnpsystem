@@ -36,7 +36,7 @@ export default function InvoiceDetailPageUi(props) {
         gridTemplateColumns: "minmax(0, 1fr) auto",
         gap: "12px",
         alignItems: "start",
-        background: "rgba(var(--primary-rgb), 0.08)",
+        background: "var(--theme)",
         border: "1px solid rgba(var(--primary-rgb), 0.16)"
       }}>
             <div style={{
@@ -45,7 +45,7 @@ export default function InvoiceDetailPageUi(props) {
               <h1 style={{
             margin: 0,
             fontSize: "2rem",
-            color: "var(--text-primary)"
+            color: "var(--text-1)"
           }}>Invoice {invoice?.invoice_number || invoiceId}</h1>
             </div>
             <div style={{
@@ -61,7 +61,7 @@ export default function InvoiceDetailPageUi(props) {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           gap: "16px",
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           border: "1px solid rgba(var(--primary-rgb), 0.16)"
         }}>
                 {Array.from({
@@ -83,7 +83,7 @@ export default function InvoiceDetailPageUi(props) {
           display: "flex",
           flexDirection: "column",
           gap: 10,
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           border: "1px solid rgba(var(--primary-rgb), 0.16)"
         }}>
                 <SkeletonBlock width="20%" height="16px" />
@@ -97,7 +97,7 @@ export default function InvoiceDetailPageUi(props) {
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           gap: "16px",
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           border: "1px solid rgba(var(--primary-rgb), 0.16)"
         }}>
                 <div style={{
@@ -108,7 +108,7 @@ export default function InvoiceDetailPageUi(props) {
           }}>
                   <p style={{
               margin: 0,
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               fontSize: "0.8rem"
@@ -117,7 +117,7 @@ export default function InvoiceDetailPageUi(props) {
               display: "block",
               marginTop: "10px",
               fontSize: "1.8rem",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>{currencyFormatter.format(getInvoiceAmountValue(invoice))}</strong>
                 </div>
                 <div style={{
@@ -128,7 +128,7 @@ export default function InvoiceDetailPageUi(props) {
           }}>
                   <p style={{
               margin: 0,
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               fontSize: "0.8rem"
@@ -142,7 +142,7 @@ export default function InvoiceDetailPageUi(props) {
               fontWeight: 600,
               ...(statusBadgeStyles[invoice.payment_status] || {
                 background: "rgba(var(--primary-rgb), 0.14)",
-                color: "var(--primary-dark)"
+                color: "var(--primary-selected)"
               })
             }}>{invoice.payment_status || "Draft"}</span>
                 </div>
@@ -154,7 +154,7 @@ export default function InvoiceDetailPageUi(props) {
           }}>
                   <p style={{
               margin: 0,
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               fontSize: "0.8rem"
@@ -162,7 +162,7 @@ export default function InvoiceDetailPageUi(props) {
                   <strong style={{
               display: "block",
               marginTop: "10px",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>{getDueDateDisplayValue(invoice)}</strong>
                 </div>
                 <div style={{
@@ -173,7 +173,7 @@ export default function InvoiceDetailPageUi(props) {
           }}>
                   <p style={{
               margin: 0,
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               fontSize: "0.8rem"
@@ -181,7 +181,7 @@ export default function InvoiceDetailPageUi(props) {
                   <strong style={{
               display: "block",
               marginTop: "10px",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>{getAccountDisplayValue(invoice)}</strong>
                 </div>
                 <div style={{
@@ -192,7 +192,7 @@ export default function InvoiceDetailPageUi(props) {
           }}>
                   <p style={{
               margin: 0,
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               fontSize: "0.8rem"
@@ -200,7 +200,7 @@ export default function InvoiceDetailPageUi(props) {
                   <strong style={{
               display: "block",
               marginTop: "10px",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>{getCustomerDisplayValue(invoice)}</strong>
                 </div>
                 <div style={{
@@ -211,7 +211,7 @@ export default function InvoiceDetailPageUi(props) {
           }}>
                   <p style={{
               margin: 0,
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               fontSize: "0.8rem"
@@ -219,7 +219,7 @@ export default function InvoiceDetailPageUi(props) {
                   <strong style={{
               display: "block",
               marginTop: "10px",
-              color: "var(--text-primary)"
+              color: "var(--text-1)"
             }}>{invoice.job_number || "—"}</strong>
                 </div>
               </section>
@@ -227,16 +227,16 @@ export default function InvoiceDetailPageUi(props) {
           display: "flex",
           flexDirection: "column",
           gap: "8px",
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           border: "1px solid rgba(var(--primary-rgb), 0.16)"
         }}>
                 <h2 style={{
             margin: 0,
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             fontSize: "1.25rem"
           }}>Payment History</h2>
                 {payments.length === 0 && <p style={{
-            color: "var(--text-secondary)"
+            color: "var(--text-1)"
           }}>No payments recorded.</p>}
                 {payments.map(payment => <div key={payment.payment_id} style={{
             display: "flex",
@@ -248,11 +248,11 @@ export default function InvoiceDetailPageUi(props) {
           }}>
                     <div>
                       <strong style={{
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>{currencyFormatter.format(Number(payment.amount || 0))}</strong>
                       <p style={{
                 margin: 0,
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>{payment.method || payment.payment_method || "—"}</p>
                     </div>
                     <div style={{
@@ -261,11 +261,11 @@ export default function InvoiceDetailPageUi(props) {
                       <p style={{
                 margin: 0,
                 fontWeight: 600,
-                color: "var(--text-primary)"
+                color: "var(--text-1)"
               }}>{payment.payment_date ? new Date(payment.payment_date).toLocaleDateString("en-GB") : "—"}</p>
                       <p style={{
                 margin: 0,
-                color: "var(--text-secondary)"
+                color: "var(--text-1)"
               }}>{payment.reference || "Manual"}</p>
                     </div>
                   </div>)}
@@ -274,12 +274,12 @@ export default function InvoiceDetailPageUi(props) {
           display: "flex",
           flexDirection: "column",
           gap: "8px",
-          background: "rgba(var(--primary-rgb), 0.08)",
+          background: "var(--theme)",
           border: "1px solid rgba(var(--primary-rgb), 0.16)"
         }}>
                 <h2 style={{
             margin: 0,
-            color: "var(--text-primary)",
+            color: "var(--text-1)",
             fontSize: "1.25rem"
           }}>Linked Job Card</h2>
                 {job ? <div style={{
@@ -296,7 +296,7 @@ export default function InvoiceDetailPageUi(props) {
                     {infoRow("Vehicle", job.vehicle || job.reg)}
                     {infoRow("Advisor", job.advisor || job.service_advisor)}
                   </div> : <p style={{
-            color: "var(--text-secondary)"
+            color: "var(--text-1)"
           }}>No job card linked.</p>}
               </section>
             </>}

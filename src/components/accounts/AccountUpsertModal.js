@@ -102,7 +102,7 @@ export default function AccountUpsertModal({ isOpen, mode, accountId, onClose, o
             </div>
           )}
           {loading ? (
-            <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading account…</p>
+            <p style={{ margin: 0, color: "var(--text-1)" }}>Loading account…</p>
           ) : (
             <AccountForm
               initialValues={account}

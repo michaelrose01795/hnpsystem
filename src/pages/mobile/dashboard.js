@@ -22,7 +22,7 @@ function MobileJobRowsSkeleton({ count = 2 }) {return (
           gridTemplateColumns: "1fr auto",
           gap: "10px",
           padding: "12px 0",
-          borderBottom: "1px solid var(--border-subtle, rgba(15,23,42,0.08))"
+          borderBottom: "1px solid var(--primary-border-subtle, rgba(15,23,42,0.08))"
         }}>
         
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -55,7 +55,7 @@ const jobRowStyle = {
   gridTemplateColumns: "1fr auto",
   gap: "10px",
   padding: "12px 0",
-  borderBottom: "1px solid var(--border-subtle, rgba(15,23,42,0.08))"
+  borderBottom: "1px solid var(--primary-border-subtle, rgba(15,23,42,0.08))"
 };
 
 function formatWindow(startIso, endIso) {
@@ -107,7 +107,7 @@ function MobileDashboardInner() {
     <div style={pageStyle}>
       <header>
         <h1 style={{ margin: 0 }}>Mobile Dashboard</h1>
-        <p style={{ margin: "4px 0 0", color: "var(--text-secondary)" }}>
+        <p style={{ margin: "4px 0 0", color: "var(--text-1)" }}>
           Your on-site visits for today and the days ahead.
         </p>
       </header>
@@ -160,11 +160,11 @@ function JobRow({ job }) {
           <strong>{job.job_number}</strong>
           <ServiceModeBadge mode="mobile" />
         </div>
-        <div style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
+        <div style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
           {job.vehicle_reg} · {job.vehicle_make_model}
         </div>
         <div style={{ fontSize: "0.85rem" }}>{job.service_address} {job.service_postcode}</div>
-        <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+        <div style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
           {formatWindow(job.appointment_window_start, job.appointment_window_end)}
         </div>
       </div>

@@ -19,8 +19,8 @@
   gap: 10px;
   padding: 12px 16px;
   border-radius: var(--radius-sm);
-  background: var(--surfaceMain);
-  color: var(--text-primary);
+  background: var(--surface);
+  color: var(--text-1);
   font-size: var(--text-body-sm);
   font-weight: 500;
   min-width: 240px;
@@ -39,11 +39,11 @@
 }
 
 .app-toast--info {
-  border-left: 4px solid var(--accentMain);
+  border-left: 4px solid var(--primary);
 }
 .app-toast--info .app-toast__icon {
-  background: var(--accentSurface);
-  color: var(--accentMain);
+  background: var(--secondary);
+  color: var(--primary);
 }
 
 .app-toast--success {

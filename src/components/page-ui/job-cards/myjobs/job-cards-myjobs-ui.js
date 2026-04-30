@@ -158,11 +158,11 @@ export default function MyJobsPageUi(props) {
           gap: "12px",
           padding: "8px 16px",
           borderRadius: "var(--radius-sm)",
-          backgroundColor: "var(--accent-surface-hover)",
+          backgroundColor: "var(--theme-hover)",
           border: "none",
           fontSize: "12px",
           fontWeight: "700",
-          color: "var(--primary-dark)",
+          color: "var(--primary-selected)",
           textTransform: "uppercase",
           letterSpacing: "0.04em"
         }}>
@@ -230,7 +230,7 @@ export default function MyJobsPageUi(props) {
               <h3 style={{
           fontSize: "20px",
           fontWeight: "600",
-          color: "var(--text-secondary)",
+          color: "var(--text-1)",
           marginBottom: "8px"
         }}>
                 {searchTerm ? "No jobs found" : "No jobs assigned"}
@@ -256,11 +256,11 @@ export default function MyJobsPageUi(props) {
           gap: "12px",
           padding: "8px 16px",
           borderRadius: "var(--radius-sm)",
-          backgroundColor: "var(--accent-surface-hover)",
+          backgroundColor: "var(--theme-hover)",
           border: "none",
           fontSize: "12px",
           fontWeight: "700",
-          color: "var(--primary-dark)",
+          color: "var(--primary-selected)",
           textTransform: "uppercase",
           letterSpacing: "0.04em"
         }}>
@@ -346,7 +346,7 @@ export default function MyJobsPageUi(props) {
             prefetchJob(job.jobNumber); // warm SWR cache on hover
           }} onMouseLeave={e => {
             e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.borderColor = "var(--border)";
+            e.currentTarget.style.borderColor = "var(--primary-border)";
             e.currentTarget.style.zIndex = "0";
           }}>
                     {/* Status Badge */}
@@ -368,7 +368,7 @@ export default function MyJobsPageUi(props) {
                     <span className="myjobs-cell myjobs-jobnumber" style={{
               fontSize: "16px",
               fontWeight: "700",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               minWidth: "90px"
             }}>
                       {job.jobNumber || "No Job #"}
@@ -377,7 +377,7 @@ export default function MyJobsPageUi(props) {
                     {/* Registration */}
                     <span className="myjobs-cell myjobs-reg" style={{
               fontSize: "14px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               fontWeight: "600",
               minWidth: "80px"
             }}>
@@ -387,7 +387,7 @@ export default function MyJobsPageUi(props) {
                     {/* Customer */}
                     <span className="myjobs-cell myjobs-customer" style={{
               fontSize: "13px",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
               minWidth: "140px",
               flex: "0 0 auto"
             }}>
@@ -397,7 +397,7 @@ export default function MyJobsPageUi(props) {
                     {/* Make/Model */}
                     <span className="myjobs-cell myjobs-make" style={{
               fontSize: "13px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               minWidth: "160px",
               flex: "1 1 auto"
             }}>
@@ -407,7 +407,7 @@ export default function MyJobsPageUi(props) {
                     {/* Job Type */}
                     <span className="myjobs-cell myjobs-type" style={{
               fontSize: "12px",
-              color: "var(--text-secondary)",
+              color: "var(--text-1)",
               minWidth: "80px"
             }}>
                       {jobType}

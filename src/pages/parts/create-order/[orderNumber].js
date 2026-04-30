@@ -25,9 +25,9 @@ const infoGrid = {
 const tabButtonStyle = (active) => ({
   padding: "10px 18px",
   borderRadius: "var(--radius-pill)",
-  border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
-  background: active ? "var(--primary-dark)" : "var(--surface-light)",
-  color: active ? "var(--surface)" : "var(--primary-dark)",
+  border: active ? "1px solid var(--primary-selected)" : "1px solid var(--surface)",
+  background: active ? "var(--primary-selected)" : "var(--surface)",
+  color: active ? "var(--surface)" : "var(--primary-selected)",
   fontWeight: 600,
   cursor: "pointer"
 });
@@ -413,7 +413,7 @@ function SummaryPill({ label, value }) {
       }}>
       
       <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info)" }}>{label}</p>
-      <strong style={{ fontSize: "1.1rem", color: "var(--primary-dark)" }}>{value}</strong>
+      <strong style={{ fontSize: "1.1rem", color: "var(--primary-selected)" }}>{value}</strong>
     </div>);
 
 }
@@ -461,7 +461,7 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
       {saving && <p style={{ color: "var(--info)" }}>Saving status…</p>}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Delivery milestones</h3>
+        <h3 style={{ margin: 0, color: "var(--primary-selected)" }}>Delivery milestones</h3>
         <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
           Update the live journey from part ordered through to delivery.
         </p>
@@ -480,7 +480,7 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-        <h3 style={{ margin: 0, color: "var(--primary-dark)" }}>Invoice progress</h3>
+        <h3 style={{ margin: 0, color: "var(--primary-selected)" }}>Invoice progress</h3>
         <p style={{ margin: 0, color: "var(--grey-accent-dark)" }}>
           Track when the order has been invoiced and when payment clears.
         </p>
@@ -500,12 +500,12 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
 
       <div
         style={{
-          border: "1px dashed var(--surface-light)",
+          border: "1px dashed var(--surface)",
           borderRadius: "var(--radius-md)",
           padding: "14px",
           background: completionReady ?
           "rgba(var(--success-rgb,34,139,34),0.08)" :
-          "var(--surface-light)"
+          "var(--surface)"
         }}>
         
         <p style={{ margin: "0 0 6px", fontWeight: 600 }}>
@@ -533,11 +533,11 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
 
 function StatusStageButton({ label, active, completed, onClick, disabled }) {
   const background = active ?
-  "var(--primary-dark)" :
+  "var(--primary-selected)" :
   completed ?
   "rgba(var(--primary-rgb,99,52,255),0.12)" :
-  "var(--surface-light)";
-  const color = active ? "var(--surface)" : "var(--primary-dark)";
+  "var(--surface)";
+  const color = active ? "var(--surface)" : "var(--primary-selected)";
   return (
     <button
       type="button"
@@ -545,7 +545,7 @@ function StatusStageButton({ label, active, completed, onClick, disabled }) {
       disabled={disabled}
       style={{
         borderRadius: "var(--radius-sm)",
-        border: active ? "1px solid var(--primary-dark)" : "1px solid var(--surface-light)",
+        border: active ? "1px solid var(--primary-selected)" : "1px solid var(--surface)",
         padding: "10px 14px",
         minWidth: "160px",
         textAlign: "left",

@@ -20,17 +20,17 @@ const STATUS_STATES = ["In Progress", "Tea Break", "Waiting for Job"];
 
 const STATUS_BADGE_STYLES = {
   "In Progress": {
-    background: "var(--layer-section-level-1)",
+    background: "var(--surface)",
     border: "none",
     color: "var(--success-dark)"
   },
   "Tea Break": {
-    background: "var(--layer-section-level-1)",
+    background: "var(--surface)",
     border: "none",
     color: "var(--warning-dark)"
   },
   "Waiting for Job": {
-    background: "var(--layer-section-level-1)",
+    background: "var(--surface)",
     border: "none",
     color: "var(--info)"
   }
@@ -654,7 +654,7 @@ export default function UserClockingHistory() {
   const basePanelStyle = {
     borderRadius: "var(--radius-xl)",
     border: "none",
-    background: "var(--layer-section-level-2)",
+    background: "var(--surface)",
     padding: "32px",
     boxShadow: "none",
     display: "flex",
@@ -692,20 +692,20 @@ export default function UserClockingHistory() {
     textTransform: "uppercase",
     letterSpacing: "0.08em",
     color: "var(--grey-accent)",
-    background: "var(--surface-light)",
-    borderBottom: "1px solid var(--surface-light)",
+    background: "var(--surface)",
+    borderBottom: "1px solid var(--surface)",
     padding: "14px 18px"
   };
 
   const tableCellStyle = {
     padding: "14px 18px",
-    borderBottom: "1px solid var(--surface-light)",
+    borderBottom: "1px solid var(--surface)",
     color: "var(--text-color)"
   };
 
   const managerBadgeStyle = {
     ...badgeBaseStyle,
-    background: "var(--layer-section-level-1)",
+    background: "var(--surface)",
     border: "none",
     color: "var(--info)"
   };
@@ -713,10 +713,10 @@ export default function UserClockingHistory() {
   const inputStyle = {
     borderRadius: "var(--radius-md)",
     border: "none",
-    background: "var(--surface-light)",
+    background: "var(--surface)",
     padding: "12px 14px",
     fontSize: "0.95rem",
-    color: "var(--text-primary)",
+    color: "var(--text-1)",
     outline: "none"
   };
 

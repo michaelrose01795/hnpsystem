@@ -20,7 +20,7 @@ export default function InputField({
           style={{
             fontSize: "var(--text-label)",
             fontWeight: "var(--control-label-weight)",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
             textTransform: "uppercase",
             letterSpacing: "var(--tracking-caps)",
           }}

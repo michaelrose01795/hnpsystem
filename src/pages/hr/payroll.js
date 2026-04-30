@@ -25,7 +25,7 @@ function ListRowsSkeleton({ rows = 3 }) {
       <div
         key={i}
         style={{
-          border: "1px solid var(--border)",
+          border: "1px solid var(--primary-border)",
           borderRadius: "var(--radius-sm)",
           padding: "var(--space-3)",
           display: "flex",
@@ -63,7 +63,7 @@ function PayrollContent() {
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <SkeletonKeyframes />
       <header style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)" }}>
-        <p style={{ color: "var(--text-secondary)", margin: 0 }}>
+        <p style={{ color: "var(--text-1)", margin: 0 }}>
           Track compensation, pay rise approvals, overtime payments, and exports.
         </p>
       </header>
@@ -102,8 +102,8 @@ function PayrollContent() {
                 <tr key={employee.id}>
                       <td>
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{employee.name}</span>
-                          <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                          <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{employee.name}</span>
+                          <span style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
                             {employee.jobTitle}
                           </span>
                         </div>
@@ -120,7 +120,7 @@ function PayrollContent() {
         </SectionCard>
 
         <SectionCard title="Pay Rise Requests" subtitle="Approval workflow: Employee → Manager → HR">
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-secondary)", fontStyle: "italic", margin: 0 }}>
+          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
             TODO: Fetch pay rise requests from Supabase. Display employee name, current/requested rate, approver, status, and approve/reject actions.
           </p>
         </SectionCard>
@@ -189,7 +189,7 @@ function PayrollContent() {
             <div
               key={summary.id}
               style={{
-                border: "1px solid var(--border)",
+                border: "1px solid var(--primary-border)",
                 borderRadius: "var(--radius-sm)",
                 padding: "var(--space-3)",
                 display: "flex",
@@ -198,12 +198,12 @@ function PayrollContent() {
               }}>
               
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{summary.employee}</span>
-                    <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--text-secondary)" }}>
+                    <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{summary.employee}</span>
+                    <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--text-1)" }}>
                       {summary.status}
                     </span>
                   </div>
-                  <span style={{ fontSize: "var(--text-label)", color: "var(--text-secondary)" }}>
+                  <span style={{ fontSize: "var(--text-label)", color: "var(--text-1)" }}>
                     Period {new Date(summary.periodStart).toLocaleDateString()} -{" "}
                     {new Date(summary.periodEnd).toLocaleDateString()}
                   </span>
@@ -212,7 +212,7 @@ function PayrollContent() {
                   display: "flex",
                   gap: "var(--space-4)",
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--text-primary)"
+                  color: "var(--text-1)"
                 }}>
                 
                     <span>{summary.overtimeHours} hrs</span>

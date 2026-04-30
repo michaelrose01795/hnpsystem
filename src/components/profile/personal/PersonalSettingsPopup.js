@@ -68,12 +68,12 @@ function Section({ title, description, children, sectionId }) {
             fontWeight: 700,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "var(--text-secondary)",
+            color: "var(--text-1)",
           }}
         >
           {title}
         </div>
-        <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+        <div style={{ fontSize: "0.78rem", color: "var(--text-1)", lineHeight: 1.5 }}>
           {description}
         </div>
       </div>
@@ -83,7 +83,7 @@ function Section({ title, description, children, sectionId }) {
 }
 
 function FieldLabel({ children }) {
-  return <div style={{ fontSize: "0.74rem", marginBottom: "2px", color: "var(--text-secondary)", fontWeight: 600 }}>{children}</div>;
+  return <div style={{ fontSize: "0.74rem", marginBottom: "2px", color: "var(--text-1)", fontWeight: 600 }}>{children}</div>;
 }
 
 function StatGrid({ children, isMobile }) {
@@ -97,7 +97,7 @@ function StatGrid({ children, isMobile }) {
 function Stat({ label, children }) {
   return (
     <div style={{ fontSize: "0.82rem" }}>
-      <span style={{ color: "var(--text-secondary)" }}>{label}: </span>
+      <span style={{ color: "var(--text-1)" }}>{label}: </span>
       <strong>{children}</strong>
     </div>
   );
@@ -296,7 +296,7 @@ function RecurringRulesSection() {
                         display: "flex",
                         alignItems: "center",
                         padding: "0 12px",
-                        color: "var(--text-secondary)",
+                        color: "var(--text-1)",
                         fontSize: "0.82rem",
                       }}
                     >
@@ -328,7 +328,7 @@ function RecurringRulesSection() {
           </div>
 
           {message ? (
-            <div style={{ fontSize: "0.8rem", color: message.includes("saved") ? "var(--text-secondary)" : "var(--danger, #c62828)" }}>
+            <div style={{ fontSize: "0.8rem", color: message.includes("saved") ? "var(--text-1)" : "var(--danger, #c62828)" }}>
               {message}
             </div>
           ) : null}
@@ -397,7 +397,7 @@ function PayAndWorkSection({ finance, isMobile }) {
         </label>
       </div>
 
-      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
         Tax and NI overrides
       </div>
       <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.84rem", fontWeight: 600, cursor: "pointer" }}>
@@ -408,7 +408,7 @@ function PayAndWorkSection({ finance, isMobile }) {
         />
         <span>{`Override tax and NI for ${monthLabel} only with fixed £ amounts`}</span>
       </label>
-      <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--text-1)", lineHeight: 1.5 }}>
         These overrides are saved against the selected month only and never update other months.
       </div>
       {month.monthState.useManualTax ? (
@@ -523,7 +523,7 @@ function LeaveSection({ finance, isMobile }) {
             >
               <div>
                 <div style={{ fontWeight: 700, fontSize: "0.84rem" }}>{request.type || "Leave"}</div>
-                <div style={{ fontSize: "0.76rem", color: "var(--text-secondary)" }}>
+                <div style={{ fontSize: "0.76rem", color: "var(--text-1)" }}>
                   {formatDate(request.startDate)} → {formatDate(request.endDate)}
                 </div>
               </div>
@@ -593,7 +593,7 @@ function PaymentsSection({ finance, isMobile }) {
         <Stat label="Total out">{formatCurrency(month.totals.totalOut)}</Stat>
       </StatGrid>
 
-      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
         Fixed outgoings
       </div>
       <div style={{ display: "grid", gap: "8px" }}>
@@ -620,7 +620,7 @@ function PaymentsSection({ finance, isMobile }) {
               options={FIXED_OUTGOING_CATEGORY_OPTIONS}
               size="sm"
             />
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", minHeight: "var(--control-height-sm)", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-primary)", padding: "0 4px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", minHeight: "var(--control-height-sm)", fontSize: "0.78rem", fontWeight: 600, color: "var(--text-1)", padding: "0 4px" }}>
               <input
                 type="checkbox"
                 checked={Boolean(entry.isMonthOverrideEnabled)}
@@ -636,7 +636,7 @@ function PaymentsSection({ finance, isMobile }) {
         Add fixed outgoing
       </Button>
 
-      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
         Planned payments
       </div>
       <div style={{ display: "grid", gap: "8px" }}>
@@ -671,7 +671,7 @@ function CreditCardsSection({ finance, isMobile }) {
         <Stat label="Total balances">{formatCurrency(month.totals.totalCardBalances)}</Stat>
       </StatGrid>
 
-      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
         Credit card names
       </div>
       {accounts.length === 0 ? (
@@ -706,7 +706,7 @@ function CreditCardsSection({ finance, isMobile }) {
         Add credit card name
       </Button>
 
-      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
+      <div style={{ fontSize: "0.74rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.04em", textTransform: "uppercase", marginTop: "2px" }}>
         {formatMonthLabel(finance.model.selectedMonthKey)} balances
       </div>
       <div style={{ display: "grid", gap: "8px" }}>
@@ -811,10 +811,10 @@ function AdjustmentsSection({ finance, isMobile }) {
         </label>
       </div>
       <StatGrid isMobile={isMobile}>
-        <Stat label="Total in"><span style={{ color: "var(--text-primary)" }}>{formatCurrency(month.totals.totalIn)}</span></Stat>
-        <Stat label="Total out"><span style={{ color: "var(--text-primary)" }}>{formatCurrency(month.totals.totalOut)}</span></Stat>
+        <Stat label="Total in"><span style={{ color: "var(--text-1)" }}>{formatCurrency(month.totals.totalIn)}</span></Stat>
+        <Stat label="Total out"><span style={{ color: "var(--text-1)" }}>{formatCurrency(month.totals.totalOut)}</span></Stat>
         <Stat label="Money left">
-          <span style={{ color: "var(--text-primary)" }}>
+          <span style={{ color: "var(--text-1)" }}>
             {formatCurrency(month.totals.difference)}
           </span>
         </Stat>
@@ -864,7 +864,7 @@ export default function PersonalSettingsPopup({ isOpen, onClose, finance, initia
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
           <div style={{ display: "grid", gap: "3px" }}>
             <div style={{ fontSize: isMobile ? "1rem" : "1.05rem", fontWeight: 700 }}>Personal settings</div>
-            <div style={{ color: "var(--text-secondary)", lineHeight: 1.5, fontSize: "0.8rem" }}>
+            <div style={{ color: "var(--text-1)", lineHeight: 1.5, fontSize: "0.8rem" }}>
               Changes for <strong>{finance.model.selectedMonthKey}</strong> save automatically.
             </div>
           </div>

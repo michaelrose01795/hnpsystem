@@ -42,7 +42,7 @@ export default function StatusTimeline({ currentStatus, currentStatusId = null, 
                 <div
                   className="absolute left-4 top-10 w-0.5 h-12"
                   style={{
-                    backgroundColor: completed || current ? status.color : 'var(--accentSurfaceSubtle)'
+                    backgroundColor: completed || current ? status.color : 'var(--theme)'
                   }}
                 />
               )}
@@ -53,7 +53,7 @@ export default function StatusTimeline({ currentStatus, currentStatusId = null, 
                   current ? 'animate-pulse ring-4 ring-opacity-50' : ''
                 }`}
                 style={{
-                  backgroundColor: completed || current ? status.color : 'var(--accentSurfaceSubtle)',
+                  backgroundColor: completed || current ? status.color : 'var(--theme)',
                   ringColor: current ? status.color : 'transparent'
                 }}
               >

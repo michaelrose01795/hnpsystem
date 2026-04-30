@@ -95,13 +95,13 @@ export default function QuestionPromptsPopup({
               >
                 Question Prompts
                 {requestIndex !== null ? (
-                  <span style={{ color: "var(--text-secondary)", fontWeight: 500 }}>
+                  <span style={{ color: "var(--text-1)", fontWeight: 500 }}>
                     {" "}
                     · Request {Number(requestIndex) + 1}
                   </span>
                 ) : null}
               </h3>
-              <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+              <span style={{ fontSize: "12px", color: "var(--text-1)" }}>
                 {result.isFallback
                   ? "No strong match — general questions to get started."
                   : `${totalQuestions} suggested ${totalQuestions === 1 ? "question" : "questions"} to ask the customer.`}
@@ -129,15 +129,15 @@ export default function QuestionPromptsPopup({
             <div
               style={{
                 fontSize: "13px",
-                color: "var(--text-primary)",
-                backgroundColor: "var(--surface-light)",
+                color: "var(--text-1)",
+                backgroundColor: "var(--surface)",
                 borderRadius: "var(--radius-sm)",
                 padding: "10px 12px",
                 marginBottom: "16px",
                 whiteSpace: "pre-wrap",
               }}
             >
-              <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>Request:</span>{" "}
+              <span style={{ color: "var(--text-1)", fontWeight: 600 }}>Request:</span>{" "}
               {requestText}
             </div>
           ) : null}
@@ -173,7 +173,7 @@ export default function QuestionPromptsPopup({
                 style={{
                   border: "none",
                   borderRadius: "var(--radius-sm)",
-                  backgroundColor: "var(--surface-light)",
+                  backgroundColor: "var(--surface)",
                   padding: "14px 16px",
                   display: "grid",
                   gap: "10px",
@@ -187,7 +187,7 @@ export default function QuestionPromptsPopup({
                     style={{
                       fontSize: "13px",
                       fontWeight: 700,
-                      color: "var(--text-primary)",
+                      color: "var(--text-1)",
                       letterSpacing: "0.02em",
                     }}
                   >
@@ -224,9 +224,9 @@ export default function QuestionPromptsPopup({
                             borderRadius: "var(--radius-xs)",
                             border: "none",
                             background: isTicked
-                              ? "var(--accent-surface-hover)"
+                              ? "var(--theme-hover)"
                               : "var(--surface)",
-                            color: "var(--text-primary)",
+                            color: "var(--text-1)",
                             cursor: "pointer",
                             fontSize: "13px",
                             lineHeight: 1.45,

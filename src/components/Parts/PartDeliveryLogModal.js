@@ -166,7 +166,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             maxHeight: "90vh",
             background: "var(--surface)",
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--accent-purple-surface)",
+            border: "1px solid var(--theme)",
             boxShadow: "var(--shadow-xl)",
             display: "flex",
             flexDirection: "column",
@@ -178,7 +178,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
         <div
           style={{
             padding: "20px 24px",
-            borderBottom: "1px solid var(--accent-purple-surface)",
+            borderBottom: "1px solid var(--theme)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -198,7 +198,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             style={{
               padding: "8px 12px",
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--theme)",
               background: "var(--surface)",
               color: "var(--info-dark)",
               cursor: "pointer",
@@ -232,8 +232,8 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
               style={{
                 padding: "12px",
                 borderRadius: "var(--radius-sm)",
-                background: "var(--info-surface)",
-                border: "1px solid var(--accent-purple-surface)",
+                background: "var(--theme)",
+                border: "1px solid var(--theme)",
               }}
             >
               <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "8px" }}>
@@ -263,7 +263,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-purple-surface)",
+                border: "1px solid var(--theme)",
                 fontSize: "14px",
               }}
             />
@@ -282,7 +282,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-purple-surface)",
+                border: "1px solid var(--theme)",
                 fontSize: "14px",
               }}
             />
@@ -303,7 +303,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--theme)",
                   fontSize: "14px",
                 }}
               />
@@ -323,7 +323,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-purple-surface)",
+                  border: "1px solid var(--theme)",
                   fontSize: "14px",
                 }}
               />
@@ -345,7 +345,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-purple-surface)",
+                border: "1px solid var(--theme)",
                 fontSize: "14px",
               }}
             />
@@ -371,7 +371,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-purple-surface)",
+                border: "1px solid var(--theme)",
                 fontSize: "14px",
                 resize: "vertical",
               }}
@@ -412,7 +412,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
         <div
           style={{
             padding: "16px 24px",
-            borderTop: "1px solid var(--accent-purple-surface)",
+            borderTop: "1px solid var(--theme)",
             display: "flex",
             justifyContent: "flex-end",
             gap: "12px",
@@ -425,7 +425,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             style={{
               padding: "10px 20px",
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--accent-purple-surface)",
+              border: "1px solid var(--theme)",
               background: "var(--surface)",
               color: "var(--info-dark)",
               fontWeight: 600,
@@ -443,7 +443,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
               padding: "10px 20px",
               borderRadius: "var(--radius-xs)",
               border: "1px solid var(--primary)",
-              background: submitting || loading ? "var(--surface-light)" : "var(--primary)",
+              background: submitting || loading ? "var(--surface)" : "var(--primary)",
               color: submitting || loading ? "var(--info)" : "var(--surface)",
               fontWeight: 600,
               cursor: submitting || loading ? "not-allowed" : "pointer",

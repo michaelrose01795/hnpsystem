@@ -21,7 +21,7 @@ const cardStyle = {
 };
 
 const labelStyle = { display: "flex", flexDirection: "column", gap: "4px", fontSize: "0.9rem" };
-const inputStyle = { padding: "10px", border: "1px solid var(--border-subtle, #cbd5e1)", borderRadius: "8px" };
+const inputStyle = { padding: "10px", border: "1px solid var(--primary-border-subtle, #cbd5e1)", borderRadius: "8px" };
 
 function MobileCreateInner() {
   const router = useRouter();

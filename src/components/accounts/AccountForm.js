@@ -46,7 +46,7 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
         <header style={{ flexBasis: "100%" }}>
           <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.25rem" }}>Core Account Details</h2>
           {!hideSectionDescriptions && (
-            <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>Maintain account type, balance, and status.</p>
+            <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "0.9rem" }}>Maintain account type, balance, and status.</p>
           )}
         </header>
         {fieldDefinitions.map((field) => (
@@ -78,7 +78,7 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
         <header style={{ flexBasis: "100%" }}>
           <h2 style={{ margin: 0, color: "var(--primary)", fontSize: "1.25rem" }}>Billing Contact</h2>
           {!hideSectionDescriptions && (
-            <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.9rem" }}>Keep invoicing information up to date for statements.</p>
+            <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "0.9rem" }}>Keep invoicing information up to date for statements.</p>
           )}
         </header>
         {billingFields.map((field) => (

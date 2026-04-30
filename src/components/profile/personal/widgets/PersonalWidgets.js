@@ -29,7 +29,7 @@ const widgetActionButtonStyle = {
   minWidth: "96px",
 };
 
-function SummaryBlock({ label, value, accent = "var(--text-primary)" }) {
+function SummaryBlock({ label, value, accent = "var(--text-1)" }) {
   return (
     <div
       style={{
@@ -39,7 +39,7 @@ function SummaryBlock({ label, value, accent = "var(--text-primary)" }) {
         gap: "4px",
       }}
     >
-      <span style={{ fontSize: "0.66rem", fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+      <span style={{ fontSize: "0.66rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
         {label}
       </span>
       <span style={{ fontSize: "1.15rem", fontWeight: 800, color: accent, lineHeight: 1.2 }}>
@@ -67,12 +67,12 @@ function InlineValuePair({ leftLabel, leftValue, rightLabel, rightValue }) {
       }}
     >
       <div style={{ display: "grid", gap: "2px" }}>
-        <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>{leftLabel}</span>
-        <span style={{ fontSize: "0.88rem", color: "var(--text-primary)", fontWeight: 700 }}>{leftValue}</span>
+        <span style={{ fontSize: "0.66rem", color: "var(--text-1)", fontWeight: 600 }}>{leftLabel}</span>
+        <span style={{ fontSize: "0.88rem", color: "var(--text-1)", fontWeight: 700 }}>{leftValue}</span>
       </div>
       <div style={{ display: "grid", gap: "2px", justifyItems: "end", borderLeft: "2px solid var(--primary)", paddingLeft: "10px" }}>
-        <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>{rightLabel}</span>
-        <span style={{ fontSize: "0.88rem", color: "var(--text-primary)", fontWeight: 700, textAlign: "right" }}>{rightValue}</span>
+        <span style={{ fontSize: "0.66rem", color: "var(--text-1)", fontWeight: 600 }}>{rightLabel}</span>
+        <span style={{ fontSize: "0.88rem", color: "var(--text-1)", fontWeight: 700, textAlign: "right" }}>{rightValue}</span>
       </div>
     </div>
   );
@@ -149,7 +149,7 @@ export function BaseWidget({
               style={{
                 fontSize: "1rem",
                 fontWeight: 700,
-                color: "var(--text-primary)",
+                color: "var(--text-1)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -209,7 +209,7 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
   const year = finance.model.yearTotals || {};
   const monthLabel = formatMonthLabel(finance.model.selectedMonthKey);
   const incomeSectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -323,10 +323,10 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Pay settings (Database)</SectionLabel>
             <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
-              <MetricPill label="Weekly hours" value={`${pay.contractedWeeklyHours || 0}h`} accent="var(--text-secondary)" />
-              <MetricPill label="Hourly rate" value={formatCurrency(pay.hourlyRate || 0)} accent="var(--text-secondary)" />
-              <MetricPill label="OT rate" value={formatCurrency(pay.overtimeRate || 0)} accent="var(--text-secondary)" />
-              <MetricPill label="Annual salary" value={formatCurrency(pay.annualSalary || 0)} accent="var(--text-secondary)" />
+              <MetricPill label="Weekly hours" value={`${pay.contractedWeeklyHours || 0}h`} accent="var(--text-1)" />
+              <MetricPill label="Hourly rate" value={formatCurrency(pay.hourlyRate || 0)} accent="var(--text-1)" />
+              <MetricPill label="OT rate" value={formatCurrency(pay.overtimeRate || 0)} accent="var(--text-1)" />
+              <MetricPill label="Annual salary" value={formatCurrency(pay.annualSalary || 0)} accent="var(--text-1)" />
             </div>
           </div>
         </SurfacePanel>
@@ -341,7 +341,7 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
   const totalWorkedHours = Number(month.pay.totalWorkedHours ?? month.pay.hoursWorked ?? 0);
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -384,7 +384,7 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
               <MetricPill label="Attendance logged" value={month.pay.attendanceWorkedHours !== null ? `${month.pay.attendanceWorkedHours.toFixed(1)}h` : "—"} accent="var(--info, #1565c0)" />
               <MetricPill label="Total OT hour" value={`${month.pay.overtimeHours.toFixed(1)}h`} accent="var(--warning, #ef6c00)" />
               <MetricPill label="Base pay (before tax)" value={formatCurrency(month.pay.basePay)} accent="var(--success, #2e7d32)" />
-              <MetricPill label="OT rate" value={formatCurrency(month.pay.overtimeRate)} accent="var(--text-secondary)" />
+              <MetricPill label="OT rate" value={formatCurrency(month.pay.overtimeRate)} accent="var(--text-1)" />
             </div>
             {month.pay.leaveDaysInMonth > 0 ? (
               <DataRow label="Leave days this month" value={`${month.pay.leaveDaysInMonth}d`} accent="var(--info, #1565c0)" />
@@ -420,7 +420,7 @@ export function SpendingWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
   const creditCards = buildDisplayRowsNewestFirst(month.monthState.creditCards || []);
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -518,7 +518,7 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
   const accounts = finance.financeState.savingsAccounts || [];
   const totalBalance = accountBalances.reduce((sum, a) => sum + a.currentBalance, 0);
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -568,19 +568,19 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
                   >
                     <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px", alignItems: "start" }}>
                       <div style={{ display: "grid", gap: "2px" }}>
-                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{group.name} total</span>
-                        <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                        <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-1)" }}>{group.name} total</span>
+                        <span style={{ fontSize: "0.66rem", color: "var(--text-1)", fontWeight: 600 }}>
                           {group.accounts.length} linked account{group.accounts.length === 1 ? "" : "s"}
                         </span>
                       </div>
                       <div style={{ display: "grid", gap: "2px", justifyItems: "end" }}>
-                        <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>{formatCurrency(group.currentBalance)}</span>
+                        <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-1)" }}>{formatCurrency(group.currentBalance)}</span>
                         {group.monthActivity !== 0 ? (
                           <span style={{ fontSize: "0.66rem", fontWeight: 600, color: group.monthActivity > 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
                             {group.monthActivity > 0 ? "+" : ""}{formatCurrency(group.monthActivity)} this month
                           </span>
                         ) : (
-                          <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)" }}>No activity this month</span>
+                          <span style={{ fontSize: "0.66rem", color: "var(--text-1)" }}>No activity this month</span>
                         )}
                       </div>
                     </div>
@@ -588,12 +588,12 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
                       {group.accounts.map((account) => (
                         <div key={account.id} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px", alignItems: "start" }}>
                           <div style={{ display: "grid", gap: "2px" }}>
-                            <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>{account.name || "Unnamed"}</span>
-                            <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                            <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>{account.name || "Unnamed"}</span>
+                            <span style={{ fontSize: "0.66rem", color: "var(--text-1)", fontWeight: 600 }}>
                               {account.interestRate > 0 ? `${account.interestRate}% AER` : "No interest rate set"}
                             </span>
                           </div>
-                          <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{formatCurrency(account.currentBalance)}</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-1)" }}>{formatCurrency(account.currentBalance)}</span>
                         </div>
                       ))}
                     </div>
@@ -613,19 +613,19 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
                     }}
                   >
                     <div style={{ display: "grid", gap: "2px" }}>
-                      <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{account.name || "Unnamed"}</span>
-                      <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-1)" }}>{account.name || "Unnamed"}</span>
+                      <span style={{ fontSize: "0.66rem", color: "var(--text-1)", fontWeight: 600 }}>
                         {account.interestRate > 0 ? `${account.interestRate}% AER` : "No interest rate set"}
                       </span>
                     </div>
                     <div style={{ display: "grid", gap: "2px", justifyItems: "end" }}>
-                      <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>{formatCurrency(account.currentBalance)}</span>
+                      <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-1)" }}>{formatCurrency(account.currentBalance)}</span>
                       {account.monthActivity !== 0 ? (
                         <span style={{ fontSize: "0.66rem", fontWeight: 600, color: account.monthActivity > 0 ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
                           {account.monthActivity > 0 ? "+" : ""}{formatCurrency(account.monthActivity)} this month
                         </span>
                       ) : (
-                        <span style={{ fontSize: "0.66rem", color: "var(--text-secondary)" }}>No activity this month</span>
+                        <span style={{ fontSize: "0.66rem", color: "var(--text-1)" }}>No activity this month</span>
                       )}
                     </div>
                   </div>
@@ -708,7 +708,7 @@ export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, wi
   const afterTaxIncome = Number(month?.pay?.afterTaxIncome || 0);
   const moneyLeftAfterPayments = afterTaxIncome - totalPayments;
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -760,7 +760,7 @@ export function FuelWidget({ widget, onOpenSettings, finance }) {
   const month = finance.model.currentMonth;
   const fuelEntries = buildDisplayRowsNewestFirst(month.monthState.fuelEntries || [], 5);
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -902,7 +902,7 @@ export function MortgageWidget({
   );
 
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -910,7 +910,7 @@ export function MortgageWidget({
     <BaseWidget
       title={widget.config?.title || "Mortgage"}
       subtitle={mode === "bills" ? "Mortgage repayment overview" : "Saving for your mortgage goal"}
-      accent="var(--text-primary)"
+      accent="var(--text-1)"
       monthLabel={mode === "saving" ? monthView.label : ""}
       statusLabel={mode === "saving" ? monthView.status : "Mortgage Bills"}
       onOpenSettings={onOpenSettings}
@@ -1045,7 +1045,7 @@ export function HolidayWidget({ widget, finance, onOpenSettings, widgetData }) {
   }, {});
   const linkedHolidayRows = Object.values(linkedHolidayGroups);
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -1131,7 +1131,7 @@ export function CustomWidget({ widget, widgetData, onOpenSettings }) {
   const target = Number(settings.customTarget ?? widget?.config?.target ?? 0);
   const note = settings.customNote ?? widget?.config?.note ?? "";
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -1153,7 +1153,7 @@ export function CustomWidget({ widget, widgetData, onOpenSettings }) {
           <div style={{ display: "grid", gap: "8px" }}>
             <SectionLabel>Summary</SectionLabel>
             {note ? (
-              <div style={{ fontSize: "0.84rem", lineHeight: 1.5, color: "var(--text-primary)", whiteSpace: "pre-wrap" }}>
+              <div style={{ fontSize: "0.84rem", lineHeight: 1.5, color: "var(--text-1)", whiteSpace: "pre-wrap" }}>
                 {note}
               </div>
             ) : (
@@ -1175,7 +1175,7 @@ export function NetPositionWidget({ widget, onOpenSettings, finance }) {
   const year = finance.model.yearTotals;
   const positive = month.totals.difference >= 0;
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -1346,7 +1346,7 @@ export function ChartWidget({
   }, [datasets, source, widgetData, widgetDataMap, widgetMonthKey]);
 
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -1401,7 +1401,7 @@ export function NotesWidget({ widget, datasets, actions }) {
   };
 
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -1409,7 +1409,7 @@ export function NotesWidget({ widget, datasets, actions }) {
     <BaseWidget
       title={widget.config?.title || "Notes"}
       subtitle="Private reminders and references"
-      accent="var(--text-primary)"
+      accent="var(--text-1)"
     >
       <div style={{ display: "grid", gap: "10px" }}>
         <SurfacePanel style={sectionStyle}>
@@ -1447,7 +1447,7 @@ export function NotesWidget({ widget, datasets, actions }) {
                       ...widgetInsetSurfaceStyle,
                     }}
                   >
-                    <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)" }}>
+                    <div style={{ fontSize: "0.74rem", color: "var(--text-1)" }}>
                       {formatDate(note.updatedAt || note.createdAt)}
                     </div>
                     <div style={{ whiteSpace: "pre-wrap", fontSize: "0.84rem", lineHeight: 1.5 }}>
@@ -1494,7 +1494,7 @@ export function AttachmentsWidget({ widget, datasets, actions }) {
   };
 
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -1544,7 +1544,7 @@ export function AttachmentsWidget({ widget, datasets, actions }) {
                         style={{
                           display: "block",
                           fontWeight: 700,
-                          color: "var(--text-primary)",
+                          color: "var(--text-1)",
                           textDecoration: "none",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
@@ -1553,7 +1553,7 @@ export function AttachmentsWidget({ widget, datasets, actions }) {
                       >
                         {attachment.fileName}
                       </a>
-                      <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)" }}>
+                      <div style={{ fontSize: "0.74rem", color: "var(--text-1)" }}>
                         {formatFileSize(attachment.fileSize)} · {formatDate(attachment.createdAt)}
                       </div>
                     </div>
@@ -1576,10 +1576,10 @@ export function AttachmentsWidget({ widget, datasets, actions }) {
 const OVERVIEW_MAX_VISIBLE_ACCOUNTS = 5;
 
 function OverviewAccountRow({ name, balance, negative = false }) {
-  const color = negative || balance < 0 ? "var(--danger, #c62828)" : "var(--text-primary)";
+  const color = negative || balance < 0 ? "var(--danger, #c62828)" : "var(--text-1)";
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.82rem", padding: "2px 0" }}>
-      <span style={{ color: "var(--text-secondary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+      <span style={{ color: "var(--text-1)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
       <span style={{ fontWeight: 700, color, whiteSpace: "nowrap" }}>{formatCurrency(balance)}</span>
     </div>
   );
@@ -1620,7 +1620,7 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
   const hiddenCount = visibleNonCardAccounts.length - OVERVIEW_MAX_VISIBLE_ACCOUNTS;
 
   const sectionStyle = {
-    background: "rgba(var(--primary-rgb), 0.08)",
+    background: "var(--theme)",
     border: "1px solid rgba(var(--primary-rgb), 0.14)",
   };
 
@@ -1691,7 +1691,7 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
                   </button>
                 ) : null}
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "1px solid rgba(var(--primary-rgb), 0.12)", paddingTop: "6px", marginTop: "2px" }}>
-                  <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-secondary)" }}>Total in accounts</span>
+                  <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>Total in accounts</span>
                   <span style={{ fontSize: "0.88rem", fontWeight: 800, color: accountsTotal < 0 ? "var(--danger, #c62828)" : "var(--success, #2e7d32)" }}>
                     {formatCurrency(accountsTotal)}
                   </span>
@@ -1718,7 +1718,7 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
                   />
                 ))}
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "1px solid rgba(var(--primary-rgb), 0.12)", paddingTop: "6px", marginTop: "2px" }}>
-                  <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-secondary)" }}>Total owed</span>
+                  <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>Total owed</span>
                   <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--danger, #c62828)" }}>
                     {formatCurrency(creditCardTotal)}
                   </span>
@@ -1733,15 +1733,15 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
           <div style={{ display: "grid", gap: "6px" }}>
             <SectionLabel>Monthly totals</SectionLabel>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.82rem" }}>
-              <span style={{ color: "var(--text-secondary)" }}>Total In</span>
+              <span style={{ color: "var(--text-1)" }}>Total In</span>
               <span style={{ fontWeight: 700, color: "var(--success, #2e7d32)" }}>{formatCurrency(totalIn)}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", fontSize: "0.82rem" }}>
-              <span style={{ color: "var(--text-secondary)" }}>Total Out</span>
+              <span style={{ color: "var(--text-1)" }}>Total Out</span>
               <span style={{ fontWeight: 700, color: "var(--danger, #c62828)" }}>{formatCurrency(totalOut)}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "1px solid rgba(var(--primary-rgb), 0.12)", paddingTop: "6px", marginTop: "2px" }}>
-              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-secondary)" }}>Difference</span>
+              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>Difference</span>
               <span style={{ fontSize: "0.88rem", fontWeight: 800, color: differencePositive ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
                 {formatCurrency(difference)}
               </span>

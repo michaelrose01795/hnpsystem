@@ -35,7 +35,7 @@ export default function LoginPresentationPageUi() {
             <h1
               style={{
                 margin: 0,
-                color: "var(--accentMain)",
+                color: "var(--primary)",
                 fontSize: "1.4rem",
                 fontWeight: 700,
               }}
@@ -45,7 +45,7 @@ export default function LoginPresentationPageUi() {
             <p
               style={{
                 margin: "6px 0 0",
-                color: "var(--text-secondary)",
+                color: "var(--text-1)",
                 fontSize: "0.9rem",
               }}
             >
@@ -80,7 +80,7 @@ export default function LoginPresentationPageUi() {
                 <span
                   style={{
                     fontWeight: 700,
-                    color: "var(--accentMain)",
+                    color: "var(--primary)",
                     fontSize: "0.95rem",
                   }}
                 >
@@ -89,7 +89,7 @@ export default function LoginPresentationPageUi() {
                 <span
                   style={{
                     fontSize: "0.78rem",
-                    color: "var(--text-secondary)",
+                    color: "var(--text-1)",
                   }}
                 >
                   {role.demoName} · {role.routes.length} pages

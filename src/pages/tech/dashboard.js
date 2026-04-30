@@ -48,18 +48,18 @@ const centeredStateStyle = {
 };
 
 const statCardBaseStyle = {
-  background: "var(--accent-surface)",
+  background: "var(--theme)",
   border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
   boxShadow: "none"
 };
 
-const buildToneSurfaceStyle = (surface, border = "var(--accentBorder)") => ({
+const buildToneSurfaceStyle = (surface, border = "var(--primary-border)") => ({
   ...statCardBaseStyle,
   background: surface
 });
 
 const sectionSurfaceStyle = {
-  background: "var(--accent-surface)",
+  background: "var(--theme)",
   border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
   boxShadow: "none"
 };
@@ -81,7 +81,7 @@ const getStatusBadgeStyle = (status) => {
     case "in progress":
       return {
         ...statusBadgeBaseStyle,
-        backgroundColor: "var(--accent-purple-surface)",
+        backgroundColor: "var(--theme)",
         color: "var(--primary)",
         border: "1px solid rgba(var(--accent-base-rgb), 0.2)"
       };
@@ -116,7 +116,7 @@ const buildVehicleLabel = (job) => {
 
 const detailLabelStyle = {
   fontSize: "15px",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   margin: 0,
   lineHeight: 1.5
 };
@@ -124,14 +124,14 @@ const detailLabelStyle = {
 const sectionHeadingStyle = {
   fontSize: "20px",
   fontWeight: "700",
-  color: "var(--text-primary)",
+  color: "var(--text-1)",
   margin: 0
 };
 
 const sectionCopyStyle = {
   margin: 0,
   fontSize: "14px",
-  color: "var(--text-secondary)",
+  color: "var(--text-1)",
   lineHeight: 1.5
 };
 

@@ -538,7 +538,7 @@ const MessageBubble = ({
                     "var(--success-surface)" :
                     leaveStatusKey === "declined" ?
                     "var(--danger-surface)" :
-                    "var(--info-surface)",
+                    "var(--theme)",
                     color:
                     leaveStatusKey === "approved" ?
                     "var(--success)" :

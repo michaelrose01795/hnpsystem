@@ -9,7 +9,7 @@ export default function PartsRedirectUi(props) {
   alignItems: 'center',
   height: '100vh',
   fontSize: '1.2rem',
-  color: 'var(--text-secondary)'
+  color: 'var(--text-1)'
 }}>
       Redirecting to Stock Catalogue...
     </div>; // render extracted page section.

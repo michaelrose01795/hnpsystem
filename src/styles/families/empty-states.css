@@ -18,19 +18,19 @@
   justify-content: center;
   gap: 10px;
   text-align: center;
-  color: var(--text-secondary);
+  color: var(--text-1);
 }
 
 .app-empty-state__title {
   font-size: var(--text-h4);
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-1);
   margin: 0;
 }
 
 .app-empty-state__description {
   font-size: var(--text-body-sm);
-  color: var(--text-secondary);
+  color: var(--text-1);
   margin: 0;
   max-width: 46ch;
 }
@@ -44,7 +44,7 @@
 
 .app-empty-state--inline {
   padding: 20px 16px;
-  background: var(--layer-section-level-1);
+  background: var(--surface);
   border-radius: var(--radius-sm);
 }
 

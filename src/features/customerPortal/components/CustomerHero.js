@@ -3,7 +3,7 @@ import React from "react";
 
 export default function CustomerHero({ nextVisit, lastUpdated }) {
   return (
-    <section className="rounded-3xl border border-[var(--surface-light)] bg-[var(--primary)] p-6 text-white">
+    <section className="rounded-3xl border border-[var(--surface)] bg-[var(--primary)] p-6 text-white">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-center">
         <div>
           <p className="text-xs uppercase tracking-[0.4em] text-white">Vehicle Health</p>

@@ -174,13 +174,13 @@ export default function OvertimeEntriesEditor({
           <tbody>
             {localEntries.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ padding: "16px 0", color: "var(--text-secondary)" }}>
+                <td colSpan={4} style={{ padding: "16px 0", color: "var(--text-1)" }}>
                   No overtime sessions logged for this period.
                 </td>
               </tr>
             ) : (
               localEntries.map((entry) => (
-                <tr key={entry.id} style={{ borderTop: "1px solid var(--accent-purple-surface)" }}>
+                <tr key={entry.id} style={{ borderTop: "1px solid var(--theme)" }}>
                   <td style={{ padding: "12px 0", fontWeight: 600 }}>
                     {new Date(entry.date).toLocaleDateString()}
                   </td>
@@ -222,7 +222,7 @@ const labelStyle = {
 const inputStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--radius-xs)",
-  border: "1px solid var(--accent-purple-surface)",
+  border: "1px solid var(--theme)",
   fontWeight: 500,
 };
 

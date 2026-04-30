@@ -124,14 +124,14 @@ export default function LoginPageUi(props) {
             <h3 style={{
         margin: 0,
         fontSize: "1.1rem",
-        color: "var(--text-primary)"
+        color: "var(--text-1)"
       }}>
               Reset Password
             </h3>
             <p style={{
         margin: "8px 0 14px",
         fontSize: "0.85rem",
-        color: "var(--text-secondary)"
+        color: "var(--text-1)"
       }}>
               Enter your email. If we have an account for you, we&apos;ll send a link to choose a new password.
             </p>
@@ -143,7 +143,7 @@ export default function LoginPageUi(props) {
               {resetStatus && <p style={{
           margin: 0,
           fontSize: "0.8rem",
-          color: resetStatusType === "error" ? "var(--danger)" : resetStatusType === "success" ? "var(--success)" : "var(--text-secondary)"
+          color: resetStatusType === "error" ? "var(--danger)" : resetStatusType === "success" ? "var(--success)" : "var(--text-1)"
         }}>
                   {resetStatus}
                 </p>}

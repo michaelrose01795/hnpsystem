@@ -34,7 +34,7 @@ export default function EmployeeManagementUi(props) {
     flexWrap: "wrap"
   }}>
         <p style={{
-      color: "var(--text-secondary)",
+      color: "var(--text-1)",
       margin: 0
     }}>
           Maintain staff records, employment details, documents, and system access.
@@ -78,7 +78,7 @@ export default function EmployeeManagementUi(props) {
               const isSelected = employee.id === selectedEmployeeId;
               return <tr key={employee.id} onClick={() => setSelectedEmployeeId(employee.id)} style={{
                 cursor: "pointer",
-                backgroundColor: isSelected ? "var(--accent-surface-hover)" : "transparent"
+                backgroundColor: isSelected ? "var(--theme-hover)" : "transparent"
               }}>
                         <td>
                           <div style={{
@@ -87,11 +87,11 @@ export default function EmployeeManagementUi(props) {
                   }}>
                             <span style={{
                       fontWeight: 600,
-                      color: "var(--text-primary)"
+                      color: "var(--text-1)"
                     }}>{employee.name}</span>
                             <span style={{
                       fontSize: "var(--text-label)",
-                      color: "var(--text-secondary)"
+                      color: "var(--text-1)"
                     }}>
                               {employee.jobTitle}
                             </span>
@@ -102,7 +102,7 @@ export default function EmployeeManagementUi(props) {
                 }}>{employee.department}</td>
                         <td style={{
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--text-primary)"
+                  color: "var(--text-1)"
                 }}>
                           {employee.employmentType}
                         </td>

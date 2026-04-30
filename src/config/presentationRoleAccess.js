@@ -304,8 +304,6 @@ export const PRESENTATION_ROLES = [
     demoName: "Demo Workshop Manager",
     routes: [
       "/dashboard/workshop",
-      "/dashboard",
-      "/workshop",
       "/workshop/consumables-tracker",
       "/job-cards/waiting/nextjobs",
       "/job-cards/view",
@@ -313,10 +311,10 @@ export const PRESENTATION_ROLES = [
       "/clocking",
       "/clocking/[technicianSlug]",
       "/parts/goods-in",
+      "/tracking",
       "/messages",
       "/newsfeed",
       "/profile",
-      "/tracking",
     ],
   },
 ];

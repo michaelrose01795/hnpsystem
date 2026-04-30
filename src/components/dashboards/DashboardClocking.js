@@ -52,7 +52,7 @@ export default function DashboardClocking() {
   return (
     <div style={{ marginTop: "var(--space-4)" }}>
       {/* Section title — uses the global text token, not a hardcoded color. */}
-      <h2 style={{ color: "var(--text-primary)", marginBottom: "var(--space-3)" }}>
+      <h2 style={{ color: "var(--text-1)", marginBottom: "var(--space-3)" }}>
         Workshop Clocking Overview
       </h2>
       <div
@@ -68,7 +68,7 @@ export default function DashboardClocking() {
             key={tech.userId || tech.id || tech.user}
             style={{
               backgroundColor: "var(--surface)",
-              border: "1px solid var(--border)",
+              border: "1px solid var(--primary-border)",
               borderRadius: "var(--radius-xs)",
               padding: "var(--space-4)",
               textAlign: "center",
@@ -78,7 +78,7 @@ export default function DashboardClocking() {
               justifyContent: "center",
               fontWeight: 500,
               fontSize: "1rem",
-              color: "var(--text-primary)",
+              color: "var(--text-1)",
             }}
           >
             {/* Technician display name as returned by /api/profile/clock */}

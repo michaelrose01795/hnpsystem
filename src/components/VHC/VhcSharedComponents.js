@@ -8,7 +8,7 @@ export const EmptyStateMessage = ({ message }) => (
       padding: "18px",
       border: "none",
       borderRadius: "var(--radius-sm)",
-      background: "var(--info-surface)",
+      background: "var(--theme)",
       color: "var(--info)",
       fontSize: "13px",
     }}
@@ -207,7 +207,7 @@ export const StockStatusBadge = ({ stockStatus }) => {
         };
       default:
         return {
-          background: "var(--info-surface)",
+          background: "var(--theme)",
           color: "var(--info)",
           label: "—",
         };

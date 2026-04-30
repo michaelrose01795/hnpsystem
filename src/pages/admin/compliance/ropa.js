@@ -57,7 +57,7 @@ function NewActivityForm({ onCreated }) {
 
   return (
     <form onSubmit={submit} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Activity name
         <input
           type="text"
@@ -68,7 +68,7 @@ function NewActivityForm({ onCreated }) {
           style={{ marginTop: 4, width: "100%", minHeight: 40 }}
         />
       </label>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Purpose
         <textarea
           value={purpose}
@@ -78,7 +78,7 @@ function NewActivityForm({ onCreated }) {
           style={{ marginTop: 4, width: "100%" }}
         />
       </label>
-      <label style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+      <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
         Lawful basis
         <select
           value={lawfulBasis}
@@ -130,7 +130,7 @@ export default function RopaPage() {
   return (
     <ComplianceLayout title="ROPA">
       <Section title="Record of Processing Activities">
-        <p style={{ margin: "0 0 10px", color: "var(--text-secondary)" }}>
+        <p style={{ margin: "0 0 10px", color: "var(--text-1)" }}>
           Per UK GDPR Art. 30, controllers must maintain a record of processing activities.
           Each entry should describe the purpose, lawful basis, data categories, recipients,
           international transfers, security measures, and retention.
@@ -141,29 +141,29 @@ export default function RopaPage() {
       <Section title="Activities">
         {error && <p role="alert" style={{ margin: "0 0 10px", color: "var(--danger-base, #ef4444)" }}>{error}</p>}
         {rows === null ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>Loading...</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
         ) : rows.length === 0 ? (
-          <p style={{ margin: 0, color: "var(--text-secondary)" }}>No activities recorded yet.</p>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>No activities recorded yet.</p>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
-                <tr style={{ textAlign: "left", color: "var(--text-secondary)" }}>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Name</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Lawful basis</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Purpose</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>Last reviewed</th>
+                <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Name</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Lawful basis</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Purpose</th>
+                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Last reviewed</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>{row.name}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>{row.lawful_basis || "—"}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.name}</td>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.lawful_basis || "—"}</td>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
                       {row.purpose ? row.purpose.slice(0, 120) : "—"}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--border)" }}>{row.last_reviewed_at || "—"}</td>
+                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.last_reviewed_at || "—"}</td>
                   </tr>
                 ))}
               </tbody>
