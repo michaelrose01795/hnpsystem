@@ -512,7 +512,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
       parentKey="clocking-page-content"
       sectionType="section-shell"
       shell
-      style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       
       {/* Summary Stats Section */}
       <DevLayoutSection
@@ -525,12 +525,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
         style={{
           background: "rgba(var(--primary-rgb), 0.08)",
           borderRadius: "var(--radius-md)",
-          padding: "24px",
+          padding: "10px",
           border: "none",
           boxShadow: "none",
           display: "flex",
           flexDirection: "column",
-          gap: "14px"
+          gap: "10px"
         }}>
         
         <div>
@@ -814,12 +814,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
         style={{
           background: "rgba(var(--primary-rgb), 0.08)",
           borderRadius: "var(--radius-md)",
-          padding: "24px",
+          padding: "10px",
           border: "none",
           boxShadow: "none",
           display: "flex",
           flexDirection: "column",
-          gap: "16px"
+          gap: "10px"
         }}>
         
         <div>

@@ -2215,14 +2215,14 @@ export function ProfileWorkTab({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "20px",
+        gap: "10px",
         padding: "0",
         background: "transparent",
         color: "var(--text-primary)",
         minHeight: "100%",
       }}
     >
-      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "18px" }}>
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
         <header style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {isAdminPreview && profile && (
             <div
@@ -2291,7 +2291,7 @@ export function ProfileWorkTab({
               shell
               style={{
                 ...profileSectionShellStyle,
-                padding: isMobile ? "12px" : "var(--section-card-padding)",
+                padding: "10px",
                 display: "grid",
                 gap: isMobile ? "10px" : "14px",
                 gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))",
@@ -2415,7 +2415,7 @@ export function ProfileWorkTab({
               shell
               style={{
                 ...profileSectionShellStyle,
-                padding: isMobile ? "12px" : "var(--section-card-padding)",
+                padding: "10px",
                 display: "grid",
                 gap: isMobile ? "12px" : "16px",
                 gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 480px), 1fr))",
@@ -2733,7 +2733,7 @@ export function ProfileWorkTab({
               shell
               style={{
                 display: "grid",
-                gap: "16px",
+                gap: "10px",
                 gridTemplateColumns: "minmax(0, 1fr)",
               }}
             >
@@ -2815,7 +2815,7 @@ export function ProfileWorkTab({
                 shell
                 style={{
                   display: "grid",
-                  gap: "16px",
+                  gap: "10px",
                   gridTemplateColumns: "minmax(0, 1fr)",
                 }}
               >

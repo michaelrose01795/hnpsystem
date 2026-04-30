@@ -69,6 +69,8 @@ const MODE_ROLE_MAP = {
 };
 const NAV_DRAWER_WIDTH = 260;
 const STATUS_DRAWER_WIDTH = 560;
+const LOGIN_SHELL_LOADING_EVENT = "hnp:login-shell-loading";
+const LOGIN_SHELL_LOADING_STORAGE_KEY = "hnp-login-shell-loading";
 // Fallback role union used only if /presentation is somehow rendered without
 // a chosen role from /loginPresentation (the provider redirects in that case,
 // but Layout sits outside the provider so this keeps it safe during the brief
@@ -95,8 +97,10 @@ export default function Layout({
   const { user, loading: userLoading, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
   const { usersByRole } = useRoster();
   const router = useRouter();
+  const [showLoginShellLoading, setShowLoginShellLoading] = useState(false);
   const hideSidebar =
-    router.pathname === "/login" || router.pathname === "/loginPresentation";
+    (router.pathname === "/login" && !showLoginShellLoading) ||
+    router.pathname === "/loginPresentation";
   const showHrTabs =
     (router.pathname.startsWith("/hr") && router.pathname !== "/hr/manager") ||
     router.pathname.startsWith("/admin/users");
@@ -267,6 +271,28 @@ export default function Layout({
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const readLoginShellLoading = () => {
+      const shouldShow =
+        router.pathname === "/login" &&
+        window.sessionStorage.getItem(LOGIN_SHELL_LOADING_STORAGE_KEY) === "1";
+      setShowLoginShellLoading(shouldShow);
+    };
+
+    readLoginShellLoading();
+    window.addEventListener(LOGIN_SHELL_LOADING_EVENT, readLoginShellLoading);
+    return () => window.removeEventListener(LOGIN_SHELL_LOADING_EVENT, readLoginShellLoading);
+  }, [router.pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (router.pathname === "/login") return;
+    window.sessionStorage.removeItem(LOGIN_SHELL_LOADING_STORAGE_KEY);
+    setShowLoginShellLoading(false);
+  }, [router.pathname]);
+
+  useEffect(() => {
     if (typeof document === "undefined") return undefined;
     if (requiresLandscape) {
       document.body.classList.add("require-landscape");
@@ -354,11 +380,12 @@ export default function Layout({
 
   useEffect(() => {
     if (presentationShell) return;
+    if (showLoginShellLoading) return;
     if (userLoading) return;
     if (user === null && !hideSidebar) {
       router.replace("/login");
     }
-  }, [user, userLoading, hideSidebar, router, presentationShell]);
+  }, [user, userLoading, hideSidebar, router, presentationShell, showLoginShellLoading]);
 
   useEffect(() => {
     if (activeJobId) fetchCurrentJobStatus(activeJobId);
@@ -1378,6 +1405,7 @@ export default function Layout({
             }
             showToggleButton={false}
             refreshKey={statusSidebarRefreshKey}
+            isVerticalPhone={isVerticalPhone}
           />
         </div>
       )}

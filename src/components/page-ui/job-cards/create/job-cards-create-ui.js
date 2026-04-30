@@ -989,21 +989,21 @@ export default function CreateJobCardPageUi(props) {
               {requests.map((req, i) => <DevLayoutSection key={`job-request-row-${i}`} sectionKey={`job-cards-create-job-request-${i + 1}`} sectionType="content-card" parentKey="job-cards-create-job-requests" style={{
             border: "none",
             borderRadius: "var(--radius-sm)",
-            marginBottom: "12px",
-            padding: "16px",
+            marginBottom: "10px",
+            padding: "10px",
             backgroundColor: "var(--surface)"
           }}>
                   <div style={{
               fontSize: "13px",
               fontWeight: "600",
               color: "var(--text-secondary)",
-              marginBottom: "12px"
+              marginBottom: "10px"
             }}>
                     Request {i + 1}
                   </div>
                   <div style={{
               display: "flex",
-              gap: "12px",
+              gap: "10px",
               alignItems: "center",
               flexWrap: "wrap"
             }}>

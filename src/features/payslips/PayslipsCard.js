@@ -240,8 +240,7 @@ export default function PayslipsCard({
         sectionKey={sectionKey}
         parentKey={parentKey}
         sectionType="content-card"
-        backgroundToken="accent-surface"
-        className="app-profile-accent-card"
+        backgroundToken="surface"
         style={cardSurfaceStyle}
       >
         {/* Header */}

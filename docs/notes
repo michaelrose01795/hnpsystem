@@ -1,14 +1,5 @@
 update the "# Role Page Access Draft" page with the edits
 
-fix "❌ archive job error: Error: update or delete on table "job_requests" violates foreign key constraint "job_request_detections_request_id_fkey" on table "job_request_detections"
-    at handler (src\pages\api\jobcards\archive\create.js:489:33)
-  487 |       .delete()
-  488 |       .eq("job_id", jobId);
-> 489 |     if (jobRequestsError) throw new Error(jobRequestsError.message);
-      |                                 ^
-  490 |
-  491 |     // Parts: items, allocations, requests, goods-in
-  492 |     const { error: partsJobItemsError } = await supabaseService"
 
 
 Presentation!!!!!!!!!
@@ -17,10 +8,15 @@ Presentation!!!!!!!!!
 
 what is the height of the tab buttons? 32px
 
-have it so "/profile :: 1.2.2.1.1.2.3 (profile-work-kpi-payslips)" backgound colour is surface colour. 
+
+
+CHECK
+Have it so the buttons in the sidebar which are "Security, Privacy" move these buttons intot he top middle section of the "/profile :: 1.2.2.1.1.1 (profile-tab-toolbar)" instead of being wihin the sidebar
 
 
 
+
+CHECK ALLL!!!
 lets have 10px gap around all the contents within 
 
 /job-cards/create :: 1.2.1.1.1.1.2.1 (job-cards-create-job-request-1)
@@ -38,13 +34,11 @@ between /profile :: 1.2.2.1.1.1 (profile-tab-toolbar) to /profile :: 1.2.2.1.1.2
 
 
 
-Deep dive the repo and fix both CI failures without changing app behaviour: first fix the GitHub Pages/Jekyll failure by opening docs/ui-system.md, finding line 83 and any other raw {{ / }} examples that Jekyll Liquid is trying to parse, then escape them safely using {% raw %} / {% endraw %} or code-fence-safe formatting so the markdown still reads correctly and actions/jekyll-build-pages@v1 passes; second fix the Playwright CI smoke test failures by auditing .github/workflows/playwright.yml, Supabase client initialisation, dev-login/test-auth paths, and the smoke specs, then remove unsafe placeholder Supabase fallbacks or fail fast with a clear missing-secret message, and add a proper CI-safe test mode so smoke tests do not depend on a live Supabase database unless real secrets are present; preserve production behaviour, auth roles, database logic, UI, and route behaviour, only adjust CI/test handling and docs escaping, then run/verify the relevant checks locally where possible: Jekyll/docs build if available, npm run lint, npm test/Vitest if available, and npx playwright test --project=auth-setup --project=smoke, then report exactly which files changed and why.
-
-
 
 
 TODO
 look into "Review Media" section after editing photo
+
 
 
 TODO DEEP ONE

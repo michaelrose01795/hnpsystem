@@ -18,6 +18,8 @@ import LoginPageUi from "@/components/page-ui/login-ui"; // Extracted presentati
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
+const LOGIN_SHELL_LOADING_EVENT = "hnp:login-shell-loading";
+const LOGIN_SHELL_LOADING_STORAGE_KEY = "hnp-login-shell-loading";
 const DEFAULT_STAFF_POST_LOGIN_ROUTE = "/newsfeed";
 const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/customer";
 const hasActiveLogoutBarrier = () => {
@@ -53,6 +55,12 @@ const getPostLoginRoute = (router, activeUser) => {
     return redirectedFrom;
   }
   return getDefaultPostLoginRoute(activeUser);
+};
+
+const showAppShellLoading = () => {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(LOGIN_SHELL_LOADING_STORAGE_KEY, "1");
+  window.dispatchEvent(new Event(LOGIN_SHELL_LOADING_EVENT));
 };
 
 const LoginCard = ({
@@ -235,6 +243,7 @@ export default function LoginPage() {
         return;
       }
 
+      showAppShellLoading();
       setIsRedirecting(true);
       // Hard navigation forces NextAuth to read the freshly-issued JWT cookie
       // and rebuilds the user/role context from the new session.
@@ -249,6 +258,7 @@ export default function LoginPage() {
       return;
     }
 
+    showAppShellLoading();
     setIsRedirecting(true);
     await router.replace(target);
   };
@@ -275,6 +285,7 @@ export default function LoginPage() {
       }
 
       if (result?.ok) {
+        showAppShellLoading();
         setIsRedirecting(true);
         await router.replace(target);
       }
@@ -341,6 +352,7 @@ export default function LoginPage() {
     user || (sessionStatus === "authenticated" && session?.user ? session.user : null);
     if (!activeUser) return;
 
+    showAppShellLoading();
     setIsRedirecting(true);
 
     const roles = [].

@@ -569,6 +569,24 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   }
 }
 
+/* Vertical phone mode: chrome (menu/status tab buttons, global search,
+   topbar) must sit BENEATH the page card so page-level sticky elements
+   and overlays do not let the search bar show through.
+   Why: .app-topbar-shell defaults to z-index:3300 to layer above page
+   content on desktop; on a portrait phone that ordering is inverted —
+   the page card and its scoped stacking context need to win. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .app-topbar-shell {
+    z-index: 0;
+  }
+
+  .app-page-shell,
+  .app-page-card {
+    position: relative;
+    z-index: 1;
+  }
+}
+
 /* ========================================================= */
 /* === Modern Floating Scrollbar Styles === */
 /* ========================================================= */

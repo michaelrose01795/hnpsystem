@@ -27,6 +27,7 @@ export default function StatusSidebar({
   variant = "overlay",
   canClose = true,
   refreshKey = 0,
+  isVerticalPhone = false,
 }) {
   const [snapshot, setSnapshot] = useState(null); // Latest job status snapshot payload
   const [statusHistory, setStatusHistory] = useState([]); // Timeline entries for the tracker
@@ -733,6 +734,21 @@ export default function StatusSidebar({
                   flags={trackerFlags}
                 />
               </div>
+              {/* In-section close button — vertical phone only, ensures dismiss is reachable after scrolling the timeline */}
+              {isVerticalPhone && canClose && onToggle && (
+                <button
+                  type="button"
+                  aria-label="Close job tracker"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggle();
+                  }}
+                  className="app-btn app-btn--secondary"
+                  style={{ width: '100%', minHeight: '44px' }}
+                >
+                  Close Job Tracker
+                </button>
+              )}
             </div>
           )}
         </div>

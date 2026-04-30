@@ -334,8 +334,6 @@ export const sidebarSections = [
     category: "account",
     items: [
       { label: "Profile", href: "/profile", roles: [] },
-      { label: "Security", href: "/account/security", roles: [] },
-      { label: "Privacy", href: "/profile/privacy", roles: [] },
       { label: "Logout", href: null, roles: [], action: "logout" },
     ],
   },

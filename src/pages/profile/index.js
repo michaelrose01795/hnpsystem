@@ -108,7 +108,7 @@ export function ProfilePage({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: isMobile ? "12px" : "18px",
+        gap: "10px",
         padding: "0"
       }}>
       
@@ -134,6 +134,34 @@ export function ProfilePage({
             }}
             personalDisabled={personalDisabled} />
           
+          </DevLayoutSection>
+          <DevLayoutSection sectionKey="profile-account-links" parentKey="profile-tab-toolbar" sectionType="toolbar">
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              flexWrap: "wrap"
+            }}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="app-btn--control"
+                onClick={() => router.push("/account/security")}
+              >
+                Security
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="app-btn--control"
+                onClick={() => router.push("/profile/privacy")}
+              >
+                Privacy
+              </Button>
+            </div>
           </DevLayoutSection>
           <DevLayoutSection sectionKey="profile-tab-actions" parentKey="profile-tab-toolbar" sectionType="toolbar">
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -165,7 +193,12 @@ export function ProfilePage({
           </DevLayoutSection>
         </DevLayoutSection>
 
-        <DevLayoutSection sectionKey="profile-active-tab-panel" parentKey="profile-page-content" sectionType="section-shell" shell>
+        <DevLayoutSection sectionKey="profile-active-tab-panel" parentKey="profile-page-content" sectionType="section-shell" shell style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px",
+          padding: 0
+        }}>
           {activeTab === "work" ?
         <ProfileWorkTab
           forcedUserName={forcedUserName}

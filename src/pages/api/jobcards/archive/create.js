@@ -36,7 +36,7 @@ const deleteByIds = async (table, idField, ids) => {
   }
 };
 
-async function handler(req, res, session) {
+async function handler(req, res) {
   if (!supabaseService) {
     return res.status(500).json({ success: false, error: "Service role key not configured" });
   }
@@ -132,6 +132,42 @@ async function handler(req, res, session) {
     snapshotTables.job_requests = await fetchRows(
       supabaseService.from("job_requests").select("*").eq("job_id", jobId),
       "job_requests"
+    );
+    const jobRequestIds = snapshotTables.job_requests.map((row) => row.request_id);
+    const requestDetectionsByJob = await fetchRows(
+      supabaseService.from("job_request_detections").select("*").eq("job_id", jobId),
+      "job_request_detections"
+    );
+    const requestDetectionsByRequest = jobRequestIds.length
+      ? await fetchRows(
+          supabaseService
+            .from("job_request_detections")
+            .select("*")
+            .in("request_id", jobRequestIds),
+          "job_request_detections"
+        )
+      : [];
+    snapshotTables.job_request_detections = mergeUniqueById(
+      [...requestDetectionsByJob, ...requestDetectionsByRequest],
+      "detection_id"
+    );
+
+    const proformaOverridesByJob = await fetchRows(
+      supabaseService.from("proforma_request_overrides").select("*").eq("job_id", jobId),
+      "proforma_request_overrides"
+    );
+    const proformaOverridesByRequest = jobRequestIds.length
+      ? await fetchRows(
+          supabaseService
+            .from("proforma_request_overrides")
+            .select("*")
+            .in("request_id", jobRequestIds),
+          "proforma_request_overrides"
+        )
+      : [];
+    snapshotTables.proforma_request_overrides = mergeUniqueById(
+      [...proformaOverridesByJob, ...proformaOverridesByRequest],
+      "id"
     );
     snapshotTables.job_writeups = await fetchRows(
       supabaseService.from("job_writeups").select("*").eq("job_id", jobId),
@@ -482,6 +518,20 @@ async function handler(req, res, session) {
     if (vhcChecksError) throw new Error(vhcChecksError.message);
 
     // Job requests
+    await deleteByIds("job_request_detections", "request_id", jobRequestIds);
+    const { error: requestDetectionsError } = await supabaseService
+      .from("job_request_detections")
+      .delete()
+      .eq("job_id", jobId);
+    if (requestDetectionsError) throw new Error(requestDetectionsError.message);
+
+    await deleteByIds("proforma_request_overrides", "request_id", jobRequestIds);
+    const { error: proformaOverridesError } = await supabaseService
+      .from("proforma_request_overrides")
+      .delete()
+      .eq("job_id", jobId);
+    if (proformaOverridesError) throw new Error(proformaOverridesError.message);
+
     const { error: jobRequestsError } = await supabaseService
       .from("job_requests")
       .delete()

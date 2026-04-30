@@ -168,15 +168,17 @@ export default function ViewJobCardsUi(props) {
       `}</style>
       <PageShell sectionKey="job-cards-view-shell">
         <ContentWidth sectionKey="job-cards-view-content" parentKey="job-cards-view-shell" widthMode="content">
-      <div className="app-page-stack">
+      <div className="app-page-stack" style={{
+          gap: "10px"
+        }}>
           <SectionShell sectionKey="job-cards-view-filter-shell" parentKey="job-cards-view-content" style={{
           display: "flex",
           flexDirection: "column",
-          padding: "12px",
-          gap: "12px"
+          padding: "10px",
+          gap: "10px"
         }}>
             <div className="job-cards-view-toolbar" style={{
-            gap: "0.75rem"
+            gap: "10px"
           }}>
               <div className="job-cards-view-tabs">
                 <TabGroup items={tabOptions} value={activeTab} onChange={setActiveTab} ariaLabel="Job card tabs" className="tab-api--wrap" />
@@ -217,7 +219,7 @@ export default function ViewJobCardsUi(props) {
           <SectionShell sectionKey="job-cards-view-list-shell" parentKey="job-cards-view-content" style={{
           flex: 1,
           overflow: "hidden",
-          padding: "12px",
+          padding: "10px",
           minHeight: "0"
         }}>
             <DevLayoutSection sectionKey="job-cards-view-list-viewport" parentKey="job-cards-view-list-shell" sectionType="scroll-region" style={{
@@ -225,7 +227,7 @@ export default function ViewJobCardsUi(props) {
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
-            gap: "12px"
+            gap: "10px"
           }}>
               {isOrdersTab && ordersLoading ? <DevLayoutSection sectionKey="job-cards-view-orders-loading" parentKey="job-cards-view-list-viewport" sectionType="state-banner" style={{
               padding: "32px",
