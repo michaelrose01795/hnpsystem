@@ -2,7 +2,7 @@
  *
  * Canonical home for the Button family.
  *
- * Variants: primary, secondary, ghost, danger, control, on-primary
+ * Variants: primary, secondary, ghost, danger
  * Sizes:    md (default), sm, xs    — height is LOCKED to var(--control-height)
  *                                     across sizes; only padding/font-size vary.
  * Modifiers: pill, nav, is-active
@@ -116,21 +116,6 @@
   background: var(--control-bg) !important;
 }
 
-.app-btn--control {
-  background: var(--control-bg) !important;
-  color: var(--accentText) !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-.app-btn--control:hover,
-.app-btn--control:focus-visible {
-  background: var(--control-bg-hover) !important;
-}
-.app-btn--control:focus-visible {
-  outline: none;
-  box-shadow: var(--control-ring) !important;
-}
-
 .app-btn--danger {
   background: var(--danger) !important;
   color: #fff !important;
@@ -139,29 +124,6 @@
 .app-btn--danger:hover,
 .app-btn--danger:focus-visible {
   background: var(--danger-dark) !important;
-}
-
-.app-btn--success {
-  background: var(--success) !important;
-  color: #fff !important;
-  border: none !important;
-}
-.app-btn--success:hover,
-.app-btn--success:focus-visible {
-  background: var(--success-dark) !important;
-}
-
-/* --on-primary: for buttons sitting on top of a primary-coloured
-   surface (status sidebar header, accent banners). Translucent white
-   fill so it reads on the accent background without needing a border. */
-.app-btn--on-primary {
-  background: rgba(var(--surface-rgb), 0.18) !important;
-  color: var(--text-2) !important;
-  border: none !important;
-}
-.app-btn--on-primary:hover,
-.app-btn--on-primary:focus-visible {
-  background: rgba(var(--surface-rgb), 0.3) !important;
 }
 
 /* ========================================================= */

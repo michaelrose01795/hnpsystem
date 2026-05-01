@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ModalPortal from "@/components/popups/ModalPortal";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
+import Button from "@/components/ui/Button";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 
 const consumableNameCollator = new Intl.Collator(undefined, {
@@ -39,28 +40,6 @@ const checkboxLabelStyle = {
   gap: "8px",
   fontWeight: 600,
   color: "var(--text-1)",
-};
-
-const buttonPrimaryStyle = {
-  padding: "10px 18px",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.28)",
-  background: "var(--primary)",
-  color: "var(--surface)",
-  fontWeight: 600,
-  cursor: "pointer",
-  boxShadow: "none",
-};
-
-const buttonSecondaryStyle = {
-  padding: "8px 14px",
-  borderRadius: "var(--input-radius)",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
-  background: "var(--surface)",
-  color: "var(--text-1)",
-  fontWeight: 600,
-  cursor: "pointer",
-  boxShadow: "none",
 };
 
 const inputFieldStyle = {
@@ -571,27 +550,24 @@ function StockCheckPopup({
           </label>
           {isManager && (
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              <button
+              <Button
                 type="button"
-                style={{ ...buttonSecondaryStyle, padding: "4px 10px" }}
+                variant="secondary"
+                size="xs"
                 onClick={() =>
                   setRenameItemState({ id: item.id, value: item.name || "" })
                 }
               >
                 Rename
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                style={{
-                  ...buttonSecondaryStyle,
-                  padding: "4px 10px",
-                  color: "var(--danger)",
-                  borderColor: "transparent",
-                }}
+                variant="ghost"
+                size="xs"
                 onClick={() => handleDeleteItem(item.id, item.name)}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -608,21 +584,23 @@ function StockCheckPopup({
               }
               style={{ ...inputFieldStyle, flex: "1 1 220px" }}
             />
-            <button
+            <Button
               type="button"
               onClick={handleRenameItem}
-              style={{ ...buttonPrimaryStyle, padding: "8px 14px" }}
+              variant="primary"
+              size="sm"
               disabled={managerActionLoading}
             >
               Save
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => setRenameItemState({ id: null, value: "" })}
-              style={{ ...buttonSecondaryStyle, padding: "8px 14px" }}
+              variant="secondary"
+              size="sm"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -694,21 +672,16 @@ function StockCheckPopup({
             >
               {pendingRequestCount} pending
             </span>
-            <button
+            <Button
               type="button"
               onClick={closePopup}
-              style={{
-                ...buttonSecondaryStyle,
-                width: "44px",
-                height: "44px",
-                padding: 0,
-                fontSize: "1.1rem",
-                lineHeight: 1,
-              }}
+              variant="ghost"
+              size="sm"
+              style={{ width: "44px" }}
               aria-label="Close stock check"
             >
               ✕
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -809,17 +782,13 @@ function StockCheckPopup({
                     />
                   </label>
                   <div style={{ gridColumn: "1 / -1", textAlign: "right" }}>
-                    <button
+                    <Button
                       type="submit"
                       disabled={newConsumableLoading}
-                      style={{
-                        ...buttonPrimaryStyle,
-                        padding: "10px 20px",
-                        background: newConsumableLoading ? "rgba(var(--primary-rgb),0.45)" : buttonPrimaryStyle.background,
-                      }}
+                      variant="primary"
                     >
                       {newConsumableLoading ? "Adding…" : "Add Consumable"}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -877,27 +846,24 @@ function StockCheckPopup({
                               <td>
                                 {request.status === "pending" ? (
                                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                                    <button
+                                    <Button
                                       type="button"
                                       onClick={() => handleRequestStatusUpdate(request.id, "approved")}
-                                      style={{ ...buttonPrimaryStyle, padding: "6px 12px" }}
+                                      variant="primary"
+                                      size="xs"
                                       disabled={requestUpdateId === request.id}
                                     >
                                       Approve
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                       type="button"
                                       onClick={() => handleRequestStatusUpdate(request.id, "rejected")}
-                                      style={{
-                                        ...buttonSecondaryStyle,
-                                        padding: "6px 12px",
-                                        color: "var(--danger)",
-                                        borderColor: "transparent",
-                                      }}
+                                      variant="ghost"
+                                      size="xs"
                                       disabled={requestUpdateId === request.id}
                                     >
                                       Reject
-                                    </button>
+                                    </Button>
                                   </div>
                                 ) : (
                                   <span style={mutedTextStyle}>No actions</span>
@@ -948,22 +914,22 @@ function StockCheckPopup({
                       minWidth: "240px",
                     }}
                   />
-                  <button
+                  <Button
                     type="button"
                     onClick={() => applyStockSearch()}
-                    style={{ ...buttonPrimaryStyle, padding: "10px 14px" }}
+                    variant="primary"
                     disabled={loading || totalItems === 0}
                   >
                     Search
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     onClick={() => setShowStockList((previous) => !previous)}
-                    className="app-btn app-btn--control"
+                    variant="secondary"
                     disabled={totalItems === 0}
                   >
                     {showStockList && !hasAppliedSearch ? "Hide list" : "Show list"}
-                  </button>
+                  </Button>
                 </div>
               </div>
               {hasSearchQuery && !loading && (
@@ -995,18 +961,15 @@ function StockCheckPopup({
                   ) : (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                       {searchSuggestions.map((item) => (
-                        <button
+                        <Button
                           key={item.id}
                           type="button"
                           onClick={() => applyStockSearch(item.name || "")}
-                          style={{
-                            ...buttonSecondaryStyle,
-                            padding: "8px 12px",
-                            background: "rgba(var(--accent-base-rgb), 0.08)",
-                          }}
+                          variant="secondary"
+                          size="sm"
                         >
                           {item.name}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -1044,29 +1007,29 @@ function StockCheckPopup({
             </strong>
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <button
+            <Button
               type="button"
               onClick={() => setSelectedItems(new Set())}
-              style={{ ...buttonSecondaryStyle, padding: "10px 16px" }}
+              variant="secondary"
             >
               Clear Selection
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={handleEmailSelectedItems}
-              style={{ ...buttonSecondaryStyle, padding: "12px 18px", opacity: selectedCount ? 1 : 0.7 }}
+              variant="secondary"
               disabled={!selectedCount}
             >
               Email
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={handleSubmitRequest}
-              style={{ ...buttonPrimaryStyle, padding: "12px 22px", opacity: selectedCount ? 1 : 0.7 }}
+              variant="primary"
               disabled={submitLoading || !selectedCount}
             >
               {submitLoading ? "Submitting…" : "Submit Stock Check Request"}
-            </button>
+            </Button>
           </div>
         </div>
         </div>

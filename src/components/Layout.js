@@ -1120,7 +1120,7 @@ export default function Layout({
                         <button
                           type="button"
                           disabled
-                          className="app-btn app-btn--control"
+                          className="app-btn app-btn--secondary"
                         >
                           No Current Job
                         </button>
@@ -1131,7 +1131,7 @@ export default function Layout({
                           if (presentationShell) return;
                           setIsModalOpen(true);
                         }}
-                        className="app-btn app-btn--control"
+                        className="app-btn app-btn--secondary"
                       >
                         Start Job
                       </button>
@@ -1156,7 +1156,7 @@ export default function Layout({
                           <Link
                             key={action.href}
                             href={action.href}
-                            className={`app-btn app-btn--control${active ? " is-active" : ""}`}
+                            className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
                           >
                             {action.label}
                           </Link>
@@ -1184,7 +1184,7 @@ export default function Layout({
                           <Link
                             key={action.href}
                             href={action.href}
-                            className={`app-btn app-btn--control${active ? " is-active" : ""}`}
+                            className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
                           >
                             {action.label}
                           </Link>

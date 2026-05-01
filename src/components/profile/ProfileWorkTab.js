@@ -466,9 +466,8 @@ function LeaveRequestModal({
                 type="button"
                 onClick={onRemove}
                 disabled={isRemoving || isSubmitting}
-                variant="secondary"
+                variant="ghost"
                 size="sm"
-                className="app-btn--control"
                 style={{ color: "var(--danger)" }}
               >
                 {isRemoving ? "Removing..." : "Remove request"}
@@ -2588,7 +2587,6 @@ export function ProfileWorkTab({
                         onClick={handleStartEcEdit}
                         variant="secondary"
                         size="sm"
-                        className="app-btn--control"
                       >
                         Edit
                       </Button>
@@ -2756,7 +2754,6 @@ export function ProfileWorkTab({
                     }}
                     variant="secondary"
                     size="sm"
-                    className="app-btn--control"
                   >
                     Recurring Rules
                   </Button>

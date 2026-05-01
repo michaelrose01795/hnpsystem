@@ -728,13 +728,12 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
             type="button"
             variant="secondary"
             size="sm"
-            className="app-btn--control"
             style={toolbarButtonStyle}
             onClick={() => setIsAddWidgetOpen(true)}
           >
             Edit
           </Button>
-          <Button type="button" variant="secondary" size="sm" className="app-btn--control" style={toolbarButtonStyle} onClick={dashboard.lock}>
+          <Button type="button" variant="secondary" size="sm" style={toolbarButtonStyle} onClick={dashboard.lock}>
             Lock
           </Button>
         </div>

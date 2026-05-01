@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/newsfeed-ui.js
+import Button from "@/components/ui/Button";
 
 export default function NewsFeedUi(props) {
   const {
@@ -33,15 +34,12 @@ export default function NewsFeedUi(props) {
       width: "100%",
       paddingBottom: "16px"
     }}>
-            <button onClick={() => {
+            <Button type="button" variant="primary" onClick={() => {
         resetModal();
         setModalOpen(true);
-      }} className="px-5 py-2 font-semibold text-white rounded-xl  transition-all hover:-translate-y-0.5 hover:shadow-lg" style={{
-        backgroundColor: "var(--primary)",
-        border: "1px solid var(--primary-selected)"
-      }} type="button">
+      }}>
               Add Update
-            </button>
+            </Button>
           </div>}
 
         {loading && <div className="mb-6" style={{
@@ -279,55 +277,15 @@ export default function NewsFeedUi(props) {
           justifyContent: "flex-end",
           gap: "12px"
         }}>
-              <button type="button" onClick={() => {
+              <Button type="button" variant="secondary" onClick={() => {
             setModalOpen(false);
             resetModal();
-          }} style={{
-            padding: "12px 24px",
-            borderRadius: "var(--radius-sm)",
-            border: "2px solid var(--surface)",
-            backgroundColor: "transparent",
-            fontSize: "15px",
-            fontWeight: "bold",
-            color: "var(--text-1)",
-            cursor: "pointer",
-            transition: "all 0.2s"
-          }} onMouseEnter={e => {
-            e.currentTarget.style.borderColor = "var(--primary)";
-            e.currentTarget.style.backgroundColor = "var(--surface)";
-          }} onMouseLeave={e => {
-            e.currentTarget.style.borderColor = "var(--surface)";
-            e.currentTarget.style.backgroundColor = "transparent";
           }}>
                 Cancel
-              </button>
-              <button type="button" onClick={handleCreateUpdate} disabled={saving} style={{
-            padding: "12px 24px",
-            borderRadius: "var(--radius-sm)",
-            border: "2px solid var(--primary-selected)",
-            backgroundColor: "var(--primary)",
-            color: "white",
-            fontSize: "15px",
-            fontWeight: "bold",
-            cursor: saving ? "not-allowed" : "pointer",
-            opacity: saving ? 0.6 : 1,
-            transition: "all 0.2s",
-            boxShadow: "none"
-          }} onMouseEnter={e => {
-            if (!saving) {
-              e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 0, 0, 0.2)";
-              e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-            }
-          }} onMouseLeave={e => {
-            if (!saving) {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.15)";
-              e.currentTarget.style.zIndex = "0";
-            }
-          }}>
+              </Button>
+              <Button type="button" variant="primary" onClick={handleCreateUpdate} disabled={saving}>
                 {saving ? "Publishing…" : "Publish Update"}
-              </button>
+              </Button>
             </div>
             </div>
           </div>

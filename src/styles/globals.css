@@ -535,7 +535,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   text-transform: uppercase;
 }
 
-/* Sidebar nav links now use .app-btn .app-btn--control .app-btn--nav —
+/* Sidebar nav links now use .app-btn .app-btn--secondary .app-btn--nav —
    the old .app-sidebar__link ruleset was removed during the 2026-04 UI
    audit. Sidebar link margin-bottom is applied inline because it is a
    layout property, not a visual one. */

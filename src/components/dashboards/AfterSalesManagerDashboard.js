@@ -246,7 +246,7 @@ export default function AfterSalesManagerDashboard() {
           <Link
             key={action.href}
             href={action.href}
-            className="app-btn app-btn--control app-btn--pill"
+            className="app-btn app-btn--secondary app-btn--pill"
           >
             {action.label}
           </Link>

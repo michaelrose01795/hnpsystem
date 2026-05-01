@@ -63,20 +63,6 @@ export const UI_FAMILIES = [
         usage: "Delete, Archive, Void. Never use for Cancel.",
         status: "approved",
       },
-      {
-        id: "control",
-        className: "app-btn app-btn--control",
-        description: "Matches .app-input chrome — sits inside input rows.",
-        usage: "Inline input-group actions (Clear, Apply, Copy).",
-        status: "approved",
-      },
-      {
-        id: "on-primary",
-        className: "app-btn app-btn--on-primary",
-        description: "Used when a button sits on top of a filled primary surface.",
-        usage: "Buttons on a red hero strip or an accent-coloured banner.",
-        status: "approved",
-      },
     ],
     sizes: [
       { id: "md", className: "", description: "Default 44px control height." },

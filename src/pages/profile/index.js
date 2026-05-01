@@ -90,7 +90,6 @@ export function ProfilePage({
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="app-btn--control"
                 onClick={() => setOpenPanel("security")}
               >
                 Security
@@ -99,7 +98,6 @@ export function ProfilePage({
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="app-btn--control"
                 onClick={() => setOpenPanel("privacy")}
               >
                 Privacy

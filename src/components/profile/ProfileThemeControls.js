@@ -90,7 +90,6 @@ export default function ProfileThemeControls({
         type="button"
         variant="secondary"
         size="sm"
-        className="app-btn--control"
         onClick={toggleTheme}
         aria-label="Cycle theme">
         {themeLabel}

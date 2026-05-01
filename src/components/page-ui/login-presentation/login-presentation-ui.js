@@ -66,7 +66,7 @@ export default function LoginPresentationPageUi() {
               <Link
                 key={role.key}
                 href={`/presentation?role=${role.key}`}
-                className="app-btn app-btn--control"
+                className="app-btn app-btn--secondary"
                 style={{
                   display: "flex",
                   flexDirection: "column",

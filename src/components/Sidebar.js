@@ -339,7 +339,7 @@ export default function Sidebar({
               </div>
               {onToggle && (
                 <button
-                  className="app-btn app-btn--control app-btn--xs"
+                  className="app-btn app-btn--secondary app-btn--xs"
                   type="button"
                   onClick={onToggle}
                   aria-label="Close sidebar"
@@ -353,7 +353,7 @@ export default function Sidebar({
                 pathname === shortcut.href || (pathname && pathname.startsWith(`${shortcut.href}/`));
               return (
                 <Link
-                  className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
+                  className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={shortcut.href}
                   href={shortcut.href}
                   title={shortcut.description}
@@ -377,7 +377,7 @@ export default function Sidebar({
               const isActive = pathname === item.href;
               return (
                 <Link
-                  className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
+                  className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
                   onClick={handleNavigationPress}
@@ -400,7 +400,7 @@ export default function Sidebar({
               const isActive = pathname === item.href;
               return (
                 <Link
-                  className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
+                  className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={item.href}
                   onClick={handleNavigationPress}
@@ -427,7 +427,7 @@ export default function Sidebar({
                         className={
                           isClockedIn
                             ? "app-btn app-btn--danger"
-                            : "app-btn"
+                            : "app-btn app-btn--primary"
                         }
                         type="button"
                         onClick={handleClockToggle}
@@ -437,11 +437,6 @@ export default function Sidebar({
                             ? { flex: 1, opacity: clockLoading ? 0.6 : 1 }
                             : {
                                 flex: 1,
-                                // no --success variant exists in the button family;
-                                // the green clock-in state is the one documented
-                                // exception that paints colour inline.
-                                background: "var(--success)",
-                                color: "var(--onAccentText)",
                                 opacity: clockLoading ? 0.6 : 1,
                               }
                         }
@@ -484,7 +479,7 @@ export default function Sidebar({
                             aria-label="Toggle dev layout overlay"
                             className={
                               devOverlayEnabled
-                                ? "app-btn app-btn--success"
+                                ? "app-btn app-btn--primary"
                                 : "app-btn app-btn--danger"
                             }
                             onClick={toggleDevOverlay}
@@ -497,7 +492,7 @@ export default function Sidebar({
                     )}
                     <button
                       type="button"
-                      className={`app-btn app-btn--control app-btn--nav${
+                      className={`app-btn app-btn--secondary app-btn--nav${
                         pathname.startsWith("/presentation")
                           ? " is-active"
                           : ""
@@ -545,7 +540,7 @@ export default function Sidebar({
                 const isActive = pathname === item.href;
                 return (
                   <Link
-                    className={`app-btn app-btn--control app-btn--nav${isActive ? " is-active" : ""}`}
+                    className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                     key={item.href}
                     href={item.href}
                     onClick={handleNavigationPress}

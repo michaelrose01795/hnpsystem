@@ -168,7 +168,7 @@ export function BaseWidget({
         </div>
 
         {onOpenSettings ? (
-          <Button type="button" variant="secondary" size="sm" className="app-btn--control" style={widgetActionButtonStyle} onClick={onOpenSettings}>
+          <Button type="button" variant="secondary" size="sm" style={widgetActionButtonStyle} onClick={onOpenSettings}>
             Settings
           </Button>
         ) : null}

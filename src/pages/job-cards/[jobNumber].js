@@ -9076,7 +9076,7 @@ function VHCTab({
       {/* be re-sent. For now multiple sends are allowed for debugging. */}
       <button
     type="button"
-    className="app-btn app-btn--success app-btn--sm"
+    className="app-btn app-btn--primary app-btn--sm"
     onClick={handleSendVhc}
     disabled={!sendVhcEnabled || sendingVhc}
     title={!sendVhcEnabled ? "Awaiting customer decision must be set on a Red or Amber row before sending." : "Send interactive VHC to customer"}>
