@@ -393,6 +393,7 @@ export default function DocumentsUploadPopup({
                       /* Inline rename row */
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <input
+                          className="app-input"
                           autoFocus
                           value={renameValue}
                           onChange={(e) => setRenameValue(e.target.value)}
@@ -400,16 +401,7 @@ export default function DocumentsUploadPopup({
                             if (e.key === "Enter") commitRename(idx);
                             if (e.key === "Escape") setRenamingIndex(null);
                           }}
-                          style={{
-                            flex: 1,
-                            padding: "5px 8px",
-                            borderRadius: "var(--input-radius)",
-                            border: "1px solid var(--primary)",
-                            fontSize: "13px",
-                            color: "var(--text-1)",
-                            backgroundColor: "var(--surface)",
-                            outline: "none",
-                          }}
+                          style={{ flex: 1 }}
                         />
                         <button
                           onClick={() => commitRename(idx)}

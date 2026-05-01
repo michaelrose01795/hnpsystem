@@ -3,7 +3,8 @@ import React, { useEffect, useState } from "react"; // import React and hooks fo
 import PropTypes from "prop-types";
 import { ACCOUNT_TYPES, ACCOUNT_STATUSES, DEFAULT_ACCOUNT_FORM_VALUES } from "@/config/accounts";
 import Button from "@/components/ui/Button";
-import { fieldGroupStyles, inputStyles, labelStyles, textareaStyles } from "@/styles/formStyles";
+import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { fieldGroupStyles, labelStyles } from "@/styles/formStyles";
 const fieldDefinitions = [
   { name: "customer_id", label: "Customer ID", type: "text" },
   { name: "account_type", label: "Account Type", type: "select", options: ACCOUNT_TYPES },
@@ -53,19 +54,22 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
           <label key={field.name} style={{ flex: "1 1 220px", display: "flex", flexDirection: "column", gap: "6px" }}>
             <span style={labelStyles}>{field.label}</span>
             {field.type === "select" ? (
-              <select name={field.name} value={formValues[field.name] || ""} onChange={handleChange} disabled={readOnly || (field.name === "account_type" && !!formValues.account_id)} style={inputStyles}>
-                {(field.options || []).map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              <DropdownField
+                name={field.name}
+                value={formValues[field.name] || ""}
+                onChange={handleChange}
+                disabled={readOnly || (field.name === "account_type" && !!formValues.account_id)}
+                options={(field.options || []).map((option) => ({ label: option, value: option }))}
+                placeholder={`Select ${field.label.toLowerCase()}`}
+              />
             ) : (
-              <input name={field.name} type={field.type} value={formValues[field.name] ?? ""} onChange={handleChange} disabled={readOnly && field.name !== "status"} style={inputStyles} step={field.type === "number" ? "0.01" : undefined} />
+              <input className="app-input" name={field.name} type={field.type} value={formValues[field.name] ?? ""} onChange={handleChange} disabled={readOnly && field.name !== "status"} step={field.type === "number" ? "0.01" : undefined} />
             )}
           </label>
         ))}
         <label style={{ flexBasis: "100%", display: "flex", flexDirection: "column", gap: "6px" }}>
           <span style={labelStyles}>Internal Notes</span>
-          <textarea name="notes" style={textareaStyles} value={formValues.notes || ""} onChange={handleChange} disabled={readOnly} placeholder="Credit control notes, reminders, or manual adjustments." />
+          <textarea className="app-input" name="notes" value={formValues.notes || ""} onChange={handleChange} disabled={readOnly} placeholder="Credit control notes, reminders, or manual adjustments." />
         </label>
         {isFrozen && (
           <div style={{ flexBasis: "100%", background: "rgba(var(--warning-rgb), 0.15)", border: "none", borderRadius: "var(--radius-sm)", padding: "14px" }}>
@@ -84,7 +88,7 @@ export default function AccountForm({ initialValues, onSubmit, isSubmitting, rea
         {billingFields.map((field) => (
           <label key={field.name} style={{ flex: "1 1 220px", display: "flex", flexDirection: "column", gap: "6px" }}>
             <span style={labelStyles}>{field.label}</span>
-            <input name={field.name} type={field.type} value={formValues[field.name] ?? ""} onChange={handleChange} disabled={readOnly} style={inputStyles} />
+            <input className="app-input" name={field.name} type={field.type} value={formValues[field.name] ?? ""} onChange={handleChange} disabled={readOnly} />
           </label>
         ))}
       </section>

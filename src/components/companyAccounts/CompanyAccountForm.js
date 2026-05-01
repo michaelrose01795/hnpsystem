@@ -1,7 +1,7 @@
 // file location: src/components/companyAccounts/CompanyAccountForm.js // shared form for new/edit company accounts
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { fieldGroupStyles, inputStyles } from "@/styles/formStyles";
+import { fieldGroupStyles } from "@/styles/formStyles";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const DEFAULT_VALUES = {
@@ -175,17 +175,13 @@ export default function CompanyAccountForm({
       <label key={name} style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.9rem" }}>
         <span style={{ fontWeight: 600 }}>{label}</span>
         <input
+          className="app-input"
           name={name}
           value={values[name] || ""}
           onChange={handleChange}
           disabled={computedDisabled}
           {...rest}
-          style={{
-            ...inputStyles,
-            padding: "10px 14px",
-            background: computedDisabled ? "var(--surface)" : "white",
-            ...customStyle,
-          }}
+          style={customStyle}
         />
       </label>
     );
@@ -204,6 +200,7 @@ export default function CompanyAccountForm({
         <label style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "0.9rem" }}>
           <span style={{ fontWeight: 600 }}>Bulk data entry</span>
           <textarea
+            className="app-input"
             value={bulkInput}
             onChange={(event) => setBulkInput(event.target.value)}
             onKeyDown={(event) => {
@@ -218,12 +215,7 @@ export default function CompanyAccountForm({
               "Contact Email, Contact Phone, Linked Ledger Account,",
               "Address Line 1, Address Line 2, City, Postcode.",
             ].join(" ")}
-            style={{
-              borderRadius: "var(--control-radius-xs)",
-              border: "none",
-              padding: "12px 14px",
-              resize: "vertical",
-            }}
+            style={{ resize: "vertical" }}
           />
           <DevLayoutSection sectionKey={`${sectionKey}-bulk-actions`} sectionType="toolbar" parentKey={`${sectionKey}-bulk-entry`}>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
@@ -286,16 +278,12 @@ export default function CompanyAccountForm({
         <label style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "0.9rem" }}>
           <span style={{ fontWeight: 600 }}>Notes</span>
           <textarea
+            className="app-input"
             name="notes"
             value={values.notes || ""}
             onChange={handleChange}
             rows={5}
-            style={{
-              borderRadius: "var(--control-radius-xs)",
-              border: "none",
-              padding: "10px 14px",
-              resize: "vertical",
-            }}
+            style={{ resize: "vertical" }}
           />
         </label>
       </DevLayoutSection>

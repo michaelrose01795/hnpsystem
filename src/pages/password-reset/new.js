@@ -162,24 +162,14 @@ export default function PasswordResetNewPage() {
                 New password
               </label>
               <input
+                className="app-input"
                 type={showPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 autoComplete="new-password"
                 minLength={MIN_PASSWORD_LENGTH}
                 required
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  padding: "10px 12px",
-                  minHeight: 44,
-                  borderRadius: "var(--radius-xs, 6px)",
-                  border: "1px solid var(--primary-border)",
-                  background: "var(--surface)",
-                  color: "var(--text-1)",
-                  fontSize: "0.95rem",
-                  marginBottom: 12,
-                }}
+                style={{ marginBottom: 12 }}
               />
 
               <label
@@ -193,24 +183,14 @@ export default function PasswordResetNewPage() {
                 Confirm new password
               </label>
               <input
+                className="app-input"
                 type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
                 minLength={MIN_PASSWORD_LENGTH}
                 required
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  padding: "10px 12px",
-                  minHeight: 44,
-                  borderRadius: "var(--radius-xs, 6px)",
-                  border: "1px solid var(--primary-border)",
-                  background: "var(--surface)",
-                  color: "var(--text-1)",
-                  fontSize: "0.95rem",
-                  marginBottom: 12,
-                }}
+                style={{ marginBottom: 12 }}
               />
 
               <label

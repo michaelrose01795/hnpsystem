@@ -158,16 +158,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
     fontWeight: "700",
     color: "var(--text-1)",
   };
-  const fieldInputStyle = {
-    width: "100%",
-    padding: "12px 16px",
-    borderRadius: "var(--input-radius)",
-    border: "2px solid var(--surface)",
-    backgroundColor: "var(--surface)",
-    color: "var(--text-1)",
-    fontSize: "15px",
-    transition: "border-color 0.2s",
-  };
 
   // ✅ UI layout for popup
   return (
@@ -179,12 +169,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
       ariaLabel="New customer"
     >
       <>
-        <style>{`
-          .new-customer-popup__input::placeholder {
-            color: rgba(var(--text-1-rgb), 0.58);
-            opacity: 1;
-          }
-        `}</style>
         {/* Header removed by request */}
 
         {/* Content */}
@@ -209,14 +193,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   First Name
                 </label>
                 <input
-                  className="new-customer-popup__input"
+                  className="app-input"
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Enter first name"
-                  style={fieldInputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                 />
               </div>
               <div>
@@ -224,14 +205,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   Last Name
                 </label>
                 <input
-                  className="new-customer-popup__input"
+                  className="app-input"
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Enter last name"
-                  style={fieldInputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                 />
               </div>
             </div>
@@ -258,14 +236,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     Number
                   </label>
                   <input
-                    className="new-customer-popup__input"
+                    className="app-input"
                     type="text"
                     value={number}
                     onChange={(e) => setNumber(e.target.value)}
                     placeholder="No."
-                    style={fieldInputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
                 <div>
@@ -273,14 +248,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     Street
                   </label>
                   <input
-                    className="new-customer-popup__input"
+                    className="app-input"
                     type="text"
                     value={street}
                     onChange={(e) => setStreet(e.target.value)}
                     placeholder="Street name"
-                    style={fieldInputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
               </div>
@@ -290,14 +262,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     Town/City
                   </label>
                   <input
-                    className="new-customer-popup__input"
+                    className="app-input"
                     type="text"
                     value={town}
                     onChange={(e) => setTown(e.target.value)}
                     placeholder="Town or city"
-                    style={fieldInputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
                 <div>
@@ -305,14 +274,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     County
                   </label>
                   <input
-                    className="new-customer-popup__input"
+                    className="app-input"
                     type="text"
                     value={county}
                     onChange={(e) => setCounty(e.target.value)}
                     placeholder="County"
-                    style={fieldInputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
               </div>
@@ -323,14 +289,12 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   </label>
                   <div style={{ display: "flex", gap: "12px" }}>
                     <input
-                      className="new-customer-popup__input"
+                      className="app-input"
                       type="text"
                       value={postcode}
                       onChange={(e) => handlePostcodeChange(e.target.value)}
                       placeholder="Enter postcode"
-                      style={{ ...fieldInputStyle, flex: 1, minWidth: 0 }}
-                      onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                      onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
+                      style={{ flex: 1, minWidth: 0 }}
                     />
                     <button
                       type="button"
@@ -359,14 +323,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     Country
                   </label>
                   <input
-                    className="new-customer-popup__input"
+                    className="app-input"
                     type="text"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
                     placeholder="Country"
-                    style={fieldInputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
               </div>
@@ -443,14 +404,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                   Email
                 </label>
                 <input
-                  className="new-customer-popup__input"
+                  className="app-input"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="customer@example.com"
-                  style={fieldInputStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                  onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                 />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -459,14 +417,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     Mobile
                   </label>
                   <input
-                    className="new-customer-popup__input"
+                    className="app-input"
                     type="text"
                     value={mobile}
                     onChange={(e) => setMobile(e.target.value)}
                     placeholder="Mobile number"
-                    style={fieldInputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
                 <div>
@@ -474,14 +429,11 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                     Telephone
                   </label>
                   <input
-                    className="new-customer-popup__input"
+                    className="app-input"
                     type="text"
                     value={telephone}
                     onChange={(e) => setTelephone(e.target.value)}
                     placeholder="Telephone number"
-                    style={fieldInputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "var(--primary)")}
-                    onBlur={(e) => (e.target.style.borderColor = "var(--surface)")}
                   />
                 </div>
               </div>

@@ -6,6 +6,21 @@ import { resolveWelcomeQuoteSlot } from "@/lib/welcomeQuoteSlot";
 const TOTAL_WELCOME_QUOTES = 936;
 const FALLBACK_QUOTE = "Progress grows when clear actions are completed with care.";
 
+type WelcomeQuoteRow = {
+  text?: string | null;
+};
+
+type WelcomeQuoteQueryBuilder = {
+  select: (columns: string) => WelcomeQuoteQueryBuilder;
+  order: (column: string, options?: { ascending?: boolean }) => WelcomeQuoteQueryBuilder;
+  range: (from: number, to: number) => WelcomeQuoteQueryBuilder;
+  maybeSingle: () => Promise<{ data: WelcomeQuoteRow | null; error: unknown }>;
+};
+
+type WelcomeQuoteClient = {
+  from: (table: "welcome_quotes") => WelcomeQuoteQueryBuilder;
+};
+
 const getDeterministicIndex = (userId: string, dateIso: string, slot: string) => {
   const seed = `${userId}:${dateIso}:${slot}`;
   const digest = createHash("sha256").update(seed).digest("hex");
@@ -21,7 +36,13 @@ export async function getWelcomeQuote(userId: string): Promise<string> {
   const { dateIso, slot } = resolveWelcomeQuoteSlot(new Date());
   const quoteIndex = getDeterministicIndex(String(userId), dateIso, slot);
 
-  const { data, error } = await supabase
+  if (!supabase) {
+    return FALLBACK_QUOTE;
+  }
+
+  const welcomeQuoteClient = supabase as unknown as WelcomeQuoteClient;
+
+  const { data, error } = await welcomeQuoteClient
     .from("welcome_quotes")
     .select("text")
     .order("id", { ascending: true })

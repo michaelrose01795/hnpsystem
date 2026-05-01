@@ -108,7 +108,8 @@
       "Bash(awk 'NR>=140 && NR<=1090 { *)",
       "Bash(node --experimental-vm-modules -e \"import\\('./src/features/vhc/vhcStatusEngine.js'\\).then\\(m => console.log\\(Object.keys\\(m\\).join\\(','\\)\\)\\).catch\\(e => console.error\\('ERR:', e.message\\)\\)\")",
       "Bash(echo \"EXIT=$?\")",
-      "Bash(PLAYWRIGHT_TEST_AUTH=1 node -e \"const m = require\\('./src/lib/database/supabaseClient.js'\\); \\(async \\(\\) => { const r = await m.supabase.from\\('jobs'\\).select\\('*'\\).eq\\('id',1\\); console.log\\('result:', r\\); const s = await m.supabase.from\\('jobs'\\).select\\('*'\\).eq\\('id',1\\).single\\(\\); console.log\\('single:', s\\); }\\)\\(\\)\")"
+      "Bash(PLAYWRIGHT_TEST_AUTH=1 node -e \"const m = require\\('./src/lib/database/supabaseClient.js'\\); \\(async \\(\\) => { const r = await m.supabase.from\\('jobs'\\).select\\('*'\\).eq\\('id',1\\); console.log\\('result:', r\\); const s = await m.supabase.from\\('jobs'\\).select\\('*'\\).eq\\('id',1\\).single\\(\\); console.log\\('single:', s\\); }\\)\\(\\)\")",
+      "Bash(powershell -NoProfile -Command ' *)"
     ],
     "deny": [],
     "ask": []

@@ -258,8 +258,8 @@ export default function AccountsListPage() {
       <div style={{ flex: "0 0 180px" }}>
         <CalendarField name="dateTo" placeholder="To date" value={filters.dateTo} onChange={(event) => handleFilterChange("dateTo", event.target.value)} style={{ background: "var(--surface)" }} />
       </div>
-      <input type="number" name="minBalance" value={filters.minBalance} placeholder="Min balance" onChange={(event) => handleFilterChange("minBalance", event.target.value)} style={{ flex: "0 0 124px", background: "var(--control-bg)" }} />
-      <input type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max balance" onChange={(event) => handleFilterChange("maxBalance", event.target.value)} style={{ flex: "0 0 124px", background: "var(--control-bg)" }} />
+      <input className="app-input" type="number" name="minBalance" value={filters.minBalance} placeholder="Min balance" onChange={(event) => handleFilterChange("minBalance", event.target.value)} style={{ flex: "0 0 124px" }} />
+      <input className="app-input" type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max balance" onChange={(event) => handleFilterChange("maxBalance", event.target.value)} style={{ flex: "0 0 124px" }} />
       <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters} style={{ background: "var(--control-bg)", color: "var(--primary)" }}>
         Clear filters
       </Button>

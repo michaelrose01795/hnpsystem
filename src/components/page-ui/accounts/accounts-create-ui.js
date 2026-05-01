@@ -9,14 +9,14 @@ export default function CreateAccountRouteShimUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <ProtectedRoute allowedRoles={CREATE_ROLES}>
-      <div style={{
-    minHeight: "40vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "var(--text-1)"
-  }}>
-        Opening account form…
+      <div className="app-page-shell">
+        <div className="app-page-card">
+          <div className="app-page-stack">
+            <section className="app-section-card">
+              Opening account form…
+            </section>
+          </div>
+        </div>
       </div>
     </ProtectedRoute>; // render extracted page section.
     default:

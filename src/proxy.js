@@ -17,7 +17,12 @@ const applyRuntimeNextAuthUrl = (req) => {
 
   if (!host) return;
 
-  if (!isLocalhostUrl(host) && (!process.env.NEXTAUTH_URL || isLocalhostUrl(process.env.NEXTAUTH_URL))) {
+  const currentAuthUrl = process.env.NEXTAUTH_URL || "";
+  const shouldUseRequestHost =
+    (isLocalhostUrl(host) && !isLocalhostUrl(currentAuthUrl)) ||
+    (!isLocalhostUrl(host) && (!currentAuthUrl || isLocalhostUrl(currentAuthUrl)));
+
+  if (shouldUseRequestHost) {
     process.env.NEXTAUTH_URL = `${proto}://${host}`;
   }
 };

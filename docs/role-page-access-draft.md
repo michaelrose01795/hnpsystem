@@ -2,9 +2,6 @@
 
 !!!!!!ONCE CHANGED HAVE CODEX UPDATE THE LOGINPRESENTATION PAGE AS WELL AS THE ORDER AND ACCESS WHICH THAT USER SELECTED HAS THE PRESENTATION GO IN!!!!!!!!!!!!!!!
 
-TODO!!!!!!!!!!!!!
-FIX IT SO THESE PAGES within the Role Page Access Draft file USE THE EXACT SAME FILE AS THE PAGES UI STYLE, ATM WHEN A PAGE UI IS UPDATED THIS DOESNT UPDATE THE UI WITHIN THE PRESENTATION PAGE, FIX THIS. make sure the ui files of every page has all of the buttons in the same position, every card, every feature which is inlcuded in the showcase section and every text within the same position and location as it does when using both the files combind eg using the app normally, the only differnce between each file (normal file and ui file) is that the ui file doesnt hold any functions, but the normal file page holds all of the files and just connects to the ui files features eg text box, button, all the features within the showcase etc. 
-
 
 
 Use this as the working list for Presentation Mode/page access. Add/remove pages under each role, then number the pages in the order that role should see them.

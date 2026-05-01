@@ -15,30 +15,7 @@ export default function AccountsDashboardUi(props) {
     case "section1":
       return <>
       <div>
-        <header className="app-section-card" style={{
-      border: "1px solid var(--theme)"
-    }}>
-          <p style={{
-        margin: 0,
-        letterSpacing: "0.12em",
-        textTransform: "uppercase",
-        color: "var(--primary-selected)"
-      }}>
-            Accounts cockpit
-          </p>
-          <h1 style={{
-        margin: "6px 0 0",
-        color: "var(--primary-selected)"
-      }}>Invoice performance</h1>
-          <p style={{
-        margin: "6px 0 0",
-        color: "var(--info)"
-      }}>
-            Track invoices raised, items collected, and jobs awaiting billing.
-          </p>
-        </header>
-
-        <Section title="Invoice stats">
+        <Section title="Invoice stats" style={{ background: "var(--theme)" }}>
           {loading ? <p style={{
         color: "var(--info)"
       }}>Loading financial KPIs…</p> : error ? <p style={{
@@ -54,7 +31,7 @@ export default function AccountsDashboardUi(props) {
             </div>}
         </Section>
 
-        <Section title="Outstanding jobs" subtitle="Most recent completions without invoice">
+        <Section title="Outstanding jobs" subtitle="Most recent completions without invoice" style={{ background: "var(--theme)" }}>
           {loading ? <p style={{
         color: "var(--info)"
       }}>Loading outstanding jobs…</p> : error ? <p style={{
@@ -62,7 +39,7 @@ export default function AccountsDashboardUi(props) {
       }}>{error}</p> : <JobList jobs={data.outstandingJobs} />}
         </Section>
 
-        <Section title="Completion trend" subtitle="Jobs completed in the last 7 days">
+        <Section title="Completion trend" subtitle="Jobs completed in the last 7 days" style={{ background: "var(--theme)" }}>
           <TrendBlock data={data.trends} />
         </Section>
       </div>
