@@ -2185,9 +2185,9 @@ textarea {
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);
-  border: none;
-  background: var(--control-bg);
-  color: var(--accentText);
+  border: var(--input-border) !important;
+  background: var(--input-bg) !important;
+  color: var(--text-1) !important;
   font-size: var(--control-font-size);
   font-weight: var(--control-font-weight);
   line-height: 1.2;
@@ -2232,7 +2232,7 @@ textarea {
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):hover,
 select:hover,
 textarea:hover {
-  background: var(--control-bg-hover);
+  background: var(--control-bg-hover) !important;
 }
 
 .dropdown-api.is-open .dropdown-api__control,
@@ -2249,8 +2249,8 @@ select:focus-visible,
 textarea:focus,
 textarea:focus-visible {
   outline: none;
-  background: var(--control-bg-hover);
-  box-shadow: var(--control-ring);
+  background: var(--control-bg-hover) !important;
+  box-shadow: var(--control-ring) !important;
 }
 
 .dropdown-api__control:disabled,
@@ -4650,7 +4650,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  overflow-y: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
   padding: var(--popup-viewport-gap);
 }
@@ -4678,6 +4678,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: auto;
+  min-height: 0;
 }
 
 .popup-backdrop > * {
@@ -4686,6 +4687,34 @@ a.tab-api__item:focus-visible:not(.is-active) {
   overflow-y: auto;
   overscroll-behavior: contain;
   min-height: 0;
+}
+
+@media (orientation: portrait), (max-width: 768px) {
+  .popup-backdrop,
+  [aria-modal="true"].popup-backdrop,
+  [data-modal-portal="true"] > .popup-backdrop {
+    --popup-viewport-gap: max(8px, env(safe-area-inset-top), env(safe-area-inset-bottom));
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    padding: var(--popup-viewport-gap) !important;
+  }
+
+  .popup-card,
+  .popup-backdrop > * {
+    width: min(100%, calc(100vw - (var(--popup-viewport-gap) * 2))) !important;
+    max-width: calc(100vw - (var(--popup-viewport-gap) * 2)) !important;
+    max-height: calc(100dvh - (var(--popup-viewport-gap) * 2)) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    margin: auto !important;
+    min-height: 0 !important;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .video-editor-backdrop {

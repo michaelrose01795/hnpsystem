@@ -96,7 +96,7 @@ export const vhcModalStyles = {
     alignItems: "center",
     zIndex: 9999,
     padding: "clamp(10px, 2.5vw, 20px)",
-    overflowY: "auto",
+    overflow: "hidden",
     overscrollBehavior: "contain",
   },
   container: ({ width = "1080px", height = "640px" } = {}) => ({
@@ -226,7 +226,7 @@ export const popupOverlayStyles = {
   justifyContent: "center",
   padding: "var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px))",
   zIndex: 9999,
-  overflowY: "auto",
+  overflow: "hidden",
   overscrollBehavior: "contain",
 };
 

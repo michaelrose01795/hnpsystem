@@ -15,7 +15,7 @@ export const popupStyleApi = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    overflowY: "auto",
+    overflow: "hidden",
     overscrollBehavior: "contain",
     padding: "var(--popup-viewport-gap, clamp(10px, 2.5vw, 20px))",
     zIndex: 9999,
