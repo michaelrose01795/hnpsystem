@@ -23,6 +23,27 @@ const initialState = {
   error: null,
 };
 
+const hasRosterData = (data) =>
+  Boolean(
+    data &&
+      (
+        (Array.isArray(data.allUsers) && data.allUsers.length > 0) ||
+        Object.keys(data.usersByRoleDetailed || {}).length > 0 ||
+        Object.keys(data.usersByRole || {}).length > 0
+      )
+  );
+
+const stateFromInitialRoster = (initialRosterData) =>
+  hasRosterData(initialRosterData)
+    ? {
+        usersByRole: initialRosterData.usersByRole || {},
+        usersByRoleDetailed: initialRosterData.usersByRoleDetailed || {},
+        allUsers: initialRosterData.allUsers || [],
+        isLoading: false,
+        error: null,
+      }
+    : initialState;
+
 const RosterContext = createContext(initialState);
 
 async function fetchRoster(signal) {
@@ -50,13 +71,20 @@ async function fetchRoster(signal) {
   }
 }
 
-export function RosterProvider({ children }) {
+export function RosterProvider({ children, initialRosterData = null }) {
   const router = useRouter();
   const { user, loading: userLoading } = useUser() || {};
-  const [state, setState] = useState(initialState);
-  const hasLoadedRef = useRef(false);
+  const [state, setState] = useState(() => stateFromInitialRoster(initialRosterData));
+  const hasLoadedRef = useRef(hasRosterData(initialRosterData));
   const isPresentationRoute = router?.pathname === "/presentation";
   const isPublicPresentation = isPresentationRoute && !userLoading && !user;
+
+  useEffect(() => {
+    if (!hasRosterData(initialRosterData)) return;
+    if (hasLoadedRef.current && hasRosterData(state)) return;
+    setState(stateFromInitialRoster(initialRosterData));
+    hasLoadedRef.current = true;
+  }, [initialRosterData, state]);
 
   const loadRoster = useCallback(async () => {
     if (isPublicPresentation) {

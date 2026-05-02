@@ -252,7 +252,7 @@ export default function MyApp({ Component, pageProps }) {
                     <NextActionProvider>
                       <JobsProvider>
                         <ClockingProvider>
-                          <RosterProvider>
+                          <RosterProvider initialRosterData={pageProps.initialRosterData}>
                             <AppWrapper Component={Component} pageProps={pageProps} />
                           </RosterProvider>
                         </ClockingProvider>

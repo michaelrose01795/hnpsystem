@@ -12,6 +12,7 @@ import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
+import { buildRosterPayload, EMPTY_ROSTER_PAYLOAD } from "@/lib/users/rosterPayload";
 import Button from "@/components/ui/Button";
 import LoginPageUi from "@/components/page-ui/login-ui"; // Extracted presentation layer.
 
@@ -151,7 +152,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
-  const [loadingDevUsers, setLoadingDevUsers] = useState(true);
+  const [loadingDevUsers, setLoadingDevUsers] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetStatus, setResetStatus] = useState("");
@@ -729,4 +730,25 @@ export default function LoginPage() {
 
 
 
+}
+
+export async function getServerSideProps() {
+  if (!canShowDevLogin()) {
+    return { props: {} };
+  }
+
+  try {
+    return {
+      props: {
+        initialRosterData: await buildRosterPayload(),
+      },
+    };
+  } catch (error) {
+    console.error("Failed to preload dev login roster", error);
+    return {
+      props: {
+        initialRosterData: EMPTY_ROSTER_PAYLOAD,
+      },
+    };
+  }
 }
