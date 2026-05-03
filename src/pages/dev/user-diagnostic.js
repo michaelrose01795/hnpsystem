@@ -1812,7 +1812,18 @@ function GlobalUiShowcase() {
         .showcase-section-card {
           background: #fdf2f8 !important;
           box-shadow: none;
+          border: none;
           margin-bottom: var(--page-stack-gap);
+        }
+        .user-diagnostic-showcase .app-input,
+        .user-diagnostic-showcase .dropdown-api__control,
+        .user-diagnostic-showcase .calendar-api__control,
+        .user-diagnostic-showcase .timepicker-api__control,
+        .user-diagnostic-showcase .searchbar-api,
+        .user-diagnostic-showcase input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+        .user-diagnostic-showcase select,
+        .user-diagnostic-showcase textarea {
+          border: none !important;
         }
         :root[data-theme="dark"] .user-diagnostic-showcase .app-section-card,
         :root[data-theme="dark"] .user-diagnostic-showcase .showcase-section-card,

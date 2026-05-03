@@ -2179,7 +2179,7 @@ body:has(.login-page-wrapper) {
 .calendar-api__control,
 .timepicker-api__control,
 .searchbar-api,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input),
 select,
 textarea {
   min-height: var(--control-height);
@@ -2229,7 +2229,7 @@ textarea {
 .calendar-api__control:hover:not(:disabled),
 .timepicker-api__control:hover:not(:disabled),
 .searchbar-api:hover,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):hover,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):hover,
 select:hover,
 textarea:hover {
   background: var(--control-bg-hover) !important;
@@ -2242,8 +2242,8 @@ textarea:hover {
 .timepicker-api__control:focus,
 .timepicker-api__control:focus-visible,
 .searchbar-api:focus-within,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):focus,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):focus-visible,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus,
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus-visible,
 select:focus,
 select:focus-visible,
 textarea:focus,
@@ -2294,12 +2294,16 @@ textarea:disabled {
    intentionally NOT constrained here — the consumer controls it via the
    wrapper's width / flex props, so the search bar fills whatever column
    it's dropped into.
-   Padding: 6px on the left gives the typed text its breathing room
-   against the container edge; the right edge is flush so the clear
-   button lands at the far right of the search section. */
-.searchbar-api {
+   Padding is zero so the input fills edge-to-edge; the input itself
+   carries a mask-image fade across the curved corners so text fades
+   behind the curve instead of being clipped. The clear button still
+   lands flush at the far right of the search section. */
+.searchbar-api,
+.searchbar-api:hover,
+.searchbar-api:focus-within {
   height: var(--control-height) !important;
-  padding: 0 0 0 6px !important;
+  padding: 0 !important;
+  background: var(--theme) !important;
 }
 
 .dropdown-api.is-open .dropdown-api__control,
@@ -3220,6 +3224,7 @@ input[type="search"]::-webkit-search-results-decoration {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
+  height: var(--control-height) !important;
   min-height: 0 !important;
   padding: 0 !important;
   border: none !important;
@@ -3235,6 +3240,15 @@ input[type="search"]::-webkit-search-results-decoration {
   appearance: none;
   position: relative;
   z-index: 2;
+  /* Initial text starts inset past the fade zone so short values read
+     cleanly. As the user types past the right edge, the input scrolls
+     natively and earlier characters pass under the left fade. */
+  text-indent: 22px;
+  /* Fade text into/out of the rounded corner zone (14px = --control-radius)
+     instead of clipping at the input edge. Native horizontal scroll on the
+     input is preserved — only the visual edge is faded. */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--control-radius), #000 calc(100% - 8px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--control-radius), #000 calc(100% - 8px), transparent 100%);
 }
 
 .searchbar-api__input::-webkit-search-decoration,

@@ -152,7 +152,7 @@ export default function MultiSelectDropdown({
 
       {/* Searchable control */}
       <div
-        className="dropdown-api__control"
+        className="dropdown-api__control searchbar-api"
         style={dropdownTriggerButtonStyle}
         onClick={() => controlInputRef.current?.focus()}
       >
@@ -160,7 +160,7 @@ export default function MultiSelectDropdown({
           id={controlId}
           ref={controlInputRef}
           type="search"
-          className="dropdown-api__search-input multiselect-dropdown-api__search-input"
+          className="dropdown-api__search-input multiselect-dropdown-api__search-input searchbar-api__input"
           placeholder={controlPlaceholder}
           value={searchTerm}
           disabled={disabled}

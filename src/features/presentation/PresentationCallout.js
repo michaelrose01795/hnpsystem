@@ -26,6 +26,10 @@ const PAGE_FILE_BY_ROUTE = {
   "/valet": "src/pages/valet/index.js",
 };
 
+const GAP = 16; // minimum gap between the callout and the highlighted rect
+const VIEWPORT_PAD = 12; // padding from the viewport edges
+const HIGHLIGHT_PAD = 10; // matches PresentationHighlight's PAD constant
+
 function formatRouteLabel(route) {
   return String(route || "")
     .replace(/^\//, "")
@@ -37,76 +41,167 @@ function getPageFile(slide) {
   return slide.pageFile || PAGE_FILE_BY_ROUTE[slide.route] || `src/pages/${formatRouteLabel(slide.route)}`;
 }
 
-function sideRailPosition(calloutSize, position = "right") {
-  if (typeof window === "undefined") return { left: 24, top: 24 };
-  const pad = 18;
-  const viewportW = window.innerWidth;
-  const viewportH = window.innerHeight;
-  const reservedBottom = 104;
-  const { width: cw, height: ch } = calloutSize;
-  const usableHeight = Math.max(220, viewportH - reservedBottom);
-  const top = Math.max(pad, (usableHeight - ch) / 2);
-
-  if (viewportW < 760) {
-    return {
-      left: Math.max(12, (viewportW - cw) / 2),
-      top: 12,
-    };
-  }
-
-  if (position === "left" || position === "top-left" || position === "bottom-left") {
-    return { left: pad, top };
-  }
-
-  return { left: viewportW - cw - pad, top };
+function rectsOverlap(a, b) {
+  return !(
+    a.right <= b.left ||
+    a.left >= b.right ||
+    a.bottom <= b.top ||
+    a.top >= b.bottom
+  );
 }
 
-function computePosition(anchorRect, position, calloutSize) {
-  if (!anchorRect) return sideRailPosition(calloutSize, position);
-  if (typeof window !== "undefined" && window.innerWidth < 760) {
-    return sideRailPosition(calloutSize, "center");
-  }
-
-  const pad = 16;
-  const { width: cw, height: ch } = calloutSize;
-  const { top, left, right, bottom, width, height } = anchorRect;
-  const cx = left + width / 2;
-  const cy = top + height / 2;
-
-  switch (position) {
-    case "top":
-      return { left: cx - cw / 2, top: top - ch - pad };
-    case "bottom":
-      return { left: cx - cw / 2, top: bottom + pad };
-    case "left":
-      return { left: left - cw - pad, top: cy - ch / 2 };
-    case "right":
-      return { left: right + pad, top: cy - ch / 2 };
-    case "top-left":
-      return { left, top: top - ch - pad };
-    case "top-right":
-      return { left: right - cw, top: top - ch - pad };
-    case "bottom-left":
-      return { left, top: bottom + pad };
-    case "bottom-right":
-      return { left: right - cw, top: bottom + pad };
-    case "center":
-    default:
-      return sideRailPosition(calloutSize, position);
-  }
-}
-
-function clampToViewport(style, calloutSize) {
-  if (typeof window === "undefined") return style;
-  const pad = 10;
-  const reservedBottom = 112;
-  const maxLeft = window.innerWidth - calloutSize.width - pad;
-  const maxTop = window.innerHeight - calloutSize.height - reservedBottom;
+// Pad the highlighted rect by HIGHLIGHT_PAD to match the visible highlight ring
+// — the callout must not cover the ring either.
+function inflateAnchor(anchorRect) {
+  if (!anchorRect) return null;
   return {
-    ...style,
-    left: Math.max(pad, Math.min(Number(style.left), Math.max(pad, maxLeft))),
-    top: Math.max(pad, Math.min(Number(style.top), Math.max(pad, maxTop))),
+    top: anchorRect.top - HIGHLIGHT_PAD,
+    left: anchorRect.left - HIGHLIGHT_PAD,
+    right: anchorRect.right + HIGHLIGHT_PAD,
+    bottom: anchorRect.bottom + HIGHLIGHT_PAD,
+    width: anchorRect.width + HIGHLIGHT_PAD * 2,
+    height: anchorRect.height + HIGHLIGHT_PAD * 2,
   };
+}
+
+// Generate candidate placements for each side. Returned as a `position` rect
+// with top/left/width/height and a free-space score (higher is better).
+function buildCandidates(anchor, calloutSize, viewport) {
+  const { width: cw, height: ch } = calloutSize;
+  const { width: vw, height: vh } = viewport;
+  const cx = anchor.left + anchor.width / 2;
+  const cy = anchor.top + anchor.height / 2;
+
+  // Try each side at three alignments (start, center, end) so the callout
+  // can shift along the side instead of forcing center alignment.
+  const right = anchor.right + GAP;
+  const leftSide = anchor.left - GAP - cw;
+  const top = anchor.top - GAP - ch;
+  const bottom = anchor.bottom + GAP;
+
+  const verticalAlignments = [
+    cy - ch / 2, // center
+    anchor.top, // top-aligned
+    anchor.bottom - ch, // bottom-aligned
+  ];
+  const horizontalAlignments = [
+    cx - cw / 2, // center
+    anchor.left, // left-aligned
+    anchor.right - cw, // right-aligned
+  ];
+
+  const candidates = [];
+
+  // Right side
+  for (const t of verticalAlignments) {
+    candidates.push({ side: "right", top: t, left: right });
+  }
+  // Left side
+  for (const t of verticalAlignments) {
+    candidates.push({ side: "left", top: t, left: leftSide });
+  }
+  // Bottom
+  for (const l of horizontalAlignments) {
+    candidates.push({ side: "bottom", top: bottom, left: l });
+  }
+  // Top
+  for (const l of horizontalAlignments) {
+    candidates.push({ side: "top", top, left: l });
+  }
+
+  return candidates.map((c) => {
+    // Clamp into the viewport so we score the placement we'd actually render.
+    const clampedLeft = Math.max(
+      VIEWPORT_PAD,
+      Math.min(c.left, vw - cw - VIEWPORT_PAD)
+    );
+    const clampedTop = Math.max(
+      VIEWPORT_PAD,
+      Math.min(c.top, vh - ch - VIEWPORT_PAD)
+    );
+    const placed = {
+      ...c,
+      left: clampedLeft,
+      top: clampedTop,
+      right: clampedLeft + cw,
+      bottom: clampedTop + ch,
+    };
+    const fitsHoriz = placed.left >= VIEWPORT_PAD && placed.right <= vw - VIEWPORT_PAD;
+    const fitsVert = placed.top >= VIEWPORT_PAD && placed.bottom <= vh - VIEWPORT_PAD;
+    const fitsViewport = fitsHoriz && fitsVert;
+    const overlaps = rectsOverlap(placed, anchor);
+
+    // Score: higher = better. Hard penalty for overlap, soft penalty for not
+    // fitting the viewport.
+    let score = 1000;
+    if (overlaps) score -= 10000;
+    if (!fitsViewport) score -= 2000;
+
+    // Prefer side placements (left/right) for wide elements, top/bottom for
+    // tall elements — so the callout sits in the more open direction.
+    const elementIsWide = anchor.width > anchor.height;
+    if (elementIsWide && (c.side === "top" || c.side === "bottom")) score += 50;
+    if (!elementIsWide && (c.side === "left" || c.side === "right")) score += 50;
+
+    return { ...placed, side: c.side, score, overlaps, fitsViewport };
+  });
+}
+
+function pickPlacement(anchorRect, calloutSize, preferredSide) {
+  if (typeof window === "undefined") {
+    return { left: VIEWPORT_PAD, top: VIEWPORT_PAD, side: "rail" };
+  }
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // Mobile: dock to bottom as a sheet so the highlight stays visible above.
+  if (vw < 760) {
+    const top = Math.max(
+      VIEWPORT_PAD,
+      vh - calloutSize.height - VIEWPORT_PAD
+    );
+    const left = Math.max(VIEWPORT_PAD, (vw - calloutSize.width) / 2);
+    return { left, top, side: "mobile-sheet" };
+  }
+
+  if (!anchorRect) {
+    // No anchor — dock to the right rail.
+    const top = Math.max(VIEWPORT_PAD, (vh - calloutSize.height) / 2);
+    const left = vw - calloutSize.width - VIEWPORT_PAD;
+    return { left, top, side: "rail" };
+  }
+
+  const anchor = inflateAnchor(anchorRect);
+  const candidates = buildCandidates(anchor, calloutSize, {
+    width: vw,
+    height: vh,
+  });
+
+  // Apply a hint bonus for the preferred side.
+  if (preferredSide) {
+    for (const c of candidates) {
+      if (c.side === preferredSide) c.score += 25;
+    }
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+  const best = candidates[0];
+
+  // If even the best candidate overlaps the anchor, fall back to the side rail
+  // so the callout cannot block the feature it describes.
+  if (!best || best.overlaps) {
+    const top = Math.max(VIEWPORT_PAD, (vh - calloutSize.height) / 2);
+    // Pick the rail with more free space.
+    const leftRailFree = anchor.left;
+    const rightRailFree = vw - anchor.right;
+    const left =
+      rightRailFree >= leftRailFree
+        ? vw - calloutSize.width - VIEWPORT_PAD
+        : VIEWPORT_PAD;
+    return { left, top, side: "rail" };
+  }
+
+  return best;
 }
 
 function isAnchorVisible(selector) {
@@ -120,7 +215,7 @@ function isAnchorVisible(selector) {
 export default function PresentationCallout({ step }) {
   const ref = useRef(null);
   const [anchorRect, setAnchorRect] = useState(null);
-  const [calloutSize, setCalloutSize] = useState({ width: 380, height: 250 });
+  const [calloutSize, setCalloutSize] = useState({ width: 380, height: 260 });
   const [anchorFound, setAnchorFound] = useState(() => isAnchorVisible(step?.anchor));
 
   const {
@@ -180,8 +275,10 @@ export default function PresentationCallout({ step }) {
     };
   }, [step?.anchor]);
 
-  const rawPosition = computePosition(anchorRect, step?.position || "center", calloutSize);
-  const style = clampToViewport(rawPosition, calloutSize);
+  // `step.preferredSide` is the new authoring hint; `step.position` stays
+  // honored as a legacy fallback for slides not yet migrated.
+  const preferredSide = step?.preferredSide || step?.position || null;
+  const placement = pickPlacement(anchorRect, calloutSize, preferredSide);
 
   return (
     <aside
@@ -189,6 +286,7 @@ export default function PresentationCallout({ step }) {
       role="dialog"
       aria-live="polite"
       data-presentation-callout={step?.id || step?.title || "step"}
+      data-presentation-side={placement.side}
       className="app-section-card"
       style={{
         position: "fixed",
@@ -204,7 +302,8 @@ export default function PresentationCallout({ step }) {
         gap: 10,
         background: "rgba(var(--surface-rgb), 0.98)",
         backdropFilter: "blur(12px)",
-        ...style,
+        left: placement.left,
+        top: placement.top,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
