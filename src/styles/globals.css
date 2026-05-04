@@ -1181,6 +1181,22 @@ label {
   text-align: left;
 }
 
+/* Default body-row height — driven by --table-row-height (showcase: Table
+   States in /dev/user-diagnostic). Cells use min-height via line-height
+   sizing fallback; setting tr height makes browsers stretch td accordingly.
+   The !important keeps this true repo-wide regardless of per-row inline
+   padding so every .app-data-table row is exactly --table-row-height tall. */
+.app-data-table tbody tr {
+  height: var(--table-row-height) !important;
+}
+
+/* Default in-row button height — every <button> inside an .app-data-table
+   snaps to --table-action-btn-height (32px). Wins over .app-btn via the
+   higher specificity. To opt out, set an explicit height on the button. */
+.app-data-table button {
+  height: var(--table-action-btn-height) !important;
+}
+
 .app-data-table thead th {
   background: var(--surface);
   color: var(--text-1);
@@ -1190,6 +1206,36 @@ label {
 
 .app-data-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* Canonical in-row action button (Edit / Delete / etc.). Driven by
+   --table-action-btn-height. Use this class on every <button> that lives
+   inside an .app-data-table or row-list cell so heights stay aligned with
+   the showcase. */
+.app-data-table .app-table-action-btn,
+.app-table-action-btn {
+  height: var(--table-action-btn-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  font-size: var(--text-label);
+  font-weight: 600;
+  border-radius: var(--radius-xs);
+  background: var(--surface);
+  color: var(--text-1);
+  border: 1px solid var(--primary-border);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.app-table-action-btn--ghost {
+  border: none;
+}
+
+.app-table-action-btn--danger {
+  color: var(--danger);
+  border: none;
 }
 
 /* Canonical home: src/styles/families/badges.css

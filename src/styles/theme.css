@@ -29,6 +29,11 @@
   --skeleton-radius: 8px;
   --skeleton-animation-duration: 1.8s;
   --table-border: 1px solid rgba(var(--accent-base-rgb), 0.14);
+  /* Canonical row + in-row action button heights. Demonstrated by the
+     "Table States" section in /dev/user-diagnostic. Editing these tokens
+     updates every table in the repo that uses .app-data-table. */
+  --table-row-height: 44px;
+  --table-action-btn-height: 32px;
   --text-1: var(--surfaceText);
   --text-1-rgb: 15, 15, 15;
   --text-2: var(--onAccentText);
