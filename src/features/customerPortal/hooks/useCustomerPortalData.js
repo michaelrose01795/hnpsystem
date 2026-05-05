@@ -131,7 +131,18 @@ export function useCustomerPortalData() {
         const normalizedEmail = user.email?.trim().toLowerCase();
         let customerRow = null;
 
-        if (normalizedEmail) {
+        if (user.customerId) {
+          const { data, error } = await supabase
+            .from("customers")
+            .select("id, firstname, lastname, email, mobile, telephone, address, postcode, contact_preference")
+            .eq("id", user.customerId)
+            .maybeSingle();
+
+          if (error && error.code !== "PGRST116") throw error;
+          customerRow = data || null;
+        }
+
+        if (!customerRow && normalizedEmail) {
           const { data, error } = await supabase
             .from("customers")
             .select("id, firstname, lastname, email, mobile, telephone, address, postcode, contact_preference")
@@ -140,15 +151,6 @@ export function useCustomerPortalData() {
 
           if (error && error.code !== "PGRST116") throw error;
           customerRow = data || null;
-        }
-
-        if (!customerRow) {
-          const { data } = await supabase
-            .from("customers")
-            .select("id, firstname, lastname, email, mobile, telephone, address, postcode, contact_preference")
-            .order("created_at", { ascending: true })
-            .limit(1);
-          customerRow = data?.[0] || null;
         }
 
         if (!customerRow) {
@@ -162,7 +164,7 @@ export function useCustomerPortalData() {
           if (widgetResponse.ok && widgetPayload?.success) {
             dashboardWidgets = sanitiseDashboardWidgets(widgetPayload.widgets);
           }
-        } catch (_widgetError) {
+        } catch {
           dashboardWidgets = DEFAULT_CUSTOMER_DASHBOARD_WIDGETS;
         }
 

@@ -23,7 +23,6 @@ export default function GoodsInPageUi(props) {
     addPartFieldStyle,
     addPartInputStyle,
     addressFieldStyle,
-    compactFieldWrapStyle,
     completing,
     completionPromptOpen,
     confirmDialog,
@@ -85,7 +84,6 @@ export default function GoodsInPageUi(props) {
     supplierModalOpen,
     textareaStyle,
     toast,
-    wideCompactFieldWrapStyle,
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
@@ -187,6 +185,23 @@ export default function GoodsInPageUi(props) {
           gap: 12px;
           flex-wrap: wrap;
         }
+        .invoice-details-field {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          min-width: 0;
+          width: 100%;
+        }
+        .invoice-details-field :global(input),
+        .invoice-details-field :global(textarea),
+        .invoice-details-field :global(select),
+        .invoice-details-field :global(.dropdown-api),
+        .invoice-details-field :global(.calendar-api),
+        .invoice-details-field .compact-dropdown,
+        .invoice-details-field .compact-calendar {
+          min-width: 0;
+          width: 100%;
+        }
         @media (max-width: 900px) {
           .add-part-section {
             padding: 16px;
@@ -219,7 +234,7 @@ export default function GoodsInPageUi(props) {
             {toast.message}
           </div>}
 
-        <TabGroup items={ADVANCED_TABS.map(tab => ({
+        <TabGroup devSectionKey="goods-in-advanced-tabs" devSectionParent="app-layout-page-card" items={ADVANCED_TABS.map(tab => ({
       value: tab.id,
       label: tab.label
     }))} value={activeTab} onChange={value => {
@@ -227,7 +242,13 @@ export default function GoodsInPageUi(props) {
       setIsAdvancedPanelOpen(true);
     }} ariaLabel="Part detail tabs" />
 
-        <LayerSurface as="section" style={sectionCardStyle} className="invoice-details-section">
+        <LayerTheme
+          as="section"
+          sectionKey="goods-in-invoice-details"
+          parentKey="app-layout-page-card"
+          style={sectionCardStyle}
+          className="invoice-details-section"
+        >
           <div className="invoice-details-toolbar">
             <h2 style={{
           margin: 0
@@ -248,8 +269,11 @@ export default function GoodsInPageUi(props) {
             </div>
           </div>
           <div className="invoice-details-shell">
-            <div style={fieldGridStyle}>
-              <div>
+            <div style={{
+              ...fieldGridStyle,
+              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))"
+            }}>
+              <div className="invoice-details-field">
                 <label style={labelStyle}>Supplier</label>
                 <input style={inputStyle} value={invoiceForm.supplierName} onChange={event => handleInvoiceChange("supplierName", event.target.value)} placeholder="Supplier name" />
                 {invoiceForm.supplierAccountNumber && <small style={{
@@ -258,15 +282,15 @@ export default function GoodsInPageUi(props) {
                     Account #{invoiceForm.supplierAccountNumber}
                   </small>}
               </div>
-              <div>
+              <div className="invoice-details-field">
                 <label style={labelStyle}>Invoice number</label>
                 <input style={inputStyle} value={invoiceForm.invoiceNumber} onChange={event => handleInvoiceChange("invoiceNumber", event.target.value)} placeholder="INV-001" />
               </div>
-              <div>
+              <div className="invoice-details-field">
                 <label style={labelStyle}>Delivery note number</label>
                 <input style={inputStyle} value={invoiceForm.deliveryNoteNumber} onChange={event => handleInvoiceChange("deliveryNoteNumber", event.target.value)} placeholder="DN-001" />
               </div>
-              <div style={compactFieldWrapStyle}>
+              <div className="invoice-details-field">
                 <label style={labelStyle}>Invoice date</label>
                 <div className="compact-calendar">
                   <CalendarField value={invoiceForm.invoiceDate} onChange={event => handleInvoiceChange("invoiceDate", event.target.value)} name="invoiceDate" helperText="" style={{
@@ -274,7 +298,7 @@ export default function GoodsInPageUi(props) {
               }} />
                 </div>
               </div>
-              <div style={compactFieldWrapStyle}>
+              <div className="invoice-details-field">
                 <label style={labelStyle}>Price level</label>
                 <div className="compact-dropdown">
                   <DropdownField value={invoiceForm.priceLevel} onChange={event => handleInvoiceChange("priceLevel", event.target.value)} style={{
@@ -286,7 +310,7 @@ export default function GoodsInPageUi(props) {
                   </DropdownField>
                 </div>
               </div>
-              <div style={wideCompactFieldWrapStyle}>
+              <div className="invoice-details-field">
                 <label style={labelStyle}>Franchise</label>
                 <div className="compact-dropdown">
                   <DropdownField value={partForm.franchise} onChange={event => handlePartChange("franchise", event.target.value)} style={{
@@ -319,9 +343,15 @@ export default function GoodsInPageUi(props) {
                 {invoiceScanPayload.extracted.invoiceNumber && ` Invoice ${invoiceScanPayload.extracted.invoiceNumber}`}
               </div>}
           </div>
-        </LayerSurface>
+        </LayerTheme>
 
-        <LayerSurface as="section" style={sectionCardStyle} className="add-part-section">
+        <LayerTheme
+          as="section"
+          sectionKey="goods-in-add-part"
+          parentKey="app-layout-page-card"
+          style={sectionCardStyle}
+          className="add-part-section"
+        >
           <div className="add-part-toolbar">
             <h2 style={{
           margin: 0
@@ -428,52 +458,59 @@ export default function GoodsInPageUi(props) {
               <div style={{
           marginTop: "14px"
         }}>
-                {activeTab === "global" && <div style={fieldGridStyle}>
-                    <div>
-                      <label style={labelStyle}>Surcharge</label>
-                      <input style={inputStyle} value={partForm.surcharge} onChange={event => handlePartChange("surcharge", event.target.value)} placeholder="0.00" />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>VAT rate</label>
-                      <DropdownField value={partForm.vatRate} onChange={event => handlePartChange("vatRate", event.target.value)} style={{
-                width: "100%"
-              }} placeholder="Select VAT rate">
-                        {VAT_RATE_OPTIONS.map(option => <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>)}
-                      </DropdownField>
-                      {partForm.vatRate === "custom" && <input style={{
-                ...inputStyle,
-                marginTop: "6px"
-              }} value={partForm.vatRateCustomValue} onChange={event => handlePartChange("vatRateCustomValue", event.target.value)} placeholder="Enter custom rate" />}
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Pack size</label>
-                      <input style={inputStyle} value={partForm.packSize} onChange={event => handlePartChange("packSize", event.target.value)} />
-                    </div>
-                    <div>
-                      <label style={labelStyle}>Sales price tiers</label>
-                      <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-                gap: "8px"
-              }}>
-                        {partForm.salePrices.map((entry, index) => <input key={entry.label} style={inputStyle} placeholder={entry.label} value={entry.price} onChange={event => handleSalePriceChange(index, event.target.value)} />)}
+                {activeTab === "global" && <LayerSurface
+                  as="section"
+                  sectionKey="goods-in-global-details"
+                  parentKey="goods-in-add-part"
+                  style={sectionCardStyle}
+                >
+                    <div style={fieldGridStyle}>
+                      <div>
+                        <label style={labelStyle}>Surcharge</label>
+                        <input style={inputStyle} value={partForm.surcharge} onChange={event => handlePartChange("surcharge", event.target.value)} placeholder="0.00" />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>VAT rate</label>
+                        <DropdownField value={partForm.vatRate} onChange={event => handlePartChange("vatRate", event.target.value)} style={{
+                  width: "100%"
+                }} placeholder="Select VAT rate">
+                          {VAT_RATE_OPTIONS.map(option => <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>)}
+                        </DropdownField>
+                        {partForm.vatRate === "custom" && <input style={{
+                  ...inputStyle,
+                  marginTop: "6px"
+                }} value={partForm.vatRateCustomValue} onChange={event => handlePartChange("vatRateCustomValue", event.target.value)} placeholder="Enter custom rate" />}
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Pack size</label>
+                        <input style={inputStyle} value={partForm.packSize} onChange={event => handlePartChange("packSize", event.target.value)} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Sales price tiers</label>
+                        <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                  gap: "8px"
+                }}>
+                          {partForm.salePrices.map((entry, index) => <input key={entry.label} style={inputStyle} placeholder={entry.label} value={entry.price} onChange={event => handleSalePriceChange(index, event.target.value)} />)}
+                        </div>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Purchase details</label>
+                        <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                  gap: "8px"
+                }}>
+                          <input style={inputStyle} placeholder="Stock order" value={partForm.purchaseDetails.stockOrder} onChange={event => handleNestedPartChange("purchaseDetails", "stockOrder", event.target.value)} />
+                          <input style={inputStyle} placeholder="VOR cost" value={partForm.purchaseDetails.vorCost} onChange={event => handleNestedPartChange("purchaseDetails", "vorCost", event.target.value)} />
+                          <input style={inputStyle} placeholder="Local cost" value={partForm.purchaseDetails.localCost} onChange={event => handleNestedPartChange("purchaseDetails", "localCost", event.target.value)} />
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <label style={labelStyle}>Purchase details</label>
-                      <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-                gap: "8px"
-              }}>
-                        <input style={inputStyle} placeholder="Stock order" value={partForm.purchaseDetails.stockOrder} onChange={event => handleNestedPartChange("purchaseDetails", "stockOrder", event.target.value)} />
-                        <input style={inputStyle} placeholder="VOR cost" value={partForm.purchaseDetails.vorCost} onChange={event => handleNestedPartChange("purchaseDetails", "vorCost", event.target.value)} />
-                        <input style={inputStyle} placeholder="Local cost" value={partForm.purchaseDetails.localCost} onChange={event => handleNestedPartChange("purchaseDetails", "localCost", event.target.value)} />
-                      </div>
-                    </div>
-                  </div>}
+                  </LayerSurface>}
                 {activeTab === "dealer" && <div style={fieldGridStyle}>
                     <input style={inputStyle} placeholder="Dealer code" value={partForm.dealerDetails.dealerCode} onChange={event => handleNestedPartChange("dealerDetails", "dealerCode", event.target.value)} />
                     <input style={inputStyle} placeholder="Tier" value={partForm.dealerDetails.tier} onChange={event => handleNestedPartChange("dealerDetails", "tier", event.target.value)} />
@@ -587,9 +624,14 @@ export default function GoodsInPageUi(props) {
               </button>
             </div>
           </div>
-        </LayerSurface>
+        </LayerTheme>
 
-        <LayerSurface as="section" style={sectionCardStyle}>
+        <LayerTheme
+          as="section"
+          sectionKey="goods-in-invoice-lines"
+          parentKey="app-layout-page-card"
+          style={sectionCardStyle}
+        >
           <div style={{
         display: "flex",
         justifyContent: "space-between",
@@ -703,7 +745,7 @@ export default function GoodsInPageUi(props) {
                 </tbody>
               </table>
             </ScrollArea>}
-        </LayerSurface>
+        </LayerTheme>
       </div>
 
       {supplierModalOpen && <SupplierSearchModal onClose={() => setSupplierModalOpen(false)} onSelect={handleSupplierSelected} initialQuery={invoiceForm.supplierName} />}

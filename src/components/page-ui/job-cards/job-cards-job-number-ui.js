@@ -617,7 +617,19 @@ export default function JobCardDetailPageUi(props) {
         margin: 0
       }}>
           <div ref={tabsScrollRef} onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined} onMouseMove={tabsOverflowing ? handleTabsDragMove : undefined} onMouseUp={tabsOverflowing ? handleTabsDragEnd : undefined} onMouseLeave={tabsOverflowing ? handleTabsDragEnd : undefined}>
-          <LayerTheme className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`} radius="var(--radius-sm)" padding="8px" gap={undefined}>
+          <LayerTheme
+            className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`}
+            radius="var(--radius-sm)"
+            padding="8px"
+            gap="6px"
+            style={{
+              flexDirection: "row",
+              flexWrap: "nowrap",
+              alignItems: "center",
+              overflowX: "auto",
+              overflowY: "hidden"
+            }}
+          >
             {tabs.map(tab => {
             const isActive = activeTab === tab.id;
             const isLocked = lockedTabIds.has(tab.id);

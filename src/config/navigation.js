@@ -6,11 +6,6 @@ export const sidebarSections = [
     category: "general",
     items: [
       { label: "News Feed", href: "/newsfeed", roles: [] },
-      {
-        label: "Retail Dashboard",
-        href: "/dashboard",
-        roles: ["service manager", "workshop manager", "after sales director"],
-      },
       { label: "Messages", href: "/messages", roles: [] },
       {
         label: "Tracker",

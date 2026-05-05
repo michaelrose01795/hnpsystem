@@ -10,6 +10,7 @@ import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { useTheme } from "@/styles/themeProvider";
 import StockCheckPopup from "@/components/Consumables/StockCheckPopup";
 import { CalendarField } from "@/components/ui/calendarAPI";
+import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
 import { PageShell, ContentWidth, SectionShell } from "@/components/ui";
@@ -148,17 +149,6 @@ const orderButtonStyle = {
   border: "none",
   background: "var(--primary)",
   color: "var(--surface)",
-  fontWeight: 600,
-  cursor: "pointer",
-  boxShadow: "none"
-};
-
-const stockCheckButtonStyle = {
-  padding: "10px 18px",
-  borderRadius: "var(--radius-pill)",
-  border: "1px solid var(--primary)",
-  background: "var(--surface)",
-  color: "var(--text-1)",
   fontWeight: 600,
   cursor: "pointer",
   boxShadow: "none"
@@ -602,11 +592,13 @@ function ConsumablesTrackerPage() {
     }),
     [viewMonth, viewYear]
   );
-  const canAdvanceToNextMonth = useMemo(
-    () =>
-    viewYear < currentYearNumber ||
-    viewYear === currentYearNumber && viewMonth < currentMonthNumber,
-    [viewYear, viewMonth, currentMonthNumber, currentYearNumber]
+  const selectedMonthValue = useMemo(
+    () => `${viewYear}-${String(viewMonth).padStart(2, "0")}`,
+    [viewMonth, viewYear]
+  );
+  const maxMonthValue = useMemo(
+    () => `${currentYearNumber}-${String(currentMonthNumber).padStart(2, "0")}`,
+    [currentMonthNumber, currentYearNumber]
   );
   const formattedBudgetUpdatedAt = useMemo(() => {
     if (!financialSummary.budgetUpdatedAt) {
@@ -756,14 +748,12 @@ function ConsumablesTrackerPage() {
     setBudgetSaveMessage("");
   }, []);
 
-  const handleMonthChange = useCallback(
-    (offset) => {
-      const candidate = new Date(viewYear, viewMonth - 1 + offset, 1);
-      setViewYear(candidate.getFullYear());
-      setViewMonth(candidate.getMonth() + 1);
-    },
-    [viewMonth, viewYear]
-  );
+  const handleMonthValueChange = useCallback((value) => {
+    const match = typeof value === "string" ? value.match(/^(\d{4})-(\d{2})$/) : null;
+    if (!match) return;
+    setViewYear(Number(match[1]));
+    setViewMonth(Number(match[2]));
+  }, []);
 
   const handleBudgetSave = useCallback(async () => {
     setBudgetSaving(true);
@@ -1039,7 +1029,7 @@ function ConsumablesTrackerPage() {
 
   }
 
-  return <ConsumablesTrackerPageUi view="section2" PageShell={PageShell} ContentWidth={ContentWidth} SectionShell={SectionShell} accentDashedBorder={accentDashedBorder} budgetInput={budgetInput} budgetSaveError={budgetSaveError} budgetSaveMessage={budgetSaveMessage} budgetSaving={budgetSaving} CalendarField={CalendarField} canAdvanceToNextMonth={canAdvanceToNextMonth} cardStyle={cardStyle} closeHistoryModal={closeHistoryModal} closeOrderModal={closeOrderModal} consumables={consumables} consumablesError={consumablesError} dbUserId={dbUserId} duplicateModalStyle={duplicateModalStyle} duplicateOverlayStyle={duplicateOverlayStyle} fetchTechRequests={fetchTechRequests} filteredConsumables={filteredConsumables} financialError={financialError} financialLoading={financialLoading} formatCurrency={formatCurrency} formatDate={formatDate} formattedBudgetUpdatedAt={formattedBudgetUpdatedAt} getConsumableStatus={getConsumableStatus} handleBudgetInputChange={handleBudgetInputChange} handleBudgetSave={handleBudgetSave} handleEditedOrder={handleEditedOrder} handleMonthChange={handleMonthChange} handleOrderFormChange={handleOrderFormChange} handleRequestOrder={handleRequestOrder} handleSameDetails={handleSameDetails} highlightRowBackground={highlightRowBackground} historyModalConsumable={historyModalConsumable} historyModalStyle={historyModalStyle} InlineLoading={InlineLoading} isWorkshopManager={isWorkshopManager} loadingConsumables={loadingConsumables} logsError={logsError} logsLoading={logsLoading} logsSummary={logsSummary} monthLabel={monthLabel} monthlyLogs={monthlyLogs} mutedTextColor={mutedTextColor} openHistoryModal={openHistoryModal} openOrderModal={openOrderModal} orderButtonStyle={orderButtonStyle} orderForm={orderForm} orderHistoryHeaderStyle={orderHistoryHeaderStyle} orderingRequestId={orderingRequestId} orderModalButtonStyle={orderModalButtonStyle} orderModalCloseButtonStyle={orderModalCloseButtonStyle} orderModalConsumable={orderModalConsumable} orderModalError={orderModalError} orderModalFormGroupStyle={orderModalFormGroupStyle} orderModalInputStyle={orderModalInputStyle} orderModalLoading={orderModalLoading} orderModalOverlayStyle={orderModalOverlayStyle} orderModalSecondaryButtonStyle={orderModalSecondaryButtonStyle} orderModalStyle={orderModalStyle} potentialDuplicates={potentialDuplicates} previewLogs={previewLogs} quietLabelColor={quietLabelColor} requestsError={requestsError} requestsLoading={requestsLoading} scheduledTableBodyStyle={scheduledTableBodyStyle} SearchBar={SearchBar} searchQuery={searchQuery} sectionTitleStyle={sectionTitleStyle} setSearchQuery={setSearchQuery} setShowDuplicateModal={setShowDuplicateModal} setShowEditForm={setShowEditForm} setShowStockCheck={setShowStockCheck} showDuplicateModal={showDuplicateModal} showEditForm={showEditForm} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} stockCheckButtonStyle={stockCheckButtonStyle} StockCheckPopup={StockCheckPopup} tableHeaderColor={tableHeaderColor} techRequests={techRequests} themedBudgetInputStyle={themedBudgetInputStyle} themedOrderHistoryContainerStyle={themedOrderHistoryContainerStyle} themedOrderHistoryRowBorder={themedOrderHistoryRowBorder} themedOrderHistoryRowStyle={themedOrderHistoryRowStyle} toneToStyles={toneToStyles} totals={totals} />;
+  return <ConsumablesTrackerPageUi view="section2" PageShell={PageShell} ContentWidth={ContentWidth} SectionShell={SectionShell} accentDashedBorder={accentDashedBorder} budgetInput={budgetInput} budgetSaveError={budgetSaveError} budgetSaveMessage={budgetSaveMessage} budgetSaving={budgetSaving} CalendarField={CalendarField} cardStyle={cardStyle} closeHistoryModal={closeHistoryModal} closeOrderModal={closeOrderModal} consumables={consumables} consumablesError={consumablesError} dbUserId={dbUserId} duplicateModalStyle={duplicateModalStyle} duplicateOverlayStyle={duplicateOverlayStyle} fetchTechRequests={fetchTechRequests} filteredConsumables={filteredConsumables} financialError={financialError} financialLoading={financialLoading} formatCurrency={formatCurrency} formatDate={formatDate} formattedBudgetUpdatedAt={formattedBudgetUpdatedAt} getConsumableStatus={getConsumableStatus} handleBudgetInputChange={handleBudgetInputChange} handleBudgetSave={handleBudgetSave} handleEditedOrder={handleEditedOrder} handleMonthValueChange={handleMonthValueChange} handleOrderFormChange={handleOrderFormChange} handleRequestOrder={handleRequestOrder} handleSameDetails={handleSameDetails} highlightRowBackground={highlightRowBackground} historyModalConsumable={historyModalConsumable} historyModalStyle={historyModalStyle} InlineLoading={InlineLoading} isWorkshopManager={isWorkshopManager} loadingConsumables={loadingConsumables} logsError={logsError} logsLoading={logsLoading} logsSummary={logsSummary} maxMonthValue={maxMonthValue} monthLabel={monthLabel} monthlyLogs={monthlyLogs} MonthPickerField={MonthPickerField} mutedTextColor={mutedTextColor} openHistoryModal={openHistoryModal} openOrderModal={openOrderModal} orderButtonStyle={orderButtonStyle} orderForm={orderForm} orderHistoryHeaderStyle={orderHistoryHeaderStyle} orderingRequestId={orderingRequestId} orderModalButtonStyle={orderModalButtonStyle} orderModalCloseButtonStyle={orderModalCloseButtonStyle} orderModalConsumable={orderModalConsumable} orderModalError={orderModalError} orderModalFormGroupStyle={orderModalFormGroupStyle} orderModalInputStyle={orderModalInputStyle} orderModalLoading={orderModalLoading} orderModalOverlayStyle={orderModalOverlayStyle} orderModalSecondaryButtonStyle={orderModalSecondaryButtonStyle} orderModalStyle={orderModalStyle} potentialDuplicates={potentialDuplicates} previewLogs={previewLogs} quietLabelColor={quietLabelColor} requestsError={requestsError} requestsLoading={requestsLoading} scheduledTableBodyStyle={scheduledTableBodyStyle} SearchBar={SearchBar} searchQuery={searchQuery} sectionTitleStyle={sectionTitleStyle} selectedMonthValue={selectedMonthValue} setSearchQuery={setSearchQuery} setShowDuplicateModal={setShowDuplicateModal} setShowEditForm={setShowEditForm} setShowStockCheck={setShowStockCheck} showDuplicateModal={showDuplicateModal} showEditForm={showEditForm} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} StockCheckPopup={StockCheckPopup} tableHeaderColor={tableHeaderColor} techRequests={techRequests} themedBudgetInputStyle={themedBudgetInputStyle} themedOrderHistoryContainerStyle={themedOrderHistoryContainerStyle} themedOrderHistoryRowBorder={themedOrderHistoryRowBorder} themedOrderHistoryRowStyle={themedOrderHistoryRowStyle} toneToStyles={toneToStyles} totals={totals} />;
 
 
 

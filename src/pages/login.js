@@ -42,6 +42,22 @@ value.startsWith("/") &&
 !value.startsWith("//") &&
 !value.startsWith("/api/");
 
+const normalizeLoginLookup = (value) =>
+String(value || "").
+toLowerCase().
+replace(/\s+/g, " ").
+trim();
+
+const getRosterUserId = (user) => user?.id ?? user?.user_id ?? user?.identifier ?? null;
+
+const getRosterUserName = (user = {}) =>
+user.name ||
+user.displayName ||
+user.fullName ||
+`${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+`${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+"";
+
 const getDefaultPostLoginRoute = (activeUser) => {
   const roles = [].
   concat(activeUser?.roles || []).
@@ -148,6 +164,8 @@ export default function LoginPage() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
+  const [loginFullName, setLoginFullName] = useState("");
+  const [loginUserId, setLoginUserId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -158,6 +176,7 @@ export default function LoginPage() {
   const [resetStatusType, setResetStatusType] = useState("info");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const devLoginInProgressRef = useRef(false);
   const finalizedPendingLogoutRef = useRef(false);
 
   useEffect(() => {
@@ -203,27 +222,79 @@ export default function LoginPage() {
     return normalizedCategory;
   }, [usersByRole, usersByRoleDetailed]);
 
+  const loginLookupUsers = React.useMemo(
+    () =>
+    (Array.isArray(allUsers) ? allUsers : []).
+    map((rosterUser) => ({
+      ...rosterUser,
+      id: getRosterUserId(rosterUser),
+      name: getRosterUserName(rosterUser),
+      email: rosterUser.email || ""
+    })),
+    [allUsers]
+  );
+
+  const syncLoginIdentityFields = React.useCallback((rosterUser) => {
+    setLoginFullName(rosterUser?.name || "");
+    setLoginUserId(rosterUser?.id ? String(rosterUser.id) : "");
+    setEmail(rosterUser?.email || "");
+  }, []);
+
+  const resolveLoginIdentityMatch = React.useCallback((field, value) => {
+    const normalized = normalizeLoginLookup(value);
+    if (!normalized) return null;
+
+    return loginLookupUsers.find((rosterUser) => {
+      if (field === "id") {
+        return String(rosterUser.id ?? "").trim() === String(value).trim();
+      }
+      if (field === "email") {
+        return normalizeLoginLookup(rosterUser.email) === normalized;
+      }
+      return normalizeLoginLookup(rosterUser.name) === normalized;
+    }) || null;
+  }, [loginLookupUsers]);
+
+  const handleLoginIdentityInput = React.useCallback((field, value) => {
+    if (field === "name") setLoginFullName(value);
+    if (field === "id") setLoginUserId(value);
+    if (field === "email") setEmail(value);
+
+    const match = resolveLoginIdentityMatch(field, value);
+    if (match) {
+      syncLoginIdentityFields(match);
+    }
+  }, [resolveLoginIdentityMatch, syncLoginIdentityFields]);
+
   // Developer login routes through NextAuth's credentials provider with the
   // picked user's database id. Server-side Supabase access is reliable, so the
   // session reflects exactly the user that was chosen in the dropdown.
-  const handleDevLogin = async () => {
+  const handleDevLogin = async (loginTarget = {}) => {
     if (!allowDevUserSelection) {
       setErrorMessage("Developer login is disabled in this environment.");
       return;
     }
 
-    if (!selectedCategory || !selectedDepartment || !selectedUser) {
+    if (devLoginInProgressRef.current) return;
+
+    const targetCategory = loginTarget.category || selectedCategory;
+    const targetDepartment = loginTarget.department || selectedDepartment;
+    const targetUser = loginTarget.user || selectedUser;
+
+    if (!targetCategory || !targetDepartment || !targetUser) {
       alert("Please select an area, department, and user.");
       return;
     }
+    devLoginInProgressRef.current = true;
+    setErrorMessage("");
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(LOGOUT_BARRIER_STORAGE_KEY);
     }
 
     const userId =
-    selectedUser?.id ?? selectedUser?.user_id ?? selectedUser?.identifier ?? null;
+    targetUser?.id ?? targetUser?.user_id ?? targetUser?.identifier ?? null;
     const numericId = Number(userId);
-    const target = getPostLoginRoute(router, selectedUser);
+    const target = getPostLoginRoute(router, targetUser);
 
     // Wipe any stale dev-session artefacts so the new signIn starts cleanly.
     if (typeof window !== "undefined") {
@@ -240,6 +311,7 @@ export default function LoginPage() {
 
       if (result?.error || !result?.ok) {
         setErrorMessage("Developer login failed. Session was not created.");
+        devLoginInProgressRef.current = false;
         return;
       }
 
@@ -252,9 +324,10 @@ export default function LoginPage() {
     }
 
     // Fallback for users without a numeric DB id (e.g. roster strings).
-    const result = await devLogin?.(selectedUser, selectedDepartment || selectedCategory || "WORKSHOP");
+    const result = await devLogin?.(targetUser, targetDepartment || targetCategory || "WORKSHOP");
     if (!result?.success) {
       setErrorMessage("Developer login failed. Session was not created.");
+      devLoginInProgressRef.current = false;
       return;
     }
 
@@ -430,7 +503,7 @@ export default function LoginPage() {
     return <LoginPageUi view="section1" PageSkeleton={PageSkeleton} />;
   }
 
-  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handlePasswordReset={handlePasswordReset} isResettingPassword={isResettingPassword} loadingDevUsers={loadingDevUsers} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetStatus={resetStatus} resetStatusType={resetStatusType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setEmail={setEmail} setPassword={setPassword} setResetEmail={setResetEmail} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} showResetModal={showResetModal} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
+  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handleLoginIdentityInput={handleLoginIdentityInput} handlePasswordReset={handlePasswordReset} isResettingPassword={isResettingPassword} loadingDevUsers={loadingDevUsers} loginFullName={loginFullName} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} loginUserId={loginUserId} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetStatus={resetStatus} resetStatusType={resetStatusType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setPassword={setPassword} setResetEmail={setResetEmail} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} showResetModal={showResetModal} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
 
 
 

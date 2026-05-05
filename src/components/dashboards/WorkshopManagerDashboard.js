@@ -27,16 +27,18 @@ const monthLabel = (key) => dayjs(`${key}-01`).format("MMMM YYYY");
 const formatTime = (value) => value ? dayjs(value).format("HH:mm") : "—";
 const formatTechnicianName = (tech) =>
 `${tech?.first_name || ""} ${tech?.last_name || ""}`.trim() || "Technician";
+const formatNoticeMessage = (message = "") =>
+  String(message).replace(/^\s*(?:ℹ️|ℹ|ⓘ|i)\s*/i, "").trim();
 
 const findStatusTone = (text = "") => {
   const normalized = text.toLowerCase();
   if (normalized.includes("ready") || normalized.includes("clear")) {
-    return "var(--success)";
+    return "var(--text-accent)";
   }
   if (normalized.includes("wait") || normalized.includes("hold")) {
-    return "var(--danger)";
+    return "var(--text-accent)";
   }
-  return "var(--primary-selected)";
+  return "var(--text-accent)";
 };
 
 export default function WorkshopManagerDashboard() {
@@ -245,25 +247,25 @@ export default function WorkshopManagerDashboard() {
       label: "Jobs On Site",
       value: dashboardData.dailySummary.inProgress,
       helper: `${queue.length} waiting in queue`,
-      accent: "var(--primary)"
+      accent: "var(--text-accent)"
     },
     {
       label: "Technicians Clocked In",
       value: `${dashboardData.technicianAvailability.onJobs} / ${dashboardData.technicianAvailability.totalTechnicians}`,
       helper: `${dashboardData.technicianAvailability.available} available`,
-      accent: "var(--primary-selected)"
+      accent: "var(--text-accent)"
     },
     {
       label: "Awaiting Parts",
       value: awaitingParts,
       helper: awaitingParts ? "Waiting on suppliers" : "All parts allocated",
-      accent: "var(--primary-hover)"
+      accent: "var(--text-accent)"
     },
     {
       label: "QC / Road Test",
       value: qcOrRoadTest,
       helper: qcOrRoadTest ? "Needs inspection" : "No QC backlog",
-      accent: "var(--danger)"
+      accent: "var(--text-accent)"
     }];
 
   }, [dashboardData]);
@@ -276,7 +278,7 @@ export default function WorkshopManagerDashboard() {
       next: entry.vehicle,
       status: entry.status,
       startedAt: entry.startedAt,
-      accent: "var(--primary)"
+      accent: "var(--text-accent)"
     }));
 
     if (liveEntries.length >= 3) {
@@ -292,7 +294,7 @@ export default function WorkshopManagerDashboard() {
       next: job.vehicle_reg || job.vehicle_make_model || "Awaiting assignment",
       status: job.status || "Pending",
       startedAt: job.checked_in_at,
-      accent: "var(--accent-purple)"
+      accent: "var(--text-accent)"
     }));
 
     return [...liveEntries, ...queueFallback];
@@ -321,7 +323,7 @@ export default function WorkshopManagerDashboard() {
     () =>
     (notices || []).map((notice) => ({
       id: notice.notification_id,
-      message: notice.message,
+      message: formatNoticeMessage(notice.message),
       targetRole: notice.target_role,
       createdAt: notice.created_at
     })),
@@ -329,7 +331,7 @@ export default function WorkshopManagerDashboard() {
   );
 
   return (
-    <DevLayoutSection sectionKey="dashboard-workshop-shell" sectionType="page-shell" shell>
+    <DevLayoutSection sectionKey="dashboard-workshop-shell" sectionType="page-shell" shell style={{ color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "10px" }}>
       <DevLayoutSection
         as="section"
         sectionKey="dashboard-workshop-metrics-grid"
@@ -339,7 +341,7 @@ export default function WorkshopManagerDashboard() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "16px",
+          gap: "10px",
           background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
@@ -353,7 +355,7 @@ export default function WorkshopManagerDashboard() {
         style={{
           gridColumn: "1 / -1",
           padding: "18px",
-          color: "var(--info)"
+          color: "var(--text-1)"
         }}>
 
             Loading live workshop metrics…
@@ -382,7 +384,7 @@ export default function WorkshopManagerDashboard() {
             borderRadius: "var(--radius-md)",
             padding: "18px",
             background: "var(--surface)",
-            border: `1px solid ${metric.accent}22`,
+            border: "1px solid rgba(var(--text-1-rgb), 0.12)",
             display: "flex",
             flexDirection: "column",
             gap: "6px"
@@ -393,7 +395,7 @@ export default function WorkshopManagerDashboard() {
               textTransform: "uppercase",
               letterSpacing: "0.08em",
               fontSize: "0.78rem",
-              color: "var(--info)"
+              color: "var(--text-1)"
             }}>
 
                 {metric.label}
@@ -401,7 +403,7 @@ export default function WorkshopManagerDashboard() {
               <strong style={{ fontSize: "1.8rem", color: metric.accent }}>
                 {metric.value}
               </strong>
-              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
+              <span style={{ color: "var(--text-1)", fontSize: "0.85rem" }}>
                 {metric.helper}
               </span>
             </div>
@@ -418,7 +420,7 @@ export default function WorkshopManagerDashboard() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: "18px",
+          gap: "10px",
           alignItems: "stretch",
           background: "var(--theme)",
           borderRadius: "var(--radius-md)",
@@ -429,42 +431,56 @@ export default function WorkshopManagerDashboard() {
 
         <DevLayoutSection sectionKey="dashboard-workshop-technician-focus" parentKey="dashboard-workshop-focus-row" sectionType="content-card">
           <SectionCard title="Technician Focus" style={{ gap: "12px", height: "100%" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {clockingLoading ?
-              <p style={{ color: "var(--info)" }}>Loading technician activity…</p> :
+              <p style={{ color: "var(--text-1)" }}>Loading technician activity…</p> :
               clockingError ?
               <p style={{ color: "var(--danger)" }}>{clockingError}</p> :
               technicianFocus.length === 0 ?
-              <p style={{ color: "var(--info)" }}>No live technician activity recorded.</p> :
+              <p style={{ color: "var(--text-1)" }}>No live technician activity recorded.</p> :
 
               technicianFocus.map((item) =>
               <div
                 key={item.key}
                 style={{
-                  border: `1px solid ${item.accent}33`,
                   borderRadius: "var(--radius-sm)",
-                  padding: "14px",
-                  display: "grid",
-                  gridTemplateColumns: "minmax(0, 1.2fr) auto",
-                  gap: "8px 16px",
+                  padding: "12px 16px",
+                  display: "flex",
                   alignItems: "center",
+                  gap: "14px",
                   background: "var(--theme)",
-                  minHeight: "104px"
+                  border: "none",
+                  boxShadow: "none"
                 }}>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
-                    <strong style={{ color: item.accent }}>{item.tech}</strong>
-                    <span style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
-                      {item.job}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", alignItems: "flex-end", textAlign: "right" }}>
-                    <small style={{ color: "var(--info)" }}>
-                      {item.startedAt ? `Since ${formatTime(item.startedAt)}` : item.status}
+                  <strong style={{ color: item.accent, fontSize: "0.95rem", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    {item.tech}
+                  </strong>
+                  <span style={{ fontSize: "0.78rem", color: "var(--text-1)", opacity: 0.7, textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    Job {item.job}
+                  </span>
+                  <span style={{ color: "var(--text-1)", fontSize: "0.85rem", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.next}
+                  </span>
+                  {item.startedAt && (
+                    <small style={{ color: "var(--text-1)", opacity: 0.65, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      Since {formatTime(item.startedAt)}
                     </small>
-                    <small style={{ color: item.accent, fontWeight: 600 }}>{item.status}</small>
-                  </div>
-                  <div style={{ gridColumn: "1 / -1", color: "var(--info)", fontSize: "0.85rem" }}>{item.next}</div>
+                  )}
+                  <span style={{
+                    padding: "4px 10px",
+                    borderRadius: "999px",
+                    background: "var(--surface)",
+                    color: item.accent,
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0
+                  }}>
+                    {item.status}
+                  </span>
                 </div>
               )
               }
@@ -474,30 +490,46 @@ export default function WorkshopManagerDashboard() {
 
         <DevLayoutSection sectionKey="dashboard-workshop-bay-readiness" parentKey="dashboard-workshop-focus-row" sectionType="content-card">
           <SectionCard title="Bay Readiness" style={{ gap: "12px", height: "100%" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {dashboardLoading ?
-              <p style={{ color: "var(--info)" }}>Loading bay readiness…</p> :
+              <p style={{ color: "var(--text-1)" }}>Loading bay readiness…</p> :
               bayReadiness.length === 0 ?
-              <p style={{ color: "var(--info)" }}>No bays waiting for work.</p> :
+              <p style={{ color: "var(--text-1)" }}>No bays waiting for work.</p> :
 
               bayReadiness.map((bay) =>
               <div
                 key={bay.key}
                 style={{
-                  border: `1px solid ${bay.tone}33`,
                   borderRadius: "var(--radius-sm)",
-                  padding: "14px",
-                  display: "grid",
-                  gridTemplateColumns: "minmax(0, 1.2fr) auto",
-                  gap: "8px 16px",
+                  padding: "12px 16px",
+                  display: "flex",
                   alignItems: "center",
+                  gap: "14px",
                   background: "var(--theme)",
-                  minHeight: "104px"
+                  border: "none",
+                  boxShadow: "none"
                 }}>
 
-                  <strong style={{ color: bay.tone }}>{bay.bay}</strong>
-                  <span style={{ color: "var(--accent-purple)", justifySelf: "end", textAlign: "right" }}>{bay.status}</span>
-                  <small style={{ color: "var(--info)", gridColumn: "1 / -1" }}>{bay.action}</small>
+                  <strong style={{ color: bay.tone, fontSize: "1rem", whiteSpace: "nowrap", flexShrink: 0 }}>
+                    {bay.bay}
+                  </strong>
+                  <small style={{ color: "var(--text-1)", opacity: 0.85, fontSize: "0.82rem", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {bay.action}
+                  </small>
+                  <span style={{
+                    padding: "4px 10px",
+                    borderRadius: "999px",
+                    background: "var(--surface)",
+                    color: bay.tone,
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0
+                  }}>
+                    {bay.status}
+                  </span>
                 </div>
               )
               }
@@ -514,7 +546,6 @@ export default function WorkshopManagerDashboard() {
         shell
         backgroundToken="accent"
         style={{
-          marginBottom: "32px",
           background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
@@ -522,7 +553,7 @@ export default function WorkshopManagerDashboard() {
           boxShadow: "none"
         }}>
 
-        <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px" }}>
+        <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px", color: "var(--text-accent)" }}>
           Clocking Overview
         </h2>
         {dashboardLoading ?
@@ -531,7 +562,7 @@ export default function WorkshopManagerDashboard() {
             padding: "12px",
             backgroundColor: "var(--surface)",
             borderRadius: "var(--radius-xs)",
-            color: "var(--info)"
+            color: "var(--text-1)"
           }}>
 
             Loading technician availability…
@@ -544,16 +575,24 @@ export default function WorkshopManagerDashboard() {
             borderRadius: "var(--radius-xs)"
           }}>
 
-            <p style={{ margin: "0 0 6px", color: "var(--primary-selected)", fontWeight: 600 }}>
+            <p style={{ margin: "0 0 6px", color: "var(--text-accent)", fontWeight: 600 }}>
               {dashboardData.technicianAvailability.onJobs} technicians clocked in
             </p>
-            <p style={{ margin: 0, color: "var(--info)" }}>
+            <p style={{ margin: 0, color: "var(--text-1)" }}>
               {dashboardData.technicianAvailability.available} available •{" "}
               {dashboardData.technicianAvailability.totalTechnicians} total technicians
             </p>
           </div>
         }
       </DevLayoutSection>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: "10px",
+          alignItems: "stretch"
+        }}>
 
       <DevLayoutSection
         as="section"
@@ -563,15 +602,15 @@ export default function WorkshopManagerDashboard() {
         shell
         backgroundToken="accent"
         style={{
-          marginBottom: "32px",
           background: "var(--theme)",
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
-          boxShadow: "none"
+          boxShadow: "none",
+          height: "100%"
         }}>
 
-        <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px" }}>
+        <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px", color: "var(--text-accent)" }}>
           Consumables
         </h2>
         <div
@@ -586,7 +625,7 @@ export default function WorkshopManagerDashboard() {
             gap: "12px"
           }}>
 
-          <p style={{ margin: 0, color: "var(--info)" }}>
+          <p style={{ margin: 0, color: "var(--text-1)" }}>
             {consumableLoading ?
             "Loading consumable orders…" :
             consumableError || "Review recent consumable orders and spend by month."}
@@ -599,8 +638,8 @@ export default function WorkshopManagerDashboard() {
               padding: "10px 18px",
               borderRadius: "var(--radius-sm)",
               border: "none",
-              background: consumableLoading ? "var(--grey-accent)" : "var(--primary)",
-              color: "var(--surface)",
+              background: consumableLoading ? "rgba(var(--text-1-rgb), 0.3)" : "var(--text-accent)",
+              color: "var(--text-2)",
               fontWeight: 600,
               cursor: consumableLoading ? "not-allowed" : "pointer"
             }}>
@@ -622,40 +661,74 @@ export default function WorkshopManagerDashboard() {
           borderRadius: "var(--radius-md)",
           padding: "24px",
           border: "none",
-          boxShadow: "none"
+          boxShadow: "none",
+          height: "100%"
         }}>
 
-        <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px" }}>
+        <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: "12px", color: "var(--text-accent)" }}>
           Important Notices
         </h2>
         <div
           style={{
-            padding: "12px",
+            padding: "14px",
             backgroundColor: "var(--surface)",
-            borderRadius: "var(--radius-xs)",
+            borderRadius: "var(--radius-sm)",
             display: "flex",
             flexDirection: "column",
-            gap: "8px"
+            gap: "10px"
           }}>
 
           {noticesLoading ?
-          <p style={{ margin: 0, color: "var(--info)" }}>Loading notices…</p> :
+          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading notices…</p> :
           noticesError ?
           <p style={{ margin: 0, color: "var(--danger)" }}>{noticesError}</p> :
           formattedNotices.length === 0 ?
-          <p style={{ margin: 0, color: "var(--info)" }}>No notices at the moment.</p> :
+          <p style={{ margin: 0, color: "var(--text-1)" }}>No notices at the moment.</p> :
 
           formattedNotices.map((notice) =>
-          <div key={notice.id} style={{ color: "var(--info)" }}>
-                <strong style={{ color: "var(--primary-selected)" }}>
+          <div
+            key={notice.id}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(118px, auto) minmax(0, 1fr)",
+              gap: "10px 14px",
+              alignItems: "center",
+              padding: "12px 14px",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--theme)",
+              border: "none",
+              boxShadow: "none"
+            }}>
+
+                <time
+                  dateTime={notice.createdAt}
+                  style={{
+                    color: "var(--text-accent)",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                    whiteSpace: "nowrap"
+                  }}>
+
                   {dayjs(notice.createdAt).format("DD MMM HH:mm")}
-                </strong>
-                <span style={{ marginLeft: 8 }}>{notice.message}</span>
+                </time>
+                <span
+                  style={{
+                    color: "var(--text-1)",
+                    fontSize: "0.92rem",
+                    lineHeight: 1.45,
+                    overflowWrap: "anywhere"
+                  }}>
+
+                  {notice.message || "Workshop notice"}
+                </span>
               </div>
           )
           }
         </div>
       </DevLayoutSection>
+      </div>
 
       {isConsumablesModalOpen &&
       <DevLayoutSection sectionKey="dashboard-workshop-consumables-modal-overlay" parentKey="dashboard-workshop-shell" sectionType="floating-action">
@@ -686,10 +759,10 @@ export default function WorkshopManagerDashboard() {
                   }}>
 
               <div>
-                <h2 style={{ margin: 0, color: "var(--primary-selected)" }}>
+                <h2 style={{ margin: 0, color: "var(--text-accent)" }}>
                   Workshop Consumable Orders
                 </h2>
-                <p style={{ margin: "6px 0 0", color: "var(--grey-accent-dark)" }}>
+                <p style={{ margin: "6px 0 0", color: "var(--text-1)" }}>
                   Month view showing actual orders recorded in the tracker.
                 </p>
               </div>
@@ -701,7 +774,7 @@ export default function WorkshopManagerDashboard() {
                       background: "transparent",
                       fontSize: "1.2rem",
                       cursor: "pointer",
-                      color: "var(--primary-selected)"
+                      color: "var(--text-accent)"
                     }}
                     aria-label="Close consumables modal">
 
@@ -719,7 +792,7 @@ export default function WorkshopManagerDashboard() {
 
               <label
                     htmlFor="consumable-month"
-                    style={{ fontWeight: 600, color: "var(--primary-selected)" }}>
+                    style={{ fontWeight: 600, color: "var(--text-accent)" }}>
 
                 Month
               </label>
@@ -741,7 +814,7 @@ export default function WorkshopManagerDashboard() {
                   </option>
                     )}
               </select>
-              <span style={{ color: "var(--grey-accent)", fontSize: "0.9rem" }}>
+              <span style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
                 Showing orders from {monthLabel(selectedMonth)}.
               </span>
             </div>
@@ -762,7 +835,7 @@ export default function WorkshopManagerDashboard() {
                           style={{
                             textAlign: "left",
                             padding: "8px",
-                            color: "var(--primary-selected)",
+                            color: "var(--text-accent)",
                             fontSize: "0.8rem",
                             textTransform: "uppercase",
                             letterSpacing: "0.08em"
@@ -781,7 +854,7 @@ export default function WorkshopManagerDashboard() {
                           style={{
                             padding: "16px",
                             textAlign: "center",
-                            color: "var(--info)"
+                            color: "var(--text-1)"
                           }}>
 
                         Loading consumable orders…
@@ -794,7 +867,7 @@ export default function WorkshopManagerDashboard() {
                           style={{
                             padding: "16px",
                             textAlign: "center",
-                            color: "var(--grey-accent)"
+                            color: "var(--text-1)"
                           }}>
 
                         No consumable orders recorded for this month.
@@ -805,23 +878,23 @@ export default function WorkshopManagerDashboard() {
                       <tr
                         key={item.id}
                         style={{
-                          backgroundColor: "var(--danger-surface)",
+                          backgroundColor: "var(--theme)",
                           borderRadius: "var(--radius-sm)"
                         }}>
 
                         <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-1)" }}>
                           {item.name}
                         </td>
-                        <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                        <td style={{ padding: "12px", color: "var(--text-1)" }}>
                           {dayjs(item.lastOrderedDate).format("DD MMM YYYY")}
                         </td>
-                        <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                        <td style={{ padding: "12px", color: "var(--text-1)" }}>
                           {item.quantity}
                         </td>
-                        <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                        <td style={{ padding: "12px", color: "var(--text-1)" }}>
                           {formatCurrency(item.totalCost)}
                         </td>
-                        <td style={{ padding: "12px", color: "var(--grey-accent-dark)" }}>
+                        <td style={{ padding: "12px", color: "var(--text-1)" }}>
                           {item.supplier}
                         </td>
                       </tr>

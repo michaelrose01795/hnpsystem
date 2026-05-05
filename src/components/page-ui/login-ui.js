@@ -14,10 +14,13 @@ export default function LoginPageUi(props) {
     errorMessage,
     handleDbLogin,
     handleDevLogin,
+    handleLoginIdentityInput,
     handlePasswordReset,
     isResettingPassword,
     loadingDevUsers,
+    loginFullName,
     loginRoleCategories,
+    loginUserId,
     openResetModal,
     password,
     resetEmail,
@@ -27,7 +30,6 @@ export default function LoginPageUi(props) {
     selectedCategory,
     selectedDepartment,
     selectedUser,
-    setEmail,
     setPassword,
     setResetEmail,
     setSelectedCategory,
@@ -51,18 +53,28 @@ export default function LoginPageUi(props) {
           </div>
           <LoginCard className="login-card--auth" title="Login">
             <form onSubmit={handleDbLogin} className="login-form">
-              <div className="login-field">
-                <label htmlFor="email" className="login-label">
-                  Email
+              <div className="login-identity-grid" aria-label="Login user lookup">
+                <label className="login-field login-identity-field" htmlFor="loginFullName">
+                  <span className="login-label">Full name</span>
+                  <input id="loginFullName" name="fullName" type="text" autoComplete="name" placeholder="Enter full name" value={loginFullName} onChange={e => handleLoginIdentityInput("name", e.target.value)} className="app-input" />
                 </label>
-                <input id="email" name="email" type="email" autoComplete="username" placeholder="email@humphriesandpark.co.uk" value={email} onChange={e => setEmail(e.target.value)} className="app-input" required />
+
+                <label className="login-field login-identity-field" htmlFor="loginUserId">
+                  <span className="login-label">User id</span>
+                  <input id="loginUserId" name="userId" type="text" inputMode="numeric" placeholder="Enter user id" value={loginUserId} onChange={e => handleLoginIdentityInput("id", e.target.value)} className="app-input" />
+                </label>
+
+                <label className="login-field login-identity-field login-identity-field--email" htmlFor="email">
+                  <span className="login-label">Email</span>
+                  <input id="email" name="email" type="email" autoComplete="username" placeholder="Enter email" value={email} onChange={e => handleLoginIdentityInput("email", e.target.value)} className="app-input" required />
+                </label>
               </div>
 
               <div className="login-field">
                 <label htmlFor="password" className="login-label">
                   Password
                 </label>
-                <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter your password" value={password} onChange={e => setPassword(e.target.value)} className="app-input" required />
+                <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Enter password" value={password} onChange={e => setPassword(e.target.value)} className="app-input" required />
               </div>
 
               {errorMessage && <p className="login-error" role="alert">
@@ -86,7 +98,7 @@ export default function LoginPageUi(props) {
         {allowDevUserSelection && <div className="login-dev-panel">
             <LoginCard className="login-card--dev" title="Developer Login">
               <div className="login-dev-content">
-                <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} />
+                <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} onSingleUserDepartmentLogin={handleDevLogin} />
 
                 <p className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")}>
                   Loading database users for dev login...

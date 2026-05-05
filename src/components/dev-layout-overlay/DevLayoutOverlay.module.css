@@ -260,6 +260,30 @@
   border-color: rgba(var(--accent-base-rgb), 0.55);
 }
 
+.iconBtnSm {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.kickerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.backgroundBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(var(--accent-base-rgb), 0.35);
+  background: rgba(var(--accent-base-rgb), 0.05);
+}
+
 .controlsBlock {
   display: flex;
   flex-direction: column;

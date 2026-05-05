@@ -284,6 +284,7 @@ export function UserProvider({ children }) {
         roles: resolvedRole ? [String(resolvedRole).toUpperCase()] : [],
         impersonatedRole: resolvedRole,
         department: choice.department || "",
+        customerId: choice.customerId || choice.customer_id || null,
         authUuid: null,
         isDevLogin: true,
       };

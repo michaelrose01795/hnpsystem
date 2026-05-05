@@ -39,6 +39,7 @@ import { useDevLayoutRegistry } from "@/context/DevLayoutRegistryContext";
 import { Button, InputField, StatusMessage } from "@/components/ui";
 import { DropdownField, MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
+import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { SearchBar } from "@/components/ui/searchBarAPI";
@@ -509,6 +510,7 @@ const COLOUR_GROUPS = [
   title: "Text & Borders",
   swatches: [
   "text-1", "text-2", "text-accent",
+  "textfieldbackground",
   "secondary-border", "primary-border"]
 
 },
@@ -612,6 +614,11 @@ const USAGE_REGISTRY = {
   { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" },
   { label: "Job cards myjobs", file: "src/pages/job-cards/myjobs/index.js", route: "/job-cards/myjobs" },
   { label: "Tracking page", file: "src/pages/tracking/index.js", route: "/tracking" }],
+
+  "monthpicker-api": [
+  { label: "MonthPickerField primitive", file: "src/components/ui/monthPickerAPI/MonthPickerField.js" },
+  { label: "MonthPicker primitive", file: "src/components/ui/monthPickerAPI/MonthPicker.js" },
+  { label: "Interactive Showcase Control", file: "src/pages/dev/user-diagnostic.js", route: "/dev/user-diagnostic" }],
 
   "timepicker-api": [
   { label: "TimePickerField primitive", file: "src/components/ui/timePickerAPI/TimePickerField.js" },
@@ -1364,6 +1371,22 @@ function getCalendarShowcaseState(preset = "default") {
   };
 }
 
+function getMonthPickerShowcaseState(preset = "default") {
+  if (preset === "disabled") {
+    return { preset, selectedMonth: "2026-05", disabled: true };
+  }
+  if (preset === "error") {
+    return { preset, selectedMonth: "", disabled: false };
+  }
+  if (preset === "filled") {
+    return { preset, selectedMonth: new Date().toISOString().slice(0, 7), disabled: false };
+  }
+  if (preset === "edge") {
+    return { preset, selectedMonth: "3000-12", disabled: false };
+  }
+  return { preset, selectedMonth: "2026-05", disabled: false };
+}
+
 function getTimePickerShowcaseState(preset = "default") {
   if (preset === "disabled") {
     return { preset, selectedTime: "", minuteStep: 15, disabled: true };
@@ -1540,6 +1563,7 @@ const SHOWCASE_CATALOG = {
   "multiselect-dropdown": { category: "Dropdowns & Selects", scope: "global", terms: "multiselect multi select dropdown tag chip department" },
   // ── Calendar & Time ──
   "calendar-api": { category: "Calendar & Time", scope: "global", terms: "calendar date picker datepicker range highlight disabled" },
+  "monthpicker-api": { category: "Calendar & Time", scope: "global", terms: "month picker monthpicker year previous next dropdown" },
   "timepicker-api": { category: "Calendar & Time", scope: "global", terms: "time picker timepicker clock hour minute step" },
   // ── Search ──
   "searchbar-api": { category: "Search", scope: "global", terms: "search bar searchbar query filter clear loading" },
@@ -1770,6 +1794,7 @@ function GlobalUiShowcase() {
   const [dropdownState, setDropdownState] = useState(() => getDropdownShowcaseState());
   const [multiSelectState, setMultiSelectState] = useState(() => getMultiSelectShowcaseState());
   const [calendarState, setCalendarState] = useState(() => getCalendarShowcaseState());
+  const [monthPickerState, setMonthPickerState] = useState(() => getMonthPickerShowcaseState());
   const [timePickerState, setTimePickerState] = useState(() => getTimePickerShowcaseState());
   const [inputState, setInputState] = useState(() => getInputShowcaseState());
   const [tabsState, setTabsState] = useState(() => getTabsShowcaseState());
@@ -1898,6 +1923,7 @@ function GlobalUiShowcase() {
         .user-diagnostic-showcase .app-input,
         .user-diagnostic-showcase .dropdown-api__control,
         .user-diagnostic-showcase .calendar-api__control,
+        .user-diagnostic-showcase .monthpicker-api__control,
         .user-diagnostic-showcase .timepicker-api__control,
         .user-diagnostic-showcase .searchbar-api,
         .user-diagnostic-showcase input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
@@ -2043,6 +2069,7 @@ function GlobalUiShowcase() {
         }
         .showcase-field--error .dropdown-api__control,
         .showcase-field--error .calendar-api__control,
+        .showcase-field--error .monthpicker-api__control,
         .showcase-field--error .timepicker-api__control,
         .showcase-field--error .searchbar-api {
           border: none;
@@ -2207,6 +2234,17 @@ function GlobalUiShowcase() {
                 disabled={calendarState.disabled}
                 highlightedDates={calendarHighlightedDates}
                 disabledDates={calendarDisabledDates} />
+            </div>
+          </div>
+          <div className="showcase-comparison-item showcase-comparison-item--wide">
+            <div className="showcase-comparison-label">Month Picker</div>
+            <div className="showcase-comparison-control">
+              <MonthPickerField
+                value={monthPickerState.selectedMonth}
+                onValueChange={(value) => setMonthPickerState((current) => ({ ...current, selectedMonth: value }))}
+                disabled={monthPickerState.disabled}
+                minYear={2020}
+                maxYear={2032} />
             </div>
           </div>
           <div className="showcase-comparison-item">
@@ -2721,6 +2759,38 @@ function GlobalUiShowcase() {
             <div className="showcase-status-tone showcase-status-tone--red">Red selection token</div>
             }
           </div>
+        </div>
+      </ShowcaseSection>
+      }
+      {isSectionVisible("monthpicker-api") &&
+      <ShowcaseSection title="Month Picker (.monthpicker-api)" itemKey="monthpicker-api" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+        <div className="showcase-controls">
+          <ShowcaseControlRow label="State preset">
+            <DropdownField
+              value={monthPickerState.preset}
+              onValueChange={(value) => setMonthPickerState(getMonthPickerShowcaseState(value))}
+              options={SHOWCASE_PRESET_OPTIONS}
+              placeholder="Choose preset" />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Selected month">
+            <InputField
+              type="month"
+              value={monthPickerState.selectedMonth}
+              onChange={(event) => setMonthPickerState((current) => ({ ...current, selectedMonth: event.target.value }))} />
+          </ShowcaseControlRow>
+          <ShowcaseControlRow label="Reset">
+            <Button type="button" size="xs" variant="ghost" onClick={() => setMonthPickerState(getMonthPickerShowcaseState())}>Reset</Button>
+          </ShowcaseControlRow>
+        </div>
+        <div className="showcase-preview-stack">
+          <MonthPickerField
+            label="Sample month"
+            value={monthPickerState.selectedMonth}
+            onValueChange={(value) => setMonthPickerState((current) => ({ ...current, selectedMonth: value }))}
+            disabled={monthPickerState.disabled}
+            minYear={2020}
+            maxYear={2032}
+            helperText="The outer month picker shell is 44px high; Prev, month/year, and Next are 32px buttons." />
         </div>
       </ShowcaseSection>
       }

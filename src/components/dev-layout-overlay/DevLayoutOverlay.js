@@ -914,7 +914,18 @@ export default function DevLayoutOverlay() {
         <div className={styles.panelScroll}>
           <div className={styles.panelHeader}>
             <div className={styles.panelTitleBlock}>
-              <p className={styles.kicker}>Dev Layout Inspector</p>
+              <div className={styles.kickerRow}>
+                <p className={styles.kicker}>Dev Layout Inspector</p>
+                <button
+                  type="button"
+                  className={`${styles.iconBtn} ${styles.iconBtnSm}`.trim()}
+                  onClick={() => setPanelOpen(false)}
+                  aria-label="Minimise dev overlay panel"
+                  title="Minimise"
+                >
+                  −
+                </button>
+              </div>
               <h3 className={styles.title}>
                 {scopedSelected
                   ? `${scopedSelected.route} :: ${scopedSelected.number} (${scopedSelected.key})`
@@ -934,18 +945,21 @@ export default function DevLayoutOverlay() {
                   : `Route ${currentRoute} · ${stats.total} section${stats.total === 1 ? "" : "s"} detected`}
               </p>
             </div>
-            <div className={styles.panelHeaderActions}>
-              <button
-                type="button"
-                className={`${styles.iconBtn}`.trim()}
-                onClick={() => setPanelOpen(false)}
-                aria-label="Minimise dev overlay panel"
-                title="Minimise"
-              >
-                −
-              </button>
-            </div>
           </div>
+
+          {scopedSelected && (
+            <div className={styles.backgroundBlock}>
+              <p className={styles.blockTitle}>Background</p>
+              <div className={styles.grid}>
+                <span className={styles.labelKey}>Name</span>
+                <span className={styles.value}>{scopedSelected.key}</span>
+                <span className={styles.labelKey}>Colour token</span>
+                <span className={`${styles.value} ${styles.codeValue}`.trim()}>
+                  {scopedSelected.backgroundToken || "—"}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className={styles.controlsBlock}>
             <div className={styles.controlRow}>

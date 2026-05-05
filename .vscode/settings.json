@@ -1,4 +1,10 @@
 {
     "chat.agent.maxRequests": 100000000,
-    "remote.autoForwardPortsFallback": 0
+    "remote.autoForwardPortsFallback": 0,
+    "terminal.integrated.env.linux": {
+        "PATH": "${workspaceFolder}/tools/bin:${env:PATH}"
+    },
+    "terminal.integrated.env.osx": {
+        "PATH": "${workspaceFolder}/tools/bin:${env:PATH}"
+    }
 }

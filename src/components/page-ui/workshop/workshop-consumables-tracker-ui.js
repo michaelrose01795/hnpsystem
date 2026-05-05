@@ -1,4 +1,5 @@
-import LayerSurface from "@/components/ui/LayerSurface"; // file location: src/components/page-ui/workshop/workshop-consumables-tracker-ui.js
+import LayerTheme from "@/components/ui/LayerTheme"; // file location: src/components/page-ui/workshop/workshop-consumables-tracker-ui.js
+import Button from "@/components/ui/Button";
 
 export default function ConsumablesTrackerPageUi(props) {
   const {
@@ -13,7 +14,6 @@ export default function ConsumablesTrackerPageUi(props) {
     budgetSaveError,
     budgetSaveMessage,
     budgetSaving,
-    canAdvanceToNextMonth,
     cardStyle,
     closeHistoryModal,
     closeOrderModal,
@@ -33,7 +33,7 @@ export default function ConsumablesTrackerPageUi(props) {
     handleBudgetInputChange,
     handleBudgetSave,
     handleEditedOrder,
-    handleMonthChange,
+    handleMonthValueChange,
     handleOrderFormChange,
     handleRequestOrder,
     handleSameDetails,
@@ -45,8 +45,10 @@ export default function ConsumablesTrackerPageUi(props) {
     logsError,
     logsLoading,
     logsSummary,
+    maxMonthValue,
     monthLabel,
     monthlyLogs,
+    MonthPickerField,
     mutedTextColor,
     openHistoryModal,
     openOrderModal,
@@ -72,6 +74,7 @@ export default function ConsumablesTrackerPageUi(props) {
     scheduledTableBodyStyle,
     searchQuery,
     sectionTitleStyle,
+    selectedMonthValue,
     setSearchQuery,
     setShowDuplicateModal,
     setShowEditForm,
@@ -80,7 +83,6 @@ export default function ConsumablesTrackerPageUi(props) {
     showEditForm,
     showStockCheck,
     statusBadgeStyles,
-    stockCheckButtonStyle,
     tableHeaderColor,
     techRequests,
     themedBudgetInputStyle,
@@ -341,7 +343,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   </form>}
               </div>
             </div>}
-            <LayerSurface as="div" sectionKey="workshop-consumables-budget-card" parentKey="workshop-consumables-tracker-content" style={{
+            <LayerTheme as="div" sectionKey="workshop-consumables-budget-card" parentKey="workshop-consumables-tracker-content" style={{
               ...cardStyle
             }}>
               <div data-presentation="workshop-consumables-budget" style={{
@@ -385,9 +387,9 @@ export default function ConsumablesTrackerPageUi(props) {
                       </strong>
                     </div>
                   </div>
-                  <button type="button" onClick={() => setShowStockCheck(true)} style={stockCheckButtonStyle}>
+                  <Button type="button" variant="primary" onClick={() => setShowStockCheck(true)}>
                     Stock Check
-                  </button>
+                  </Button>
                 </div>
 
                 <div style={{
@@ -400,36 +402,14 @@ export default function ConsumablesTrackerPageUi(props) {
                   <div style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: "8px"
+                    minWidth: "280px",
+                    width: "min(100%, 360px)"
                   }}>
-                    <button type="button" onClick={() => handleMonthChange(-1)} style={{
-                      padding: "6px 10px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--primary)",
-                      background: "var(--surface)",
-                      color: "var(--text-1)",
-                      fontWeight: 600,
-                      cursor: "pointer"
-                    }}>
-                      ← Previous
-                    </button>
-                    <span style={{
-                      fontWeight: 600,
-                      color: "var(--text-1)"
-                    }}>
-                      {monthLabel}
-                    </span>
-                    <button type="button" onClick={() => handleMonthChange(1)} disabled={!canAdvanceToNextMonth} style={{
-                      padding: "6px 10px",
-                      borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--primary)",
-                      background: canAdvanceToNextMonth ? "var(--surface)" : "rgba(var(--primary-rgb),0.2)",
-                      color: canAdvanceToNextMonth ? "var(--text-1)" : "var(--text-1)",
-                      fontWeight: 600,
-                      cursor: canAdvanceToNextMonth ? "pointer" : "not-allowed"
-                    }}>
-                      Next →
-                    </button>
+                    <MonthPickerField
+                      value={selectedMonthValue}
+                      onValueChange={handleMonthValueChange}
+                      max={maxMonthValue}
+                      aria-label={`Select consumables month, currently ${monthLabel}`} />
                   </div>
                   <div style={{
                     display: "flex",
@@ -489,9 +469,9 @@ export default function ConsumablesTrackerPageUi(props) {
                   }}>{financialError}</p>}
                 </div>
               </div>
-            </LayerSurface>
+            </LayerTheme>
 
-            <LayerSurface as="div" sectionKey="workshop-consumables-logs-card" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle }}>
+            <LayerTheme as="div" sectionKey="workshop-consumables-logs-card" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle }}>
               <div data-presentation="workshop-consumables-logs" style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -680,9 +660,9 @@ export default function ConsumablesTrackerPageUi(props) {
                   </tbody>
                 </table>
               </div>
-            </LayerSurface>
+            </LayerTheme>
 
-              <LayerSurface as="div" sectionKey="workshop-consumables-totals-card" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle }}>
+              <LayerTheme as="div" sectionKey="workshop-consumables-totals-card" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle }}>
                 <div data-presentation="workshop-consumables-totals" style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
@@ -755,9 +735,9 @@ export default function ConsumablesTrackerPageUi(props) {
                   </h2>
                 </div>
               </div>
-              </LayerSurface>
+              </LayerTheme>
 
-            <LayerSurface as="div" sectionKey="workshop-consumables-scheduled-card" parentKey="workshop-consumables-tracker-content" style={{
+            <LayerTheme as="div" sectionKey="workshop-consumables-scheduled-card" parentKey="workshop-consumables-tracker-content" style={{
               ...cardStyle
             }}>
               <div data-presentation="workshop-consumables-scheduled" style={{
@@ -925,9 +905,9 @@ export default function ConsumablesTrackerPageUi(props) {
                 </table>
                 </div>
               </div>
-            </LayerSurface>
+            </LayerTheme>
 
-          <LayerSurface as="div" sectionKey="workshop-consumables-requests-card" parentKey="workshop-consumables-tracker-content" style={{
+          <LayerTheme as="div" sectionKey="workshop-consumables-requests-card" parentKey="workshop-consumables-tracker-content" style={{
               ...cardStyle
             }}>
             <div data-presentation="workshop-consumables-requests" style={{
@@ -1084,7 +1064,7 @@ export default function ConsumablesTrackerPageUi(props) {
                 </tbody>
               </table>
             </div>
-          </LayerSurface>
+          </LayerTheme>
         </ContentWidth>
       </PageShell>
     </>; // render extracted page section.

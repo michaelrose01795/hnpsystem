@@ -344,7 +344,7 @@ export default function Sidebar({
               }}
             >
               <div className="app-sidebar__section-title">
-                My Dashboard
+                Dashboard
               </div>
               {onToggle && (
                 <button
@@ -358,8 +358,10 @@ export default function Sidebar({
               )}
             </div>
             {dashboardShortcuts.map((shortcut) => {
+              const exactOnly = shortcut.href === "/dashboard";
               const isActive =
-                pathname === shortcut.href || (pathname && pathname.startsWith(`${shortcut.href}/`));
+                pathname === shortcut.href ||
+                (!exactOnly && pathname && pathname.startsWith(`${shortcut.href}/`));
               return (
                 <Link
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}

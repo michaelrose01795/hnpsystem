@@ -256,6 +256,7 @@
   --control-bg: var(--secondary);
   --control-bg-hover: var(--secondary-hover);
   --control-bg-active: var(--secondary-hover);
+  --textfieldbackground: #9ca3af;
   --control-muted-text: var(--text-1);
   --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);
@@ -566,6 +567,7 @@
   --control-bg: var(--secondary);
   --control-bg-hover: var(--secondary-hover);
   --control-bg-active: var(--secondary-hover);
+  --textfieldbackground: #a1a1aa;
   --control-muted-text: var(--text-1);
   --control-icon: var(--text-1);
   --control-menu-bg: var(--surface);

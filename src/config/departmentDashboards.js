@@ -2,7 +2,14 @@ export const departmentDashboardShortcuts = [
   {
     label: "Retail Dashboard",
     href: "/dashboard",
-    roles: ["service", "service department", "service advisor"],
+    roles: [
+      "service",
+      "service department",
+      "service advisor",
+      "service manager",
+      "workshop manager",
+      "after sales director",
+    ],
     description: "Live retail and service overview",
   },
   {

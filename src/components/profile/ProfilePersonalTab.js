@@ -4,11 +4,10 @@ import usePersonalDashboard from "@/hooks/usePersonalDashboard";
 import usePersonalTabModel from "@/hooks/usePersonalTabModel";
 import usePersonalWidgets from "@/hooks/usePersonalWidgets";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import PopupModal from "@/components/popups/popupStyleApi";
 import WidgetSettingsModal from "@/components/profile/personal/WidgetSettingsModal";
 import PersonalSettingsPopup from "@/components/profile/personal/PersonalSettingsPopup";
-import { formatMonthLabel, normaliseMonthKey, shiftMonthKey } from "@/lib/profile/calculations";
+import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { generateHeadline, generateInsights } from "@/lib/profile/personalInsights";
 import { PERSONAL_WIDGET_DEFINITIONS, PERSONAL_WIDGET_TYPE_OPTIONS, sortWidgetsForDisplay } from "@/lib/profile/personalWidgets";
 import Button from "@/components/ui/Button";
@@ -167,63 +166,6 @@ function PasscodeModal({
         </div>
       </form>
     </PopupModal>
-  );
-}
-
-/* ── MonthPicker ──────────────────────────────────────────────── */
-
-function buildMonthOptions(centerMonthKey, radius = 12) {
-  return Array.from({ length: radius * 2 + 1 }, (_, index) => {
-    const offset = index - radius;
-    const monthKey = shiftMonthKey(centerMonthKey, offset);
-    return {
-      value: monthKey,
-      label: formatMonthLabel(monthKey),
-    };
-  });
-}
-
-function MonthPicker({
-  value,
-  onChange,
-  compact = false,
-  align = "left",
-  showLabel = true,
-  width = null,
-}) {
-  const monthKey = normaliseMonthKey(value);
-  const monthOptions = useMemo(() => buildMonthOptions(monthKey, 12), [monthKey]);
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        justifyContent: align === "right" ? "flex-end" : "flex-start",
-        gap: "6px",
-      }}
-    >
-      {showLabel ? (
-        <div style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--text-1)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-          Month
-        </div>
-      ) : null}
-      <DropdownField
-        value={monthKey}
-        onChange={(event) => onChange?.(normaliseMonthKey(event.target.value, monthKey))}
-        options={monthOptions}
-        ariaLabel="Selected month"
-        size="sm"
-        style={{
-          width: compact ? "100%" : width || "190px",
-          minWidth: compact ? "140px" : width || "190px",
-          flex: compact ? "1 1 180px" : "0 0 auto",
-        }}
-        controlStyle={{ justifyContent: "center" }}
-        valueStyle={{ justifyContent: "center", whiteSpace: "nowrap" }}
-      />
-    </div>
   );
 }
 
@@ -717,13 +659,12 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
     return (
       <DevLayoutSection sectionKey="profile-personal-header-actions" parentKey="profile-tab-actions" sectionType="toolbar">
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <MonthPicker
-            value={finance.model.selectedMonthKey}
-            onChange={finance.setSelectedMonth}
-            align="right"
-            showLabel={false}
-            width="190px"
-          />
+          <div style={{ width: "min(100%, 320px)", minWidth: "280px" }}>
+            <MonthPickerField
+              value={finance.model.selectedMonthKey}
+              onValueChange={finance.setSelectedMonth}
+              aria-label={`Select personal finance month, currently ${finance.model.selectedMonthKey}`} />
+          </div>
           <Button
             type="button"
             variant="secondary"

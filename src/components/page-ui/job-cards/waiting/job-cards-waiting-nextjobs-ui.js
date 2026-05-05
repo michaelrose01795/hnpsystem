@@ -2,6 +2,7 @@
 
 import React from "react"; // support extracted fragments.
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical "theme" layer primitive (alternates with LayerSurface)
 
 export default function NextJobsPageUi(props) {
   const {
@@ -84,7 +85,7 @@ export default function NextJobsPageUi(props) {
   }}>
         
         {/* ✅ Outstanding Jobs Section with Drop Zone */}
-            <LayerSurface sectionKey="nextjobs-outstanding" parentKey="app-layout-page-card" sectionType="content-card" backgroundToken="page-card-bg-alt" padding="16px" gap={undefined} style={{
+            <LayerTheme sectionKey="nextjobs-outstanding" parentKey="app-layout-page-card" sectionType="content-card" backgroundToken="theme" padding="16px" gap={undefined} style={{
       marginBottom: "12px",
       // Drop-target outline is a state indicator (drag-over highlight), not a surface border. Kept per rules.
       outline: activeDropTarget === "outstanding" ? "3px solid var(--primary)" : "none",
@@ -330,10 +331,10 @@ export default function NextJobsPageUi(props) {
                 </div>}
             </div>
           </div>
-        </LayerSurface>
+        </LayerTheme>
 
         {/* ✅ Technicians Grid Section */}
-            <LayerSurface sectionKey="nextjobs-technicians" parentKey="app-layout-page-card" shell sectionType="content-card" backgroundToken="page-card-bg-alt" padding="24px" gap="24px" style={{
+            <LayerTheme sectionKey="nextjobs-technicians" parentKey="app-layout-page-card" shell sectionType="content-card" backgroundToken="theme" padding="24px" gap="24px" style={{
       flex: "1 0 auto"
     }}>
           
@@ -365,7 +366,7 @@ export default function NextJobsPageUi(props) {
                 {assignedMotJobs.slice(0, 2).map(renderAssigneePanel)}
               </div>
             </div>}
-        </LayerSurface>
+        </LayerTheme>
 
         {isDragActive && draggingJob && <div aria-hidden="true" style={{
       position: "fixed",

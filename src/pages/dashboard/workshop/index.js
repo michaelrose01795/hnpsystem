@@ -20,9 +20,10 @@ const MetricCard = ({ sectionKey, parentKey, label, value, helper }) => (
     sectionKey={sectionKey}
     parentKey={parentKey}
     sectionType="stat-card"
-    backgroundToken="stat-surface"
+    backgroundToken="surface"
     radius="var(--radius-sm)"
     style={{
+      background: "var(--surface)",
       minWidth: "140px",
       flex: "1 1 140px",
     }}
@@ -43,8 +44,9 @@ const Section = ({ sectionKey, parentKey, title, subtitle, children, style }) =>
     sectionKey={sectionKey}
     parentKey={parentKey}
     sectionType="section-shell"
+    backgroundToken="theme"
     gap="12px"
-    style={style}
+    style={{ background: "var(--theme)", ...style }}
   >
     <div>
       <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accentText)" }}>{title}</h2>
@@ -58,16 +60,21 @@ const Section = ({ sectionKey, parentKey, title, subtitle, children, style }) =>
 // so it is a LayerTheme. Internal chart bars are widget elements, not surfaces.
 const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
   const maxValue = Math.max(1, ...(data || []).map((item) => item.count));
+  const total = (data || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
   return (
     <LayerTheme
       sectionKey={sectionKey}
       parentKey={parentKey}
+      backgroundToken="surface"
       radius="var(--radius-sm)"
       padding="16px"
       gap="10px"
-      style={{ flex: 1 }}
+      style={{ background: "var(--surface)", flex: 1 }}
     >
-      <p style={{ margin: 0, textTransform: "uppercase", color: "var(--accentText)", fontSize: "0.75rem" }}>{title}</p>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+        <p style={{ margin: 0, textTransform: "uppercase", color: "var(--accentText)", fontSize: "0.75rem" }}>{title}</p>
+        <strong style={{ color: "var(--accentText)", fontSize: "0.9rem", whiteSpace: "nowrap" }}>{total} total</strong>
+      </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         {(data || []).map((point) => (
           <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -76,7 +83,7 @@ const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
               style={{
                 flex: 1,
                 height: 8,
-                background: "var(--surface)",
+                background: "var(--theme)",
                 borderRadius: 4,
                 overflow: "hidden",
               }}
@@ -98,12 +105,24 @@ const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
 };
 
 const ProgressBar = ({ completed, target }) => {
-  const safeTarget = target > 0 ? target : 1;
+  const safeTarget = Math.max(target, completed, 1);
   const percentage = Math.min(100, Math.round((completed / safeTarget) * 100));
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "10px" }}>
+        {[
+          ["Completed", completed],
+          ["Scheduled", target],
+          ["Rate", `${percentage}%`],
+        ].map(([label, value]) => (
+          <div key={label} style={{ background: "var(--surface)", borderRadius: "var(--radius-sm)", padding: "10px" }}>
+            <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</p>
+            <strong style={{ display: "block", marginTop: "4px", color: "var(--accentText)", fontSize: "1.15rem" }}>{value}</strong>
+          </div>
+        ))}
+      </div>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--text-1)" }}>
-        <span>Completed</span>
+        <span>{completed} completed from {target} scheduled</span>
         <span>{percentage}%</span>
       </div>
       <div style={{ width: "100%", height: 10, background: "var(--theme)", borderRadius: 5 }}>
@@ -134,14 +153,14 @@ const defaultData = {
 const twoColSplitStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-  gap: "16px",
+  gap: "10px",
   alignItems: "stretch",
 };
 
 const listViewportStyle = {
   display: "flex",
   flexDirection: "column",
-  gap: "12px",
+  gap: "10px",
   maxHeight: "276px",
   overflowY: "auto",
   paddingRight: "2px",

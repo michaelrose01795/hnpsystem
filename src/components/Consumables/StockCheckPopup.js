@@ -1,6 +1,6 @@
 // file location: src/components/Consumables/StockCheckPopup.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import ModalPortal from "@/components/popups/ModalPortal";
+import PopupModal from "@/components/popups/popupStyleApi";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import Button from "@/components/ui/Button";
 import { SearchBar } from "@/components/ui/searchBarAPI";
@@ -11,14 +11,8 @@ const consumableNameCollator = new Intl.Collator(undefined, {
 });
 
 const modalStyle = {
-  borderRadius: "var(--radius-xl)",
-  width: "min(1120px, calc(100vw - 32px))",
-  maxWidth: "1120px",
-  maxHeight: "calc(100vh - 32px)",
+  width: "min(100%, 1120px)",
   overflow: "hidden",
-  border: "none",
-  background: "var(--page-card-bg)",
-  boxShadow: "var(--shadow-xl)",
   padding: "clamp(16px, 2.4vw, 24px)",
   display: "flex",
   flexDirection: "column",
@@ -609,21 +603,13 @@ function StockCheckPopup({
 
   return (
     <>
-    <ModalPortal>
-      <div
-        className="popup-backdrop"
-        style={{
-          zIndex: 1400,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "16px",
-          overflowY: "auto",
-        }}
-        role="dialog"
-        aria-modal="true"
-      >
-        <div className="popup-card" style={modalStyle}>
+    <PopupModal
+      isOpen={open}
+      onClose={closePopup}
+      closeOnBackdrop={false}
+      ariaLabel="Stock Check"
+      cardStyle={modalStyle}
+    >
         <div
           style={{
             ...subtleSectionStyle,
@@ -1032,9 +1018,7 @@ function StockCheckPopup({
             </Button>
           </div>
         </div>
-        </div>
-      </div>
-    </ModalPortal>
+    </PopupModal>
     <ConfirmationDialog
       isOpen={!!confirmDialog}
       message={confirmDialog?.message}

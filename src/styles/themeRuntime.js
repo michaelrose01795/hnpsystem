@@ -251,6 +251,7 @@ export const buildThemeRuntime = ({ resolvedMode = "light", accentName = DEFAULT
       "--control-border": `1px solid ${accentSurfaceHover}`,
       "--control-border-hover": accentSurfaceHover,
       "--control-border-focus": accentSurfaceHover,
+      "--textfieldbackground": resolvedMode === "dark" ? "#a1a1aa" : "#9ca3af",
       "--control-ring": `0 0 0 3px rgba(${accentRgb}, ${resolvedMode === "dark" ? "0.18" : "0.12"})`,
       "--control-menu-shadow": "none",
       "--row-background": surfaceMain,

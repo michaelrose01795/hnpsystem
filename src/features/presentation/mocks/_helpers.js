@@ -12,6 +12,7 @@ import { ContentWidth, PageShell, SectionShell } from "@/components/ui";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { CalendarField } from "@/components/ui/calendarAPI";
+import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import FilterToolbarRow from "@/components/ui/layout-system/FilterToolbarRow";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -60,6 +61,7 @@ export const SHARED_UI_DEPS = {
   DevLayoutSection,
   DropdownField,
   CalendarField,
+  MonthPickerField,
   FilterToolbarRow,
   InputField,
   Link,

@@ -1,5 +1,56 @@
 // file location: src/components/page-ui/dashboard/workshop/dashboard-workshop-ui.js
 
+const worklistRowStyle = {
+  display: "grid",
+  gridTemplateColumns: "minmax(56px, 0.65fr) minmax(0, 1fr) minmax(70px, 0.9fr) auto",
+  alignItems: "center",
+  columnGap: "10px",
+  minHeight: "54px",
+  background: "var(--surface)",
+};
+
+const rowPrimaryTextStyle = {
+  color: "var(--accentText)",
+  fontSize: "0.95rem",
+  fontWeight: 700,
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const rowSecondaryTextStyle = {
+  color: "var(--text-1)",
+  fontSize: "0.82rem",
+  minWidth: 0,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const rowPillStyle = {
+  justifySelf: "start",
+  color: "var(--text-2)",
+  background: "var(--accentText)",
+  borderRadius: "var(--radius-xs)",
+  padding: "5px 9px",
+  fontSize: "0.75rem",
+  fontWeight: 700,
+  maxWidth: "100%",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+const rowTimeStyle = {
+  color: "var(--text-1)",
+  fontSize: "0.78rem",
+  fontWeight: 600,
+  justifySelf: "end",
+  textAlign: "right",
+  whiteSpace: "nowrap",
+};
+
 export default function WorkshopDashboardUi(props) {
   const {
     ContentWidth,
@@ -23,7 +74,7 @@ export default function WorkshopDashboardUi(props) {
     case "section1":
       return (
         <PageShell sectionKey="workshop-dashboard-shell">
-          <ContentWidth sectionKey="workshop-dashboard-content" parentKey="workshop-dashboard-shell" widthMode="content">
+          <ContentWidth sectionKey="workshop-dashboard-content" parentKey="workshop-dashboard-shell" widthMode="content" style={{ gap: "10px" }}>
             <Section sectionKey="workshop-dashboard-daily-checkpoints" parentKey="workshop-dashboard-content" title="Daily checkpoints">
               {loading ? (
                 <p style={{ color: "var(--text-1)" }}>Loading today's metrics...</p>
@@ -37,7 +88,7 @@ export default function WorkshopDashboardUi(props) {
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-                    gap: "12px",
+                    gap: "10px",
                   }}
                 >
                   <MetricCard sectionKey="workshop-dashboard-metric-in-progress" parentKey="workshop-dashboard-checkpoints-grid" label="Jobs in progress" value={dashboardData.dailySummary.inProgress} helper="Vehicles currently on the bay" />
@@ -70,22 +121,20 @@ export default function WorkshopDashboardUi(props) {
                       dashboardData.queue.map((job) => (
                         <LayerTheme
                           key={job.job_number}
+                          backgroundToken="surface"
                           radius="var(--radius-sm)"
-                          padding="12px"
-                          gap="8px"
-                          style={{ minHeight: "84px" }}
+                          padding="10px 12px"
+                          gap="0"
+                          style={worklistRowStyle}
                         >
-                          <div>
-                            <strong style={{ color: "var(--accentText)", fontSize: "0.95rem" }}>
-                              {job.job_number || "-"} - {job.vehicle_reg || "TBC"}
-                            </strong>
-                            <div style={{ fontSize: "0.85rem", color: "var(--text-1)", marginTop: "4px" }}>
-                              {job.status || "Status unknown"}
-                            </div>
-                          </div>
-                          <span style={{ fontSize: "0.8rem", color: "var(--text-1)" }}>
-                            Checked in {formatTime(job.checked_in_at)}
+                          <strong style={rowPrimaryTextStyle}>{job.job_number || "-"}</strong>
+                          <span style={rowSecondaryTextStyle}>
+                            {job.vehicle_reg || "TBC"}{job.vehicle_make_model ? ` - ${job.vehicle_make_model}` : ""}
                           </span>
+                          <span style={rowPillStyle}>{job.waiting_status || job.status || "Status unknown"}</span>
+                          <time dateTime={job.checked_in_at || undefined} style={rowTimeStyle}>
+                            {job.checked_in_at ? `In ${formatTime(job.checked_in_at)}` : "Not checked in"}
+                          </time>
                         </LayerTheme>
                       ))
                     )}
@@ -103,20 +152,20 @@ export default function WorkshopDashboardUi(props) {
                     {dashboardData.outstandingVhc.map((job) => (
                       <LayerTheme
                         key={job.job_number}
+                        backgroundToken="surface"
                         radius="var(--radius-sm)"
-                        padding="12px"
-                        gap="8px"
-                        style={{ minHeight: "84px" }}
+                        padding="10px 12px"
+                        gap="0"
+                        style={worklistRowStyle}
                       >
-                        <div>
-                          <strong style={{ fontSize: "0.95rem" }}>{job.job_number || "-"}</strong>
-                          <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "0.85rem" }}>
-                            {job.vehicle_reg || "Registration missing"}
-                          </p>
-                        </div>
-                        <span style={{ fontSize: "0.8rem", color: "var(--text-1)" }}>
-                          Checked in {formatTime(job.checked_in_at)}
+                        <strong style={rowPrimaryTextStyle}>{job.job_number || "-"}</strong>
+                        <span style={rowSecondaryTextStyle}>
+                          {job.vehicle_reg || "Registration missing"}{job.vehicle_make_model ? ` - ${job.vehicle_make_model}` : ""}
                         </span>
+                        <span style={rowPillStyle}>{job.waiting_status || job.status || "VHC required"}</span>
+                        <time dateTime={job.checked_in_at || undefined} style={rowTimeStyle}>
+                          {job.checked_in_at ? `In ${formatTime(job.checked_in_at)}` : "Not checked in"}
+                        </time>
                       </LayerTheme>
                     ))}
                   </div>

@@ -1,0 +1,243 @@
+UI THEME / SURFACE REVIEW — SIDEBAR PAGES PER USER
+
+====================================================
+GENERAL  (shared across roles — review once)
+====================================================
+
+- /messages
+Within /messages :: 1.2.2.1.1.1.1.1 (messages-threads-card) section where the "Select +" buttons used to be at the top is a card still within the code, remove this card section so its jsut the /messages :: 1.2.2.1.1.1.1.1.1 (messages-thread-search) — “Select +” and /messages :: 1.2.2.1.1.1.1.1.2.1 (messages-thread-pins) — “System”, and /messages :: 1.2.2.1.1.1.1.1.2 (messages-thread-list) section wihtin the "/messages :: 1.2.2.1.1.1.1.1 (messages-threads-card)" section
+
+Remove the underline for the users name within the "/messages :: 1.2.2.1.1.1.2.1 (messages-thread-header) — “Customer · Callum Wright Edit”" section. have it so for a customer chat section hide the "Edit" button wihtin this section as users cant be removed or added from this groupcaht type etc.
+
+Hvae it so the /message page is a fixed height, have this this page always go to the bottom of the sidebar section no matter the contents within this page. dont make this change to the other pages.
+
+Have it so "/messages :: 1.2.1.1.1.1.1.1 (messages-threads-card)", "/messages :: 1.2.2.1.1.1.2 (messages-conversation-panel)", /messages :: 1.2.1.1.1.1.2 (messages-conversation-panel) use "--theme" colour, and the rows "/messages :: 1.2.1.1.1.1.1.1.2.7.1 (messages-thread-card-8) — “PartsM 1”" when not selected use "--surface background colour.
+
+- /tracking
+Move the search bar, and the two status dropdowns (All statuses, All car locations) within the middle of the "Key/Parking, Equipment/Tools, Oil/Stock" (or ""Key/Parking") tab group and the "Refresh, Add location" buttons dont make the dropdowns smaller in width just the search bar smaller in width not the tab group or the "Refresh, Add location" buttons either, just the search bar smaller to also fit on the smaller screens, if to small screen is being used then move it back to how it currently is or have it a new layout for the really small screens eg vertical phone mode.
+
+Have it so the rows for example "/tracking :: 1.2.1.1.1.1.3.1 (tracking-active-jobs-card-1) — “00078 • WP10VPE • Daniel Carter TOYOTA • BLUE Last moved 6d…”" use have differnt sections within it, for example dont change the layout of the sections atm, but add a "--surface colour background behind the section like "00078 • WP10VPE • Daniel Carter, TOYOTA • BLUE" in one section, then "Key location, Service showroom" ion another and "Car Location in another etc. make sure the "/tracking :: 1.2.2.1.1.1.3.1 (tracking-active-jobs-card-1) — “00078 • WP10VPE • Daniel Carter TOYOTA • BLUE Last moved 6d…”" sections are using "--theme" colour background as well. do this change for "/tracking :: 1.2.2.1.1.1.3.1 (tracking-equipment-card-1) — “Workshop Heater Due in 171 days Last checked 23 Oct 2025 Ne…”" cards as well, make those card backgrounds "--theme" without card borders as well, and the same again for "/tracking :: 1.2.1.1.1.1.3.1 (tracking-oil-card-1) — “5W-30 Due in 28 days Stock amount 4500 Last check 31 Dec 20…”" rows within that section.
+
+- /profile
+have it so "/profile :: 1.2.1.1.1.1.4 (profile-work-attendance-history-group)" and "/profile :: 1.2.1.1.1.1.2 (profile-work-staff-vehicles-group)", "/profile :: 1.2.2.1.1.2.1 (profile-work-kpi-card-group)","/profile :: 1.2.2.1.1.2.6 (profile-work-summary-card-group)" use "--theme" coour background. 
+
+move the "Recurring Rules" to above the "Overtime History" section 
+
+change it so within the "Add overtime" popup remove the "Bulk Overtime" tab section and replace it within "Recurring Rules" seciton showing "Recurring Overtime Rules" content within the "Add overtime" popup. delete the " Recurring Overtime Rules" popup as its being used within the "" popup instead. 
+
+have it so within the the "Add overtime" popup the "Single entry" tab button is named "Entry" and the "Recurring Rules" is named "Recurring". have it so those two tab sectiosn follows the tab global style. remove "Type is saved as overtime. Logout or total hours can be calculated from the other fields." text. remove the "Cancel" button and move the "Add overtime" or "Add Rule" within the same row as the "Add overtime" or ""Recurring Rules" text title have the buttons next to the the "X" button. make sure the popup follows the global.css and change the "Add overtime" popup name to "Overtime"
+
+
+====================================================
+RETAIL
+====================================================
+
+----------------------------------------------------
+Service Manager
+----------------------------------------------------
+
+- /job-cards/waiting/nextjobs
+Move the search bar onto the same row as the "Outstanding Jobs (4)" title and have the search bar smaller width to the far right of that row. 
+
+Have it so "Current clocking Not clocked into a job" seciton uses "--danger-surface" colour code when no clocked on, and "--success-surface" when clocked on a job. 
+
+- /job-cards/view
+Remove "/job-cards/view :: 1.2.2.1.1.1 (job-cards-view-content)" card and move contetns into the main card page. have it so the rows within for example "/job-cards/view :: 1.2.2.1.1.1.2.1.1 (job-cards-view-job-row-00078) — “00078 WP10VPE TOYOTA Retail Released Customer Daniel Carter…”" use "--text-1, --text-2, --text-accent" text colours. do the same for "/job-cards/view :: 1.2.1.1.1.1.2.1.1 (job-cards-view-empty-state) — “No jobs in this status group.”" section and the rows wihtin "/job-cards/view :: 1.2.1.1.1.1.2 (job-cards-view-list-shell)" this to copy the rows within "/job-cards/view :: 1.2.2.1.1.1.2 (job-cards-view-list-shell)" section as well. 
+
+have it so the rows within /job-cards/view :: 1.2.2.1.1.1.2 (job-cards-view-list-shell) and /job-cards/view :: 1.2.2.1.1.1.2 (job-cards-view-list-shell) follow a curved edge corners like those cards
+
+- /job-cards/view?division=retail
+remove "/job-cards/view?division=retail" page and just keep it as "/job-cards/view" page
+
+- /job-cards/archive
+remove "/job-cards/archive :: 1.2.1.1.1.2.1 (job-cards-archive-results-table-scroll)" card and move the table within "/job-cards/archive :: 1.2.1.1.1.2 (job-cards-archive-results-panel)" card section. 
+
+Change the colour of the heading section for the global table style so the colour used is "--secondary-pressed" colour name and colour. 
+
+- /parts/goods-in
+Have it so the tab group buttons are linked up ot the other tab group pages, within these pages. and the tab tabground doesnt go the whole width of the page but the edge of the tab buttons. also have it so the width of the page follows the width of the sections wihtin the /newsfeed page. 
+
+Reduce the width of the "Search parts catalogue" popup, have it so the rows within the search section background uses "--theme". Have it so the rows within "Supplier accounts" popup also use "--theme". have it so "Supplier search", "Search catalogue" button follows Primary button style. 
+
+Within "Add goods-in parts to a job" popup reduce the space between the search bar and the "Selected for job" section. mkae "Available to select" background colour of the section "--theme" colour. mkae Select all follow the secondary button style. and the same with the "Add" button. 
+
+- /mobile/appointments 
+remove "/mobile/appointments" page instead give the mobile mechanic role access to the /appoinment page, however they only have access to view the mobile mechanic booked appointments. 
+
+
+- /mobile/create
+Remove the "/mobile/create" page instead give the mobile mechanic role access to the /create page, however they only have access to create a job if the user is Eligibility for Mobile Mechanic which is if the "Mobile Mechanic Eligibility" section says yes/true/the customer is. 
+
+
+- /dashboard/service
+have it so "/dashboard/service :: 1.2.1.1.7 (dashboard-service-auto-content-card-7) — “VHCs awaiting approval No pending VHC approvals.”", "/dashboard/service :: 1.2.1.1.6 (dashboard-service-auto-content-card-6) — “VHC severity Weekly breakdown No VHC data for the week yet.”", "/dashboard/service :: 1.2.1.1.5 (dashboard-service-auto-content-card-5) — “Upcoming jobs No upcoming jobs right now.”", "/dashboard/service :: 1.2.1.1.4 (dashboard-service-auto-content-card-4) — “Appointment trends Last 7 days”", "/dashboard/service :: 1.2.1.1.3 (dashboard-service-auto-content-card-3) — “Waiting mix Loan, waiting, and collection split Waiting 0 L…”", "/dashboard/service :: 1.2.1.1.2 (dashboard-service-auto-content-card-2) — “Progress Jobs completed vs checked in Completed 0 %”", "/dashboard/service :: 1.2.2.1.1 (dashboard-service-auto-content-card-1) — “Appointments today "failed to parse filter not.in.Complete…”" seciton use "--theme" colour background. remove "Service dashboard Advisor cockpit Appointment throughput, customer status, and VHC approvals all in one pane." section and have it so that page width is uses the same as the "newsfeed" page. improve the layout of the "/dashboard/service" page so its better to view. change the layout of the cards only and fix ""failed to parse filter (not.in.Completed,Complete,Cancelled,Collected)" (line 1, column 8)" use the full width of the page and adjust the layout depending on screen size being used. 
+
+
+----------------------------------------------------
+Workshop Manager
+----------------------------------------------------
+
+- /clocking
+have it so the text wihtin /clocking :: 1.2.2.1.1.1.2.1 (clocking-overview-stats) — “Summary Statistics Last updated 19:58” and /clocking :: 1.2.2.1.1.1.2.2 (clocking-overview-technician-status) — “Technician Status” sections use "--text-1, --text-2" as well as "--text-accent"
+
+have it so "View Details" button removes ">". have it so clicking the "/clocking :: 1.2.1.1.1.1.1.2.1.5 (clocking-overview-tech-48) — “Tech 6 Not clocked in Current Job — Time — Awaiting assignm…”" for example doesnt open the "/clocking/Tech6-48" page or example but clicking the "View Details" button does. have it so the sections within "/clocking :: 1.2.1.1.1.1.1.2.1.1 (clocking-overview-tech-35) — “Tech 1 Not clocked in Current Job — Time — Awaiting assignm…”" like the current job and time etc sections have a differnt section to the /clocking :: 1.2.1.1.1.1.1.2.1.1 (clocking-overview-tech-35) — “Tech 1 Not clocked in Current Job — Time — Awaiting assignm…” card, have it so the smaller sections within the "/clocking :: 1.2.1.1.1.1.1.2.1.1 (clocking-overview-tech-35) — “Tech 1 Not clocked in Current Job — Time — Awaiting assignm…”" card use "--theme" colour background, make sure "/clocking :: 1.2.1.1.1.1.1.2.1.1 (clocking-overview-tech-35) — “Tech 1 Not clocked in Current Job — Time — Awaiting assignm…”" use "--surface" as the main card colour. 
+
+have it so the Not clocked in, waiting for job etc sections use button style with the 44px height, and move that down to the same row as the "View details" button (and remove the awaiting asssignment text etc) and have the "Not clocked in, waiting for job etc sections" in a 50/50 split with that on the left adn the "View details" on the right. have it so the "Not clocked in, waiting for job etc sections" are colour coded, so "Not clocked in" uses "--danger-surface", "Clocked on (clocked onto a job)" uses "--success-surface" and everything else uses "--warning-surface". 
+
+Remove "All technicians", "Active on jobs", "On MOT tests", "On break", "Awaiting jobs", "Not clocked in" text. have it so "Last updated 20:13" is on the same line as "Summary Statistics" heading, and in the top right of that section add a status dropdown whcih follows the global.css with the dropdown etc and has a status to change the content shown within the "/clocking :: 1.2.1.1.1.1.1.2 (clocking-overview-technician-status) — “Technician Status”" section to chose either of the "Not clocked in, waiting for job etc sections". 
+
+improve dev overlay within "/clocking/Tech1-35 :: 1.2.1.1 (app-layout-page-card) — “Live technician activity Live Status Job Number Start Finis…”" section. have it so the "Live technician activity" section card uses "--theme" and the same with the "Manual clocking entry" card. remove the "Live" text and replace a simple "Back" button which takes the user back to "/clocking" page. 
+
+have it so the gap betwen the bottom of "/clocking :: 1.2.1.1.1.1.1 (clocking-overview-shell)" and the page isnt as big, make the gap the same as from the left of the page section to the left of the "/clocking :: 1.2.1.1.1.1.1.2 (clocking-overview-technician-status) — “Technician Status”" section. 
+
+Within "/clocking :: 1.2.1.1.1.1.1.1 (clocking-efficiency-content)" section have it so "‹ Prev May 2026 Next ›" is to the far rigth of that row, and follows the global month picker style. 
+
+Remove the "/clocking :: 1.2.1.1.1.1.1 (clocking-efficiency-shell)" card and move everything into the mian page card. have it so "/clocking :: 1.2.2.1.1.1.2.1.1.2 (tech-efficiency-filter-shell)", "/clocking :: 1.2.2.1.1.1.2.1.1.3 (tech-efficiency-overall-summary) — “Overall Efficiency - May 2026”", "/clocking :: 1.2.2.1.1.1.2.1.1.4 (tech-efficiency-overall-breakdown) — “Technician Breakdown”", and the card which holds "Overall MOT MOT Tech Tech Tech Tech Tech ‹ Prev May 2026 Next ›" content in all follow the "--theme" background colour. have it so the cards within "/clocking :: 1.2.1.1.1.1.1.1.1.2.1 (tech-efficiency-overall-summary-grid)" section follow "--surface" colour and the Titles follow the "--text1, --text2" text colour where the data within the cards follow the current text colour. 
+
+have it os the gap betweent the bottom of the "/clocking :: 1.2.1.1.1.1.1.1.1.3 (tech-efficiency-overall-breakdown) — “Technician Breakdown”" and the bottom of the main page section matchs the left of the mian page and the left of the /clocking :: 1.2.1.1.1.1.1.1.1.3 (tech-efficiency-overall-breakdown) — “Technician Breakdown” section gap. 
+
+- /workshop/consumables-tracker
+Improve dev overlay within "/workshop/consumables-tracker" page. 
+
+have it so the cards within "/workshop/consumables-tracker :: 1.2.1.1.1.1.2 (workshop-consumables-logs-card) — “Monthly Logs Spend £0.00 Quantity 0 Orders 0 Suppliers 0 Da…”", "/workshop/consumables-tracker :: 1.2.1.1.1.1.2 (workshop-consumables-totals-card) — “This Month's Spend £0.00 Projected Spend All Scheduled Ord…”" follow the curverd corners theme. 
+
+within "/workshop/consumables-tracker :: 1.2.2.1.1.1.1 (workshop-consumables-budget-card) — “Workshop Consumables Tracker Budget for September 2025 £0.0…”" section remove "Budget for September 2025" text and "£0.00" and "Workshop Consumables Tracker" text. Make the Save Budget text box width smaller to fit no more than "100000" text width within. move the "Stock Check" button to the left of "/workshop/consumables-tracker :: 1.2.2.1.1.1.1 (workshop-consumables-budget-card) — “Workshop Consumables Tracker Budget for September 2025 £0.0…”" section, the month picker in the middle of the section and then the budget text box and save budget button to the right of that section 
+
+Have it so the "Status" within the "" section doesnt use icons and the buttons within this table use 32px high as within a table, also have it so within the status coloumn the "bubbles" atm use button 32px style as well as using the "--success-surface", "--warning-surface", "--danger-surface" background colour depedning on Not required, Order now, overdue. 
+
+Have it so the "/workshop/consumables-tracker :: 1.2.1.1.1.1.3 (workshop-consumables-requests-card) — “Requests 6 requests Item Quantity Technician Requested Stat…”" section shows 4 rows and then uses a scroll. have it so the order buttons are set to 32px height as they are being used within a global.css table. 
+
+Within the "Stock Check" popup have it so "Add new consumable" is at the bottom of the whole popup, have it so it goes in this order "Stock Check" section, then "Consumable stock" then "Recent stock check requests" then "Add new consumable" then mvoe the "items selected" into the "Stock Check" section. have it so "182 stock items, 5 pending" "bubbles" use button styles still using the colour of the currnt bubbles but with the 44px height style. have it so the "Recent stock check requests" section uses "--theme" colour background. 
+
+Improve the skelleton loading style within the /workshop/consumables-tracker page. 
+
+
+----------------------------------------------------
+After Sales Director
+----------------------------------------------------
+
+- /dashboard/after-sales
+
+
+----------------------------------------------------
+Techs
+----------------------------------------------------
+
+- /job-cards/myjobs
+
+- /tech/efficiency
+
+- /tech/dashboard
+
+
+----------------------------------------------------
+Mobile Technician
+----------------------------------------------------
+
+- /mobile/dashboard
+improve the dev overlay within "/mobile/dashboard" page. 
+
+Have it so "", "", "" sections use "--theme" colour background. Remove "Mobile Dashboard Your on-site visits for today and the days ahead." text and section and improve the layout of the page better and adjsut the layout depending on size of the screen being used. 
+
+- /mobile/jobs
+Remove "/mobile/jobs" page and have it so the mobile mechanic role has access to the "/job-cards/myjobs" page layout but for the mobile mechanic user they only have access to view any job for that day which is classes as Eligibility for Mobile Mechanic. 
+
+- /tech/consumables-request#
+have it so "/tech/consumables-request :: 1.2.2.1.1 (tech-consumables-request-panel)" card uses "--theme" colour background. have it so the contents within that sectioin use the whole width of the card. 
+
+have it so the "Status" coloumn follows the same style as the "/consumables-request" page request section with the "bubbles" now uses 32px button style height (32px not 44px because inside a table). 
+
+
+----------------------------------------------------
+Parts Manager
+----------------------------------------------------
+
+- /stock-catalogue
+
+- /parts/deliveries
+
+- /parts/manager
+
+- /dashboard/parts
+
+
+----------------------------------------------------
+MOT Tester
+----------------------------------------------------
+
+- /dashboard/mot
+have it so "/dashboard/mot :: 1.2.1.1.3 (dashboard-mot-auto-content-card-3) — “Trend Tests checked in over the last 7 days Wed 0 Thu 0 Fri…”", "/dashboard/mot :: 1.2.1.1.2 (dashboard-mot-auto-content-card-2) — “Recent MOT jobs Latest registered jobs Recent MOTs No recor…”", "/dashboard/mot :: 1.2.1.1.1 (dashboard-mot-auto-content-card-1) — “Daily MOT tally Tests today 0 Checked in today Passed 0 Com…”" cards use "--theme" colour background. remove "MOT workspace Today's test board Track pass/fail rates, retests, and the queue for testers." text and section 
+
+
+----------------------------------------------------
+Valet Service
+----------------------------------------------------
+
+- /valet
+Have it so "Showing 12 jobs" section is within a 44px button style "success" theme lable
+
+- /dashboard/valeting
+improve the dev overlay within "/dashboard/valeting :: 1.2.1.1 (app-layout-page-card) — “Wash bay overview Cars waiting wash 16 Checked in but not s…”" seciton. 
+
+Hvae it so "Queue board" uses "--theme" colour background. and have it so "Queue trend" and "Queue board" are using a 50/50 split of the page section width. 
+
+
+====================================================
+SALES
+====================================================
+
+----------------------------------------------------
+Admin Manager
+----------------------------------------------------
+
+- /admin/compliance
+
+- /dashboard/admin
+
+
+----------------------------------------------------
+Accounts Manager
+----------------------------------------------------
+
+- /job-cards/view?division=sales    (Sales Jobs)
+
+- /accounts
+
+- /company-accounts
+
+- /accounts/invoices
+
+- /accounts/reports
+
+- /accounts/payslips
+
+- /dashboard/accounts
+
+
+----------------------------------------------------
+Owner
+----------------------------------------------------
+
+- /hr/manager
+
+
+----------------------------------------------------
+Painters
+----------------------------------------------------
+
+- /dashboard/painting
+
+
+====================================================
+PRESENTATION
+====================================================
+
+----------------------------------------------------
+Presentation
+----------------------------------------------------
+
+- /login                (real login page — review here too)
+
+- /loginPresentation    (presentation role-picker)
+
+- /presentation         (presentation runner shell)

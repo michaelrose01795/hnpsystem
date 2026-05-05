@@ -21,12 +21,12 @@ import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import InputField from "@/components/ui/InputField";
 import Button from "@/components/ui/Button";
 import { supabase } from "@/lib/database/supabaseClient";
-import { useTheme } from "@/styles/themeProvider";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -157,7 +157,6 @@ export default function EfficiencyTab({
   filterUserId = null,
   editableUserId = null,
 }) {
-  const { accent } = useTheme();
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
@@ -544,24 +543,17 @@ export default function EfficiencyTab({
     setModalOpen(true);
   };
 
-  // Month navigation
-  const handlePrevMonth = () => {
-    if (selectedMonth === 1) {
-      setSelectedMonth(12);
-      setSelectedYear((y) => y - 1);
-    } else {
-      setSelectedMonth((m) => m - 1);
-    }
-  };
+  const selectedMonthValue = useMemo(
+    () => `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`,
+    [selectedMonth, selectedYear]
+  );
 
-  const handleNextMonth = () => {
-    if (selectedMonth === 12) {
-      setSelectedMonth(1);
-      setSelectedYear((y) => y + 1);
-    } else {
-      setSelectedMonth((m) => m + 1);
-    }
-  };
+  const handleMonthValueChange = useCallback((value) => {
+    const match = typeof value === "string" ? value.match(/^(\d{4})-(\d{2})$/) : null;
+    if (!match) return;
+    setSelectedYear(Number(match[1]));
+    setSelectedMonth(Number(match[2]));
+  }, []);
 
   // Reset request-related state
   const resetRequestState = () => {
@@ -809,23 +801,6 @@ export default function EfficiencyTab({
   };
 
   // Styles
-  const monthNavStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  };
-
-  const monthBtnStyle = {
-    padding: "8px 14px",
-    borderRadius: "var(--input-radius)",
-    border: "none",
-    background: "var(--surface)",
-    color: "var(--primary-selected)",
-    fontWeight: 600,
-    fontSize: "0.85rem",
-    cursor: "pointer",
-  };
-
   const sectionStyle = {
     background: "var(--surface)",
     borderRadius: "var(--radius-lg)",
@@ -930,13 +905,6 @@ export default function EfficiencyTab({
     letterSpacing: "0.08em",
     color: statusTone(color).label,
   });
-  const popupErrorAccent = accent === "red" ? "var(--warning)" : "var(--danger)";
-  const popupErrorSurface = accent === "red" ? "var(--warning-surface)" : "var(--danger-surface)";
-  const popupFieldErrorStyle = {
-    border: `1px solid ${popupErrorAccent}`,
-    background: popupErrorSurface,
-  };
-
   // Download PDF handler - generates a portrait B&W PDF with 31 rows
   const handleDownload = async () => {
     try {
@@ -1119,17 +1087,12 @@ export default function EfficiencyTab({
             sectionType="toolbar"
             parentKey="tech-efficiency-nav-group"
             className="efficiency-month-nav"
-            style={{ ...monthNavStyle, flex: "0 0 auto", marginInline: "auto" }}
+            style={{ flex: "0 0 320px", width: "min(100%, 320px)", marginInline: "auto" }}
           >
-            <button type="button" style={monthBtnStyle} onClick={handlePrevMonth}>
-              &lsaquo; Prev
-            </button>
-            <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--primary-selected)", minWidth: "150px", textAlign: "center" }}>
-              {MONTHS[selectedMonth - 1]} {selectedYear}
-            </span>
-            <button type="button" style={monthBtnStyle} onClick={handleNextMonth}>
-              Next &rsaquo;
-            </button>
+            <MonthPickerField
+              value={selectedMonthValue}
+              onValueChange={handleMonthValueChange}
+              aria-label={`Select efficiency month, currently ${MONTHS[selectedMonth - 1]} ${selectedYear}`} />
           </DevLayoutSection>
 
           {/* Action buttons */}

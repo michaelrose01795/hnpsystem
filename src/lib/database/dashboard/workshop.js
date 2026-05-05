@@ -13,6 +13,7 @@ export const getWorkshopDashboardData = async () => {
     completedTodayJobs,
     technicianUsers,
     clockedInEntries,
+    scheduledAppointmentsToday,
     queueJobs,
     outstandingVhcJobs,
     statusHistory,
@@ -43,8 +44,15 @@ export const getWorkshopDashboardData = async () => {
     runQuery(() => supabase.from("job_clocking").select("user_id").is("clock_out", null)),
     runQuery(() =>
       supabase
+        .from("appointments")
+        .select("appointment_id")
+        .gte("scheduled_time", todayStart)
+        .lt("scheduled_time", todayEnd)
+    ),
+    runQuery(() =>
+      supabase
         .from("jobs")
-        .select("id,job_number,vehicle_reg,status,waiting_status,checked_in_at")
+        .select("id,job_number,vehicle_reg,vehicle_make_model,status,waiting_status,checked_in_at")
         .is("completed_at", null)
         .order("checked_in_at", { ascending: true, nullsFirst: true })
         .limit(6)
@@ -52,7 +60,7 @@ export const getWorkshopDashboardData = async () => {
     runQuery(() =>
       supabase
         .from("jobs")
-        .select("id,job_number,vehicle_reg,waiting_status,vhc_required,checked_in_at")
+        .select("id,job_number,vehicle_reg,vehicle_make_model,status,waiting_status,vhc_required,checked_in_at")
         .eq("vhc_required", true)
         .is("vhc_completed_at", null)
         .order("checked_in_at", { ascending: true, nullsFirst: true })
@@ -87,7 +95,9 @@ export const getWorkshopDashboardData = async () => {
     },
     progress: {
       completed: completedTodayJobs.length,
-      scheduled: Math.max(checkedInTodayJobs.length, completedTodayJobs.length, 1),
+      scheduled: scheduledAppointmentsToday.length,
+      scheduledToday: scheduledAppointmentsToday.length,
+      checkedInToday: checkedInTodayJobs.length,
     },
     queue: queueJobs,
     outstandingVhc: outstandingVhcJobs,

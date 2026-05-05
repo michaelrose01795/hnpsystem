@@ -22,6 +22,67 @@ const isPreferredDevLoginDepartment = (category, department) =>
 const isPreferredDevLoginUser = (user) =>
   normalizeValue(user?.name).split(" ").includes(DEFAULT_DEV_LOGIN_USER);
 
+const isManagerRole = (role) => normalizeValue(role).includes("manager");
+
+const getDepartmentPairKey = (label) =>
+  normalizeValue(label)
+    .replace(/\bmanager\b/g, "")
+    .replace(/\bdepartment\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const sortDepartmentGroups = (groups) =>
+  [...groups].sort((a, b) => {
+    const aPairKey = getDepartmentPairKey(a.label);
+    const bPairKey = getDepartmentPairKey(b.label);
+    const aWorkshop = aPairKey === "workshop";
+    const bWorkshop = bPairKey === "workshop";
+
+    if (aWorkshop !== bWorkshop) return aWorkshop ? -1 : 1;
+    if (aPairKey !== bPairKey) return aPairKey.localeCompare(bPairKey);
+    if (a.isManagerRole !== b.isManagerRole) return a.isManagerRole ? 1 : -1;
+    return a.label.localeCompare(b.label);
+  });
+
+const resolveDepartmentRoster = (source, department) => {
+  if (!source || !department) return null;
+  if (source[department]) return source[department];
+  const aliases = ROLE_ALIASES[String(department).toLowerCase()] || [];
+  for (const alias of aliases) {
+    const aliasMatchKey = Object.keys(source).find(
+      (key) => key.toLowerCase() === String(alias).toLowerCase()
+    );
+    if (aliasMatchKey) return source[aliasMatchKey];
+  }
+  const matchKey = Object.keys(source).find(
+    (key) => key.toLowerCase() === department.toLowerCase()
+  );
+  return matchKey ? source[matchKey] : null;
+};
+
+const toUserOption = (user, index, fallbackDepartment) =>
+  typeof user === "string"
+    ? {
+        id: `${fallbackDepartment}-${index}`,
+        name: user,
+        role: fallbackDepartment,
+      }
+    : {
+        id: user.id ?? user.user_id ?? `${fallbackDepartment}-${index}`,
+        name:
+          user.name ||
+          user.displayName ||
+          user.fullName ||
+          `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+          `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+          user.email ||
+          `User ${index + 1}`,
+        email: user.email || "",
+        department: user.department || fallbackDepartment,
+        role: user.role || fallbackDepartment,
+        customerId: user.customerId || user.customer_id || null,
+      };
+
 /**
  * LoginDropdown
  * Props:
@@ -45,39 +106,15 @@ export default function LoginDropdown({
   usersByRole,
   usersByRoleDetailed,
   roleCategories,
+  onSingleUserDepartmentLogin,
   className = "",
 }) {
-  // Format user display names for managers
   const formatUserName = (role, user) => {
-    const managerRoles = [
-      "Admin Manager",
-      "Accounts Manager",
-      "Service Manager",
-      "Workshop Manager",
-      "Parts Manager",
-    ];
-
-    if (managerRoles.includes(role)) {
-      return `${user} (Manager)`; // append (Manager) for clarity
+    if (isManagerRole(role)) {
+      return `${user} (Manager)`;
     }
 
     return user;
-  };
-
-  const resolveDepartmentRoster = (source, department) => {
-    if (!source || !department) return null;
-    if (source[department]) return source[department];
-    const aliases = ROLE_ALIASES[String(department).toLowerCase()] || [];
-    for (const alias of aliases) {
-      const aliasMatchKey = Object.keys(source).find(
-        (key) => key.toLowerCase() === String(alias).toLowerCase()
-      );
-      if (aliasMatchKey) return source[aliasMatchKey];
-    }
-    const matchKey = Object.keys(source).find(
-      (key) => key.toLowerCase() === department.toLowerCase()
-    );
-    return matchKey ? source[matchKey] : null;
   };
 
   const categorizedUsers = useMemo(() => {
@@ -100,42 +137,39 @@ export default function LoginDropdown({
 
     const groups = new Map();
 
-    categorizedUsers.forEach((user, index) => {
-      const departmentLabel =
-        String(user?.department || "").trim() ||
-        String(user?.role || "").trim() ||
-        `Department ${index + 1}`;
-      const key = normalizeValue(departmentLabel);
+    (roleCategories?.[selectedCategory] || []).forEach((department) => {
+      const directUsers = categorizedUsers.filter(
+        (user) => normalizeValue(user?.role) === normalizeValue(department)
+      );
+      const fallbackUsers =
+        resolveDepartmentRoster(usersByRoleDetailed, department) ||
+        resolveDepartmentRoster(usersByRole, department) ||
+        [];
+      const users = directUsers.length > 0 ? directUsers : fallbackUsers;
+
+      if (users.length === 0) return;
+
+      const firstUser = users.find((user) => typeof user !== "string");
+      const label = isManagerRole(department)
+        ? department
+        : String(firstUser?.department || department).trim() || department;
+      const key = normalizeValue(label);
       const existing = groups.get(key);
 
       if (existing) {
-        existing.users.push(user);
+        existing.users.push(...users);
         return;
       }
 
       groups.set(key, {
         key,
-        label: departmentLabel,
-        users: [user],
+        label,
+        users: [...users],
+        isManagerRole: isManagerRole(department),
       });
     });
 
-    if (groups.size > 0) {
-      return Array.from(groups.values()).sort((a, b) => a.label.localeCompare(b.label));
-    }
-
-    return (roleCategories?.[selectedCategory] || [])
-      .filter((department) =>
-        resolveDepartmentRoster(usersByRoleDetailed, department) ||
-        resolveDepartmentRoster(usersByRole, department)
-      )
-      .map((department) => ({
-        key: normalizeValue(department),
-        label: department,
-        users: resolveDepartmentRoster(usersByRoleDetailed, department) ||
-          resolveDepartmentRoster(usersByRole, department) ||
-          [],
-      }));
+    return sortDepartmentGroups(Array.from(groups.values()));
   }, [
     categorizedUsers,
     roleCategories,
@@ -158,26 +192,7 @@ export default function LoginDropdown({
       (Array.isArray(detailed) && detailed.length > 0 ? detailed : fallback || []);
 
     return source.map((user, index) =>
-      typeof user === "string"
-        ? {
-            id: `${selectedDepartment}-${index}`,
-            name: user,
-            role: selectedDepartment,
-          }
-        : {
-            id: user.id ?? user.user_id ?? `${selectedDepartment}-${index}`,
-            name:
-              user.name ||
-              user.displayName ||
-              user.fullName ||
-              `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
-              `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-              user.email ||
-              `User ${index + 1}`,
-            email: user.email || "",
-            department: user.department || selectedDepartment,
-            role: user.role || selectedDepartment,
-          }
+      toUserOption(user, index, selectedDepartment)
     );
   }, [departmentGroups, selectedDepartment, usersByRole, usersByRoleDetailed]);
 
@@ -253,7 +268,7 @@ export default function LoginDropdown({
       key: department.key,
       value: department.label,
       label: department.label,
-      description: `${department.users.length} user${department.users.length === 1 ? "" : "s"}`,
+      description: `${department.isManagerRole ? "Manager role - " : ""}${department.users.length} user${department.users.length === 1 ? "" : "s"}`,
     }));
   }, [departmentGroups, selectedCategory]);
 
@@ -303,7 +318,23 @@ export default function LoginDropdown({
         onChange={(raw) => {
           const nextDepartment =
             (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
+          const nextGroup = departmentGroups.find(
+            (group) => group.key === normalizeValue(nextDepartment)
+          );
+          const nextUsers = (nextGroup?.users || []).map((user, index) =>
+            toUserOption(user, index, nextDepartment)
+          );
           setSelectedDepartment(nextDepartment);
+          if (nextUsers.length === 1) {
+            const onlyUser = nextUsers[0];
+            setSelectedUser(onlyUser);
+            onSingleUserDepartmentLogin?.({
+              category: selectedCategory,
+              department: nextDepartment,
+              user: onlyUser,
+            });
+            return;
+          }
           setSelectedUser(null);
         }}
         className="login-dropdown__control"
