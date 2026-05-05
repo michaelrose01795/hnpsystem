@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/parts/create-order/parts-create-order-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function PartsJobCardPageUi(props) {
   const {
@@ -77,7 +79,7 @@ export default function PartsJobCardPageUi(props) {
       flexDirection: "column",
       gap: "20px"
     }}>
-        <section className="app-section-card" style={cardStyle}>
+        <LayerSurface as="section" style={cardStyle}>
           {errorMessage && <div style={{
           padding: "10px",
           borderRadius: "var(--radius-sm)",
@@ -91,7 +93,7 @@ export default function PartsJobCardPageUi(props) {
           flexDirection: "column",
           gap: "18px"
         }}>
-            <div style={sectionCardStyle}>
+            <LayerTheme style={sectionCardStyle}>
               <div style={sectionHeaderStyle}>
                 <div>
                   <strong style={{
@@ -201,12 +203,7 @@ export default function PartsJobCardPageUi(props) {
                     </div>
                   </div>
                 </div> : <>
-                  {customerRecord && <div style={{
-                border: "none",
-                borderRadius: "var(--radius-md)",
-                padding: "12px",
-                background: "var(--surface)"
-              }}>
+                  {customerRecord && <LayerSurface padding="12px" gap="0">
                       <strong>{formatFullName(customerRecord)}</strong>
                       <div style={{
                   fontSize: "0.85rem",
@@ -220,7 +217,7 @@ export default function PartsJobCardPageUi(props) {
                 }}>
                         {customerRecord.address || "No saved address"}
                       </div>
-                    </div>}
+                    </LayerSurface>}
                   <div style={twoColumnGrid}>
                     <label style={fieldStyle}>
                       <span style={{
@@ -260,9 +257,9 @@ export default function PartsJobCardPageUi(props) {
                 }} placeholder="Special instructions or payment notes" />
                   </label>
                 </>}
-            </div>
+            </LayerTheme>
 
-            <div style={sectionCardStyle}>
+            <LayerTheme style={sectionCardStyle}>
               <div style={sectionHeaderStyle}>
                 <strong style={{
                 fontSize: "1.05rem"
@@ -299,9 +296,9 @@ export default function PartsJobCardPageUi(props) {
                   <input type="text" value={form.vehicle_vin} onChange={event => handleFieldChange("vehicle_vin", event.target.value.toUpperCase())} style={inputStyle} placeholder="VIN" />
                 </label>
               </div>
-            </div>
+            </LayerTheme>
 
-            <div style={sectionCardStyle}>
+            <LayerTheme style={sectionCardStyle}>
               <div style={sectionHeaderStyle}>
                 <strong style={{
                 fontSize: "1.05rem"
@@ -323,14 +320,7 @@ export default function PartsJobCardPageUi(props) {
                 <CalendarField label={form.delivery_type === "delivery" ? "Delivery date" : "Collection date"} value={form.delivery_eta || ""} onChange={value => handleFieldChange("delivery_eta", value)} name="delivery_eta" />
                 <TimePickerField label={form.delivery_type === "delivery" ? "Delivery window / time" : "Collection time"} value={form.delivery_window || ""} onChange={event => handleFieldChange("delivery_window", event.target.value)} />
               </div>
-              {form.delivery_type === "delivery" && <div style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "8px",
-              border: "none",
-              borderRadius: "var(--radius-md)",
-              padding: "12px"
-            }}>
+              {form.delivery_type === "delivery" && <LayerSurface padding="12px" gap="8px">
                   <label style={{
                 display: "flex",
                 alignItems: "center",
@@ -343,7 +333,7 @@ export default function PartsJobCardPageUi(props) {
                 ...inputStyle,
                 resize: "vertical"
               }} placeholder="Delivery address" />}
-                </div>}
+                </LayerSurface>}
               <label style={fieldStyle}>
                 <span style={{
                 fontWeight: 600
@@ -355,9 +345,9 @@ export default function PartsJobCardPageUi(props) {
                 resize: "vertical"
               }} placeholder="Access instructions, collection requirements, etc." />
               </label>
-            </div>
+            </LayerTheme>
 
-            <div style={sectionCardStyle}>
+            <LayerTheme style={sectionCardStyle}>
               <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -386,13 +376,9 @@ export default function PartsJobCardPageUi(props) {
               gap: "10px",
               marginTop: "10px"
             }}>
-                {partLines.map((line, index) => <div key={`part-line-${index}`} style={{
-                border: "none",
-                borderRadius: "var(--radius-sm)",
-                padding: "12px",
+                {partLines.map((line, index) => <LayerSurface key={`part-line-${index}`} radius="var(--radius-sm)" padding="12px" gap="10px" style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                gap: "10px"
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))"
               }}>
                     <label style={fieldStyle}>
                       <span style={{
@@ -487,9 +473,9 @@ export default function PartsJobCardPageUi(props) {
                 }}>
                         Remove part
                       </button>}
-                  </div>)}
+                  </LayerSurface>)}
               </div>
-            </div>
+            </LayerTheme>
 
             <div style={{
             display: "flex",
@@ -522,7 +508,7 @@ export default function PartsJobCardPageUi(props) {
               </button>
             </div>
           </form>
-        </section>
+        </LayerSurface>
       </div>
     </>
     {partSearchOpen && <ModalPortal>

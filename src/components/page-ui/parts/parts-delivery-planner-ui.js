@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/parts/parts-delivery-planner-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function PartsDeliveryPlannerPageUi(props) {
   const {
@@ -86,7 +88,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
     flexDirection: "column",
     gap: "22px"
   }}>
-        <header className="app-section-card" style={sectionStyle}>
+        <LayerSurface as="header" style={sectionStyle}>
           <div style={{
         display: "flex",
         flexWrap: "wrap",
@@ -166,10 +168,10 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 <span>Fuel rate: {priceLabel}</span>
               </div>
             </>}
-        </header>
+        </LayerSurface>
 
         {plannerTab === "delivery" ? <>
-            <section className="app-section-card" style={queueCardStyle}>
+            <LayerSurface as="section" style={queueCardStyle}>
               <div>
                 <p style={{
             margin: 0,
@@ -208,7 +210,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
             margin: 0
           }}>
                     No invoice deliveries scheduled yet. Add a job to get started.
-                  </p> : jobQueueByDate.map(([date, jobs]) => <div key={date} style={queueDayStyle}>
+                  </p> : jobQueueByDate.map(([date, jobs]) => <LayerTheme key={date} style={queueDayStyle}>
                       <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -297,11 +299,11 @@ export default function PartsDeliveryPlannerPageUi(props) {
                             </button>;
               })}
                       </div>
-                    </div>)}
+                    </LayerTheme>)}
               </div>
-            </section>
+            </LayerSurface>
 
-            <section className="app-section-card" style={sectionStyle}>
+            <LayerSurface as="section" style={sectionStyle}>
               <div style={{
           display: "flex",
           flexDirection: "row",
@@ -362,7 +364,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
           const dayDrops = items.reduce((total, item) => total + (item.stops_count || 1), 0);
           const status = items[0]?.status?.replace(/_/g, " ") || "Planned";
           const cardLabel = date === "unscheduled" ? "Unscheduled" : formatDate(date);
-          return <div key={`${date}-${status}`} style={dayCardStyle}>
+          return <LayerTheme key={`${date}-${status}`} style={dayCardStyle}>
                       <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -401,7 +403,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 const jobNumber = run.job?.job_number || `#${run.job_id}`;
                 const address = run.destination_address || customer?.address || run.customer?.name || "Address TBC";
                 const fuelExpense = Number(run.fuel_cost) || computeFuelCost(run);
-                return <article key={run.id} style={runRowStyle}>
+                return <LayerSurface as="article" key={run.id} radius="var(--radius-sm)" padding="12px" gap="0" style={runRowStyle}>
                               <div>
                                 <div style={{
                       fontWeight: 600,
@@ -443,13 +445,13 @@ export default function PartsDeliveryPlannerPageUi(props) {
                                   <strong>Fuel:</strong> {formatCurrency(fuelExpense)}
                                 </div>
                               </div>
-                            </article>;
+                            </LayerSurface>;
               })}
                       </div>
-                    </div>;
+                    </LayerTheme>;
         })}
-            </section>
-          </> : <section style={collectionPlannerGridStyle}>
+            </LayerSurface>
+          </> : <LayerSurface as="section" padding="18px" style={collectionPlannerGridStyle}>
             <div style={{
         display: "flex",
         flexDirection: "column",
@@ -510,7 +512,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                   {collectionSearchMessage}
                 </p>}
             </div>
-            <div style={collectionTableSectionStyle}>
+            <LayerTheme padding="0" gap="0" style={collectionTableSectionStyle}>
               {collectionError ? <div style={{
           padding: "18px",
           color: "var(--danger)"
@@ -613,8 +615,8 @@ export default function PartsDeliveryPlannerPageUi(props) {
                     </tbody>
                   </table>
                 </div>}
-            </div>
-            <div style={collectionDetailsSectionStyle}>
+            </LayerTheme>
+            <LayerTheme padding="18px" style={collectionDetailsSectionStyle}>
               <div style={{
           display: "flex",
           flexWrap: "wrap",
@@ -754,8 +756,8 @@ export default function PartsDeliveryPlannerPageUi(props) {
                         </div>
                       </button>)}
                 </div>}
-            </div>
-          </section>}
+            </LayerTheme>
+          </LayerSurface>}
       </div>
       {jobModalOpen && <DeliveryJobModal job={jobForm} editing={Boolean(editingJobId)} onClose={closeJobModal} onSave={handleSaveJob} onDelete={handleDeleteJob} onFieldChange={updateJobForm} invoiceQuery={invoiceQuery} setInvoiceQuery={setInvoiceQuery} invoiceResults={invoiceResults} onInvoiceSelect={handleInvoiceSelected} invoiceSearching={invoiceSearchLoading} error={jobModalError} saving={jobModalSaving} />}
     </>; // render extracted page section.

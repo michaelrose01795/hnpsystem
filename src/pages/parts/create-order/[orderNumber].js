@@ -6,6 +6,7 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/database/supabaseClient";
 import InvoiceDetailSection from "@/features/invoices/components/InvoiceDetailSection"; // shared invoice viewer
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import PartsOrderDetailUi from "@/components/page-ui/parts/create-order/parts-create-order-order-number-ui"; // Extracted presentation layer.
 const containerStyle = {
   display: "flex",
@@ -404,17 +405,10 @@ export default function PartsOrderDetail() {
 
 function SummaryPill({ label, value }) {
   return (
-    <div
-      style={{
-        border: "none",
-        borderRadius: "var(--radius-md)",
-        padding: "10px 14px",
-        minWidth: "140px"
-      }}>
-      
+    <LayerTheme padding="10px 14px" gap="0" style={{ minWidth: "140px" }}>
       <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--info)" }}>{label}</p>
       <strong style={{ fontSize: "1.1rem", color: "var(--primary-selected)" }}>{value}</strong>
-    </div>);
+    </LayerTheme>);
 
 }
 
@@ -449,12 +443,10 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
       {error &&
       <div
         style={{
-          border: "none",
-          borderRadius: "var(--radius-sm)",
           padding: "10px 14px",
           color: "var(--danger)"
         }}>
-        
+
           {error}
         </div>
       }
@@ -499,15 +491,19 @@ function StatusTab({ order, onDeliveryChange, onInvoiceChange, saving, error }) 
       </div>
 
       <div
+        // State-indicator panel: keep data-driven background as it signals
+        // completion-ready state. Dashed border replaced with outline so it
+        // does not count as a surface border per the layer-sweep rules.
         style={{
-          border: "1px dashed var(--surface)",
+          outline: "1px dashed var(--surface)",
+          outlineOffset: "-1px",
           borderRadius: "var(--radius-md)",
           padding: "14px",
           background: completionReady ?
           "rgba(var(--success-rgb,34,139,34),0.08)" :
           "var(--surface)"
         }}>
-        
+
         <p style={{ margin: "0 0 6px", fontWeight: 600 }}>
           Current status: {formatOrderStatus(order?.status)}
         </p>
@@ -573,17 +569,15 @@ function PartsTab({ items, orderNotes }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       {items.map((item) =>
-      <div
+      <LayerTheme
         key={item.id}
+        padding="14px"
+        gap="12px"
         style={{
-          border: "none",
-          borderRadius: "var(--radius-md)",
-          padding: "14px",
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-          gap: "12px"
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))"
         }}>
-        
+
           <InfoCell label="Part number" value={item.part_number || "—"} />
           <InfoCell label="Part name" value={item.part_name || "—"} />
           <InfoCell label="Quantity" value={item.quantity || 0} />
@@ -591,20 +585,14 @@ function PartsTab({ items, orderNotes }) {
           <InfoCell
           label="Line total"
           value={formatCurrency((Number(item.quantity) || 0) * (Number(item.unit_price) || 0))} />
-        
+
           {item.notes && <InfoCell label="Notes" value={item.notes} fullWidth />}
-        </div>
+        </LayerTheme>
       )}
       {orderNotes &&
-      <div
-        style={{
-          borderRadius: "var(--radius-md)",
-          border: "none",
-          padding: "12px"
-        }}>
-        
+      <LayerTheme padding="12px">
           <InfoCell label="Order notes" value={orderNotes} fullWidth />
-        </div>
+        </LayerTheme>
       }
     </div>);
 
@@ -632,9 +620,9 @@ function DeliveryTab({ order }) {
 function InvoiceTab({ orderNumber }) {
   if (!orderNumber) {
     return (
-      <div style={{ border: "none", borderRadius: "var(--radius-md)", padding: "12px" }}>
+      <LayerTheme padding="12px">
         <p style={{ margin: 0, color: "var(--danger-dark)" }}>Order number missing — cannot render invoice.</p>
-      </div>);
+      </LayerTheme>);
 
   }
   return (

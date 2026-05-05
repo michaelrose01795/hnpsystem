@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function GoodsInDetailPageUi(props) {
   const {
@@ -44,7 +45,7 @@ export default function GoodsInDetailPageUi(props) {
     gap: "18px",
     padding: "12px"
   }}>
-        <section className="app-section-card" style={sectionCardStyle}>
+        <LayerSurface as="section" style={sectionCardStyle}>
           <div style={{
         display: "flex",
         justifyContent: "space-between",
@@ -107,9 +108,9 @@ export default function GoodsInDetailPageUi(props) {
           }}>Supplier account: {goodsIn.supplier_account_id || "--"}</div>
               </div>
             </div>}
-        </section>
+        </LayerSurface>
 
-        <section className="app-section-card" style={sectionCardStyle}>
+        <LayerSurface as="section" style={sectionCardStyle}>
           <h3 style={{
         margin: 0
       }}>Invoice lines</h3>
@@ -120,10 +121,7 @@ export default function GoodsInDetailPageUi(props) {
       }}>
               No invoice lines found.
             </div> : <ScrollArea maxHeight="420px" style={{
-        borderRadius: "var(--radius-lg)",
-        border: "none",
-        overflowX: "hidden",
-        background: "var(--surface)"
+        overflowX: "hidden"
       }}>
               <table style={invoiceTableStyles}>
                 <thead>
@@ -162,9 +160,9 @@ export default function GoodsInDetailPageUi(props) {
                 </tbody>
               </table>
             </ScrollArea>}
-        </section>
+        </LayerSurface>
 
-        <section className="app-section-card" style={sectionCardStyle}>
+        <LayerSurface as="section" style={sectionCardStyle}>
           <h3 style={{
         margin: 0
       }}>Totals</h3>
@@ -184,9 +182,9 @@ export default function GoodsInDetailPageUi(props) {
           }}>{currencyFormatter.format(totals.retail)}</div>
             </div>
           </div>
-        </section>
+        </LayerSurface>
 
-        <section className="app-section-card" style={sectionCardStyle}>
+        <LayerSurface as="section" style={sectionCardStyle}>
           <h3 style={{
         margin: 0
       }}>History</h3>
@@ -244,7 +242,7 @@ export default function GoodsInDetailPageUi(props) {
                 </div>}
             </div>
           </div>
-        </section>
+        </LayerSurface>
       </div>
     </>; // render extracted page section.
     default:

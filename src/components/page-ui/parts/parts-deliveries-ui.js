@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/parts/parts-deliveries-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function PartsDeliveriesPageUi(props) {
   const {
@@ -39,7 +41,7 @@ export default function PartsDeliveriesPageUi(props) {
     case "section2":
       return <>
       <div style={pageStyles.container}>
-        <section className="app-section-card" style={pageStyles.headerCard}>
+        <LayerSurface as="section" style={pageStyles.headerCard}>
           <div style={{
         display: "flex",
         flexDirection: "column",
@@ -129,9 +131,9 @@ export default function PartsDeliveriesPageUi(props) {
           }}>{completedCount}</strong>
             </div>
           </div>
-        </section>
+        </LayerSurface>
 
-        <section className="app-section-card" style={pageStyles.listCard}>
+        <LayerSurface as="section" style={pageStyles.listCard}>
           <div style={{
         display: "flex",
         flexDirection: "column",
@@ -160,13 +162,10 @@ export default function PartsDeliveriesPageUi(props) {
               <SkeletonKeyframes />
               {Array.from({
           length: 4
-        }).map((_, i) => <div key={i} style={{
+        }).map((_, i) => <LayerTheme key={i} padding="12px" gap="0" style={{
           display: "grid",
           gridTemplateColumns: "36px 1fr auto",
-          gap: 12,
-          padding: 12,
-          borderRadius: "var(--radius-md)",
-          background: "var(--surface)"
+          gap: 12
         }}>
                   <SkeletonBlock width="28px" height="28px" borderRadius="999px" />
                   <div style={{
@@ -178,13 +177,13 @@ export default function PartsDeliveriesPageUi(props) {
                     <SkeletonBlock width="75%" height="10px" />
                   </div>
                   <SkeletonBlock width="56px" height="18px" />
-                </div>)}
+                </LayerTheme>)}
             </div>}
           {!loading && sortedJobs.length === 0 && <div style={{
         color: "var(--info)"
       }}>No deliveries queued for this day.</div>}
           {!loading && sortedJobs.map((job, index) => <DeliveryJobRow key={job.id} job={job} index={index} total={sortedJobs.length} onView={setViewJob} onMove={handleMoveJob} onMarkDelivered={handleMarkDelivered} actionDisabled={rowActionId === job.id} />)}
-        </section>
+        </LayerSurface>
       </div>
       {viewJob && <DeliveryJobViewModal job={viewJob} onClose={() => setViewJob(null)} />}
     </>; // render extracted page section.

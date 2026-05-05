@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/parts/parts-goods-in-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function GoodsInPageUi(props) {
   const {
@@ -225,7 +227,7 @@ export default function GoodsInPageUi(props) {
       setIsAdvancedPanelOpen(true);
     }} ariaLabel="Part detail tabs" />
 
-        <section style={sectionCardStyle} className="app-section-card invoice-details-section">
+        <LayerSurface as="section" style={sectionCardStyle} className="invoice-details-section">
           <div className="invoice-details-toolbar">
             <h2 style={{
           margin: 0
@@ -317,9 +319,9 @@ export default function GoodsInPageUi(props) {
                 {invoiceScanPayload.extracted.invoiceNumber && ` Invoice ${invoiceScanPayload.extracted.invoiceNumber}`}
               </div>}
           </div>
-        </section>
+        </LayerSurface>
 
-        <section style={sectionCardStyle} className="app-section-card add-part-section">
+        <LayerSurface as="section" style={sectionCardStyle} className="add-part-section">
           <div className="add-part-toolbar">
             <h2 style={{
           margin: 0
@@ -585,9 +587,9 @@ export default function GoodsInPageUi(props) {
               </button>
             </div>
           </div>
-        </section>
+        </LayerSurface>
 
-        <section className="app-section-card" style={sectionCardStyle}>
+        <LayerSurface as="section" style={sectionCardStyle}>
           <div style={{
         display: "flex",
         justifyContent: "space-between",
@@ -646,10 +648,7 @@ export default function GoodsInPageUi(props) {
       }}>
               No lines yet. Add a part to populate this invoice.
             </div> : <ScrollArea maxHeight="420px" style={{
-        borderRadius: "var(--radius-lg)",
-        border: "none",
-        overflowX: "hidden",
-        background: "var(--surface)"
+        overflowX: "hidden"
       }}>
               <table style={invoiceTableStyles}>
                 <thead>
@@ -704,7 +703,7 @@ export default function GoodsInPageUi(props) {
                 </tbody>
               </table>
             </ScrollArea>}
-        </section>
+        </LayerSurface>
       </div>
 
       {supplierModalOpen && <SupplierSearchModal onClose={() => setSupplierModalOpen(false)} onSelect={handleSupplierSelected} initialQuery={invoiceForm.supplierName} />}

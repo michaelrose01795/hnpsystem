@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/parts/create-order/parts-create-order-order-number-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function PartsOrderDetailUi(props) {
   const {
@@ -34,7 +35,7 @@ export default function PartsOrderDetailUi(props) {
     case "section1":
       return <>
       <div style={containerStyle}>
-        <div className="app-section-card" style={sectionCard}>
+        <LayerSurface style={sectionCard}>
           <p style={{
         margin: 0,
         textTransform: "uppercase",
@@ -86,9 +87,9 @@ export default function PartsOrderDetailUi(props) {
             <SummaryPill label="Subtotal" value={formatCurrency(totals.subtotal)} />
             <SummaryPill label="Invoice total" value={formatCurrency(order?.invoice_total || totals.subtotal)} />
           </div>
-        </div>
+        </LayerSurface>
 
-        <div className="app-section-card" style={sectionCard}>
+        <LayerSurface style={sectionCard}>
           <h2 style={{
         margin: "0 0 12px",
         color: "var(--primary-selected)"
@@ -103,9 +104,9 @@ export default function PartsOrderDetailUi(props) {
           </div>
           <InfoCell label="Address" value={order?.customer_address || "—"} fullWidth />
           <InfoCell label="Notes" value={order?.notes || "No notes recorded"} fullWidth />
-        </div>
+        </LayerSurface>
 
-        <div className="app-section-card" style={sectionCard}>
+        <LayerSurface style={sectionCard}>
           <div style={{
         display: "flex",
         gap: "8px",
@@ -139,7 +140,7 @@ export default function PartsOrderDetailUi(props) {
               {activeTab === "invoice" && <InvoiceTab order={order} totals={totals} orderNumber={resolvedOrderNumber} /> // pass order number into invoice tab
         }
             </>}
-        </div>
+        </LayerSurface>
       </div>
     </>; // render extracted page section.
     default:

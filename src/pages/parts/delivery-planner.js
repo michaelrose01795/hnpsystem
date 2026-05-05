@@ -15,20 +15,12 @@ const sectionStyle = {
 };
 
 const dayCardStyle = {
-  borderRadius: "var(--radius-md)",
-  border: "none",
-  background: "var(--danger-surface)",
-  padding: "var(--section-card-padding)",
   display: "flex",
   flexDirection: "column",
   gap: "12px"
 };
 
 const runRowStyle = {
-  padding: "12px",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  background: "var(--surface)",
   display: "grid",
   gridTemplateColumns: "minmax(0, 1fr) minmax(150px, 1fr)",
   gap: "12px",
@@ -36,20 +28,16 @@ const runRowStyle = {
 };
 
 const queueCardStyle = {
-  ...sectionStyle,
-  border: "none"
+  ...sectionStyle
 };
 
 const queueDayStyle = {
-  borderRadius: "var(--radius-md)",
-  border: "none",
-  background: "var(--surface)",
-  padding: "var(--section-card-padding)",
   display: "flex",
   flexDirection: "column",
   gap: "12px"
 };
 
+// Button keeps its own surface — it's a data-row button not a card layer.
 const jobRowButtonStyle = {
   border: "none",
   borderRadius: "var(--radius-md)",
@@ -65,7 +53,6 @@ const jobRowButtonStyle = {
 
 const collectionPlannerGridStyle = {
   ...sectionStyle,
-  padding: "18px",
   display: "grid",
   gridTemplateRows: "minmax(110px, 10%) minmax(360px, 50%) minmax(320px, 40%)",
   gap: "16px",
@@ -74,9 +61,6 @@ const collectionPlannerGridStyle = {
 };
 
 const collectionTableSectionStyle = {
-  borderRadius: "var(--radius-md)",
-  border: "none",
-  background: "var(--surface)",
   display: "flex",
   flexDirection: "column",
   overflow: "hidden"
@@ -88,10 +72,6 @@ const collectionTableScrollStyle = {
 };
 
 const collectionDetailsSectionStyle = {
-  borderRadius: "var(--radius-md)",
-  border: "none",
-  padding: "18px",
-  background: "var(--surface)",
   display: "flex",
   flexDirection: "column",
   gap: "14px",

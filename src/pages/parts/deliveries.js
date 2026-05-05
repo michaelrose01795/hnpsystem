@@ -34,8 +34,9 @@ const pageStyles = {
     gap: "10px",
     alignItems: "center"
   },
+  // Data-row with state-indicator background (completed vs scheduled).
+  // Background is data-driven so it stays here; cosmetic border removed.
   jobRow: (isCompleted) => ({
-    border: "none",
     borderRadius: "var(--radius-md)",
     padding: "var(--section-card-padding)",
     display: "flex",

@@ -41,10 +41,6 @@ const inputStyle = {
 };
 
 const sectionCardStyle = {
-  borderRadius: "var(--radius-md)",
-  border: "none",
-  background: "rgba(var(--surface-rgb), 0.9)",
-  padding: "var(--section-card-padding)",
   display: "flex",
   flexDirection: "column",
   gap: "12px"

@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/parts/deliveries/parts-deliveries-delivery-id-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function DeliveryRoutePageUi(props) {
   const {
@@ -106,15 +108,7 @@ export default function DeliveryRoutePageUi(props) {
           </p>
         </div>
 
-        <section style={{
-      borderRadius: "var(--radius-lg)",
-      border: "none",
-      background: "var(--surface)",
-      padding: "22px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "10px"
-    }}>
+        <LayerSurface as="section" radius="var(--radius-lg)" padding="22px" gap="10px">
           <p style={{
         margin: 0,
         textTransform: "uppercase",
@@ -251,7 +245,7 @@ export default function DeliveryRoutePageUi(props) {
               </p>
             </div>
           </div>
-        </section>
+        </LayerSurface>
 
         <div style={{
       display: "flex",
@@ -473,13 +467,10 @@ export default function DeliveryRoutePageUi(props) {
             <SkeletonKeyframes />
             {Array.from({
         length: 3
-      }).map((_, i) => <div key={i} style={{
+      }).map((_, i) => <LayerSurface key={i} padding="12px" gap="0" style={{
         display: "grid",
         gridTemplateColumns: "40px 1fr auto",
-        gap: 12,
-        padding: 12,
-        borderRadius: "var(--radius-md)",
-        background: "var(--surface)"
+        gap: 12
       }}>
                 <SkeletonBlock width="32px" height="32px" borderRadius="999px" />
                 <div style={{
@@ -491,7 +482,7 @@ export default function DeliveryRoutePageUi(props) {
                   <SkeletonBlock width="80%" height="10px" />
                 </div>
                 <SkeletonBlock width="60px" height="20px" />
-              </div>)}
+              </LayerSurface>)}
           </div>}
 
         {!loading && !orderedStops.length && <p style={{
@@ -513,9 +504,11 @@ export default function DeliveryRoutePageUi(props) {
           listStyle: "none",
           cursor: "grab"
         }} draggable onDragStart={handleDragStart(stop.id)} onDragOver={handleDragOver(stop.id)} onDrop={handleDrop(stop.id)} onDragEnd={handleDragEnd}>
-                  <div style={{
+                  <LayerSurface padding="18px" gap="0" style={{
             ...stopCardStyle,
-            borderColor: isDropTarget ? "var(--primary)" : "var(--surface)",
+            // Drop-target highlight is a state ring, not a card border, so use outline.
+            outline: isDropTarget ? "1px solid var(--primary)" : "none",
+            outlineOffset: "-1px",
             opacity: isDragging ? 0.7 : 1
           }}>
                     <div style={{
@@ -731,7 +724,7 @@ export default function DeliveryRoutePageUi(props) {
                           </button>
                         </div>
                       </div>}
-                  </div>
+                  </LayerSurface>
                 </li>;
       })}
           </ol>}

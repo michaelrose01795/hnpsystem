@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/parts/parts-manager-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function PartsManagerDashboardUi(props) {
   const {
@@ -84,20 +86,13 @@ export default function PartsManagerDashboardUi(props) {
     }}>
             {Array.from({
         length: 2
-      }).map((_, i) => <div key={i} style={{
-        background: "var(--surface)",
-        border: "1px solid var(--accent-base)",
-        borderRadius: "var(--radius-md)",
-        padding: "18px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
+      }).map((_, i) => <LayerSurface key={i} padding="18px" gap="12px" style={{
         minHeight: "220px"
       }}>
                 <SkeletonBlock width="52%" height="16px" />
                 <SkeletonBlock width="100%" height="140px" borderRadius="12px" />
                 <SkeletonBlock width="68%" height="12px" />
-              </div>)}
+              </LayerSurface>)}
           </div>
         </div> : error ? <div style={{
     padding: "48px",
@@ -106,18 +101,14 @@ export default function PartsManagerDashboardUi(props) {
   }}>{error}</div> : <>
           <PartsOpsDashboard title="Parts Manager Dashboard" subtitle="Live queue, inbound deliveries and inventory status pulled from Supabase" data={dashboardData} />
 
-          <div className="app-section-card" style={sectionCardStyle}>
+          <LayerSurface style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Parts Pipeline</div>
             <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         gap: "12px"
       }}>
-              {pipelineStages.map(stage => <div key={stage.id} style={{
-          padding: "10px 12px",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          background: "rgba(var(--danger-rgb), 0.4)",
+              {pipelineStages.map(stage => <LayerTheme key={stage.id} radius="var(--radius-sm)" padding="10px 12px" gap="0" style={{
           minHeight: "100px"
         }}>
                   <div style={{
@@ -137,7 +128,7 @@ export default function PartsManagerDashboardUi(props) {
           }}>
                     {stage.description}
                   </p>
-                </div>)}
+                </LayerTheme>)}
             </div>
             <div style={{
         marginTop: "12px",
@@ -147,7 +138,7 @@ export default function PartsManagerDashboardUi(props) {
               {pipelineSummary.totalCount} part line
               {pipelineSummary.totalCount === 1 ? "" : "s"} currently tracked in the pipeline.
             </div>
-          </div>
+          </LayerSurface>
 
           <div style={containerStyle}>
             <div style={{
@@ -155,7 +146,7 @@ export default function PartsManagerDashboardUi(props) {
         gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)",
         gap: "20px"
       }}>
-              <div className="app-section-card" style={sectionCardStyle}>
+              <LayerSurface style={sectionCardStyle}>
                 <div style={sectionTitleStyle}>Queue Snapshot</div>
                 <table style={performanceTableStyle}>
                   <thead>
@@ -244,14 +235,14 @@ export default function PartsManagerDashboardUi(props) {
               })}
                   </tbody>
                 </table>
-              </div>
+              </LayerSurface>
 
               <div style={{
           display: "flex",
           flexDirection: "column",
           gap: "20px"
         }}>
-                <div className="app-section-card" style={sectionCardStyle}>
+                <LayerSurface style={sectionCardStyle}>
                   <div style={sectionTitleStyle}>Status Buckets</div>
                   {dashboardData.teamAvailability.map(bucket => <div key={bucket.name} style={{
               padding: "10px 0",
@@ -270,9 +261,9 @@ export default function PartsManagerDashboardUi(props) {
                 marginTop: "4px"
               }}>{bucket.window}</div>
                     </div>)}
-                </div>
+                </LayerSurface>
 
-                <div className="app-section-card" style={sectionCardStyle}>
+                <LayerSurface style={sectionCardStyle}>
                   <div style={sectionTitleStyle}>Focus Items</div>
                   {dashboardData.focusItems.map(item => <div key={item.title} style={{
               padding: "10px 0",
@@ -291,11 +282,11 @@ export default function PartsManagerDashboardUi(props) {
                 marginTop: "4px"
               }}>{item.owner}</div>
                     </div>)}
-                </div>
+                </LayerSurface>
               </div>
             </div>
 
-            <div className="app-section-card" style={sectionCardStyle}>
+            <LayerSurface style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Top Queue Lines</div>
               <table style={performanceTableStyle}>
                 <thead>
@@ -340,9 +331,9 @@ export default function PartsManagerDashboardUi(props) {
                     </tr>)}
                 </tbody>
               </table>
-            </div>
+            </LayerSurface>
 
-            <div className="app-section-card" style={sectionCardStyle}>
+            <LayerSurface style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Low Stock Parts Overview</div>
               {lowStockRows.length === 0 ? <div style={{
           color: "var(--grey-accent)"
@@ -424,9 +415,9 @@ export default function PartsManagerDashboardUi(props) {
                       </tr>)}
                   </tbody>
                 </table>}
-            </div>
+            </LayerSurface>
 
-          <div className="app-section-card" style={sectionCardStyle}>
+          <LayerSurface style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Tech Requests</div>
             {techRequests.length === 0 ? <div style={{
           color: "var(--grey-accent)"
@@ -511,7 +502,7 @@ export default function PartsManagerDashboardUi(props) {
             })}
                   </tbody>
               </table>}
-          </div>
+          </LayerSurface>
         </div>
       </>}
       <DeliverySchedulerModal open={isScheduleModalOpen} onClose={closeScheduleModal} job={scheduleModalJob} deliveries={deliveryRoutes} onScheduled={() => loadDashboard()} />

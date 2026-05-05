@@ -27,12 +27,7 @@ const formatCurrency = (value) => {
   }).format(Number(value));
 };
 
-const stopCardStyle = {
-  borderRadius: "var(--radius-md)",
-  border: "none",
-  background: "var(--surface)",
-  padding: "18px"
-};
+const stopCardStyle = {};
 
 const buttonStyle = {
   borderRadius: "var(--radius-sm)",

@@ -54,8 +54,7 @@ const ADVANCED_TABS = [
 
 
 const sectionCardStyle = {
-  gap: "18px",
-  background: "var(--theme)"
+  gap: "18px"
 };
 
 const fieldGridStyle = {
