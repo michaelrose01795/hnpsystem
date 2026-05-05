@@ -14,7 +14,7 @@
 //
 // Mounted from src/pages/_app.js next to GlobalNotesWidget.
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";import LayerSurface from "@/components/ui/LayerSurface";
 
 const STORAGE_KEY = "hnp.cookieConsent.v1";
 const ANON_COOKIE = "hnp_anon_id";
@@ -22,32 +22,32 @@ const POLICY_VERSION = "v1.0";
 const COOKIE_TTL_DAYS = 365;
 
 const CATEGORIES = [
-  {
-    key: "essential",
-    label: "Essential",
-    description:
-      "Required for the site to work. Sign-in, security, and accessibility settings.",
-    locked: true,
-  },
-  {
-    key: "preferences",
-    label: "Preferences",
-    description: "Remember choices like theme and last-viewed pages.",
-    locked: false,
-  },
-  {
-    key: "analytics",
-    label: "Analytics",
-    description: "Help us understand how the site is used so we can improve it.",
-    locked: false,
-  },
-  {
-    key: "marketing",
-    label: "Marketing",
-    description: "Used for promotional messages and audience measurement.",
-    locked: false,
-  },
-];
+{
+  key: "essential",
+  label: "Essential",
+  description:
+  "Required for the site to work. Sign-in, security, and accessibility settings.",
+  locked: true
+},
+{
+  key: "preferences",
+  label: "Preferences",
+  description: "Remember choices like theme and last-viewed pages.",
+  locked: false
+},
+{
+  key: "analytics",
+  label: "Analytics",
+  description: "Help us understand how the site is used so we can improve it.",
+  locked: false
+},
+{
+  key: "marketing",
+  label: "Marketing",
+  description: "Used for promotional messages and audience measurement.",
+  locked: false
+}];
+
 
 const generateUuid = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -55,7 +55,7 @@ const generateUuid = () => {
   }
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
     const r = Math.floor(Math.random() * 16);
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    const v = c === "x" ? r : r & 0x3 | 0x8;
     return v.toString(16);
   });
 };
@@ -99,7 +99,7 @@ export default function CookieBanner() {
     essential: true,
     preferences: false,
     analytics: false,
-    marketing: false,
+    marketing: false
   }));
 
   useEffect(() => {
@@ -126,14 +126,14 @@ export default function CookieBanner() {
       categories,
       policyVersion: POLICY_VERSION,
       anonymousId,
-      capturedAt: new Date().toISOString(),
+      capturedAt: new Date().toISOString()
     };
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch {
+
       // best effort; banner will reappear next session if storage is blocked
-    }
-    try {
+    }try {
       await fetch("/api/cookies/consent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -141,13 +141,13 @@ export default function CookieBanner() {
         body: JSON.stringify({
           anonymousId,
           categories,
-          policyVersion: POLICY_VERSION,
-        }),
+          policyVersion: POLICY_VERSION
+        })
       });
     } catch {
+
       // server-side mirror is best-effort; the local choice still applies
-    }
-    setOpen(false);
+    }setOpen(false);
   };
 
   const acceptAll = () => {
@@ -155,7 +155,7 @@ export default function CookieBanner() {
       essential: true,
       preferences: true,
       analytics: true,
-      marketing: true,
+      marketing: true
     });
   };
 
@@ -164,7 +164,7 @@ export default function CookieBanner() {
       essential: true,
       preferences: false,
       analytics: false,
-      marketing: false,
+      marketing: false
     });
   };
 
@@ -184,7 +184,7 @@ export default function CookieBanner() {
       // Surface, padding, radius and (no) border all flow from the
       // .app-section-card token system declared in globals.css.
       color: "var(--text-1)",
-      fontFamily: "var(--font-family, system-ui, sans-serif)",
+      fontFamily: "var(--font-family, system-ui, sans-serif)"
     }),
     []
   );
@@ -199,7 +199,7 @@ export default function CookieBanner() {
     fontWeight: 600,
     cursor: "pointer",
     background: "var(--primary)",
-    color: "var(--onAccentText)",
+    color: "var(--onAccentText)"
   };
 
   // Ghost (Customise, Reject All, Save Choices): no border, transparent
@@ -212,13 +212,13 @@ export default function CookieBanner() {
     fontWeight: 600,
     cursor: "pointer",
     background: "transparent",
-    color: "var(--text-1)",
+    color: "var(--text-1)"
   };
 
   if (!mounted || !open) return null;
 
   return (
-    <div role="dialog" aria-label="Cookie consent" className="app-section-card" style={containerStyle}>
+    <LayerSurface as="div" role="dialog" aria-label="Cookie consent" style={containerStyle}>
       <h2 style={{ margin: "0 0 6px", fontSize: "1.05rem" }}>Cookies on this site</h2>
       <p style={{ margin: "0 0 12px", fontSize: "0.9rem", color: "var(--text-1)", lineHeight: 1.5 }}>
         We use essential cookies to make the site work. With your permission we&apos;d
@@ -226,66 +226,66 @@ export default function CookieBanner() {
         the service. You can change your choice at any time on the privacy page.
       </p>
 
-      {showCustomise && (
-        <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
-          {CATEGORIES.map((cat) => (
-            <label
-              key={cat.key}
-              className="app-section-card"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "auto 1fr",
-                gap: 10,
-                alignItems: "start",
-                cursor: cat.locked ? "default" : "pointer",
-                opacity: cat.locked ? 0.85 : 1,
-              }}
-            >
+      {showCustomise &&
+      <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+          {CATEGORIES.map((cat) =>
+        <LayerSurface as="label"
+        key={cat.key}
+
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto 1fr",
+          gap: 10,
+          alignItems: "start",
+          cursor: cat.locked ? "default" : "pointer",
+          opacity: cat.locked ? 0.85 : 1
+        }}>
+
               <input
-                type="checkbox"
-                checked={cat.locked ? true : Boolean(selections[cat.key])}
-                disabled={cat.locked}
-                onChange={(e) =>
-                  setSelections((prev) => ({ ...prev, [cat.key]: e.target.checked }))
-                }
-                style={{ marginTop: 4 }}
-              />
+            type="checkbox"
+            checked={cat.locked ? true : Boolean(selections[cat.key])}
+            disabled={cat.locked}
+            onChange={(e) =>
+            setSelections((prev) => ({ ...prev, [cat.key]: e.target.checked }))
+            }
+            style={{ marginTop: 4 }} />
+
               <span>
                 <span style={{ display: "block", fontWeight: 600 }}>
                   {cat.label}
-                  {cat.locked && (
-                    <span style={{ marginLeft: 8, fontSize: "0.75rem", color: "var(--text-1)" }}>
+                  {cat.locked &&
+              <span style={{ marginLeft: 8, fontSize: "0.75rem", color: "var(--text-1)" }}>
                       (always on)
                     </span>
-                  )}
+              }
                 </span>
                 <span style={{ display: "block", fontSize: "0.82rem", color: "var(--text-1)" }}>
                   {cat.description}
                 </span>
               </span>
-            </label>
-          ))}
+            </LayerSurface>
+        )}
         </div>
-      )}
+      }
 
       <div
         style={{
           display: "flex",
           flexWrap: "wrap",
           gap: 8,
-          justifyContent: "flex-end",
-        }}
-      >
-        {!showCustomise && (
-          <button type="button" onClick={() => setShowCustomise(true)} style={buttonGhost}>
+          justifyContent: "flex-end"
+        }}>
+
+        {!showCustomise &&
+        <button type="button" onClick={() => setShowCustomise(true)} style={buttonGhost}>
             Customise
           </button>
-        )}
-        {showCustomise && (
-          <button type="button" onClick={saveCustom} style={buttonGhost}>
+        }
+        {showCustomise &&
+        <button type="button" onClick={saveCustom} style={buttonGhost}>
             Save Choices
           </button>
-        )}
+        }
         <button type="button" onClick={rejectAll} style={buttonGhost}>
           Reject All
         </button>
@@ -293,6 +293,6 @@ export default function CookieBanner() {
           Accept All
         </button>
       </div>
-    </div>
-  );
+    </LayerSurface>);
+
 }

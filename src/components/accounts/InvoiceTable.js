@@ -1,6 +1,6 @@
 // file location: src/components/accounts/InvoiceTable.js // header for clarity
 import React from "react"; // import React for JSX
-import PropTypes from "prop-types";
+import LayerSurface from "@/components/ui/LayerSurface";import PropTypes from "prop-types";
 import { useRouter } from "next/router";
 import { INVOICE_STATUSES } from "@/config/accounts";
 import { isInvoiceSettled } from "@/lib/status/statusHelpers"; // Centralized invoice status check.
@@ -13,7 +13,7 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 const getInvoiceDisplayValue = (invoice) =>
-  invoice?.invoice_number || invoice?.invoice_id || invoice?.id || "—";
+invoice?.invoice_number || invoice?.invoice_id || invoice?.id || "—";
 
 const getCustomerDisplayValue = (invoice) => {
   const invoiceToName = typeof invoice?.invoice_to?.name === "string" ? invoice.invoice_to.name.trim() : "";
@@ -23,27 +23,27 @@ const getCustomerDisplayValue = (invoice) => {
   if (customerName) return customerName;
 
   const linkedCustomerName =
-    invoice?.customer?.name ||
-    [invoice?.customer?.firstname, invoice?.customer?.lastname].filter(Boolean).join(" ").trim();
+  invoice?.customer?.name ||
+  [invoice?.customer?.firstname, invoice?.customer?.lastname].filter(Boolean).join(" ").trim();
   if (linkedCustomerName) return linkedCustomerName;
 
   return invoice?.customer_id || "—";
 };
 
 const getAccountDisplayValue = (invoice) =>
-  invoice?.account?.billing_name ||
-  invoice?.account_number ||
-  invoice?.account?.account_id ||
-  invoice?.account_id ||
-  "—";
+invoice?.account?.billing_name ||
+invoice?.account_number ||
+invoice?.account?.account_id ||
+invoice?.account_id ||
+"—";
 
 const getInvoiceAmountValue = (invoice) =>
-  Number(
-    invoice?.invoice_total ??
-    invoice?.grand_total ??
-    invoice?.total ??
-    0
-  );
+Number(
+  invoice?.invoice_total ??
+  invoice?.grand_total ??
+  invoice?.total ??
+  0
+);
 
 const getDueDateDisplayValue = (invoice) => {
   const explicitDueDate = invoice?.due_date ? new Date(invoice.due_date) : null;
@@ -103,16 +103,16 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
       if (toDate && createdDate && createdDate > toDate) return false;
       if (search) {
         const haystack = [
-          invoice.invoice_id,
-          invoice.invoice_number,
-          invoice.customer_id,
-          invoice.account_id,
-          invoice.job_number,
-          invoice.order_number,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
+        invoice.invoice_id,
+        invoice.invoice_number,
+        invoice.customer_id,
+        invoice.account_id,
+        invoice.job_number,
+        invoice.order_number].
+
+        filter(Boolean).
+        join(" ").
+        toLowerCase();
         if (!haystack.includes(search)) return false;
       }
       return true;
@@ -121,15 +121,15 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
   const totalRecords = pagination?.total || filteredInvoices.length || 0;
 
   return (
-    <DevLayoutSection
+    <LayerSurface
       as="section"
       sectionKey="accounts-invoices-table-card"
       sectionType="content-card"
       parentKey="accounts-invoices-table"
-      backgroundToken={accentSurface ? "accent-surface" : "surface"}
-      className="app-section-card"
-      style={{ display: "flex", flexDirection: "column", gap: "16px", ...(accentSurface ? { background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" } : {}) }}
-    >
+
+
+      style={{ display: "flex", flexDirection: "column", gap: "16px", ...(accentSurface ? { background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" } : {}) }}>
+
       <DevLayoutSection sectionKey="accounts-invoices-table-header" sectionType="content-card" parentKey="accounts-invoices-table-card">
         <header style={{ display: "grid", gridTemplateColumns: "auto minmax(280px, 1fr) auto", alignItems: "center", gap: "12px" }}>
           <DevLayoutSection sectionKey="accounts-invoices-table-title" sectionType="content-card" parentKey="accounts-invoices-table-header">
@@ -146,16 +146,16 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                 placeholder="Search invoice or job"
                 onChange={handleFilterChange}
                 onClear={() => onFilterChange({ ...filters, search: "" })}
-                style={{ flex: "1 1 240px" }}
-              />
+                style={{ flex: "1 1 240px" }} />
+
               <DropdownField
                 name="status"
                 value={filters.status}
                 onChange={handleFilterChange}
                 placeholder="All statuses"
                 options={[{ label: "All Statuses", value: "", placeholder: true }, ...INVOICE_STATUSES.map((status) => ({ label: status, value: status }))]}
-                style={{ flex: "0 0 180px" }}
-              />
+                style={{ flex: "0 0 180px" }} />
+
               <div style={{ flex: "0 0 160px" }}>
                 <CalendarField name="from" placeholder="From date" value={filters.from} onChange={handleFilterChange} size="sm" />
               </div>
@@ -187,35 +187,35 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
             </tr>
             </thead>
             <tbody data-dev-section-key="accounts-invoices-data-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="accounts-invoices-data-table">
-            {loading && (
+            {loading &&
               <tr>
                 <td colSpan={7} style={{ padding: "24px", textAlign: "center", color: "var(--text-1)" }}>Loading invoices…</td>
               </tr>
-            )}
-            {!loading && filteredInvoices.length === 0 && (
+              }
+            {!loading && filteredInvoices.length === 0 &&
               <tr>
                 <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "var(--text-1)" }}>No invoices found.</td>
               </tr>
-            )}
+              }
             {!loading && filteredInvoices.map((invoice) => {
-              const overdue = isInvoiceOverdue(invoice);
-              return (
-                <tr
-                  key={invoice.invoice_id}
-                  onClick={() => handleOpenInvoice(invoice)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      handleOpenInvoice(invoice);
-                    }
-                  }}
-                  onMouseEnter={() => setHoveredInvoiceId(invoice.invoice_id)}
-                  onMouseLeave={() => setHoveredInvoiceId((current) => (current === invoice.invoice_id ? null : current))}
-                  tabIndex={navigationDisabled ? undefined : 0}
-                  role={navigationDisabled ? undefined : "button"}
-                  aria-label={navigationDisabled ? undefined : `Open invoice ${getInvoiceDisplayValue(invoice)}`}
-                  style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", background: hoveredInvoiceId === invoice.invoice_id ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)", transition: "background-color 0.18s ease", cursor: navigationDisabled ? "default" : "pointer" }}
-                >
+                const overdue = isInvoiceOverdue(invoice);
+                return (
+                  <tr
+                    key={invoice.invoice_id}
+                    onClick={() => handleOpenInvoice(invoice)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        handleOpenInvoice(invoice);
+                      }
+                    }}
+                    onMouseEnter={() => setHoveredInvoiceId(invoice.invoice_id)}
+                    onMouseLeave={() => setHoveredInvoiceId((current) => current === invoice.invoice_id ? null : current)}
+                    tabIndex={navigationDisabled ? undefined : 0}
+                    role={navigationDisabled ? undefined : "button"}
+                    aria-label={navigationDisabled ? undefined : `Open invoice ${getInvoiceDisplayValue(invoice)}`}
+                    style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", background: hoveredInvoiceId === invoice.invoice_id ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)", transition: "background-color 0.18s ease", cursor: navigationDisabled ? "default" : "pointer" }}>
+
                   <td style={{ padding: "12px", fontWeight: 600 }}>{getInvoiceDisplayValue(invoice)}</td>
                   <td style={{ padding: "12px" }}>{getCustomerDisplayValue(invoice)}</td>
                   <td style={{ padding: "12px" }}>{getAccountDisplayValue(invoice)}</td>
@@ -228,15 +228,15 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                     {getDueDateDisplayValue(invoice)}
                     {overdue && <span style={{ background: "var(--warning-surface)", color: "var(--warning-text)", borderRadius: "var(--radius-pill)", padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700 }}>Overdue</span>}
                   </td>
-                </tr>
-              );
-            })}
+                </tr>);
+
+              })}
             </tbody>
           </table>
         </div>
       </DevLayoutSection>
-    </DevLayoutSection>
-  );
+    </LayerSurface>);
+
 }
 InvoiceTable.propTypes = {
   invoices: PropTypes.arrayOf(PropTypes.object),
@@ -247,7 +247,7 @@ InvoiceTable.propTypes = {
   onExport: PropTypes.func.isRequired,
   loading: PropTypes.bool,
   accentSurface: PropTypes.bool,
-  navigationDisabled: PropTypes.bool,
+  navigationDisabled: PropTypes.bool
 };
 InvoiceTable.defaultProps = {
   invoices: [],
@@ -255,5 +255,5 @@ InvoiceTable.defaultProps = {
   pagination: { page: 1, pageSize: 20, total: 0 },
   loading: false,
   accentSurface: false,
-  navigationDisabled: false,
+  navigationDisabled: false
 };

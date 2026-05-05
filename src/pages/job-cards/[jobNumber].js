@@ -45,8 +45,8 @@ import {
   projectVhcItem,
   getDisplayStatus,
   resolveVhcItemState,
-  normaliseDecisionStatus,
-} from "@/features/vhc/vhcStatusEngine";
+  normaliseDecisionStatus } from
+"@/features/vhc/vhcStatusEngine";
 import { isValidUuid, sanitizeNumericId } from "@/lib/utils/ids";
 import { clockInToJob, getUserActiveJobs, switchJob } from "@/lib/database/jobClocking";
 import PartsTabNew from "@/components/PartsTab";
@@ -82,46 +82,46 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 import JobCardDetailPageUi from "@/components/page-ui/job-cards/job-cards-job-number-ui"; // Extracted presentation layer.
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false,
-    loading: () => {
-      return (
-        <div
-          style={{
-            padding: "12px 0",
-            display: "flex",
-            flexDirection: "column",
-            gap: 14
-          }}>
-          
+  loading: () => {
+    return (
+      <div
+        style={{
+          padding: "12px 0",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14
+        }}>
+
         <SkeletonKeyframes />
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {Array.from({ length: 5 }).map((_, i) =>
-            <SkeletonBlock key={i} width="90px" height="32px" borderRadius="999px" />
-            )}
+          <SkeletonBlock key={i} width="90px" height="32px" borderRadius="999px" />
+          )}
         </div>
         <div
-            style={{
-              display: "grid",
-              gap: 14,
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"
-            }}>
-            
+          style={{
+            display: "grid",
+            gap: 14,
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))"
+          }}>
+
           {Array.from({ length: 4 }).map((_, i) =>
-            <LayerSurface
-              key={i}
-              radius="var(--radius-md)"
-              padding={16}
-              gap={10}>
+          <LayerSurface
+            key={i}
+            radius="var(--radius-md)"
+            padding={16}
+            gap={10}>
 
               <SkeletonBlock width="50%" height="12px" />
               <SkeletonBlock width="90%" height="14px" />
               <SkeletonBlock width="70%" height="14px" />
             </LayerSurface>
-            )}
+          )}
         </div>
       </div>);
 
-    }
-  });
+  }
+});
 
 const deriveVhcSeverity = (check = {}) => {
   const fields = [
@@ -182,9 +182,9 @@ const deriveStoragePathFromUrl = (url = "") => {
     }
   } catch (_err) {
 
+
     // fallback to string parsing
-  }const fallbackMarker = "/job-documents/";
-  const fallbackIdx = url.indexOf(fallbackMarker);
+  }const fallbackMarker = "/job-documents/";const fallbackIdx = url.indexOf(fallbackMarker);
   if (fallbackIdx >= 0) {
     return decodeURIComponent(url.substring(fallbackIdx + fallbackMarker.length));
   }
@@ -1045,18 +1045,18 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   const clockingSummary = statusSnapshot?.clockingSummary || null;
   const techHasClockedOnThisJob = Boolean(
     clockingSummary && (
-      (Array.isArray(clockingSummary.activeClockIns) && clockingSummary.activeClockIns.length > 0) ||
-      (typeof clockingSummary.completedSeconds === "number" && clockingSummary.completedSeconds > 0)
-    )
+    Array.isArray(clockingSummary.activeClockIns) && clockingSummary.activeClockIns.length > 0 ||
+    typeof clockingSummary.completedSeconds === "number" && clockingSummary.completedSeconds > 0)
+
   );
   const shouldPromoteCheckedInToInProgress =
-    rawOverallStatusId === JOB_STATUSES.CHECKED_IN && techHasClockedOnThisJob;
-  const overallStatusId = shouldPromoteCheckedInToInProgress
-    ? JOB_STATUSES.IN_PROGRESS
-    : rawOverallStatusId;
-  const overallStatusLabel = shouldPromoteCheckedInToInProgress
-    ? "In Progress"
-    : rawOverallStatusLabel;
+  rawOverallStatusId === JOB_STATUSES.CHECKED_IN && techHasClockedOnThisJob;
+  const overallStatusId = shouldPromoteCheckedInToInProgress ?
+  JOB_STATUSES.IN_PROGRESS :
+  rawOverallStatusId;
+  const overallStatusLabel = shouldPromoteCheckedInToInProgress ?
+  "In Progress" :
+  rawOverallStatusLabel;
   const isBookedStatus = overallStatusId ?
   overallStatusId === JOB_STATUSES.BOOKED :
   typeof jobData?.status === "string" &&
@@ -1065,8 +1065,8 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // (see src/lib/status/_baseline/currentStatusOutputs.md). Walk-in / unbooked
   // jobs land here and need the same Check-in flow as Booked appointments.
   const isOpenStatus =
-    typeof jobData?.status === "string" &&
-    jobData.status.trim().toLowerCase() === "open";
+  typeof jobData?.status === "string" &&
+  jobData.status.trim().toLowerCase() === "open";
   // Treat the job as Checked In for button visibility only when the status
   // genuinely sits at CHECKED_IN. The legacy fallback to checkedInAt /
   // appointment.status was matching jobs that had progressed past Check In
@@ -1074,14 +1074,14 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   // header badge to show Checked In even though work is in progress.
   const isCheckedIn = Boolean(
     overallStatusId === JOB_STATUSES.CHECKED_IN ||
-    (
-      // Only fall back to the timestamps when we don't know the canonical
-      // status yet — i.e. before the status snapshot has loaded.
-      !overallStatusId && (
-        jobData?.checkedInAt ||
-        jobData?.appointment?.status === "checked_in"
-      )
-    )
+
+    // Only fall back to the timestamps when we don't know the canonical
+    // status yet — i.e. before the status snapshot has loaded.
+    !overallStatusId && (
+    jobData?.checkedInAt ||
+    jobData?.appointment?.status === "checked_in")
+
+
   );
 
   // Sync active tab from query parameter, default to customer-requests
@@ -1172,9 +1172,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       deferredRoutes.forEach((route) => {
         router.prefetch(route).catch(() => {
 
+
           // Ignore prefetch errors; navigation still works with standard loading.
-        });});
-    };
+        });});};
 
     if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
       idleId = window.requestIdleCallback(prefetchDeferredRoutes, { timeout: 3000 });
@@ -1452,9 +1452,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       );
     } catch {
 
+
       // silently ignore — the gallery will refresh on next fetchDocuments
     }}, [jobNumber]);
-
   const handleDocumentFileUploaded = useCallback((fileData) => {
     if (!fileData) return;
     const newDoc = mapJobFileRecord({
@@ -1516,9 +1516,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       setJobDocuments(files.map(mapJobFileRecord));
     } catch {
 
+
       // silently ignore — the embedded-join fallback already ran
     }}, [jobNumber]);
-
   // Always fetch documents directly on page load and job-number changes.
   // This is the authoritative source: a direct query against job_files avoids
   // any PostgREST embedded-join schema-cache misses.
@@ -1837,13 +1837,13 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       title: null, // Suppress the eyebrow — the prompt is enough on its own.
       message: "Check in this customer?",
       details: [
-        { label: "Job", value: jobData.jobNumber || jobData.id || "—", tone: "info" },
-        { label: "Customer", value: jobData.customer || "N/A", tone: "success" },
-        { label: "Vehicle", value: jobData.reg || "N/A", tone: "warning" },
-        { label: "Appointment", value: jobData.appointment?.time || "N/A", tone: "accent" },
-      ],
+      { label: "Job", value: jobData.jobNumber || jobData.id || "—", tone: "info" },
+      { label: "Customer", value: jobData.customer || "N/A", tone: "success" },
+      { label: "Vehicle", value: jobData.reg || "N/A", tone: "warning" },
+      { label: "Appointment", value: jobData.appointment?.time || "N/A", tone: "accent" }],
+
       confirmLabel: "Check In",
-      cancelLabel: "Cancel",
+      cancelLabel: "Cancel"
     });
 
     if (!confirmed) return;
@@ -2799,9 +2799,9 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       title: null,
       message: `Archive job ${jobData.jobNumber}?`,
       details: [
-        { label: "Customer", value: jobData.customer || "N/A", tone: "info" },
-        { label: "Vehicle", value: jobData.reg || "N/A", tone: "warning" }
-      ],
+      { label: "Customer", value: jobData.customer || "N/A", tone: "info" },
+      { label: "Vehicle", value: jobData.reg || "N/A", tone: "warning" }],
+
       confirmLabel: "Archive Job",
       cancelLabel: "Cancel",
       tone: "warning"
@@ -2855,11 +2855,11 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         // Job tracker logging — non-blocking.
         try {
           const mime = String(file.type || file.mimeType || file.name || "").toLowerCase();
-          const kind = mime.startsWith("image") || /\.(jpe?g|png|gif|webp|heic)$/.test(mime)
-            ? "Photo"
-            : mime.startsWith("video") || /\.(mp4|mov|avi|mkv|webm)$/.test(mime)
-            ? "Video"
-            : "Document";
+          const kind = mime.startsWith("image") || /\.(jpe?g|png|gif|webp|heic)$/.test(mime) ?
+          "Photo" :
+          mime.startsWith("video") || /\.(mp4|mov|avi|mkv|webm)$/.test(mime) ?
+          "Video" :
+          "Document";
           await logJobActivityClient({
             jobId: jobData?.id || null,
             jobNumber,
@@ -2868,7 +2868,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
             summary: `${kind} deleted: ${file.name || "(unnamed)"}`,
             targetType: "job_file",
             targetId: String(file.id),
-            payload: { fileName: file.name || null, fileType: file.type || null },
+            payload: { fileName: file.name || null, fileType: file.type || null }
           });
         } catch {}
 
@@ -5065,9 +5065,9 @@ function CustomerRequestsTab({
   if (Array.isArray(writeUpChecklistTasksRaw)) {
     writeUpChecklistTasks = writeUpChecklistTasksRaw;
   } else if (writeUpChecklistTasksRaw && typeof writeUpChecklistTasksRaw === "object") {
-    writeUpChecklistTasks = Array.isArray(writeUpChecklistTasksRaw.tasks)
-      ? writeUpChecklistTasksRaw.tasks
-      : [];
+    writeUpChecklistTasks = Array.isArray(writeUpChecklistTasksRaw.tasks) ?
+    writeUpChecklistTasksRaw.tasks :
+    [];
   } else if (typeof writeUpChecklistTasksRaw === "string") {
     try {
       const parsed = JSON.parse(writeUpChecklistTasksRaw);
@@ -5101,11 +5101,11 @@ function CustomerRequestsTab({
     writeUpChecklistTasks.forEach((task) => {
       if (!task || typeof task !== "object") return;
       const isCheckedTask =
-        typeof task.checked === "boolean"
-          ? task.checked
-          : ["complete", "completed", "done"].includes(
-              String(task.status || "").trim().toLowerCase()
-            );
+      typeof task.checked === "boolean" ?
+      task.checked :
+      ["complete", "completed", "done"].includes(
+        String(task.status || "").trim().toLowerCase()
+      );
       if (!isCheckedTask) return;
       const requestIdNum = Number(task.requestId ?? task.request_id ?? null);
       if (Number.isInteger(requestIdNum) && requestIdNum > 0) {
@@ -5121,19 +5121,19 @@ function CustomerRequestsTab({
   const isRequestRowCompleteFromWriteUp = useCallback((req, indexInList = -1) => {
     if (!req) return false;
     const requestIdNum = Number(req.requestId ?? req.request_id ?? null);
-    if (Number.isInteger(requestIdNum) && requestIdNum > 0
-      && completedWriteUpRequestIds.has(requestIdNum)) {
+    if (Number.isInteger(requestIdNum) && requestIdNum > 0 &&
+    completedWriteUpRequestIds.has(requestIdNum)) {
       return true;
     }
     const sortOrderNum = Number(req.sortOrder ?? req.sort_order ?? null);
-    if (Number.isInteger(sortOrderNum) && sortOrderNum > 0
-      && completedWriteUpSortOrders.has(sortOrderNum)) {
+    if (Number.isInteger(sortOrderNum) && sortOrderNum > 0 &&
+    completedWriteUpSortOrders.has(sortOrderNum)) {
       return true;
     }
     // Fall back to positional index (1-based) — matches how WriteUpForm seeds
     // a fresh checklist when no requestId/sortOrder is present.
-    if (Number.isInteger(indexInList) && indexInList >= 0
-      && completedWriteUpSortOrders.has(indexInList + 1)) {
+    if (Number.isInteger(indexInList) && indexInList >= 0 &&
+    completedWriteUpSortOrders.has(indexInList + 1)) {
       return true;
     }
     return false;
@@ -5483,7 +5483,7 @@ function CustomerRequestsTab({
     });
 
     // Stable severity-priority pass: red rows first, then amber, others retain prior relative order.
-    const severityRank = (sev) => (sev === "red" ? 0 : sev === "amber" ? 1 : 2);
+    const severityRank = (sev) => sev === "red" ? 0 : sev === "amber" ? 1 : 2;
     return baseSorted.
     map((row, idx) => ({ row, idx })).
     sort((a, b) => {
@@ -5671,7 +5671,7 @@ function CustomerRequestsTab({
             onMouseLeave={(e) => {
               e.currentTarget.style.opacity = "1";
             }}>
-            
+
               {jobData.vhcRequired ? "Mark VHC Not Required" : "Mark VHC Required"}
             </button>
           }
@@ -5689,7 +5689,7 @@ function CustomerRequestsTab({
               fontSize: "var(--control-font-size)",
               minHeight: "var(--control-height)"
             }}>
-            
+
               Edit Requests
             </button>
           }
@@ -5709,7 +5709,7 @@ function CustomerRequestsTab({
               fontSize: "var(--control-font-size)",
               minHeight: "var(--control-height)"
             }}>
-            
+
               Save
             </button>
             <button
@@ -5729,7 +5729,7 @@ function CustomerRequestsTab({
               fontSize: "var(--control-font-size)",
               minHeight: "var(--control-height)"
             }}>
-            
+
               Cancel
             </button>
           </div>
@@ -5748,7 +5748,7 @@ function CustomerRequestsTab({
             gap: "12px",
             flexWrap: "nowrap"
           }}>
-          
+
               <div
             style={{
               flex: 1,
@@ -5758,7 +5758,7 @@ function CustomerRequestsTab({
               gap: "6px",
               minWidth: "260px"
             }}>
-            
+
                 <span style={requestSubtitleStyle}>Request {index + 1}</span>
                 <RequestPresetAutosuggestInput
               value={req.text || ""}
@@ -5785,7 +5785,7 @@ function CustomerRequestsTab({
                 color: "var(--text-1)",
                 backgroundColor: "transparent"
               }} />
-            
+
               </div>
 
               <div style={{ width: "82px", flexShrink: 0 }}>
@@ -5794,25 +5794,25 @@ function CustomerRequestsTab({
                 </label>
                 <div style={{ position: "relative" }}>
                 <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={req.time}
-              onChange={(e) => handleUpdateRequest(index, "time", e.target.value)}
-              onBlur={() => persistPresetHoursFromRow(requests[index])}
-              className="edit-requests-hours-input"
-              style={{
-                width: "100%",
-                height: "var(--control-height-sm)",
-                padding: "8px 24px 8px 10px",
-                border: "none",
-                borderRadius: "var(--control-radius)",
-                fontSize: "14px",
-                backgroundColor: "var(--surface)",
-                color: "var(--text-1)",
-                appearance: "textfield",
-                MozAppearance: "textfield"
-              }} />
+                type="number"
+                min="0"
+                step="0.1"
+                value={req.time}
+                onChange={(e) => handleUpdateRequest(index, "time", e.target.value)}
+                onBlur={() => persistPresetHoursFromRow(requests[index])}
+                className="edit-requests-hours-input"
+                style={{
+                  width: "100%",
+                  height: "var(--control-height-sm)",
+                  padding: "8px 24px 8px 10px",
+                  border: "none",
+                  borderRadius: "var(--control-radius)",
+                  fontSize: "14px",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text-1)",
+                  appearance: "textfield",
+                  MozAppearance: "textfield"
+                }} />
                 <span style={{
                 pointerEvents: "none",
                 position: "absolute",
@@ -5827,7 +5827,7 @@ function CustomerRequestsTab({
                   h
                 </span>
                 </div>
-            
+
               </div>
 
               <div style={{ width: "170px", flexShrink: 0 }}>
@@ -5848,7 +5848,7 @@ function CustomerRequestsTab({
               { value: "Staff", label: "Staff" }]
               }
               className="edit-requests-payment-dropdown" />
-            
+
               </div>
 
               <button
@@ -5867,7 +5867,7 @@ function CustomerRequestsTab({
               fontWeight: "600",
               alignSelf: "flex-end"
             }}>
-            
+
                 Remove
               </button>
             </div>
@@ -5885,7 +5885,7 @@ function CustomerRequestsTab({
             fontSize: "var(--control-font-size)",
             minHeight: "var(--control-height)"
           }}>
-          
+
             Add Request
           </button>
 
@@ -5904,13 +5904,13 @@ function CustomerRequestsTab({
               gap: "12px",
               flexWrap: "nowrap",
               // Severity-driven row tint overrides default authorised-row background for red/amber VHC items.
-              ...(req.severity === "red"
-                ? { backgroundColor: "var(--danger-surface)", color: "var(--danger-text)" }
-                : req.severity === "amber"
-                ? { backgroundColor: "var(--warning-surface)", color: "var(--warning-text)" }
-                : null)
+              ...(req.severity === "red" ?
+              { backgroundColor: "var(--danger-surface)", color: "var(--danger-text)" } :
+              req.severity === "amber" ?
+              { backgroundColor: "var(--warning-surface)", color: "var(--warning-text)" } :
+              null)
             }}>
-            
+
                   <div
               style={{
                 flex: 1,
@@ -5920,7 +5920,7 @@ function CustomerRequestsTab({
                 gap: "6px",
                 minWidth: "260px"
               }}>
-              
+
                     <span style={requestSubtitleStyle}>{`Authorised ${index + 1}`}</span>
                     <input
                 type="text"
@@ -5937,7 +5937,7 @@ function CustomerRequestsTab({
                   color: "var(--text-1)",
                   backgroundColor: "transparent"
                 }} />
-              
+
                   </div>
 
                   <div style={{ width: "82px", flexShrink: 0 }}>
@@ -5946,25 +5946,25 @@ function CustomerRequestsTab({
                     </label>
                     <div style={{ position: "relative" }}>
                     <input
-                type="number"
-                min="0"
-                step="0.1"
-                value={req.time}
-                readOnly
-                disabled
-                className="edit-requests-hours-input"
-                style={{
-                  width: "100%",
-                  height: "var(--control-height-sm)",
-                  padding: "8px 24px 8px 10px",
-                  border: "none",
-                  borderRadius: "var(--control-radius)",
-                  fontSize: "14px",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--text-1)",
-                  opacity: 0.75,
-                  cursor: "not-allowed"
-                }} />
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={req.time}
+                  readOnly
+                  disabled
+                  className="edit-requests-hours-input"
+                  style={{
+                    width: "100%",
+                    height: "var(--control-height-sm)",
+                    padding: "8px 24px 8px 10px",
+                    border: "none",
+                    borderRadius: "var(--control-radius)",
+                    fontSize: "14px",
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text-1)",
+                    opacity: 0.75,
+                    cursor: "not-allowed"
+                  }} />
                     <span style={{
                   pointerEvents: "none",
                   position: "absolute",
@@ -5980,7 +5980,7 @@ function CustomerRequestsTab({
                       h
                     </span>
                     </div>
-              
+
                   </div>
 
                   <div style={{ width: "170px", flexShrink: 0 }}>
@@ -6002,7 +6002,7 @@ function CustomerRequestsTab({
                 }
                 className="edit-requests-payment-dropdown"
                 disabled={!req.requestId && !req.vhcItemId} />
-              
+
                   </div>
                 </div>
           )}
@@ -6020,9 +6020,9 @@ function CustomerRequestsTab({
             // task in the write-up checklist, show Completed for this row even
             // when the bulk write-up status hasn't been flipped yet.
             const rowCompletedInWriteUp = isRequestRowCompleteFromWriteUp(req, index);
-            const effectiveRowStatus = rowCompletedInWriteUp
-              ? "completed"
-              : customerRequestStatusByWorkflow;
+            const effectiveRowStatus = rowCompletedInWriteUp ?
+            "completed" :
+            customerRequestStatusByWorkflow;
             const { statusLabel, statusBadgeStyle } = getRequestStatusPresentation(
               effectiveRowStatus,
               "inprogress"
@@ -6031,7 +6031,7 @@ function CustomerRequestsTab({
               <div key={index} style={requestRowButtonStyle}>
                 <div
                   style={requestColumnGridStyle}>
-                  
+
                   <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", alignSelf: "start" }}>
                     <span style={requestSubtitleStyle}>Request {index + 1}</span>
                     <span style={{ fontSize: "14px", color: "var(--text-1)" }}>
@@ -6131,16 +6131,16 @@ function CustomerRequestsTab({
             Number(row.partsCost) :
             null;
             const severityRowStyle =
-              row.severity === "red"
-                ? { backgroundColor: "var(--danger-surface)", color: "var(--danger-text)" } // Red VHC severity overrides default row bg.
-                : row.severity === "amber"
-                ? { backgroundColor: "var(--warning-surface)", color: "var(--warning-text)" } // Amber VHC severity overrides default row bg.
-                : null;
+            row.severity === "red" ?
+            { backgroundColor: "var(--danger-surface)", color: "var(--danger-text)" } // Red VHC severity overrides default row bg.
+            : row.severity === "amber" ?
+            { backgroundColor: "var(--warning-surface)", color: "var(--warning-text)" } // Amber VHC severity overrides default row bg.
+            : null;
             return (
               <div key={rowKey} style={{ ...authorisedRowButtonStyle, ...(severityRowStyle || {}) }}>
                   <div
                   style={requestColumnGridStyle}>
-                  
+
                     <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "6px", alignSelf: "start" }}>
                       <span style={requestSubtitleStyle}>{`Authorised ${index + 1}`}</span>
                       <span style={{ fontSize: "14px", color: "var(--text-1)" }}>
@@ -6213,7 +6213,7 @@ function CustomerRequestsTab({
                     borderRadius: "var(--radius-sm)",
                     backgroundColor: "var(--theme)"
                   }}>
-                  
+
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                         <thead>
                           <tr style={{ color: "var(--grey-accent)", textAlign: "left", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -6232,7 +6232,7 @@ function CustomerRequestsTab({
                           color: "var(--text-1)",
                           backgroundColor: normalizeStatusId(item.status) === "removed" ? undefined : "var(--surface)"
                         }}>
-                        
+
                               <td style={{ padding: "4px 8px 4px 0", fontWeight: "500", color: "var(--text-1)" }}>{item.part?.partNumber || item.part_number || "\u2014"}</td>
                               <td style={{ padding: "4px 8px" }}>{item.part?.name || item.part?.description || "\u2014"}</td>
                               <td style={{ padding: "4px 8px", textAlign: "right" }}>{item.quantityAllocated ?? item.quantityRequested ?? 0}</td>
@@ -6340,7 +6340,7 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
           flexDirection: "column",
           gap: "16px"
         }}>
-        
+
         <div>
           <h2 style={{ margin: 0 }}>Edit existing</h2>
         </div>
@@ -6358,7 +6358,7 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
               size="md"
               usePortal={false}
               menuStyle={{ maxHeight: "220px", overflowY: "auto" }} />
-            
+
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -6373,7 +6373,7 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
               size="md"
               usePortal={false}
               menuStyle={{ maxHeight: "220px", overflowY: "auto" }} />
-            
+
           </div>
         </div>
 
@@ -6392,7 +6392,7 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
               fontSize: "var(--control-font-size)",
               minHeight: "var(--control-height)"
             }}>
-            
+
             Close
           </button>
           <button
@@ -6408,7 +6408,7 @@ function LocationUpdateModal({ entry, onClose, onSave }) {
               minHeight: "var(--control-height)",
               cursor: "pointer"
             }}>
-            
+
             Update
           </button>
         </div>
@@ -6469,7 +6469,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
           flexDirection: "column",
           gap: "18px"
         }}>
-        
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h2 style={{ margin: 0 }}>{isEdit ? "Edit existing" : "Log new"}</h2>
@@ -6487,7 +6487,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
               cursor: "pointer",
               fontWeight: 700
             }}>
-            
+
             ✕
           </button>
         </div>
@@ -6498,7 +6498,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
             gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
             gap: "10px"
           }}>
-          
+
           {[
           { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821", required: false },
           { label: "Registration", field: "reg", placeholder: "GY21 HNP", required: false },
@@ -6526,7 +6526,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
                 fontSize: "var(--control-font-size)",
                 minHeight: "var(--control-height)"
               }} />
-            
+
             </div>
           )}
         </div>
@@ -6537,7 +6537,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
             gridTemplateColumns: "1fr",
             gap: "10px"
           }}>
-          
+
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <label style={{ fontSize: "0.85rem", color: "var(--info)", fontWeight: 600 }}>
               Vehicle Location
@@ -6550,7 +6550,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
               size="md"
               usePortal={false}
               menuStyle={{ maxHeight: "220px", overflowY: "auto" }} />
-            
+
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -6565,7 +6565,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
               size="md"
               usePortal={false}
               menuStyle={{ maxHeight: "220px", overflowY: "auto" }} />
-            
+
           </div>
         </div>
 
@@ -6582,7 +6582,7 @@ function LocationEntryModal({ context, entry, mode = "edit", onClose, onSave }) 
             fontSize: "var(--control-font-size)",
             minHeight: "var(--control-height)"
           }}>
-          
+
           Update
         </button>
       </form>
@@ -6738,13 +6738,13 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
       backgroundToken="surface"
       shell
       style={panelStyle}>
-      
+
       <DevLayoutSection
         sectionKey="jobcard-tab-contact-header"
         sectionType="toolbar"
         parentKey="jobcard-tab-contact-panel"
         style={panelHeaderStyle}>
-        
+
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {editing ? <div style={badgeStyle}>Editing</div> : null}
         </div>
@@ -6755,7 +6755,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         sectionType="form-grid"
         parentKey="jobcard-tab-contact-panel"
         style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px" }}>
-        
+
         <div>
           <label style={labelStyle}>
             CUSTOMER NAME
@@ -6772,7 +6772,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                 ...inputStyle
               }}
               disabled={customerSaving} />
-            
+
               <input
               type="text"
               placeholder="Last name"
@@ -6783,7 +6783,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
                 ...inputStyle
               }}
               disabled={customerSaving} />
-            
+
             </div> :
 
           <div style={readOnlyStyle}>
@@ -6859,7 +6859,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
             onChange={(e) => handleFieldChange("contactPreference", e.target.value)}
             style={inputStyle}
             disabled={customerSaving}>
-            
+
               {contactOptions.map((option) =>
             <option key={option} value={option}>
                   {option}
@@ -6915,7 +6915,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
           border: "none",
           borderLeft: `4px solid ${approvalChecked ? "var(--success)" : "var(--warning)"}`
         }}>
-        
+
           <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "14px", color: "var(--text-1)", fontWeight: "700" }}>
             <input
             type="checkbox"
@@ -6923,7 +6923,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
             onChange={(e) => setApprovalChecked(e.target.checked)}
             disabled={customerSaving}
             style={{ width: "16px", height: "16px" }} />
-          
+
             Customer has approved updated details
           </label>
           <p style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "8px", marginBottom: 0 }}>
@@ -6938,7 +6938,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         sectionType="content-card"
         parentKey="jobcard-tab-contact-panel"
         style={{ marginTop: "12px", padding: "10px", borderRadius: "var(--control-radius)", backgroundColor: "var(--danger-surface)", color: "var(--danger)", fontSize: "13px" }}>
-        
+
           {saveError}
         </DevLayoutSection>
       }
@@ -6949,7 +6949,7 @@ function ContactTab({ jobData, canEdit, onSaveCustomerDetails, customerSaving })
         sectionType="toolbar"
         parentKey="jobcard-tab-contact-panel"
         style={{ ...actionsStyle, marginTop: "auto", justifyContent: "flex-start" }}>
-        
+
           {editing ?
         <>
               <button onClick={handleSave} disabled={isSaveDisabled} style={primaryButtonStyle(isSaveDisabled)}>
@@ -7333,7 +7333,7 @@ function SchedulingTab({
           parentKey="jobcard-tab-scheduling"
           backgroundToken="surface"
           style={sectionCardStyle}>
-          
+
           <div style={sectionTitleRow}>
             <div style={{ flex: 1 }}>
               <h3 style={cardTitleStyle}>Customer &amp; Vehicle</h3>
@@ -7363,7 +7363,7 @@ function SchedulingTab({
                 whiteSpace: "nowrap",
                 opacity: !jobData.customerFirstName && !jobData.customerLastName && !jobData.customerId ? 0.5 : 1
               }}>
-              
+
               View Profile
             </button>
           </div>
@@ -7399,39 +7399,39 @@ function SchedulingTab({
         </DevLayoutSection>
 
         {/* ── Section 4: Customer Logistics ──
-            Migrated to the canonical .app-section-card class per CLAUDE.md
-            §3.3. Inline sectionCardStyle removed so padding, background and
-            radius come from --section-card-padding / --section-card-bg /
-            --section-card-radius design tokens. .app-section-card also
-            establishes a flex-column with --layout-card-gap between children. */}
-        <DevLayoutSection
+             Migrated to the canonical .app-section-card class per CLAUDE.md
+             §3.3. Inline sectionCardStyle removed so padding, background and
+             radius come from --section-card-padding / --section-card-bg /
+             --section-card-radius design tokens. .app-section-card also
+             establishes a flex-column with --layout-card-gap between children. */}
+        <LayerSurface
           sectionKey="jobcard-tab-scheduling-logistics"
           sectionType="content-card"
-          parentKey="jobcard-tab-scheduling"
-          backgroundToken="surface"
-          className="app-section-card">
+          parentKey="jobcard-tab-scheduling">
+
+
 
           <div style={sectionTitleRow}>
             <h3 style={cardTitleStyle}>Customer Logistics</h3>
           </div>
           {/* Mirrors the main job-card tab strip (job-cards-auto-tab-row-1):
-              same .tab-scroll-row container chip + .tab-api__item buttons,
-              same --tab-container-bg background and 8px padding. Reusing
-              those classes means this row picks up every visual change made
-              to the canonical tab family (radius, spacing, active-state
-              colours, hover, focus) without diverging styling. */}
+               same .tab-scroll-row container chip + .tab-api__item buttons,
+               same --tab-container-bg background and 8px padding. Reusing
+               those classes means this row picks up every visual change made
+               to the canonical tab family (radius, spacing, active-state
+               colours, hover, focus) without diverging styling. */}
           <div
             className="tab-scroll-row"
             role="tablist"
             style={{
               backgroundColor: "var(--tab-container-bg)",
               borderRadius: "var(--radius-sm)",
-              padding: "8px",
+              padding: "8px"
             }}>
             {waitingOptions.map((option) => {
               const isActive =
-                bookingWaitingStatus === option ||
-                (!bookingWaitingStatus && option === "Neither");
+              bookingWaitingStatus === option ||
+              !bookingWaitingStatus && option === "Neither";
               return (
                 <button
                   key={option}
@@ -7443,13 +7443,13 @@ function SchedulingTab({
                   aria-pressed={isActive}
                   aria-selected={isActive}>
                   {option}
-                </button>
-              );
+                </button>);
+
             })}
           </div>
           {/* Placeholder for future conditional fields (loan car details, collection time, etc.) */}
           <div style={{ minHeight: "0px" }} />
-        </DevLayoutSection>
+        </LayerSurface>
       </div>
 
       {/* ── Row: Customer Reported Issues (left) + Appointment Information (right) ── */}
@@ -7462,7 +7462,7 @@ function SchedulingTab({
           parentKey="jobcard-tab-scheduling"
           backgroundToken="surface"
           style={{ ...sectionCardStyle, marginBottom: 0, display: "flex", flexDirection: "column" }}>
-          
+
           <div style={sectionTitleRow}>
             <h3 style={cardTitleStyle}>Customer Reported Issues</h3>
           </div>
@@ -7477,7 +7477,7 @@ function SchedulingTab({
               fontSize: "13px",
               lineHeight: "18px"
             }}>
-            
+
             {bookingRequestLines.length > 0 ?
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {bookingRequestLines.map((line, index) =>
@@ -7487,7 +7487,7 @@ function SchedulingTab({
                   ...reportedIssueRowStyle,
                   marginBottom: 0
                 }}>
-                
+
                     <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
                       <span style={schedulingRowSubtitleStyle}>Reported Issue {index + 1}</span>
                       <span style={{ color: "var(--text-1)", fontSize: "13px" }}>{line}</span>
@@ -7508,7 +7508,7 @@ function SchedulingTab({
           parentKey="jobcard-tab-scheduling"
           backgroundToken="surface"
           style={{ ...sectionCardStyle, marginBottom: 0 }}>
-          
+
           <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -7530,7 +7530,7 @@ function SchedulingTab({
                 cursor: "pointer",
                 whiteSpace: "nowrap"
               }}>
-              
+
               Open Appointment Calendar
             </button>
           </div>
@@ -7573,7 +7573,7 @@ function SchedulingTab({
                 onChange={(event) => handleAppointmentFieldChange("date", event.target.value)}
                 disabled={!canEdit || appointmentSaving}
                 className="compact-picker" />
-              
+
             </div>
             <div>
               <TimePickerField
@@ -7583,7 +7583,7 @@ function SchedulingTab({
                 disabled={!canEdit || appointmentSaving}
                 className="compact-picker"
                 style={{ ...inputStyle }} />
-              
+
             </div>
             <div>
               <DropdownField
@@ -7601,7 +7601,7 @@ function SchedulingTab({
                 { value: "completed", label: "Completed" },
                 { value: "cancelled", label: "Cancelled" }]
                 } />
-              
+
             </div>
           </div>
 
@@ -7615,7 +7615,7 @@ function SchedulingTab({
               fontSize: "12px",
               color: "var(--grey-accent)"
             }}>
-            
+
             Appointment created: <strong style={{ color: "var(--text-1)" }}>{appointmentCreatedAt}</strong>
           </div>
         </DevLayoutSection>
@@ -7628,7 +7628,7 @@ function SchedulingTab({
         parentKey="jobcard-tab-scheduling"
         backgroundToken="surface"
         style={{ ...sectionCardStyle, display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: "14px", marginBottom: 0 }}>
-        
+
         <DevLayoutSection
           sectionKey="jobcard-tab-scheduling-confirmation"
           sectionType="content-card"
@@ -7642,7 +7642,7 @@ function SchedulingTab({
             border: "none",
             borderLeft: `4px solid ${confirmCustomerDetails ? "var(--success)" : "var(--warning)"}`
           }}>
-          
+
           <label
             style={{
               display: "flex",
@@ -7652,14 +7652,14 @@ function SchedulingTab({
               color: "var(--text-1)",
               cursor: canEdit ? "pointer" : "default"
             }}>
-            
+
             <input
               type="checkbox"
               checked={confirmCustomerDetails}
               onChange={(event) => setConfirmCustomerDetails(event.target.checked)}
               disabled={!canEdit}
               style={{ width: "16px", height: "16px", marginTop: "2px", flexShrink: 0 }} />
-            
+
             <span>
               I confirm {jobData.customer || "the customer"}&apos;s contact details for this booking.
               <br />
@@ -7680,7 +7680,7 @@ function SchedulingTab({
           sectionType="toolbar"
           parentKey="jobcard-tab-scheduling-actions"
           style={{ display: "flex", flex: "1 1 320px", flexWrap: "wrap", alignItems: "center", alignContent: "center", gap: "12px" }}>
-          
+
         {/* Primary: Save Booking */}
         <button
             onClick={handleBookingSubmit}
@@ -7707,7 +7707,7 @@ function SchedulingTab({
               opacity: bookingButtonDisabled ? 0.65 : 1,
               transition: "opacity 0.15s, background-color 0.15s"
             }}>
-            
+
           {bookingFlowSaving ? "Saving..." : "Save Booking Details"}
         </button>
 
@@ -7729,7 +7729,7 @@ function SchedulingTab({
               opacity: !appointmentDirty ? 0.6 : 1,
               transition: "opacity 0.15s, background-color 0.15s, color 0.15s"
             }}>
-            
+
             {appointmentSaving ?
             "Saving..." :
             jobData.appointment ?
@@ -7814,7 +7814,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
       parentKey="jobcard-tab-service-history"
       backgroundToken="surface"
       shell>
-      
+
       {history.length > 0 ?
       <DevLayoutSection
         sectionKey="jobcard-tab-service-history-list"
@@ -7825,7 +7825,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
           backgroundColor: "var(--surface)",
           overflow: "hidden"
         }}>
-        
+
           <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
             <thead>
               <tr>
@@ -7867,7 +7867,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
                           fontWeight: "600",
                           cursor: "pointer"
                         }}>
-                        
+
                               Open Invoice
                             </button> :
                       null}
@@ -7902,7 +7902,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
                               backgroundColor: isVhcApproved ? "var(--success-surface)" : "var(--surface)",
                               borderLeft: `4px solid ${isVhcApproved ? "var(--success)" : "var(--primary)"}`
                             }}>
-                            
+
                                 <span style={rowLabelStyle}>
                                   {isVhcApproved ? "VHC Approved Request" : `Customer Request ${index + 1}`}
                                 </span>
@@ -7935,7 +7935,7 @@ function ServiceHistoryTab({ vehicleJobHistory }) {
           backgroundColor: "var(--surface)",
           borderRadius: "var(--control-radius)"
         }}>
-        
+
           <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
           <p style={{ fontSize: "14px", color: "var(--grey-accent)" }}>
             No previous service history for this vehicle
@@ -7968,7 +7968,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
           gap: "12px",
           flexWrap: "wrap"
         }}>
-        
+
         <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600", color: "var(--text-1)" }}>
           PARTS ADDED TO JOB
         </h3>
@@ -8001,7 +8001,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
             cursor: !canAllocate || allocateDisabled ? "not-allowed" : "pointer",
             transition: "background 0.2s ease, color 0.2s ease"
           }}>
-          
+
           Allocate to Request
         </button>
       </div>
@@ -8016,7 +8016,7 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
           fontSize: "14px",
           textAlign: "center"
         }}>
-        
+
           No parts have been added to this job yet.
         </div> :
 
@@ -8029,14 +8029,14 @@ function GoodsInPartsPanel({ goodsInParts = [], onAllocateParts, canAllocate }) 
           overflowY: "auto",
           maxHeight: "300px"
         }}>
-        
+
           <table
           style={{
             width: "100%",
             borderCollapse: "separate",
             borderSpacing: "0"
           }}>
-          
+
             <thead>
               <tr style={{ background: "var(--surface)", textTransform: "uppercase", fontSize: "11px", letterSpacing: "0.08em" }}>
                 <th style={{ textAlign: "left", padding: "12px 16px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>Goods in #</th>
@@ -8359,7 +8359,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           flexDirection: "column",
           gap: "12px"
         }}>
-        
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>
             <div
@@ -8370,7 +8370,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                 letterSpacing: "0.06em",
                 textTransform: "uppercase"
               }}>
-              
+
               Add Part From Stock
             </div>
             <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info-dark)" }}>
@@ -8399,7 +8399,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             width: "100%",
             opacity: canAllocateParts ? 1 : 0.7
           }} />
-        
+
         {catalogLoading &&
         <div style={{ fontSize: "0.85rem", color: "var(--info)" }}>Searching stock…</div>
         }
@@ -8414,7 +8414,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             border: "none",
             borderRadius: "var(--radius-sm)"
           }}>
-          
+
             {catalogResults.map((part) => {
             const isSelected = selectedCatalogPart?.id === part.id;
             return (
@@ -8431,7 +8431,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                   background: isSelected ? "var(--theme)" : "transparent",
                   cursor: "pointer"
                 }}>
-                
+
                   <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>{part.name}</div>
                   <div style={{ fontSize: "0.8rem", color: "var(--info-dark)" }}>
                     Part #: {part.part_number} · Supplier: {part.supplier || "Unknown"}
@@ -8452,7 +8452,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             padding: "12px",
             background: "var(--theme)"
           }}>
-          
+
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
               <div>
                 <div style={{ fontWeight: 700, color: "var(--accent-purple)", fontSize: "1rem" }}>{selectedCatalogPart.name}</div>
@@ -8470,7 +8470,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                 cursor: "pointer",
                 fontWeight: 600
               }}>
-              
+
                 Clear
               </button>
             </div>
@@ -8481,7 +8481,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))",
               gap: "12px"
             }}>
-            
+
               <label style={{ fontSize: "0.8rem", color: "var(--info-dark)" }}>
                 Quantity
                 <input
@@ -8501,7 +8501,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                   minHeight: "var(--control-height)",
                   fontSize: "var(--control-font-size)"
                 }} />
-              
+
               </label>
               <div>
                 <div style={{ fontSize: "0.75rem", color: "var(--info-dark)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -8552,7 +8552,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               minHeight: "var(--control-height)",
               cursor: !canAllocateParts ? "not-allowed" : "pointer"
             }}>
-            
+
               {allocatingPart ? "Adding…" : `Add to Job ${jobNumber || ""}`}
             </button>
           </div>
@@ -8567,7 +8567,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
             borderRadius: "var(--control-radius)",
             padding: "16px"
           }}>
-          
+
             <div
             style={{
               fontSize: "0.9rem",
@@ -8576,7 +8576,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               letterSpacing: "0.05em",
               textTransform: "uppercase"
             }}>
-            
+
               Parts Pipeline
             </div>
             <div
@@ -8586,7 +8586,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
               gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
               gap: "10px"
             }}>
-            
+
               {pipelineStages.map((stage) =>
             <div
               key={stage.id}
@@ -8596,7 +8596,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                 border: "none",
                 background: stage.count > 0 ? "var(--surface)" : "var(--theme)"
               }}>
-              
+
                   <div style={{ fontSize: "1.25rem", fontWeight: 600, color: "var(--primary)" }}>
                     {stage.count}
                   </div>
@@ -8640,7 +8640,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                     border: "1px solid var(--theme)",
                     backgroundColor: "var(--surface)"
                   }}>
-                  
+
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                         <div>
                           <div style={{ fontSize: "12px", color: "var(--info)" }}>{part.partNumber}</div>
@@ -8660,7 +8660,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                         color: statusMeta.color,
                         backgroundColor: statusMeta.background
                       }}>
-                      
+
                           {statusMeta.label}
                         </span>
                       </div>
@@ -8752,7 +8752,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                     border: "1px solid var(--theme)",
                     backgroundColor: "var(--surface)"
                   }}>
-                  
+
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
                         <div>
                           <div style={{ fontSize: "12px", color: "var(--info)" }}>{request.partNumber}</div>
@@ -8772,7 +8772,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                         color: statusMeta.color,
                         backgroundColor: statusMeta.background
                       }}>
-                      
+
                           {statusMeta.label}
                         </span>
                       </div>
@@ -8881,7 +8881,7 @@ function NotesTab({ value, onChange, canEdit, saving, meta }) {
             backgroundColor: canEdit ? "var(--surface)" : "rgba(var(--primary-rgb), 0.04)",
             color: "var(--info-dark)"
           }} />
-        
+
         <div style={{ marginTop: "16px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", fontSize: "13px", color: "var(--info)", gap: "16px" }}>
           <div>
             {lastUpdated ?
@@ -8996,12 +8996,12 @@ function VHCTab({
       // never localhost. Override via NEXT_PUBLIC_VHC_BASE_URL / NEXT_PUBLIC_APP_URL
       // when developing against a tunnel.
       const publicOrigin = (
-        process.env.NEXT_PUBLIC_VHC_BASE_URL ||
-        process.env.NEXT_PUBLIC_APP_URL ||
-        (typeof window !== "undefined" && !/localhost|127\.0\.0\.1/.test(window.location.origin)
-          ? window.location.origin
-          : "https://hnpsystem.vercel.app")
-      ).replace(/\/+$/, "");
+      process.env.NEXT_PUBLIC_VHC_BASE_URL ||
+      process.env.NEXT_PUBLIC_APP_URL || (
+      typeof window !== "undefined" && !/localhost|127\.0\.0\.1/.test(window.location.origin) ?
+      window.location.origin :
+      "https://hnpsystem.vercel.app")).
+      replace(/\/+$/, "");
       const shareUrl = `${publicOrigin}/vhc/customer/${jobNumber}/${linkCode}`;
 
       await navigator.clipboard.writeText(shareUrl);
@@ -9052,18 +9052,18 @@ function VHCTab({
   const customActions =
   <>
       <button
-    type="button"
-    className="app-btn app-btn--primary app-btn--sm"
-    onClick={handleCustomerViewClick}
-    title="Open customer preview">
+      type="button"
+      className="app-btn app-btn--primary app-btn--sm"
+      onClick={handleCustomerViewClick}
+      title="Open customer preview">
         View
       </button>
       <button
-    type="button"
-    className="app-btn app-btn--secondary app-btn--sm"
-    onClick={handleCopyToClipboard}
-    disabled={generatingLink}
-    title={copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}>
+      type="button"
+      className="app-btn app-btn--secondary app-btn--sm"
+      onClick={handleCopyToClipboard}
+      disabled={generatingLink}
+      title={copied ? "Copied!" : "Copy shareable link (expires in 24 hours)"}>
         {generatingLink ? "..." : copied ? "Copied" : "Copy"}
       </button>
       {/* TODO: After testing, lock the Send button to fire only once per job — */}
@@ -9071,11 +9071,11 @@ function VHCTab({
       {/* jobData.vhc_sent_at or a local state mirror) so the same email can't */}
       {/* be re-sent. For now multiple sends are allowed for debugging. */}
       <button
-    type="button"
-    className="app-btn app-btn--primary app-btn--sm"
-    onClick={handleSendVhc}
-    disabled={!sendVhcEnabled || sendingVhc}
-    title={!sendVhcEnabled ? "Awaiting customer decision must be set on a Red or Amber row before sending." : "Send interactive VHC to customer"}>
+      type="button"
+      className="app-btn app-btn--primary app-btn--sm"
+      onClick={handleSendVhc}
+      disabled={!sendVhcEnabled || sendingVhc}
+      title={!sendVhcEnabled ? "Awaiting customer decision must be set on a Red or Amber row before sending." : "Send interactive VHC to customer"}>
         {sendingVhc ? "Sending..." : "Send"}
       </button>
       {sendVhcMessage ?
@@ -9099,7 +9099,7 @@ function VHCTab({
       parentKey="jobcard-tab-vhc"
       backgroundToken="surface"
       shell>
-      
+
       <VhcDetailsPanel
         jobNumber={jobNumber}
         readOnly={!canEdit}
@@ -9111,7 +9111,7 @@ function VHCTab({
         onJobDataRefresh={onJobDataRefresh}
         onUpdateRequestPrePickLocation={onUpdateRequestPrePickLocation}
         enableTabs />
-      
+
     </DevLayoutSection>);
 
 }
@@ -9151,7 +9151,7 @@ const renderMessageContentWithLinks = (content) => {
           onClick={(e) => {
             e.stopPropagation();
           }}>
-          
+
           {fullMatch}
         </a>
       );
@@ -9166,7 +9166,7 @@ const renderMessageContentWithLinks = (content) => {
             color: "var(--accent-purple)"
           }}
           title={`Customer: ${custName}`}>
-          
+
           {fullMatch}
         </span>
       );
@@ -9179,7 +9179,7 @@ const renderMessageContentWithLinks = (content) => {
             fontWeight: 600,
             color: "var(--info-dark)"
           }}>
-          
+
           {fullMatch}
         </span>
       );
@@ -9265,7 +9265,7 @@ function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
             fontWeight: "600",
             cursor: "pointer"
           }}>
-          
+
             Open Messaging Hub
           </button>
         </div> :
@@ -9299,7 +9299,7 @@ function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
                 fontWeight: "600",
                 cursor: "pointer"
               }}>
-              
+
                 Open in Messaging Hub
               </button>
             </div>
@@ -9314,7 +9314,7 @@ function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
                 backgroundColor: "var(--theme)",
                 color: "var(--info-dark)"
               }}>
-              
+
                   {member.name} · {member.role || "Team"}
                 </span>
             )}
@@ -9327,7 +9327,7 @@ function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
                 backgroundColor: "var(--theme)",
                 color: "var(--accent-purple)"
               }}>
-              
+
                   {customerMember.name || "Customer"} · Customer
                 </span>
             }
@@ -9379,7 +9379,7 @@ function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
                   borderBottom: "1px solid var(--theme)",
                   backgroundColor: isStaffOnly ? "var(--danger-surface)" : "var(--theme)"
                 }}>
-                
+
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
                         <strong style={{ color: "var(--accent-purple)", fontSize: "14px" }}>
@@ -9408,7 +9408,7 @@ function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
                       color: isStaffOnly ? "var(--danger)" : "var(--info-dark)",
                       backgroundColor: isStaffOnly ? "var(--danger-surface)" : "var(--success)"
                     }}>
-                    
+
                         {isStaffOnly ? "Internal only" : "Shared with customer"}
                       </span>
                       {message.metadata?.jobNumber &&
@@ -9575,17 +9575,17 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
       try {
         const today = new Date().toISOString().split("T")[0];
         const [{ data: jobClocking, error: jobError }, { data: timeRecords, error: timeError }] =
-          await Promise.all([
-            supabase
-              .from("job_clocking")
-              .select("user_id, job_id, job_number, clock_in")
-              .is("clock_out", null),
-            supabase
-              .from("time_records")
-              .select("user_id, clock_in, notes")
-              .eq("date", today)
-              .is("clock_out", null),
-          ]);
+        await Promise.all([
+        supabase.
+        from("job_clocking").
+        select("user_id, job_id, job_number, clock_in").
+        is("clock_out", null),
+        supabase.
+        from("time_records").
+        select("user_id, clock_in, notes").
+        eq("date", today).
+        is("clock_out", null)]
+        );
         if (jobError) throw jobError;
         if (timeError) throw timeError;
 
@@ -9596,7 +9596,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             map[entry.user_id] = {
               status: "In Progress",
               jobNumber: entry.job_number || null,
-              jobId: entry.job_id || null,
+              jobId: entry.job_id || null
             };
           }
         });
@@ -9605,11 +9605,11 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           if (map[record.user_id]) return; // active job_clocking already wins
           const note = (record.notes || "").toString().toLowerCase();
           map[record.user_id] = {
-            status: note.includes("tea") || note.includes("break")
-              ? "Tea Break"
-              : "Waiting for Job",
+            status: note.includes("tea") || note.includes("break") ?
+            "Tea Break" :
+            "Waiting for Job",
             jobNumber: null,
-            jobId: null,
+            jobId: null
           };
         });
         if (isMounted) setTechStatuses(map);
@@ -9635,7 +9635,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         userId,
         jobId,
         jobNumber: normalizedJobNumber,
-        workType: "initial",
+        workType: "initial"
       });
       if (!result?.success) {
         throw new Error(result?.error || "Unable to clock the technician onto this job.");
@@ -10079,7 +10079,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         flexDirection: "column",
         gap: "18px"
       }}>
-      
+
       {techniciansError &&
       <div
         style={{
@@ -10090,7 +10090,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           color: "var(--danger-dark)",
           fontSize: "0.9rem"
         }}>
-        
+
           {techniciansError}
         </div>
       }
@@ -10105,7 +10105,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           color: "var(--warning-dark)",
           fontSize: "0.9rem"
         }}>
-        
+
           {disabledMessage}
         </div>
       }
@@ -10120,7 +10120,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           color: "var(--danger-dark)",
           fontSize: "0.9rem"
         }}>
-        
+
           {formError}
         </div>
       }
@@ -10135,7 +10135,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           color: "var(--success-dark)",
           fontSize: "0.9rem"
         }}>
-        
+
           {formSuccess}
         </div>
       }
@@ -10148,7 +10148,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             gridTemplateColumns: "repeat(4, 1fr)",
             gap: "16px"
           }}>
-          
+
           <CalendarField
             id="clocking-in-date"
             label="Clock-in date"
@@ -10162,7 +10162,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             }}
             required
             disabled={!canEdit} />
-          
+
           <CalendarField
             id="clocking-out-date"
             label="Clock-out date"
@@ -10170,7 +10170,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             onChange={(event) => setClockOutDate(event.target.value)}
             required
             disabled={!canEdit} />
-          
+
           <TimePickerField
             id="clocking-start-time"
             label="Clock-in time"
@@ -10178,7 +10178,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             onChange={(event) => setClockInTime(event.target.value)}
             required
             disabled={!canEdit} />
-          
+
           <TimePickerField
             id="clocking-finish-time"
             label="Clock-out time"
@@ -10186,7 +10186,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             onChange={(event) => setClockOutTime(event.target.value)}
             required
             disabled={!canEdit} />
-          
+
         </div>
 
         {/* Row 2: Request selector, Tech selector */}
@@ -10196,12 +10196,12 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             gridTemplateColumns: "repeat(2, 1fr)",
             gap: "16px"
           }}>
-          
+
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <label
               htmlFor="clocking-request-selector"
               style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}>
-              
+
               Job / Request
             </label>
             <DropdownField
@@ -10213,13 +10213,13 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               disabled={!canEdit}
               required
               style={{ width: "100%" }} />
-            
+
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <label
               htmlFor="clocking-tech-selector"
               style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--info-dark)" }}>
-              
+
               Technician
             </label>
             <DropdownField
@@ -10235,7 +10235,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               disabled={!canEdit || techniciansLoading}
               required
               style={{ width: "100%" }} />
-            
+
           </div>
         </div>
 
@@ -10247,7 +10247,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             alignItems: "center",
             justifyContent: "space-between"
           }}>
-          
+
           <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
             {isJustClockState && selectedTechnicianId ?
             <button
@@ -10265,7 +10265,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 cursor: !canEdit || submitting ? "not-allowed" : "pointer",
                 opacity: !canEdit || submitting ? 0.6 : 1
               }}>
-              
+
                 {submitting ? "Clocking…" : "Just clock"}
               </button> :
             null}
@@ -10283,7 +10283,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 cursor: !canEdit || submitting ? "not-allowed" : "pointer",
                 opacity: !canEdit || submitting ? 0.6 : 1
               }}>
-              
+
               {submitting ? "Saving…" : "Save clocking entry"}
             </button>
             <button
@@ -10300,7 +10300,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                 fontWeight: 600,
                 cursor: submitting ? "not-allowed" : "pointer"
               }}>
-              
+
               Reset form
             </button>
           </div>
@@ -10336,7 +10336,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           refreshSignal={refreshSignal}
           enableRequestClick={false}
           title="Clocking history" />
-        
+
         </div>
       }
 
@@ -10344,8 +10344,8 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
       {showTechsPopup && typeof document !== "undefined" && createPortal(
         <div
           style={{ ...popupOverlayStyles, zIndex: 1300 }}
-          onClick={() => setShowTechsPopup(false)}
-        >
+          onClick={() => setShowTechsPopup(false)}>
+
           <div
             role="dialog"
             aria-modal="true"
@@ -10358,8 +10358,8 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               flexDirection: "column",
               gap: "18px"
             }}
-            onClick={(event) => event.stopPropagation()}
-          >
+            onClick={(event) => event.stopPropagation()}>
+
             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
               <h3 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: "var(--text-1)" }}>
                 Technicians · {new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
@@ -10370,119 +10370,119 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               </p>
             </div>
 
-            {popupClockingError ? (
-              <div
-                style={{
-                  borderRadius: "var(--control-radius-xs)",
-                  backgroundColor: "var(--danger-surface)",
-                  color: "var(--danger-dark)",
-                  padding: "8px 12px",
-                  fontSize: "0.85rem"
-                }}
-              >
+            {popupClockingError ?
+            <div
+              style={{
+                borderRadius: "var(--control-radius-xs)",
+                backgroundColor: "var(--danger-surface)",
+                color: "var(--danger-dark)",
+                padding: "8px 12px",
+                fontSize: "0.85rem"
+              }}>
+
                 {popupClockingError}
-              </div>
-            ) : null}
+              </div> :
+            null}
 
-            {techniciansLoading || techStatusesLoading ? (
-              <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading technicians…</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "60vh", overflowY: "auto" }}>
+            {techniciansLoading || techStatusesLoading ?
+            <div style={{ color: "var(--grey-accent)", padding: "12px 0" }}>Loading technicians…</div> :
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "60vh", overflowY: "auto" }}>
                 {technicianOptions.map((tech) => {
-                  const userIdNum = Number(tech.value);
-                  const absence = techAbsences.find((a) => a.userId === userIdNum);
-                  const isOff = Boolean(absence);
-                  const statusEntry = techStatuses[userIdNum] || null;
-                  const rawStatus = isOff
-                    ? `On ${absence.type}`
-                    : statusEntry?.status || "Not Clocked In";
-                  const isOnThisJob =
-                    !isOff &&
-                    statusEntry?.status === "In Progress" &&
-                    Number(statusEntry?.jobId) === Number(jobId);
-                  const isOnAnotherJob =
-                    !isOff &&
-                    statusEntry?.status === "In Progress" &&
-                    !isOnThisJob;
-                  const canClockOn = !isOff && rawStatus === "Waiting for Job";
-                  const isThisRowSubmitting = popupClockingUserId === userIdNum;
+                const userIdNum = Number(tech.value);
+                const absence = techAbsences.find((a) => a.userId === userIdNum);
+                const isOff = Boolean(absence);
+                const statusEntry = techStatuses[userIdNum] || null;
+                const rawStatus = isOff ?
+                `On ${absence.type}` :
+                statusEntry?.status || "Not Clocked In";
+                const isOnThisJob =
+                !isOff &&
+                statusEntry?.status === "In Progress" &&
+                Number(statusEntry?.jobId) === Number(jobId);
+                const isOnAnotherJob =
+                !isOff &&
+                statusEntry?.status === "In Progress" &&
+                !isOnThisJob;
+                const canClockOn = !isOff && rawStatus === "Waiting for Job";
+                const isThisRowSubmitting = popupClockingUserId === userIdNum;
 
-                  // Pick a tone class from global.css so every row's pill shares
-                  // the same shape/size and only the colour changes.
-                  let toneClass = "app-badge--neutral";
-                  let pillLabel = rawStatus;
-                  if (isOff) {
-                    toneClass = "app-badge--warning";
-                  } else if (isOnThisJob) {
-                    toneClass = "app-badge--success";
-                    pillLabel = "On this job";
-                  } else if (isOnAnotherJob) {
-                    toneClass = "app-badge--danger";
-                    pillLabel = `On Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}`;
-                  } else if (canClockOn) {
-                    toneClass = "app-badge--success-strong";
-                    pillLabel = isThisRowSubmitting ? "Clocking on…" : "Clock on";
-                  } else if (rawStatus === "Tea Break") {
-                    toneClass = "app-badge--warning";
-                  }
+                // Pick a tone class from global.css so every row's pill shares
+                // the same shape/size and only the colour changes.
+                let toneClass = "app-badge--neutral";
+                let pillLabel = rawStatus;
+                if (isOff) {
+                  toneClass = "app-badge--warning";
+                } else if (isOnThisJob) {
+                  toneClass = "app-badge--success";
+                  pillLabel = "On this job";
+                } else if (isOnAnotherJob) {
+                  toneClass = "app-badge--danger";
+                  pillLabel = `On Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}`;
+                } else if (canClockOn) {
+                  toneClass = "app-badge--success-strong";
+                  pillLabel = isThisRowSubmitting ? "Clocking on…" : "Clock on";
+                } else if (rawStatus === "Tea Break") {
+                  toneClass = "app-badge--warning";
+                }
 
-                  const pillBaseClass = "app-badge app-badge--control app-badge--uppercase";
-                  const pillStyle = { minWidth: "120px", justifyContent: "center" };
+                const pillBaseClass = "app-badge app-badge--control app-badge--uppercase";
+                const pillStyle = { minWidth: "120px", justifyContent: "center" };
 
-                  // Row background follows the same tone as the right-side pill,
-                  // sourced from the theme's surface tokens.
-                  let rowBackground = "var(--theme)";
-                  if (isOff) {
-                    rowBackground = "var(--warning-surface)";
-                  } else if (isOnThisJob) {
-                    rowBackground = "var(--success-surface)";
-                  } else if (isOnAnotherJob) {
-                    rowBackground = "var(--danger-surface)";
-                  } else if (canClockOn) {
-                    rowBackground = "var(--success-surface)";
-                  } else if (rawStatus === "Tea Break") {
-                    rowBackground = "var(--warning-surface)";
-                  }
+                // Row background follows the same tone as the right-side pill,
+                // sourced from the theme's surface tokens.
+                let rowBackground = "var(--theme)";
+                if (isOff) {
+                  rowBackground = "var(--warning-surface)";
+                } else if (isOnThisJob) {
+                  rowBackground = "var(--success-surface)";
+                } else if (isOnAnotherJob) {
+                  rowBackground = "var(--danger-surface)";
+                } else if (canClockOn) {
+                  rowBackground = "var(--success-surface)";
+                } else if (rawStatus === "Tea Break") {
+                  rowBackground = "var(--warning-surface)";
+                }
 
-                  const rightLabel = canClockOn ? (
-                    <button
-                      type="button"
-                      disabled={isThisRowSubmitting}
-                      onClick={() => handleClockTechFromPopup(userIdNum)}
-                      className={`${pillBaseClass} ${toneClass}`}
-                      style={{
-                        ...pillStyle,
-                        border: "none",
-                        cursor: isThisRowSubmitting ? "wait" : "pointer"
-                      }}
-                    >
+                const rightLabel = canClockOn ?
+                <button
+                  type="button"
+                  disabled={isThisRowSubmitting}
+                  onClick={() => handleClockTechFromPopup(userIdNum)}
+                  className={`${pillBaseClass} ${toneClass}`}
+                  style={{
+                    ...pillStyle,
+                    border: "none",
+                    cursor: isThisRowSubmitting ? "wait" : "pointer"
+                  }}>
+
                       {pillLabel}
-                    </button>
-                  ) : (
-                    <span className={`${pillBaseClass} ${toneClass}`} style={pillStyle}>
+                    </button> :
+
+                <span className={`${pillBaseClass} ${toneClass}`} style={pillStyle}>
                       {pillLabel}
-                    </span>
-                  );
+                    </span>;
 
-                  const secondaryLine = isOff
-                    ? absence.role
-                    : isOnAnotherJob
-                      ? `Currently on Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}`
-                      : tech.description || "Technician";
 
-                  return (
-                    <div
-                      key={tech.key}
-                      style={{
-                        padding: "12px 14px",
-                        borderRadius: "var(--radius-sm)",
-                        backgroundColor: rowBackground,
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "12px"
-                      }}
-                    >
+                const secondaryLine = isOff ?
+                absence.role :
+                isOnAnotherJob ?
+                `Currently on Job #${statusEntry?.jobNumber || statusEntry?.jobId || "—"}` :
+                tech.description || "Technician";
+
+                return (
+                  <div
+                    key={tech.key}
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: "var(--radius-sm)",
+                      backgroundColor: rowBackground,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: "12px"
+                    }}>
+
                       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
                         <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-1)" }}>
                           {tech.label}
@@ -10492,14 +10492,14 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                         </span>
                       </div>
                       {rightLabel}
-                    </div>
-                  );
-                })}
-                {technicianOptions.length === 0 && (
-                  <div style={{ color: "var(--grey-accent)", padding: "8px 0" }}>No technicians found.</div>
-                )}
+                    </div>);
+
+              })}
+                {technicianOptions.length === 0 &&
+              <div style={{ color: "var(--grey-accent)", padding: "8px 0" }}>No technicians found.</div>
+              }
               </div>
-            )}
+            }
 
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
               <button
@@ -10513,8 +10513,8 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
                   color: "var(--text-1)",
                   fontWeight: 600,
                   cursor: "pointer"
-                }}
-              >
+                }}>
+
                 Close
               </button>
             </div>
@@ -10684,7 +10684,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
           sectionType="toolbar"
           parentKey="jobcard-tab-warranty-panel"
           style={{ marginTop: "16px" }}>
-          
+
           <button
             type="button"
             onClick={() => setLinkMode(true)}
@@ -10697,7 +10697,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               fontWeight: "600",
               cursor: "pointer"
             }}>
-            
+
             {isLinked ? "Change Linked Warranty Job" : "Link Warranty Job Card"}
           </button>
         </DevLayoutSection>);
@@ -10719,7 +10719,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
           flexDirection: "column",
           gap: "12px"
         }}>
-        
+
         <div>
           <DropdownField
             label="Select Warranty Job"
@@ -10735,7 +10735,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               value: String(job.id),
               label: `${job.job_number} · ${job.vehicle_reg || "No Reg"} · ${job.vehicle_make_model || "Warranty Job"}`
             }))} />
-          
+
           {linkError &&
           <p style={{ marginTop: "6px", fontSize: "12px", color: "var(--danger)" }}>
               {linkError}
@@ -10757,7 +10757,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               cursor: linking ? "not-allowed" : "pointer",
               minWidth: "140px"
             }}>
-            
+
             {linking ? "Linking..." : "Link Job"}
           </button>
           <button
@@ -10773,7 +10773,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               fontWeight: "600",
               cursor: linking ? "not-allowed" : "pointer"
             }}>
-            
+
             Cancel
           </button>
         </div>
@@ -10788,7 +10788,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
       parentKey="jobcard-tab-warranty"
       backgroundToken="surface"
       shell>
-      
+
       <DevLayoutSection
         sectionKey="jobcard-tab-warranty-linked-job"
         sectionType="content-card"
@@ -10800,7 +10800,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
           backgroundColor: "var(--surface)",
           marginBottom: "16px"
         }}>
-        
+
         <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "var(--accent-purple)" }}>
           Linked Warranty Job
         </h3>
@@ -10815,7 +10815,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
               onClick={handleOpenLinkedJob}
               style={{
                 padding: "8px 14px",
-              borderRadius: "var(--control-radius)",
+                borderRadius: "var(--control-radius)",
                 border: "none",
                 backgroundColor: "var(--surface)",
                 color: "var(--text-1)",
@@ -10823,7 +10823,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
                 fontWeight: "600",
                 fontSize: "13px"
               }}>
-              
+
                 View Linked Job
               </button>
             </div>
@@ -10845,7 +10845,7 @@ function WarrantyTab({ jobData, canEdit, onLinkComplete = () => {} }) {
           border: "none",
           backgroundColor: "var(--surface)"
         }}>
-        
+
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
           <h3 style={{ margin: 0, fontSize: "16px", color: "var(--accent-base)" }}>
             Shared VHC Source
@@ -11069,7 +11069,7 @@ function ValetClockingPanel({ jobId, jobNumber, userId, clockingLocked = false, 
           opacity: loading || !jobId || !userId || clockingLocked && !isClockedOn ? 0.7 : 1,
           whiteSpace: "nowrap"
         }}>
-        
+
         {loading ? "Updating..." : isClockedOn ? "Clock Out (Valet)" : clockingLocked ? "Clocking Locked" : "Clock On To Job (Valet)"}
       </button>
       {clockedSinceText &&
@@ -11211,7 +11211,7 @@ function DocumentsTab({
   return (
     <div>
       {/* Document preview popup — portalled to document.body so position:fixed is
-           always relative to the viewport, not any transformed ancestor */}
+            always relative to the viewport, not any transformed ancestor */}
       {previewDoc && typeof document !== "undefined" && createPortal(
         <div
           onClick={() => setPreviewDoc(null)}
@@ -11221,7 +11221,7 @@ function DocumentsTab({
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: "24px"
           }}>
-          
+
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -11236,7 +11236,7 @@ function DocumentsTab({
               width: "100%",
               boxShadow: "0 24px 64px rgba(0,0,0,0.4)"
             }}>
-            
+
             {/* Header */}
             <div
               style={{
@@ -11252,7 +11252,7 @@ function DocumentsTab({
                 right: 0,
                 zIndex: 2
               }}>
-              
+
               {isRenamingPreview ?
               <>
                   <input
@@ -11281,7 +11281,7 @@ function DocumentsTab({
                     WebkitBackdropFilter: "blur(12px)",
                     outline: "none"
                   }} />
-                
+
                   <button
                   type="button"
                   onClick={() => {
@@ -11293,14 +11293,14 @@ function DocumentsTab({
                     setIsRenamingPreview(false);
                   }}
                   style={previewHeaderButtonStyle}>
-                  
+
                     Save
                   </button>
                   <button
                   type="button"
                   onClick={() => setIsRenamingPreview(false)}
                   style={previewHeaderButtonStyle}>
-                  
+
                     Cancel
                   </button>
                 </> :
@@ -11314,7 +11314,7 @@ function DocumentsTab({
                   type="button"
                   onClick={() => {setEditingDoc(previewDoc);setPreviewDoc(null);}}
                   style={previewHeaderButtonStyle}>
-                  
+
                       Edit
                     </button>
                 }
@@ -11327,7 +11327,7 @@ function DocumentsTab({
                     setIsRenamingPreview(true);
                   }}
                   style={previewHeaderButtonStyle}>
-                  
+
                       Rename
                     </button>
                 }
@@ -11348,7 +11348,7 @@ function DocumentsTab({
                   WebkitBackdropFilter: "blur(12px)"
                 }}
                 aria-label="Close preview">
-                
+
                 ×
               </button>
             </div>
@@ -11361,7 +11361,7 @@ function DocumentsTab({
                 backgroundColor: "var(--surface)",
                 minHeight: "300px"
               }}>
-              
+
               {isImageDocument(previewDoc) ?
               <img
                 src={previewDoc.url || previewDoc.file_url || ""}
@@ -11400,7 +11400,7 @@ function DocumentsTab({
           border: "1px solid var(--accent-base)",
           marginBottom: "16px"
         }}>
-        
+
           <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
             <div>
               <h3 style={{ margin: 0, fontSize: "15px", color: "var(--accent-strong)" }}>Valet Upload Picture</h3>
@@ -11414,7 +11414,7 @@ function DocumentsTab({
             userId={valetUserId}
             clockingLocked={clockingLocked}
             lockMessage={clockingLockDescription} />
-          
+
           </div>
           <div style={{ display: "flex", gap: "10px", marginTop: "12px", alignItems: "center", flexWrap: "wrap" }}>
             <input type="file" accept="image/*" onChange={(e) => setValetUploadFile(e.target.files?.[0] || null)} style={{ fontSize: "13px" }} />
@@ -11428,7 +11428,7 @@ function DocumentsTab({
               cursor: valetUploading || !valetUploadFile ? "not-allowed" : "pointer",
               opacity: valetUploading || !valetUploadFile ? 0.7 : 1
             }}>
-            
+
               {valetUploading ? "Uploading…" : "Upload Valet Photo"}
             </button>
             {valetUploadError && <span style={{ color: "var(--danger)", fontSize: "12px", fontWeight: 600 }}>{valetUploadError}</span>}
@@ -11450,7 +11450,7 @@ function DocumentsTab({
             backgroundColor: "var(--primary)", color: "var(--text-2)",
             fontWeight: "600", fontSize: "14px", cursor: "pointer"
           }}>
-          
+
             Upload Documents
           </button>
         }
@@ -11468,7 +11468,7 @@ function DocumentsTab({
           fontSize: "14px",
           lineHeight: 1.6
         }}>
-        
+
           <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>📄</div>
           <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-1)" }}>No documents attached</div>
           Upload check-sheets, signed paperwork, or photos to keep everything in one place.
@@ -11481,7 +11481,7 @@ function DocumentsTab({
           gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
           gap: "14px"
         }}>
-        
+
           {sortedDocuments.map((doc) => {
           const docName = doc.name || doc.file_name || "Document";
           const docType = doc.type || doc.file_type || "";
@@ -11504,7 +11504,7 @@ function DocumentsTab({
               }}
               onMouseEnter={(e) => {e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)";}}
               onMouseLeave={(e) => {e.currentTarget.style.boxShadow = "none";}}>
-              
+
                 {/* Thumbnail / type icon */}
                 <button
                 type="button"
@@ -11520,7 +11520,7 @@ function DocumentsTab({
                   backgroundColor: isImage ? "var(--surface-dark, #111)" : typeMeta.bg,
                   flexShrink: 0
                 }}>
-                
+
                   {isImage && docUrl ?
                 <img
                   src={docUrl}
@@ -11535,7 +11535,7 @@ function DocumentsTab({
                     display: "flex", flexDirection: "column",
                     alignItems: "center", justifyContent: "center", gap: "6px"
                   }}>
-                  
+
                       <span style={{ fontSize: "36px", lineHeight: 1, opacity: 0.7 }}>
                         {docType.includes("pdf") ? "📕" : docType.includes("sheet") || docName.match(/\.xls/i) ? "📗" : docType.includes("word") || docName.match(/\.doc/i) ? "📘" : "📄"}
                       </span>
@@ -11554,7 +11554,7 @@ function DocumentsTab({
                     fontSize: "13px", fontWeight: 600, color: "var(--text-1)",
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap"
                   }}>
-                  
+
                     {docName}
                   </div>
                   {dateStr &&
@@ -11569,7 +11569,7 @@ function DocumentsTab({
                   borderTop: "1px solid var(--surface)",
                   backgroundColor: "var(--surface)"
                 }}>
-                
+
                   <button
                   type="button"
                   onClick={() => docUrl && setPreviewDoc(doc)}
@@ -11581,7 +11581,7 @@ function DocumentsTab({
                     fontSize: "12px", fontWeight: 600, cursor: docUrl ? "pointer" : "not-allowed",
                     opacity: docUrl ? 1 : 0.5
                   }}>
-                  
+
                     View
                   </button>
                   {canDelete &&
@@ -11594,7 +11594,7 @@ function DocumentsTab({
                     backgroundColor: "var(--danger-surface)", color: "var(--danger)",
                     fontSize: "12px", fontWeight: 600, cursor: "pointer"
                   }}>
-                  
+
                       Delete
                     </button>
                 }
@@ -11614,7 +11614,7 @@ function DocumentsTab({
         }}
         onCancel={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}}
         onSkip={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}} />
-      
+
 
       <VideoEditorModal
         isOpen={editingDoc !== null && isVideoMime(editingDoc?.type || editingDoc?.file_type || "")}
@@ -11625,7 +11625,7 @@ function DocumentsTab({
         }}
         onCancel={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}}
         onSkip={() => {setPreviewDoc(editingDoc);setEditingDoc(null);}} />
-      
+
     </div>);
 
 }

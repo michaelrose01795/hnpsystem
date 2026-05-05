@@ -1,5 +1,5 @@
 // file location: src/components/dashboards/RetailManagersDashboard.js
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";import LayerSurface from "@/components/ui/LayerSurface";
 import dayjs from "dayjs";
 import { roleCategories } from "@/config/users";
 import { useRoster } from "@/context/RosterContext";
@@ -11,26 +11,26 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 // ⚠️ Mock data found — replacing with Supabase query
 // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
-const retailManagerRoles = (roleCategories?.Retail || [])
-  .filter((roleName) => typeof roleName === "string")
-  .filter((roleName) => /manager|director/i.test(roleName));
+const retailManagerRoles = (roleCategories?.Retail || []).
+filter((roleName) => typeof roleName === "string").
+filter((roleName) => /manager|director/i.test(roleName));
 
-const LinearTrend = ({ data, accent = "var(--primary)" }) => (
-  <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", width: "100%" }}>
-    {data.map((point) => (
-      <div key={point.label} style={{ flex: 1, textAlign: "center" }}>
+const LinearTrend = ({ data, accent = "var(--primary)" }) =>
+<div style={{ display: "flex", gap: "8px", alignItems: "flex-end", width: "100%" }}>
+    {data.map((point) =>
+  <div key={point.label} style={{ flex: 1, textAlign: "center" }}>
         <div
-          style={{
-            height: `${Math.max(8, point.jobs * 3)}px`,
-            background: accent,
-            borderRadius: "var(--radius-xs) var(--radius-xs) 4px 4px",
-          }}
-        />
+      style={{
+        height: `${Math.max(8, point.jobs * 3)}px`,
+        background: accent,
+        borderRadius: "var(--radius-xs) var(--radius-xs) 4px 4px"
+      }} />
+
         <small style={{ color: "var(--info)" }}>{point.label}</small>
       </div>
-    ))}
-  </div>
-);
+  )}
+  </div>;
+
 
 /** @see statusHelpers.isInactiveJobStatus — replaces inline Set */
 const CRITICAL_STATUS_KEYWORDS = ["waiting", "hold", "vhc", "qa", "road"];
@@ -57,52 +57,52 @@ const buildThroughputTrend = (jobs = []) => {
 
   if (buckets.size === 0) {
     return [
-      { label: "08:00", jobs: 0 },
-      { label: "10:00", jobs: 0 },
-      { label: "12:00", jobs: 0 },
-      { label: "14:00", jobs: 0 },
-      { label: "16:00", jobs: 0 },
-    ];
+    { label: "08:00", jobs: 0 },
+    { label: "10:00", jobs: 0 },
+    { label: "12:00", jobs: 0 },
+    { label: "14:00", jobs: 0 },
+    { label: "16:00", jobs: 0 }];
+
   }
 
-  return Array.from(buckets.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .slice(0, 8)
-    .map(([label, count]) => ({ label, jobs: count }));
+  return Array.from(buckets.entries()).
+  sort((a, b) => a[0].localeCompare(b[0])).
+  slice(0, 8).
+  map(([label, count]) => ({ label, jobs: count }));
 };
 
 const buildUtilisation = (clockingRows = [], teamMembers = {}) => {
   const activeIds = new Set((clockingRows || []).map((row) => row.user_id));
 
   const segments = [
-    { team: "Workshop", key: "techs" },
-    { team: "MOT", key: "mot" },
-    { team: "Valet", key: "valet" },
-  ];
+  { team: "Workshop", key: "techs" },
+  { team: "MOT", key: "mot" },
+  { team: "Valet", key: "valet" }];
+
 
   return segments.map(({ team, key }) => {
     const members = teamMembers[key] || [];
     const total = members.length || 0;
     const clockedIn = members.filter((id) => activeIds.has(id)).length;
-    const utilisation = total === 0 ? 0 : Math.round((clockedIn / total) * 100);
+    const utilisation = total === 0 ? 0 : Math.round(clockedIn / total * 100);
     return { team, utilisation, clockedIn, total };
   });
 };
 
 const buildRedJobs = (jobs = []) => {
-  return jobs
-    .filter((job) => {
-      const statusText = `${job.status || ""} ${job.waiting_status || ""}`.toLowerCase();
-      return CRITICAL_STATUS_KEYWORDS.some((keyword) => statusText.includes(keyword));
-    })
-    .sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0))
-    .slice(0, 5)
-    .map((job) => ({
-      jobNumber: job.job_number,
-      concern: job.job_concern || job.waiting_status || "Escalated job",
-      eta: job.promised_time ? dayjs(job.promised_time).format("HH:mm") : "TBC",
-      owner: job.assigned_to || "Unassigned",
-    }));
+  return jobs.
+  filter((job) => {
+    const statusText = `${job.status || ""} ${job.waiting_status || ""}`.toLowerCase();
+    return CRITICAL_STATUS_KEYWORDS.some((keyword) => statusText.includes(keyword));
+  }).
+  sort((a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)).
+  slice(0, 5).
+  map((job) => ({
+    jobNumber: job.job_number,
+    concern: job.job_concern || job.waiting_status || "Escalated job",
+    eta: job.promised_time ? dayjs(job.promised_time).format("HH:mm") : "TBC",
+    owner: job.assigned_to || "Unassigned"
+  }));
 };
 
 const DEFAULT_METRICS = {
@@ -114,7 +114,7 @@ const DEFAULT_METRICS = {
   techniciansTotal: 0,
   courtesyCarsOut: 0,
   todaysRevenue: 0,
-  estUpsell: 0,
+  estUpsell: 0
 };
 
 const useRetailWorkshopSnapshot = (teamMembers) => {
@@ -124,7 +124,7 @@ const useRetailWorkshopSnapshot = (teamMembers) => {
     throughputTrend: [],
     technicianUtilisation: [],
     isLoading: true,
-    error: null,
+    error: null
   });
 
   useEffect(() => {
@@ -135,31 +135,31 @@ const useRetailWorkshopSnapshot = (teamMembers) => {
         setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
         const startOfDay = dayjs().startOf("day").toISOString();
-        const { data: jobsData, error: jobsError } = await supabase
-          .from("jobs")
-          .select(
-            "id, job_number, status, waiting_status, job_concern, vehicle_reg, promised_time, created_at, updated_at, assigned_to, job_categories"
-          )
-          .gte("created_at", startOfDay)
-          .order("created_at", { ascending: true });
+        const { data: jobsData, error: jobsError } = await supabase.
+        from("jobs").
+        select(
+          "id, job_number, status, waiting_status, job_concern, vehicle_reg, promised_time, created_at, updated_at, assigned_to, job_categories"
+        ).
+        gte("created_at", startOfDay).
+        order("created_at", { ascending: true });
 
         if (jobsError) throw jobsError;
 
         const jobIds = (jobsData || []).map((job) => job.id);
 
-        const { data: clockingRows, error: clockingError } = await supabase
-          .from("job_clocking")
-          .select("user_id")
-          .is("clock_out", null);
+        const { data: clockingRows, error: clockingError } = await supabase.
+        from("job_clocking").
+        select("user_id").
+        is("clock_out", null);
 
         if (clockingError) throw clockingError;
 
         let authorisedChecks = [];
         if (jobIds.length) {
-          const { data: checksData, error: checksError } = await supabase
-            .from("vhc_checks")
-            .select("job_id, labour_hours, parts_cost, total_override, approval_status")
-            .in("job_id", jobIds);
+          const { data: checksData, error: checksError } = await supabase.
+          from("vhc_checks").
+          select("job_id, labour_hours, parts_cost, total_override, approval_status").
+          in("job_id", jobIds);
 
           if (checksError && checksError.code !== "PGRST116") throw checksError;
           authorisedChecks = (checksData || []).filter((row) => {
@@ -182,15 +182,15 @@ const useRetailWorkshopSnapshot = (teamMembers) => {
         ).length;
 
         const completedToday = jobs.filter((job) =>
-          isInactiveJobStatus(job.status)
+        isInactiveJobStatus(job.status)
         ).length;
 
         const courtesyCarsOut = jobs.filter((job) =>
-          Array.isArray(job.job_categories)
-            ? job.job_categories.some((cat) =>
-                String(cat).toLowerCase().includes("courtesy")
-              )
-            : false
+        Array.isArray(job.job_categories) ?
+        job.job_categories.some((cat) =>
+        String(cat).toLowerCase().includes("courtesy")
+        ) :
+        false
         ).length;
 
         const estUpsell = authorisedChecks.reduce((sum, row) => sum + sumAuthorizedCheckTotal(row), 0);
@@ -199,9 +199,9 @@ const useRetailWorkshopSnapshot = (teamMembers) => {
         const technicianUtilisation = buildUtilisation(clockingRows, teamMembers);
         const redJobs = buildRedJobs(jobs);
         const techniciansTotal =
-          (teamMembers.techs?.length || 0) +
-          (teamMembers.mot?.length || 0) +
-          (teamMembers.valet?.length || 0);
+        (teamMembers.techs?.length || 0) + (
+        teamMembers.mot?.length || 0) + (
+        teamMembers.valet?.length || 0);
 
         if (cancelled) return;
 
@@ -211,19 +211,19 @@ const useRetailWorkshopSnapshot = (teamMembers) => {
             jobsOnSite,
             waitingForParts,
             qaRoadTest,
-            techniciansClockedIn: (clockingRows || []).length
-              ? new Set(clockingRows.map((row) => row.user_id)).size
-              : 0,
+            techniciansClockedIn: (clockingRows || []).length ?
+            new Set(clockingRows.map((row) => row.user_id)).size :
+            0,
             techniciansTotal,
             courtesyCarsOut,
             todaysRevenue: completedToday * 450,
-            estUpsell: Math.round(estUpsell),
+            estUpsell: Math.round(estUpsell)
           },
           redJobs,
           throughputTrend,
           technicianUtilisation,
           isLoading: false,
-          error: null,
+          error: null
         });
       } catch (error) {
         if (cancelled) return;
@@ -231,7 +231,7 @@ const useRetailWorkshopSnapshot = (teamMembers) => {
         setState((prev) => ({
           ...prev,
           isLoading: false,
-          error: error.message || "Unable to load workshop metrics",
+          error: error.message || "Unable to load workshop metrics"
         }));
       }
     };
@@ -249,19 +249,19 @@ const buildManagerPanel = (roleName, metrics, redJobCount) => {
   const base = {
     focus: `Monitor ${metrics.jobsOnSite} active jobs in workshop`,
     risks: [
-      `${metrics.waitingForParts} jobs blocked awaiting parts`,
-      `${redJobCount} red-priority jobs need attention`,
-    ],
+    `${metrics.waitingForParts} jobs blocked awaiting parts`,
+    `${redJobCount} red-priority jobs need attention`],
+
     actions: [
-      "Review outstanding authorisations",
-      "Confirm ETA on delayed courtesy cars",
-    ],
+    "Review outstanding authorisations",
+    "Confirm ETA on delayed courtesy cars"],
+
     kpis: {
       cycleTime: Number((metrics.jobsOnSite / Math.max(metrics.jobsBooked || 1, 1)).toFixed(1)),
       sameDayFix: Math.max(0, 100 - metrics.waitingForParts * 4),
       nps: 70,
-      authorisations: Math.min(100, Math.round((metrics.estUpsell / Math.max(metrics.jobsBooked || 1, 1)) * 10)),
-    },
+      authorisations: Math.min(100, Math.round(metrics.estUpsell / Math.max(metrics.jobsBooked || 1, 1) * 10))
+    }
   };
 
   switch (roleName) {
@@ -270,36 +270,36 @@ const buildManagerPanel = (roleName, metrics, redJobCount) => {
         ...base,
         focus: `Keep service advisors synced with ${metrics.jobsBooked} bookings`,
         actions: [
-          "Chase customer responses on pending VHCs",
-          `Coordinate ${metrics.courtesyCarsOut} courtesy cars with reception`,
-        ],
+        "Chase customer responses on pending VHCs",
+        `Coordinate ${metrics.courtesyCarsOut} courtesy cars with reception`]
+
       };
     case "Workshop Manager":
       return {
         ...base,
         focus: `Optimise ramp utilisation with ${metrics.techniciansClockedIn}/${metrics.techniciansTotal} techs clocked in`,
         actions: [
-          "Reassign stalled jobs to free technicians",
-          "Check ramp availability for afternoon drop-offs",
-        ],
+        "Reassign stalled jobs to free technicians",
+        "Check ramp availability for afternoon drop-offs"]
+
       };
     case "Parts Manager":
       return {
         ...base,
         focus: `Close the gap on ${metrics.waitingForParts} parts-delayed jobs`,
         actions: [
-          "Call suppliers for urgent ETA updates",
-          "Top up fast-moving consumables before 15:00",
-        ],
+        "Call suppliers for urgent ETA updates",
+        "Top up fast-moving consumables before 15:00"]
+
       };
     case "After Sales Director":
       return {
         ...base,
         focus: `Protect gross profit with £${metrics.todaysRevenue.toLocaleString()} billed today`,
         actions: [
-          "Review high-value jobs before invoicing",
-          "Approve overtime where profitable",
-        ],
+        "Review high-value jobs before invoicing",
+        "Approve overtime where profitable"]
+
       };
     default:
       return base;
@@ -312,19 +312,19 @@ export default function RetailManagersDashboard({ user }) {
     () => ({
       techs: (usersByRoleDetailed?.["Techs"] || []).map((member) => member.id).filter(Boolean),
       mot: (usersByRoleDetailed?.["MOT Tester"] || []).map((member) => member.id).filter(Boolean),
-      valet: (usersByRoleDetailed?.["Valet Service"] || []).map((member) => member.id).filter(Boolean),
+      valet: (usersByRoleDetailed?.["Valet Service"] || []).map((member) => member.id).filter(Boolean)
     }),
     [usersByRoleDetailed]
   );
   const snapshot = useRetailWorkshopSnapshot(teamMembers);
   const todayLabel = dayjs().format("dddd, D MMM");
   const displayMetrics = snapshot.metrics || DEFAULT_METRICS;
-  const throughputData = snapshot.throughputTrend.length
-    ? snapshot.throughputTrend
-    : buildThroughputTrend([]);
-  const utilisationData = snapshot.technicianUtilisation.length
-    ? snapshot.technicianUtilisation
-    : buildUtilisation([], teamMembers);
+  const throughputData = snapshot.throughputTrend.length ?
+  snapshot.throughputTrend :
+  buildThroughputTrend([]);
+  const utilisationData = snapshot.technicianUtilisation.length ?
+  snapshot.technicianUtilisation :
+  buildUtilisation([], teamMembers);
   const redJobs = snapshot.redJobs;
 
   const managerPanels = useMemo(() => {
@@ -332,23 +332,23 @@ export default function RetailManagersDashboard({ user }) {
     return retailManagerRoles.map((roleName) => ({
       role: roleName,
       owners: usersByRole?.[roleName] || [],
-      ...buildManagerPanel(roleName, snapshot.metrics, snapshot.redJobs.length),
+      ...buildManagerPanel(roleName, snapshot.metrics, snapshot.redJobs.length)
     }));
   }, [snapshot.metrics, snapshot.redJobs.length, usersByRole]);
 
   return (
     <DevLayoutSection sectionKey="dashboard-retail-shell" sectionType="page-shell" shell style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <DevLayoutSection
+      <LayerSurface
         as="header"
         sectionKey="dashboard-retail-header"
         parentKey="dashboard-retail-shell"
         sectionType="section-shell"
         shell
-        className="app-section-card"
+
         style={{
-          gap: "8px",
-        }}
-      >
+          gap: "8px"
+        }}>
+
         <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.8rem", color: "var(--primary-selected)" }}>
           Retail Workshop Control Room
         </span>
@@ -356,28 +356,28 @@ export default function RetailManagersDashboard({ user }) {
           {user?.username ? `${user.username}'s Dashboard` : "Retail Dashboard"}
         </h1>
         <p style={{ margin: 0, color: "var(--info)" }}>Live view for retail managers · {todayLabel}</p>
-      </DevLayoutSection>
+      </LayerSurface>
 
       <DevLayoutSection sectionKey="dashboard-retail-workshop-pulse" parentKey="dashboard-retail-shell" sectionType="content-card">
         <SectionCard
           title="Today's Workshop Pulse"
-          subtitle="Live workshop snapshot aggregated from Supabase"
-        >
-        {snapshot.error && (
+          subtitle="Live workshop snapshot aggregated from Supabase">
+
+        {snapshot.error &&
           <div style={{ color: "var(--danger)", marginBottom: "12px", fontWeight: 600 }}>
             {snapshot.error}
           </div>
-        )}
+          }
         <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
           <MetricPill label="Jobs Booked" value={displayMetrics.jobsBooked} helper="+/- vs yesterday" />
           <MetricPill label="On Site" value={displayMetrics.jobsOnSite} helper="Active in workshop" />
           <MetricPill label="Awaiting Parts" value={`${displayMetrics.waitingForParts} jobs`} helper="Waiting on suppliers" />
           <MetricPill label="Road Test / QA" value={`${displayMetrics.qaRoadTest} cars`} helper="Require sign-off" />
           <MetricPill
-            label="Technicians"
-            value={`${displayMetrics.techniciansClockedIn}/${displayMetrics.techniciansTotal}`}
-            helper="Clocked-in vs scheduled"
-          />
+              label="Technicians"
+              value={`${displayMetrics.techniciansClockedIn}/${displayMetrics.techniciansTotal}`}
+              helper="Clocked-in vs scheduled" />
+
           <MetricPill label="Courtesy Cars Out" value={displayMetrics.courtesyCarsOut} helper="Currently loaned" />
           <MetricPill label="Revenue Today" value={`£${displayMetrics.todaysRevenue.toLocaleString()}`} helper="Complete & invoiced" />
           <MetricPill label="Upsell Pipeline" value={`£${displayMetrics.estUpsell.toLocaleString()}`} helper="Awaiting authorisation" />
@@ -392,7 +392,7 @@ export default function RetailManagersDashboard({ user }) {
       <DevLayoutSection sectionKey="dashboard-retail-manager-focus" parentKey="dashboard-retail-shell" sectionType="content-card">
         <SectionCard title="Retail manager focus" subtitle="Quick view for every manager level role inside retail">
         <div style={{ display: "grid", gap: "18px", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-          {managerPanels.map((panel) => (
+          {managerPanels.map((panel) =>
             <div
               key={panel.role}
               data-dev-section="1"
@@ -406,36 +406,36 @@ export default function RetailManagersDashboard({ user }) {
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
-                background: "var(--danger-surface)",
-              }}
-            >
+                background: "var(--danger-surface)"
+              }}>
+
               <div>
                 <h3 style={{ margin: 0, color: "var(--primary-selected)" }}>{panel.role}</h3>
-                {panel.owners.length > 0 && (
-                  <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
+                {panel.owners.length > 0 &&
+                <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
                     Owners: {panel.owners.join(", ")}
                   </p>
-                )}
+                }
               </div>
               <p style={{ margin: 0, color: "var(--info-dark)", fontWeight: 600 }}>{panel.focus}</p>
               <div style={{ display: "flex", gap: "10px" }}>
-                {Object.entries(panel.kpis).map(([label, value]) => (
-                  <div key={label} style={{ flex: 1 }}>
+                {Object.entries(panel.kpis).map(([label, value]) =>
+                <div key={label} style={{ flex: 1 }}>
                     <span style={{ color: "var(--info)", fontSize: "0.75rem", textTransform: "uppercase" }}>{label}</span>
                     <p style={{ margin: 0, fontWeight: 700, color: "var(--primary-selected)" }}>
                       {typeof value === "number" && value < 1 ? value.toFixed(1) : `${value}%`}
                     </p>
                   </div>
-                ))}
+                )}
               </div>
               <div>
                 <span style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                   Risks
                 </span>
                 <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "var(--info-dark)" }}>
-                  {panel.risks.map((risk) => (
-                    <li key={risk}>{risk}</li>
-                  ))}
+                  {panel.risks.map((risk) =>
+                  <li key={risk}>{risk}</li>
+                  )}
                 </ul>
               </div>
               <div>
@@ -443,13 +443,13 @@ export default function RetailManagersDashboard({ user }) {
                   Actions
                 </span>
                 <ul style={{ margin: "6px 0 0", paddingLeft: "18px", color: "var(--info-dark)" }}>
-                  {panel.actions.map((action) => (
-                    <li key={action}>{action}</li>
-                  ))}
+                  {panel.actions.map((action) =>
+                  <li key={action}>{action}</li>
+                  )}
                 </ul>
               </div>
             </div>
-          ))}
+            )}
         </div>
         </SectionCard>
       </DevLayoutSection>
@@ -458,15 +458,15 @@ export default function RetailManagersDashboard({ user }) {
         sectionKey="dashboard-retail-bottom-row"
         parentKey="dashboard-retail-shell"
         sectionType="grid-card"
-        style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}
-      >
+        style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
+
         <DevLayoutSection sectionKey="dashboard-retail-technician-utilisation" parentKey="dashboard-retail-bottom-row" sectionType="content-card">
           <SectionCard
             title="Technician utilisation"
-            subtitle="Clock-in data grouped by team"
-          >
+            subtitle="Clock-in data grouped by team">
+
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {utilisationData.map((team) => (
+            {utilisationData.map((team) =>
               <div
                 key={team.team}
                 style={{
@@ -476,9 +476,9 @@ export default function RetailManagersDashboard({ user }) {
                   background: "var(--theme)",
                   border: "1px solid rgba(var(--primary-rgb), 0.18)",
                   borderRadius: "var(--radius-sm)",
-                  padding: "12px",
-                }}
-              >
+                  padding: "12px"
+                }}>
+
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>
                   <span>{team.team}</span>
                   <strong>{team.utilisation}%</strong>
@@ -488,22 +488,22 @@ export default function RetailManagersDashboard({ user }) {
                     height: "10px",
                     borderRadius: "var(--radius-pill)",
                     background: "var(--surface)",
-                    overflow: "hidden",
-                  }}
-                >
+                    overflow: "hidden"
+                  }}>
+
                   <div
                     style={{
                       width: `${team.utilisation}%`,
                       height: "100%",
-                      background: "var(--primary)",
-                    }}
-                  />
+                      background: "var(--primary)"
+                    }} />
+
                 </div>
                 <small style={{ color: "var(--info)" }}>
                   {team.clockedIn}/{team.total} clocked in
                 </small>
               </div>
-            ))}
+              )}
           </div>
           </SectionCard>
         </DevLayoutSection>
@@ -511,19 +511,19 @@ export default function RetailManagersDashboard({ user }) {
         <DevLayoutSection sectionKey="dashboard-retail-red-jobs" parentKey="dashboard-retail-bottom-row" sectionType="content-card">
           <SectionCard title="Red priority jobs" subtitle="Jobs requiring manager attention">
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {redJobs.length === 0 && (
+            {redJobs.length === 0 &&
               <span style={{ color: "var(--info)" }}>No red-priority jobs at the moment.</span>
-            )}
-            {redJobs.map((job) => (
+              }
+            {redJobs.map((job) =>
               <div
                 key={job.jobNumber}
                 style={{
                   border: "1px solid rgba(var(--primary-rgb), 0.18)",
                   borderRadius: "var(--radius-sm)",
                   padding: "12px",
-                  background: "var(--theme)",
-                }}
-              >
+                  background: "var(--theme)"
+                }}>
+
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                   <strong style={{ color: "var(--primary-selected)" }}>{job.jobNumber}</strong>
                   <span style={{ color: "var(--info)", fontSize: "0.85rem" }}>{job.eta}</span>
@@ -531,11 +531,11 @@ export default function RetailManagersDashboard({ user }) {
                 <p style={{ margin: 0, color: "var(--info-dark)" }}>{job.concern}</p>
                 <small style={{ color: "var(--info)" }}>Owner: {job.owner}</small>
               </div>
-            ))}
+              )}
           </div>
           </SectionCard>
         </DevLayoutSection>
       </DevLayoutSection>
-    </DevLayoutSection>
-  );
+    </DevLayoutSection>);
+
 }

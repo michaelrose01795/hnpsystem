@@ -1,5 +1,5 @@
 // Shared layout shell for the parts dashboards
-import React from "react";
+import React from "react";import LayerSurface from "@/components/ui/LayerSurface";
 
 const containerStyle = {
   padding: "24px",
@@ -7,21 +7,21 @@ const containerStyle = {
   margin: "0 auto",
   display: "flex",
   flexDirection: "column",
-  gap: "24px",
+  gap: "24px"
 };
 
 const summaryGridStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: "16px",
+  gap: "16px"
 };
 
 const summaryCardStyle = {
-  padding: "18px",
+  padding: "18px"
 };
 
 const sectionCardStyle = {
-  height: "100%",
+  height: "100%"
 };
 
 const sectionTitleStyle = {
@@ -30,19 +30,19 @@ const sectionTitleStyle = {
   letterSpacing: "0.05em",
   color: "var(--primary-selected)",
   marginBottom: "14px",
-  textTransform: "uppercase",
+  textTransform: "uppercase"
 };
 
 const splitGridStyle = {
   display: "grid",
   gridTemplateColumns: "minmax(0, 2fr) minmax(260px, 1fr)",
-  gap: "20px",
+  gap: "20px"
 };
 
 const tableStyle = {
   width: "100%",
   borderCollapse: "separate",
-  borderSpacing: "0 10px",
+  borderSpacing: "0 10px"
 };
 
 const formatCurrency = (value) => {
@@ -55,7 +55,7 @@ const formatMargin = (cost, price) => {
   const costValue = Number(cost || 0);
   const priceValue = Number(price || 0);
   const diff = priceValue - costValue;
-  const percent = priceValue !== 0 ? (diff / priceValue) * 100 : 0;
+  const percent = priceValue !== 0 ? diff / priceValue * 100 : 0;
   return `${formatCurrency(diff)} (${percent.toFixed(0)}%)`;
 };
 
@@ -67,7 +67,7 @@ export default function PartsDashboardGrid({
   focusItems = [],
   inventoryAlerts = [],
   deliveries = [],
-  teamAvailability = [],
+  teamAvailability = []
 }) {
   return (
     <div style={containerStyle}>
@@ -79,32 +79,32 @@ export default function PartsDashboardGrid({
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             fontWeight: 700,
-            fontSize: "0.85rem",
-          }}
-        >
+            fontSize: "0.85rem"
+          }}>
+
           Parts Department
         </p>
         <h1 style={{ margin: 0, color: "var(--primary)", fontSize: "2rem" }}>{title}</h1>
-        {subtitle ? (
-          <p style={{ marginTop: "6px", color: "var(--grey-accent-dark)", maxWidth: "760px" }}>{subtitle}</p>
-        ) : null}
+        {subtitle ?
+        <p style={{ marginTop: "6px", color: "var(--grey-accent-dark)", maxWidth: "760px" }}>{subtitle}</p> :
+        null}
       </header>
 
       <div style={summaryGridStyle}>
-        {summaryCards.map((card) => (
-          <div key={card.label} className="app-section-card" style={summaryCardStyle}>
+        {summaryCards.map((card) =>
+        <LayerSurface as="div" key={card.label} style={summaryCardStyle}>
             <div style={{ fontSize: "0.85rem", color: "var(--primary-selected)", fontWeight: 600 }}>{card.label}</div>
             <div style={{ fontSize: "1.9rem", fontWeight: 700, color: "var(--primary)", margin: "8px 0" }}>
               {card.value}
             </div>
             {card.helper ? <div style={{ color: "var(--grey-accent)" }}>{card.helper}</div> : null}
-          </div>
-        ))}
+          </LayerSurface>
+        )}
       </div>
 
       <div style={splitGridStyle}>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div className="app-section-card" style={sectionCardStyle}>
+          <LayerSurface as="div" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Active Job Queue</div>
             <table style={tableStyle}>
               <thead>
@@ -117,8 +117,8 @@ export default function PartsDashboardGrid({
                 </tr>
               </thead>
               <tbody>
-                {workload.map((job) => (
-                  <tr key={job.jobNumber} style={{ background: "var(--danger-surface)" }}>
+                {workload.map((job) =>
+                <tr key={job.jobNumber} style={{ background: "var(--danger-surface)" }}>
                     <td style={{ padding: "12px", borderRadius: "var(--radius-xs) 0 0 var(--radius-xs)" }}>
                       <div style={{ fontWeight: 600 }}>{job.jobNumber}</div>
                       <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{job.reg}</div>
@@ -127,17 +127,17 @@ export default function PartsDashboardGrid({
                     <td style={{ padding: "12px" }}>{job.neededBy}</td>
                     <td style={{ padding: "12px" }}>
                       <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          padding: "4px 10px",
-                          borderRadius: "var(--radius-pill)",
-                          fontSize: "0.8rem",
-                          fontWeight: 600,
-                          background: job.statusColor || "rgba(var(--primary-rgb),0.08)",
-                          color: job.statusTextColor || "var(--primary-selected)",
-                        }}
-                      >
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "4px 10px",
+                        borderRadius: "var(--radius-pill)",
+                        fontSize: "0.8rem",
+                        fontWeight: 600,
+                        background: job.statusColor || "rgba(var(--primary-rgb),0.08)",
+                        color: job.statusTextColor || "var(--primary-selected)"
+                      }}>
+
                         {job.status}
                       </span>
                     </td>
@@ -145,23 +145,23 @@ export default function PartsDashboardGrid({
                       {job.value}
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
-          </div>
+          </LayerSurface>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
-            <div className="app-section-card" style={sectionCardStyle}>
+            <LayerSurface as="div" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Inventory Alerts</div>
               {inventoryAlerts.map((alert) => {
                 const statusLabel =
-                  alert.status === "low_stock"
-                    ? "Low stock"
-                    : alert.status === "back_order"
-                    ? "On back-order"
-                    : alert.status === "inactive"
-                    ? "Inactive"
-                    : "In stock";
+                alert.status === "low_stock" ?
+                "Low stock" :
+                alert.status === "back_order" ?
+                "On back-order" :
+                alert.status === "inactive" ?
+                "Inactive" :
+                "In stock";
                 return (
                   <div
                     key={alert.id || alert.partNumber || alert.part}
@@ -170,9 +170,9 @@ export default function PartsDashboardGrid({
                       marginBottom: "12px",
                       borderRadius: "var(--radius-sm)",
                       border: "1px dashed rgba(var(--primary-rgb),0.3)",
-                      background: "var(--theme)",
-                    }}
-                  >
+                      background: "var(--theme)"
+                    }}>
+
                     <div style={{ fontWeight: 600, color: "var(--primary-selected)" }}>
                       {alert.partNumber ? `${alert.partNumber} · ${alert.name || ""}` : alert.part || "Part"}
                     </div>
@@ -188,61 +188,61 @@ export default function PartsDashboardGrid({
                     <div style={{ marginTop: "4px", fontSize: "0.8rem", color: "var(--grey-accent-dark)" }}>
                       Linked jobs: {alert.openJobCount ?? 0}
                     </div>
-                  </div>
-                );
+                  </div>);
+
               })}
-            </div>
-            <div className="app-section-card" style={sectionCardStyle}>
+            </LayerSurface>
+            <LayerSurface as="div" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Team Focus</div>
-              {focusItems.map((item) => (
-                <div
-                  key={item.title}
-                  style={{
-                    padding: "10px 0",
-                    borderBottom: "1px solid rgba(var(--shadow-rgb),0.06)",
-                  }}
-                >
+              {focusItems.map((item) =>
+              <div
+                key={item.title}
+                style={{
+                  padding: "10px 0",
+                  borderBottom: "1px solid rgba(var(--shadow-rgb),0.06)"
+                }}>
+
                   <div style={{ fontWeight: 600 }}>{item.title}</div>
                   <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{item.detail}</div>
                   <div style={{ fontSize: "0.8rem", color: "var(--primary-selected)", marginTop: "4px" }}>{item.owner}</div>
                 </div>
-              ))}
-            </div>
+              )}
+            </LayerSurface>
           </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div className="app-section-card" style={sectionCardStyle}>
+          <LayerSurface as="div" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Team Availability</div>
-            {teamAvailability.map((entry) => (
-              <div
-                key={entry.name}
-                style={{
-                  padding: "12px",
-                  borderRadius: "var(--radius-sm)",
-                  border: "none",
-                  marginBottom: "12px",
-                  background: "var(--theme)",
-                }}
-              >
+            {teamAvailability.map((entry) =>
+            <div
+              key={entry.name}
+              style={{
+                padding: "12px",
+                borderRadius: "var(--radius-sm)",
+                border: "none",
+                marginBottom: "12px",
+                background: "var(--theme)"
+              }}>
+
                 <div style={{ fontWeight: 600 }}>{entry.name}</div>
                 <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>{entry.role}</div>
                 <div style={{ fontSize: "0.8rem", color: "var(--primary-selected)", marginTop: "6px" }}>
                   {entry.status} • {entry.window}
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="app-section-card" style={sectionCardStyle}>
+            )}
+          </LayerSurface>
+          <LayerSurface as="div" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Inbound Deliveries</div>
-            {deliveries.map((delivery) => (
-              <div
-                key={delivery.reference}
-                style={{
-                  padding: "10px 0",
-                  borderBottom: "1px solid rgba(var(--shadow-rgb),0.06)",
-                }}
-              >
+            {deliveries.map((delivery) =>
+            <div
+              key={delivery.reference}
+              style={{
+                padding: "10px 0",
+                borderBottom: "1px solid rgba(var(--shadow-rgb),0.06)"
+              }}>
+
                 <div style={{ fontWeight: 600 }}>{delivery.supplier}</div>
                 <div style={{ color: "var(--grey-accent)", fontSize: "0.85rem" }}>
                   ETA {delivery.eta} • {delivery.items} lines
@@ -251,10 +251,10 @@ export default function PartsDashboardGrid({
                   {delivery.reference}
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          </LayerSurface>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 }

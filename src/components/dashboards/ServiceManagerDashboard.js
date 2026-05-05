@@ -1,61 +1,61 @@
 // file location: src/components/dashboards/ServiceManagerDashboard.js
-import React, { useMemo } from "react";
+import React, { useMemo } from "react";import LayerSurface from "@/components/ui/LayerSurface";
 import Link from "next/link";
 import dayjs from "dayjs";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const advisorPipelines = [
-  {
-    advisor: "Nicola",
-    opens: 14,
-    authorisations: 9,
-    awaitingCallBack: 3,
-    escalations: 1,
-    nps: 76,
-  },
-  {
-    advisor: "Sharna",
-    opens: 12,
-    authorisations: 10,
-    awaitingCallBack: 1,
-    escalations: 0,
-    nps: 69,
-  },
-  {
-    advisor: "Josh",
-    opens: 9,
-    authorisations: 7,
-    awaitingCallBack: 2,
-    escalations: 0,
-    nps: 73,
-  },
-];
+{
+  advisor: "Nicola",
+  opens: 14,
+  authorisations: 9,
+  awaitingCallBack: 3,
+  escalations: 1,
+  nps: 76
+},
+{
+  advisor: "Sharna",
+  opens: 12,
+  authorisations: 10,
+  awaitingCallBack: 1,
+  escalations: 0,
+  nps: 69
+},
+{
+  advisor: "Josh",
+  opens: 9,
+  authorisations: 7,
+  awaitingCallBack: 2,
+  escalations: 0,
+  nps: 73
+}];
+
 
 const waitingCustomers = [
-  { jobNumber: "JC1440", customer: "Mr. Lawson", promised: "12:30", status: "Awaiting QA", owner: "Nicola" },
-  { jobNumber: "JC1442", customer: "Ms. Patel", promised: "14:00", status: "Road Test", owner: "Sharna" },
-  { jobNumber: "JC1445", customer: "Fleet Drop", promised: "15:15", status: "Paperwork", owner: "Josh" },
-];
+{ jobNumber: "JC1440", customer: "Mr. Lawson", promised: "12:30", status: "Awaiting QA", owner: "Nicola" },
+{ jobNumber: "JC1442", customer: "Ms. Patel", promised: "14:00", status: "Road Test", owner: "Sharna" },
+{ jobNumber: "JC1445", customer: "Fleet Drop", promised: "15:15", status: "Paperwork", owner: "Josh" }];
+
 
 const courtesyFleet = [
-  { vehicle: "22 HPX", type: "EV Hatch", status: "Due back 13:45", customer: "JC1438" },
-  { vehicle: "71 HPN", type: "SUV", status: "With valet", customer: "JC1427" },
-  { vehicle: "20 HPA", type: "Hybrid", status: "Available", customer: "-" },
-  { vehicle: "19 HPR", type: "City", status: "In use (staff)", customer: "-" },
-];
+{ vehicle: "22 HPX", type: "EV Hatch", status: "Due back 13:45", customer: "JC1438" },
+{ vehicle: "71 HPN", type: "SUV", status: "With valet", customer: "JC1427" },
+{ vehicle: "20 HPA", type: "Hybrid", status: "Available", customer: "-" },
+{ vehicle: "19 HPR", type: "City", status: "In use (staff)", customer: "-" }];
+
 
 const afternoonPlan = [
-  { slot: "13:00", action: "Confirm three while-you-wait collections", owner: "Reception" },
-  { slot: "14:30", action: "Service clinic call backs (VIP list)", owner: "Nicola" },
-  { slot: "15:15", action: "Courtesy car swap for JC1427", owner: "Sharna" },
-  { slot: "16:00", action: "Prep tomorrow's first-wave appointments", owner: "Josh" },
-];
+{ slot: "13:00", action: "Confirm three while-you-wait collections", owner: "Reception" },
+{ slot: "14:30", action: "Service clinic call backs (VIP list)", owner: "Nicola" },
+{ slot: "15:15", action: "Courtesy car swap for JC1427", owner: "Sharna" },
+{ slot: "16:00", action: "Prep tomorrow's first-wave appointments", owner: "Josh" }];
+
 
 const quickActions = [
-  { label: "Create Job Card", href: "/job-cards/create" },
-  { label: "Appointments", href: "/job-cards/appointments" },
-  { label: "Check In", href: "/appointments" },
-];
+{ label: "Create Job Card", href: "/job-cards/create" },
+{ label: "Appointments", href: "/job-cards/appointments" },
+{ label: "Check In", href: "/appointments" }];
+
 
 export default function ServiceManagerDashboard() {
   const todayLabel = dayjs().format("dddd, D MMM");
@@ -75,50 +75,50 @@ export default function ServiceManagerDashboard() {
 
   return (
     <DevLayoutSection sectionKey="dashboard-service-shell" sectionType="page-shell" shell style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <DevLayoutSection
+      <LayerSurface
         as="header"
         sectionKey="dashboard-service-header"
         parentKey="dashboard-service-shell"
         sectionType="section-shell"
         shell
-        className="app-section-card"
+
         style={{
-          background: "var(--theme)",
-          border: "none",
-          gap: "6px",
-        }}
-      >
+
+
+          gap: "6px"
+        }}>
+
         <span style={{ textTransform: "uppercase", letterSpacing: "0.16em", color: "var(--info-dark)", fontSize: "0.78rem" }}>
           Service Manager Command Centre
         </span>
         <h1 style={{ margin: 0, color: "var(--info-dark)", fontSize: "1.9rem" }}>Customer Flow Control</h1>
         <p style={{ margin: 0, color: "var(--info-dark)" }}>{todayLabel} • 32 appointments • 6 waiters in lounge</p>
-      </DevLayoutSection>
+      </LayerSurface>
 
-      <DevLayoutSection
+      <LayerSurface
         as="section"
         sectionKey="dashboard-service-quick-actions"
         parentKey="dashboard-service-shell"
         sectionType="toolbar"
-        className="app-section-card"
+
         style={{
           display: "flex",
           flexWrap: "wrap",
           gap: "12px",
-          padding: "14px 20px",
-          border: "none",
-        }}
-      >
-        {quickActions.map((action) => (
-          <Link
-            key={action.href}
-            href={action.href}
-            className="app-btn app-btn--secondary app-btn--pill"
-          >
+          padding: "14px 20px"
+
+        }}>
+
+        {quickActions.map((action) =>
+        <Link
+          key={action.href}
+          href={action.href}
+          className="app-btn app-btn--secondary app-btn--pill">
+
             {action.label}
           </Link>
-        ))}
-      </DevLayoutSection>
+        )}
+      </LayerSurface>
 
       <DevLayoutSection
         as="section"
@@ -128,35 +128,35 @@ export default function ServiceManagerDashboard() {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "16px",
-        }}
-      >
+          gap: "16px"
+        }}>
+
         {[
-          { label: "Calls Answered", value: "148", helper: "+18 vs target", accent: "var(--info)" },
-          { label: "Check-ins Completed", value: "22", helper: "7 remaining today", accent: "var(--info)" },
-          { label: "Advisor CSAT", value: "4.7★", helper: "Live from feedback iPads", accent: "var(--info-dark)" },
-          { label: "Upsell Authorised", value: "£4,280", helper: "55% hit-rate", accent: "var(--danger)" },
-        ].map((metric, index) => (
-          <div
-            key={metric.label}
-            className="app-section-card"
-            data-dev-section="1"
-            data-dev-section-key={`dashboard-service-metric-${index + 1}`}
-            data-dev-section-type="stat-card"
-            data-dev-section-parent="dashboard-service-metric-grid"
-            style={{
-              padding: "18px",
-              border: `1px solid ${metric.accent}22`,
-              gap: "6px",
-            }}
-          >
+        { label: "Calls Answered", value: "148", helper: "+18 vs target", accent: "var(--info)" },
+        { label: "Check-ins Completed", value: "22", helper: "7 remaining today", accent: "var(--info)" },
+        { label: "Advisor CSAT", value: "4.7★", helper: "Live from feedback iPads", accent: "var(--info-dark)" },
+        { label: "Upsell Authorised", value: "£4,280", helper: "55% hit-rate", accent: "var(--danger)" }].
+        map((metric, index) =>
+        <LayerSurface as="div"
+        key={metric.label}
+
+        data-dev-section="1"
+        data-dev-section-key={`dashboard-service-metric-${index + 1}`}
+        data-dev-section-type="stat-card"
+        data-dev-section-parent="dashboard-service-metric-grid"
+        style={{
+          padding: "18px",
+
+          gap: "6px"
+        }}>
+
             <span style={{ textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.8rem", color: "var(--info)" }}>
               {metric.label}
             </span>
             <strong style={{ fontSize: "1.8rem", color: metric.accent }}>{metric.value}</strong>
             <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>{metric.helper}</span>
-          </div>
-        ))}
+          </LayerSurface>
+        )}
       </DevLayoutSection>
 
       <DevLayoutSection
@@ -167,21 +167,21 @@ export default function ServiceManagerDashboard() {
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(320px, 2fr) minmax(280px, 1.2fr)",
-          gap: "18px",
-        }}
-      >
-        <DevLayoutSection
+          gap: "18px"
+        }}>
+
+        <LayerSurface
           as="article"
           sectionKey="dashboard-service-advisor-pipelines"
           parentKey="dashboard-service-operations-row"
           sectionType="content-card"
-          className="app-section-card"
+
           style={{
             padding: "var(--section-card-padding)",
-            border: "none",
-            gap: "16px",
-          }}
-        >
+
+            gap: "16px"
+          }}>
+
           <div>
             <h2 style={{ margin: 0, color: "var(--info-dark)", fontSize: "1.2rem" }}>Advisor Pipelines</h2>
             <p style={{ margin: "4px 0 0", color: "var(--info)" }}>
@@ -190,20 +190,20 @@ export default function ServiceManagerDashboard() {
             </p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-            {advisorPipelines.map((advisor) => (
-              <div
-                key={advisor.advisor}
-                style={{
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "14px",
-                  display: "grid",
-                  gridTemplateColumns: "1.2fr repeat(4, 1fr)",
-                  gap: "12px",
-                  alignItems: "center",
-                  background: "var(--theme)",
-                }}
-              >
+            {advisorPipelines.map((advisor) =>
+            <div
+              key={advisor.advisor}
+              style={{
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                padding: "14px",
+                display: "grid",
+                gridTemplateColumns: "1.2fr repeat(4, 1fr)",
+                gap: "12px",
+                alignItems: "center",
+                background: "var(--theme)"
+              }}>
+
                 <strong style={{ fontSize: "1rem", color: "var(--info-dark)" }}>{advisor.advisor}</strong>
                 <div>
                   <small style={{ color: "var(--info)" }}>Opens</small>
@@ -224,37 +224,37 @@ export default function ServiceManagerDashboard() {
                   </div>
                 </div>
               </div>
-            ))}
+            )}
           </div>
-        </DevLayoutSection>
+        </LayerSurface>
 
-        <DevLayoutSection
+        <LayerSurface
           as="article"
           sectionKey="dashboard-service-courtesy-fleet"
           parentKey="dashboard-service-operations-row"
           sectionType="content-card"
-          className="app-section-card"
+
           style={{
             padding: "var(--section-card-padding)",
-            border: "none",
-            gap: "18px",
-          }}
-        >
+
+            gap: "18px"
+          }}>
+
           <div>
             <h2 style={{ margin: 0, color: "var(--info-dark)", fontSize: "1.2rem" }}>Courtesy Fleet</h2>
             <p style={{ margin: "4px 0 0", color: "var(--info)" }}>11 of 14 vehicles in use • 2 due back today</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {courtesyFleet.map((car) => (
-              <div
-                key={car.vehicle}
-                style={{
-                  borderRadius: "var(--radius-sm)",
-                  padding: "14px",
-                  border: "none",
-                  background: "var(--theme)",
-                }}
-              >
+            {courtesyFleet.map((car) =>
+            <div
+              key={car.vehicle}
+              style={{
+                borderRadius: "var(--radius-sm)",
+                padding: "14px",
+                border: "none",
+                background: "var(--theme)"
+              }}>
+
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>
                   <strong>{car.vehicle}</strong>
                   <span>{car.type}</span>
@@ -264,9 +264,9 @@ export default function ServiceManagerDashboard() {
                   <small>{car.customer}</small>
                 </div>
               </div>
-            ))}
+            )}
           </div>
-        </DevLayoutSection>
+        </LayerSurface>
       </DevLayoutSection>
 
       <DevLayoutSection
@@ -277,20 +277,20 @@ export default function ServiceManagerDashboard() {
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(300px, 1fr) minmax(320px, 1fr)",
-          gap: "18px",
-        }}
-      >
-        <DevLayoutSection
+          gap: "18px"
+        }}>
+
+        <LayerSurface
           as="article"
           sectionKey="dashboard-service-waiters-lounge"
           parentKey="dashboard-service-planning-row"
           sectionType="content-card"
-          className="app-section-card"
+
           style={{
-            padding: "var(--section-card-padding)",
-            border: "none",
-          }}
-        >
+            padding: "var(--section-card-padding)"
+
+          }}>
+
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <div>
               <h2 style={{ margin: 0, color: "var(--info-dark)", fontSize: "1.2rem" }}>Waiters & Lounge</h2>
@@ -299,18 +299,18 @@ export default function ServiceManagerDashboard() {
             <span style={{ color: "var(--info)", fontWeight: 600 }}>{waitingCustomers.length} active</span>
           </div>
           <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-            {waitingCustomers.map((customer) => (
-              <div
-                key={customer.jobNumber}
-                style={{
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "14px",
-                  display: "grid",
-                  gridTemplateColumns: "1.4fr 1fr 1fr",
-                  gap: "12px",
-                }}
-              >
+            {waitingCustomers.map((customer) =>
+            <div
+              key={customer.jobNumber}
+              style={{
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                padding: "14px",
+                display: "grid",
+                gridTemplateColumns: "1.4fr 1fr 1fr",
+                gap: "12px"
+              }}>
+
                 <div>
                   <strong style={{ display: "block", color: "var(--info-dark)" }}>{customer.customer}</strong>
                   <small style={{ color: "var(--info)" }}>{customer.jobNumber}</small>
@@ -327,44 +327,44 @@ export default function ServiceManagerDashboard() {
                   <small>{customer.status}</small>
                 </div>
               </div>
-            ))}
+            )}
           </div>
-        </DevLayoutSection>
+        </LayerSurface>
 
-        <DevLayoutSection
+        <LayerSurface
           as="article"
           sectionKey="dashboard-service-afternoon-plan"
           parentKey="dashboard-service-planning-row"
           sectionType="content-card"
-          className="app-section-card"
+
           style={{
             padding: "var(--section-card-padding)",
-            border: "none",
-            gap: "12px",
-          }}
-        >
+
+            gap: "12px"
+          }}>
+
           <div>
             <h2 style={{ margin: 0, color: "var(--info-dark)", fontSize: "1.2rem" }}>Afternoon Plan</h2>
             <p style={{ margin: "4px 0 0", color: "var(--info)" }}>Key guardrails for the PM session</p>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            {afternoonPlan.map((item) => (
-              <div
-                key={`${item.slot}-${item.owner}`}
-                style={{
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  padding: "14px",
-                  background: "var(--theme)",
-                }}
-              >
+            {afternoonPlan.map((item) =>
+            <div
+              key={`${item.slot}-${item.owner}`}
+              style={{
+                border: "none",
+                borderRadius: "var(--radius-sm)",
+                padding: "14px",
+                background: "var(--theme)"
+              }}>
+
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>
                   <strong>{item.slot}</strong>
                   <span>{item.owner}</span>
                 </div>
                 <p style={{ margin: "6px 0 0", color: "var(--info-dark)" }}>{item.action}</p>
               </div>
-            ))}
+            )}
           </div>
           <div
             style={{
@@ -373,13 +373,13 @@ export default function ServiceManagerDashboard() {
               borderRadius: "var(--radius-sm)",
               background: "var(--success-surface)",
               color: "var(--info-dark)",
-              fontWeight: 600,
-            }}
-          >
+              fontWeight: 600
+            }}>
+
             Target: Zero waiters after 17:00 • Courtesy fleet utilisation &gt; 85%
           </div>
-        </DevLayoutSection>
+        </LayerSurface>
       </DevLayoutSection>
-    </DevLayoutSection>
-  );
+    </DevLayoutSection>);
+
 }

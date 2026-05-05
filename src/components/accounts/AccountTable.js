@@ -1,19 +1,19 @@
 // file location: src/components/accounts/AccountTable.js // file path header
 import React from "react"; // import React to define component
-import PropTypes from "prop-types";
+import LayerSurface from "@/components/ui/LayerSurface";import PropTypes from "prop-types";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const columnDefinitions = [
-  { key: "account_id", label: "Account ID" },
-  { key: "customer_id", label: "Customer" },
-  { key: "account_type", label: "Type" },
-  { key: "status", label: "Status" },
-  { key: "balance", label: "Balance" },
-  { key: "credit_limit", label: "Credit Limit" },
-  { key: "billing_name", label: "Billing Name" },
-  { key: "updated_at", label: "Updated" },
-];
+{ key: "account_id", label: "Account ID" },
+{ key: "customer_id", label: "Customer" },
+{ key: "account_type", label: "Type" },
+{ key: "status", label: "Status" },
+{ key: "balance", label: "Balance" },
+{ key: "credit_limit", label: "Credit Limit" },
+{ key: "billing_name", label: "Billing Name" },
+{ key: "updated_at", label: "Updated" }];
+
 const formatCurrency = (value) => {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Number(value || 0));
 };
@@ -26,7 +26,7 @@ const formatDate = (value) => {
 const statusStyles = {
   active: { background: "rgba(var(--success-rgb), 0.15)", color: "#047857" },
   frozen: { background: "rgba(var(--warning-rgb), 0.18)", color: "var(--warning-text)" },
-  closed: { background: "rgba(var(--danger-rgb), 0.15)", color: "var(--danger-dark)" },
+  closed: { background: "rgba(var(--danger-rgb), 0.15)", color: "var(--danger-dark)" }
 };
 const renderStatusBadge = (status) => {
   const normalized = (status || "").toLowerCase();
@@ -39,12 +39,12 @@ const renderStatusBadge = (status) => {
         fontSize: "0.75rem",
         fontWeight: 700,
         textTransform: "uppercase",
-        ...palette,
-      }}
-    >
+        ...palette
+      }}>
+
       {status || "Unknown"}
-    </span>
-  );
+    </span>);
+
 };
 export default function AccountTable({
   accounts,
@@ -58,7 +58,7 @@ export default function AccountTable({
   canExport,
   canCreateAccount,
   onExport,
-  onCreateAccount,
+  onCreateAccount
 }) {
   const [hoveredAccountId, setHoveredAccountId] = React.useState(null);
 
@@ -78,7 +78,7 @@ export default function AccountTable({
   };
 
   return (
-    <DevLayoutSection as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+    <LayerSurface as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-1)" }}>Customer Accounts</h2>
@@ -87,23 +87,23 @@ export default function AccountTable({
           <span style={{ color: "var(--text-1)", fontSize: "0.92rem" }}>
             {pagination.total || 0} records
           </span>
-          {canExport && (
-            <Button type="button" variant="secondary" onClick={onExport}>
+          {canExport &&
+          <Button type="button" variant="secondary" onClick={onExport}>
               Export
             </Button>
-          )}
-          {canCreateAccount && (
-            <Button type="button" onClick={onCreateAccount}>
+          }
+          {canCreateAccount &&
+          <Button type="button" onClick={onCreateAccount}>
               New Account
             </Button>
-          )}
+          }
         </div>
       </div>
       <div style={{ overflowX: "auto", overflowY: accounts.length > 10 ? "auto" : "visible", maxHeight: accounts.length > 10 ? "640px" : "none" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-1)" }}>
           <tr>
-            {columnDefinitions.map((column) => (
+            {columnDefinitions.map((column) =>
               <th
                 key={column.key}
                 onClick={() => handleSort(column.key)}
@@ -113,53 +113,53 @@ export default function AccountTable({
                   textAlign: "left",
                   fontSize: "0.85rem",
                   userSelect: "none",
-                  whiteSpace: "nowrap",
-                }}
-              >
+                  whiteSpace: "nowrap"
+                }}>
+
                 {column.label} {sortedIcon(column.key)}
               </th>
-            ))}
+              )}
             <th
-              style={{
-                padding: "13px 12px",
-                textAlign: "right",
-                fontSize: "0.85rem",
-                whiteSpace: "nowrap",
-              }}
-            >
+                style={{
+                  padding: "13px 12px",
+                  textAlign: "right",
+                  fontSize: "0.85rem",
+                  whiteSpace: "nowrap"
+                }}>
+
               Actions
             </th>
           </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr>
+            {loading &&
+            <tr>
                 <td
-                  colSpan={columnDefinitions.length + 1}
-                  style={{
-                    padding: "28px",
-                    textAlign: "center",
-                    color: "var(--text-1)",
-                  }}
-                >
+                colSpan={columnDefinitions.length + 1}
+                style={{
+                  padding: "28px",
+                  textAlign: "center",
+                  color: "var(--text-1)"
+                }}>
+
                   Loading accounts…
                 </td>
               </tr>
-            )}
-            {!loading && accounts.length === 0 && (
-              <tr>
+            }
+            {!loading && accounts.length === 0 &&
+            <tr>
                 <td
-                  colSpan={columnDefinitions.length + 1}
-                  style={{
-                    padding: "40px",
-                    textAlign: "center",
-                    color: "var(--text-1)",
-                  }}
-                >
+                colSpan={columnDefinitions.length + 1}
+                style={{
+                  padding: "40px",
+                  textAlign: "center",
+                  color: "var(--text-1)"
+                }}>
+
                   No accounts match your filters.
                 </td>
               </tr>
-            )}
+            }
             {!loading && accounts.map((account) => {
               const isSelected = selectedAccountId && selectedAccountId === account.account_id;
               const isHovered = hoveredAccountId === account.account_id;
@@ -167,13 +167,13 @@ export default function AccountTable({
                 <tr
                   key={account.account_id}
                   onMouseEnter={() => setHoveredAccountId(account.account_id)}
-                  onMouseLeave={() => setHoveredAccountId((current) => (current === account.account_id ? null : current))}
+                  onMouseLeave={() => setHoveredAccountId((current) => current === account.account_id ? null : current)}
                   style={{
                     background: isSelected ? "rgba(var(--primary-rgb), 0.16)" : isHovered ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)",
                     borderTop: "1px solid rgba(var(--primary-rgb), 0.08)",
-                    transition: "background-color 0.18s ease",
-                  }}
-                >
+                    transition: "background-color 0.18s ease"
+                  }}>
+
                   {columnDefinitions.map((column) => {
                     const value = account[column.key];
                     let content = value;
@@ -191,12 +191,12 @@ export default function AccountTable({
                         style={{
                           padding: "14px 12px",
                           fontWeight: column.key === "account_id" ? 600 : 400,
-                          whiteSpace: column.key === "billing_name" ? "normal" : "nowrap",
-                        }}
-                      >
+                          whiteSpace: column.key === "billing_name" ? "normal" : "nowrap"
+                        }}>
+
                         {content || "—"}
-                      </td>
-                    );
+                      </td>);
+
                   })}
                   <td style={{ padding: "14px 12px", textAlign: "right" }}>
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
@@ -208,14 +208,14 @@ export default function AccountTable({
                       </Button>
                     </div>
                   </td>
-                </tr>
-              );
+                </tr>);
+
             })}
           </tbody>
         </table>
       </div>
-    </DevLayoutSection>
-  );
+    </LayerSurface>);
+
 }
 AccountTable.propTypes = {
   accounts: PropTypes.arrayOf(PropTypes.object),
@@ -223,20 +223,20 @@ AccountTable.propTypes = {
   pagination: PropTypes.shape({
     page: PropTypes.number,
     pageSize: PropTypes.number,
-    total: PropTypes.number,
+    total: PropTypes.number
   }),
   onPageChange: PropTypes.func,
   onSortChange: PropTypes.func,
   sortState: PropTypes.shape({
     field: PropTypes.string,
-    direction: PropTypes.oneOf(["asc", "desc"]),
+    direction: PropTypes.oneOf(["asc", "desc"])
   }),
   onSelectAccount: PropTypes.func,
   selectedAccountId: PropTypes.string,
   canExport: PropTypes.bool,
   canCreateAccount: PropTypes.bool,
   onExport: PropTypes.func,
-  onCreateAccount: PropTypes.func,
+  onCreateAccount: PropTypes.func
 };
 AccountTable.defaultProps = {
   accounts: [],
@@ -250,5 +250,5 @@ AccountTable.defaultProps = {
   canExport: false,
   canCreateAccount: false,
   onExport: () => {},
-  onCreateAccount: () => {},
+  onCreateAccount: () => {}
 };

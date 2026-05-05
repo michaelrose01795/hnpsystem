@@ -2,7 +2,7 @@
 // Shared shell for /admin/compliance/* pages: gates by role, places a tab
 // nav, and wraps the content in the canonical app-page-shell hierarchy.
 
-import React from "react";
+import React from "react";import LayerSurface from "@/components/ui/LayerSurface";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -11,13 +11,13 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import { COMPLIANCE_ADMIN_ROLES } from "@/lib/compliance/roles";
 
 const TABS = [
-  { href: "/admin/compliance", label: "Dashboard" },
-  { href: "/admin/compliance/sars", label: "Subject Requests" },
-  { href: "/admin/compliance/breaches", label: "Breaches" },
-  { href: "/admin/compliance/dpias", label: "DPIAs" },
-  { href: "/admin/compliance/ropa", label: "ROPA" },
-  { href: "/admin/compliance/retention", label: "Retention" },
-];
+{ href: "/admin/compliance", label: "Dashboard" },
+{ href: "/admin/compliance/sars", label: "Subject Requests" },
+{ href: "/admin/compliance/breaches", label: "Breaches" },
+{ href: "/admin/compliance/dpias", label: "DPIAs" },
+{ href: "/admin/compliance/ropa", label: "ROPA" },
+{ href: "/admin/compliance/retention", label: "Retention" }];
+
 
 const upper = (arr) => arr.map((r) => r.toUpperCase());
 
@@ -31,7 +31,7 @@ export default function ComplianceLayout({ title, children }) {
       </Head>
       <Layout>
         <div className="app-page-shell">
-          <div className="app-page-card" style={{ padding: "8px 8px 32px" }}>
+          <LayerSurface as="div" style={{ padding: "8px 8px 32px" }}>
             <div className="app-page-stack">
               <nav
                 aria-label="Compliance sections"
@@ -40,14 +40,14 @@ export default function ComplianceLayout({ title, children }) {
                   flexWrap: "wrap",
                   gap: 6,
                   paddingBottom: 8,
-                  borderBottom: "1px solid var(--primary-border)",
-                }}
-              >
+                  borderBottom: "1px solid var(--primary-border)"
+                }}>
+
                 {TABS.map((tab) => {
                   const active =
-                    tab.href === "/admin/compliance"
-                      ? currentPath === "/admin/compliance"
-                      : currentPath.startsWith(tab.href);
+                  tab.href === "/admin/compliance" ?
+                  currentPath === "/admin/compliance" :
+                  currentPath.startsWith(tab.href);
                   return (
                     <Link
                       key={tab.href}
@@ -59,19 +59,19 @@ export default function ComplianceLayout({ title, children }) {
                         background: active ? "var(--primary)" : "transparent",
                         color: active ? "var(--onAccentText)" : "var(--text-1)",
                         fontWeight: active ? 700 : 500,
-                        border: active ? "none" : "1px solid var(--primary-border)",
-                      }}
-                    >
+                        border: active ? "none" : "1px solid var(--primary-border)"
+                      }}>
+
                       {tab.label}
-                    </Link>
-                  );
+                    </Link>);
+
                 })}
               </nav>
               {children}
             </div>
-          </div>
+          </LayerSurface>
         </div>
       </Layout>
-    </ProtectedRoute>
-  );
+    </ProtectedRoute>);
+
 }
