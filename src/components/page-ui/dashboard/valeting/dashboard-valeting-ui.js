@@ -2,6 +2,8 @@
 
 export default function ValetingDashboardUi(props) {
   const {
+    LayerSurface,
+    LayerTheme,
     MetricCard,
     QueueBoard,
     TrendBlock,
@@ -14,110 +16,73 @@ export default function ValetingDashboardUi(props) {
     case "section1":
       return <>
       <div>
-        {/* Card 3 — accent background section containing equal-sized metric cards */}
-        <section style={{
-      background: "var(--theme)",
-      // accent tint background
-      border: "1px solid rgba(var(--primary-rgb), 0.18)",
-      // accent border
-      borderRadius: "var(--section-card-radius)",
-      // standard card radius
-      padding: "var(--section-card-padding)",
-      // standard card padding
-      display: "flex",
-      // flex column layout
-      flexDirection: "column",
-      // vertical stack
-      gap: "12px" // spacing between title and grid
-    }}>
+        {/* Wash bay overview — outer LayerTheme (tinted) so MetricCards inside flip to LayerSurface */}
+        <LayerTheme as="section" gap="12px">
           <h2 style={{
         margin: 0,
         fontSize: "1.2rem",
         color: "var(--primary-selected)"
-      }}>Wash bay overview</h2> {/* section heading */}
+      }}>Wash bay overview</h2>
           {loading ?
-      // loading state
       <p style={{
         color: "var(--info)"
       }}>Gathering metrics…</p> : error ?
-      // error state
       <p style={{
         color: "var(--primary)"
       }}>{error}</p> : <div style={{
         display: "grid",
         gridTemplateColumns: "repeat(4, 1fr)",
         gap: "16px"
-      }}> {/* 4 equal-width columns */}
-              <MetricCard label="Cars waiting wash" value={data.waitingCount} helper="Checked in but not started" /> {/* card 4 — surface */}
-              <MetricCard label="Cars washed" value={data.washedCount} helper="Wash completed" /> {/* card 5 — surface */}
-              <MetricCard label="Cars delayed" value={data.delayedCount} helper="Includes delay flag" /> {/* card 6 — surface */}
-              <MetricCard label="Cars in queue" value={data.waitingQueue.length} helper="Vehicles queued right now" /> {/* added card — surface */}
+      }}>
+              <MetricCard label="Cars waiting wash" value={data.waitingCount} helper="Checked in but not started" />
+              <MetricCard label="Cars washed" value={data.washedCount} helper="Wash completed" />
+              <MetricCard label="Cars delayed" value={data.delayedCount} helper="Includes delay flag" />
+              <MetricCard label="Cars in queue" value={data.waitingQueue.length} helper="Vehicles queued right now" />
             </div>}
-        </section>
+        </LayerTheme>
 
-        {/* Card 7 — accent background section with surface-level rows */}
-        <section style={{
-      background: "var(--theme)",
-      // accent tint background
-      border: "1px solid rgba(var(--primary-rgb), 0.18)",
-      // accent border
-      borderRadius: "var(--section-card-radius)",
-      // standard card radius
-      padding: "var(--section-card-padding)",
-      // standard card padding
-      display: "flex",
-      // flex column layout
-      flexDirection: "column",
-      // vertical stack
-      gap: "12px" // spacing between heading and content
-    }}>
+        {/* Queue trend — outer LayerTheme; trend rows inside flip to LayerSurface */}
+        <LayerTheme as="section" gap="12px">
           <div>
             <h2 style={{
           margin: 0,
           fontSize: "1.2rem",
           color: "var(--primary-selected)"
-        }}>Queue trend</h2> {/* section heading */}
+        }}>Queue trend</h2>
             <p style={{
           margin: "6px 0 0",
           color: "var(--info)"
-        }}>Wash starts last 7 days</p> {/* subtitle */}
+        }}>Wash starts last 7 days</p>
           </div>
           {loading ?
-      // loading state
       <p style={{
         color: "var(--info)"
-      }}>Building trend view…</p> : <TrendBlock data={data.trends} /> // trend bars — each row has surface background
+      }}>Building trend view…</p> : <TrendBlock data={data.trends} />
       }
-        </section>
+        </LayerTheme>
 
-        {/* Queue board — surface background section */}
-        <section className="app-section-card" // surface background from globals.css
-    style={{
-      gap: "12px"
-    }} // internal spacing
-    >
+        {/* Queue board — outer LayerSurface; rows inside flip to LayerTheme */}
+        <LayerSurface as="section" gap="12px">
           <div>
             <h2 style={{
           margin: 0,
           fontSize: "1.2rem",
           color: "var(--primary-selected)"
-        }}>Queue board</h2> {/* section heading */}
+        }}>Queue board</h2>
             <p style={{
           margin: "6px 0 0",
           color: "var(--info)"
-        }}>Cars checked in and ready</p> {/* subtitle */}
+        }}>Cars checked in and ready</p>
           </div>
           {loading ?
-      // loading state
       <p style={{
         color: "var(--info)"
       }}>Refreshing queue…</p> : error ?
-      // error state
       <p style={{
         color: "var(--primary)"
-      }}>{error}</p> : <QueueBoard queue={data.waitingQueue} /> // queue table with surface rows
+      }}>{error}</p> : <QueueBoard queue={data.waitingQueue} />
       }
-        </section>
+        </LayerSurface>
       </div>
     </>; // render extracted page section.
     default:

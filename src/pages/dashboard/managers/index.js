@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { getManagersDashboardData } from "@/lib/database/dashboard/managers";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
+import { LayerTheme } from "@/components/ui"; // canonical tinted layer primitive (depth 2 inside Section)
 import ManagersDashboardUi from "@/components/page-ui/dashboard/managers/dashboard-managers-ui"; // Extracted presentation layer.
 const MANAGER_ROLES = [
 "service manager",
@@ -17,18 +18,15 @@ const MANAGER_ROLES = [
 "owner"];
 
 
-const MetricCard = ({ label, value, helper, style }) =>
-<div
-  className="app-section-card"
-  style={{
-    minWidth: 180,
-    ...style
-  }}>
-
+// MetricCard — single stat tile. Lives inside a Section (LayerSurface),
+// so per the strict alternation rule it renders as a LayerTheme.
+const MetricCard = ({ label, value, helper, style }) => (
+  <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 180, ...style }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </div>;
+  </LayerTheme>
+);
 
 
 const ProgressBar = ({ completed, target }) => {
@@ -47,7 +45,7 @@ const ProgressBar = ({ completed, target }) => {
             background: "var(--danger)",
             borderRadius: 5
           }} />
-        
+
       </div>
     </div>);
 
@@ -68,7 +66,7 @@ const TrendBlock = ({ data }) => {
               background: "var(--info)",
               borderRadius: 4
             }} />
-          
+
           </div>
           <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
@@ -77,31 +75,22 @@ const TrendBlock = ({ data }) => {
 
 };
 
-const EscalationList = ({ items }) =>
-<div
-  style={{
-    border: "none",
-    borderRadius: "var(--radius-sm)",
-    padding: "12px",
-    background: "var(--surface)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px"
-  }}>
-  
+// EscalationList — list block inside a Section (LayerSurface), renders as LayerTheme.
+const EscalationList = ({ items }) => (
+  <LayerTheme radius="var(--radius-sm)" padding="12px" gap="10px">
     {items.length === 0 ?
-  <p style={{ margin: 0, color: "var(--info)" }}>No escalations.</p> :
-
-  items.map((notice) =>
-  <div key={notice.notification_id} style={{ color: "var(--info-dark)" }}>
+      <p style={{ margin: 0, color: "var(--info)" }}>No escalations.</p> :
+      items.map((notice) =>
+        <div key={notice.notification_id} style={{ color: "var(--info-dark)" }}>
           <p style={{ margin: 0 }}>{notice.message}</p>
           <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--info)" }}>
             For {notice.target_role || "everyone"}
           </p>
         </div>
-  )
-  }
-  </div>;
+      )
+    }
+  </LayerTheme>
+);
 
 
 const defaultData = {
@@ -140,64 +129,7 @@ export default function ManagersDashboard() {
 
   if (!hasAccess) {
     return <ManagersDashboardUi view="section1" />;
-
-
-
-
-
-
   }
 
   return <ManagersDashboardUi view="section2" data={data} error={error} EscalationList={EscalationList} loading={loading} MetricCard={MetricCard} ProgressBar={ProgressBar} Section={Section} TrendBlock={TrendBlock} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

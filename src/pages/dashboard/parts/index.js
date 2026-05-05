@@ -5,18 +5,18 @@ import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { getPartsDashboardData } from "@/lib/database/dashboard/parts";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
+import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import PartsDashboardUi from "@/components/page-ui/dashboard/parts/dashboard-parts-ui"; // Extracted presentation layer.
-const MetricCard = ({ label, value, helper }) =>
-<div
-  className="app-section-card"
-  style={{
-    minWidth: 180
-  }}>
-  
+
+// MetricCard — single stat tile. Lives inside a Section (LayerSurface),
+// so per the strict alternation rule it renders as a LayerTheme.
+const MetricCard = ({ label, value, helper }) => (
+  <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 180 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </div>;
+  </LayerTheme>
+);
 
 
 const TrendBlock = ({ data }) => {
@@ -34,7 +34,7 @@ const TrendBlock = ({ data }) => {
               background: "var(--accent-purple)",
               borderRadius: 4
             }} />
-          
+
           </div>
           <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
@@ -43,29 +43,20 @@ const TrendBlock = ({ data }) => {
 
 };
 
-const ListBlock = ({ title, items }) =>
-<div
-  style={{
-    border: "none",
-    borderRadius: "var(--radius-sm)",
-    padding: "12px",
-    background: "var(--surface)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px"
-  }}>
-  
+// ListBlock — list block inside a Section (LayerSurface), renders as LayerTheme.
+const ListBlock = ({ title, items }) => (
+  <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
     <p style={{ margin: 0, fontWeight: 600, color: "var(--primary-selected)" }}>{title}</p>
     {(items || []).length === 0 ?
-  <p style={{ margin: 0, color: "var(--info)" }}>No records yet.</p> :
-
-  items.map((entry) =>
-  <div key={entry.request_id} style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
+      <p style={{ margin: 0, color: "var(--info)" }}>No records yet.</p> :
+      items.map((entry) =>
+        <div key={entry.request_id} style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
           Request <strong>{entry.request_id}</strong> · {entry.status}
         </div>
-  )
-  }
-  </div>;
+      )
+    }
+  </LayerTheme>
+);
 
 
 export default function PartsDashboard() {
@@ -107,142 +98,7 @@ export default function PartsDashboard() {
 
   if (!hasAccess) {
     return <PartsDashboardUi view="section1" />;
-
-
-
-
-
-
   }
 
-  return <PartsDashboardUi view="section2" data={data} error={error} ListBlock={ListBlock} loading={loading} MetricCard={MetricCard} recentRequests={recentRequests} requestsByStatus={requestsByStatus} requestSummary={requestSummary} Section={Section} stockAlerts={stockAlerts} TrendBlock={TrendBlock} trendData={trendData} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return <PartsDashboardUi view="section2" data={data} error={error} LayerSurface={LayerSurface} LayerTheme={LayerTheme} ListBlock={ListBlock} loading={loading} MetricCard={MetricCard} recentRequests={recentRequests} requestsByStatus={requestsByStatus} requestSummary={requestSummary} Section={Section} stockAlerts={stockAlerts} TrendBlock={TrendBlock} trendData={trendData} />;
 }

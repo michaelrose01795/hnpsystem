@@ -4,19 +4,18 @@
 import React, { useEffect, useState } from "react";
 import { getMotDashboardData } from "@/lib/database/dashboard/mot";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
+import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import MotDashboardUi from "@/components/page-ui/dashboard/mot/dashboard-mot-ui"; // Extracted presentation layer.
-const MetricCard = ({ label, value, helper }) =>
-<div
-  className="app-section-card"
-  style={{
-    border: "none",
-    minWidth: 160
-  }}>
-  
+
+// MetricCard — single stat tile. Lives inside a Section (LayerSurface),
+// so per the strict alternation rule it renders as a LayerTheme.
+const MetricCard = ({ label, value, helper }) => (
+  <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 160 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </div>;
+  </LayerTheme>
+);
 
 
 const TrendBlock = ({ data }) => {
@@ -34,7 +33,7 @@ const TrendBlock = ({ data }) => {
               background: "var(--success)",
               borderRadius: 4
             }} />
-          
+
           </div>
           <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
@@ -43,36 +42,26 @@ const TrendBlock = ({ data }) => {
 
 };
 
-const CardList = ({ title, items }) =>
-<div
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    border: "none",
-    borderRadius: "var(--radius-sm)",
-    padding: "12px",
-    background: "var(--surface)"
-  }}>
-  
+// CardList — list block inside a Section (LayerSurface), renders as LayerTheme.
+const CardList = ({ title, items }) => (
+  <LayerTheme radius="var(--radius-sm)" padding="12px" gap="10px">
     <p style={{ margin: 0, fontWeight: 600, color: "var(--primary-selected)" }}>{title}</p>
     {items.length === 0 ?
-  <p style={{ margin: 0, color: "var(--info)" }}>No records.</p> :
-
-  items.map((job) =>
-  <div
-    key={job.id}
-    style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--info-dark)" }}>
-    
+      <p style={{ margin: 0, color: "var(--info)" }}>No records.</p> :
+      items.map((job) =>
+        <div
+          key={job.id}
+          style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--info-dark)" }}>
           <div>
             <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
             <p style={{ margin: "4px 0 0", color: "var(--info)" }}>{job.vehicle_reg || "Plate"}</p>
           </div>
           <span style={{ color: "var(--info)" }}>{job.completion_status || "Pending"}</span>
         </div>
-  )
-  }
-  </div>;
+      )
+    }
+  </LayerTheme>
+);
 
 
 const defaultData = {
@@ -107,47 +96,5 @@ export default function MotDashboard() {
     loadData();
   }, []);
 
-  return <MotDashboardUi view="section1" CardList={CardList} data={data} error={error} loading={loading} MetricCard={MetricCard} Section={Section} TrendBlock={TrendBlock} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return <MotDashboardUi view="section1" CardList={CardList} data={data} error={error} LayerSurface={LayerSurface} loading={loading} MetricCard={MetricCard} Section={Section} TrendBlock={TrendBlock} />;
 }

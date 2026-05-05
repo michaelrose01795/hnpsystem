@@ -27,7 +27,7 @@ export default function ManagersDashboardUi(props) {
     case "section2":
       return <>
       <div>
-        <Section title="Combined performance" style={{ background: "var(--theme)" }}>
+        <Section title="Combined performance">
           {loading ? <p style={{
         color: "var(--info)"
       }}>Gathering completion statistics…</p> : error ? <p style={{
@@ -42,26 +42,26 @@ export default function ManagersDashboardUi(props) {
             </div>}
         </Section>
 
-        <Section title="Approvals & follow ups" style={{ background: "var(--theme)" }}>
+        <Section title="Approvals & follow ups">
           <div style={{
         display: "flex",
         flexWrap: "wrap",
         gap: "16px"
       }}>
-            <MetricCard label="Parts approvals" value={data.counts.pendingParts} helper="Pending" style={{ background: "var(--surface)" }} />
+            <MetricCard label="Parts approvals" value={data.counts.pendingParts} helper="Pending" />
             <MetricCard label="VHC sign-off" value={data.counts.pendingVhc} helper="Awaiting auth" />
           </div>
         </Section>
 
-        <Section title="Escalations" subtitle="Latest notifications" style={{ background: "var(--theme)" }}>
+        <Section title="Escalations" subtitle="Latest notifications">
           <EscalationList items={data.escalations} />
         </Section>
 
-        <Section title="Progress" subtitle="Jobs completed vs started" style={{ background: "var(--theme)" }}>
+        <Section title="Progress" subtitle="Jobs completed vs started">
           <ProgressBar completed={data.progress.completed} target={data.progress.scheduled} />
         </Section>
 
-        <Section title="Completion trend" subtitle="Last 7 days" style={{ background: "var(--theme)" }}>
+        <Section title="Completion trend" subtitle="Last 7 days">
           <TrendBlock data={data.trend.jobsCompletedLast7} />
         </Section>
       </div>

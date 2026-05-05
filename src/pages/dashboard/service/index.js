@@ -4,18 +4,18 @@
 import React, { useEffect, useState } from "react";
 import { getServiceDashboardData } from "@/lib/database/dashboard/service";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
+import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import ServiceDashboardUi from "@/components/page-ui/dashboard/service/dashboard-service-ui"; // Extracted presentation layer.
-const MetricCard = ({ label, value, helper }) =>
-<div
-  className="app-section-card"
-  style={{
-    minWidth: 160
-  }}>
-  
+
+// MetricCard — single stat tile. Lives inside a Section (LayerSurface),
+// so per the strict alternation rule it renders as a LayerTheme.
+const MetricCard = ({ label, value, helper }) => (
+  <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 160 }}>
     <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.8rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </div>;
+  </LayerTheme>
+);
 
 
 const PieChart = ({ breakdown }) => {
@@ -39,14 +39,14 @@ const PieChart = ({ breakdown }) => {
             borderRadius: 6,
             overflow: "hidden"
           }}>
-          
+
             <div
             style={{
               width: `${Math.round(segment.value / total * 100)}%`,
               height: "100%",
               background: segment.color
             }} />
-          
+
           </div>
           <strong style={{ color: "var(--primary-selected)" }}>{segment.value}</strong>
         </div>
@@ -55,20 +55,11 @@ const PieChart = ({ breakdown }) => {
 
 };
 
+// TrendBlock — chart card inside a Section (LayerSurface), renders as LayerTheme.
 const TrendBlock = ({ data }) => {
   const max = Math.max(1, ...(data || []).map((point) => point.count));
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        padding: "12px",
-        border: "none",
-        borderRadius: "var(--radius-sm)",
-        background: "var(--surface)"
-      }}>
-      
+    <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
       {(data || []).map((point) =>
       <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span>
@@ -80,13 +71,13 @@ const TrendBlock = ({ data }) => {
               background: "var(--success)",
               borderRadius: 4
             }} />
-          
+
           </div>
           <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
       )}
-    </div>);
-
+    </LayerTheme>
+  );
 };
 
 const ProgressBar = ({ completed, target }) => {
@@ -105,24 +96,19 @@ const ProgressBar = ({ completed, target }) => {
             background: "var(--danger)",
             borderRadius: 5
           }} />
-        
+
       </div>
     </div>);
 
 };
 
-const QueueItem = ({ job }) =>
-<div
-  style={{
-    display: "flex",
+// QueueItem — list-row card inside a Section (LayerSurface), renders as LayerTheme.
+const QueueItem = ({ job }) => (
+  <LayerTheme radius="var(--radius-sm)" padding="12px 14px" style={{
+    flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    border: "none",
-    borderRadius: "var(--radius-sm)",
-    padding: "12px 14px",
-    background: "var(--surface)"
+    alignItems: "center"
   }}>
-  
     <div>
       <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
       <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
@@ -130,7 +116,8 @@ const QueueItem = ({ job }) =>
       </p>
     </div>
     <span style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>{job.status || "Status unknown"}</span>
-  </div>;
+  </LayerTheme>
+);
 
 
 const defaultData = {
@@ -167,123 +154,5 @@ export default function ServiceDashboard() {
     loadData();
   }, []);
 
-  return <ServiceDashboardUi view="section1" data={data} error={error} loading={loading} MetricCard={MetricCard} PieChart={PieChart} ProgressBar={ProgressBar} QueueItem={QueueItem} Section={Section} TrendBlock={TrendBlock} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return <ServiceDashboardUi view="section1" data={data} error={error} LayerSurface={LayerSurface} loading={loading} MetricCard={MetricCard} PieChart={PieChart} ProgressBar={ProgressBar} QueueItem={QueueItem} Section={Section} TrendBlock={TrendBlock} />;
 }

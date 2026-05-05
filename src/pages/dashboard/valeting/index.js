@@ -3,130 +3,120 @@
 
 import React, { useEffect, useState } from "react"; // React runtime + hooks
 import { getValetingDashboardData } from "@/lib/database/dashboard/valeting"; // fetch valet dashboard metrics
+import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 
-// MetricCard — surface-background stat card, equal-sized via parent CSS grid
+// MetricCard — single stat tile. Lives inside an outer LayerTheme section,
+// so per the strict alternation rule it renders as a LayerSurface.
 import ValetingDashboardUi from "@/components/page-ui/dashboard/valeting/dashboard-valeting-ui"; // Extracted presentation layer.
-const MetricCard = ({ label, value, helper }) => <div
-  className="app-section-card" // surface background from globals.css
-  style={{ minWidth: 0 }} // let grid control width so all cards match size
->
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p> {/* metric label */}
-    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p> {/* metric value */}
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>} {/* helper text */}
-  </div>;
+const MetricCard = ({ label, value, helper }) => (
+  <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 0 }}>
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
+    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
+  </LayerSurface>
+);
 
 
-// TrendBlock — horizontal bar chart rows, each row uses surface background
+// TrendBlock — horizontal bar chart rows. Sits inside the outer LayerTheme
+// "Queue trend" section, so each row is a LayerSurface for alternation.
 const TrendBlock = ({ data }) => {
   const max = Math.max(1, ...(data || []).map((point) => point.count)); // find max for proportional bar widths
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}> {/* vertical stack of trend rows */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {(data || []).map((point) =>
-      <div
+      <LayerSurface
         key={point.label}
+        radius="var(--radius-sm)"
+        padding="8px 12px"
         style={{
-          display: "flex", // row layout for label + bar + count
-          alignItems: "center", // vertically centred
-          gap: "8px", // spacing between label, bar, count
-          background: "var(--surface)", // surface-level row background
-          borderRadius: "var(--radius-sm)", // rounded corners
-          padding: "8px 12px" // inner spacing
+          flexDirection: "row",
+          alignItems: "center",
+          gap: "8px"
         }}>
-        
-          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span> {/* day label */}
-          <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}> {/* bar track */}
+          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span>
+          <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
             <div
             style={{
-              width: `${Math.round(point.count / max * 100)}%`, // proportional fill
-              height: "100%", // full track height
-              background: "var(--accent-purple)", // accent colour bar fill
-              borderRadius: 4 // rounded bar ends
+              width: `${Math.round(point.count / max * 100)}%`,
+              height: "100%",
+              background: "var(--accent-purple)",
+              borderRadius: 4
             }} />
-          
           </div>
-          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong> {/* numeric count */}
-        </div>
+          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
+        </LayerSurface>
       )}
     </div>);
 
 };
 
-// QueueBoard — waiting cars table with surface-level rows inside accent section
+// QueueBoard — waiting cars table. Sits inside the third "Queue board"
+// LayerSurface section, so rows render as LayerTheme.
 const QueueBoard = ({ queue }) =>
-<div style={{ display: "flex", flexDirection: "column", gap: "10px" }}> {/* vertical list of queue rows */}
-    {queue.length === 0 ? // empty state
-  <div
-    style={{
-      background: "var(--surface)", // surface background for empty card
-      borderRadius: "var(--radius-sm)", // rounded corners
-      padding: "16px", // inner spacing
-      color: "var(--info)" // muted text colour
-    }}>
-    
+<div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+    {queue.length === 0 ?
+  <LayerTheme radius="var(--radius-sm)" padding="16px" style={{ color: "var(--info)" }}>
         No cars waiting.
-      </div> :
+      </LayerTheme> :
 
   <>
         <div
       style={{
-        display: "grid", // table-header grid
-        gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr) auto", // column widths
-        gap: "12px", // column gap
-        alignItems: "center", // vertical centre
-        padding: "0 8px 10px", // header padding
-        borderBottom: "1px solid rgba(var(--primary-rgb), 0.14)" // divider line
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr) auto",
+        gap: "12px",
+        alignItems: "center",
+        padding: "0 8px 10px",
+        borderBottom: "1px solid rgba(var(--primary-rgb), 0.14)"
       }}>
-      
-          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Vehicle</span> {/* column header */}
-          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Status</span> {/* column header */}
-          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Queue</span> {/* column header */}
+
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Vehicle</span>
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Status</span>
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Queue</span>
         </div>
         <div
       style={{
-        display: "flex", // vertical scroll container
-        flexDirection: "column", // stack rows
-        gap: "10px", // row gap
-        maxHeight: "294px", // scroll after 4-5 rows
-        overflowY: "auto", // vertical scroll
-        paddingRight: "4px" // space for scrollbar
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        maxHeight: "294px",
+        overflowY: "auto",
+        paddingRight: "4px"
       }}>
-      
+
           {queue.map((job) =>
-      <div
+      <LayerTheme
         key={job.id}
+        radius="var(--radius-sm)"
+        padding="14px 16px"
         style={{
-          display: "grid", // row grid matching header columns
-          gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr) auto", // same as header
-          gap: "12px", // column gap
-          alignItems: "center", // vertical centre
-          minHeight: "66px", // minimum row height
-          padding: "14px 16px", // inner spacing
-          background: "var(--surface)", // surface-level row background
-          borderRadius: "var(--radius-sm)", // rounded corners
-          border: "1px solid rgba(var(--primary-rgb), 0.12)", // subtle border
-          boxShadow: "0 1px 0 rgba(var(--primary-rgb), 0.04)" // lift shadow
+          display: "grid", // override flex column from LayerTheme default for grid row layout
+          gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr) auto",
+          gap: "12px",
+          alignItems: "center",
+          minHeight: "66px",
+          boxShadow: "0 1px 0 rgba(var(--primary-rgb), 0.04)" // subtle lift, non-surface concern
         }}>
-        
-              <div style={{ minWidth: 0 }}> {/* vehicle info cell */}
-                <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong> {/* job number */}
-                <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--primary)" }}>{job.vehicle_reg || "Plate"}</p> {/* registration */}
+              <div style={{ minWidth: 0 }}>
+                <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
+                <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--primary)" }}>{job.vehicle_reg || "Plate"}</p>
               </div>
-              <span style={{ color: "var(--info-dark)", fontSize: "0.9rem" }}>{job.status || "Checked in"}</span> {/* status text */}
+              <span style={{ color: "var(--info-dark)", fontSize: "0.9rem" }}>{job.status || "Checked in"}</span>
               <span
           style={{
-            justifySelf: "start", // align left in cell
-            padding: "6px 10px", // pill padding
-            borderRadius: "999px", // pill shape
-            background: "rgba(var(--primary-rgb), 0.1)", // soft accent fill
-            color: "var(--primary-selected)", // text colour
-            fontSize: "0.82rem", // small text
-            fontWeight: 600, // semi-bold
-            border: "1px solid rgba(var(--primary-rgb), 0.14)" // subtle border
+            justifySelf: "start",
+            padding: "6px 10px",
+            borderRadius: "999px", // pill badge — non-surface decorative element
+            background: "rgba(var(--primary-rgb), 0.1)", // pill badge — non-surface decorative element
+            color: "var(--primary-selected)",
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            border: "1px solid rgba(var(--primary-rgb), 0.14)" // pill badge — non-surface decorative element
           }}>
-          
-                {job.waiting_status || "Ready"} {/* queue status badge */}
+
+                {job.waiting_status || "Ready"}
               </span>
-            </div>
+            </LayerTheme>
       )}
         </div>
       </>
@@ -165,79 +155,5 @@ export default function ValetingDashboard() {
     loadData(); // invoke on mount
   }, []);
 
-  const totalTrendStarts = (data.trends || []).reduce((sum, point) => sum + (point.count || 0), 0); // sum of 7-day wash starts
-
-  return <ValetingDashboardUi view="section1" data={data} error={error} loading={loading} MetricCard={MetricCard} QueueBoard={QueueBoard} TrendBlock={TrendBlock} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return <ValetingDashboardUi view="section1" data={data} error={error} LayerSurface={LayerSurface} LayerTheme={LayerTheme} loading={loading} MetricCard={MetricCard} QueueBoard={QueueBoard} TrendBlock={TrendBlock} />;
 }

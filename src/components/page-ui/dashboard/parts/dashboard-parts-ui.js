@@ -2,6 +2,8 @@
 
 export default function PartsDashboardUi(props) {
   const {
+    LayerSurface,
+    LayerTheme,
     ListBlock,
     MetricCard,
     Section,
@@ -31,9 +33,7 @@ export default function PartsDashboardUi(props) {
     case "section2":
       return <>
       <div>
-        <header className="app-section-card" style={{
-      border: "none"
-    }}>
+        <LayerSurface as="header">
           <p style={{
         margin: 0,
         textTransform: "uppercase",
@@ -50,7 +50,7 @@ export default function PartsDashboardUi(props) {
       }}>
             Live stock, inbound, and request telemetry from the parts catalogue.
           </p>
-        </header>
+        </LayerSurface>
 
         <Section title="Request snapshot" subtitle="New and pre-picks today">
           {loading ? <p style={{
@@ -91,13 +91,9 @@ export default function PartsDashboardUi(props) {
         flexDirection: "column",
         gap: "10px"
       }}>
-              {stockAlerts.map(part => <div key={part.id} style={{
-          display: "flex",
-          justifyContent: "space-between",
-          padding: "10px 12px",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          background: "var(--surface)"
+              {stockAlerts.map(part => <LayerTheme key={part.id} radius="var(--radius-sm)" padding="10px 12px" style={{
+          flexDirection: "row",
+          justifyContent: "space-between"
         }}>
                   <div>
                     <strong>{part.label}</strong>
@@ -122,7 +118,7 @@ export default function PartsDashboardUi(props) {
               color: "var(--info)"
             }}>In stock</p>
                   </div>
-                </div>)}
+                </LayerTheme>)}
             </div>}
         </Section>
 
@@ -138,11 +134,7 @@ export default function PartsDashboardUi(props) {
         flexWrap: "wrap",
         gap: "12px"
       }}>
-              {requestsByStatus.map(row => <div key={row.status} style={{
-          padding: "10px 14px",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          background: "var(--surface)",
+              {requestsByStatus.map(row => <LayerTheme key={row.status} radius="var(--radius-sm)" padding="10px 14px" style={{
           minWidth: 150
         }}>
                   <p style={{
@@ -153,7 +145,7 @@ export default function PartsDashboardUi(props) {
                   <strong style={{
             color: "var(--primary-selected)"
           }}>{row.count}</strong>
-                </div>)}
+                </LayerTheme>)}
             </div>}
         </Section>
 

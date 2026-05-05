@@ -3,6 +3,7 @@
 export default function AdminDashboardUi(props) {
   const {
     HolidayList,
+    LayerSurface,
     MetricCard,
     NoticeList,
     Section,
@@ -15,9 +16,7 @@ export default function AdminDashboardUi(props) {
     case "section1":
       return <>
       <div>
-        <header className="app-section-card" style={{
-      border: "1px solid var(--theme)"
-    }}>
+        <LayerSurface as="header">
           <p style={{
         margin: 0,
         letterSpacing: "0.12em",
@@ -36,7 +35,7 @@ export default function AdminDashboardUi(props) {
       }}>
             Track jobs, appointments, requests, and notices in one place.
           </p>
-        </header>
+        </LayerSurface>
 
         <Section title="System statistics" subtitle="Jobs, appointments, and parts throughput">
           {loading ? <p style={{

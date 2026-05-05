@@ -15,7 +15,7 @@ export default function AccountsDashboardUi(props) {
     case "section1":
       return <>
       <div>
-        <Section title="Invoice stats" style={{ background: "var(--theme)" }}>
+        <Section title="Invoice stats">
           {loading ? <p style={{
         color: "var(--info)"
       }}>Loading financial KPIs…</p> : error ? <p style={{
@@ -31,7 +31,7 @@ export default function AccountsDashboardUi(props) {
             </div>}
         </Section>
 
-        <Section title="Outstanding jobs" subtitle="Most recent completions without invoice" style={{ background: "var(--theme)" }}>
+        <Section title="Outstanding jobs" subtitle="Most recent completions without invoice">
           {loading ? <p style={{
         color: "var(--info)"
       }}>Loading outstanding jobs…</p> : error ? <p style={{
@@ -39,7 +39,7 @@ export default function AccountsDashboardUi(props) {
       }}>{error}</p> : <JobList jobs={data.outstandingJobs} />}
         </Section>
 
-        <Section title="Completion trend" subtitle="Jobs completed in the last 7 days" style={{ background: "var(--theme)" }}>
+        <Section title="Completion trend" subtitle="Jobs completed in the last 7 days">
           <TrendBlock data={data.trends} />
         </Section>
       </div>

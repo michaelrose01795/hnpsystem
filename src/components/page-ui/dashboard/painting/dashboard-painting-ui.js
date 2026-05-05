@@ -2,6 +2,7 @@
 
 export default function PaintingDashboardUi(props) {
   const {
+    LayerSurface,
     MetricCard,
     QueueList,
     Section,
@@ -15,10 +16,7 @@ export default function PaintingDashboardUi(props) {
     case "section1":
       return <>
       <div>
-        <header className="app-section-card" style={{
-      background: "var(--warning-surface)",
-      border: "none"
-    }}>
+        <LayerSurface as="header">
           <p style={{
         margin: 0,
         letterSpacing: "0.12em",
@@ -37,7 +35,7 @@ export default function PaintingDashboardUi(props) {
       }}>
             Track paint jobs waiting on the bay and pull estimated finish times directly from job timestamps.
           </p>
-        </header>
+        </LayerSurface>
 
         <Section title="Bodyshop jobs">
           {loading ? <p style={{

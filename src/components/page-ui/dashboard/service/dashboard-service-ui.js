@@ -2,6 +2,7 @@
 
 export default function ServiceDashboardUi(props) {
   const {
+    LayerSurface,
     MetricCard,
     PieChart,
     ProgressBar,
@@ -17,9 +18,7 @@ export default function ServiceDashboardUi(props) {
     case "section1":
       return <>
       <div>
-        <header className="app-section-card" style={{
-      background: "var(--surface)"
-    }}>
+        <LayerSurface as="header">
           <p style={{
         margin: 0,
         letterSpacing: "0.12em",
@@ -38,7 +37,7 @@ export default function ServiceDashboardUi(props) {
       }}>
             Appointment throughput, customer status, and VHC approvals all in one pane.
           </p>
-        </header>
+        </LayerSurface>
 
         <Section title="Appointments today">
           {loading ? <p style={{

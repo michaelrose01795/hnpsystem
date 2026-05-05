@@ -3,6 +3,7 @@
 export default function AfterSalesDashboardUi(props) {
   const {
     FollowUpList,
+    LayerSurface,
     MetricCard,
     ProgressBar,
     Section,
@@ -27,9 +28,7 @@ export default function AfterSalesDashboardUi(props) {
     case "section2":
       return <>
       <div>
-        <header className="app-section-card" style={{
-      background: "var(--surface)"
-    }}>
+        <LayerSurface as="header">
           <p style={{
         margin: 0,
         letterSpacing: "0.12em",
@@ -48,7 +47,7 @@ export default function AfterSalesDashboardUi(props) {
       }}>
             Keep the customer journey humming — jobs, VHCs, and approvals in one pane.
           </p>
-        </header>
+        </LayerSurface>
 
         <Section title="Combined performance">
           {loading ? <p style={{

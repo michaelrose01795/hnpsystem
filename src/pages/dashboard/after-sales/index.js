@@ -5,20 +5,19 @@ import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { getAfterSalesDashboardData } from "@/lib/database/dashboard/after-sales";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
+import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import AfterSalesDashboardUi from "@/components/page-ui/dashboard/after-sales/dashboard-after-sales-ui"; // Extracted presentation layer.
 const ALLOWED_ROLES = ["after sales manager", "after sales director", "aftersales manager"];
 
-const MetricCard = ({ label, value, helper }) =>
-<div
-  className="app-section-card"
-  style={{
-    minWidth: 180
-  }}>
-  
+// MetricCard — single stat tile. Lives inside a Section (LayerSurface),
+// so per the strict alternation rule it renders as a LayerTheme.
+const MetricCard = ({ label, value, helper }) => (
+  <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 180 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </div>;
+  </LayerTheme>
+);
 
 
 const ProgressBar = ({ completed, target }) => {
@@ -37,7 +36,7 @@ const ProgressBar = ({ completed, target }) => {
             background: "var(--info)",
             borderRadius: 5
           }} />
-        
+
       </div>
     </div>);
 
@@ -58,7 +57,7 @@ const TrendBlock = ({ data }) => {
               background: "var(--info)",
               borderRadius: 4
             }} />
-          
+
           </div>
           <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
@@ -67,32 +66,23 @@ const TrendBlock = ({ data }) => {
 
 };
 
-const FollowUpList = ({ items }) =>
-<div
-  style={{
-    border: "none",
-    borderRadius: "var(--radius-sm)",
-    padding: "12px",
-    background: "var(--surface)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px"
-  }}>
-  
+// FollowUpList — list block inside a Section (LayerSurface), renders as LayerTheme.
+const FollowUpList = ({ items }) => (
+  <LayerTheme radius="var(--radius-sm)" padding="12px" gap="10px">
     {items.length === 0 ?
-  <p style={{ margin: 0, color: "var(--info)" }}>No follow-ups recorded.</p> :
-
-  items.map((entry) =>
-  <div key={entry.id} style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>
+      <p style={{ margin: 0, color: "var(--info)" }}>No follow-ups recorded.</p> :
+      items.map((entry) =>
+        <div key={entry.id} style={{ display: "flex", justifyContent: "space-between", color: "var(--info-dark)" }}>
           <div>
             <strong style={{ color: "var(--primary-selected)" }}>{entry.job?.job_number || "Job"}</strong>
             <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{entry.status}</p>
           </div>
           <span style={{ fontSize: "0.85rem", color: "var(--info)" }}>{entry.job?.vehicle_reg || "Vehicle"}</span>
         </div>
-  )
-  }
-  </div>;
+      )
+    }
+  </LayerTheme>
+);
 
 
 const defaultData = {
@@ -131,70 +121,7 @@ export default function AfterSalesDashboard() {
 
   if (!hasAccess) {
     return <AfterSalesDashboardUi view="section1" />;
-
-
-
-
-
-
   }
 
-  return <AfterSalesDashboardUi view="section2" data={data} error={error} FollowUpList={FollowUpList} loading={loading} MetricCard={MetricCard} ProgressBar={ProgressBar} Section={Section} TrendBlock={TrendBlock} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return <AfterSalesDashboardUi view="section2" data={data} error={error} FollowUpList={FollowUpList} LayerSurface={LayerSurface} loading={loading} MetricCard={MetricCard} ProgressBar={ProgressBar} Section={Section} TrendBlock={TrendBlock} />;
 }

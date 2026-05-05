@@ -3,6 +3,7 @@
 export default function MotDashboardUi(props) {
   const {
     CardList,
+    LayerSurface,
     MetricCard,
     Section,
     TrendBlock,
@@ -15,9 +16,7 @@ export default function MotDashboardUi(props) {
     case "section1":
       return <>
       <div>
-        <header className="app-section-card" style={{
-      background: "var(--surface)"
-    }}>
+        <LayerSurface as="header">
           <p style={{
         margin: 0,
         letterSpacing: "0.1em",
@@ -29,14 +28,14 @@ export default function MotDashboardUi(props) {
           <h1 style={{
         margin: "6px 0 0",
         color: "var(--primary-selected)"
-      }}>Today's test board</h1>
+      }}>Today&apos;s test board</h1>
           <p style={{
         margin: "6px 0 0",
         color: "var(--info)"
       }}>
             Track pass/fail rates, retests, and the queue for testers.
           </p>
-        </header>
+        </LayerSurface>
 
         <Section title="Daily MOT tally">
           {loading ? <p style={{

@@ -5,18 +5,18 @@
 import React, { useEffect, useState } from "react";
 import { getPaintingDashboardData } from "@/lib/database/dashboard/painting";
 import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
+import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import PaintingDashboardUi from "@/components/page-ui/dashboard/painting/dashboard-painting-ui"; // Extracted presentation layer.
-const MetricCard = ({ label, value, helper }) =>
-<div
-  className="app-section-card"
-  style={{
-    minWidth: 180
-  }}>
-  
+
+// MetricCard — single stat tile. Lives inside a Section (LayerSurface),
+// so per the strict alternation rule it renders as a LayerTheme.
+const MetricCard = ({ label, value, helper }) => (
+  <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 180 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </div>;
+  </LayerTheme>
+);
 
 
 const TrendBlock = ({ data }) => {
@@ -34,7 +34,7 @@ const TrendBlock = ({ data }) => {
               background: "var(--danger)",
               borderRadius: 4
             }} />
-          
+
           </div>
           <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
@@ -43,40 +43,30 @@ const TrendBlock = ({ data }) => {
 
 };
 
-const QueueList = ({ queue }) =>
-<div
-  style={{
-    border: "none",
-    borderRadius: "var(--radius-sm)",
-    padding: "12px",
-    background: "var(--surface)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px"
-  }}>
-  
+// QueueList — list block inside a Section (LayerSurface), renders as LayerTheme.
+const QueueList = ({ queue }) => (
+  <LayerTheme radius="var(--radius-sm)" padding="12px" gap="10px">
     {queue.length === 0 ?
-  <p style={{ margin: 0, color: "var(--info)" }}>No painting jobs in queue.</p> :
-
-  queue.map((job) =>
-  <div
-    key={job.id}
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      color: "var(--info-dark)"
-    }}>
-    
+      <p style={{ margin: 0, color: "var(--info)" }}>No painting jobs in queue.</p> :
+      queue.map((job) =>
+        <div
+          key={job.id}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            color: "var(--info-dark)"
+          }}>
           <div>
             <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
             <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{job.vehicle_reg || "Plate"}</p>
           </div>
           <span style={{ color: "var(--info)" }}>{job.status || "In progress"}</span>
         </div>
-  )
-  }
-  </div>;
+      )
+    }
+  </LayerTheme>
+);
 
 
 const defaultData = {
@@ -108,49 +98,5 @@ export default function PaintingDashboard() {
     loadData();
   }, []);
 
-  return <PaintingDashboardUi view="section1" data={data} error={error} loading={loading} MetricCard={MetricCard} QueueList={QueueList} Section={Section} TrendBlock={TrendBlock} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return <PaintingDashboardUi view="section1" data={data} error={error} LayerSurface={LayerSurface} loading={loading} MetricCard={MetricCard} QueueList={QueueList} Section={Section} TrendBlock={TrendBlock} />;
 }
