@@ -1,8 +1,13 @@
 // file location: src/components/ui/Card.js
-// Standard card component with shared padding, border radius, and surface styling.
-// Uses the .app-section-card class from globals.css for consistent appearance.
+// Bare card wrapper used across the app.
+// Internally renders <LayerSurface> — the canonical "surface" layer primitive —
+// so all consumers of Card automatically inherit the layer-sweep visual
+// (borderless, --surface fill, --radius-md corners). Public API is unchanged.
+//
+// `app-section-card` className is preserved on the rendered element so the
+// (large) body of legacy scoped CSS in globals.css continues to apply.
 import React from "react";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerSurface from "./LayerSurface";
 
 export default function Card({
   title,
@@ -19,8 +24,18 @@ export default function Card({
   shell = false,
 }) {
   const cardClassName = `app-section-card ${className}`.trim();
-  const cardContent = (
-    <>
+
+  return (
+    <LayerSurface
+      className={cardClassName}
+      style={style}
+      sectionKey={sectionKey}
+      parentKey={parentKey}
+      sectionType={sectionType}
+      backgroundToken={backgroundToken}
+      widthMode={widthMode}
+      shell={shell}
+    >
       {(title || subtitle || action) && (
         <div
           style={{
@@ -58,30 +73,6 @@ export default function Card({
         </div>
       )}
       {children}
-    </>
-  );
-
-  if (sectionKey) {
-    return (
-      <DevLayoutSection
-        as="div"
-        sectionKey={sectionKey}
-        parentKey={parentKey}
-        sectionType={sectionType}
-        backgroundToken={backgroundToken}
-        widthMode={widthMode}
-        shell={shell}
-        className={cardClassName}
-        style={style}
-      >
-        {cardContent}
-      </DevLayoutSection>
-    );
-  }
-
-  return (
-    <div className={cardClassName} style={style}>
-      {cardContent}
-    </div>
+    </LayerSurface>
   );
 }

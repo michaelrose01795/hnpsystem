@@ -1,9 +1,35 @@
 /* file location: src/styles/theme.css */
 /* Central colour and design token source for the entire application. */
+/*
+ * Canonical surface tokens (Layer Sweep — see docs/layer-sweep-handoff.md):
+ *   --surface  — base "surface" layer fill. Used by <LayerSurface>.
+ *   --theme    — tinted "theme" layer fill. Used by <LayerTheme>.
+ *
+ * The two layer primitives <LayerSurface> and <LayerTheme>
+ * (src/components/ui/LayerSurface.js and src/components/ui/LayerTheme.js)
+ * are the only legal way to render a card / section surface. Consumers MUST
+ * NOT use inline `background:` / `border:` / `borderRadius:` on cards or
+ * sections — see CLAUDE.md section 3.
+ *
+ * Deprecated aliases (do not introduce new references; will be removed in
+ * Phase 3 of the layer sweep). They currently resolve to --surface so any
+ * un-migrated consumer still renders correctly:
+ *   --surfaceMain          → --surface  (legacy, never wired in this file but referenced in older docs)
+ *   --section-card-bg      → --surface
+ *   --page-card-bg         → --surface
+ *   --row-background       → --surface
+ *   --surface-gradient     → --surface
+ *   --section-gradient-center → --surface
+ *   --grey-accent-light    → --surface
+ *   --search-surface       → --surface (light theme; dark theme overrides)
+ *   --section-card-border  → none (legacy "border token" — empty by design)
+ *   --page-card-border     → none
+ */
 
 :root {
   color-scheme: light;
   --surface: #ffffff;
+  --surfaceMain: var(--surface); /* deprecated alias — see header comment */
   --surfaceHover: #f7f7f7;
   --surfaceMutedToken: #f3f3f3;
   --surfaceText: #0f0f0f;
@@ -386,6 +412,7 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
   --surface: #16161a;
+  --surfaceMain: var(--surface); /* deprecated alias — see header comment */
   --surfaceHover: #23232b;
   --surfaceMutedToken: #1d1d24;
   --surfaceText: #f8f7ff;

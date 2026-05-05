@@ -32,11 +32,37 @@ Before writing or changing any code:
 
 ## 3. Design System — Non-Negotiable
 
+### 3.0 Layer Primitives — THE LAW (post-Layer-Sweep, 2026-05-05)
+
+**Only two surface primitives exist for the entire app:**
+
+| Component | Background | Where |
+|---|---|---|
+| `<LayerSurface>` | `var(--surface)` | `src/components/ui/LayerSurface.js` |
+| `<LayerTheme>` | `var(--theme)` | `src/components/ui/LayerTheme.js` |
+
+**Rules:**
+1. Every card / section / panel / surface in the app MUST be one of these two components (or a wrapper that renders one of them, e.g. `<Card>`, `<Section>`, `<SectionCard>` — all of which now route through `<LayerSurface>` internally).
+2. **Strict alternation as you nest deeper:**
+   `<LayerSurface>` → `<LayerTheme>` → `<LayerSurface>` → `<LayerTheme>` ...
+   The outermost surface is `<LayerSurface>`; every nested surface flips. Two consecutive `<LayerSurface>` (or two consecutive `<LayerTheme>`) is a bug.
+3. **Both layer components are borderless.** `<LayerSurface>` and `<LayerTheme>` render with **no border** — period.
+4. **Banned inline styles on cards / sections:**
+   ```
+   ❌ <div style={{ border: ... }}>           // banned on cards/sections
+   ❌ <div style={{ background: ... }}>       // banned on cards/sections
+   ❌ <div style={{ borderRadius: ... }}>     // banned on cards/sections
+   ```
+   Use `<LayerSurface>` / `<LayerTheme>` and pass `radius`, `padding`, `gap` props if you need to override the defaults. Inline styles for non-surface concerns (flex, gap, colour for text, height, width, etc.) remain fine.
+5. **Borders ARE still allowed on non-surfaces:** buttons, inputs, badges, table rows used to indicate state (selected / error), separators. The ban is **surfaces only** — anything that looks like a card or panel.
+6. **Visual reference:** "Section Layers (surface / theme alternation)" showcase in [src/pages/dev/user-diagnostic.js](src/pages/dev/user-diagnostic.js) lines 2860–2880 — but rendered without the borders shown there.
+
 ### 3.1 Token Sources
-- **Colour tokens:** `src/styles/theme.css` — CSS custom properties only (e.g. `var(--accentMain)`, `var(--surfaceMain)`, `var(--text-secondary)`)
+- **Colour tokens:** `src/styles/theme.css` — CSS custom properties only (e.g. `var(--accentText)`, `var(--surface)`, `var(--theme)`, `var(--text-1)`)
 - **Base layout classes:** `src/styles/globals.css` — `.app-page-shell`, `.app-page-stack`, `.app-section-card`, `.app-page-card`
 - **Never hardcode hex colours.** Never introduce a new colour outside of `theme.css`.
 - **Never add a new CSS custom property** without confirming it belongs in the global token system.
+- The canonical surface tokens are `--surface` and `--theme`. Tokens like `--surfaceMain`, `--section-card-bg`, `--page-card-bg`, `--row-background` are deprecated aliases pointing at `--surface` and will be removed at the end of the layer sweep.
 
 ### 3.2 Key Colour Tokens (quick reference)
 | Token | Purpose |
@@ -67,8 +93,10 @@ Before writing or changing any code:
 ### 3.4 Shared UI Components — Use These, Do Not Recreate
 | Component | Location | Use for |
 |---|---|---|
-| `Section` | `src/components/Section.js` | Titled section card on dashboard pages |
-| `SectionCard` / `Card` | `src/components/ui/Card.js` | Bare card wrapper (no built-in title) |
+| `LayerSurface` | `src/components/ui/LayerSurface.js` | Canonical "surface" layer — base of every card / section |
+| `LayerTheme` | `src/components/ui/LayerTheme.js` | Canonical "theme" layer — alternates with LayerSurface inside nesting |
+| `Section` | `src/components/Section.js` | Titled section card (renders LayerSurface internally) |
+| `SectionCard` / `Card` | `src/components/ui/Card.js` | Bare card wrapper (renders LayerSurface internally) |
 | `ProtectedRoute` | `src/components/ProtectedRoute.js` | Role-gated page wrapper |
 | `Sidebar` | `src/components/Sidebar.js` | Global sidebar — do not duplicate |
 | `Layout` | `src/components/Layout.js` | Global page layout shell |
