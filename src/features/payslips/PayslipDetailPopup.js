@@ -8,6 +8,7 @@
 import React from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import LayerSurface from "@/components/ui/LayerSurface";
 import {
   formatCurrency,
   formatDate,
@@ -232,7 +233,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
               gap: "16px",
             }}
           >
-            <div className="app-section-card" style={{ padding: "14px", gap: "10px" }}>
+            <LayerSurface style={{ padding: "14px", gap: "10px" }}>
               <span style={sectionTitleStyle}>Employer</span>
               <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-1)" }}>
                 <strong style={{ fontSize: "0.95rem" }}>
@@ -247,8 +248,8 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
                   </span>
                 ) : null}
               </div>
-            </div>
-            <div className="app-section-card" style={{ padding: "14px", gap: "10px" }}>
+            </LayerSurface>
+            <LayerSurface style={{ padding: "14px", gap: "10px" }}>
               <span style={sectionTitleStyle}>Employee</span>
               <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-1)" }}>
                 <strong style={{ fontSize: "0.95rem" }}>{employeeSnapshot?.name || "—"}</strong>
@@ -262,12 +263,11 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
                   <span style={{ color: "var(--text-1)" }}>Tax code {payslip.taxCode}</span>
                 ) : null}
               </div>
-            </div>
+            </LayerSurface>
           </div>
 
           {/* Pay context */}
-          <div
-            className="app-section-card"
+          <LayerSurface
             style={{
               padding: "14px",
               display: "grid",
@@ -291,7 +291,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
                   : "—"
               }
             />
-          </div>
+          </LayerSurface>
 
           {/* Earnings */}
           <div style={{ display: "grid", gap: "8px" }}>
@@ -338,34 +338,34 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
               gap: "12px",
             }}
           >
-            <div className="app-section-card" style={{ padding: "14px", gap: "4px" }}>
+            <LayerSurface style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Gross pay</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #2e7d32)" }}>
                 {formatCurrency(payslip.grossPay)}
               </span>
-            </div>
-            <div className="app-section-card" style={{ padding: "14px", gap: "4px" }}>
+            </LayerSurface>
+            <LayerSurface style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Taxable pay</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-1)" }}>
                 {formatCurrency(payslip.taxablePay ?? payslip.grossPay)}
               </span>
-            </div>
-            <div className="app-section-card" style={{ padding: "14px", gap: "4px" }}>
+            </LayerSurface>
+            <LayerSurface style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Net pay</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accentText, var(--accent))" }}>
                 {formatCurrency(payslip.netPay)}
               </span>
-            </div>
-            <div className="app-section-card" style={{ padding: "14px", gap: "4px" }}>
+            </LayerSurface>
+            <LayerSurface style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Employer pension</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-1)" }}>
                 {formatCurrency(payslip.pensionEmployer)}
               </span>
-            </div>
+            </LayerSurface>
           </div>
 
           {/* YTD totals */}
-          <div className="app-section-card" style={{ padding: "14px", gap: "10px" }}>
+          <LayerSurface style={{ padding: "14px", gap: "10px" }}>
             <span style={sectionTitleStyle}>Year to date</span>
             <div
               style={{
@@ -380,16 +380,16 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
               <InfoCell label="YTD NI" value={payslip.ytdNi !== null && payslip.ytdNi !== undefined ? formatCurrency(payslip.ytdNi) : "—"} />
               <InfoCell label="YTD Pension" value={payslip.ytdPension !== null && payslip.ytdPension !== undefined ? formatCurrency(payslip.ytdPension) : "—"} />
             </div>
-          </div>
+          </LayerSurface>
 
           {/* Notes */}
           {payslip.notes ? (
-            <div className="app-section-card" style={{ padding: "14px", gap: "8px" }}>
+            <LayerSurface style={{ padding: "14px", gap: "8px" }}>
               <span style={sectionTitleStyle}>Notes</span>
               <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-1)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
                 {payslip.notes}
               </p>
-            </div>
+            </LayerSurface>
           ) : null}
         </div>
       </div>
