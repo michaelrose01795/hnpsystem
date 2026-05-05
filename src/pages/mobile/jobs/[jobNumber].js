@@ -9,14 +9,12 @@ import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
 import RedirectToWorkshopButton from "@/components/mobile/RedirectToWorkshopButton";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { showAlert } from "@/lib/notifications/alertBus";
+import LayerSurface from "@/components/ui/LayerSurface";
 import PageUi from "@/components/page-ui/mobile/jobs/mobile-jobs-job-number-ui"; // Extracted presentation layer.
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: "720px" };
 const cardStyle = {
-  backgroundColor: "var(--section-card-bg, #fff)",
-  borderRadius: "var(--section-card-radius, 12px)",
-  padding: "16px",
-  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))"
+  padding: "16px"
 };
 
 const primaryButtonStyle = {
@@ -120,22 +118,22 @@ function MobileJobCardInner() {
           <SkeletonBlock width="140px" height="22px" />
           <SkeletonBlock width="64px" height="18px" borderRadius="999px" />
         </header>
-        <section style={cardStyle}>
+        <LayerSurface as="section" style={cardStyle}>
           <SkeletonBlock width="60%" height="16px" />
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
             <SkeletonBlock width="80%" height="12px" />
             <SkeletonBlock width="70%" height="12px" />
             <SkeletonBlock width="65%" height="12px" />
           </div>
-        </section>
-        <section style={cardStyle}>
+        </LayerSurface>
+        <LayerSurface as="section" style={cardStyle}>
           <SkeletonBlock width="40%" height="16px" />
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
             <SkeletonBlock width="90%" height="12px" />
             <SkeletonBlock width="85%" height="12px" />
             <SkeletonBlock width="60%" height="12px" />
           </div>
-        </section>
+        </LayerSurface>
       </div>);
 
   }
@@ -151,32 +149,32 @@ function MobileJobCardInner() {
         <span style={{ color: "var(--text-1)" }}>{job.status}</span>
       </header>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Vehicle & customer</h2>
         <p><strong>{job.vehicle_reg}</strong> — {job.vehicle_make_model}</p>
         <p>
           {job.customer?.first_name} {job.customer?.last_name} · {job.service_contact_phone || job.customer?.phone}
         </p>
-      </section>
+      </LayerSurface>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>On-site visit</h2>
         <p><strong>Address:</strong> {job.service_address} {job.service_postcode}</p>
         <p><strong>Window:</strong> {job.appointment_window_start ? new Date(job.appointment_window_start).toLocaleString() : "—"}
           {job.appointment_window_end ? ` → ${new Date(job.appointment_window_end).toLocaleTimeString()}` : ""}
         </p>
         {job.access_notes && <p><strong>Access notes:</strong> {job.access_notes}</p>}
-      </section>
+      </LayerSurface>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Work</h2>
         <p>{job.description || "No description"}</p>
         {job.mobile_outcome &&
         <p><strong>Outcome:</strong> {job.mobile_outcome.replace(/_/g, " ")}</p>
         }
-      </section>
+      </LayerSurface>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Actions</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           <button type="button" style={primaryButtonStyle} onClick={complete}>Complete on-site</button>
@@ -186,13 +184,13 @@ function MobileJobCardInner() {
           </button>
           <RedirectToWorkshopButton jobNumber={job.job_number} onRedirected={() => router.push("/mobile/dashboard")} />
         </div>
-      </section>
+      </LayerSurface>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <Link href={`/job-cards/${encodeURIComponent(job.job_number)}`}>
           Open full job card (notes, parts, VHC)
         </Link>
-      </section>
+      </LayerSurface>
     </div>);
 
 }

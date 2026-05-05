@@ -6,6 +6,7 @@ import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import LayerSurface from "@/components/ui/LayerSurface";
 
 // Structured job-row skeleton shaped like the real JobRow (title + time stamp + body).
 // Kept local to this file because the mobile dashboard cards use a compact two-column
@@ -44,10 +45,7 @@ const pageStyle = {
 };
 
 const cardStyle = {
-  backgroundColor: "var(--section-card-bg, #fff)",
-  borderRadius: "var(--section-card-radius, 12px)",
-  padding: "16px",
-  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))"
+  padding: "16px"
 };
 
 const jobRowStyle = {
@@ -113,12 +111,12 @@ function MobileDashboardInner() {
       </header>
 
       {error &&
-      <div style={{ ...cardStyle, borderColor: "transparent", color: "var(--danger, #dc2626)" }}>
-          {error}
-        </div>
+      <LayerSurface style={{ ...cardStyle, color: "var(--danger, #dc2626)" }}>
+        {error}
+      </LayerSurface>
       }
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Today ({today.length})</h2>
         {loading ?
         <MobileJobRowsSkeleton count={2} /> :
@@ -127,9 +125,9 @@ function MobileDashboardInner() {
 
         today.map((j) => <JobRow key={j.id} job={j} />)
         }
-      </section>
+      </LayerSurface>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Upcoming ({upcoming.length})</h2>
         {loading ?
         <MobileJobRowsSkeleton count={3} /> :
@@ -138,16 +136,16 @@ function MobileDashboardInner() {
 
         upcoming.map((j) => <JobRow key={j.id} job={j} />)
         }
-      </section>
+      </LayerSurface>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Quick actions</h2>
         <ul style={{ margin: 0, paddingLeft: "20px" }}>
           <li><Link href="/mobile/appointments">View all appointments</Link></li>
           <li><Link href="/mobile/jobs">See my mobile jobs</Link></li>
           <li><Link href="/tech/consumables-request">Request consumables</Link></li>
         </ul>
-      </section>
+      </LayerSurface>
     </div>);
 
 }

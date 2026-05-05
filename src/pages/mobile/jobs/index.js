@@ -6,14 +6,12 @@ import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import LayerSurface from "@/components/ui/LayerSurface";
 import PageUi from "@/components/page-ui/mobile/jobs/mobile-jobs-ui"; // Extracted presentation layer.
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px" };
 const cardStyle = {
-  backgroundColor: "var(--section-card-bg, #fff)",
-  borderRadius: "var(--section-card-radius, 12px)",
-  padding: "16px",
-  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))"
+  padding: "16px"
 };
 
 function MobileJobsInner() {
@@ -31,7 +29,7 @@ function MobileJobsInner() {
     <div style={pageStyle}>
       <h1 style={{ margin: 0 }}>My Mobile Jobs</h1>
       {loading ?
-      <div style={cardStyle}>
+      <LayerSurface style={cardStyle}>
           <SkeletonKeyframes />
           {Array.from({ length: 4 }).map((_, i) =>
         <div
@@ -49,9 +47,9 @@ function MobileJobsInner() {
               <SkeletonBlock width="60%" height="10px" />
             </div>
         )}
-        </div> :
+        </LayerSurface> :
 
-      <div style={cardStyle}>
+      <LayerSurface style={cardStyle}>
           {jobs.length === 0 ? <p>No mobile jobs assigned.</p> : jobs.map((j) =>
         <div key={j.id} style={{ padding: "10px 0", borderBottom: "1px solid var(--primary-border-subtle)" }}>
               <Link href={`/mobile/jobs/${encodeURIComponent(j.job_number)}`}>
@@ -67,7 +65,7 @@ function MobileJobsInner() {
               </Link>
             </div>
         )}
-        </div>
+        </LayerSurface>
       }
     </div>);
 

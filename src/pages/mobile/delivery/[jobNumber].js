@@ -9,14 +9,12 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
 import RedirectToWorkshopButton from "@/components/mobile/RedirectToWorkshopButton";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import LayerSurface from "@/components/ui/LayerSurface";
 import PageUi from "@/components/page-ui/mobile/delivery/mobile-delivery-job-number-ui"; // Extracted presentation layer.
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: "720px" };
 const cardStyle = {
-  backgroundColor: "var(--section-card-bg, #fff)",
-  borderRadius: "var(--section-card-radius, 12px)",
-  padding: "16px",
-  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))"
+  padding: "16px"
 };
 
 function OUTCOME_LABEL(outcome) {
@@ -52,14 +50,14 @@ function DeliveryInner() {
           <SkeletonBlock width="180px" height="22px" />
           <SkeletonBlock width="64px" height="18px" borderRadius="999px" />
         </header>
-        <section style={cardStyle}>
+        <LayerSurface as="section" style={cardStyle}>
           <SkeletonBlock width="40%" height="16px" />
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
             <SkeletonBlock width="70%" height="12px" />
             <SkeletonBlock width="80%" height="12px" />
             <SkeletonBlock width="60%" height="12px" />
           </div>
-        </section>
+        </LayerSurface>
       </div>);
 
   }
@@ -72,7 +70,7 @@ function DeliveryInner() {
         <ServiceModeBadge mode="mobile" />
       </header>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>{job.job_number}</h2>
         <p><strong>Outcome:</strong> {OUTCOME_LABEL(job.mobile_outcome)}</p>
         {job.mobile_completed_at &&
@@ -80,9 +78,9 @@ function DeliveryInner() {
         }
         <p><strong>Vehicle:</strong> {job.vehicle_reg} — {job.vehicle_make_model}</p>
         <p><strong>Site:</strong> {job.service_address} {job.service_postcode}</p>
-      </section>
+      </LayerSurface>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ marginTop: 0 }}>Next steps</h2>
         {job.mobile_outcome === "completed_onsite" && <p>All done. Customer notified via the normal status flow.</p>}
         {job.mobile_outcome === "follow_up_required" &&
@@ -97,7 +95,7 @@ function DeliveryInner() {
             <Link href={`/mobile/jobs/${encodeURIComponent(jobNumber)}`}>Back to job actions →</Link>
           </div>
         }
-      </section>
+      </LayerSurface>
     </div>);
 
 }

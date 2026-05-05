@@ -7,14 +7,11 @@ import React, { useState } from "react";
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { showAlert } from "@/lib/notifications/alertBus";
+import LayerSurface from "@/components/ui/LayerSurface";
 import PageUi from "@/components/page-ui/mobile/mobile-create-ui"; // Extracted presentation layer.
 
 const pageStyle = { padding: "16px", display: "flex", flexDirection: "column", gap: "14px", maxWidth: "720px" };
 const cardStyle = {
-  backgroundColor: "var(--section-card-bg, #fff)",
-  borderRadius: "var(--section-card-radius, 12px)",
-  padding: "16px",
-  border: "var(--section-card-border, 1px solid rgba(15,23,42,0.08))",
   display: "flex",
   flexDirection: "column",
   gap: "10px"
@@ -94,7 +91,7 @@ function MobileCreateInner() {
     <form style={pageStyle} onSubmit={submit}>
       <h1 style={{ margin: 0 }}>New Mobile Job</h1>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ margin: 0 }}>Customer</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           <label style={labelStyle}>First name<input style={inputStyle} value={form.customerFirst} onChange={(e) => update("customerFirst", e.target.value)} required /></label>
@@ -102,9 +99,9 @@ function MobileCreateInner() {
           <label style={labelStyle}>Mobile<input style={inputStyle} value={form.customerMobile} onChange={(e) => update("customerMobile", e.target.value)} required /></label>
           <label style={labelStyle}>Email<input style={inputStyle} type="email" value={form.customerEmail} onChange={(e) => update("customerEmail", e.target.value)} /></label>
         </div>
-      </section>
+      </LayerSurface>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ margin: 0 }}>On-site visit</h2>
         <label style={labelStyle}>Address<input style={inputStyle} value={form.address} onChange={(e) => update("address", e.target.value)} required /></label>
         <label style={labelStyle}>Postcode<input style={inputStyle} value={form.postcode} onChange={(e) => update("postcode", e.target.value)} required /></label>
@@ -114,9 +111,9 @@ function MobileCreateInner() {
           <label style={labelStyle}>Window end<input style={inputStyle} type="datetime-local" value={form.windowEnd} onChange={(e) => update("windowEnd", e.target.value)} /></label>
         </div>
         <label style={labelStyle}>Access notes<textarea style={inputStyle} rows={3} value={form.accessNotes} onChange={(e) => update("accessNotes", e.target.value)} placeholder="e.g. gate code, parking, dog on site" /></label>
-      </section>
+      </LayerSurface>
 
-      <section style={cardStyle}>
+      <LayerSurface as="section" style={cardStyle}>
         <h2 style={{ margin: 0 }}>Vehicle & work</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
           <label style={labelStyle}>Reg<input style={inputStyle} value={form.vehicleReg} onChange={(e) => update("vehicleReg", e.target.value.toUpperCase())} required /></label>
@@ -132,7 +129,7 @@ function MobileCreateInner() {
         </label>
         <label style={labelStyle}>Description of work<textarea style={inputStyle} rows={3} required value={form.description} onChange={(e) => update("description", e.target.value)} /></label>
         <label style={labelStyle}>Estimated hours<input style={inputStyle} type="number" step="0.25" value={form.hours} onChange={(e) => update("hours", e.target.value)} /></label>
-      </section>
+      </LayerSurface>
 
       <button
         type="submit"
