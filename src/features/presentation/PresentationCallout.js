@@ -296,7 +296,7 @@ export default function PresentationCallout({ step }) {
         overflow: "auto",
         pointerEvents: "auto",
         boxShadow: "0 18px 46px rgba(0, 0, 0, 0.32)",
-        border: "1px solid rgba(var(--primary-rgb), 0.38)",
+        border: "none",
         display: "flex",
         flexDirection: "column",
         gap: 10,

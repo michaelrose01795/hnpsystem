@@ -95,7 +95,7 @@ export default function MyJobsPageUi(props) {
         </DevLayoutSection>
 
         {/* Search and Filter Bar */}
-        <LayerSurface sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="app-layout-page-card" backgroundToken="surface-filter-card" className="myjobs-filter-toolbar" style={{
+        <LayerTheme sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="app-layout-page-card" backgroundToken="theme-filter-card" className="myjobs-filter-toolbar" style={{
       display: "flex",
       flexDirection: "row",
       gap: "12px",
@@ -133,10 +133,10 @@ export default function MyJobsPageUi(props) {
                 {label}
               </Button>)}
           </div>
-        </LayerSurface>
+        </LayerTheme>
 
         {/* Jobs List */}
-        <LayerSurface sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="surface-results-card" style={{
+        <LayerTheme sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-results-card" style={{
       flex: 1,
       display: "flex",
       flexDirection: "column",
@@ -416,10 +416,10 @@ export default function MyJobsPageUi(props) {
                   </div>;
         })}
             </div>}
-        </LayerSurface>
+        </LayerTheme>
 
         {/* Job Count Summary */}
-        <LayerSurface sectionKey="myjobs-summary" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="surface-summary-card">
+        <LayerTheme sectionKey="myjobs-summary" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-summary-card">
           <div data-dev-section="1" data-dev-section-key="myjobs-summary-grid" data-dev-section-type="content-card" data-dev-section-parent="myjobs-summary" style={{
         display: "grid",
         gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
@@ -505,7 +505,7 @@ export default function MyJobsPageUi(props) {
           }}>Completed</div>
             </div>
           </div>
-        </LayerSurface>
+        </LayerTheme>
 
       </div>
 

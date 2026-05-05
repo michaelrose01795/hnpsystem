@@ -16,7 +16,7 @@ const modalStyle = {
   maxWidth: "1120px",
   maxHeight: "calc(100vh - 32px)",
   overflow: "hidden",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+  border: "none",
   background: "var(--page-card-bg)",
   boxShadow: "var(--shadow-xl)",
   padding: "clamp(16px, 2.4vw, 24px)",
@@ -28,7 +28,7 @@ const modalStyle = {
 
 const sectionCardStyle = {
   background: "var(--surface)",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.14)",
+  border: "none",
   borderRadius: "var(--radius-md)",
   padding: "16px",
   boxShadow: "none",
@@ -45,7 +45,7 @@ const checkboxLabelStyle = {
 const inputFieldStyle = {
   padding: "10px 12px",
   borderRadius: "var(--input-radius)",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+  border: "none",
   background: "var(--surface)",
   color: "var(--text-1)",
 };

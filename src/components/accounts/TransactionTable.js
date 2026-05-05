@@ -1,6 +1,8 @@
 // file location: src/components/accounts/TransactionTable.js // header comment for file traceability
 import React from "react"; // import React to render JSX
-import LayerSurface from "@/components/ui/LayerSurface";import PropTypes from "prop-types";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+import PropTypes from "prop-types";
 import { TRANSACTION_TYPES, PAYMENT_METHODS } from "@/config/accounts";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
@@ -10,6 +12,7 @@ import Button from "@/components/ui/Button";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 export default function TransactionTable({ transactions, loading, filters, onFilterChange, pagination, onPageChange, onExport, accentSurface = false }) {
+  const Layer = accentSurface ? LayerTheme : LayerSurface;
   const [hoveredTransactionId, setHoveredTransactionId] = React.useState(null);
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
@@ -46,7 +49,7 @@ export default function TransactionTable({ transactions, loading, filters, onFil
   }, [transactions, filters]);
 
   return (
-    <LayerSurface as="section" style={{ display: "flex", flexDirection: "column", gap: "16px", ...(accentSurface ? { background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" } : {}) }}>
+    <Layer as="section" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <header style={{ display: "grid", gridTemplateColumns: "auto minmax(280px, 1fr) auto", alignItems: "center", gap: "12px" }}>
         <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-1)" }}>Transactions</h3>
         <ToolbarRow style={{ minWidth: 0 }}>
@@ -129,7 +132,7 @@ export default function TransactionTable({ transactions, loading, filters, onFil
           </tbody>
         </table>
       </div>
-    </LayerSurface>);
+    </Layer>);
 
 }
 TransactionTable.propTypes = {

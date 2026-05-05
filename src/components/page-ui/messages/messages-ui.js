@@ -180,7 +180,7 @@ export default function MessagesPageUi(props) {
             flexDirection: "column",
             gap: "10px"
           }}>
-                <SectionTitle title={threadSelectionMode ? "Selected" : ""} subtitle={threadSelectionMode && selectedThreadIds.length ? `${selectedThreadIds.length} thread(s) selected` : undefined} action={threadSelectionMode ? <div style={{
+                {threadSelectionMode && <SectionTitle title="Selected" subtitle={selectedThreadIds.length ? `${selectedThreadIds.length} thread(s) selected` : undefined} action={<div style={{
               display: "flex",
               gap: "var(--space-sm)"
             }}>
@@ -190,32 +190,45 @@ export default function MessagesPageUi(props) {
                         <Button type="button" variant="secondary" size="sm" pill onClick={handleCloseSelectionMode}>
                           Close
                         </Button>
-                      </div> : <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-sm)"
-            }}>
-                        <Button type="button" variant="secondary" size="sm" pill onClick={() => {
-                if (!visibleThreads.length) return;
-                setThreadSelectionMode(true);
-                setSelectedThreadIds([]);
-              }} disabled={!visibleThreads.length}>
-                          Select
-                        </Button>
-                        <Button type="button" variant="primary" size="sm" pill onClick={handleOpenNewChatModal} aria-label="Start new chat">
-                          +
-                        </Button>
-                      </div>} />
+                      </div>} />}
               </DevLayoutSection>
 
               {threadDeleteError && <StatusMessage tone="danger">{threadDeleteError}</StatusMessage>}
 
-              <DevLayoutSection sectionKey="messages-thread-search" parentKey="messages-threads-card" sectionType="filter-row">
-                <SearchBar placeholder="Search threads..." value={threadSearchTerm} onChange={event => setThreadSearchTerm(event.target.value)} onClear={() => setThreadSearchTerm("")} style={{
-              width: "100%",
-              marginTop: "10px",
-              marginBottom: "0"
-            }} />
+              <DevLayoutSection sectionKey="messages-thread-search" parentKey="messages-threads-card" sectionType="filter-row" style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--space-sm)",
+            width: "100%"
+          }}>
+                <div style={{
+              flex: "1 1 auto",
+              minWidth: 0
+            }}>
+                  <SearchBar placeholder="Search threads..." value={threadSearchTerm} onChange={event => setThreadSearchTerm(event.target.value)} onClear={() => setThreadSearchTerm("")} style={{
+                width: "100%",
+                marginTop: "10px",
+                marginBottom: "0"
+              }} />
+                </div>
+                {!threadSelectionMode && <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-sm)",
+              flex: "0 0 auto",
+              marginTop: "10px"
+            }}>
+                    <Button type="button" variant="secondary" size="sm" pill onClick={() => {
+                if (!visibleThreads.length) return;
+                setThreadSelectionMode(true);
+                setSelectedThreadIds([]);
+              }} disabled={!visibleThreads.length}>
+                      Select
+                    </Button>
+                    <Button type="button" variant="primary" size="sm" pill onClick={handleOpenNewChatModal} aria-label="Start new chat">
+                      +
+                    </Button>
+                  </div>}
               </DevLayoutSection>
 
               <DevLayoutSection sectionKey="messages-thread-list" parentKey="messages-threads-card" sectionType="section-shell" shell backgroundToken="messages-thread-list" className="custom-scrollbar" style={{
@@ -229,12 +242,14 @@ export default function MessagesPageUi(props) {
             gap: "10px",
             paddingTop: "6px",
             paddingBottom: "6px",
-            paddingRight: "2px"
+            paddingRight: "2px",
+            userSelect: "none",
+            WebkitUserSelect: "none"
           }}>
                 <DevLayoutSection sectionKey="messages-thread-pins" parentKey="messages-thread-list" sectionType="toolbar" style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: 0,
+              gap: "var(--space-sm)",
               width: "100%",
               flex: "0 0 auto"
             }}>
@@ -269,17 +284,18 @@ export default function MessagesPageUi(props) {
                   }} />}
                     </span>
                   </button>
-                  {pinnedThreads.map(thread => <button key={`pin-${thread.id}`} type="button" className={`app-btn app-btn--${activeThreadId === thread.id && !activeSystemView ? "primary" : "secondary"} app-btn--pill`} onClick={() => openThread(thread.id, thread)} onDoubleClick={() => handleTogglePinnedThread(thread.id)} title="Double click to unpin" style={{
+                  {pinnedThreads.map(thread => <button key={`pin-${thread.id}`} type="button" className={`app-btn app-btn--${activeThreadId === thread.id && !activeSystemView ? "primary" : "secondary"} app-btn--pill app-hover-tooltip`} data-tooltip={thread.title} onClick={() => openThread(thread.id, thread)} onDoubleClick={() => handleTogglePinnedThread(thread.id)} aria-label={thread.title} style={{
                 width: "100%",
                 height: "44px",
                 minWidth: 0,
                 justifyContent: "center",
-                overflow: "hidden"
+                overflow: "visible"
               }}>
                       <span style={{
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
+                  whiteSpace: "nowrap",
+                  minWidth: 0
                 }}>
                         {thread.title}
                       </span>
@@ -300,19 +316,31 @@ export default function MessagesPageUi(props) {
                     {filteredThreads.length ? <div style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "6px"
+                gap: "6px",
+                userSelect: "none",
+                WebkitUserSelect: "none"
               }}>
-                        {filteredThreads.map(thread => <div key={thread.id} data-dev-section="1" data-dev-section-key={`messages-thread-row-${thread.id}`} data-dev-section-type="section-shell" data-dev-section-parent="messages-thread-list" data-dev-background-token="messages-thread-row" style={{
+                        {filteredThreads.map(thread => <div key={thread.id} data-dev-section="1" data-dev-section-key={`messages-thread-row-${thread.id}`} data-dev-section-type="section-shell" data-dev-section-parent="messages-thread-list" data-dev-background-token="messages-thread-row" onMouseDown={event => {
+                  if (!threadSelectionMode && event.detail > 1) {
+                    event.preventDefault();
+                  }
+                }} style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "12px"
+                  gap: "12px",
+                  userSelect: "none",
+                  WebkitUserSelect: "none"
                 }}>
                             {threadSelectionMode && <input type="checkbox" checked={selectedThreadIds.includes(thread.id)} onChange={() => handleThreadCheckboxChange(thread.id)} style={{
                     width: "16px",
                     height: "16px",
                     cursor: "pointer"
                   }} />}
-                            <div role="button" tabIndex={threadSelectionMode ? -1 : 0} aria-disabled={threadSelectionMode} onClick={() => threadSelectionMode ? null : openThread(thread.id, thread)} onKeyDown={event => {
+                            <div role="button" tabIndex={threadSelectionMode ? -1 : 0} aria-disabled={threadSelectionMode} onClick={() => threadSelectionMode ? null : openThread(thread.id, thread)} onMouseDown={event => {
+                    if (!threadSelectionMode && event.detail > 1) {
+                      event.preventDefault();
+                    }
+                  }} onKeyDown={event => {
                     if (threadSelectionMode) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
@@ -331,7 +359,9 @@ export default function MessagesPageUi(props) {
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
-                    minWidth: 0
+                    minWidth: 0,
+                    userSelect: "none",
+                    WebkitUserSelect: "none"
                   }} onMouseEnter={event => {
                     if (threadSelectionMode || activeThreadId === thread.id) return;
                     event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
@@ -474,19 +504,31 @@ export default function MessagesPageUi(props) {
                             </div>}
                           <article data-dev-section="1" data-dev-section-key={`messages-system-note-${note.notification_id}`} data-dev-section-type="content-card" data-dev-section-parent="messages-system-feed" data-dev-background-token="messages-system-note" style={{
                   borderRadius: "var(--radius-md)",
-                  border: `1px solid ${palette.border}`,
-                  padding: "12px",
+                  padding: "10px 12px",
                   backgroundColor: "var(--surface)",
-                  boxShadow: "none"
+                  boxShadow: "none",
+                  minHeight: "44px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px"
                 }}>
                             <p style={{
                     margin: 0,
-                    color: palette.textPrimary
-                  }}>{note.message || "System update"}</p>
+                    color: palette.textPrimary,
+                    fontSize: "var(--text-body-sm)",
+                    fontWeight: 650,
+                    lineHeight: 1.35,
+                    minWidth: 0
+                  }}>
+                              {String(note.message || "System update").replace(/^[\s\p{Extended_Pictographic}\uFE0F]+/u, "").trim() || "System update"}
+                            </p>
                             <p style={{
-                    margin: "6px 0 0",
+                    margin: 0,
                     fontSize: "var(--text-caption)",
-                    color: palette.textMuted
+                    color: palette.textMuted,
+                    flex: "0 0 auto",
+                    whiteSpace: "nowrap"
                   }}>
                               {formatNotificationTimestamp(note.created_at)}
                             </p>
@@ -544,7 +586,7 @@ export default function MessagesPageUi(props) {
             display: "flex",
             flexDirection: "column",
             gap: isMobileView ? "12px" : "18px",
-            paddingRight: "6px",
+            padding: isMobileView ? "18px 10px 12px" : "22px 12px 14px",
             overscrollBehavior: "contain"
           }}>
                   {loadingMessages && <MessageBubblesSkeleton count={4} />}

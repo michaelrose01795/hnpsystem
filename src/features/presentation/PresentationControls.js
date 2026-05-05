@@ -41,7 +41,7 @@ export default function PresentationControls({ onExport, exportBusy }) {
         padding: "10px 12px",
         boxShadow: "0 14px 42px rgba(0, 0, 0, 0.28)",
         pointerEvents: "auto",
-        border: "1px solid rgba(var(--primary-rgb), 0.28)",
+        border: "none",
         background: "rgba(var(--surface-rgb), 0.96)",
         backdropFilter: "blur(10px)",
       }}

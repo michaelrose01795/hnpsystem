@@ -1,6 +1,8 @@
 // file location: src/components/accounts/InvoiceTable.js // header for clarity
 import React from "react"; // import React for JSX
-import LayerSurface from "@/components/ui/LayerSurface";import PropTypes from "prop-types";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+import PropTypes from "prop-types";
 import { useRouter } from "next/router";
 import { INVOICE_STATUSES } from "@/config/accounts";
 import { isInvoiceSettled } from "@/lib/status/statusHelpers"; // Centralized invoice status check.
@@ -73,6 +75,7 @@ const isInvoiceOverdue = (invoice) => {
   return due.getTime() < Date.now();
 };
 export default function InvoiceTable({ invoices, filters, onFilterChange, pagination, onPageChange, onExport, loading, accentSurface = false, navigationDisabled = false }) {
+  const Layer = accentSurface ? LayerTheme : LayerSurface;
   const router = useRouter();
   void onPageChange;
   const [hoveredInvoiceId, setHoveredInvoiceId] = React.useState(null);
@@ -121,14 +124,12 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
   const totalRecords = pagination?.total || filteredInvoices.length || 0;
 
   return (
-    <LayerSurface
+    <Layer
       as="section"
       sectionKey="accounts-invoices-table-card"
       sectionType="content-card"
       parentKey="accounts-invoices-table"
-
-
-      style={{ display: "flex", flexDirection: "column", gap: "16px", ...(accentSurface ? { background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" } : {}) }}>
+      style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
       <DevLayoutSection sectionKey="accounts-invoices-table-header" sectionType="content-card" parentKey="accounts-invoices-table-card">
         <header style={{ display: "grid", gridTemplateColumns: "auto minmax(280px, 1fr) auto", alignItems: "center", gap: "12px" }}>
@@ -235,7 +236,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
           </table>
         </div>
       </DevLayoutSection>
-    </LayerSurface>);
+    </Layer>);
 
 }
 InvoiceTable.propTypes = {

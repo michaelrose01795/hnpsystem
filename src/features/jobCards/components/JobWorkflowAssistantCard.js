@@ -27,7 +27,7 @@ export default function JobWorkflowAssistantCard({
       style={{
         padding: "14px 16px",
         borderRadius: "var(--radius-sm)",
-        border: "1px solid var(--theme)",
+        border: "none",
         backgroundColor: "var(--surface)",
         display: "flex",
         flexDirection: "column",

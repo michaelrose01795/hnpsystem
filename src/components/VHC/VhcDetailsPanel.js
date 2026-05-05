@@ -557,7 +557,7 @@ const SEVERITY_THEME = {
   red: { background: "var(--danger-surface)", border: "none", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
   amber: { background: "var(--warning-surface)", border: "none", text: "var(--warning-dark)", hover: "var(--warning-surface-hover)" },
   green: { background: "var(--success-surface)", border: "none", text: "var(--info-dark)", hover: "var(--success-surface-hover)" },
-  grey: { background: "var(--theme)", border: "var(--theme)", text: "var(--info-dark)", hover: "var(--theme)" },
+  grey: { background: "var(--theme)", border: "none", text: "var(--info-dark)", hover: "var(--theme)" },
   authorized: { background: "var(--authorised-surface)", border: "none", text: "var(--authorised)", hover: "var(--authorised-surface-hover)" },
   completed: { background: "var(--complete-surface)", border: "none", text: "var(--complete)", hover: "var(--complete-surface-hover)" },
   declined: { background: "var(--danger-surface)", border: "none", text: "var(--danger-dark)", hover: "var(--danger-surface-hover)" },
@@ -7479,7 +7479,7 @@ export default function VhcDetailsPanel({
                             </div>
                           ) : (
                             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                              <div style={{ border: "1px solid var(--theme)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
+                              <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
                                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                                   <thead>
                                     <tr style={{ background: "var(--theme)", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "10px" }}>
@@ -9446,7 +9446,7 @@ export default function VhcDetailsPanel({
           </div>
 
           {showNewPartForm && (
-            <div style={{ border: "1px solid var(--theme)", borderRadius: "var(--radius-sm)", padding: "16px", background: "var(--surface)" }}>
+            <div style={{ border: "none", borderRadius: "var(--radius-sm)", padding: "16px", background: "var(--surface)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                 <h2 style={{ margin: 0, fontSize: "16px", color: "var(--text-1)" }}>Add part</h2>
               </div>
@@ -9628,7 +9628,7 @@ export default function VhcDetailsPanel({
             </div>
           )}
 
-          <div style={{ border: "1px solid var(--theme)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
+          <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
             <div style={{ padding: "10px 12px", background: "var(--theme)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
               Search results
             </div>
@@ -9683,7 +9683,7 @@ export default function VhcDetailsPanel({
             )}
           </div>
 
-          <div style={{ border: "1px solid var(--theme)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
+          <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
             <div style={{ padding: "10px 12px", background: "var(--theme)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
               Selected parts
             </div>
@@ -9692,7 +9692,7 @@ export default function VhcDetailsPanel({
                 <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)", marginBottom: "8px" }}>
                   Already added to this VHC item
                 </div>
-                <div style={{ border: "1px solid var(--theme)", borderRadius: "var(--input-radius)", overflow: "hidden" }}>
+                <div style={{ border: "none", borderRadius: "var(--input-radius)", overflow: "hidden" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                     <thead>
                       <tr style={{ background: "var(--surface)", color: "var(--info)" }}>

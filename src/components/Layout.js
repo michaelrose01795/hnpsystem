@@ -990,7 +990,7 @@ export default function Layout({
             className="app-topbar-shell"
             {...lockChromeInteraction}
             style={{
-              background: "rgba(var(--surface-rgb), 0.92)",
+              background: "var(--surface)",
               borderRadius: "var(--radius-md)",
               border: "none",
               boxShadow: "none",

@@ -8442,7 +8442,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
         {selectedCatalogPart &&
         <div
           style={{
-            border: "1px solid var(--theme)",
+            border: "none",
             borderRadius: "var(--radius-sm)",
             padding: "12px",
             background: "var(--theme)"
@@ -8615,7 +8615,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           <div style={{
             padding: "20px",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--theme)",
+            border: "none",
             backgroundColor: "var(--theme)",
             fontSize: "14px",
             color: "var(--info)"
@@ -8632,7 +8632,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
                   style={{
                     padding: "16px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--theme)",
+                    border: "none",
                     backgroundColor: "var(--surface)"
                   }}>
 
@@ -8727,7 +8727,7 @@ function PartsTab({ jobData, canEdit, onRefreshJob, actingUserId, actingUserNume
           <div style={{
             padding: "20px",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--theme)",
+            border: "none",
             backgroundColor: "var(--theme)",
             fontSize: "14px",
             color: "var(--info)"

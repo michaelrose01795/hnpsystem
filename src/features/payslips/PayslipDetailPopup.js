@@ -53,7 +53,7 @@ function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentCol
   return (
     <div
       style={{
-        border: "1px solid rgba(var(--text-1-rgb), 0.12)",
+        border: "none",
         borderRadius: "var(--radius-md, 12px)",
         overflow: "hidden",
         background: "var(--surface)",

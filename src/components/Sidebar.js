@@ -311,6 +311,15 @@ export default function Sidebar({
         </div>
       </DevLayoutSection>
 
+      <div
+        aria-hidden="true"
+        style={{
+          height: "1px",
+          background: "var(--theme)",
+          flexShrink: 0,
+        }}
+      />
+
       {/* Navigation Content */}
       <DevLayoutSection
         className="app-sidebar__body"

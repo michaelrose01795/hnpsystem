@@ -166,7 +166,7 @@ export default function PartDeliveryLogModal({ isOpen, onClose, selectedPart, on
             maxHeight: "90vh",
             background: "var(--surface)",
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--theme)",
+            border: "none",
             boxShadow: "var(--shadow-xl)",
             display: "flex",
             flexDirection: "column",

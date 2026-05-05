@@ -983,6 +983,40 @@ button:not(.app-btn):disabled {
   cursor: not-allowed;
 }
 
+.app-hover-tooltip {
+  position: relative;
+}
+
+.app-hover-tooltip[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  top: calc(100% + var(--space-sm));
+  transform: translate(-50%, 4px);
+  z-index: var(--hover-surface-z);
+  max-width: min(260px, 80vw);
+  width: max-content;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-1);
+  box-shadow: var(--dropdown-menu-shadow);
+  opacity: 0;
+  pointer-events: none;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.app-hover-tooltip[data-tooltip]:hover::after,
+.app-hover-tooltip[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 /* Inputs, Textareas & Selects — base resets only; sizing handled by Shared Field Surface below */
 input[type="text"],
 input[type="number"],
@@ -1050,7 +1084,7 @@ textarea::placeholder {
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--input-radius);
-  border: var(--input-border);
+  border: none;
   background: var(--input-bg);
   font-family: inherit;
   font-size: var(--control-font-size);
@@ -2231,7 +2265,7 @@ textarea {
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);
-  border: var(--input-border) !important;
+  border: none !important;
   background: var(--input-bg) !important;
   color: var(--text-1) !important;
   font-size: var(--control-font-size);

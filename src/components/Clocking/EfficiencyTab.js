@@ -23,6 +23,8 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+import InputField from "@/components/ui/InputField";
+import Button from "@/components/ui/Button";
 import { supabase } from "@/lib/database/supabaseClient";
 import { useTheme } from "@/styles/themeProvider";
 
@@ -837,14 +839,14 @@ export default function EfficiencyTab({
   const themedSectionStyle = {
     ...sectionStyle,
     background: "var(--theme)",
-    border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+    border: "none",
   };
 
   const statCardStyle = {
     borderRadius: "var(--radius-md)",
     padding: "16px",
     background: "var(--theme)",
-    border: "1px solid rgba(var(--accent-purple-rgb), 0.22)",
+    border: "none",
     display: "flex",
     flexDirection: "column",
     gap: "4px",
@@ -1079,7 +1081,7 @@ export default function EfficiencyTab({
           padding: "16px 18px",
           borderRadius: "var(--radius-lg)",
           background: "var(--theme)",
-          border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+          border: "none",
         }}
       >
         <DevLayoutSection
@@ -1203,7 +1205,7 @@ export default function EfficiencyTab({
             width: "100%",
           }}
         >
-          <div className="efficiency-period-toggle" style={{ flex: "1 1 220px", minWidth: "180px" }}>
+          <div className="efficiency-period-toggle" style={{ flex: "0 0 auto" }}>
             <TabGroup
               value={periodFilter}
               onChange={setPeriodFilter}
@@ -1991,27 +1993,15 @@ export default function EfficiencyTab({
                     {editingEntry ? (editingEntry._source === "job_clocking" ? "View Job Entry" : "Edit Job Entry") : "New Job Entry"}
                   </h3>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
                   onClick={closeModal}
                   aria-label="Close"
-                  style={{
-                    width: "var(--control-height-xs)",
-                    height: "var(--control-height-xs)",
-                    borderRadius: "var(--input-radius)",
-                    border: "none",
-                    background: "var(--surface)",
-                    color: "var(--grey-accent)",
-                    fontSize: "1.1rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
                 >
                   &times;
-                </button>
+                </Button>
               </div>
 
               {formError && (
@@ -2069,14 +2059,9 @@ export default function EfficiencyTab({
                 {/* Row 2: Job Number + Job Clocking On */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", alignItems: "start" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <label
-                      htmlFor="efficiencyJobNumber"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
-                    >
-                      Job Number
-                    </label>
-                    <input
+                    <InputField
                       id="efficiencyJobNumber"
+                      label="Job Number"
                       type="text"
                       value={formJobNumber}
                       onChange={(e) => {
@@ -2085,16 +2070,6 @@ export default function EfficiencyTab({
                       }}
                       placeholder="Job no. optional"
                       disabled={editingEntry?._source === "job_clocking"}
-                      style={{
-                        borderRadius: "var(--radius-md)",
-                        border: "none",
-                        background: "var(--surface)",
-                        padding: "12px 14px",
-                        fontSize: "0.95rem",
-                        color: "var(--text-1)",
-                        outline: "none",
-                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
-                      }}
                     />
                     <span
                       style={{
@@ -2132,15 +2107,22 @@ export default function EfficiencyTab({
 
                 {/* Row 3: Allocated Hours + Total Clocked */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
                     <label
                       htmlFor="efficiencyAllocatedHours"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
+                      style={{
+                        fontSize: "var(--text-label)",
+                        fontWeight: "var(--control-label-weight)",
+                        color: "var(--text-1)",
+                        textTransform: "uppercase",
+                        letterSpacing: "var(--tracking-caps)",
+                      }}
                     >
                       Allocated Hours
                     </label>
                     <input
                       id="efficiencyAllocatedHours"
+                      className="app-input"
                       type="number"
                       step="0.01"
                       min="0.1"
@@ -2151,28 +2133,25 @@ export default function EfficiencyTab({
                       }}
                       placeholder="Allocated hours"
                       disabled={editingEntry?._source === "job_clocking"}
-                      style={{
-                        borderRadius: "var(--radius-md)",
-                        border: "none",
-                        background: "var(--surface)",
-                        padding: "12px 14px",
-                        fontSize: "0.95rem",
-                        color: "var(--text-1)",
-                        outline: "none",
-                        ...(formError.toLowerCase().includes("allocated hours") ? popupFieldErrorStyle : {}),
-                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
-                      }}
+                      style={formError.toLowerCase().includes("allocated hours") ? { boxShadow: "0 0 0 2px var(--danger)" } : undefined}
                     />
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
                     <label
                       htmlFor="efficiencyHours"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
+                      style={{
+                        fontSize: "var(--text-label)",
+                        fontWeight: "var(--control-label-weight)",
+                        color: "var(--text-1)",
+                        textTransform: "uppercase",
+                        letterSpacing: "var(--tracking-caps)",
+                      }}
                     >
                       Total Clocked
                     </label>
                     <input
                       id="efficiencyHours"
+                      className="app-input"
                       type="number"
                       step="0.01"
                       min="0.01"
@@ -2184,79 +2163,59 @@ export default function EfficiencyTab({
                       placeholder="Clocked hours"
                       required
                       disabled={editingEntry?._source === "job_clocking"}
-                      style={{
-                        borderRadius: "var(--radius-md)",
-                        border: "none",
-                        background: "var(--surface)",
-                        padding: "12px 14px",
-                        fontSize: "0.95rem",
-                        color: "var(--text-1)",
-                        outline: "none",
-                        ...(formError.toLowerCase().includes("total clocked") ? popupFieldErrorStyle : {}),
-                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
-                      }}
+                      style={formError.toLowerCase().includes("total clocked") ? { boxShadow: "0 0 0 2px var(--danger)" } : undefined}
                     />
                   </div>
                 </div>
 
                 {/* Row 4: Job Description + Notes */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
                     <label
                       htmlFor="efficiencyJobDescription"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
+                      style={{
+                        fontSize: "var(--text-label)",
+                        fontWeight: "var(--control-label-weight)",
+                        color: "var(--text-1)",
+                        textTransform: "uppercase",
+                        letterSpacing: "var(--tracking-caps)",
+                      }}
                     >
                       Job Description
                     </label>
                     <textarea
                       id="efficiencyJobDescription"
+                      className="app-input"
                       value={formDescription}
                       onChange={(e) => setFormDescription(e.target.value)}
                       placeholder="Job description"
                       rows={2}
                       disabled={editingEntry?._source === "job_clocking"}
-                      style={{
-                        borderRadius: "var(--radius-md)",
-                        border: "none",
-                        background: "var(--surface)",
-                        padding: "12px 14px",
-                        fontSize: "0.95rem",
-                        color: "var(--text-1)",
-                        outline: "none",
-                        resize: "vertical",
-                        minHeight: "64px",
-                        overflowY: "auto",
-                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
-                      }}
+                      style={{ resize: "vertical", minHeight: "64px" }}
                     />
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
                     <label
                       htmlFor="efficiencyNotes"
-                      style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}
+                      style={{
+                        fontSize: "var(--text-label)",
+                        fontWeight: "var(--control-label-weight)",
+                        color: "var(--text-1)",
+                        textTransform: "uppercase",
+                        letterSpacing: "var(--tracking-caps)",
+                      }}
                     >
                       Notes
                     </label>
                     <textarea
                       id="efficiencyNotes"
+                      className="app-input"
                       value={formNotes}
                       onChange={(e) => setFormNotes(e.target.value)}
                       placeholder="Notes"
                       rows={2}
                       disabled={editingEntry?._source === "job_clocking"}
-                      style={{
-                        borderRadius: "var(--radius-md)",
-                        border: "none",
-                        background: "var(--surface)",
-                        padding: "12px 14px",
-                        fontSize: "0.95rem",
-                        color: "var(--text-1)",
-                        outline: "none",
-                        resize: "vertical",
-                        minHeight: "64px",
-                        overflowY: "auto",
-                        ...(editingEntry?._source === "job_clocking" ? { opacity: 0.6, cursor: "not-allowed" } : {}),
-                      }}
+                      style={{ resize: "vertical", minHeight: "64px" }}
                     />
                   </div>
                 </div>
@@ -2265,62 +2224,25 @@ export default function EfficiencyTab({
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", paddingTop: "4px" }}>
                   <div>
                     {editingEntry && (
-                      <button
+                      <Button
                         type="button"
+                        variant="danger"
                         onClick={handleDeleteFromEditModal}
                         disabled={deleteSubmitting}
-                        style={{
-                          padding: "12px 20px",
-                          borderRadius: "var(--radius-md)",
-                          border: "none",
-                          background: "var(--danger-surface)",
-                          color: "var(--danger)",
-                          fontSize: "0.9rem",
-                          fontWeight: 600,
-                          cursor: deleteSubmitting ? "not-allowed" : "pointer",
-                          opacity: deleteSubmitting ? 0.7 : 1,
-                        }}
                       >
                         {deleteSubmitting ? "Deleting..." : editingEntry._source === "job_clocking" ? "Remove Entry" : "Delete Entry"}
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <div style={{ display: "flex", gap: "12px" }}>
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    style={{
-                      padding: "12px 20px",
-                      borderRadius: "var(--radius-md)",
-                      border: "none",
-                      background: "var(--surface)",
-                      color: "var(--info)",
-                      fontSize: "0.9rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  {editingEntry?._source !== "job_clocking" && (
-                  <button
-                    type="submit"
-                    disabled={formSubmitting}
-                    style={{
-                      padding: "12px 24px",
-                      borderRadius: "var(--radius-md)",
-                      border: "none",
-                      background: "var(--primary)",
-                      color: "var(--surface)",
-                      fontSize: "0.9rem",
-                      fontWeight: 600,
-                      cursor: formSubmitting ? "not-allowed" : "pointer",
-                      opacity: formSubmitting ? 0.7 : 1,
-                    }}
-                  >
-                    {formSubmitting ? "Saving..." : editingEntry ? "Update Job Entry" : "Add Job Entry"}
-                  </button>
-                  )}
+                    <Button type="button" variant="ghost" onClick={closeModal}>
+                      Cancel
+                    </Button>
+                    {editingEntry?._source !== "job_clocking" && (
+                      <Button type="submit" variant="primary" disabled={formSubmitting}>
+                        {formSubmitting ? "Saving..." : editingEntry ? "Update Job Entry" : "Add Job Entry"}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </form>
@@ -2378,14 +2300,7 @@ export default function EfficiencyTab({
                 gap: 8px !important;
                 justify-content: flex-start !important;
               }
-              :global(.efficiency-period-toggle) {
-                width: 100%;
-              }
-              :global(.efficiency-period-toggle .tab-api) {
-                width: 100%;
-              }
               :global(.efficiency-period-toggle .tab-api__item) {
-                flex: 1 1 0;
                 font-size: 0.75rem !important;
                 padding: 8px 10px !important;
               }

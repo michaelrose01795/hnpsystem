@@ -523,6 +523,48 @@ const COLOUR_GROUPS = [
   "declined-section-bg",
   "info", "theme-status"]
 
+},
+{
+  title: "New — Distinct Tokens",
+  swatches: [
+  "surfaceHover", "surfaceMutedToken",
+  "theme-hover",
+  "success-base-hover", "success-strong", "success-surface-hover",
+  "authorised-base-hover", "authorised-strong", "authorised-surface-hover",
+  "complete-base-hover", "complete-strong", "complete-surface-hover",
+  "warning-base-hover", "warning-strong", "warning-surface-hover",
+  "danger-base-hover", "danger-strong", "danger-surface-hover",
+  "info-dark",
+  "skeleton-base", "skeleton-highlight",
+  "overlay", "overlay-muted",
+  "tab-item-bg", "tab-item-bg-hover", "tab-item-text",
+  "search-surface", "calendar-today-row-border"]
+
+},
+{
+  title: "New — Aliases (same colour, different name)",
+  swatches: [
+  "accentText", "onAccentText",
+  "legacy-marker-red", "legacy-marker-purple",
+  "accent-purple", "accent-orange", "accent-blue", "accent-strong",
+  "nav-link-bg-active",
+  "error", "error-text", "error-surface", "error-hover", "error-surface-hover",
+  "success-base", "success-dark", "success-hover",
+  "authorised-base", "authorised-dark", "authorised-hover",
+  "complete-base", "complete-dark", "complete-hover",
+  "warning-base", "warning-dark", "warning-hover",
+  "danger-base", "danger-dark", "danger-hover",
+  "accent-base", "accent-base-hover",
+  "nav-shell-bg", "nav-link-bg", "tab-container-bg",
+  "tab-button-bg", "tab-button-selected-bg",
+  "search-text", "text-color",
+  "grey-accent", "grey-accent-light", "grey-accent-dark",
+  "row-background", "surfaceMain",
+  "profile-table-surface", "profile-table-alt-surface",
+  "calendar-saturday-row-bg", "calendar-amber-selected-bg",
+  "calendar-red-selected-bg", "calendar-today-row-bg",
+  "calendar-today-pill-bg", "calendar-today-pill-text"]
+
 }];
 
 // Distinct background values used as card surfaces across pages.

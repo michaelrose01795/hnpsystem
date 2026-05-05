@@ -113,7 +113,8 @@
       "Bash(dir \"c:\\\\hnpsystem\\\\src\\\\features\\\\presentation\")",
       "Bash(Select-Object Name)",
       "PowerShell(Get-ChildItem -Path \"c:\\\\hnpsystem\\\\src\\\\pages\\\\vhc\" -Recurse -File | ForEach-Object { $_.FullName.Replace\\(\"c:\\\\hnpsystem\\\\\", \"\"\\).Replace\\(\"\\\\\", \"/\"\\) })",
-      "Bash(powershell -Command \"\\(Get-Content 'src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js' -Raw\\) -replace '</section>', '</LayerSurface>' | Set-Content 'src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js' -NoNewline\")"
+      "Bash(powershell -Command \"\\(Get-Content 'src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js' -Raw\\) -replace '</section>', '</LayerSurface>' | Set-Content 'src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js' -NoNewline\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\src\" -Directory)"
     ],
     "deny": [],
     "ask": []

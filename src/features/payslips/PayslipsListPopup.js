@@ -25,7 +25,7 @@ function SummaryStat({ label, value, tone = "var(--text-1)" }) {
         padding: "12px",
         borderRadius: "var(--radius-md, 12px)",
         background: "var(--surface)",
-        border: "1px solid rgba(var(--text-1-rgb), 0.08)",
+        border: "none",
         display: "grid",
         gap: "4px",
       }}

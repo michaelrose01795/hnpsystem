@@ -482,42 +482,46 @@ const MessageBubble = ({
               padding: "6px 10px",
               borderRadius: radii.pill,
               backgroundColor: "var(--surface)",
-              border: `1px solid ${palette.border}`,
-              boxShadow: shadows.lg,
-              marginBottom: "2px",
-              zIndex: 2
+              boxShadow: "0 0 0 1px rgba(var(--accent-purple-rgb), 0.08), 0 0 22px rgba(var(--accent-purple-rgb), 0.26), 0 12px 28px rgba(var(--shadow-rgb), 0.16)",
+              marginBottom: "8px",
+              position: "relative",
+              zIndex: 5
             }}>
 
               {REACTION_EMOJIS.map((emoji) =>
-            <Button
+            <button
               key={emoji}
               type="button"
-              variant="ghost"
-              size="xs"
-              pill
+              className="app-btn app-btn--xs app-btn--pill"
               onClick={(e) => {
                 e.stopPropagation();
                 onReact?.(emoji);
                 setActionsOpen(false);
               }}
-              aria-label={`React with ${emoji}`}>
+              aria-label={`React with ${emoji}`}
+              style={{
+                backgroundColor: "var(--theme)",
+                borderColor: "transparent"
+              }}>
 
                   {emoji}
-                </Button>
+                </button>
             )}
-              <div style={{ width: "1px", height: "18px", backgroundColor: palette.border }} />
-              <Button
+              <button
               type="button"
-              variant="ghost"
-              size="xs"
+              className="app-btn app-btn--xs app-btn--pill"
               onClick={(e) => {
                 e.stopPropagation();
                 onReply?.();
                 setActionsOpen(false);
+              }}
+              style={{
+                backgroundColor: "var(--theme)",
+                borderColor: "transparent"
               }}>
 
                 Reply
-              </Button>
+              </button>
             </div>
           }
           <div

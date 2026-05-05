@@ -8,59 +8,28 @@ update the "# Role Page Access Draft" page with the edits
 Presentation!!!!!!!!!
 /create card doesnt use the create ui for Presentation 
 
+Have it so within the presnentaion when overview or Business Value popup is highlighting a section, have it so it scrolls the page and makes sure the highlighted section can is within the view of the screen.
 
-what is the height of the tab buttons? 32px
 
-TODO
-within the "👍
-👎
-❤️
-🔥
-😂
-😮
-Reply2 section remove the borders from around this section and have it so the section bacgkround uses --surface colour and th ebuttons use --theme colour background add a glow effect around the whole of the section evenly to make it look like its hovering
+CHECK
+within the "👍👎 ❤️ 🔥 😂 😮 Reply2 section remove the borders from around this section and have it so the section bacgkround uses --surface colour and th ebuttons use --theme colour background add a glow effect around the whole of the section evenly to make it look like its hovering
+
+CHECK
+move "Select" and "+" button onto the same row as the search bar within "/messages :: 1.2.2.1.1.1.1.1.2 (messages-thread-search)" section have it so the search bar is made smaller or bigger depening on the size of the screen, not the buttons being changed. disable highligin when double click is used within "/messages :: 1.2.2.1.1.1.1.1.4 (messages-thread-list)" section rows.
 
 
 
-TODO
-
-move "Select
-+" button onto the same row as the search bar within "/messages :: 1.2.2.1.1.1.1.1.2 (messages-thread-search)" section have it so the search bar is made smaller or bigger depening on the size of the screen, not the buttons being changed.
+CHECK 
+have it so all of these uses "--theme" colour background /job-cards/myjobs :: 1.2.2.1.2 (myjobs-results-shell), /job-cards/myjobs :: 1.2.2.1.3 (myjobs-summary), /job-cards/myjobs :: 1.2.2.1.1 (myjobs-filter-toolbar)
 
 
-
-TODO
-
-disable highligin when double click is used within "/messages :: 1.2.2.1.1.1.1.1.4 (messages-thread-list)" section rows.
+CHECK
+Why does /tech/efficiency :: 1.2.2.1.1.4 (tech-efficiency-overall-breakdown) — “Technician Breakdown”, /tech/efficiency :: 1.2.2.1.1.3 (tech-efficiency-overall-summary) — “Overall Efficiency - May 2026”, /tech/efficiency :: 1.2.2.1.1.2 (tech-efficiency-filter-shell), adn the card outside this section (fix the dev overlay so i can click it correctly) /tech/efficiency :: 1.2.2.1.1.1.1 (tech-efficiency-nav-group) uses "--theme" colour background which incudes borders, theses cards shouldnt, no card or section should include a border so why, deep dive to make sure no other pages follows this with the broder within the whole repo. 
 
 
 
-
-
-
-
-TODO
-have it so the background of the topbar uses --surface colour. also add within the showcase section within the "Colour Tokens" section any new colours which are being used under a heading "New" which arent already within the "Colour Tokens" sectin already, also within that section add colours which are the same clours which are withn the "Colour Tokens" section but jsut use a differnt name 
-
-
-
-CHECK ALLL!!!
-lets have 10px gap around all the contents within 
-
-/job-cards/create :: 1.2.1.1.1.1.2.1 (job-cards-create-job-request-1)
-
-/job-cards/view :: 1.2.2.1.1.1.1 (job-cards-view-filter-shell)
-
-between "/job-cards/view :: 1.2.2.1.1.1.1 (job-cards-view-filter-shell)" and "/job-cards/view :: 1.2.2.1.1.1.2 (job-cards-view-list-shell)"
-
-between /clocking :: 1.2.1.1.1.1.1.1 (clocking-auto-tab-row-1), /clocking :: 1.2.1.1.1.1.2.1 (clocking-overview-stats), /clocking :: 1.2.1.1.1.1.2.2 (clocking-overview-technician-status) and from the bottom of "/clocking :: 1.2.1.1.1.1.1.2 (clocking-overview-technician-status)" to the bottom of /clocking :: 1.2.1.1 (app-layout-page-card)
-
-between /profile :: 1.2.2.1.1.1 (profile-tab-toolbar) to /profile :: 1.2.2.1.1.2.1 (profile-work-kpi-card-group) to /profile :: 1.2.2.1.1.2.6 (profile-work-summary-card-group) to /profile :: 1.2.1.1.1.1.9 (profile-work-attendance-history-group) to /profile :: 1.2.1.1.1.1.2 (profile-work-staff-vehicles-group), and the bottom of /profile :: 1.2.1.1.1.1.2 (profile-work-staff-vehicles-group) to the bottom of the page. 
-
-
-
-
-
+CHECK
+Have it so the width of the "/tech/efficiency :: 1.2.2.1.1.2.1.1 (tech-efficiency-auto-tab-row-3) — “Day Week Month” section is the width of the buttons withi the tab group and no more. 
 
 
 
