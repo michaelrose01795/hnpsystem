@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/job-cards/view/job-cards-view-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function ViewJobCardsUi(props) {
   const {
@@ -229,25 +231,17 @@ export default function ViewJobCardsUi(props) {
             flexDirection: "column",
             gap: "10px"
           }}>
-              {isOrdersTab && ordersLoading ? <DevLayoutSection sectionKey="job-cards-view-orders-loading" parentKey="job-cards-view-list-viewport" sectionType="state-banner" style={{
-              padding: "32px",
+              {isOrdersTab && ordersLoading ? <LayerTheme sectionKey="job-cards-view-orders-loading" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="32px" style={{
               textAlign: "center",
-              color: "var(--info)",
-              border: "1px dashed var(--theme)",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--theme)"
+              color: "var(--info)"
             }}>
                   Loading orders...
-                </DevLayoutSection> : sortedJobs.length === 0 ? <DevLayoutSection sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" style={{
-              padding: "32px",
+                </LayerTheme> : sortedJobs.length === 0 ? <LayerTheme sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="32px" style={{
               textAlign: "center",
-              color: "var(--info)",
-              border: "1px dashed var(--theme)",
-              borderRadius: "var(--radius-sm)",
-              background: "var(--theme)"
+              color: "var(--info)"
             }}>
                   {emptyStateMessage}
-                </DevLayoutSection> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} onNavigate={() => handleCardNavigation(job.jobNumber)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
+                </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} onNavigate={() => handleCardNavigation(job.jobNumber)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
             </DevLayoutSection>
           </SectionShell>
 
@@ -339,7 +333,7 @@ export default function ViewJobCardsUi(props) {
               </div>
 
               {/* ✅ Job Details - Enhanced */}
-              <div className="app-section-card" style={{
+              <LayerTheme radius="var(--radius-sm)" style={{
                 marginBottom: "20px"
               }}>
                 <div style={{
@@ -463,7 +457,7 @@ export default function ViewJobCardsUi(props) {
                       {popupJob.cosmeticNotes}
                     </p>
                   </div>}
-              </div>
+              </LayerTheme>
 
               {/* Status Badges */}
               <div style={{

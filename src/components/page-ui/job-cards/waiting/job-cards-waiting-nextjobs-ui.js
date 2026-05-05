@@ -1,6 +1,8 @@
 // file location: src/components/page-ui/job-cards/waiting/job-cards-waiting-nextjobs-ui.js
 
 import React from "react"; // support extracted fragments.
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function NextJobsPageUi(props) {
   const {
@@ -83,18 +85,14 @@ export default function NextJobsPageUi(props) {
   }}>
         
         {/* ✅ Outstanding Jobs Section with Drop Zone */}
-            <div className="app-layout-card" data-dev-section-key="nextjobs-outstanding" data-dev-section-parent="app-layout-page-card" data-dev-section-type="content-card" data-dev-background-token="page-card-bg-alt" style={{
+            <LayerSurface sectionKey="nextjobs-outstanding" parentKey="app-layout-page-card" sectionType="content-card" backgroundToken="page-card-bg-alt" padding="16px" gap={undefined} style={{
       marginBottom: "12px",
-      borderRadius: "var(--section-card-radius)",
-      border: activeDropTarget === "outstanding" ? "3px solid var(--primary)" : "var(--section-card-border)",
+      // Drop-target outline is a state indicator (drag-over highlight), not a surface border. Kept per rules.
+      outline: activeDropTarget === "outstanding" ? "3px solid var(--primary)" : "none",
       boxShadow: activeDropTarget === "outstanding" ? "0 4px 12px rgba(0, 0, 0, 0.2)" : "0 2px 4px rgba(var(--shadow-rgb),0.08)",
-      padding: "16px",
-      display: "flex",
-      flexDirection: "column",
       minHeight: OUTSTANDING_GRID_MAX_HEIGHT_PX,
       flexShrink: 0,
       transition: "all 0.2s ease",
-      backgroundColor: activeDropTarget === "outstanding" ? "var(--theme)" : "var(--theme)",
       color: "var(--text-1)"
     }}>
           <div data-dev-section-key="nextjobs-outstanding-header" data-dev-section-parent="nextjobs-outstanding" data-dev-section-type="toolbar" style={{
@@ -333,17 +331,11 @@ export default function NextJobsPageUi(props) {
                 </div>}
             </div>
           </div>
-        </div>
+        </LayerSurface>
 
         {/* ✅ Technicians Grid Section */}
-            <div className="app-layout-card" data-dev-section-key="nextjobs-technicians" data-dev-section-parent="app-layout-page-card" data-dev-shell="1" data-dev-section-type="content-card" data-dev-background-token="page-card-bg-alt" style={{
-      flex: "1 0 auto",
-      borderRadius: "var(--section-card-radius)",
-      backgroundColor: "var(--theme)",
-      padding: "24px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "24px"
+            <LayerSurface sectionKey="nextjobs-technicians" parentKey="app-layout-page-card" shell sectionType="content-card" backgroundToken="page-card-bg-alt" padding="24px" gap="24px" style={{
+      flex: "1 0 auto"
     }}>
           
           <div data-dev-section-key="nextjobs-tech-grid" data-dev-section-parent="nextjobs-technicians" data-dev-section-type="data-table" data-dev-width-mode="full" style={{
@@ -374,7 +366,7 @@ export default function NextJobsPageUi(props) {
                 {assignedMotJobs.slice(0, 2).map(renderAssigneePanel)}
               </div>
             </div>}
-        </div>
+        </LayerSurface>
 
         {isDragActive && draggingJob && <div aria-hidden="true" style={{
       position: "fixed",
@@ -422,17 +414,13 @@ export default function NextJobsPageUi(props) {
       const hasScrollableDetails = detailsRows.length > 5;
       const assignedToName = selectedJob.assignedTech?.name || "Unassigned";
       return <div className="popup-backdrop" onClick={handleCloseJobDetails}>
-            <div className="popup-card" data-dev-section-key="nextjobs-job-details-popup" data-dev-section-type="content-card" data-dev-background-token="surface" style={{
-          borderRadius: "var(--radius-xl)",
+            <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: "500px", maxHeight: "90vh", overflow: "hidden" }}>
+              <LayerSurface className="popup-card" sectionKey="nextjobs-job-details-popup" sectionType="content-card" backgroundToken="surface" radius="var(--radius-xl)" padding="32px" style={{
           width: "100%",
-          maxWidth: "500px",
           maxHeight: "90vh",
           overflowY: "auto",
-          border: "none",
-          padding: "32px",
           position: "relative"
-        }} onClick={e => e.stopPropagation()} // Prevent closing when clicking inside
-        >
+        }}>
               <h3 style={{
             fontWeight: "700",
             marginBottom: "16px",
@@ -630,6 +618,7 @@ export default function NextJobsPageUi(props) {
                   Close
                 </button>
               </div>
+            </LayerSurface>
             </div>
           </div>;
     })()}

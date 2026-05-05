@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/job-cards/job-cards-job-number-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function JobCardDetailPageUi(props) {
   const {
@@ -206,42 +208,27 @@ export default function JobCardDetailPageUi(props) {
         gap: "16px",
         rowGap: "16px"
       }} data-dev-section="1" data-dev-section-key="jobcard-page-shell" data-dev-section-type="page-shell" data-dev-shell="1">
-        {isArchiveMode && <section data-dev-section="1" data-dev-section-key="jobcard-archive-banner" data-dev-section-type="section-shell" data-dev-section-parent="jobcard-page-shell" style={{
-        padding: "12px 16px",
-        borderRadius: "var(--radius-sm)",
-        border: "none",
-        backgroundColor: "var(--surface)",
+        {isArchiveMode && <LayerSurface as="section" sectionKey="jobcard-archive-banner" sectionType="section-shell" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="12px 16px" style={{
         color: "var(--danger-dark)",
         fontSize: "0.95rem",
         fontWeight: 600
       }}>
             Archived copy &middot; Job #{jobData.jobNumber} is read-only. VHC, notes, and documents are preserved for audit.
-          </section>}
+          </LayerSurface>}
 
-        {isInvoiceOrBeyondReadOnly && !isArchiveMode && <section style={{
-        padding: "12px 16px",
-        borderRadius: "var(--radius-sm)",
-        border: "none",
-        backgroundColor: "var(--surface)",
+        {isInvoiceOrBeyondReadOnly && !isArchiveMode && <LayerSurface as="section" radius="var(--radius-sm)" padding="12px 16px" style={{
         color: "var(--text-1)",
         fontSize: "0.95rem",
         fontWeight: 600
       }}>
             Job card is read-only in {jobData.status}. Key/car location updates remain available until archive. Awaiting job to be archived.
-          </section>}
+          </LayerSurface>}
 
         {/* ✅ Header Section */}
-        <section style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-        padding: "20px",
-        backgroundColor: sharedJobCardShellBackground,
-        borderRadius: "var(--radius-sm)",
-        border: "none",
+        <LayerTheme as="section" sectionKey="jobcard-header" sectionType="section-header-row" parentKey="jobcard-page-shell" radius="var(--radius-sm)" padding="20px" gap="12px" style={{
         flexShrink: 0,
         margin: 0
-      }} data-dev-section="1" data-dev-section-key="jobcard-header" data-dev-section-type="section-header-row" data-dev-section-parent="jobcard-page-shell">
+      }}>
           {/* Row 1: Title + Action Buttons */}
           <div style={{
           display: "flex",
@@ -413,24 +400,16 @@ export default function JobCardDetailPageUi(props) {
               Last Updated: {new Date(jobData.updatedAt).toLocaleString()}
             </p>
           </div>
-        </section>
+        </LayerTheme>
 
         {/* ✅ Vehicle & Customer Info Bar */}
-        <section style={{
+        <LayerTheme as="section" sectionKey="jobcard-summary-shell" sectionType="section-shell" parentKey="jobcard-page-shell" shell radius="var(--radius-sm)" padding="8px" gap="10px" style={{
         display: "grid",
         gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
-        gap: "10px",
         flexShrink: 0,
-        backgroundColor: sharedJobCardShellBackground,
-        borderRadius: "var(--radius-sm)",
-        padding: "8px",
         margin: 0
-      }} data-dev-section="1" data-dev-section-key="jobcard-summary-shell" data-dev-section-type="section-shell" data-dev-section-parent="jobcard-page-shell" data-dev-shell="1">
-          <div data-dev-section="1" data-dev-section-key="jobcard-summary-vehicle" data-dev-section-type="content-card" data-dev-section-parent="jobcard-summary-shell" style={{
-          padding: "12px 14px",
-          backgroundColor: "var(--surface)",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
+      }}>
+          <LayerSurface sectionKey="jobcard-summary-vehicle" sectionType="content-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           minWidth: 0,
           overflow: "hidden"
         }}>
@@ -485,9 +464,14 @@ export default function JobCardDetailPageUi(props) {
             <div style={summarySecondaryTextStyle}>
               {String(jobData.make || jobData.makeModel || `${jobData.make} ${jobData.model}` || "N/A")}
             </div>
-          </div>
+          </LayerSurface>
 
-          <div data-dev-section="1" data-dev-section-key="jobcard-summary-customer" data-dev-section-type="content-card" data-dev-section-parent="jobcard-summary-shell" onClick={() => {
+          <LayerSurface sectionKey="jobcard-summary-customer" sectionType="content-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
+          minWidth: 0,
+          overflow: "hidden",
+          cursor: jobData.customerId || jobData.customerFirstName || jobData.customerLastName || jobData.customer ? "pointer" : "default"
+        }}>
+          <div onClick={() => {
           const fallbackNameParts = (jobData.customer || "").split(" ").map(part => part.trim()).filter(Boolean);
           const fallbackFirst = fallbackNameParts[0] || "";
           const fallbackLast = fallbackNameParts.slice(1).join(" ");
@@ -496,14 +480,6 @@ export default function JobCardDetailPageUi(props) {
           if (target) {
             router.push(`/customers/${target}`);
           }
-        }} style={{
-          padding: "12px 14px",
-          backgroundColor: "var(--surface)",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          minWidth: 0,
-          overflow: "hidden",
-          cursor: jobData.customerId || jobData.customerFirstName || jobData.customerLastName || jobData.customer ? "pointer" : "default"
         }}>
             <div style={summaryPrimaryTextStyle}>
               {jobData.customer || "N/A"}
@@ -512,12 +488,9 @@ export default function JobCardDetailPageUi(props) {
               {jobData.customerPhone || jobData.customerEmail || "No contact info"}
             </div>
           </div>
+          </LayerSurface>
 
-          <div data-dev-section="1" data-dev-section-key="jobcard-summary-vhc-financials" data-dev-section-type="stat-card" data-dev-section-parent="jobcard-summary-shell" style={{
-          padding: "12px 14px",
-          backgroundColor: "var(--surface)",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
+          <LayerSurface sectionKey="jobcard-summary-vhc-financials" sectionType="stat-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           minWidth: 0,
           overflow: "hidden"
         }}>
@@ -569,18 +542,9 @@ export default function JobCardDetailPageUi(props) {
                 </div>
               </div>
             </div>
-          </div>
+          </LayerSurface>
 
-          <div data-dev-section="1" data-dev-section-key="jobcard-summary-locations" data-dev-section-type="content-card" data-dev-section-parent="jobcard-summary-shell" onClick={() => {
-          if (canEditTrackingLocations) {
-            setTrackerQuickModalOpen(true);
-          }
-        }} style={{
-          padding: "12px 14px",
-          backgroundColor: "var(--surface)",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          display: "flex",
+          <LayerSurface sectionKey="jobcard-summary-locations" sectionType="content-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
           flexDirection: "row",
           alignItems: "stretch",
           minWidth: 0,
@@ -588,6 +552,11 @@ export default function JobCardDetailPageUi(props) {
           cursor: canEditTrackingLocations ? "pointer" : "default",
           opacity: canEditTrackingLocations ? 1 : 0.75
         }}>
+          <div onClick={() => {
+          if (canEditTrackingLocations) {
+            setTrackerQuickModalOpen(true);
+          }
+        }} style={{ display: "flex", flexDirection: "row", alignItems: "stretch", flex: 1, gap: 0 }}>
             <div style={{
             flex: 1,
             minWidth: 0
@@ -639,20 +608,16 @@ export default function JobCardDetailPageUi(props) {
               </div>
             </div>
           </div>
-        </section>
+          </LayerSurface>
+        </LayerTheme>
 
         {/* ✅ Tabs Navigation */}
         <section style={{
-        backgroundColor: "transparent",
-        borderRadius: 0,
         padding: 0,
         margin: 0
       }}>
-          <div className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`} style={{
-          backgroundColor: sharedJobCardShellBackground,
-          borderRadius: "var(--radius-sm)",
-          padding: "8px"
-        }} ref={tabsScrollRef} onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined} onMouseMove={tabsOverflowing ? handleTabsDragMove : undefined} onMouseUp={tabsOverflowing ? handleTabsDragEnd : undefined} onMouseLeave={tabsOverflowing ? handleTabsDragEnd : undefined}>
+          <div ref={tabsScrollRef} onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined} onMouseMove={tabsOverflowing ? handleTabsDragMove : undefined} onMouseUp={tabsOverflowing ? handleTabsDragEnd : undefined} onMouseLeave={tabsOverflowing ? handleTabsDragEnd : undefined}>
+          <LayerTheme className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`} radius="var(--radius-sm)" padding="8px" gap={undefined}>
             {tabs.map(tab => {
             const isActive = activeTab === tab.id;
             const isLocked = lockedTabIds.has(tab.id);
@@ -681,6 +646,7 @@ export default function JobCardDetailPageUi(props) {
                     </span>}
                 </button>;
           })}
+          </LayerTheme>
           </div>
         </section>
         <style jsx global>{`
@@ -727,12 +693,9 @@ export default function JobCardDetailPageUi(props) {
         `}</style>
 
         {/* ✅ Tab Content */}
-        <section style={{
-        backgroundColor: sharedJobCardShellBackground,
-        borderRadius: "var(--radius-sm)",
-        padding: "8px",
+        <LayerTheme as="section" sectionKey="jobcard-tab-content-shell" sectionType="section-shell" parentKey="jobcard-page-shell" shell radius="var(--radius-sm)" padding="8px" style={{
         margin: 0
-      }} data-dev-section="1" data-dev-section-key="jobcard-tab-content-shell" data-dev-section-type="section-shell" data-dev-section-parent="jobcard-page-shell" data-dev-shell="1">
+      }}>
           {/* Per-tab containers below use the canonical .app-page-stack class
               (CLAUDE.md §3.3) so the in-tab Locked alert and the tab body sit
               on a vertical flex stack with --page-stack-gap.
@@ -934,7 +897,7 @@ export default function JobCardDetailPageUi(props) {
               </div>}
             <InvoiceSection jobData={jobData} invoiceReady={showProformaCompleteSection} onInvoiceStateChange={setInvoiceViewState} onPaymentCompleted={handleInvoicePaymentCompleted} onReleaseRequested={handleReleaseJob} />
           </div>
-        </section>
+        </LayerTheme>
         <DocumentsUploadPopup open={showDocumentsPopup} onClose={() => setShowDocumentsPopup(false)} jobId={jobData?.id ? String(jobData.id) : null} userId={user?.user_id || actingUserId || null} onAfterUpload={() => {
         fetchJobData({
           silent: true,
@@ -969,8 +932,7 @@ export default function JobCardDetailPageUi(props) {
         padding: "32px",
         display: "flex",
         flexDirection: "column",
-        gap: "20px",
-        border: "none"
+        gap: "20px"
       }} onClick={e => e.stopPropagation()}>
             <h3 style={{
           margin: 0,

@@ -19,6 +19,8 @@ import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
 import ViewJobCardsUi from "@/components/page-ui/job-cards/view/job-cards-view-ui"; // Extracted presentation layer.
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
 
@@ -1320,15 +1322,15 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
   [];
 
   return (
+    // List-row container hosts onClick + hover handlers; LayerSurface paints the row surface inside.
+    // Background colour is data-derived (rowBackground from prop logic) so we keep it inline as a per-row state indicator.
     <DevLayoutSection
       sectionKey={sectionKey}
       parentKey={parentKey}
       sectionType="list-row"
       onClick={onNavigate}
       style={{
-        border: "none",
         padding: "0.75rem 0.9rem",
-        borderRadius: "var(--radius-sm)",
         backgroundColor: rowBackground,
         display: "flex",
         flexDirection: "column",
@@ -1342,15 +1344,13 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
         event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         event.currentTarget.style.transform = "translateY(-2px)";
         event.currentTarget.style.boxShadow = "none";
-        event.currentTarget.style.borderColor = "var(--primary)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
         event.currentTarget.style.boxShadow = "none";
-        event.currentTarget.style.borderColor = "var(--surface)";
         event.currentTarget.style.zIndex = "0";
       }}>
-      
+
       {/* Header Row - Job Number, Reg, Status */}
       <div
         style={{
@@ -1460,21 +1460,15 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
 
       {/* Customer Requests Section */}
       {customerRequests.length > 0 &&
-      <div
-        style={{
-          padding: "8px 10px",
-          borderRadius: "var(--radius-xs)",
-          backgroundColor: "var(--theme)",
-          border: "none"
-        }}>
-        
+      <LayerTheme radius="var(--radius-xs)" padding="8px 10px" gap={undefined}>
+
           <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
             Customer Requests ({customerRequests.length})
           </div>
           <div style={{ fontSize: "12px", color: "var(--info-dark)", lineHeight: "1.4" }}>
             {customerRequests.join(" • ")}
           </div>
-        </div>
+        </LayerTheme>
       }
     </DevLayoutSection>);
 
@@ -1495,15 +1489,14 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
   order.status || order.delivery_status || order.invoice_status || "Draft";
 
   return (
+    // List-row container hosts onClick + hover handlers; row background is data-driven (rowBackground), so kept inline.
     <DevLayoutSection
       sectionKey={sectionKey}
       parentKey={parentKey}
       sectionType="list-row"
       onClick={onNavigate}
       style={{
-        border: "none",
         padding: "0.75rem 0.9rem",
-        borderRadius: "var(--radius-sm)",
         backgroundColor: rowBackground,
         display: "flex",
         flexDirection: "column",
@@ -1516,15 +1509,13 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
         event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         event.currentTarget.style.transform = "translateY(-2px)";
         event.currentTarget.style.boxShadow = "none";
-        event.currentTarget.style.borderColor = "var(--primary)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
         event.currentTarget.style.boxShadow = "none";
-        event.currentTarget.style.borderColor = "var(--surface)";
         event.currentTarget.style.zIndex = "0";
       }}>
-      
+
       <div
         style={{
           display: "flex",
@@ -1601,14 +1592,8 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
       </div>
 
       {items.length > 0 &&
-      <div
-        style={{
-          padding: "8px 10px",
-          borderRadius: "var(--radius-xs)",
-          backgroundColor: "var(--theme)",
-          border: "none"
-        }}>
-        
+      <LayerTheme radius="var(--radius-xs)" padding="8px 10px" gap={undefined}>
+
           <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
             Parts Summary
           </div>
@@ -1619,7 +1604,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
           join(" • ")}
             {items.length > 4 ? " +" + (items.length - 4) + " more" : ""}
           </div>
-        </div>
+        </LayerTheme>
       }
     </DevLayoutSection>);
 

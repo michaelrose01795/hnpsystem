@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/job-cards/myjobs/job-cards-myjobs-job-number-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function TechJobDetailPageUi(props) {
   const {
@@ -357,14 +359,10 @@ export default function TechJobDetailPageUi(props) {
   }}>
         
         {/* Header Section */}
-        <DevLayoutSection as="div" sectionKey="myjob-header" sectionType="section-header-row" parentKey="myjob-page-shell" style={{
-      display: "flex",
-      gap: "12px",
+        <LayerTheme as="div" sectionKey="myjob-header" sectionType="section-header-row" parentKey="myjob-page-shell" radius="var(--radius-xs)" padding="12px" gap="12px" style={{
+      flexDirection: "row",
       alignItems: "center",
       marginBottom: "12px",
-      padding: "12px",
-      backgroundColor: "var(--theme)",
-      borderRadius: "var(--radius-xs)",
       flexShrink: 0
     }}>
           <h1 style={{
@@ -430,7 +428,7 @@ export default function TechJobDetailPageUi(props) {
                 </Button>
               </div>
             </div>
-        </DevLayoutSection>
+        </LayerTheme>
 
         {completeJobFeedback ? <div style={{
       padding: "12px 14px",
@@ -456,14 +454,10 @@ export default function TechJobDetailPageUi(props) {
           </div> : null}
 
         {/* Quick Stats Grid */}
-        <DevLayoutSection as="div" sectionKey="myjob-quick-stats" sectionType="section-shell" parentKey="myjob-page-shell" backgroundToken="page-card-bg-alt" style={{
+        <LayerTheme as="div" sectionKey="myjob-quick-stats" sectionType="section-shell" parentKey="myjob-page-shell" backgroundToken="page-card-bg-alt" radius="var(--radius-xs)" padding="12px" gap="12px" style={{
       display: "grid",
       gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-      gap: "12px",
       marginBottom: "12px",
-      padding: "12px",
-      backgroundColor: "var(--theme)",
-      borderRadius: "var(--radius-xs)",
       flexShrink: 0
     }}>
           {quickStats.map(stat => {
@@ -485,6 +479,8 @@ export default function TechJobDetailPageUi(props) {
             stat.onClick();
           }
         }} style={{
+          // Surface tokens preserved on the interactive button: stat-cards are interactive elements where the surface
+          // styling is fused to the click target. Splitting into LayerSurface + button would require restructuring.
           backgroundColor: "var(--surface)",
           border: "none",
           borderRadius: "var(--radius-xs)",
@@ -520,7 +516,7 @@ export default function TechJobDetailPageUi(props) {
                 </span>
               </CardTag>;
       })}
-        </DevLayoutSection>
+        </LayerTheme>
 
         {/* Tab Row */}
         <DevLayoutSection as="div" className="app-layout-tab-row" sectionKey="myjob-tab-row" sectionType="tab-row" parentKey="myjob-page-shell" style={{
@@ -578,15 +574,9 @@ export default function TechJobDetailPageUi(props) {
         </DevLayoutSection>
 
         {/* Main Content Area with Scrolling */}
-        <DevLayoutSection as="div" sectionKey="myjob-main-content" sectionType="section-shell" parentKey="myjob-page-shell" backgroundToken="page-card-bg-alt" shell style={{
+        <LayerTheme as="div" sectionKey="myjob-main-content" sectionType="section-shell" parentKey="myjob-page-shell" backgroundToken="page-card-bg-alt" shell radius="var(--radius-xs)" padding="24px" style={{
       flex: 1,
-      borderRadius: "var(--radius-xs)",
-      border: "none",
-      backgroundColor: "var(--theme)",
-      padding: "24px",
       overflow: "hidden",
-      display: "flex",
-      flexDirection: "column",
       minHeight: 0
     }}>
           
@@ -604,12 +594,7 @@ export default function TechJobDetailPageUi(props) {
           gap: "16px"
         }}>
               {/* Job Details */}
-              <DevLayoutSection as="div" sectionKey="myjob-overview-details" sectionType="content-card" parentKey="myjob-tab-overview" backgroundToken="surface" style={{
-            backgroundColor: "var(--surface)",
-            padding: "24px",
-            borderRadius: "var(--radius-sm)",
-            border: "none"
-          }}>
+              <LayerSurface as="div" sectionKey="myjob-overview-details" sectionType="content-card" parentKey="myjob-tab-overview" backgroundToken="surface" radius="var(--radius-sm)" padding="24px">
                 <h3 style={{
               fontSize: "18px",
               fontWeight: "600",
@@ -860,7 +845,7 @@ export default function TechJobDetailPageUi(props) {
                 lineHeight: 1.6
               }}>{jobCard.cosmeticNotes}</p>
                   </div>}
-              </DevLayoutSection>
+              </LayerSurface>
 
               <DevLayoutSection as="div" sectionKey="myjob-overview-summary-grid" sectionType="section-shell" parentKey="myjob-tab-overview" backgroundToken="none" style={{
             display: "grid",
@@ -868,12 +853,7 @@ export default function TechJobDetailPageUi(props) {
             gap: "16px"
           }}>
                 {/* Vehicle Info */}
-                <DevLayoutSection as="div" sectionKey="myjob-overview-vehicle" sectionType="content-card" parentKey="myjob-overview-summary-grid" backgroundToken="surface" style={{
-              backgroundColor: "var(--surface)",
-              padding: "24px",
-              borderRadius: "var(--radius-sm)",
-              border: "none"
-            }}>
+                <LayerSurface as="div" sectionKey="myjob-overview-vehicle" sectionType="content-card" parentKey="myjob-overview-summary-grid" backgroundToken="surface" radius="var(--radius-sm)" padding="24px">
                   <h3 style={{
                 fontSize: "18px",
                 fontWeight: "600",
@@ -940,15 +920,10 @@ export default function TechJobDetailPageUi(props) {
                         </p>
                       </div>}
                   </div>
-                </DevLayoutSection>
+                </LayerSurface>
 
                 {/* Customer Info */}
-                <DevLayoutSection as="div" sectionKey="myjob-overview-customer" sectionType="content-card" parentKey="myjob-overview-summary-grid" backgroundToken="surface" style={{
-              backgroundColor: "var(--surface)",
-              padding: "24px",
-              borderRadius: "var(--radius-sm)",
-              border: "none"
-            }}>
+                <LayerSurface as="div" sectionKey="myjob-overview-customer" sectionType="content-card" parentKey="myjob-overview-summary-grid" backgroundToken="surface" radius="var(--radius-sm)" padding="24px">
                   <h3 style={{
                 fontSize: "18px",
                 fontWeight: "600",
@@ -1002,7 +977,7 @@ export default function TechJobDetailPageUi(props) {
                         </p>
                       </div>}
                   </div>
-                </DevLayoutSection>
+                </LayerSurface>
               </DevLayoutSection>
             </DevLayoutSection>}
 
@@ -1351,15 +1326,7 @@ export default function TechJobDetailPageUi(props) {
           gap: "16px",
           alignItems: "stretch"
         }}>
-              <DevLayoutSection as="div" sectionKey="myjob-parts-request" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" style={{
-            backgroundColor: "var(--surface)",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px"
-          }}>
+              <LayerSurface as="div" sectionKey="myjob-parts-request" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
                 <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -1476,17 +1443,9 @@ export default function TechJobDetailPageUi(props) {
             }}>
                     {partsFeedback}
                   </div>}
-              </DevLayoutSection>
+              </LayerSurface>
 
-              <DevLayoutSection as="div" sectionKey="myjob-parts-active-requests" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" style={{
-            backgroundColor: "var(--surface)",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--theme)",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px"
-          }}>
+              <LayerSurface as="div" sectionKey="myjob-parts-active-requests" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
                 <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -1607,18 +1566,10 @@ export default function TechJobDetailPageUi(props) {
                         </div>;
               })}
                   </div>}
-              </DevLayoutSection>
+              </LayerSurface>
 
               {/* Parts Authorised Section */}
-              <DevLayoutSection as="div" sectionKey="myjob-parts-authorised" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" style={{
-            backgroundColor: "var(--surface)",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            padding: "20px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px"
-          }}>
+              <LayerSurface as="div" sectionKey="myjob-parts-authorised" sectionType="content-card" parentKey="myjob-tab-parts" backgroundToken="surface" radius="var(--radius-sm)" padding="20px" gap="12px">
                 <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -1761,19 +1712,11 @@ export default function TechJobDetailPageUi(props) {
                         </div>;
               })}
                   </div>}
-              </DevLayoutSection>
+              </LayerSurface>
             </DevLayoutSection>}
 
           {/* NOTES TAB */}
-          {activeTab === "notes" && <DevLayoutSection as="div" sectionKey="myjob-tab-notes" sectionType="content-card" parentKey="myjob-main-scroll" backgroundToken="surface" style={{
-          backgroundColor: "var(--surface)",
-          padding: "24px",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          display: "flex",
-          flexDirection: "column",
-          gap: "20px"
-        }}>
+          {activeTab === "notes" && <LayerSurface as="div" sectionKey="myjob-tab-notes" sectionType="content-card" parentKey="myjob-main-scroll" backgroundToken="surface" radius="var(--radius-sm)" padding="24px" gap="20px">
               <DevLayoutSection as="div" sectionKey="myjob-notes-toolbar" sectionType="toolbar" parentKey="myjob-tab-notes" backgroundToken="none" style={{
             display: "flex",
             justifyContent: "space-between",
@@ -1939,17 +1882,13 @@ export default function TechJobDetailPageUi(props) {
                       </DevLayoutSection>;
             })}
                 </DevLayoutSection>}
-            </DevLayoutSection>}
+            </LayerSurface>}
 
           {/* WRITE-UP TAB */}
-          <DevLayoutSection as="div" sectionKey="myjob-tab-writeup" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="layer-section-level-2" shell style={{
+          <LayerSurface as="div" sectionKey="myjob-tab-writeup" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="layer-section-level-2" shell radius="var(--radius-sm)" style={{
           height: "100%",
           overflow: "hidden",
-          display: activeTab === "write-up" ? "flex" : "none",
-          flexDirection: "column",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
-          backgroundColor: "var(--surface)"
+          display: activeTab === "write-up" ? "flex" : "none"
         }}>
             <DevLayoutSection as="div" sectionKey="myjob-writeup-form-shell" sectionType="content-card" parentKey="myjob-tab-writeup" backgroundToken="transparent" style={{
             flex: 1,
@@ -1978,7 +1917,7 @@ export default function TechJobDetailPageUi(props) {
               setLiveWriteUpTasks(Array.isArray(nextTasks) ? nextTasks : []);
             }} />
             </DevLayoutSection>
-          </DevLayoutSection>
+          </LayerSurface>
 
           {/* DOCUMENTS TAB */}
           {activeTab === "documents" && <DevLayoutSection as="div" sectionKey="myjob-tab-documents" sectionType="section-shell" parentKey="myjob-main-scroll" backgroundToken="none" shell style={{
@@ -1996,7 +1935,7 @@ export default function TechJobDetailPageUi(props) {
               </DevLayoutSection>
             </DevLayoutSection>}
           </DevLayoutSection>
-        </DevLayoutSection>
+        </LayerTheme>
 
         {/* Bottom Action Bar */}
       </DevLayoutSection>

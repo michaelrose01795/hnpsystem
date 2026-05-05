@@ -80,6 +80,7 @@ import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleto
 // real WriteUpForm shape (tab bar + content grid) so switching tabs never
 // flashes a plain text loader.
 import JobCardDetailPageUi from "@/components/page-ui/job-cards/job-cards-job-number-ui"; // Extracted presentation layer.
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), { ssr: false,
     loading: () => {
       return (
@@ -105,21 +106,16 @@ const WriteUpForm = dynamic(() => import("@/components/JobCards/WriteUpForm"), {
             }}>
             
           {Array.from({ length: 4 }).map((_, i) =>
-            <div
+            <LayerSurface
               key={i}
-              style={{
-                background: "var(--surface)",
-                borderRadius: "var(--radius-md)",
-                padding: 16,
-                display: "flex",
-                flexDirection: "column",
-                gap: 10
-              }}>
-              
+              radius="var(--radius-md)"
+              padding={16}
+              gap={10}>
+
               <SkeletonBlock width="50%" height="12px" />
               <SkeletonBlock width="90%" height="14px" />
               <SkeletonBlock width="70%" height="14px" />
-            </div>
+            </LayerSurface>
             )}
         </div>
       </div>);

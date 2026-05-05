@@ -1,5 +1,7 @@
 // file location: src/components/page-ui/job-cards/myjobs/job-cards-myjobs-ui.js
 import Button from "@/components/ui/Button";
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function MyJobsPageUi(props) {
   const {
@@ -93,7 +95,7 @@ export default function MyJobsPageUi(props) {
         </DevLayoutSection>
 
         {/* Search and Filter Bar */}
-        <DevLayoutSection sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="app-layout-page-card" backgroundToken="surface-filter-card" className="app-section-card myjobs-filter-toolbar" style={{
+        <LayerSurface sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="app-layout-page-card" backgroundToken="surface-filter-card" className="myjobs-filter-toolbar" style={{
       display: "flex",
       flexDirection: "row",
       gap: "12px",
@@ -131,10 +133,10 @@ export default function MyJobsPageUi(props) {
                 {label}
               </Button>)}
           </div>
-        </DevLayoutSection>
+        </LayerSurface>
 
         {/* Jobs List */}
-        <DevLayoutSection sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="surface-results-card" className="app-section-card" style={{
+        <LayerSurface sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="surface-results-card" style={{
       flex: 1,
       display: "flex",
       flexDirection: "column",
@@ -215,8 +217,6 @@ export default function MyJobsPageUi(props) {
             </div> : filteredJobs.length === 0 ? <div data-dev-section="1" data-dev-section-key="myjobs-empty-state" data-dev-section-type="content-card" data-dev-section-parent="myjobs-results-shell" data-dev-background-token="surface-empty-state" style={{
         backgroundColor: "transparent",
         padding: "60px",
-        borderRadius: "var(--radius-md)",
-        border: "none",
         textAlign: "center",
         margin: "auto",
         maxWidth: "520px"
@@ -416,10 +416,10 @@ export default function MyJobsPageUi(props) {
                   </div>;
         })}
             </div>}
-        </DevLayoutSection>
+        </LayerSurface>
 
         {/* Job Count Summary */}
-        <DevLayoutSection sectionKey="myjobs-summary" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="surface-summary-card" className="app-section-card">
+        <LayerSurface sectionKey="myjobs-summary" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="surface-summary-card">
           <div data-dev-section="1" data-dev-section-key="myjobs-summary-grid" data-dev-section-type="content-card" data-dev-section-parent="myjobs-summary" style={{
         display: "grid",
         gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
@@ -505,7 +505,7 @@ export default function MyJobsPageUi(props) {
           }}>Completed</div>
             </div>
           </div>
-        </DevLayoutSection>
+        </LayerSurface>
 
       </div>
 

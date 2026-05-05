@@ -1378,14 +1378,15 @@ export default function NextJobsPage() {
         data-dnd-target-key={panelKey}
         style={{
           background: "var(--surface)",
-          border:
-          activeDropTarget === panelKey ?
-          "3px solid var(--primary)" :
-          "1px solid var(--surface)",
           borderRadius: "var(--radius-xs)",
           padding: "16px",
           display: "flex",
           flexDirection: "column",
+          // Drag-over highlight is a state indicator (drop-target outline), not a card surface border. Kept per layer-sweep rules.
+          outline:
+          activeDropTarget === panelKey ?
+          "3px solid var(--primary)" :
+          "none",
           height: PANEL_HEIGHT_PX,
           minHeight: PANEL_HEIGHT_PX,
           maxHeight: PANEL_HEIGHT_PX,
@@ -1394,11 +1395,9 @@ export default function NextJobsPage() {
           activeDropTarget === panelKey ?
           "0 4px 12px rgba(0, 0, 0, 0.2)" :
           "0 2px 4px rgba(var(--shadow-rgb),0.14)",
-          transition: "all 0.2s ease",
-          backgroundColor:
-          activeDropTarget === panelKey ? "var(--surface)" : "var(--surface)"
+          transition: "all 0.2s ease"
         }}>
-        
+
       <p style={{
           fontWeight: "600",
           marginBottom: "12px",

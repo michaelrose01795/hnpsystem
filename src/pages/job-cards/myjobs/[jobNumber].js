@@ -64,6 +64,8 @@ import Button from "@/components/ui/Button";
 import PhotoEditorModal from "@/components/VHC/PhotoEditorModal";
 import VideoEditorModal from "@/components/VHC/VideoEditorModal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import themeConfig, {
   vhcCardStates // VHC section state colours — still comes from appTheme
 } from "@/styles/appTheme";
@@ -4987,15 +4989,18 @@ function DocumentsTab({
       </DevLayoutSection>
 
       {sortedDocuments.length === 0 ?
-      <DevLayoutSection
+      <LayerSurface
         as="div"
         sectionKey="myjob-documents-empty"
         sectionType="content-card"
         parentKey="myjob-documents-panel"
+        radius="var(--radius-md)"
+        padding="48px 24px"
+        gap={undefined}
         style={{
-          padding: "48px 24px",
-          borderRadius: "var(--radius-md)",
-          border: "2px dashed var(--surface)",
+          // Empty-state outline preserved as state-indicator (dashed prompt) — not a card surface border.
+          outline: "2px dashed var(--surface)",
+          outlineOffset: "-2px",
           textAlign: "center",
           color: "var(--text-1)",
           fontSize: "14px",
@@ -5005,7 +5010,7 @@ function DocumentsTab({
           <div style={{ fontSize: "32px", marginBottom: "10px", opacity: 0.4 }}>📄</div>
           <div style={{ fontWeight: 600, marginBottom: "4px", color: "var(--text-1)" }}>No documents attached</div>
           Upload check-sheets, signed paperwork, or photos to keep everything in one place.
-        </DevLayoutSection> :
+        </LayerSurface> :
 
       <div
         style={{
@@ -5025,17 +5030,18 @@ function DocumentsTab({
           return (
             <div
               key={doc.id || doc.file_id || docUrl}
-              style={{
-                borderRadius: "var(--radius-md)",
-                border: "1px solid var(--surface)",
-                overflow: "hidden",
-                backgroundColor: "var(--surface)",
-                display: "flex",
-                flexDirection: "column",
-                transition: "box-shadow 0.15s ease"
-              }}
               onMouseEnter={(e) => {e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)";}}
-              onMouseLeave={(e) => {e.currentTarget.style.boxShadow = "none";}}>
+              onMouseLeave={(e) => {e.currentTarget.style.boxShadow = "none";}}
+              style={{ transition: "box-shadow 0.15s ease" }}>
+              <LayerSurface
+                radius="var(--radius-md)"
+                gap={undefined}
+                padding={0}
+                style={{
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column"
+                }}>
               
                 <button
                 type="button"
@@ -5128,6 +5134,7 @@ function DocumentsTab({
                     </button>
                 }
                 </div>
+              </LayerSurface>
               </div>);
 
         })}

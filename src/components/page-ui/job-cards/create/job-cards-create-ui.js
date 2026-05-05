@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/job-cards/create/job-cards-create-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function CreateJobCardPageUi(props) {
   const {
@@ -323,15 +325,9 @@ export default function CreateJobCardPageUi(props) {
         width: "100%"
       }}>
             {/* Job Information Section - responsive, min 260px */}
-            <DevLayoutSection sectionKey="job-cards-create-job-information" sectionType="content-card" parentKey="job-cards-create-top-row" style={{
+            <LayerTheme sectionKey="job-cards-create-job-information" sectionType="content-card" parentKey="job-cards-create-top-row" radius="var(--radius-md)" gap="16px" style={{
           flex: "1 1 260px",
           minWidth: 0,
-          padding: "var(--section-card-padding)",
-          borderRadius: "var(--radius-md)",
-          ...sectionCardStyle,
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
           minHeight: "420px",
           boxSizing: "border-box",
           overflowY: "auto"
@@ -415,22 +411,17 @@ export default function CreateJobCardPageUi(props) {
                     component; no extra API wiring is needed here. */}
                 <MobileMechanicEligibility customer={customerForm} vehicle={vehicle} jobDetections={jobDetections} jobCategories={jobCategories} isMobileMechanic={isMobileMechanic} onSelectionChange={setIsMobileMechanic} toggleGroupStyle={binaryToggleGroupStyle} getToggleButtonStyle={getBinaryToggleButtonStyle} />
               </div>
-            </DevLayoutSection>
+            </LayerTheme>
 
-            {/* Vehicle Details Section - responsive, min 260px */}
-            <DevLayoutSection sectionKey="job-cards-create-vehicle-details" sectionType="content-card" parentKey="job-cards-create-top-row" style={{
-          flex: "1 1 260px",
+            {/* Vehicle Details Section - responsive, min 260px. Outer ref div hosts the ResizeObserver target; inner LayerTheme paints the surface. */}
+            <div ref={vehicleSectionRef} style={{ flex: "1 1 260px", minWidth: 0, display: "flex" }}>
+            <LayerTheme sectionKey="job-cards-create-vehicle-details" sectionType="content-card" parentKey="job-cards-create-top-row" radius="var(--radius-md)" gap="16px" style={{
+          flex: "1 1 auto",
           minWidth: 0,
-          padding: "var(--section-card-padding)",
-          borderRadius: "var(--radius-md)",
-          ...sectionCardStyle,
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
           minHeight: "420px",
           boxSizing: "border-box",
           overflowY: "auto"
-        }} ref={vehicleSectionRef}>
+        }}>
               <h3 style={{
             fontSize: "16px",
             fontWeight: "600",
@@ -609,18 +600,13 @@ export default function CreateJobCardPageUi(props) {
               }} />
                 </div>
               </div>
-            </DevLayoutSection>
+            </LayerTheme>
+            </div>
 
             {/* Customer Details Section - responsive, min 260px */}
-            <DevLayoutSection sectionKey="job-cards-create-customer-details" sectionType="content-card" parentKey="job-cards-create-top-row" style={{
+            <LayerTheme sectionKey="job-cards-create-customer-details" sectionType="content-card" parentKey="job-cards-create-top-row" radius="var(--radius-md)" gap="16px" style={{
           flex: "1 1 260px",
           minWidth: 0,
-          padding: "var(--section-card-padding)",
-          borderRadius: "var(--radius-md)",
-          ...sectionCardStyle,
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
           minHeight: "420px",
           boxSizing: "border-box",
           overflowY: "auto"
@@ -962,15 +948,11 @@ export default function CreateJobCardPageUi(props) {
                     Search Existing Customer
                   </button>
                 </div>}
-            </DevLayoutSection>
+            </LayerTheme>
           </DevLayoutSection>
 
           {/* ✅ Job Requests Section - Full Width */}
-          <DevLayoutSection sectionKey="job-cards-create-job-requests" sectionType="section-shell" parentKey="job-cards-create-content" style={{
-        padding: "var(--section-card-padding)",
-        borderRadius: "var(--radius-md)",
-        ...sectionCardStyle
-      }}>
+          <LayerTheme sectionKey="job-cards-create-job-requests" sectionType="section-shell" parentKey="job-cards-create-content" radius="var(--radius-md)">
             <h3 style={{
           fontSize: "16px",
           fontWeight: "600",
@@ -986,12 +968,8 @@ export default function CreateJobCardPageUi(props) {
           paddingRight: "4px",
           marginBottom: "12px"
         }}>
-              {requests.map((req, i) => <DevLayoutSection key={`job-request-row-${i}`} sectionKey={`job-cards-create-job-request-${i + 1}`} sectionType="content-card" parentKey="job-cards-create-job-requests" style={{
-            border: "none",
-            borderRadius: "var(--radius-sm)",
-            marginBottom: "10px",
-            padding: "10px",
-            backgroundColor: "var(--surface)"
+              {requests.map((req, i) => <LayerSurface key={`job-request-row-${i}`} sectionKey={`job-cards-create-job-request-${i + 1}`} sectionType="content-card" parentKey="job-cards-create-job-requests" radius="var(--radius-sm)" padding="10px" style={{
+            marginBottom: "10px"
           }}>
                   <div style={{
               fontSize: "13px",
@@ -1076,23 +1054,16 @@ export default function CreateJobCardPageUi(props) {
                       Remove
                     </button>
                   </div>
-                </DevLayoutSection>)}
+                </LayerSurface>)}
             </div>
             <button type="button" onClick={handleAddRequest} className="app-btn app-btn--primary">
               + Add Request
             </button>
-          </DevLayoutSection>
+          </LayerTheme>
 
           {/* ✅ Bottom Row: Cosmetic Damage, Add VHC, Full Car Details */}
           <DevLayoutSection sectionKey="job-cards-create-bottom-row" sectionType="section-shell" parentKey="job-cards-create-content" shell className="job-cards-create-bottom-row">
-            <DevLayoutSection sectionKey="job-cards-create-cosmetic-damage" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" style={{
-          padding: "var(--section-card-padding)",
-          borderRadius: "var(--radius-md)",
-          ...sectionCardStyle,
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px"
-        }}>
+            <LayerTheme sectionKey="job-cards-create-cosmetic-damage" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px">
               <div className="job-cards-create-bottom-card-header" style={{
             display: "flex",
             alignItems: "center",
@@ -1132,14 +1103,8 @@ export default function CreateJobCardPageUi(props) {
           }} onBlur={e => {
             e.target.style.borderColor = "var(--surface)";
           }} />}
-            </DevLayoutSection>
-            <DevLayoutSection sectionKey="job-cards-create-wash" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" style={{
-          padding: "var(--section-card-padding)",
-          borderRadius: "var(--radius-md)",
-          ...sectionCardStyle,
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
+            </LayerTheme>
+            <LayerTheme sectionKey="job-cards-create-wash" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px" style={{
           justifyContent: "space-between"
         }}>
               <div className="job-cards-create-bottom-card-header" style={{
@@ -1162,15 +1127,8 @@ export default function CreateJobCardPageUi(props) {
                     </button>)}
                 </div>
               </div>
-            </DevLayoutSection>
-            <DevLayoutSection sectionKey="job-cards-create-vhc-required" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" style={{
-          padding: "var(--section-card-padding)",
-          borderRadius: "var(--radius-md)",
-          ...sectionCardStyle,
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px"
-        }}>
+            </LayerTheme>
+            <LayerTheme sectionKey="job-cards-create-vhc-required" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px">
               <div className="job-cards-create-bottom-card-header" style={{
             display: "flex",
             alignItems: "center",
@@ -1191,14 +1149,8 @@ export default function CreateJobCardPageUi(props) {
                     </button>)}
                 </div>
               </div>
-            </DevLayoutSection>
-            <DevLayoutSection sectionKey="job-cards-create-documents" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" style={{
-          padding: "var(--section-card-padding)",
-          borderRadius: "var(--radius-md)",
-          ...sectionCardStyle,
-          display: "flex",
-          flexDirection: "column",
-          gap: "12px",
+            </LayerTheme>
+            <LayerTheme sectionKey="job-cards-create-documents" sectionType="content-card" parentKey="job-cards-create-bottom-row" className="job-cards-create-bottom-card" radius="var(--radius-md)" gap="12px" style={{
           justifyContent: "space-between"
         }}>
               <div className="job-cards-create-bottom-card-header" style={{
@@ -1237,7 +1189,7 @@ export default function CreateJobCardPageUi(props) {
                   Manage Documents
                 </button>
               </div>
-            </DevLayoutSection>
+            </LayerTheme>
           </DevLayoutSection>
         </DevLayoutSection>
 

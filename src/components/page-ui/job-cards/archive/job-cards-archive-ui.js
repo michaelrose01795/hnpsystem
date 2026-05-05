@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/job-cards/archive/job-cards-archive-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function ArchivedJobsPageUi(props) {
   const {
@@ -28,9 +30,7 @@ export default function ArchivedJobsPageUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
-      <DevLayoutSection sectionKey="job-cards-archive-page-shell" sectionType="page-shell" shell className="app-page-stack" style={{
-    gap: "24px"
-  }}>
+      <LayerSurface sectionKey="job-cards-archive-page-shell" sectionType="page-shell" shell className="app-page-stack" gap="24px" padding={0}>
         <DevLayoutSection as="form" sectionKey="job-cards-archive-search-toolbar" parentKey="job-cards-archive-page-shell" sectionType="toolbar" backgroundToken="transparent" onSubmit={event => {
       event.preventDefault();
       runSearch(query);
@@ -41,10 +41,7 @@ export default function ArchivedJobsPageUi(props) {
       alignItems: "center",
       gap: "8px",
       padding: 0,
-      background: "transparent",
-      border: "none",
       boxShadow: "none",
-      borderRadius: 0,
       color: "var(--search-text)"
     }}>
           <DevLayoutSection sectionKey="job-cards-archive-search-input" parentKey="job-cards-archive-search-toolbar" sectionType="filter-row" backgroundToken="search-surface" style={{
@@ -113,24 +110,15 @@ export default function ArchivedJobsPageUi(props) {
           </DevLayoutSection>
         </DevLayoutSection>
 
-        {error && <DevLayoutSection sectionKey="job-cards-archive-error-banner" parentKey="job-cards-archive-page-shell" sectionType="state-banner" backgroundToken="danger-surface" style={{
-      borderRadius: "var(--radius-sm)",
-      border: "none",
-      background: "var(--danger-surface)",
-      padding: "12px"
-    }}>
+        {error && <LayerTheme sectionKey="job-cards-archive-error-banner" parentKey="job-cards-archive-page-shell" sectionType="state-banner" backgroundToken="danger-surface" radius="var(--radius-sm)" padding="12px">
             <p style={{
         margin: 0,
         color: "var(--danger)"
       }}>{error}</p>
-          </DevLayoutSection>}
+          </LayerTheme>}
 
-        <DevLayoutSection as="section" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell backgroundToken="surface" style={{
-      background: "var(--theme)",
-      borderRadius: "var(--radius-sm)",
-      border: "1px solid var(--primary-border)"
-    }}>
-          <DevLayoutSection sectionKey="job-cards-archive-results-table-scroll" parentKey="job-cards-archive-results-panel" sectionType="content-card" backgroundToken="accent-surface" style={{
+        <LayerTheme as="section" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell radius="var(--radius-sm)">
+          <LayerSurface sectionKey="job-cards-archive-results-table-scroll" parentKey="job-cards-archive-results-panel" sectionType="content-card" radius="var(--radius-sm)" style={{
         overflowX: "auto"
       }}>
             <DevLayoutSection as="table" sectionKey="job-cards-archive-results-table" parentKey="job-cards-archive-results-table-scroll" sectionType="data-table" backgroundToken="accent-surface" style={{
@@ -236,7 +224,6 @@ export default function ArchivedJobsPageUi(props) {
                     textDecoration: "none",
                     padding: "8px 14px",
                     borderRadius: "var(--radius-sm)",
-                    border: "none",
                     color: "var(--accent-purple)",
                     fontWeight: 600
                   }}>
@@ -256,9 +243,9 @@ export default function ArchivedJobsPageUi(props) {
                   </tr>}
               </tbody>
             </DevLayoutSection>
-          </DevLayoutSection>
-        </DevLayoutSection>
-      </DevLayoutSection>
+          </LayerSurface>
+        </LayerTheme>
+      </LayerSurface>
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.
