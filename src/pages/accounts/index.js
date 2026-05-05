@@ -13,9 +13,10 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import ToolbarRow from "@/components/ui/ToolbarRow";
-import ControlGroup from "@/components/ui/ControlGroup";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import AccountsListPageUi from "@/components/page-ui/accounts/accounts-ui"; // Extracted presentation layer.
 
 const ALLOWED_ROLES = [
@@ -220,8 +221,10 @@ export default function AccountsListPage() {
   }];
 
 
+  // The DevLayoutSection page-shell in accounts-ui.js does not paint a surface,
+  // so this filter panel is the outermost surface card → LayerSurface. Inner cards alternate to LayerTheme.
   const renderFilters = () =>
-  <DevLayoutSection as="section" sectionKey="accounts-filter-panel" sectionType="content-card" parentKey="accounts-page-shell" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "16px", background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+  <LayerSurface as="section" sectionKey="accounts-filter-panel" sectionType="content-card" parentKey="accounts-page-shell" gap="16px">
       <DevLayoutSection sectionKey="accounts-filter-toolbar" sectionType="filter-row" parentKey="accounts-filter-panel">
       <ToolbarRow>
       <SearchBar
@@ -231,18 +234,17 @@ export default function AccountsListPage() {
           onChange={(event) => handleFilterChange("search", event.target.value)}
           onClear={() => handleFilterChange("search", "")}
           style={{
-            flex: "1 1 240px",
-            background: "var(--surface)"
+            flex: "1 1 240px"
           }} />
-        
+
       <DropdownField
           name="status"
           value={filters.status}
           onChange={(event) => handleFilterChange("status", event.target.value)}
           placeholder="All statuses"
           options={[{ label: "All Statuses", value: "", placeholder: true }, ...ACCOUNT_STATUSES.map((status) => ({ label: status, value: status }))]}
-          style={{ flex: "0 0 200px", background: "var(--surface)" }} />
-        
+          style={{ flex: "0 0 200px" }} />
+
       <DropdownField
           name="accountType"
           value={filters.accountType}
@@ -250,45 +252,39 @@ export default function AccountsListPage() {
           placeholder="All account types"
           options={[{ label: "All Account Types", value: "", placeholder: true }, ...ACCOUNT_TYPES.map((type) => ({ label: type, value: type }))]}
           disabled={Boolean(permissions.restrictedAccountTypes?.length)}
-          style={{ flex: "0 0 220px", background: "var(--surface)" }} />
-        
+          style={{ flex: "0 0 220px" }} />
+
       <div style={{ flex: "0 0 180px" }}>
-        <CalendarField name="dateFrom" placeholder="From date" value={filters.dateFrom} onChange={(event) => handleFilterChange("dateFrom", event.target.value)} style={{ background: "var(--surface)" }} />
+        <CalendarField name="dateFrom" placeholder="From date" value={filters.dateFrom} onChange={(event) => handleFilterChange("dateFrom", event.target.value)} />
       </div>
       <div style={{ flex: "0 0 180px" }}>
-        <CalendarField name="dateTo" placeholder="To date" value={filters.dateTo} onChange={(event) => handleFilterChange("dateTo", event.target.value)} style={{ background: "var(--surface)" }} />
+        <CalendarField name="dateTo" placeholder="To date" value={filters.dateTo} onChange={(event) => handleFilterChange("dateTo", event.target.value)} />
       </div>
       <input className="app-input" type="number" name="minBalance" value={filters.minBalance} placeholder="Min balance" onChange={(event) => handleFilterChange("minBalance", event.target.value)} style={{ flex: "0 0 124px" }} />
       <input className="app-input" type="number" name="maxBalance" value={filters.maxBalance} placeholder="Max balance" onChange={(event) => handleFilterChange("maxBalance", event.target.value)} style={{ flex: "0 0 124px" }} />
-      <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters} style={{ background: "var(--control-bg)", color: "var(--primary)" }}>
+      <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters} style={{ color: "var(--primary)" }}>
         Clear filters
       </Button>
       </ToolbarRow>
       </DevLayoutSection>
-    </DevLayoutSection>;
+    </LayerSurface>;
 
 
   const renderLinkedFinance = () =>
-  <DevLayoutSection as="section" sectionKey="accounts-linked-finance" sectionType="content-card" parentKey="accounts-page-shell" widthMode="full" className="app-section-card" style={{ display: "flex", flexDirection: "column", gap: "18px", background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.16)" }}>
+  <LayerSurface as="section" sectionKey="accounts-linked-finance" sectionType="content-card" parentKey="accounts-page-shell" widthMode="full" gap="18px">
       <DevLayoutSection sectionKey="accounts-linked-finance-jump-links" sectionType="toolbar" parentKey="accounts-linked-finance">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
         {financeLinks.map((link) =>
-        <DevLayoutSection
+        <LayerTheme
           key={link.title}
+          as="article"
           sectionKey={`accounts-linked-finance-${link.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
           sectionType="content-card"
           parentKey="accounts-linked-finance-jump-links"
-          as="article"
-          style={{
-            borderRadius: "var(--control-radius)",
-            border: "1px solid rgba(var(--primary-rgb), 0.08)",
-            background: "var(--surface)",
-            padding: "16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px"
-          }}>
-          
+          radius="var(--radius-sm)"
+          padding="16px"
+          gap="12px">
+
             <div>
               <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.76rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                 {link.title}
@@ -303,13 +299,13 @@ export default function AccountsListPage() {
             <Button type="button" variant="secondary" size="sm" onClick={link.onClick}>
               {link.actionLabel}
             </Button>
-          </DevLayoutSection>
+          </LayerTheme>
         )}
       </div>
       </DevLayoutSection>
       <DevLayoutSection sectionKey="accounts-linked-finance-reference-grid" sectionType="content-card" parentKey="accounts-linked-finance">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
-        <DevLayoutSection sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" as="article" style={{ borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", background: "var(--surface)", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+        <LayerTheme as="article" sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Invoice References</h3>
             <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/accounts/invoices")}>
@@ -348,8 +344,8 @@ export default function AccountsListPage() {
               </div>
             </div>
           )}
-        </DevLayoutSection>
-        <DevLayoutSection sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" as="article" style={{ borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", background: "var(--surface)", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+        </LayerTheme>
+        <LayerTheme as="article" sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Goods In References</h3>
             <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/parts/goods-in")}>
@@ -381,10 +377,10 @@ export default function AccountsListPage() {
               </div>
             </div>
           )}
-        </DevLayoutSection>
+        </LayerTheme>
       </div>
       </DevLayoutSection>
-    </DevLayoutSection>;
+    </LayerSurface>;
 
 
   const handlePageChange = (nextPage) => {
@@ -396,25 +392,4 @@ export default function AccountsListPage() {
   };
 
   return <AccountsListPageUi view="section1" accounts={accounts} AccountsSettingsModal={AccountsSettingsModal} AccountTable={AccountTable} AccountUpsertModal={AccountUpsertModal} ALLOWED_ROLES={ALLOWED_ROLES} Button={Button} canCreateAccount={canCreateAccount} canExport={canExport} closeAccountModal={closeAccountModal} closeSettingsModal={closeSettingsModal} DevLayoutSection={DevLayoutSection} fetchAccounts={fetchAccounts} handleAccountSelect={handleAccountSelect} handleExport={handleExport} handlePageChange={handlePageChange} handleSortChange={handleSortChange} isAccountModalOpen={isAccountModalOpen} isSettingsModalOpen={isSettingsModalOpen} loading={loading} modalAccountId={modalAccountId} modalMode={modalMode} openCreateModal={openCreateModal} openSettingsModal={openSettingsModal} pagination={pagination} ProtectedRoute={ProtectedRoute} renderFilters={renderFilters} renderLinkedFinance={renderLinkedFinance} sortState={sortState} ToolbarRow={ToolbarRow} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

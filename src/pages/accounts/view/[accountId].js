@@ -8,6 +8,7 @@ import InvoiceTable from "@/components/accounts/InvoiceTable";
 import TransactionTable from "@/components/accounts/TransactionTable";
 import Button from "@/components/ui/Button";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import ViewAccountPageUi from "@/components/page-ui/accounts/view/accounts-view-account-id-ui"; // Extracted presentation layer.
 
@@ -80,11 +81,12 @@ export default function ViewAccountPage() {
     router.push(`/accounts/invoices?accountId=${account?.account_id || ""}`);
   };
 
+  // detailCard sits inside the overview LayerSurface, so per the alternation rule it's a LayerTheme.
   const detailCard = (label, value) =>
-  <div style={{ background: "var(--surface)", borderRadius: "var(--control-radius)", border: "1px solid rgba(var(--primary-rgb), 0.08)", padding: "16px" }}>
+  <LayerTheme radius="var(--radius-sm)" padding="16px">
       <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
       <strong style={{ display: "block", marginTop: "10px", fontSize: "1.35rem", color: "var(--text-1)" }}>{value}</strong>
-    </div>;
+    </LayerTheme>;
 
 
   return <ViewAccountPageUi view="section1" account={account} Button={Button} currencyFormatter={currencyFormatter} detailCard={detailCard} DevLayoutSection={DevLayoutSection} filters={filters} handleEdit={handleEdit} handleFreezeToggle={handleFreezeToggle} handleInvoicesPage={handleInvoicesPage} handleTransactionsPage={handleTransactionsPage} invoiceFilters={invoiceFilters} invoices={invoices} InvoiceTable={InvoiceTable} loading={loading} permissions={permissions} ProtectedRoute={ProtectedRoute} router={router} setFilters={setFilters} setInvoiceFilters={setInvoiceFilters} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} statusBadgeStyles={statusBadgeStyles} transactions={transactions} TransactionTable={TransactionTable} VIEW_ROLES={VIEW_ROLES} />;

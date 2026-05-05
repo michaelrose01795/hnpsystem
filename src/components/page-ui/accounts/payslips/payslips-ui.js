@@ -10,6 +10,7 @@ import {
   formatStatusLabel,
   getStatusTone,
 } from "@/features/payslips/payslipUtils";
+import LayerSurface from "@/components/ui/LayerSurface";
 
 export default function PayslipsAdminPageUi(uiProps) {
   const {
@@ -69,13 +70,12 @@ export default function PayslipsAdminPageUi(uiProps) {
           </ToolbarRow>
 
           {/* Filters */}
-          <DevLayoutSection
+          <LayerSurface
             as="section"
             sectionKey="payslips-filter-panel"
             sectionType="content-card"
             parentKey="payslips-page-shell"
-            className="app-section-card"
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+            gap="16px"
           >
             <DevLayoutSection sectionKey="payslips-filter-toolbar" sectionType="filter-row" parentKey="payslips-filter-panel">
               <ToolbarRow>
@@ -85,28 +85,28 @@ export default function PayslipsAdminPageUi(uiProps) {
                   value={filters.search}
                   onChange={(event) => handleFilterChange("search", event.target.value)}
                   onClear={() => handleFilterChange("search", "")}
-                  style={{ flex: "1 1 240px", background: "var(--surface)" }}
+                  style={{ flex: "1 1 240px" }}
                 />
                 <DropdownField
                   name="userId"
                   value={filters.userId}
                   onChange={(event) => handleFilterChange("userId", event.target.value)}
                   options={userOptions}
-                  style={{ flex: "0 0 220px", background: "var(--surface)" }}
+                  style={{ flex: "0 0 220px" }}
                 />
                 <DropdownField
                   name="department"
                   value={filters.department}
                   onChange={(event) => handleFilterChange("department", event.target.value)}
                   options={departmentOptions}
-                  style={{ flex: "0 0 200px", background: "var(--surface)" }}
+                  style={{ flex: "0 0 200px" }}
                 />
                 <DropdownField
                   name="status"
                   value={filters.status}
                   onChange={(event) => handleFilterChange("status", event.target.value)}
                   options={STATUS_OPTIONS}
-                  style={{ flex: "0 0 160px", background: "var(--surface)" }}
+                  style={{ flex: "0 0 160px" }}
                 />
                 <div style={{ flex: "0 0 180px" }}>
                   <CalendarField
@@ -114,7 +114,6 @@ export default function PayslipsAdminPageUi(uiProps) {
                     placeholder="Paid from"
                     value={filters.paidFrom}
                     onChange={(event) => handleFilterChange("paidFrom", event.target.value)}
-                    style={{ background: "var(--surface)" }}
                   />
                 </div>
                 <div style={{ flex: "0 0 180px" }}>
@@ -123,7 +122,6 @@ export default function PayslipsAdminPageUi(uiProps) {
                     placeholder="Paid to"
                     value={filters.paidTo}
                     onChange={(event) => handleFilterChange("paidTo", event.target.value)}
-                    style={{ background: "var(--surface)" }}
                   />
                 </div>
                 <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters}>
@@ -131,15 +129,14 @@ export default function PayslipsAdminPageUi(uiProps) {
                 </Button>
               </ToolbarRow>
             </DevLayoutSection>
-          </DevLayoutSection>
+          </LayerSurface>
 
           {/* Table */}
-          <DevLayoutSection
+          <LayerSurface
             sectionKey="payslips-table"
             sectionType="data-table"
             parentKey="payslips-page-shell"
-            className="app-section-card"
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+            gap="12px"
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
               <div style={{ fontWeight: 700, color: "var(--text-1)" }}>
@@ -250,7 +247,7 @@ export default function PayslipsAdminPageUi(uiProps) {
                 </tbody>
               </table>
             </div>
-          </DevLayoutSection>
+          </LayerSurface>
         </div>
       </DevLayoutSection>
 

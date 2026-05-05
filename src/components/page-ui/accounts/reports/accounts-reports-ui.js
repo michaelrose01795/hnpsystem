@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/accounts/reports/accounts-reports-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function AccountsReportsPageUi(props) {
   const {
@@ -26,7 +27,7 @@ export default function AccountsReportsPageUi(props) {
         <DevLayoutSection as="div" sectionKey="accounts-reports-page-shell" sectionType="page-shell" backgroundToken="page-card-bg" shell className="app-layout-page-shell" style={{
       gap: "20px"
     }}>
-          <DevLayoutSection as="section" sectionKey="accounts-reports-toolbar" sectionType="content-card" parentKey="accounts-reports-page-shell" backgroundToken="surface" className="app-section-card">
+          <LayerSurface as="section" sectionKey="accounts-reports-toolbar" sectionType="content-card" parentKey="accounts-reports-page-shell">
             <ToolbarRow style={{
           justifyContent: "space-between",
           alignItems: "center"
@@ -49,7 +50,7 @@ export default function AccountsReportsPageUi(props) {
                 Export Summary
               </Button>
             </ToolbarRow>
-          </DevLayoutSection>
+          </LayerSurface>
 
           {loading && <p style={{
         color: "var(--text-1)",
@@ -57,7 +58,7 @@ export default function AccountsReportsPageUi(props) {
       }}>Loading reports…</p>}
 
           {!loading && <>
-              <DevLayoutSection as="section" sectionKey="accounts-reports-metrics-shell" sectionType="content-card" parentKey="accounts-reports-page-shell" backgroundToken="accent" className="app-layout-surface-accent" style={metricsShellStyle}>
+              <LayerSurface as="section" sectionKey="accounts-reports-metrics-shell" sectionType="content-card" parentKey="accounts-reports-page-shell" style={metricsShellStyle}>
                 <div style={metricsGridStyle}>
                   {metricCard("accounts-reports-auto-content-card-2", "New Accounts", current.newAccounts ?? 0)}
                   {metricCard("accounts-reports-auto-content-card-3", "Total Invoiced", new Intl.NumberFormat("en-GB", {
@@ -70,31 +71,28 @@ export default function AccountsReportsPageUi(props) {
               currency: "GBP"
             }).format(current.averageBalance || 0), "#0f766e")}
                 </div>
-              </DevLayoutSection>
+              </LayerSurface>
 
-              <DevLayoutSection as="section" sectionKey="accounts-reports-highlights-card" sectionType="content-card" parentKey="accounts-reports-page-shell" backgroundToken="surface">
-                <Card title="Highlights" className="" style={{
-            background: "var(--surface)",
-            gap: "12px"
+              <Card title="Highlights" sectionKey="accounts-reports-highlights-card" parentKey="accounts-reports-page-shell" style={{
+          gap: "12px"
+        }}>
+                <ul style={{
+            margin: 0,
+            paddingLeft: "20px",
+            color: "var(--text-1)",
+            lineHeight: 1.6
           }}>
-                  <ul style={{
-              margin: 0,
-              paddingLeft: "20px",
-              color: "var(--text-1)",
-              lineHeight: 1.6
-            }}>
-                    <li>{current.newAccounts ?? 0} new accounts opened during this period.</li>
-                    <li>{new Intl.NumberFormat("en-GB", {
-                  style: "currency",
-                  currency: "GBP"
-                }).format(current.totalInvoiced || 0)} invoiced with {current.overdueInvoices ?? 0} overdue follow-ups.</li>
-                    <li>Average balance stands at {new Intl.NumberFormat("en-GB", {
-                  style: "currency",
-                  currency: "GBP"
-                }).format(current.averageBalance || 0)} for the selected period.</li>
-                  </ul>
-                </Card>
-              </DevLayoutSection>
+                  <li>{current.newAccounts ?? 0} new accounts opened during this period.</li>
+                  <li>{new Intl.NumberFormat("en-GB", {
+                style: "currency",
+                currency: "GBP"
+              }).format(current.totalInvoiced || 0)} invoiced with {current.overdueInvoices ?? 0} overdue follow-ups.</li>
+                  <li>Average balance stands at {new Intl.NumberFormat("en-GB", {
+                style: "currency",
+                currency: "GBP"
+              }).format(current.averageBalance || 0)} for the selected period.</li>
+                </ul>
+              </Card>
             </>}
         </DevLayoutSection>
       </>

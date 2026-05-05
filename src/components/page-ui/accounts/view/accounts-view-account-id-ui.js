@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/accounts/view/accounts-view-account-id-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function ViewAccountPageUi(props) {
   const {
@@ -41,13 +43,7 @@ export default function ViewAccountPageUi(props) {
       }}>
           {loading && <>
               <SkeletonKeyframes />
-              <section className="app-section-card" style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 14,
-            background: "var(--theme)",
-            border: "1px solid rgba(var(--primary-rgb), 0.16)"
-          }}>
+              <LayerSurface as="section" gap="14px">
                 <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -65,38 +61,23 @@ export default function ViewAccountPageUi(props) {
                 </div>
                 <SkeletonBlock width="60%" height="12px" />
                 <SkeletonBlock width="50%" height="12px" />
-              </section>
-              <section className="app-section-card" style={{
+              </LayerSurface>
+              <LayerSurface as="section" style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 16,
-            background: "var(--theme)",
-            border: "1px solid rgba(var(--primary-rgb), 0.16)"
+            gap: 16
           }}>
                 {Array.from({
               length: 4
-            }).map((_, i) => <div key={i} style={{
-              background: "var(--surface)",
-              borderRadius: "var(--control-radius)",
-              padding: 16,
-              display: "flex",
-              flexDirection: "column",
-              gap: 8
-            }}>
+            }).map((_, i) => <LayerTheme key={i} radius="var(--radius-sm)" padding="16px" gap="8px">
                     <SkeletonBlock width="50%" height="10px" />
                     <SkeletonBlock width="80%" height="22px" />
                     <SkeletonBlock width="40%" height="10px" />
-                  </div>)}
-              </section>
+                  </LayerTheme>)}
+              </LayerSurface>
             </>}
           {!loading && account && <>
-              <DevLayoutSection as="section" sectionKey="account-view-header" sectionType="content-card" parentKey="account-view-page-shell" className="app-section-card" style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            background: "var(--theme)",
-            border: "1px solid rgba(var(--primary-rgb), 0.16)"
-          }}>
+              <LayerSurface as="section" sectionKey="account-view-header" sectionType="content-card" parentKey="account-view-page-shell" gap="16px">
                 <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -146,14 +127,8 @@ export default function ViewAccountPageUi(props) {
                 })
               }}>{account.status}</span>
                 </div>
-              </DevLayoutSection>
-              <DevLayoutSection as="section" sectionKey="account-view-overview-card" sectionType="content-card" parentKey="account-view-page-shell" className="app-section-card" style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "18px",
-            background: "var(--theme)",
-            border: "1px solid rgba(var(--primary-rgb), 0.16)"
-          }}>
+              </LayerSurface>
+              <LayerSurface as="section" sectionKey="account-view-overview-card" sectionType="content-card" parentKey="account-view-page-shell" gap="18px">
                 <DevLayoutSection sectionKey="account-view-metrics-grid" sectionType="content-card" parentKey="account-view-overview-card">
                 <div style={{
                 display: "grid",
@@ -167,15 +142,7 @@ export default function ViewAccountPageUi(props) {
                 </div>
                 </DevLayoutSection>
                 <DevLayoutSection sectionKey="account-view-billing-section" sectionType="content-card" parentKey="account-view-overview-card">
-                <div style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "14px",
-                background: "var(--surface)",
-                borderRadius: "var(--control-radius)",
-                border: "1px solid rgba(var(--primary-rgb), 0.08)",
-                padding: "16px"
-              }}>
+                <LayerTheme radius="var(--radius-sm)" padding="16px" gap="14px">
                   <h2 style={{
                   margin: 0,
                   color: "var(--text-1)",
@@ -231,18 +198,10 @@ export default function ViewAccountPageUi(props) {
                       color: "var(--text-1)"
                     }}>{[account.billing_address_line1, account.billing_address_line2, account.billing_city, account.billing_postcode, account.billing_country].filter(Boolean).join(", ") || "—"}</strong></div>
                   </div>
-                </div>
+                </LayerTheme>
                 </DevLayoutSection>
                 <DevLayoutSection sectionKey="account-view-notes-section" sectionType="content-card" parentKey="account-view-overview-card">
-                <div style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                background: "var(--surface)",
-                borderRadius: "var(--control-radius)",
-                border: "1px solid rgba(var(--primary-rgb), 0.08)",
-                padding: "16px"
-              }}>
+                <LayerTheme radius="var(--radius-sm)" padding="16px" gap="12px">
                   <h2 style={{
                   margin: 0,
                   color: "var(--text-1)",
@@ -253,9 +212,9 @@ export default function ViewAccountPageUi(props) {
                   color: "var(--text-1)",
                   lineHeight: 1.6
                 }}>{account.notes || "No notes recorded."}</p>
-                </div>
+                </LayerTheme>
                 </DevLayoutSection>
-              </DevLayoutSection>
+              </LayerSurface>
               <DevLayoutSection sectionKey="account-view-transactions" sectionType="data-table" parentKey="account-view-page-shell">
               <TransactionTable transactions={transactions} loading={loading} filters={filters} onFilterChange={setFilters} pagination={{
               page: 1,

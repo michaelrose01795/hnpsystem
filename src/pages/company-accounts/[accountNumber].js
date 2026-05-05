@@ -6,6 +6,7 @@ import CompanyAccountForm from "@/components/companyAccounts/CompanyAccountForm"
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { prefetchJob } from "@/lib/swr/prefetch";
 import CompanyAccountDetailPageUi from "@/components/page-ui/company-accounts/company-accounts-account-number-ui"; // Extracted presentation layer.
 
@@ -175,6 +176,9 @@ export default function CompanyAccountDetailPage() {
     const hasJobs = history.jobs && history.jobs.length > 0;
     const hasInvoices = history.invoices && history.invoices.length > 0;
 
+    // Each row card uses a wrapper div for the click handler / hover state, with
+    // a LayerTheme inside painting the surface (the outer container on this tab is
+    // a LayerSurface — see company-accounts-account-number-ui.js).
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         {/* Jobs Section */}
@@ -186,26 +190,21 @@ export default function CompanyAccountDetailPage() {
             <div
               key={job.id}
               onClick={() => router.push(`/job-cards/${job.job_number}`)}
-              style={{
-                padding: "16px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--surface)",
-                cursor: "pointer",
-                transition: "all 0.2s ease"
-              }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--primary)";
                 e.currentTarget.style.transform = "translateY(-2px)";
                 e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
                 prefetchJob(job.job_number); // warm SWR cache on hover
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--surface)";
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.zIndex = "0";
+              }}
+              style={{
+                cursor: "pointer",
+                transition: "all 0.2s ease"
               }}>
-              
+
+                  <LayerTheme radius="var(--radius-sm)" padding="16px">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: "200px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
@@ -220,7 +219,7 @@ export default function CompanyAccountDetailPage() {
                         background: "var(--surface)",
                         color: "var(--text-1)"
                       }}>
-                      
+
                             {job.status}
                           </span>
                     }
@@ -249,6 +248,7 @@ export default function CompanyAccountDetailPage() {
                   }
                     </div>
                   </div>
+                  </LayerTheme>
                 </div>
             )}
             </div> :
@@ -266,25 +266,20 @@ export default function CompanyAccountDetailPage() {
             <div
               key={invoice.id}
               onClick={() => router.push(`/invoices/${invoice.invoice_number}`)}
-              style={{
-                padding: "16px",
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--surface)",
-                cursor: "pointer",
-                transition: "all 0.2s ease"
-              }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--primary)";
                 e.currentTarget.style.transform = "translateY(-2px)";
                 e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--surface)";
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.zIndex = "0";
+              }}
+              style={{
+                cursor: "pointer",
+                transition: "all 0.2s ease"
               }}>
-              
+
+                  <LayerTheme radius="var(--radius-sm)" padding="16px">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: "200px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
@@ -309,7 +304,7 @@ export default function CompanyAccountDetailPage() {
                         "var(--danger)" :
                         "var(--text-1)"
                       }}>
-                      
+
                             {invoice.payment_status}
                           </span>
                     }
@@ -339,6 +334,7 @@ export default function CompanyAccountDetailPage() {
                   }
                     </div>
                   </div>
+                  </LayerTheme>
                 </div>
             )}
             </div> :

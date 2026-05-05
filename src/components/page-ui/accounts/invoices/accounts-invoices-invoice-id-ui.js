@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/accounts/invoices/accounts-invoices-invoice-id-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function InvoiceDetailPageUi(props) {
   const {
@@ -31,13 +33,11 @@ export default function InvoiceDetailPageUi(props) {
       flexDirection: "column",
       gap: "20px"
     }}>
-          <section className="app-section-card" style={{
+          <LayerSurface as="section" style={{
         display: "grid",
         gridTemplateColumns: "minmax(0, 1fr) auto",
         gap: "12px",
-        alignItems: "start",
-        background: "var(--theme)",
-        border: "1px solid rgba(var(--primary-rgb), 0.16)"
+        alignItems: "start"
       }}>
             <div style={{
           minWidth: 0
@@ -54,58 +54,36 @@ export default function InvoiceDetailPageUi(props) {
         }}>
               <Button type="button" variant="secondary" onClick={() => router.push("/accounts/invoices")}>All Invoices</Button>
             </div>
-          </section>
+          </LayerSurface>
           {loading && <>
               <SkeletonKeyframes />
-              <section className="app-section-card" style={{
+              <LayerSurface as="section" style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-          background: "var(--theme)",
-          border: "1px solid rgba(var(--primary-rgb), 0.16)"
+          gap: "16px"
         }}>
                 {Array.from({
             length: 4
-          }).map((_, i) => <div key={i} style={{
-            background: "var(--surface)",
-            borderRadius: "var(--control-radius)",
-            padding: "16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 10
-          }}>
+          }).map((_, i) => <LayerTheme key={i} radius="var(--radius-sm)" padding="16px" gap="10px">
                     <SkeletonBlock width="50%" height="10px" />
                     <SkeletonBlock width="70%" height="24px" />
                     <SkeletonBlock width="40%" height="10px" />
-                  </div>)}
-              </section>
-              <section className="app-section-card" style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          background: "var(--theme)",
-          border: "1px solid rgba(var(--primary-rgb), 0.16)"
-        }}>
+                  </LayerTheme>)}
+              </LayerSurface>
+              <LayerSurface as="section" gap="10px">
                 <SkeletonBlock width="20%" height="16px" />
                 {Array.from({
             length: 4
           }).map((_, i) => <SkeletonBlock key={i} width={i % 2 === 0 ? "100%" : "88%"} height="14px" />)}
-              </section>
+              </LayerSurface>
             </>}
           {!loading && invoice && <>
-              <section className="app-section-card" style={{
+              <LayerSurface as="section" style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
-          background: "var(--theme)",
-          border: "1px solid rgba(var(--primary-rgb), 0.16)"
+          gap: "16px"
         }}>
-                <div style={{
-            background: "var(--surface)",
-            borderRadius: "var(--control-radius)",
-            border: "1px solid rgba(var(--primary-rgb), 0.08)",
-            padding: "16px"
-          }}>
+                <LayerTheme radius="var(--radius-sm)" padding="16px">
                   <p style={{
               margin: 0,
               color: "var(--text-1)",
@@ -119,13 +97,8 @@ export default function InvoiceDetailPageUi(props) {
               fontSize: "1.8rem",
               color: "var(--text-1)"
             }}>{currencyFormatter.format(getInvoiceAmountValue(invoice))}</strong>
-                </div>
-                <div style={{
-            background: "var(--surface)",
-            borderRadius: "var(--control-radius)",
-            border: "1px solid rgba(var(--primary-rgb), 0.08)",
-            padding: "16px"
-          }}>
+                </LayerTheme>
+                <LayerTheme radius="var(--radius-sm)" padding="16px">
                   <p style={{
               margin: 0,
               color: "var(--text-1)",
@@ -145,13 +118,8 @@ export default function InvoiceDetailPageUi(props) {
                 color: "var(--primary-selected)"
               })
             }}>{invoice.payment_status || "Draft"}</span>
-                </div>
-                <div style={{
-            background: "var(--surface)",
-            borderRadius: "var(--control-radius)",
-            border: "1px solid rgba(var(--primary-rgb), 0.08)",
-            padding: "16px"
-          }}>
+                </LayerTheme>
+                <LayerTheme radius="var(--radius-sm)" padding="16px">
                   <p style={{
               margin: 0,
               color: "var(--text-1)",
@@ -164,13 +132,8 @@ export default function InvoiceDetailPageUi(props) {
               marginTop: "10px",
               color: "var(--text-1)"
             }}>{getDueDateDisplayValue(invoice)}</strong>
-                </div>
-                <div style={{
-            background: "var(--surface)",
-            borderRadius: "var(--control-radius)",
-            border: "1px solid rgba(var(--primary-rgb), 0.08)",
-            padding: "16px"
-          }}>
+                </LayerTheme>
+                <LayerTheme radius="var(--radius-sm)" padding="16px">
                   <p style={{
               margin: 0,
               color: "var(--text-1)",
@@ -183,13 +146,8 @@ export default function InvoiceDetailPageUi(props) {
               marginTop: "10px",
               color: "var(--text-1)"
             }}>{getAccountDisplayValue(invoice)}</strong>
-                </div>
-                <div style={{
-            background: "var(--surface)",
-            borderRadius: "var(--control-radius)",
-            border: "1px solid rgba(var(--primary-rgb), 0.08)",
-            padding: "16px"
-          }}>
+                </LayerTheme>
+                <LayerTheme radius="var(--radius-sm)" padding="16px">
                   <p style={{
               margin: 0,
               color: "var(--text-1)",
@@ -202,13 +160,8 @@ export default function InvoiceDetailPageUi(props) {
               marginTop: "10px",
               color: "var(--text-1)"
             }}>{getCustomerDisplayValue(invoice)}</strong>
-                </div>
-                <div style={{
-            background: "var(--surface)",
-            borderRadius: "var(--control-radius)",
-            border: "1px solid rgba(var(--primary-rgb), 0.08)",
-            padding: "16px"
-          }}>
+                </LayerTheme>
+                <LayerTheme radius="var(--radius-sm)" padding="16px">
                   <p style={{
               margin: 0,
               color: "var(--text-1)",
@@ -221,15 +174,9 @@ export default function InvoiceDetailPageUi(props) {
               marginTop: "10px",
               color: "var(--text-1)"
             }}>{invoice.job_number || "—"}</strong>
-                </div>
-              </section>
-              <section className="app-section-card" style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          background: "var(--theme)",
-          border: "1px solid rgba(var(--primary-rgb), 0.16)"
-        }}>
+                </LayerTheme>
+              </LayerSurface>
+              <LayerSurface as="section" gap="8px">
                 <h2 style={{
             margin: 0,
             color: "var(--text-1)",
@@ -238,13 +185,10 @@ export default function InvoiceDetailPageUi(props) {
                 {payments.length === 0 && <p style={{
             color: "var(--text-1)"
           }}>No payments recorded.</p>}
-                {payments.map(payment => <div key={payment.payment_id} style={{
+                {payments.map(payment => <LayerTheme key={payment.payment_id} radius="var(--radius-sm)" padding="12px 14px" gap="0" style={{
             display: "flex",
-            justifyContent: "space-between",
-            padding: "12px 14px",
-            borderRadius: "var(--control-radius)",
-            border: "1px solid rgba(var(--primary-rgb), 0.08)",
-            background: "var(--surface)"
+            flexDirection: "row",
+            justifyContent: "space-between"
           }}>
                     <div>
                       <strong style={{
@@ -268,37 +212,23 @@ export default function InvoiceDetailPageUi(props) {
                 color: "var(--text-1)"
               }}>{payment.reference || "Manual"}</p>
                     </div>
-                  </div>)}
-              </section>
-              <section className="app-section-card" style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          background: "var(--theme)",
-          border: "1px solid rgba(var(--primary-rgb), 0.16)"
-        }}>
+                  </LayerTheme>)}
+              </LayerSurface>
+              <LayerSurface as="section" gap="8px">
                 <h2 style={{
             margin: 0,
             color: "var(--text-1)",
             fontSize: "1.25rem"
           }}>Linked Job Card</h2>
-                {job ? <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "4px",
-            background: "var(--surface)",
-            borderRadius: "var(--control-radius)",
-            border: "1px solid rgba(var(--primary-rgb), 0.08)",
-            padding: "4px 16px"
-          }}>
+                {job ? <LayerTheme radius="var(--radius-sm)" padding="4px 16px" gap="4px">
                     {infoRow("Job Number", job.job_number)}
                     {infoRow("Status", job.status)}
                     {infoRow("Vehicle", job.vehicle || job.reg)}
                     {infoRow("Advisor", job.advisor || job.service_advisor)}
-                  </div> : <p style={{
+                  </LayerTheme> : <p style={{
             color: "var(--text-1)"
           }}>No job card linked.</p>}
-              </section>
+              </LayerSurface>
             </>}
           {!loading && !invoice && <p style={{
         color: "var(--danger)"

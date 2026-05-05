@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/company-accounts/company-accounts-ui.js
+import LayerSurface from "@/components/ui/LayerSurface";
 
 export default function CompanyAccountsIndexPageUi(props) {
   const {
@@ -36,7 +37,7 @@ export default function CompanyAccountsIndexPageUi(props) {
         flexDirection: "column",
         gap: "20px"
       }}>
-          <DevLayoutSection sectionKey="company-accounts-page-header" sectionType="content-card" parentKey="company-accounts-page-shell">
+          <LayerSurface sectionKey="company-accounts-page-header" sectionType="content-card" parentKey="company-accounts-page-shell">
             <div>
             <h1 style={{
               margin: 0
@@ -46,7 +47,7 @@ export default function CompanyAccountsIndexPageUi(props) {
               color: "var(--text-1)"
             }}>Central directory of partner businesses linked to accounts.</p>
             </div>
-          </DevLayoutSection>
+          </LayerSurface>
           <DevLayoutSection sectionKey="company-accounts-tab-row" sectionType="tab-row" parentKey="company-accounts-page-shell">
             <div className="app-layout-tab-row" style={{
             display: "flex",
@@ -111,10 +112,13 @@ export default function CompanyAccountsIndexPageUi(props) {
           </div>
         </DevLayoutSection>
         <style jsx>{`
-          .company-accounts-row:hover,
-          .company-accounts-row:focus-visible {
+          .company-accounts-row:hover .company-accounts-row-surface,
+          .company-accounts-row:focus-visible .company-accounts-row-surface {
             background: rgba(var(--primary-rgb), 0.1) !important;
             box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.16);
+          }
+
+          .company-accounts-row:focus-visible {
             outline: none;
           }
 

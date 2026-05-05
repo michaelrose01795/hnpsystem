@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/company-accounts/company-accounts-account-number-ui.js
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function CompanyAccountDetailPageUi(props) {
   const {
@@ -55,15 +56,7 @@ export default function CompanyAccountDetailPageUi(props) {
       }}>{error}</p> : !account ? <p>Company account not found.</p> : mode === "edit" ? <CompanyAccountForm initialValues={account} isSubmitting={saving} onSubmit={async values => {
         await handleUpdate(values);
         fetchAccount();
-      }} onCancel={() => setMode("view")} /> : <div style={{
-        padding: "24px",
-        borderRadius: "var(--radius-md)",
-        border: "none",
-        background: "var(--surface)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "20px"
-      }}>
+      }} onCancel={() => setMode("view")} /> : <LayerSurface as="div" padding="24px" gap="20px">
               {/* Header Section */}
               <div style={{
           display: "flex",
@@ -96,7 +89,7 @@ export default function CompanyAccountDetailPageUi(props) {
                 </div>
               </div>
 
-              {/* Tabs Navigation */}
+              {/* Tabs Navigation — separator border kept on a non-surface tab strip */}
               <div style={{
           display: "flex",
           gap: "8px",
@@ -137,7 +130,7 @@ export default function CompanyAccountDetailPageUi(props) {
           minHeight: "200px"
         }}>{renderTabContent()}</div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons — separator border kept on the toolbar strip (non-surface) */}
               <div style={{
           display: "flex",
           gap: "10px",
@@ -188,7 +181,7 @@ export default function CompanyAccountDetailPageUi(props) {
                     </button>
                   </>}
               </div>
-            </div>}
+            </LayerSurface>}
         </div>
       <ConfirmationDialog isOpen={!!confirmDialog} message={confirmDialog?.message} cancelLabel="Cancel" confirmLabel="Delete" onCancel={() => setConfirmDialog(null)} onConfirm={confirmDialog?.onConfirm} />
       </>

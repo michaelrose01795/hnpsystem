@@ -9,6 +9,8 @@ import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import CompanyAccountsIndexPageUi from "@/components/page-ui/company-accounts/company-accounts-ui"; // Extracted presentation layer.
 
@@ -162,14 +164,13 @@ export default function CompanyAccountsIndexPage() {
   );
 
   const renderLedgerTab = () =>
-  <DevLayoutSection
+  <LayerSurface
     as="section"
     sectionKey="company-accounts-ledger-panel"
     sectionType="content-card"
     parentKey="company-accounts-page-shell"
-    className="app-section-card"
-    style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-    
+    gap="16px">
+
       <DevLayoutSection sectionKey="company-accounts-ledger-toolbar" sectionType="filter-row" parentKey="company-accounts-ledger-panel">
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
           <SearchBar
@@ -180,7 +181,7 @@ export default function CompanyAccountsIndexPage() {
           style={{
             flex: "1 1 260px"
           }} />
-        
+
         </div>
       </DevLayoutSection>
       {ledgerFeedback && !ledgerAccounts.length && !ledgerLoading &&
@@ -195,9 +196,9 @@ export default function CompanyAccountsIndexPage() {
         sortState={ledgerSortState}
         onSortChange={setLedgerSortState}
         onSelectAccount={handleLedgerAccountSelect} />
-      
+
       </DevLayoutSection>
-    </DevLayoutSection>;
+    </LayerSurface>;
 
 
   const renderList = () => {
@@ -206,51 +207,61 @@ export default function CompanyAccountsIndexPage() {
       // rows inside the same section-card container) so the first visible frame
       // already matches the final structure.
       return (
-        <DevLayoutSection sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
+        <LayerSurface sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
           <div
             style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             role="status"
             aria-live="polite"
             aria-label="Loading company accounts">
-            
+
             <SkeletonKeyframes />
             {Array.from({ length: 5 }).map((_, i) =>
             <SkeletonBlock key={i} width="100%" height="54px" borderRadius="var(--radius-md,12px)" />
             )}
           </div>
-        </DevLayoutSection>);
+        </LayerSurface>);
 
     }
     if (!accounts.length) {
       return <p>{feedback || "No company accounts to display."}</p>;
     }
+    // Each clickable card uses the wrapper-button pattern: outer <button> hosts the click
+    // handler / accessibility, inner <LayerTheme> paints the surface.
     return (
-      <DevLayoutSection sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
+      <LayerSurface sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {accounts.map((account) =>
-          <DevLayoutSection
+          <button
             key={account.account_number}
-            as="button"
-            sectionKey={`company-accounts-company-card-${String(account.account_number || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-            sectionType="content-card"
-            parentKey="company-accounts-company-list"
             type="button"
             className="company-accounts-row"
             onClick={() => router.push(`/company-accounts/${account.account_number}`)}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "16px 18px",
-              borderRadius: "var(--radius-md)",
               border: "none",
-              background: "var(--surface)",
+              background: "transparent",
+              padding: 0,
+              margin: 0,
               textAlign: "left",
               width: "100%",
-              boxShadow: "none",
-              transition: "background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease"
+              cursor: "pointer"
             }}>
-            
+
+            <LayerTheme
+              className="company-accounts-row-surface"
+              sectionKey={`company-accounts-company-card-${String(account.account_number || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+              sectionType="content-card"
+              parentKey="company-accounts-company-list"
+              radius="var(--radius-md)"
+              padding="16px 18px"
+              gap="0"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "row",
+                gap: "12px",
+                transition: "background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease"
+              }}>
+
             <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "12px", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", flex: "1 1 260px", minWidth: 0 }}>
                 <p style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "var(--text-1)", whiteSpace: "nowrap" }}>
@@ -293,10 +304,11 @@ export default function CompanyAccountsIndexPage() {
                 }
               </div>
             </div>
-          </DevLayoutSection>
+            </LayerTheme>
+          </button>
           )}
         </div>
-      </DevLayoutSection>);
+      </LayerSurface>);
 
   };
 

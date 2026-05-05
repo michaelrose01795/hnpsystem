@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { REPORT_PERIODS } from "@/config/accounts";
 import { exportToCsv } from "@/utils/exportUtils";
 import AccountsReportsPageUi from "@/components/page-ui/accounts/reports/accounts-reports-ui"; // Extracted presentation layer.
@@ -18,14 +19,11 @@ const metricsGridStyle = {
 };
 
 const metricSurfaceStyle = {
-  flex: "1 1 220px",
-  background: "var(--surface)"
+  flex: "1 1 220px"
 };
 
 const metricsShellStyle = {
-  gap: "16px",
-  background: "var(--theme)",
-  border: "1px solid rgba(var(--primary-rgb), 0.2)"
+  gap: "16px"
 };
 
 export default function AccountsReportsPage() {
@@ -59,20 +57,19 @@ export default function AccountsReportsPage() {
 
   const current = reportData[activePeriod] || {};
 
+  // Each metric card is nested inside the metrics shell (LayerSurface) → so each card is a LayerTheme.
   const metricCard = (key, label, value, accent = "var(--primary)") =>
-  <DevLayoutSection
+  <LayerTheme
     key={key}
-    as="div"
     sectionKey={key}
     sectionType="stat-card"
     parentKey="accounts-reports-metrics-shell"
-    backgroundToken="surface"
-    className="app-section-card"
+    radius="var(--radius-sm)"
     style={metricSurfaceStyle}>
-    
+
       <p style={{ margin: 0, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.8rem" }}>{label}</p>
       <strong style={{ display: "block", marginTop: "10px", fontSize: "1.8rem", color: accent }}>{value}</strong>
-    </DevLayoutSection>;
+    </LayerTheme>;
 
 
   const handleExport = () => {

@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/accounts/accounts-create-ui.js
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 export default function CreateAccountRouteShimUi(props) {
   const {
@@ -10,13 +12,13 @@ export default function CreateAccountRouteShimUi(props) {
     case "section1":
       return <ProtectedRoute allowedRoles={CREATE_ROLES}>
       <div className="app-page-shell">
-        <div className="app-page-card">
+        <LayerSurface>
           <div className="app-page-stack">
-            <section className="app-section-card">
+            <LayerTheme as="section">
               Opening account form…
-            </section>
+            </LayerTheme>
           </div>
-        </div>
+        </LayerSurface>
       </div>
     </ProtectedRoute>; // render extracted page section.
     default:
