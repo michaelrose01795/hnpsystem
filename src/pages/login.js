@@ -14,6 +14,7 @@ import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
 import { buildRosterPayload, EMPTY_ROSTER_PAYLOAD } from "@/lib/users/rosterPayload";
 import Button from "@/components/ui/Button";
+import LayerSurface from "@/components/ui/LayerSurface";
 import LoginPageUi from "@/components/page-ui/login-ui"; // Extracted presentation layer.
 
 const FIELD_MAX_WIDTH = 380;
@@ -75,13 +76,11 @@ const LoginCard = ({
   className={["login-card", className].filter(Boolean).join(" ")}
   style={{ width: "100%", display: "flex", justifyContent: "center" }}>
   
-    <div
+    <LayerSurface
+    radius="var(--radius-xl)"
+    padding="2.25rem"
     style={{
-      borderRadius: "var(--radius-xl)",
-      border: "1px solid rgba(15, 23, 42, 0.08)",
-      background: "var(--surface)",
       boxShadow: "var(--shadow-xl)",
-      padding: "2.25rem",
       width: "100%",
       maxWidth: contentMaxWidth + 72
     }}>
@@ -123,7 +122,7 @@ const LoginCard = ({
       
         {children}
       </div>
-    </div>
+    </LayerSurface>
   </div>;
 
 

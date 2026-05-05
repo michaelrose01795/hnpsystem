@@ -10,6 +10,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import LayerSurface from "@/components/ui/LayerSurface";
 
 const MIN_PASSWORD_LENGTH = 12;
 
@@ -96,15 +97,13 @@ export default function PasswordResetNewPage() {
           boxSizing: "border-box",
         }}
       >
-        <section
+        <LayerSurface
+          as="section"
+          radius="var(--radius-md, 12px)"
+          padding="24px"
           style={{
             width: "100%",
             maxWidth: 480,
-            background: "var(--page-card-bg)",
-            border: "1px solid var(--primary-border)",
-            borderTop: "4px solid var(--primary)",
-            borderRadius: "var(--radius-md, 12px)",
-            padding: 24,
             boxShadow: "var(--shadow-xl, 0 24px 48px rgba(0,0,0,0.18))",
             boxSizing: "border-box",
           }}
@@ -262,7 +261,7 @@ export default function PasswordResetNewPage() {
               </button>
             </form>
           )}
-        </section>
+        </LayerSurface>
       </main>
     </>
   );

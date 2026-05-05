@@ -9,6 +9,7 @@ import Head from "next/head";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Section from "@/components/Section";
+import LayerSurface from "@/components/ui/LayerSurface";
 import Button from "@/components/ui/Button";
 
 const PASSWORD_MIN_LENGTH = 12;
@@ -233,7 +234,7 @@ function RecentActivity() {
 
 export function SecurityPanel() {
   return (
-    <div className="app-page-card" style={{ padding: "8px 8px 32px" }}>
+    <LayerSurface style={{ padding: "8px 8px 32px" }}>
       <div className="app-page-stack">
         <Section title="Change Password">
           <PasswordChangeForm />
@@ -242,7 +243,7 @@ export function SecurityPanel() {
           <RecentActivity />
         </Section>
       </div>
-    </div>
+    </LayerSurface>
   );
 }
 

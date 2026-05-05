@@ -10,6 +10,8 @@ import {
   getUiKeys,
 } from "@/features/presentation/uiRegistry";
 import { useTheme } from "@/styles/themeProvider";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 // Renders a single page-ui standalone with demo data.
 // URL: /dev/ui/<uiKey>
@@ -32,12 +34,12 @@ export default function DevUiPreviewPage() {
   if (!canShowDevPages()) {
     return (
       <div className="app-page-shell">
-        <div className="app-page-card">
-          <div className="app-section-card">
+        <LayerSurface>
+          <LayerTheme>
             <h1 style={{ marginTop: 0 }}>Dev pages disabled</h1>
             <p>Set <code>devToolsConfig.showPages = true</code> to enable.</p>
-          </div>
-        </div>
+          </LayerTheme>
+        </LayerSurface>
       </div>
     );
   }
@@ -50,8 +52,8 @@ export default function DevUiPreviewPage() {
     const knownKeys = getUiKeys();
     return (
       <div className="app-page-shell">
-        <div className="app-page-card">
-          <div className="app-section-card">
+        <LayerSurface>
+          <LayerTheme>
             <h1 style={{ marginTop: 0 }}>Unknown UI key: {uiKey}</h1>
             <p>
               No mock is registered for <code>{uiKey}</code>. Register one in
@@ -67,8 +69,8 @@ export default function DevUiPreviewPage() {
                 ))}
               </ul>
             </details>
-          </div>
-        </div>
+          </LayerTheme>
+        </LayerSurface>
       </div>
     );
   }
