@@ -1,7 +1,7 @@
 // file location: src/pages/customers/[customerSlug].js
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";import LayerSurface from "@/components/ui/LayerSurface";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { isInactiveJobStatus } from "@/lib/status/statusHelpers";
@@ -28,8 +28,8 @@ import {
   fetchMessageDirectory,
   fetchMessageThreads,
   fetchThreadMessages,
-  sendThreadMessage
-} from "@/lib/api/messages";
+  sendThreadMessage } from
+"@/lib/api/messages";
 import { createJobNote } from "@/lib/database/notes";
 import CustomerDetailWorkspaceUi from "@/components/page-ui/customers/customers-customer-slug-ui"; // Extracted presentation layer.
 
@@ -164,16 +164,16 @@ const formatDateTime = (value) => {
 };
 
 const formatCurrency = (value) =>
-  new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Number(value || 0));
+new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Number(value || 0));
 
 const buildAddressDisplay = (address, postcode) => {
   const rawAddress = String(address || "").trim();
   const rawPostcode = String(postcode || "").trim();
   if (!rawAddress) return rawPostcode;
   if (!rawPostcode) return rawAddress;
-  return rawAddress.toLowerCase().includes(rawPostcode.toLowerCase())
-    ? rawAddress
-    : `${rawAddress}, ${rawPostcode}`;
+  return rawAddress.toLowerCase().includes(rawPostcode.toLowerCase()) ?
+  rawAddress :
+  `${rawAddress}, ${rawPostcode}`;
 };
 
 const buildMapLink = (address) => {
@@ -182,24 +182,24 @@ const buildMapLink = (address) => {
   const encoded = encodeURIComponent(query);
   return {
     href: `https://www.google.com/maps/search/?api=1&query=${encoded}`,
-    nativeHref: `geo:0,0?q=${encoded}`,
+    nativeHref: `geo:0,0?q=${encoded}`
   };
 };
 
-const ContactPreferenceToggle = ({ label, checked, disabled, onChange }) => (
-  <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: disabled ? "not-allowed" : "pointer" }}>
+const ContactPreferenceToggle = ({ label, checked, disabled, onChange }) =>
+<label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: disabled ? "not-allowed" : "pointer" }}>
     <input
-      type="checkbox"
-      checked={Boolean(checked)}
-      disabled={disabled}
-      onChange={(event) => onChange?.(event.target.checked)}
-      style={{ width: "16px", height: "16px", accentColor: "var(--primary)" }}
-    />
+    type="checkbox"
+    checked={Boolean(checked)}
+    disabled={disabled}
+    onChange={(event) => onChange?.(event.target.checked)}
+    style={{ width: "16px", height: "16px", accentColor: "var(--primary)" }} />
+
     <span style={{ fontSize: "13px", color: disabled ? "var(--text-1)" : "var(--text-1)", fontWeight: 600 }}>
       {label}
     </span>
-  </label>
-);
+  </label>;
+
 
 const parseRequests = (raw) => {
   if (!raw) return [];
@@ -332,15 +332,15 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
   };
 
   return (
-    <section
-      className="app-section-card"
-      data-dev-section="1"
-      data-dev-section-key="customer-profile-insights-vehicles"
-      data-dev-section-type="section-shell"
-      data-dev-section-parent="customer-profile-tab-insights"
-      data-dev-background-token="surface"
-      style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "16px" }}
-    >
+    <LayerSurface as="section"
+
+    data-dev-section="1"
+    data-dev-section-key="customer-profile-insights-vehicles"
+    data-dev-section-type="section-shell"
+    data-dev-section-parent="customer-profile-tab-insights"
+    data-dev-background-token="surface"
+    style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "16px" }}>
+
       {/* Add Vehicle controls */}
       {!showForm ?
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -351,28 +351,28 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
           style={{
             cursor: "pointer"
           }}>
-          
+
             Add Vehicle
           </button>
         </div> :
 
-      <div
-        className="app-section-card"
-        data-dev-section="1"
-        data-dev-section-key="customer-profile-insights-vehicle-add-form"
-        data-dev-section-type="content-card"
-        data-dev-section-parent="customer-profile-insights-vehicles"
-        data-dev-background-token="accent-surface"
-        style={{
-          borderRadius: "var(--radius-md)",
-          border: "none",
-          background: "var(--theme)",
-          padding: "20px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "14px"
-        }}>
-        
+      <LayerSurface as="div"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-insights-vehicle-add-form"
+      data-dev-section-type="content-card"
+      data-dev-section-parent="customer-profile-insights-vehicles"
+      data-dev-background-token="accent-surface"
+      style={{
+
+
+
+        padding: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "14px"
+      }}>
+
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <input
             className="app-input"
@@ -387,7 +387,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
               textTransform: "uppercase",
               width: "180px"
             }} />
-          
+
             <button
             type="button"
             className="app-btn app-btn--secondary app-btn--sm"
@@ -396,7 +396,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
             style={{
               cursor: looking || saving || !newReg.trim() ? "not-allowed" : "pointer"
             }}>
-            
+
               {looking ? "Looking up..." : "Lookup"}
             </button>
             <button
@@ -407,7 +407,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
             style={{
               cursor: "pointer"
             }}>
-            
+
               Cancel
             </button>
           </div>
@@ -418,18 +418,18 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
 
           {/* DVLA preview */}
           {dvlaData &&
-        <div
-          className="app-section-card"
-          style={{
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            background: "var(--surface)",
-            padding: "16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px"
-          }}>
-          
+        <LayerSurface as="div"
+
+        style={{
+
+
+
+          padding: "16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px"
+        }}>
+
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 <span style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--info-dark)", letterSpacing: "0.5px" }}>
                   {newReg.trim().toUpperCase()}
@@ -447,7 +447,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
                 <div><span style={previewLabelStyle}>Tax Status</span><div style={previewValueStyle}>{dvlaData.taxStatus || "—"}</div></div>
                 <div><span style={previewLabelStyle}>Engine</span><div style={previewValueStyle}>{dvlaData.engineCapacity ? `${dvlaData.engineCapacity} cc` : "—"}</div></div>
               </div>
-            </div>
+            </LayerSurface>
         }
 
           {/* Save / Save without DVLA */}
@@ -461,7 +461,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
             style={{
               cursor: saving || !newReg.trim() ? "not-allowed" : "pointer"
             }}>
-            
+
                 {saving ? "Saving..." : dvlaData ? "Save Vehicle" : "Save Without Lookup"}
               </button>
               {formMessage && dvlaData &&
@@ -469,37 +469,37 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
           }
             </div>
         }
-        </div>
+        </LayerSurface>
       }
 
       {!vehicles.length ?
-      <div
-        className="app-section-card"
-        data-dev-section="1"
-        data-dev-section-key="customer-profile-insights-vehicles-empty"
-        data-dev-section-type="empty-state"
-        data-dev-section-parent="customer-profile-insights-vehicles"
-        data-dev-background-token="transparent"
-        style={{
-          border: "1px dashed var(--surface)",
-          borderRadius: "var(--radius-md)",
-          padding: "24px",
-          background: "var(--theme)",
-          textAlign: "center",
-          color: "var(--grey-accent)"
-        }}>
-        
-          No vehicles linked to this customer yet.
-        </div> :
+      <LayerSurface as="div"
 
-      <div
-        className="app-section-card"
-        style={{
-          display: "grid",
-          gap: "16px",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))"
-        }}>
-        
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-insights-vehicles-empty"
+      data-dev-section-type="empty-state"
+      data-dev-section-parent="customer-profile-insights-vehicles"
+      data-dev-background-token="transparent"
+      style={{
+
+
+        padding: "24px",
+
+        textAlign: "center",
+        color: "var(--grey-accent)"
+      }}>
+
+          No vehicles linked to this customer yet.
+        </LayerSurface> :
+
+      <LayerSurface as="div"
+
+      style={{
+        display: "grid",
+        gap: "16px",
+        gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))"
+      }}>
+
           {vehicles.map((vehicle) => {
           const registration = getVehicleRegistration(vehicle, "Unregistered");
           const makeModel =
@@ -508,24 +508,24 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
           "Vehicle";
 
           return (
-            <div
-              key={vehicle.vehicle_id}
-              className="app-section-card"
-              data-dev-section="1"
-              data-dev-section-key={`customer-profile-insights-vehicle-${vehicle.vehicle_id}`}
-              data-dev-section-type="content-card"
-              data-dev-section-parent="customer-profile-insights-vehicles"
-              data-dev-background-token="accent-surface"
-              style={{
-                borderRadius: "var(--radius-lg)",
-                border: "none",
-                background: "var(--theme)",
-                padding: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px"
-              }}>
-              
+            <LayerSurface as="div"
+            key={vehicle.vehicle_id}
+
+            data-dev-section="1"
+            data-dev-section-key={`customer-profile-insights-vehicle-${vehicle.vehicle_id}`}
+            data-dev-section-type="content-card"
+            data-dev-section-parent="customer-profile-insights-vehicles"
+            data-dev-background-token="accent-surface"
+            style={{
+
+
+
+              padding: "20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px"
+            }}>
+
                 <div>
                   <p
                   style={{
@@ -535,7 +535,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
                     color: "var(--grey-accent)",
                     marginBottom: "4px"
                   }}>
-                  
+
                     Registration
                   </p>
                   <p
@@ -545,7 +545,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
                     fontWeight: 700,
                     color: "var(--info-dark)"
                   }}>
-                  
+
                     {registration}
                   </p>
                 </div>
@@ -565,23 +565,23 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
                   gap: "12px",
                   gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))"
                 }}>
-                
+
                   <VehicleField label="Colour" value={vehicle.colour} />
                   <VehicleField label="VIN" value={vehicle.vin || vehicle.chassis} />
                   <VehicleField
                   label="Mileage"
                   value={vehicle.mileage ? `${vehicle.mileage} miles` : null} />
-                
+
                   <VehicleField label="Fuel" value={vehicle.fuel_type} />
                   <VehicleField label="Transmission" value={vehicle.transmission} />
                   <VehicleField label="MOT due" value={formatDate(vehicle.mot_due)} />
                 </div>
-              </div>);
+              </LayerSurface>);
 
         })}
-        </div>
+        </LayerSurface>
       }
-    </section>);
+    </LayerSurface>);
 
 };
 
@@ -594,7 +594,7 @@ const VehicleField = ({ label, value }) =>
       letterSpacing: "0.2em",
       color: "var(--grey-accent)"
     }}>
-    
+
       {label}
     </span>
     <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{value || "—"}</span>
@@ -603,179 +603,179 @@ const VehicleField = ({ label, value }) =>
 
 const CustomerDocumentsSection = ({ jobs }) => {
   const files = jobs.flatMap((job) =>
-    (job.job_files || []).map((file) => ({ ...file, jobNumber: job.job_number }))
+  (job.job_files || []).map((file) => ({ ...file, jobNumber: job.job_number }))
   );
 
   return (
-    <section
-      className="app-section-card"
-      data-dev-section="1"
-      data-dev-section-key="customer-profile-insights-documents"
-      data-dev-section-type="content-card"
-      data-dev-section-parent="customer-profile-tab-insights"
-      data-dev-background-token="surface"
-      style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}
-    >
+    <LayerSurface as="section"
+
+    data-dev-section="1"
+    data-dev-section-key="customer-profile-insights-documents"
+    data-dev-section-type="content-card"
+    data-dev-section-parent="customer-profile-tab-insights"
+    data-dev-background-token="surface"
+    style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}>
+
       <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Documents, photos and videos</h3>
-      {!files.length ? (
-        <div
-          className="app-section-card"
-          data-dev-section="1"
-          data-dev-section-key="customer-profile-insights-documents-empty"
-          data-dev-section-type="empty-state"
-          data-dev-section-parent="customer-profile-insights-documents"
-          data-dev-background-token="accent-surface"
-          style={{ borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "18px", color: "var(--text-1)" }}
-        >
+      {!files.length ?
+      <LayerSurface as="div"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-insights-documents-empty"
+      data-dev-section-type="empty-state"
+      data-dev-section-parent="customer-profile-insights-documents"
+      data-dev-background-token="accent-surface"
+      style={{ padding: "18px", color: "var(--text-1)" }}>
+
           No uploaded files across this customer's jobs yet.
-        </div>
-      ) : (
-        <div
-          data-dev-section="1"
-          data-dev-section-key="customer-profile-insights-documents-grid"
-          data-dev-section-type="section-shell"
-          data-dev-section-parent="customer-profile-insights-documents"
-          data-dev-background-token="transparent"
-          style={{ display: "grid", gridAutoFlow: "column", gridAutoColumns: "minmax(220px, 260px)", gap: "12px", overflowX: "auto", paddingBottom: "4px" }}
-        >
+        </LayerSurface> :
+
+      <div
+        data-dev-section="1"
+        data-dev-section-key="customer-profile-insights-documents-grid"
+        data-dev-section-type="section-shell"
+        data-dev-section-parent="customer-profile-insights-documents"
+        data-dev-background-token="transparent"
+        style={{ display: "grid", gridAutoFlow: "column", gridAutoColumns: "minmax(220px, 260px)", gap: "12px", overflowX: "auto", paddingBottom: "4px" }}>
+
           {files.map((file) => {
-            const type = String(file.file_type || "").toLowerCase();
-            const isImage = type.startsWith("image/");
-            const isVideo = type.startsWith("video/");
-            return (
-              <a
-                className="app-section-card"
-                key={`${file.jobNumber}-${file.file_id}`}
-                href={file.file_url}
-                target="_blank"
-                rel="noreferrer"
-                data-dev-section="1"
-                data-dev-section-key={`customer-profile-insights-document-${file.file_id}`}
-                data-dev-section-type="content-card"
-                data-dev-section-parent="customer-profile-insights-documents-grid"
-                data-dev-background-token="accent-surface"
-                style={{ borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "12px", minHeight: "160px", textDecoration: "none", color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "10px" }}
-              >
+          const type = String(file.file_type || "").toLowerCase();
+          const isImage = type.startsWith("image/");
+          const isVideo = type.startsWith("video/");
+          return (
+            <LayerSurface as="a"
+
+            key={`${file.jobNumber}-${file.file_id}`}
+            href={file.file_url}
+            target="_blank"
+            rel="noreferrer"
+            data-dev-section="1"
+            data-dev-section-key={`customer-profile-insights-document-${file.file_id}`}
+            data-dev-section-type="content-card"
+            data-dev-section-parent="customer-profile-insights-documents-grid"
+            data-dev-background-token="accent-surface"
+            style={{ padding: "12px", minHeight: "160px", textDecoration: "none", color: "var(--text-1)", display: "flex", flexDirection: "column", gap: "10px" }}>
+
                 <div style={{ height: "86px", borderRadius: "var(--radius-sm)", background: "var(--surface)", overflow: "hidden", display: "grid", placeItems: "center" }}>
-                  {isImage ? (
-                    <img src={file.file_url} alt={file.file_name || "Uploaded file"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : isVideo ? (
-                    <video src={file.file_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted />
-                  ) : (
-                    <span style={{ color: "var(--text-1)", fontWeight: 700 }}>File</span>
-                  )}
+                  {isImage ?
+                <img src={file.file_url} alt={file.file_name || "Uploaded file"} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> :
+                isVideo ?
+                <video src={file.file_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted /> :
+
+                <span style={{ color: "var(--text-1)", fontWeight: 700 }}>File</span>
+                }
                 </div>
                 <strong style={{ fontSize: "13px", overflowWrap: "anywhere" }}>{file.file_name || "Uploaded file"}</strong>
                 <span style={{ fontSize: "12px", color: "var(--text-1)" }}>Job {file.jobNumber} · {formatDate(file.uploaded_at)}</span>
-              </a>
-            );
-          })}
+              </LayerSurface>);
+
+        })}
         </div>
-      )}
-    </section>
-  );
+      }
+    </LayerSurface>);
+
 };
 
 const CustomerScheduleSection = ({ jobs }) => {
   const appointments = jobs.flatMap((job) =>
-    (job.appointments || []).map((appointment) => ({
-      ...appointment,
-      jobNumber: job.job_number,
-      vehicle: job.vehicle_reg || job.vehicle_make_model || "Vehicle not set"
-    }))
+  (job.appointments || []).map((appointment) => ({
+    ...appointment,
+    jobNumber: job.job_number,
+    vehicle: job.vehicle_reg || job.vehicle_make_model || "Vehicle not set"
+  }))
   ).sort((a, b) => new Date(b.scheduled_time || 0) - new Date(a.scheduled_time || 0));
 
   return (
-    <section
-      className="app-section-card"
-      data-dev-section="1"
-      data-dev-section-key="customer-profile-insights-schedule"
-      data-dev-section-type="content-card"
-      data-dev-section-parent="customer-profile-tab-insights"
-      data-dev-background-token="surface"
-      style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}
-    >
+    <LayerSurface as="section"
+
+    data-dev-section="1"
+    data-dev-section-key="customer-profile-insights-schedule"
+    data-dev-section-type="content-card"
+    data-dev-section-parent="customer-profile-tab-insights"
+    data-dev-background-token="surface"
+    style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}>
+
       <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Schedule</h3>
-      {!appointments.length ? (
-        <div
-          className="app-section-card"
-          data-dev-section="1"
-          data-dev-section-key="customer-profile-insights-schedule-empty"
-          data-dev-section-type="empty-state"
-          data-dev-section-parent="customer-profile-insights-schedule"
-          data-dev-background-token="accent-surface"
-          style={{ borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "18px", color: "var(--text-1)" }}
-        >
+      {!appointments.length ?
+      <LayerSurface as="div"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-insights-schedule-empty"
+      data-dev-section-type="empty-state"
+      data-dev-section-parent="customer-profile-insights-schedule"
+      data-dev-background-token="accent-surface"
+      style={{ padding: "18px", color: "var(--text-1)" }}>
+
           No appointments recorded for this customer.
-        </div>
-      ) : (
-        <div
-          data-dev-section="1"
-          data-dev-section-key="customer-profile-insights-schedule-list"
-          data-dev-section-type="section-shell"
-          data-dev-section-parent="customer-profile-insights-schedule"
-          data-dev-background-token="transparent"
-          style={{ display: "flex", flexDirection: "column", gap: "10px" }}
-        >
-          {appointments.map((appointment) => (
-            <div
-              key={appointment.appointment_id}
-              className="app-section-card"
-              data-dev-section="1"
-              data-dev-section-key={`customer-profile-insights-appointment-${appointment.appointment_id}`}
-              data-dev-section-type="content-card"
-              data-dev-section-parent="customer-profile-insights-schedule-list"
-              data-dev-background-token="accent-surface"
-              style={{ borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "14px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}
-            >
+        </LayerSurface> :
+
+      <div
+        data-dev-section="1"
+        data-dev-section-key="customer-profile-insights-schedule-list"
+        data-dev-section-type="section-shell"
+        data-dev-section-parent="customer-profile-insights-schedule"
+        data-dev-background-token="transparent"
+        style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+
+          {appointments.map((appointment) =>
+        <LayerSurface as="div"
+        key={appointment.appointment_id}
+
+        data-dev-section="1"
+        data-dev-section-key={`customer-profile-insights-appointment-${appointment.appointment_id}`}
+        data-dev-section-type="content-card"
+        data-dev-section-parent="customer-profile-insights-schedule-list"
+        data-dev-background-token="accent-surface"
+        style={{ padding: "14px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
+
               <VehicleField label="When" value={formatDateTime(appointment.scheduled_time)} />
               <VehicleField label="Status" value={appointment.status || "Booked"} />
               <VehicleField label="Vehicle" value={appointment.vehicle} />
               <VehicleField label="Notes" value={appointment.notes} />
-            </div>
-          ))}
+            </LayerSurface>
+        )}
         </div>
-      )}
-    </section>
-  );
+      }
+    </LayerSurface>);
+
 };
 
-const InsightsTab = ({ vehicles, jobs, customerId, onVehicleAdded }) => (
-  <div
-    data-dev-section="1"
-    data-dev-section-key="customer-profile-insights-stack"
-    data-dev-section-type="section-shell"
-    data-dev-section-parent="customer-profile-tab-insights"
-    data-dev-background-token="transparent"
-    style={{ display: "flex", flexDirection: "column", gap: "22px" }}
-  >
+const InsightsTab = ({ vehicles, jobs, customerId, onVehicleAdded }) =>
+<div
+  data-dev-section="1"
+  data-dev-section-key="customer-profile-insights-stack"
+  data-dev-section-type="section-shell"
+  data-dev-section-parent="customer-profile-tab-insights"
+  data-dev-background-token="transparent"
+  style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
+
     <VehiclesSection vehicles={vehicles} customerId={customerId} onVehicleAdded={onVehicleAdded} />
     <CustomerDocumentsSection jobs={jobs} />
     <CustomerScheduleSection jobs={jobs} />
-  </div>
-);
+  </div>;
+
 
 const HistoryTab = ({ jobs }) => {
   if (!jobs.length) {
     return (
-      <div
-        className="app-section-card"
-        data-dev-section="1"
-        data-dev-section-key="customer-profile-history-empty"
-        data-dev-section-type="content-card"
-        data-dev-section-parent="customer-profile-tab-history"
-        data-dev-background-token="accent-surface"
-        style={{
-          border: "1px dashed var(--surface)",
-          borderRadius: "var(--radius-md)",
-          background: "var(--theme)",
-          padding: "24px",
-          textAlign: "center",
-          color: "var(--grey-accent)"
-        }}>
-        
+      <LayerSurface as="div"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-history-empty"
+      data-dev-section-type="content-card"
+      data-dev-section-parent="customer-profile-tab-history"
+      data-dev-background-token="accent-surface"
+      style={{
+
+
+
+        padding: "24px",
+        textAlign: "center",
+        color: "var(--grey-accent)"
+      }}>
+
         No job history recorded yet.
-      </div>);
+      </LayerSurface>);
 
   }
 
@@ -786,29 +786,29 @@ const HistoryTab = ({ jobs }) => {
       data-dev-section-type="section-shell"
       data-dev-section-parent="customer-profile-tab-history"
       data-dev-background-token="transparent"
-      style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-    >
+      style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+
       {jobs.map((job) => {
         const requestSummary = deriveRequestSummary(parseRequests(job.requests));
         return (
-          <div
-            key={job.id}
-            className="app-section-card"
-            data-dev-section="1"
-            data-dev-section-key={`customer-profile-history-job-${job.id}`}
-            data-dev-section-type="content-card"
-            data-dev-section-parent="customer-profile-history-list"
-            data-dev-background-token="surface"
-            style={{
-              borderRadius: "var(--radius-md)",
-              border: "none",
-              background: "var(--surface)",
-              padding: "20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px"
-            }}>
-            
+          <LayerSurface as="div"
+          key={job.id}
+
+          data-dev-section="1"
+          data-dev-section-key={`customer-profile-history-job-${job.id}`}
+          data-dev-section-type="content-card"
+          data-dev-section-parent="customer-profile-history-list"
+          data-dev-background-token="surface"
+          style={{
+
+
+
+            padding: "20px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px"
+          }}>
+
             <div
               style={{
                 display: "flex",
@@ -817,7 +817,7 @@ const HistoryTab = ({ jobs }) => {
                 justifyContent: "space-between",
                 gap: "12px"
               }}>
-              
+
               <div>
                 <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--grey-accent)" }}>
                   Job number
@@ -829,7 +829,7 @@ const HistoryTab = ({ jobs }) => {
                     fontSize: "1.25rem",
                     color: "var(--info-dark)"
                   }}>
-                  
+
                   {job.job_number}
                 </p>
               </div>
@@ -843,7 +843,7 @@ const HistoryTab = ({ jobs }) => {
                   fontWeight: 600,
                   textTransform: "capitalize"
                 }}>
-                
+
                 {job.status || "unknown"}
               </span>
             </div>
@@ -854,15 +854,15 @@ const HistoryTab = ({ jobs }) => {
                 gap: "12px",
                 gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))"
               }}>
-              
+
               <VehicleField
                 label="Vehicle"
                 value={job.vehicle_make_model || job.vehicle_reg} />
-              
+
               <VehicleField
                 label="Mileage"
                 value={pickMileageValue(job.mileage, job.milage) ? `${pickMileageValue(job.mileage, job.milage)} miles` : null} />
-              
+
               <VehicleField label="Created" value={formatDate(job.created_at)} />
               <VehicleField label="Updated" value={formatDate(job.updated_at)} />
               <VehicleField label="Source" value={job.job_source} />
@@ -880,7 +880,7 @@ const HistoryTab = ({ jobs }) => {
                 style={{
                   textDecoration: "none"
                 }}>
-                
+
                 View job card
               </Link>
               {job.vehicle_reg &&
@@ -891,12 +891,12 @@ const HistoryTab = ({ jobs }) => {
                   border: "1px solid var(--surface)",
                   color: "var(--text-1)"
                 }}>
-                
+
                   Reg: {job.vehicle_reg}
                 </span>
               }
             </div>
-          </div>);
+          </LayerSurface>);
 
       })}
     </div>);
@@ -905,10 +905,10 @@ const HistoryTab = ({ jobs }) => {
 
 const PaymentTab = ({ paymentMethods, jobs }) => {
   const invoices = jobs.flatMap((job) =>
-    (job.invoices || []).map((invoice) => ({ ...invoice, jobNumber: job.job_number }))
+  (job.invoices || []).map((invoice) => ({ ...invoice, jobNumber: job.job_number }))
   );
   const payments = invoices.flatMap((invoice) =>
-    (invoice.invoice_payments || []).map((payment) => ({ ...payment, invoice }))
+  (invoice.invoice_payments || []).map((payment) => ({ ...payment, invoice }))
   ).sort((a, b) => new Date(b.payment_date || b.created_at || 0) - new Date(a.payment_date || a.created_at || 0));
 
   return (
@@ -918,32 +918,32 @@ const PaymentTab = ({ paymentMethods, jobs }) => {
       data-dev-section-type="section-shell"
       data-dev-section-parent="customer-profile-tab-payment"
       data-dev-background-token="transparent"
-      style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}
-    >
-      <section
-        className="app-section-card"
-        data-dev-section="1"
-        data-dev-section-key="customer-profile-payment-methods"
-        data-dev-section-type="section-shell"
-        data-dev-section-parent="customer-profile-tab-payment"
-        data-dev-background-token="surface"
-        style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}
-      >
+      style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+
+      <LayerSurface as="section"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-payment-methods"
+      data-dev-section-type="section-shell"
+      data-dev-section-parent="customer-profile-tab-payment"
+      data-dev-background-token="surface"
+      style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}>
+
         <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-1)" }}>Payment method</h3>
-        {!paymentMethods.length ? (
-          <p style={{ margin: 0, color: "var(--text-1)" }}>No saved payment methods.</p>
-        ) : (
-          paymentMethods.map((method) => (
-            <div
-              key={method.method_id}
-              className="app-section-card"
-              data-dev-section="1"
-              data-dev-section-key={`customer-profile-payment-method-${method.method_id}`}
-              data-dev-section-type="content-card"
-              data-dev-section-parent="customer-profile-payment-methods"
-              data-dev-background-token="accent-surface"
-              style={{ borderRadius: "var(--radius-sm)", background: "var(--theme)", padding: "12px", display: "flex", justifyContent: "space-between", gap: "12px" }}
-            >
+        {!paymentMethods.length ?
+        <p style={{ margin: 0, color: "var(--text-1)" }}>No saved payment methods.</p> :
+
+        paymentMethods.map((method) =>
+        <LayerSurface as="div"
+        key={method.method_id}
+
+        data-dev-section="1"
+        data-dev-section-key={`customer-profile-payment-method-${method.method_id}`}
+        data-dev-section-type="content-card"
+        data-dev-section-parent="customer-profile-payment-methods"
+        data-dev-background-token="accent-surface"
+        style={{ padding: "12px", display: "flex", justifyContent: "space-between", gap: "12px" }}>
+
               <div>
                 <strong style={{ color: "var(--text-1)" }}>{method.nickname || method.card_brand || "Card"}</strong>
                 <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "13px" }}>
@@ -951,45 +951,45 @@ const PaymentTab = ({ paymentMethods, jobs }) => {
                 </p>
               </div>
               {method.is_default && <span style={{ color: "var(--primary)", fontWeight: 700, fontSize: "12px" }}>Default</span>}
-            </div>
-          ))
-        )}
-      </section>
+            </LayerSurface>
+        )
+        }
+      </LayerSurface>
 
-      <section
-        className="app-section-card"
-        data-dev-section="1"
-        data-dev-section-key="customer-profile-payment-previous"
-        data-dev-section-type="section-shell"
-        data-dev-section-parent="customer-profile-tab-payment"
-        data-dev-background-token="surface"
-        style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}
-      >
+      <LayerSurface as="section"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-payment-previous"
+      data-dev-section-type="section-shell"
+      data-dev-section-parent="customer-profile-tab-payment"
+      data-dev-background-token="surface"
+      style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "12px" }}>
+
         <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-1)" }}>Previous payments made</h3>
-        {!payments.length ? (
-          <p style={{ margin: 0, color: "var(--text-1)" }}>No captured payments found.</p>
-        ) : (
-          payments.map((payment) => (
-            <div
-              key={payment.payment_id}
-              className="app-section-card"
-              data-dev-section="1"
-              data-dev-section-key={`customer-profile-payment-${payment.payment_id}`}
-              data-dev-section-type="content-card"
-              data-dev-section-parent="customer-profile-payment-previous"
-              data-dev-background-token="accent-surface"
-              style={{ borderRadius: "var(--radius-sm)", background: "var(--theme)", padding: "12px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}
-            >
+        {!payments.length ?
+        <p style={{ margin: 0, color: "var(--text-1)" }}>No captured payments found.</p> :
+
+        payments.map((payment) =>
+        <LayerSurface as="div"
+        key={payment.payment_id}
+
+        data-dev-section="1"
+        data-dev-section-key={`customer-profile-payment-${payment.payment_id}`}
+        data-dev-section-type="content-card"
+        data-dev-section-parent="customer-profile-payment-previous"
+        data-dev-background-token="accent-surface"
+        style={{ padding: "12px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}>
+
               <VehicleField label="Amount" value={formatCurrency(payment.amount)} />
               <VehicleField label="Method" value={payment.payment_method || payment.invoice.payment_method} />
               <VehicleField label="Invoice" value={payment.invoice.invoice_number || payment.invoice.jobNumber} />
               <VehicleField label="Date" value={formatDate(payment.payment_date || payment.created_at)} />
-            </div>
-          ))
-        )}
-      </section>
-    </div>
-  );
+            </LayerSurface>
+        )
+        }
+      </LayerSurface>
+    </div>);
+
 };
 
 const isCustomerProfileMember = (member) => {
@@ -1031,16 +1031,16 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         const threadsPayload = await fetchMessageThreads({ userId: dbUserId });
         const threads = threadsPayload?.data || [];
         let match =
-          threads.find((item) => item.title === title && (item.members || []).some(isCustomerProfileMember)) ||
-          threads.find((item) => item.title === title);
+        threads.find((item) => item.title === title && (item.members || []).some(isCustomerProfileMember)) ||
+        threads.find((item) => item.title === title);
         const hasCustomerMember = (match?.members || []).some(isCustomerProfileMember);
 
         if (!match || !hasCustomerMember) {
           const directoryPayload = await fetchMessageDirectory({ limit: 500 });
-          const memberIds = (directoryPayload?.data || [])
-            .filter(isStaffDirectoryEntry)
-            .map((entry) => entry.id)
-            .filter((id) => Number(id) !== Number(dbUserId));
+          const memberIds = (directoryPayload?.data || []).
+          filter(isStaffDirectoryEntry).
+          map((entry) => entry.id).
+          filter((id) => Number(id) !== Number(dbUserId));
 
           if (customerEmail || customerName) {
             const connected = await connectCustomerToThread({
@@ -1104,15 +1104,15 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
   }
 
   return (
-    <div
-      className="app-section-card"
-      data-dev-section="1"
-      data-dev-section-key="customer-profile-messages-panel"
-      data-dev-section-type="section-shell"
-      data-dev-section-parent="customer-profile-tab-messages"
-      data-dev-background-token="surface"
-      style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", display: "flex", flexDirection: "column", gap: "14px" }}
-    >
+    <LayerSurface as="div"
+
+    data-dev-section="1"
+    data-dev-section-key="customer-profile-messages-panel"
+    data-dev-section-type="section-shell"
+    data-dev-section-parent="customer-profile-tab-messages"
+    data-dev-background-token="surface"
+    style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "14px" }}>
+
       {loading && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading messages...</p>}
       {error && <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p>}
       <div
@@ -1121,26 +1121,26 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         data-dev-section-type="section-shell"
         data-dev-section-parent="customer-profile-messages-panel"
         data-dev-background-token="accent-surface"
-        style={{ minHeight: "260px", maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "12px" }}
-      >
+        style={{ minHeight: "260px", maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "12px" }}>
+
         {!loading && !messages.length && <p style={{ margin: 0, color: "var(--text-1)" }}>No messages yet.</p>}
         {messages.map((message) => {
           const mine = Number(message.senderId) === Number(dbUserId);
           return (
-            <div
-              key={message.id}
-              className="app-section-card"
-              data-dev-section="1"
-              data-dev-section-key={`customer-profile-message-${message.id}`}
-              data-dev-section-type="content-card"
-              data-dev-section-parent="customer-profile-messages-feed"
-              data-dev-background-token={mine ? "customer-profile-message-own" : "surface"}
-              style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "min(680px, 88%)", borderRadius: "var(--radius-md)", background: mine ? "rgba(var(--primary-rgb), 0.14)" : "var(--surface)", padding: "10px 12px" }}
-            >
+            <LayerSurface as="div"
+            key={message.id}
+
+            data-dev-section="1"
+            data-dev-section-key={`customer-profile-message-${message.id}`}
+            data-dev-section-type="content-card"
+            data-dev-section-parent="customer-profile-messages-feed"
+            data-dev-background-token={mine ? "customer-profile-message-own" : "surface"}
+            style={{ alignSelf: mine ? "flex-end" : "flex-start", maxWidth: "min(680px, 88%)", padding: "10px 12px" }}>
+
               <div style={{ fontSize: "12px", color: "var(--text-1)", marginBottom: "4px" }}>{mine ? "You" : message.sender?.name || "Team member"} · {formatDateTime(message.createdAt)}</div>
               <div style={{ color: "var(--text-1)", whiteSpace: "pre-wrap" }}>{message.content}</div>
-            </div>
-          );
+            </LayerSurface>);
+
         })}
       </div>
       <div
@@ -1149,8 +1149,8 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         data-dev-section-type="toolbar"
         data-dev-section-parent="customer-profile-messages-panel"
         data-dev-background-token="transparent"
-        style={{ display: "flex", gap: "10px", alignItems: "flex-end", border: "none", boxShadow: "none", outline: "none" }}
-      >
+        style={{ display: "flex", gap: "10px", alignItems: "flex-end", border: "none", boxShadow: "none", outline: "none" }}>
+
         <textarea
           ref={composerRef}
           rows={1}
@@ -1158,14 +1158,14 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="Message the company..."
-          style={{ flex: 1, height: "42px", minHeight: "42px", maxHeight: "132px", resize: "none", overflowY: "hidden", lineHeight: "20px", border: "none", boxShadow: "none" }}
-        />
+          style={{ flex: 1, height: "42px", minHeight: "42px", maxHeight: "132px", resize: "none", overflowY: "hidden", lineHeight: "20px", border: "none", boxShadow: "none" }} />
+
         <button type="button" className="app-btn app-btn--primary" onClick={handleSend} disabled={sending || !draft.trim()}>
           {sending ? "Sending..." : "Send"}
         </button>
       </div>
-    </div>
-  );
+    </LayerSurface>);
+
 };
 
 const CustomerNotesTab = ({ jobs, dbUserId }) => {
@@ -1181,7 +1181,7 @@ const CustomerNotesTab = ({ jobs, dbUserId }) => {
   }, [jobs]);
 
   const notes = localJobs.flatMap((job) =>
-    (job.job_notes || []).map((note) => ({ ...note, jobNumber: job.job_number }))
+  (job.job_notes || []).map((note) => ({ ...note, jobNumber: job.job_number }))
   ).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
   const handleAdd = async () => {
@@ -1195,9 +1195,9 @@ const CustomerNotesTab = ({ jobs, dbUserId }) => {
     });
     if (result.success) {
       setLocalJobs((current) => current.map((job) =>
-        String(job.id) === String(selectedJobId)
-          ? { ...job, job_notes: [result.data, ...(job.job_notes || [])] }
-          : job
+      String(job.id) === String(selectedJobId) ?
+      { ...job, job_notes: [result.data, ...(job.job_notes || [])] } :
+      job
       ));
       setText("");
     }
@@ -1211,68 +1211,68 @@ const CustomerNotesTab = ({ jobs, dbUserId }) => {
       data-dev-section-type="section-shell"
       data-dev-section-parent="customer-profile-tab-notes"
       data-dev-background-token="transparent"
-      style={{ display: "flex", flexDirection: "column", gap: "14px" }}
-    >
-      {jobs.length > 0 && (
-        <div
-          className="app-section-card"
-          data-dev-section="1"
-          data-dev-section-key="customer-profile-notes-add"
-          data-dev-section-type="toolbar"
-          data-dev-section-parent="customer-profile-tab-notes"
-          data-dev-background-token="surface"
-          style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "14px", display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
-        >
+      style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+
+      {jobs.length > 0 &&
+      <LayerSurface as="div"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-notes-add"
+      data-dev-section-type="toolbar"
+      data-dev-section-parent="customer-profile-tab-notes"
+      data-dev-background-token="surface"
+      style={{ padding: "14px", display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+
           <DropdownField
-            value={selectedJobId}
-            onChange={(event) => setSelectedJobId(event.target.value)}
-            options={jobs.map((job) => ({ value: job.id, label: `Job ${job.job_number}` }))}
-            placeholder="Select job"
-            className="customer-profile-notes-job-dropdown"
-          />
+          value={selectedJobId}
+          onChange={(event) => setSelectedJobId(event.target.value)}
+          options={jobs.map((job) => ({ value: job.id, label: `Job ${job.job_number}` }))}
+          placeholder="Select job"
+          className="customer-profile-notes-job-dropdown" />
+
           <textarea className="app-input app-input--textarea" value={text} onChange={(event) => setText(event.target.value)} placeholder="Add a job note..." style={{ minHeight: "44px" }} />
           <button type="button" className="app-btn app-btn--primary" onClick={handleAdd} disabled={saving || !text.trim()}>
             {saving ? "Saving..." : "Add"}
           </button>
-        </div>
-      )}
-      {!notes.length ? (
-        <div
-          className="app-section-card"
-          data-dev-section="1"
-          data-dev-section-key="customer-profile-notes-empty"
-          data-dev-section-type="content-card"
-          data-dev-section-parent="customer-profile-tab-notes"
-          data-dev-background-token="surface"
-          style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "18px", color: "var(--text-1)" }}
-        >
+        </LayerSurface>
+      }
+      {!notes.length ?
+      <LayerSurface as="div"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-notes-empty"
+      data-dev-section-type="content-card"
+      data-dev-section-parent="customer-profile-tab-notes"
+      data-dev-background-token="surface"
+      style={{ padding: "18px", color: "var(--text-1)" }}>
+
           No notes recorded across this customer's jobs.
-        </div>
-      ) : (
-        notes.map((note) => {
-          const author = note.user ? [note.user.first_name, note.user.last_name].filter(Boolean).join(" ").trim() : "";
-          return (
-            <article
-              key={note.note_id}
-              className="app-section-card"
-              data-dev-section="1"
-              data-dev-section-key={`customer-profile-note-${note.note_id}`}
-              data-dev-section-type="content-card"
-              data-dev-section-parent="customer-profile-notes-stack"
-              data-dev-background-token="surface"
-              style={{ borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "14px" }}
-            >
+        </LayerSurface> :
+
+      notes.map((note) => {
+        const author = note.user ? [note.user.first_name, note.user.last_name].filter(Boolean).join(" ").trim() : "";
+        return (
+          <LayerSurface as="article"
+          key={note.note_id}
+
+          data-dev-section="1"
+          data-dev-section-key={`customer-profile-note-${note.note_id}`}
+          data-dev-section-type="content-card"
+          data-dev-section-parent="customer-profile-notes-stack"
+          data-dev-background-token="surface"
+          style={{ padding: "14px" }}>
+
               <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", marginBottom: "8px" }}>
                 <strong style={{ color: "var(--text-1)" }}>Job {note.jobNumber}</strong>
                 <span style={{ color: "var(--text-1)", fontSize: "12px" }}>{author || "Unknown"} · {formatDateTime(note.created_at)}</span>
               </div>
               <p style={{ margin: 0, color: "var(--text-1)", whiteSpace: "pre-wrap" }}>{note.note_text}</p>
-            </article>
-          );
-        })
-      )}
-    </div>
-  );
+            </LayerSurface>);
+
+      })
+      }
+    </div>);
+
 };
 
 // Activity and Accounts tabs removed per latest requirements.
@@ -1398,31 +1398,31 @@ export default function CustomerDetailWorkspace() {
       type: "list",
       items: contactNumbers,
       preferences: [
-        {
-          label: "Mobile",
-          checked: customer?.contact_preference === "mobile",
-          disabled: savingPreference === "mobile",
-          onChange: async (checked) => {
-            if (!customer?.id) return;
-            setSavingPreference("mobile");
-            const result = await updateCustomer(customer.id, { contact_preference: checked ? "mobile" : null });
-            if (result.success) setCustomer(result.data);
-            setSavingPreference("");
-          }
-        },
-        {
-          label: "Telephone",
-          checked: customer?.contact_preference === "telephone",
-          disabled: savingPreference === "telephone",
-          onChange: async (checked) => {
-            if (!customer?.id) return;
-            setSavingPreference("telephone");
-            const result = await updateCustomer(customer.id, { contact_preference: checked ? "telephone" : null });
-            if (result.success) setCustomer(result.data);
-            setSavingPreference("");
-          }
+      {
+        label: "Mobile",
+        checked: customer?.contact_preference === "mobile",
+        disabled: savingPreference === "mobile",
+        onChange: async (checked) => {
+          if (!customer?.id) return;
+          setSavingPreference("mobile");
+          const result = await updateCustomer(customer.id, { contact_preference: checked ? "mobile" : null });
+          if (result.success) setCustomer(result.data);
+          setSavingPreference("");
         }
-      ]
+      },
+      {
+        label: "Telephone",
+        checked: customer?.contact_preference === "telephone",
+        disabled: savingPreference === "telephone",
+        onChange: async (checked) => {
+          if (!customer?.id) return;
+          setSavingPreference("telephone");
+          const result = await updateCustomer(customer.id, { contact_preference: checked ? "telephone" : null });
+          if (result.success) setCustomer(result.data);
+          setSavingPreference("");
+        }
+      }]
+
     },
     {
       key: "address",
@@ -1435,10 +1435,10 @@ export default function CustomerDetailWorkspace() {
       label: "Customer file",
       type: "stats",
       stats: [
-        { label: "Vehicles", value: vehicles.length },
-        { label: "Total jobs", value: totalJobs },
-        { label: "Open jobs", value: activeJobs }
-      ]
+      { label: "Vehicles", value: vehicles.length },
+      { label: "Total jobs", value: totalJobs },
+      { label: "Open jobs", value: activeJobs }]
+
     }],
 
     [customer?.email, customer?.id, customer?.contact_preference, contactNumbers, formattedAddress, vehicles.length, totalJobs, activeJobs, savingPreference]
