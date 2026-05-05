@@ -4652,7 +4652,78 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 @media (max-width: 640px) and (orientation: portrait) {
   .login-page-wrapper {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 14px;
     padding: max(12px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .login-center-stage {
+    order: 1;
+    width: 100%;
+    max-width: 420px;
+    gap: 12px;
+  }
+
+  .login-dev-panel {
+    order: 2;
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    max-height: none;
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  .login-logo {
+    width: min(72vw, 230px) !important;
+    max-width: 230px !important;
+  }
+
+  .login-brand {
+    padding-bottom: 0 !important;
+  }
+
+  .login-card > div,
+  .login-dev-panel .login-card--dev > div {
+    padding: 16px !important;
+  }
+}
+
+/* Real portrait phones use a widened layout viewport in _document.js, so
+   touch/portrait detection keeps the login cards stacked on those screens. */
+@media (max-device-width: 640px) and (orientation: portrait), (pointer: coarse) and (orientation: portrait) {
+  body:has(.login-page-wrapper) {
+    overflow-y: auto;
+  }
+
+  .login-page-wrapper {
+    height: auto;
+    min-height: 100dvh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 14px;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom)) !important;
+    overflow-y: auto;
+  }
+
+  .login-center-stage {
+    order: 1;
+    width: 100%;
+    max-width: 420px;
+    gap: 12px;
+  }
+
+  .login-dev-panel {
+    order: 2;
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    max-height: none;
+    margin: 0 auto;
+    overflow: visible;
   }
 
   .login-logo {
