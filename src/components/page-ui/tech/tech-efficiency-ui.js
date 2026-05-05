@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/tech/tech-efficiency-ui.js
+import LayerSurface from "@/components/ui/LayerSurface";
 
 export default function TechEfficiencyPageUi(props) {
   const {
@@ -11,16 +12,12 @@ export default function TechEfficiencyPageUi(props) {
     case "section1":
       return <>
       <div className="tech-efficiency-page-shell">
-        {!ready ? <div style={{
-      background: "var(--surface)",
-      borderRadius: "var(--radius-md)",
-      padding: "32px",
-      border: "none",
+        {!ready ? <LayerSurface padding="32px" style={{
       textAlign: "center",
       color: "var(--info)"
     }}>
             Loading your profile...
-          </div> : <EfficiencyTab editable={true} filterUserId={techUserId} editableUserId={techUserId} />}
+          </LayerSurface> : <EfficiencyTab editable={true} filterUserId={techUserId} editableUserId={techUserId} />}
       </div>
       <style jsx>{`
         .tech-efficiency-page-shell {

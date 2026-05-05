@@ -23,10 +23,7 @@ const pageWrapperStyle = {
 };
 
 const cardStyle = {
-  backgroundColor: "var(--section-card-bg)",
-  borderRadius: "var(--section-card-radius)",
-  padding: "var(--section-card-padding)",
-  border: "var(--section-card-border)"
+  textAlign: "center"
 };
 
 const inputStyle = {
@@ -55,13 +52,7 @@ const fieldLabelStyle = {
 };
 
 const requestCardStyle = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-  padding: "14px",
-  borderRadius: "var(--radius-md)",
-  border: "1px solid var(--primary-border-subtle, rgba(15, 23, 42, 0.08))",
-  background: "var(--surface)"
+  color: "var(--text-1)"
 };
 
 const requestCardMetaGridStyle = {

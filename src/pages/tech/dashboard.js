@@ -48,19 +48,14 @@ const centeredStateStyle = {
 };
 
 const statCardBaseStyle = {
-  background: "var(--theme)",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
   boxShadow: "none"
 };
 
 const buildToneSurfaceStyle = (surface, border = "var(--primary-border)") => ({
-  ...statCardBaseStyle,
-  background: surface
+  ...statCardBaseStyle
 });
 
 const sectionSurfaceStyle = {
-  background: "var(--theme)",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
   boxShadow: "none"
 };
 

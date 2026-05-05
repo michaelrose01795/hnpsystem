@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/tech/tech-consumables-request-ui.js
+import LayerSurface from "@/components/ui/LayerSurface";
 
 export default function TechConsumableRequestPageUi(props) {
   const {
@@ -50,7 +51,7 @@ export default function TechConsumableRequestPageUi(props) {
     maxWidth: "720px",
     margin: "0 auto"
   }}>
-          <DevLayoutSection as="section" sectionKey="tech-consumables-access-card" parentKey="tech-consumables-access-shell" sectionType="content-card" backgroundToken="surface" style={{
+          <LayerSurface as="section" sectionKey="tech-consumables-access-card" parentKey="tech-consumables-access-shell" sectionType="content-card" style={{
       ...cardStyle,
       textAlign: "center"
     }}>
@@ -81,14 +82,14 @@ export default function TechConsumableRequestPageUi(props) {
                 Return to dashboard
               </Link>
             </DevLayoutSection>
-          </DevLayoutSection>
+          </LayerSurface>
         </DevLayoutSection>
       </>; // render extracted page section.
 
     case "section2":
       return <>
       <div style={pageWrapperStyle}>
-        <DevLayoutSection as="section" sectionKey="tech-consumables-request-panel" sectionType="content-card" backgroundToken="accent" className="app-layout-surface-accent" style={requestPanelStyle}>
+        <LayerSurface as="section" sectionKey="tech-consumables-request-panel" sectionType="content-card" style={requestPanelStyle}>
           <DevLayoutSection as="div" sectionKey="tech-consumables-request-header" parentKey="tech-consumables-request-panel" sectionType="section-header-row" backgroundToken="transparent" style={requestHeaderStyle}>
             <div>
               <h1 style={{
@@ -218,7 +219,7 @@ export default function TechConsumableRequestPageUi(props) {
               </button>
             </DevLayoutSection>
           </DevLayoutSection>
-        </DevLayoutSection>
+        </LayerSurface>
 
         <DevLayoutSection as="section" sectionKey="tech-consumables-requests-panel" sectionType="section-shell" shell backgroundToken="accent" className="app-layout-surface-accent">
           <DevLayoutSection as="div" sectionKey="tech-consumables-requests-toolbar" parentKey="tech-consumables-requests-panel" sectionType="toolbar" backgroundToken="transparent" style={requestsToolbarStyle}>
@@ -254,13 +255,13 @@ export default function TechConsumableRequestPageUi(props) {
         flexDirection: "column",
         gap: "12px"
       }}>
-              {loadingRequests ? <div style={{
+              {loadingRequests ? <LayerSurface padding="14px" gap="12px" style={{
           ...requestCardStyle,
           textAlign: "center",
           color: "var(--text-1)"
         }}>
                   Loading requests…
-                </div> : filteredRequests.length > 0 ? filteredRequests.map(request => <article key={request.id} data-dev-section="1" data-dev-section-key={`tech-consumables-request-mobile-card-${request.id}`} data-dev-section-type="content-card" data-dev-section-parent="tech-consumables-request-mobile-list" style={requestCardStyle}>
+                </LayerSurface> : filteredRequests.length > 0 ? filteredRequests.map(request => <LayerSurface key={request.id} as="article" sectionKey={`tech-consumables-request-mobile-card-${request.id}`} sectionType="content-card" parentKey="tech-consumables-request-mobile-list" padding="14px" gap="12px" style={requestCardStyle}>
                     <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -335,19 +336,17 @@ export default function TechConsumableRequestPageUi(props) {
                         </div>
                       </div>
                     </div>
-                  </article>) : <div style={{
+                  </LayerSurface>) : <LayerSurface padding="14px" gap="12px" style={{
           ...requestCardStyle,
           textAlign: "center",
           color: "var(--text-1)"
         }}>
                   No consumable requests match the current filter.
-                </div>}
-            </DevLayoutSection> : <DevLayoutSection as="div" sectionKey="tech-consumables-request-auto-data-table-1-shell" parentKey="tech-consumables-requests-panel" sectionType="data-table-shell" backgroundToken="surface" className="app-section-card" style={{
+                </LayerSurface>}
+            </DevLayoutSection> : <LayerSurface as="div" sectionKey="tech-consumables-request-auto-data-table-1-shell" parentKey="tech-consumables-requests-panel" sectionType="data-table-shell" padding="0" style={{
         overflowX: "auto",
         maxHeight: "420px",
-        overflowY: "auto",
-        padding: 0,
-        background: "var(--surface)"
+        overflowY: "auto"
       }}>
               <DevLayoutSection as="table" sectionKey="tech-consumables-request-auto-data-table-1" parentKey="tech-consumables-request-auto-data-table-1-shell" sectionType="data-table" backgroundToken="surface" className="app-data-table" style={{
           minWidth: "640px",
@@ -431,7 +430,7 @@ export default function TechConsumableRequestPageUi(props) {
                     </tr>}
                 </tbody>
               </DevLayoutSection>
-            </DevLayoutSection>}
+            </LayerSurface>}
         </DevLayoutSection>
       </div>
       {showStockCheck && <StockCheckPopup open={showStockCheck} onClose={() => setShowStockCheck(false)} isManager={isWorkshopManager} technicianId={dbUserId} onRequestsSubmitted={fetchRequests} />}
