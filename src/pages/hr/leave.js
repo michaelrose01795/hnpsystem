@@ -2,7 +2,7 @@
 import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
-import { Button, StatusMessage } from "@/components/ui";
+import { Button, LayerTheme, StatusMessage } from "@/components/ui"; // LayerTheme: canonical layer primitive (see CLAUDE.md §3.0)
 import { StatusTag } from "@/components/HR/MetricCard";
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
@@ -24,20 +24,15 @@ function ListRowsSkeleton({ rows = 3 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       {Array.from({ length: rows }).map((_, i) =>
-      <div
+      <LayerTheme
         key={i}
-        style={{
-          border: "1px solid var(--primary-border)",
-          borderRadius: "var(--radius-sm)",
-          padding: "var(--space-3)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-xs)"
-        }}>
-        
+        radius="var(--radius-sm)"
+        padding="var(--space-3)"
+        gap="var(--space-xs)">
+
           <SkeletonBlock width="58%" height="14px" />
           <SkeletonBlock width="72%" height="12px" />
-        </div>
+        </LayerTheme>
       )}
     </div>);
 
@@ -141,17 +136,12 @@ function LeaveContent() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               {upcomingAbsences.map((absence) =>
-            <div
+            <LayerTheme
               key={absence.id}
-              style={{
-                border: "1px solid var(--primary-border)",
-                borderRadius: "var(--radius-sm)",
-                padding: "var(--space-3)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--space-xs)"
-              }}>
-              
+              radius="var(--radius-sm)"
+              padding="var(--space-3)"
+              gap="var(--space-xs)">
+
                   <span style={{ fontWeight: 600, color: "var(--text-1)" }}>
                     {absence.employee} • {absence.department}
                   </span>
@@ -159,7 +149,7 @@ function LeaveContent() {
                     {absence.type} from {new Date(absence.startDate).toLocaleDateString()} to{" "}
                     {new Date(absence.endDate).toLocaleDateString()}
                   </span>
-                </div>
+                </LayerTheme>
             )}
             </div>
           }

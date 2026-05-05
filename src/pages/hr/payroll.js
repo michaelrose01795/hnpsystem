@@ -2,7 +2,7 @@
 import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
-import { Button, StatusMessage } from "@/components/ui";
+import { Button, LayerTheme, StatusMessage } from "@/components/ui"; // LayerTheme: canonical layer primitive (see CLAUDE.md §3.0)
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
 // Structured skeleton bodies that sit inside each SectionCard while payroll
@@ -22,21 +22,16 @@ function ListRowsSkeleton({ rows = 3 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
       {Array.from({ length: rows }).map((_, i) =>
-      <div
+      <LayerTheme
         key={i}
-        style={{
-          border: "1px solid var(--primary-border)",
-          borderRadius: "var(--radius-sm)",
-          padding: "var(--space-3)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-1)"
-        }}>
-        
+        radius="var(--radius-sm)"
+        padding="var(--space-3)"
+        gap="var(--space-1)">
+
           <SkeletonBlock width="58%" height="14px" />
           <SkeletonBlock width="70%" height="12px" />
           <SkeletonBlock width="48%" height="12px" />
-        </div>
+        </LayerTheme>
       )}
     </div>);
 
@@ -186,17 +181,12 @@ function PayrollContent() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               {overtimeSummaries.map((summary) =>
-            <div
+            <LayerTheme
               key={summary.id}
-              style={{
-                border: "1px solid var(--primary-border)",
-                borderRadius: "var(--radius-sm)",
-                padding: "var(--space-3)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "var(--space-1)"
-              }}>
-              
+              radius="var(--radius-sm)"
+              padding="var(--space-3)"
+              gap="var(--space-1)">
+
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{summary.employee}</span>
                     <span style={{ fontSize: "var(--text-body-sm)", fontWeight: 600, color: "var(--text-1)" }}>
@@ -214,12 +204,12 @@ function PayrollContent() {
                   fontSize: "var(--text-body-sm)",
                   color: "var(--text-1)"
                 }}>
-                
+
                     <span>{summary.overtimeHours} hrs</span>
                     <span>Rate £{Number(summary.overtimeRate).toFixed(2)}</span>
                     <span>Bonus £{Number(summary.bonus).toFixed(2)}</span>
                   </div>
-                </div>
+                </LayerTheme>
             )}
             </div>
           }

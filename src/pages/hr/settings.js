@@ -1,7 +1,7 @@
 // file location: src/pages/hr/settings.js
 import React from "react";
 import { SectionCard } from "@/components/Section";
-import { Button, InputField } from "@/components/ui";
+import { Button, InputField, LayerTheme } from "@/components/ui"; // LayerTheme: canonical layer primitive (see CLAUDE.md §3.0)
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import HrSettingsPoliciesUi from "@/components/page-ui/hr/hr-settings-ui"; // Extracted presentation layer.
 
@@ -136,24 +136,25 @@ export default function HrSettingsPolicies({ embedded = false } = {}) {
   return <HrSettingsPoliciesUi view="section1" SettingsContent={SettingsContent} />;
 }
 
-// Local toggle row — no global toggle component exists in the UI kit yet; uses token-only styling.
+// Local toggle row — no global toggle component exists in the UI kit yet.
+// Surface routes through LayerTheme (sits inside a SectionCard = LayerSurface,
+// so per the alternation rule it renders as LayerTheme).
 function ToggleSetting({ label, defaultChecked }) {
   return (
-    <label
+    <LayerTheme
+      as="label"
+      radius="var(--radius-sm)"
+      padding="var(--space-3)"
+      gap="var(--space-2)"
       style={{
-        display: "flex",
+        flexDirection: "row",
         alignItems: "center",
-        gap: "var(--space-2)",
-        padding: "var(--space-3)",
-        borderRadius: "var(--radius-sm)",
-        border: "1px solid var(--primary-border)",
-        background: "var(--surface)",
         fontWeight: 600,
         color: "var(--text-1)"
       }}>
-      
+
       <input type="checkbox" defaultChecked={defaultChecked} />
       {label}
-    </label>);
+    </LayerTheme>);
 
 }

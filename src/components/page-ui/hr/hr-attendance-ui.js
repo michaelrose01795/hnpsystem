@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/hr/hr-attendance-ui.js
+import { LayerTheme } from "@/components/ui"; // canonical layer primitive (see CLAUDE.md §3.0)
 
 export default function HrAttendanceUi(props) {
   const {
@@ -89,14 +90,7 @@ export default function HrAttendanceUi(props) {
           flexDirection: "column",
           gap: "var(--space-3)"
         }}>
-                {overtimeSummaries.map(record => <div key={record.id} style={{
-            border: "1px solid var(--primary-border)",
-            borderRadius: "var(--radius-sm)",
-            padding: "var(--space-3)",
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--space-1)"
-          }}>
+                {overtimeSummaries.map(record => <LayerTheme key={record.id} radius="var(--radius-sm)" padding="var(--space-3)" gap="var(--space-1)">
                     <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -125,7 +119,7 @@ export default function HrAttendanceUi(props) {
                       <span>OT rate £{Number(record.overtimeRate).toFixed(2)}</span>
                       <span>Bonus £{Number(record.bonus).toFixed(0)}</span>
                     </div>
-                  </div>)}
+                  </LayerTheme>)}
               </div>
             </SectionCard>
           </section>
