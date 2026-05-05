@@ -12,6 +12,7 @@ import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { useTheme } from "@/styles/themeProvider";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import VhcCustomerView from "@/components/VHC/VhcCustomerView";
+import LayerSurface from "@/components/ui/LayerSurface";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -1086,11 +1087,11 @@ export default function CustomerPreviewPage() {
     });
 
     return (
-      <div
+      <LayerSurface
+        radius="var(--radius-md)"
+        padding="0"
+        gap="0"
         style={{
-          border: "none",
-          borderRadius: "var(--radius-md)",
-          background: severity === "authorized" || severity === "declined" ? "var(--surface)" : theme.background || "var(--surface)",
           overflow: "hidden",
           marginBottom: "18px"
         }}>
@@ -1158,7 +1159,7 @@ export default function CustomerPreviewPage() {
             </table>
           </div>
         }
-      </div>);
+      </LayerSurface>);
 
   };
 
@@ -1231,18 +1232,16 @@ export default function CustomerPreviewPage() {
   const renderPhotosTab = () =>
   <div>
       {photoFiles.length === 0 ?
-    <div
+    <LayerSurface
+      radius="var(--radius-sm)"
+      padding="18px"
       style={{
-        padding: "18px",
-        border: "none",
-        borderRadius: "var(--radius-sm)",
-        background: "var(--theme)",
         color: "var(--info)",
         fontSize: "13px"
       }}>
       
           No photos have been uploaded for this job.
-        </div> :
+        </LayerSurface> :
 
     <div
       style={{
@@ -1252,12 +1251,12 @@ export default function CustomerPreviewPage() {
       }}>
       
           {photoFiles.map((file) =>
-      <div
+      <LayerSurface
         key={file.file_id}
+        radius="var(--radius-sm)"
+        padding="0"
+        gap="0"
         style={{
-          background: "var(--surface)",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
           overflow: "hidden"
         }}>
         
@@ -1286,7 +1285,7 @@ export default function CustomerPreviewPage() {
                   </div>
           }
               </div>
-            </div>
+            </LayerSurface>
       )}
         </div>
     }
@@ -1297,18 +1296,16 @@ export default function CustomerPreviewPage() {
   const renderVideosTab = () =>
   <div>
       {videoFiles.length === 0 ?
-    <div
+    <LayerSurface
+      radius="var(--radius-sm)"
+      padding="18px"
       style={{
-        padding: "18px",
-        border: "none",
-        borderRadius: "var(--radius-sm)",
-        background: "var(--theme)",
         color: "var(--info)",
         fontSize: "13px"
       }}>
       
           No videos have been uploaded for this job.
-        </div> :
+        </LayerSurface> :
 
     <div
       style={{
@@ -1318,12 +1315,12 @@ export default function CustomerPreviewPage() {
       }}>
       
           {videoFiles.map((file) =>
-      <div
+      <LayerSurface
         key={file.file_id}
+        radius="var(--radius-sm)"
+        padding="0"
+        gap="0"
         style={{
-          background: "var(--surface)",
-          borderRadius: "var(--radius-sm)",
-          border: "none",
           overflow: "hidden"
         }}>
         
@@ -1351,7 +1348,7 @@ export default function CustomerPreviewPage() {
                   </div>
           }
               </div>
-            </div>
+            </LayerSurface>
       )}
         </div>
     }

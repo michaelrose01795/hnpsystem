@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/vhc/share/[jobNumber]/vhc-share-job-number-link-code-ui.js
+import LayerSurface from "@/components/ui/LayerSurface";
 
 export default function PublicSharePreviewPageUi(props) {
   const {
@@ -54,33 +55,19 @@ export default function PublicSharePreviewPageUi(props) {
         }} />
               <SkeletonBlock width="120px" height="32px" borderRadius="999px" />
             </div>
-            <div style={{
-        background: "var(--surface)",
-        borderRadius: "var(--radius-md)",
-        padding: 20,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10
-      }}>
+            <LayerSurface padding="20px" gap="10px">
               <SkeletonBlock width="60%" height="22px" />
               <SkeletonBlock width="80%" height="12px" />
               <SkeletonBlock width="50%" height="12px" />
-            </div>
+            </LayerSurface>
             {Array.from({
         length: 3
-      }).map((_, i) => <div key={i} style={{
-        background: "var(--surface)",
-        borderRadius: "var(--radius-md)",
-        padding: 20,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10
-      }}>
+      }).map((_, i) => <LayerSurface key={i} padding="20px" gap="10px">
                 <SkeletonBlock width="40%" height="16px" />
                 <SkeletonBlock width="100%" height="12px" />
                 <SkeletonBlock width="90%" height="12px" />
                 <SkeletonBlock width="70%" height="12px" />
-              </div>)}
+              </LayerSurface>)}
           </div>
         </div>
       </>; // render extracted page section.
