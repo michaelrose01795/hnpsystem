@@ -10,6 +10,7 @@
     "uk:check": "node tools/scripts/enforce-uk-english.js",
     "uk:check:all": "node tools/scripts/enforce-uk-english.js --all",
     "uk:fix": "node tools/scripts/enforce-uk-english.js --fix",
+    "check:layers": "node tools/scripts/check-layers.js",
     "build": "next build",
     "start": "next start",
     "backfill:vhc-severity": "node tools/scripts/backfill-vhc-severity.js",

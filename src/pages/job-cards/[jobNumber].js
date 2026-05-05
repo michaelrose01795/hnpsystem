@@ -7398,12 +7398,7 @@ function SchedulingTab({
           </div>
         </DevLayoutSection>
 
-        {/* ── Section 4: Customer Logistics ──
-             Migrated to the canonical .app-section-card class per CLAUDE.md
-             §3.3. Inline sectionCardStyle removed so padding, background and
-             radius come from --section-card-padding / --section-card-bg /
-             --section-card-radius design tokens. .app-section-card also
-             establishes a flex-column with --layout-card-gap between children. */}
+        {/* Customer logistics */}
         <LayerSurface
           sectionKey="jobcard-tab-scheduling-logistics"
           sectionType="content-card"

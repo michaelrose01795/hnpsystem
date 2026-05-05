@@ -3,9 +3,11 @@ import Link from "next/link";
 // Visual shell for /dev/ui/[uiKey]. Renders a thin labelled header above the
 // previewed page-ui so it's obvious which UI is being shown standalone.
 //
-// The previewed UI is expected to render its own `.app-page-shell` /
-// `.app-page-card` wrappers — this component supplies only the meta header.
-import LayerSurface from "@/components/ui/LayerSurface";export function UiPreviewShell({ uiKey, label, children }) {
+// The previewed UI is expected to render its own layer wrappers.
+// This component supplies only the meta header.
+import LayerSurface from "@/components/ui/LayerSurface";
+
+export function UiPreviewShell({ uiKey, label, children }) {
   return (
     <div data-dev-ui-preview style={{ width: "100%" }}>
       <div
