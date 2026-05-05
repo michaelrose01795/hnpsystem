@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import Section from "@/components/Section";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const fmt = (iso) => {
   if (!iso) return "—";
@@ -57,12 +58,10 @@ export default function ComplianceDashboardPage() {
   const draftDpias = dpias.filter((d) => d.status === "draft" || d.status === "in_review");
 
   const card = (label, count, hint) => (
-    <div
+    <LayerTheme
+      radius="var(--radius-sm, 8px)"
+      padding="16px"
       style={{
-        padding: 16,
-        border: "1px solid var(--primary-border)",
-        borderRadius: "var(--radius-sm, 8px)",
-        background: "var(--section-card-bg, var(--surface))",
         minWidth: 180,
         flex: "1 1 180px",
       }}
@@ -72,7 +71,7 @@ export default function ComplianceDashboardPage() {
       {hint && (
         <div style={{ fontSize: "0.78rem", color: "var(--text-1)", marginTop: 6 }}>{hint}</div>
       )}
-    </div>
+    </LayerTheme>
   );
 
   return (
