@@ -1,5 +1,34 @@
 // file location: src/pages/dev/user-diagnostic.js
 // Dev-only diagnostic page to verify the unified users table, soft-delete, and name consistency
+//
+// ─────────────────────────────────────────────────────────────────────────────
+//  SHOWCASE = SINGLE SOURCE OF TRUTH (read every time you edit this file)
+// ─────────────────────────────────────────────────────────────────────────────
+//  The "Global UI Showcase" panel rendered by this page is the canonical
+//  reference for how every shared UI surface (cards, sections, buttons,
+//  inputs, tables, popups, …) should look and behave across the repo.
+//
+//  Rules:
+//    1. If you change how a component looks here in the showcase, you MUST
+//       propagate that change to the corresponding token / class in:
+//         - src/styles/theme.css        (colour & layout tokens)
+//         - src/styles/globals.css      (.app-page-card, .app-section-card,
+//                                        .app-page-stack, etc.)
+//         - src/styles/families/*.css   (cards, buttons, inputs, …)
+//       so the rest of the repo follows the showcase, not the other way
+//       around.
+//    2. Default = NO border around section / card surfaces.
+//       Section cards use --section-card-border (currently `none`) and inline
+//       border styles on showcase demo wrappers are stripped via the CSS
+//       rule below (search "showcase-section-card--borders-allowed").
+//    3. Sections that legitimately demonstrate a border (tables with row
+//       separators, checkboxes, focus / interaction states, the ghost
+//       button, and the --primary-border / --secondary-border colour
+//       swatches) must opt in via `bordersAllowed` on <ShowcaseSection>.
+//    4. Never introduce a one-off border in a page or component file.
+//       If a new border is genuinely needed, add it to the showcase first,
+//       update the global token, then use the global token everywhere.
+// ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
@@ -886,7 +915,7 @@ function UsagePopup({ itemKey, title, onClose }) {
   );
 }
 
-function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, onNoteChange, noteSaving, children }) {
+function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, onNoteChange, noteSaving, bordersAllowed = false, children }) {
   const [noteOpen, setNoteOpen] = useState(false);
   const noteText = typeof noteTextProp === "object" && noteTextProp !== null ? noteTextProp[itemKey] || "" : noteTextProp || "";
   const hasNote = typeof noteText === "string" && noteText.length > 0;
@@ -897,7 +926,7 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
       sectionType="content-card"
       parentKey="user-diagnostic/showcase"
       backgroundToken="surface"
-      className="app-section-card showcase-section-card">
+      className={`app-section-card showcase-section-card${bordersAllowed ? " showcase-section-card--borders-allowed" : ""}`}>
       
       <div style={{ display: "flex", alignItems: "center", gap: "6px", margin: "0 0 12px" }}>
         <button
@@ -1812,7 +1841,27 @@ function GlobalUiShowcase() {
         .showcase-section-card {
           background: #fdf2f8 !important;
           box-shadow: none;
+          border: none;
           margin-bottom: var(--page-stack-gap);
+        }
+        /* Default = NO border around showcase demo wrappers.
+           Sections that legitimately demonstrate a border opt in via
+           the .showcase-section-card--borders-allowed class (set by
+           passing bordersAllowed to <ShowcaseSection>). */
+        .user-diagnostic-showcase
+          .showcase-section-card:not(.showcase-section-card--borders-allowed)
+          div[style*="border:"] {
+          border: none !important;
+        }
+        .user-diagnostic-showcase .app-input,
+        .user-diagnostic-showcase .dropdown-api__control,
+        .user-diagnostic-showcase .calendar-api__control,
+        .user-diagnostic-showcase .timepicker-api__control,
+        .user-diagnostic-showcase .searchbar-api,
+        .user-diagnostic-showcase input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+        .user-diagnostic-showcase select,
+        .user-diagnostic-showcase textarea {
+          border: none !important;
         }
         :root[data-theme="dark"] .user-diagnostic-showcase .app-section-card,
         :root[data-theme="dark"] .user-diagnostic-showcase .showcase-section-card,
@@ -2158,7 +2207,7 @@ function GlobalUiShowcase() {
       {/* ── Dev Layout Overlay ────────────────────────────────── */}
       <ShowcaseCategoryHeader category="Colours & Tokens" visible={visibleCategorySet.has("Colours & Tokens")} />
       {isSectionVisible("colour-tokens") &&
-      <ShowcaseSection title="Colour Tokens" itemKey="colour-tokens" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Colour Tokens" itemKey="colour-tokens" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ marginBottom: "14px" }}>
           <div
             style={{
@@ -2246,7 +2295,7 @@ function GlobalUiShowcase() {
 
       <ShowcaseCategoryHeader category="Buttons" visible={visibleCategorySet.has("Buttons")} />
       {isSectionVisible("buttons-app-btn") &&
-      <ShowcaseSection title="Buttons (.app-btn)" itemKey="buttons-app-btn" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Buttons (.app-btn)" itemKey="buttons-app-btn" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
           <Button variant="primary">Primary</Button>
           <Button variant="secondary">Secondary</Button>
@@ -2260,7 +2309,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
       {isSectionVisible("interaction-states-buttons") &&
-      <ShowcaseSection title="Interaction States — Buttons" itemKey="interaction-states-buttons" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Interaction States — Buttons" itemKey="interaction-states-buttons" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         {/* Simulated state previews use the data-demo-state hooks defined in
              families/buttons.css. Variant rules carry !important, so inline style
              overrides from React cannot paint through — the data-attribute
@@ -2325,7 +2374,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
       {isSectionVisible("interaction-states-inputs") &&
-      <ShowcaseSection title="Interaction States — Inputs" itemKey="interaction-states-inputs" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Interaction States — Inputs" itemKey="interaction-states-inputs" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <input className="app-input" placeholder="Default" />
           <input className="app-input" placeholder="Focus (simulated)" style={{ borderColor: "var(--primary-border)", boxShadow: "var(--control-ring)" }} />
@@ -2336,7 +2385,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
       {isSectionVisible("checkboxes-states") &&
-      <ShowcaseSection title="Checkboxes — States" itemKey="checkboxes-states" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Checkboxes — States" itemKey="checkboxes-states" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px" }}>
           <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <input type="checkbox" /> Unchecked
@@ -2377,7 +2426,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
       {isSectionVisible("focus-ring") &&
-      <ShowcaseSection title="Focus Ring Standard (--control-ring)" itemKey="focus-ring" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Focus Ring Standard (--control-ring)" itemKey="focus-ring" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <button
             type="button"
@@ -2814,13 +2863,13 @@ function GlobalUiShowcase() {
       {isSectionVisible("section-layers") &&
       <ShowcaseSection title="Section Layers (surface / theme alternation)" itemKey="section-layers" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ background: "var(--surface)", padding: "10px", borderRadius: "var(--radius-md)", border: "1px solid var(--primary-border)" }}>
-          <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>level 1 — surface colour (--surface)</div>
+          <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>LayerSurface</div>
           <div style={{ background: "var(--theme)", padding: "10px", borderRadius: "var(--radius-sm)" }}>
-            <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>level 2 — card background theme colour (--theme)</div>
+            <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>LayerTheme</div>
             <div style={{ background: "var(--surface)", padding: "10px", borderRadius: "var(--radius-xs)" }}>
-              <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>level 3 — surface colour (--surface)</div>
+              <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px" }}>LayerSurface</div>
               <div style={{ background: "var(--theme)", padding: "10px", borderRadius: "var(--radius-xs)" }}>
-                <div style={{ fontSize: "10px", color: "var(--text-1)" }}>level 4 — card background theme colour (--theme)</div>
+                <div style={{ fontSize: "10px", color: "var(--text-1)" }}>LayerTheme</div>
               </div>
             </div>
           </div>
@@ -2935,7 +2984,7 @@ function GlobalUiShowcase() {
 
       <ShowcaseCategoryHeader category="Tables" visible={visibleCategorySet.has("Tables")} />
       {isSectionVisible("table-app-data") &&
-      <ShowcaseSection title="Table (.app-data-table / .app-table-shell)" itemKey="table-app-data" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Table (.app-data-table / .app-table-shell)" itemKey="table-app-data" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div className="app-table-shell app-table-shell--with-headings">
           <table className="app-data-table" style={{ width: "100%" }}>
             <thead>
@@ -2951,7 +3000,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
       {isSectionVisible("table-states") &&
-      <ShowcaseSection title="Table States (empty / loading / hover / selected / actions)" itemKey="table-states" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Table States (empty / loading / hover / selected / actions)" itemKey="table-states" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ padding: "20px", background: "var(--surface)", borderRadius: "var(--radius-sm)", textAlign: "center", border: "1px dashed var(--primary-border)" }}>
             <div style={{ fontSize: "12px", color: "var(--text-1)", marginBottom: "4px", fontWeight: 700 }}>Empty table</div>
@@ -2962,15 +3011,22 @@ function GlobalUiShowcase() {
             <SkeletonBlock width="100%" height="28px" />
             <SkeletonBlock width="100%" height="28px" />
           </div>
+          {/*
+            Row + in-row action button defaults — wired to the global tokens
+            --table-row-height (44px) and --table-action-btn-height (32px) in
+            src/styles/theme.css. Update those tokens to change the row /
+            button heights everywhere in the repo (and update this showcase
+            so the demo continues to match reality).
+          */}
           <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "12px", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-            <div style={{ padding: "8px 10px", background: "var(--surface)" }}>Row (default)</div>
-            <div style={{ padding: "8px 10px", background: "var(--surface)" }}>Row (hover)</div>
-            <div style={{ padding: "8px 10px", background: "var(--theme)", borderLeft: "3px solid var(--primary)" }}>Row (selected)</div>
-            <div style={{ padding: "8px 10px", background: "var(--surface)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ height: "var(--table-row-height)", padding: "0 var(--space-md)", background: "var(--surface)", display: "flex", alignItems: "center" }}>Row (default)</div>
+            <div style={{ height: "var(--table-row-height)", padding: "0 var(--space-md)", background: "var(--surface)", display: "flex", alignItems: "center" }}>Row (hover)</div>
+            <div style={{ height: "var(--table-row-height)", padding: "0 var(--space-md)", background: "var(--theme)", borderLeft: "3px solid var(--primary)", display: "flex", alignItems: "center" }}>Row (selected)</div>
+            <div style={{ height: "var(--table-row-height)", padding: "0 var(--space-md)", background: "var(--surface)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>Row w/ actions</span>
               <span style={{ display: "flex", gap: "4px" }}>
-                <button type="button" style={{ padding: "2px 8px", fontSize: "11px", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-xs)", background: "var(--surface)", cursor: "pointer", fontWeight: 600 }}>Edit</button>
-                <button type="button" style={{ padding: "2px 8px", fontSize: "11px", border: "none", color: "var(--danger)", borderRadius: "var(--radius-xs)", background: "var(--surface)", cursor: "pointer", fontWeight: 600 }}>Delete</button>
+                <button type="button" className="app-table-action-btn">Edit</button>
+                <button type="button" className="app-table-action-btn app-table-action-btn--danger">Delete</button>
               </span>
             </div>
           </div>
@@ -2978,7 +3034,7 @@ function GlobalUiShowcase() {
       </ShowcaseSection>
       }
       {isSectionVisible("non-global-tables") &&
-      <ShowcaseSection title="Non-Global Tables" itemKey="non-global-tables" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
+      <ShowcaseSection title="Non-Global Tables" itemKey="non-global-tables" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div>
             <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "4px" }}>myjobs-row (flex grid)</div>

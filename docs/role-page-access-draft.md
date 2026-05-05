@@ -3,7 +3,6 @@
 !!!!!!ONCE CHANGED HAVE CODEX UPDATE THE LOGINPRESENTATION PAGE AS WELL AS THE ORDER AND ACCESS WHICH THAT USER SELECTED HAS THE PRESENTATION GO IN!!!!!!!!!!!!!!!
 
 
-
 Use this as the working list for Presentation Mode/page access. Add/remove pages under each role, then number the pages in the order that role should see them.
 
 Format to edit:
@@ -26,9 +25,7 @@ Format to edit:
 - /accounts/settings
 - /company-accounts
 - /company-accounts/[accountNumber]
-- /messages
-- /newsfeed
-- /profile
+
 
 ## Admin Manager
 
@@ -40,9 +37,7 @@ Format to edit:
 - /admin/profiles/[user]
 - /accounts/payslips
 - /hr/manager
-- /messages
-- /newsfeed
-- /profile
+
 
 ## After Sales Director
 
@@ -52,9 +47,6 @@ Format to edit:
 - /job-cards/[jobNumber]
 - /job-cards/waiting/nextjobs
 - /parts/goods-in
-- /messages
-- /newsfeed
-- /profile
 - /tracking
 
 ## Customer
@@ -77,9 +69,6 @@ Format to edit:
 - /job-cards/[jobNumber]
 - /job-cards/waiting/nextjobs
 - /tracking
-- /messages
-- /newsfeed
-- /profile
 
 ## HR Manager
 
@@ -95,9 +84,6 @@ Format to edit:
 - /hr/reports
 - /hr/settings
 - /hr/training
-- /messages
-- /newsfeed
-- /profile
 
 ## Mobile Technician
 
@@ -108,9 +94,6 @@ Format to edit:
 - /mobile/create
 - /mobile/delivery/[jobNumber]
 - /tech/consumables-request
-- /messages
-- /newsfeed
-- /profile
 
 ## MOT Tester
 
@@ -120,9 +103,6 @@ Format to edit:
 - /job-cards/[jobNumber]
 - /tech/efficiency
 - /vhc
-- /messages
-- /newsfeed
-- /profile
 
 ## Owner
 
@@ -131,9 +111,6 @@ Format to edit:
 - /admin/users
 - /admin/profiles/[user]
 - /accounts/payslips
-- /messages
-- /newsfeed
-- /profile
 
 ## Painters
 
@@ -141,9 +118,6 @@ Format to edit:
 - /job-cards/myjobs
 - /job-cards/myjobs/[jobNumber]
 - /job-cards/[jobNumber]
-- /messages
-- /newsfeed
-- /profile
 
 ## Parts Manager
 
@@ -160,9 +134,6 @@ Format to edit:
 - /parts/delivery-planner
 - /parts/goods-in
 - /parts/goods-in/[goodsInNumber]
-- /messages
-- /newsfeed
-- /profile
 
 ## Receptionist
 
@@ -173,16 +144,10 @@ Format to edit:
 - /job-cards/create
 - /job-cards/view
 - /job-cards/[jobNumber]
-- /messages
-- /newsfeed
-- /profile
 
 ## Sales Director
 
 - /dashboard/managers
-- /newsfeed
-- /messages
-- /profile
 
 ## Service Manager
 
@@ -197,9 +162,6 @@ Format to edit:
 - /parts/goods-in
 - /mobile/appointments
 - /mobile/create
-- /messages
-- /newsfeed
-- /profile
 - /tracking
 
 ## Techs
@@ -212,9 +174,6 @@ Format to edit:
 - /tech/consumables-request
 - /tech/efficiency
 - /vhc
-- /messages
-- /newsfeed
-- /profile
 - /tracking
 
 ## Valet Service
@@ -222,9 +181,6 @@ Format to edit:
 - /dashboard/valeting
 - /valet
 - /job-cards/valet/[jobnumber]
-- /messages
-- /newsfeed
-- /profile
 
 ## Workshop Manager
 
@@ -237,9 +193,6 @@ Format to edit:
 - /clocking/[technicianSlug]
 - /parts/goods-in
 - /tracking
-- /messages
-- /newsfeed
-- /profile
 
 
 ## Public / Signed Out
@@ -247,3 +200,11 @@ Format to edit:
 - /login
 - /password-reset/reverted
 - /unauthorized
+
+## Everyone access
+
+- /News Feed
+- /Messages
+- /Tracker
+- /Profile
+- /login
