@@ -40,7 +40,7 @@ function ThreadRowsSkeleton({ count = 4 }) {return (
           padding: "10px",
           borderRadius: "var(--radius-md)"
         }}>
-        
+
           <SkeletonBlock width="36px" height="36px" borderRadius="999px" />
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "6px" }}>
             <SkeletonBlock width="50%" height="12px" />
@@ -69,7 +69,7 @@ function MessageBubblesSkeleton({ count = 3 }) {
           borderRadius: "14px",
           background: "var(--surface)"
         }}>
-        
+
           <SkeletonBlock width="70%" height="10px" />
           <SkeletonBlock width="100%" height="12px" />
           <SkeletonBlock width="40%" height="10px" />
@@ -122,7 +122,7 @@ const SectionTitle = ({ title, subtitle, action }) => {
         alignItems: "center",
         gap: "12px"
       }}>
-      
+
       {hasHeading &&
       <div>
           <h3
@@ -131,7 +131,7 @@ const SectionTitle = ({ title, subtitle, action }) => {
             fontSize: "var(--text-h4)",
             color: palette.accent
           }}>
-          
+
             {title}
           </h3>
           {subtitle &&
@@ -151,7 +151,7 @@ const ComposeToggleButton = ({ active, children, onClick }) =>
   type="button"
   variant={active ? "primary" : "secondary"}
   onClick={onClick}>
-  
+
     {children}
   </Button>;
 
@@ -169,7 +169,7 @@ const Chip = ({ label, onRemove, disabled = false, color = palette.accent }) =>
     fontSize: "var(--text-body-sm)",
     fontWeight: 600
   }}>
-  
+
     {label}
     {onRemove &&
   <Button
@@ -180,7 +180,7 @@ const Chip = ({ label, onRemove, disabled = false, color = palette.accent }) =>
     onClick={disabled ? undefined : onRemove}
     disabled={disabled}
     aria-label="Remove">
-    
+
         ×
       </Button>
   }
@@ -204,7 +204,7 @@ const AvatarBadge = ({ name }) => {
         justifyContent: "center",
         boxShadow: "none"
       }}>
-      
+
       {initial}
     </div>);
 
@@ -324,7 +324,7 @@ const renderMessageContent = (content, userRoles = []) => {
           onClick={(e) => {
             e.stopPropagation();
           }}>
-          
+
           {jobBadgeLabel || fullMatch}
         </a>
       );
@@ -337,7 +337,7 @@ const renderMessageContent = (content, userRoles = []) => {
             textDecoration: standalone || prefix && value ? "underline" : "none"
           }}
           title={title}>
-          
+
           {fullMatch}
         </span>
       );
@@ -417,7 +417,7 @@ const MessageBubble = ({
         width: "100%",
         marginTop: isFirstInGroup ? "6px" : "2px"
       }}>
-      
+
       <div
         style={{
           display: "flex",
@@ -425,7 +425,7 @@ const MessageBubble = ({
           alignItems: "flex-end",
           maxWidth: "75%"
         }}>
-        
+
         <div
           style={{
             display: "flex",
@@ -434,7 +434,7 @@ const MessageBubble = ({
             alignItems: isMine ? "flex-end" : "flex-start",
             position: "relative"
           }}>
-          
+
           {replyToMeta &&
           <div
             style={{
@@ -444,7 +444,7 @@ const MessageBubble = ({
               marginBottom: "-6px",
               opacity: 0.75
             }}>
-            
+
               <div
               style={{
                 fontSize: "0.68rem",
@@ -452,7 +452,7 @@ const MessageBubble = ({
                 color: palette.textMuted,
                 padding: "0 10px 2px"
               }}>
-              
+
                 Replying to {replyToMeta.senderName || "message"}
               </div>
               <div
@@ -467,7 +467,7 @@ const MessageBubble = ({
                 transformOrigin: isMine ? "right bottom" : "left bottom",
                 border: `1px solid ${palette.border}`
               }}>
-              
+
                 {String(replyToMeta.contentSnippet || "").slice(0, 160)}
               </div>
             </div>
@@ -486,7 +486,7 @@ const MessageBubble = ({
               marginBottom: "2px",
               zIndex: 2
             }}>
-            
+
               {REACTION_EMOJIS.map((emoji) =>
             <Button
               key={emoji}
@@ -500,7 +500,7 @@ const MessageBubble = ({
                 setActionsOpen(false);
               }}
               aria-label={`React with ${emoji}`}>
-              
+
                   {emoji}
                 </Button>
             )}
@@ -514,7 +514,7 @@ const MessageBubble = ({
                 onReply?.();
                 setActionsOpen(false);
               }}>
-              
+
                 Reply
               </Button>
             </div>
@@ -524,7 +524,7 @@ const MessageBubble = ({
             onClick={() => setActionsOpen((v) => !v)}
             role="button"
             tabIndex={0}>
-            
+
             {renderMessageContent(message.content, userRoles)}
             {leaveRequestMeta ?
             <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -548,7 +548,7 @@ const MessageBubble = ({
                     fontSize: "0.72rem",
                     fontWeight: 700
                   }}>
-                  
+
                     {leaveStatus || "Pending"}
                   </span>
                   <span style={{ fontSize: "0.76rem", color: palette.textMuted }}>
@@ -577,7 +577,7 @@ const MessageBubble = ({
                   pill
                   disabled={decisionBusy}
                   onClick={() => onApproveLeaveRequest?.(message)}>
-                  
+
                       Approve
                     </Button>
                     <Button
@@ -587,7 +587,7 @@ const MessageBubble = ({
                   pill
                   disabled={decisionBusy}
                   onClick={() => onDeclineLeaveRequest?.(message)}>
-                  
+
                       Decline
                     </Button>
                   </div> :
@@ -604,7 +604,7 @@ const MessageBubble = ({
               marginTop: "-6px",
               padding: "0 6px"
             }}>
-            
+
               {Object.entries(aggregatedReactions).map(([emoji, count]) =>
             <Button
               key={emoji}
@@ -616,7 +616,7 @@ const MessageBubble = ({
                 e.stopPropagation();
                 onReact?.(emoji);
               }}>
-              
+
                   <span>{emoji}</span>
                   {count > 1 &&
               <span style={{ color: palette.textMuted, marginLeft: "var(--space-xs)" }}>

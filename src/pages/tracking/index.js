@@ -365,7 +365,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         height: "160px",
         overflow: "hidden"
       }}>
-      
+
       <div style={{ minWidth: 0 }}>
         <strong
           style={{
@@ -377,7 +377,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
             overflow: "hidden",
             textOverflow: "ellipsis"
           }}>
-          
+
           {entry.jobNumber || "Unknown job"} • {entry.reg || "Unknown reg"} • {entry.customer || "Customer pending"}
         </strong>
         <div
@@ -389,7 +389,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
             gap: "10px",
             minWidth: 0
           }}>
-          
+
           <p
             style={{
               margin: 0,
@@ -401,7 +401,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
               minWidth: 0,
               flex: 1
             }}>
-            
+
             {vehicleMeta || "Make/Model/Colour pending"}
           </p>
           <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", whiteSpace: "nowrap", flexShrink: 0 }}>
@@ -418,7 +418,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
           marginTop: "8px",
           minWidth: 0
         }}>
-        
+
         <div style={{ minWidth: 0 }}>
           <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Key location</p>
           <strong
@@ -430,7 +430,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
               overflow: "hidden",
               textOverflow: "ellipsis"
             }}>
-            
+
             {normalizeKeyLocationLabel(entry.keyLocation) || "Pending"}
           </strong>
         </div>
@@ -445,7 +445,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
               overflow: "hidden",
               textOverflow: "ellipsis"
             }}>
-            
+
             {entry.vehicleLocation || "Unallocated"}
           </strong>
         </div>
@@ -468,7 +468,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
         ...popupOverlayStyles,
         zIndex: 200
       }}>
-      
+
       <div
         style={{
           ...popupCardStyles,
@@ -481,7 +481,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
           border: "1px solid var(--search-surface-muted)",
           color: "var(--search-text)"
         }}>
-        
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", letterSpacing: "0.08em" }}>
@@ -499,7 +499,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
           onChange={(event) => setQuery(event.target.value)}
           onClear={() => setQuery("")}
           placeholder={type === "car" ? "Search bays or overflow" : "Search key safes, drawers"} />
-        
+
 
         <div
           style={{
@@ -509,7 +509,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
             flexDirection: "column",
             gap: "var(--space-2)"
           }}>
-          
+
           {filtered.map((option) =>
           <div
             key={option.id}
@@ -525,7 +525,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               gap: "var(--space-3)",
               flexWrap: "wrap"
             }}>
-            
+
               <strong style={{ color: "var(--text-1)" }}>{option.label}</strong>
               <Button variant="secondary" size="sm" onClick={() => onSelect(option)}>
                 Use location
@@ -542,7 +542,7 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
               textAlign: "center",
               color: "var(--search-text)"
             }}>
-            
+
               No locations found.
             </div>
           }
@@ -651,7 +651,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           flexDirection: "column",
           gap: "18px"
         }}>
-        
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>{initialData ? "Edit Equipment/Tools" : "Add Equipment/Tools"}</h2>
           <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
@@ -665,7 +665,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           value={form.name}
           onChange={(event) => handleChange("name", event.target.value)}
           placeholder="Equipment name" />
-        
+
 
         <CalendarField
           label="Last Checked"
@@ -673,7 +673,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           onChange={(e) => handleChange("lastCheckedDate", e.target.value)}
           placeholder="Select date"
           size="md" />
-        
+
 
         <DropdownField
           label="Duration until next check *"
@@ -685,7 +685,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           }
           placeholder="Select duration"
           size="md" />
-        
+
 
         <CalendarField
           label="Next Due"
@@ -693,7 +693,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
           placeholder="Select date"
           size="md"
           disabled />
-        
+
 
         <div
           style={{
@@ -702,7 +702,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
             gap: "var(--space-2)",
             marginTop: "var(--space-2)"
           }}>
-          
+
           <div style={{ display: "flex", gap: "var(--space-2)" }}>
             {initialData?.id &&
             <Button
@@ -718,7 +718,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
                   }
                 });
               }}>
-              
+
                 Delete
               </Button>
             }
@@ -738,7 +738,7 @@ const EquipmentToolsModal = ({ initialData = null, onClose, onSave, onDelete }) 
         confirmLabel="Delete"
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm} />
-      
+
     </div>);
 
 };
@@ -821,7 +821,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           flexDirection: "column",
           gap: "18px"
         }}>
-        
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>{initialData ? "Edit Oil / Stock" : "Add Oil / Stock"}</h2>
           <Button variant="ghost" size="sm" pill onClick={onClose} aria-label="Close">
@@ -835,14 +835,14 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           value={form.title}
           onChange={(event) => handleChange("title", event.target.value)}
           placeholder="Oil/Stock title" />
-        
+
 
         <InputField
           label="Stock"
           value={form.stock}
           onChange={(event) => handleChange("stock", event.target.value)}
           placeholder="e.g., 18 × 5L cans" />
-        
+
 
         <CalendarField
           label="Last Check"
@@ -850,7 +850,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           onChange={(e) => handleChange("lastCheckDate", e.target.value)}
           placeholder="Select date"
           size="md" />
-        
+
 
         <DropdownField
           label="Duration until next check *"
@@ -862,7 +862,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           }
           placeholder="Select duration"
           size="md" />
-        
+
 
         <CalendarField
           label="Next Check"
@@ -870,7 +870,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
           placeholder="Select date"
           size="md"
           disabled />
-        
+
 
         <div
           style={{
@@ -880,7 +880,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
             marginTop: "var(--space-2)",
             flexWrap: "wrap"
           }}>
-          
+
           {initialData?.id &&
           <Button
             type="button"
@@ -895,7 +895,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
                 }
               });
             }}>
-            
+
               Delete
             </Button>
           }
@@ -916,7 +916,7 @@ const OilStockModal = ({ initialData = null, onClose, onSave, onDelete }) => {
         confirmLabel="Delete"
         onCancel={() => setConfirmDialog(null)}
         onConfirm={confirmDialog?.onConfirm} />
-      
+
     </div>);
 
 };
@@ -1014,7 +1014,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           flexDirection: "column",
           gap: "20px"
         }}>
-        
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h2 style={{ margin: "0 0 var(--space-xs) 0" }}>Vehicle & Key Tracking</h2>
@@ -1037,7 +1037,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             borderRadius: "var(--radius-sm)",
             border: "1px solid var(--primary-border)"
           }}>
-          
+
           <div>
             <div style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", marginBottom: "var(--space-xs)" }}>Job Number</div>
             <div style={{ fontSize: "var(--text-body)", fontWeight: 600 }}>{form.jobNumber || "—"}</div>
@@ -1069,7 +1069,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
               gap: "var(--space-3)"
             }}>
-            
+
             <InputField
               label="Job Number / Reg / Customer"
               value={form.jobNumber || form.reg || form.customer}
@@ -1088,7 +1088,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               }}
               placeholder="Enter job number, reg, or customer name"
               disabled={isSearching} />
-            
+
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
@@ -1099,7 +1099,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               onValueChange={(value) => handleChange("vehicleLocation", value)}
               placeholder="Select location"
               size="md" />
-            
+
             <DropdownField
               label="Key Location"
               options={KEY_LOCATION_OPTIONS}
@@ -1107,7 +1107,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               onValueChange={(value) => handleChange("keyLocation", value)}
               placeholder="Select key location"
               size="md" />
-            
+
           </div>
 
           <Button type="submit" variant="primary">
@@ -1121,7 +1121,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
           type="button"
           variant={showUpdate ? "primary" : "secondary"}
           onClick={() => setShowUpdate(!showUpdate)}>
-          
+
           {showUpdate ? "Hide Update Section" : "Update Existing Location"}
         </Button>
 
@@ -1129,7 +1129,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
         <form
           onSubmit={handleUpdateLocation}
           style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-          
+
             <h3 style={{ margin: "0", fontSize: "var(--text-h4)", fontWeight: 600 }}>Update Location</h3>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
@@ -1140,7 +1140,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               onValueChange={(value) => handleChange("vehicleLocation", value)}
               placeholder="Select location"
               size="md" />
-            
+
               <DropdownField
               label="Key Location"
               options={KEY_LOCATION_OPTIONS}
@@ -1148,7 +1148,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
               onValueChange={(value) => handleChange("keyLocation", value)}
               placeholder="Select key location"
               size="md" />
-            
+
             </div>
 
             <Button type="submit" variant="primary">
@@ -1260,7 +1260,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
           flexDirection: "column",
           gap: "18px"
         }}>
-        
+
         <div>
           <h2 style={{ margin: 0 }}>{entry || matchedExisting ? "Edit existing" : "Log new"}</h2>
         </div>
@@ -1271,7 +1271,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: "10px"
           }}>
-          
+
           {[
           { label: "Job Number", field: "jobNumber", placeholder: "HNP-4821" },
           { label: "Registration", field: "reg", placeholder: "GY21 HNP" },
@@ -1294,7 +1294,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
             gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
             gap: "var(--space-2)"
           }}>
-          
+
           <DropdownField
             label="Vehicle Location"
             options={vehicleLocationOptions}
@@ -1302,7 +1302,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
             onValueChange={(value) => handleChange("vehicleLocation", value)}
             placeholder="Select location"
             size="md" />
-          
+
           <DropdownField
             label="Key Location"
             required
@@ -1311,7 +1311,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
             onValueChange={(value) => handleChange("keyLocation", value)}
             placeholder="Select key location"
             size="md" />
-          
+
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-2)" }}>
@@ -1969,7 +1969,7 @@ export default function TrackingDashboard() {
         gap: "12px",
         alignItems: "center"
       }}>
-      
+
         <SearchBar
         value={trackerSearchTerm}
         onChange={(event) => setTrackerSearchTerm(event.target.value)}
@@ -1980,7 +1980,7 @@ export default function TrackingDashboard() {
           flex: "1 1 320px",
           minWidth: "240px"
         }} />
-      
+
         <DropdownField
         options={trackerStatusFilterOptions}
         value={trackerStatusFilter}
@@ -1990,7 +1990,7 @@ export default function TrackingDashboard() {
           flex: "0 1 220px",
           minWidth: "180px"
         }} />
-      
+
         <DropdownField
         options={trackerVehicleLocationFilterOptions}
         value={trackerVehicleLocationFilter}
@@ -2000,7 +2000,7 @@ export default function TrackingDashboard() {
           flex: "0 1 220px",
           minWidth: "190px"
         }} />
-      
+
       </DevLayoutSection>
       {entries.length === 0 &&
     <DevLayoutSection
@@ -2014,7 +2014,7 @@ export default function TrackingDashboard() {
         textAlign: "center",
         color: "var(--info-dark)"
       }}>
-      
+
           No active job tracking data yet.
         </DevLayoutSection>
     }
@@ -2030,7 +2030,7 @@ export default function TrackingDashboard() {
         textAlign: "center",
         color: "var(--info-dark)"
       }}>
-      
+
           Waiting for job-mapped tracking entries.
         </DevLayoutSection>
     }
@@ -2046,7 +2046,7 @@ export default function TrackingDashboard() {
         textAlign: "center",
         color: "var(--info-dark)"
       }}>
-      
+
           No active jobs match your search or filters.
         </DevLayoutSection>
     }
@@ -2066,7 +2066,7 @@ export default function TrackingDashboard() {
         maxWidth: "100%",
         minWidth: 0
       }}>
-      
+
         {filteredActiveEntries.map((entry, index) => {
         const isHighlighted = highlightedJobNumber && entry.jobNumber?.toLowerCase() === highlightedJobNumber.toLowerCase();
         return (
@@ -2075,7 +2075,7 @@ export default function TrackingDashboard() {
             sectionKey={`tracking-active-jobs-card-${index + 1}`}
             parentKey="tracking-active-jobs-list"
             sectionType="content-card">
-            
+
               <CombinedTrackerCard
               entry={entry}
               isHighlighted={isHighlighted}
@@ -2094,7 +2094,7 @@ export default function TrackingDashboard() {
                 keyTip: entry.keyTip,
                 notes: entry.notes
               })} />
-            
+
             </DevLayoutSection>);
 
       })}
@@ -2114,7 +2114,7 @@ export default function TrackingDashboard() {
         gap: "12px",
         alignItems: "center"
       }}>
-      
+
         <SearchBar
         value={equipmentSearchTerm}
         onChange={(event) => setEquipmentSearchTerm(event.target.value)}
@@ -2125,7 +2125,7 @@ export default function TrackingDashboard() {
           flex: "1 1 320px",
           minWidth: "240px"
         }} />
-      
+
         <DropdownField
         options={[
         { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
@@ -2139,7 +2139,7 @@ export default function TrackingDashboard() {
           flex: "0 1 220px",
           minWidth: "180px"
         }} />
-      
+
       </DevLayoutSection>
       <DevLayoutSection
       sectionKey="tracking-equipment-grid"
@@ -2151,7 +2151,7 @@ export default function TrackingDashboard() {
         gap: "16px",
         minWidth: 0
       }}>
-      
+
         {equipmentChecks.length === 0 &&
       <DevLayoutSection
         sectionKey="tracking-equipment-empty-state"
@@ -2165,7 +2165,7 @@ export default function TrackingDashboard() {
           textAlign: "center",
           color: "var(--info-dark)"
         }}>
-        
+
             Equipment service list is empty.
           </DevLayoutSection>
       }
@@ -2220,7 +2220,7 @@ export default function TrackingDashboard() {
               height: "220px",
               overflow: "hidden"
             }}>
-            
+
               <div
               style={{
                 display: "flex",
@@ -2230,7 +2230,7 @@ export default function TrackingDashboard() {
                 minHeight: "28px",
                 minWidth: 0
               }}>
-              
+
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong
                   style={{
@@ -2242,7 +2242,7 @@ export default function TrackingDashboard() {
                     overflow: "hidden",
                     textOverflow: "ellipsis"
                   }}>
-                  
+
                     {check.name}
                   </strong>
                 </div>
@@ -2258,7 +2258,7 @@ export default function TrackingDashboard() {
                   fontSize: "var(--text-body-sm)",
                   color: "var(--info-dark)"
                 }}>
-                
+
                   <span>Last checked</span>
                   <strong>{formatDateOnlyLabel(check.lastChecked)}</strong>
                 </div>
@@ -2269,7 +2269,7 @@ export default function TrackingDashboard() {
                   fontSize: "var(--text-body-sm)",
                   color: "var(--info-dark)"
                 }}>
-                
+
                   <span>Next due</span>
                   <strong>{formatDateOnlyLabel(check.nextDue)}</strong>
                 </div>
@@ -2280,7 +2280,7 @@ export default function TrackingDashboard() {
                   fontSize: "var(--text-body-sm)",
                   color: "var(--info-dark)"
                 }}>
-                
+
                   <span>Check interval</span>
                   <strong>{durationLabel}</strong>
                 </div>
@@ -2294,7 +2294,7 @@ export default function TrackingDashboard() {
                 handleEquipmentCheck(check.id);
               }}
               style={{ marginTop: "auto", width: "100%" }}>
-              
+
                 Log check
               </Button>
             </DevLayoutSection>);
@@ -2316,7 +2316,7 @@ export default function TrackingDashboard() {
         gap: "12px",
         alignItems: "center"
       }}>
-      
+
         <SearchBar
         value={oilSearchTerm}
         onChange={(event) => setOilSearchTerm(event.target.value)}
@@ -2327,7 +2327,7 @@ export default function TrackingDashboard() {
           flex: "1 1 320px",
           minWidth: "240px"
         }} />
-      
+
         <DropdownField
         options={[
         { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
@@ -2341,7 +2341,7 @@ export default function TrackingDashboard() {
           flex: "0 1 220px",
           minWidth: "180px"
         }} />
-      
+
       </DevLayoutSection>
       <DevLayoutSection
       sectionKey="tracking-oil-grid"
@@ -2353,7 +2353,7 @@ export default function TrackingDashboard() {
         gap: "16px",
         minWidth: 0
       }}>
-      
+
         {oilChecks.length === 0 &&
       <DevLayoutSection
         sectionKey="tracking-oil-empty-state"
@@ -2367,7 +2367,7 @@ export default function TrackingDashboard() {
           textAlign: "center",
           color: "var(--info-dark)"
         }}>
-        
+
             Oil stock checklist is empty.
           </DevLayoutSection>
       }
@@ -2422,7 +2422,7 @@ export default function TrackingDashboard() {
               height: isTopUpActive ? "auto" : "260px",
               overflow: "hidden"
             }}>
-            
+
               <div
               style={{
                 display: "flex",
@@ -2432,7 +2432,7 @@ export default function TrackingDashboard() {
                 minHeight: "28px",
                 minWidth: 0
               }}>
-              
+
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong
                   style={{
@@ -2444,7 +2444,7 @@ export default function TrackingDashboard() {
                     overflow: "hidden",
                     textOverflow: "ellipsis"
                   }}>
-                  
+
                     {item.title}
                   </strong>
                 </div>
@@ -2460,7 +2460,7 @@ export default function TrackingDashboard() {
                   fontSize: "var(--text-body-sm)",
                   color: "var(--info-dark)"
                 }}>
-                
+
                   <span>Stock amount</span>
                   <strong>{item.stock || "—"}</strong>
                 </div>
@@ -2471,7 +2471,7 @@ export default function TrackingDashboard() {
                   fontSize: "var(--text-body-sm)",
                   color: "var(--info-dark)"
                 }}>
-                
+
                   <span>Last check</span>
                   <strong>{formatDateOnlyLabel(item.lastCheck)}</strong>
                 </div>
@@ -2482,7 +2482,7 @@ export default function TrackingDashboard() {
                   fontSize: "var(--text-body-sm)",
                   color: "var(--info-dark)"
                 }}>
-                
+
                   <span>Next check</span>
                   <strong>{formatDateOnlyLabel(item.nextCheck)}</strong>
                 </div>
@@ -2493,7 +2493,7 @@ export default function TrackingDashboard() {
                   fontSize: "var(--text-body-sm)",
                   color: "var(--info-dark)"
                 }}>
-                
+
                   <span>Check interval</span>
                   <strong>{durationLabel}</strong>
                 </div>
@@ -2507,7 +2507,7 @@ export default function TrackingDashboard() {
                 onChange={(e) => setTopUpValue(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
                 placeholder="e.g., 18 × 5L cans" />
-              
+
                   <Button
                 type="button"
                 variant="primary"
@@ -2517,7 +2517,7 @@ export default function TrackingDashboard() {
                   handleOilCheck(item.id, topUpValue);
                 }}
                 style={{ width: "100%" }}>
-                
+
                     Save
                   </Button>
                 </div>
@@ -2533,7 +2533,7 @@ export default function TrackingDashboard() {
                 setTopUpValue(item.stock || "");
               }}
               style={{ marginTop: "auto", width: "100%" }}>
-              
+
                   Mark checked
                 </Button>
             }

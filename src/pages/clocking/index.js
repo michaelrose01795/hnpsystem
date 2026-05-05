@@ -513,7 +513,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
       sectionType="section-shell"
       shell
       style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-      
+
       {/* Summary Stats Section */}
       <DevLayoutSection
         as="section"
@@ -532,7 +532,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           flexDirection: "column",
           gap: "10px"
         }}>
-        
+
         <div>
           <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>
             Summary Statistics
@@ -549,7 +549,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
             gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
             gap: "14px"
           }}>
-          
+
             <SkeletonKeyframes />
             {Array.from({ length: 4 }).map((_, i) =>
           <div
@@ -562,7 +562,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               flexDirection: "column",
               gap: "8px"
             }}>
-            
+
                 <SkeletonBlock width="60%" height="10px" />
                 <SkeletonBlock width="40%" height="28px" />
                 <SkeletonBlock width="80%" height="10px" />
@@ -579,7 +579,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
             gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
             gap: "14px"
           }}>
-          
+
             <DevLayoutSection
             sectionKey="clocking-stat-total"
             parentKey="clocking-overview-stats-grid"
@@ -595,7 +595,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               flexDirection: "column",
               gap: "6px"
             }}>
-            
+
               <span
               style={{
                 textTransform: "uppercase",
@@ -603,7 +603,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 fontSize: "0.78rem",
                 color: "var(--info)"
               }}>
-              
+
                 Technicians Total
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.total.valueColor }}>
@@ -629,7 +629,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               flexDirection: "column",
               gap: "6px"
             }}>
-            
+
               <span
               style={{
                 textTransform: "uppercase",
@@ -637,7 +637,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 fontSize: "0.78rem",
                 color: "var(--info)"
               }}>
-              
+
                 In Progress
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.inProgress.valueColor }}>
@@ -663,7 +663,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               flexDirection: "column",
               gap: "6px"
             }}>
-            
+
               <span
               style={{
                 textTransform: "uppercase",
@@ -671,7 +671,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 fontSize: "0.78rem",
                 color: "var(--info)"
               }}>
-              
+
                 MOT Count
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.onMot.valueColor }}>
@@ -697,7 +697,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               flexDirection: "column",
               gap: "6px"
             }}>
-            
+
               <span
               style={{
                 textTransform: "uppercase",
@@ -705,7 +705,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 fontSize: "0.78rem",
                 color: "var(--info)"
               }}>
-              
+
                 Tea Break
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.teaBreak.valueColor }}>
@@ -731,7 +731,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               flexDirection: "column",
               gap: "6px"
             }}>
-            
+
               <span
               style={{
                 textTransform: "uppercase",
@@ -739,7 +739,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 fontSize: "0.78rem",
                 color: "var(--info)"
               }}>
-              
+
                 Waiting
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.waiting.valueColor }}>
@@ -765,7 +765,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               flexDirection: "column",
               gap: "6px"
             }}>
-            
+
               <span
               style={{
                 textTransform: "uppercase",
@@ -773,7 +773,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 fontSize: "0.78rem",
                 color: "var(--info)"
               }}>
-              
+
                 Offline
               </span>
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.notClocked.valueColor }}>
@@ -798,7 +798,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           color: "var(--danger)",
           fontSize: "0.9rem"
         }}>
-        
+
           {error}
         </div>
       }
@@ -821,7 +821,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           flexDirection: "column",
           gap: "10px"
         }}>
-        
+
         <div>
           <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>
             Technician Status
@@ -835,7 +835,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: "14px"
           }}>
-          
+
             <SkeletonKeyframes />
             {Array.from({ length: 6 }).map((_, i) =>
           <div
@@ -849,7 +849,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               gap: "10px",
               minHeight: "110px"
             }}>
-            
+
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   <SkeletonBlock width="32px" height="32px" borderRadius="999px" />
                   <SkeletonBlock width="60%" height="14px" />
@@ -869,7 +869,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
             textAlign: "center",
             color: "var(--info)"
           }}>
-          
+
             No technicians or MOT testers are currently clocked in.
           </div> :
 
@@ -882,7 +882,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
             gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
             gap: "16px"
           }}>
-          
+
             {teamStatus.map((tech) => {
             const showClockButton =
             tech.status === "Not Clocked In" ||
@@ -907,7 +907,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 data-dev-section-key={`clocking-overview-tech-${tech.userId}`}
                 data-dev-section-type="content-card"
                 data-dev-section-parent="clocking-overview-technician-grid">
-                
+
                   <article
                   style={{
                     borderRadius: "var(--radius-md)",
@@ -933,7 +933,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                     e.currentTarget.style.boxShadow = "none";
                     e.currentTarget.style.zIndex = "0";
                   }}>
-                  
+
                     <div
                     style={{
                       display: "flex",
@@ -941,7 +941,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                       alignItems: "flex-start",
                       gap: "12px"
                     }}>
-                    
+
                       <div style={{ flex: 1 }}>
                         <h3
                         style={{
@@ -950,7 +950,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           fontWeight: 600,
                           color: "var(--primary-selected)"
                         }}>
-                        
+
                           {tech.name}
                         </h3>
                       </div>
@@ -968,7 +968,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                             color: statusStyle.color,
                             cursor: "pointer"
                           }}>
-                          
+
                               {clockButtonLabel}
                             </button>
                             {tech.status !== "Not Clocked In" &&
@@ -984,7 +984,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           border: statusStyle.border,
                           color: statusStyle.color
                         }}>
-                        
+
                             {tech.status}
                           </span>
                       }
@@ -997,7 +997,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                       gridTemplateColumns: "1fr 1fr",
                       gap: "12px"
                     }}>
-                    
+
                     <div
                       style={{
                         borderRadius: "var(--radius-sm)",
@@ -1005,7 +1005,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                         background: "var(--surface)",
                         border: "none"
                       }}>
-                      
+
                       <p
                         style={{
                           margin: 0,
@@ -1014,7 +1014,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           letterSpacing: "0.05em",
                           color: "var(--info)"
                         }}>
-                        
+
                         Current Job
                       </p>
                       <p
@@ -1024,7 +1024,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           fontWeight: 600,
                           color: "var(--primary-selected)"
                         }}>
-                        
+
                         {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber ?
                         tech.jobNumber :
                         "—"}
@@ -1038,7 +1038,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                         background: "var(--surface)",
                         border: "none"
                       }}>
-                      
+
                       <p
                         style={{
                           margin: 0,
@@ -1047,7 +1047,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           letterSpacing: "0.05em",
                           color: "var(--info)"
                         }}>
-                        
+
                         Time
                       </p>
                       <p
@@ -1057,7 +1057,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           fontWeight: 600,
                           color: "var(--primary-selected)"
                         }}>
-                        
+
                         {tech.timeOnActivity}
                       </p>
                     </div>
@@ -1071,7 +1071,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                       marginTop: "auto",
                       paddingTop: "8px"
                     }}>
-                    
+
                     <span
                       style={{
                         fontSize: "0.7rem",
@@ -1079,7 +1079,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                         letterSpacing: "0.05em",
                         color: "var(--info)"
                       }}>
-                      
+
                       {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber ?
                       "Active assignment" :
                       "Awaiting assignment"}
@@ -1097,7 +1097,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                         fontWeight: 600,
                         minHeight: "var(--control-height)"
                       }}>
-                      
+
                       View details
                       <span style={{ fontSize: "0.9rem" }}>&gt;</span>
                     </span>
@@ -1127,7 +1127,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="clocking-modal-title">
-          
+
             <div
             style={{
               width: "min(460px, 100%)",
@@ -1140,7 +1140,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               flexDirection: "column",
               gap: "16px"
             }}>
-            
+
             <div>
               <p style={{ margin: 0, fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
                 {selectedTechnician.name} · {selectedTechnician.role}
@@ -1161,7 +1161,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 color: "var(--danger-dark)",
                 fontSize: "0.85rem"
               }}>
-              
+
                 {modalError}
               </div>
             }
@@ -1176,7 +1176,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 display: "grid",
                 gap: "10px"
               }}>
-              
+
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "var(--info)" }}>
                   <span style={{ fontWeight: 600 }}>Job number</span>
                   <span>{selectedTechnician.jobNumber || "—"}</span>
@@ -1211,7 +1211,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   color: "var(--text-1)",
                   minHeight: "var(--control-height)"
                 }} />
-              
+
               </div>
             }
 
@@ -1230,7 +1230,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   fontWeight: 600,
                   minHeight: "var(--control-height)"
                 }}>
-                
+
                 Close
               </button>
               <button
@@ -1250,7 +1250,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                   cursor: modalActionDisabled ? "not-allowed" : "pointer",
                   opacity: modalActionDisabled ? 0.7 : 1
                 }}>
-                
+
                 {modalActionLabel}
               </button>
             </div>

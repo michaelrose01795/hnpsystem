@@ -3,7 +3,7 @@
 // Privacy hub for the signed-in user. Self-serve access to the data we
 // hold, consent management, and subject-request filing.
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";import LayerSurface from "@/components/ui/LayerSurface";
 import Head from "next/head";
 import Link from "next/link";
 import Layout from "@/components/Layout";
@@ -17,7 +17,7 @@ const REQUEST_TYPE_LABELS = {
   rectification: "Rectification (fix incorrect data)",
   portability: "Portability (machine-readable export)",
   objection: "Objection (stop a specific use of my data)",
-  restriction: "Restriction (pause processing of my data)",
+  restriction: "Restriction (pause processing of my data)"
 };
 
 const STATUS_LABELS = {
@@ -25,7 +25,7 @@ const STATUS_LABELS = {
   identity_verified: "Identity verified",
   in_progress: "In progress",
   fulfilled: "Fulfilled",
-  rejected: "Rejected",
+  rejected: "Rejected"
 };
 
 const formatDate = (iso) => {
@@ -36,7 +36,7 @@ const formatDate = (iso) => {
       month: "short",
       year: "numeric",
       hour: "2-digit",
-      minute: "2-digit",
+      minute: "2-digit"
     });
   } catch {
     return iso;
@@ -46,43 +46,43 @@ const formatDate = (iso) => {
 function ProfileSummary({ profile }) {
   if (!profile) return null;
   const fields = [
-    ["First name", profile.first_name],
-    ["Last name", profile.last_name],
-    ["Email", profile.email],
-    ["Phone", profile.phone],
-    ["Role", profile.role],
-    ["Job title", profile.job_title],
-    ["Department", profile.department],
-    ["Employment type", profile.employment_type],
-    ["Start date", profile.start_date],
-    ["Home address", profile.home_address],
-    ["Account created", formatDate(profile.created_at)],
-    ["Password last changed", formatDate(profile.password_updated_at)],
-  ].filter(([, value]) => value);
+  ["First name", profile.first_name],
+  ["Last name", profile.last_name],
+  ["Email", profile.email],
+  ["Phone", profile.phone],
+  ["Role", profile.role],
+  ["Job title", profile.job_title],
+  ["Department", profile.department],
+  ["Employment type", profile.employment_type],
+  ["Start date", profile.start_date],
+  ["Home address", profile.home_address],
+  ["Account created", formatDate(profile.created_at)],
+  ["Password last changed", formatDate(profile.password_updated_at)]].
+  filter(([, value]) => value);
 
   return (
     <div style={{ display: "grid", gap: 8 }}>
-      {fields.map(([label, value]) => (
-        <div
-          key={label}
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(160px, 1fr) 2fr",
-            gap: 12,
-            padding: "8px 0",
-            borderBottom: "1px solid var(--primary-border)",
-          }}
-        >
+      {fields.map(([label, value]) =>
+      <div
+        key={label}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(160px, 1fr) 2fr",
+          gap: 12,
+          padding: "8px 0",
+          borderBottom: "1px solid var(--primary-border)"
+        }}>
+
           <span style={{ color: "var(--text-1)" }}>{label}</span>
           <span>{value}</span>
         </div>
-      ))}
+      )}
       <p style={{ margin: "12px 0 0", fontSize: "0.85rem", color: "var(--text-1)" }}>
         Need to correct anything? Use{" "}
         <strong>Rectification</strong> below to file a request, or contact your manager.
       </p>
-    </div>
-  );
+    </div>);
+
 }
 
 function ConsentManager({ initial, onUpdated }) {
@@ -112,8 +112,8 @@ function ConsentManager({ initial, onUpdated }) {
         body: JSON.stringify({
           purpose,
           status: granted ? "granted" : "withdrawn",
-          source: "profile_privacy_page",
-        }),
+          source: "profile_privacy_page"
+        })
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload?.success) {
@@ -142,9 +142,9 @@ function ConsentManager({ initial, onUpdated }) {
               gap: 12,
               padding: "10px 12px",
               border: "1px solid var(--primary-border)",
-              borderRadius: "var(--radius-xs, 6px)",
-            }}
-          >
+              borderRadius: "var(--radius-xs, 6px)"
+            }}>
+
             <div>
               <div style={{ fontWeight: 600 }}>{label}</div>
               <div style={{ fontSize: "0.8rem", color: "var(--text-1)" }}>
@@ -156,20 +156,20 @@ function ConsentManager({ initial, onUpdated }) {
               variant={granted ? "secondary" : "primary"}
               size="sm"
               disabled={busy === purpose}
-              onClick={() => toggle(purpose, !granted)}
-            >
+              onClick={() => toggle(purpose, !granted)}>
+
               {busy === purpose ? "Saving..." : granted ? "Withdraw" : "Grant"}
             </Button>
-          </div>
-        );
+          </div>);
+
       })}
-      {error && (
-        <p role="alert" style={{ margin: 0, color: "var(--danger-base, #ef4444)", fontSize: "0.85rem" }}>
+      {error &&
+      <p role="alert" style={{ margin: 0, color: "var(--danger-base, #ef4444)", fontSize: "0.85rem" }}>
           {error}
         </p>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 }
 
 function SubjectRequestForm({ onCreated }) {
@@ -188,7 +188,7 @@ function SubjectRequestForm({ onCreated }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ requestType, details }),
+        body: JSON.stringify({ requestType, details })
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload?.success) {
@@ -209,11 +209,11 @@ function SubjectRequestForm({ onCreated }) {
   };
 
   const statusColour =
-    statusType === "error"
-      ? "var(--danger-base, #ef4444)"
-      : statusType === "success"
-      ? "var(--success-base, #16a34a)"
-      : "var(--text-1)";
+  statusType === "error" ?
+  "var(--danger-base, #ef4444)" :
+  statusType === "success" ?
+  "var(--success-base, #16a34a)" :
+  "var(--text-1)";
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: 10, maxWidth: 520 }}>
@@ -223,13 +223,13 @@ function SubjectRequestForm({ onCreated }) {
           value={requestType}
           onChange={(e) => setRequestType(e.target.value)}
           className="app-input"
-          style={{ marginTop: 4, width: "100%", minHeight: 40 }}
-        >
-          {Object.entries(REQUEST_TYPE_LABELS).map(([v, label]) => (
-            <option key={v} value={v}>
+          style={{ marginTop: 4, width: "100%", minHeight: 40 }}>
+
+          {Object.entries(REQUEST_TYPE_LABELS).map(([v, label]) =>
+          <option key={v} value={v}>
               {label}
             </option>
-          ))}
+          )}
         </select>
       </label>
       <label style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
@@ -240,21 +240,21 @@ function SubjectRequestForm({ onCreated }) {
           rows={4}
           maxLength={2000}
           className="app-input"
-          style={{ marginTop: 4, width: "100%" }}
-        />
+          style={{ marginTop: 4, width: "100%" }} />
+
       </label>
-      {statusMessage && (
-        <p role={statusType === "error" ? "alert" : undefined} style={{ margin: 0, color: statusColour, fontSize: "0.85rem" }}>
+      {statusMessage &&
+      <p role={statusType === "error" ? "alert" : undefined} style={{ margin: 0, color: statusColour, fontSize: "0.85rem" }}>
           {statusMessage}
         </p>
-      )}
+      }
       <div>
         <Button type="submit" variant="primary" disabled={submitting}>
           {submitting ? "Filing..." : "File Request"}
         </Button>
       </div>
-    </form>
-  );
+    </form>);
+
 }
 
 function RequestsList({ requests }) {
@@ -262,8 +262,8 @@ function RequestsList({ requests }) {
     return (
       <p style={{ margin: 0, color: "var(--text-1)" }}>
         You have not filed any subject requests.
-      </p>
-    );
+      </p>);
+
   }
   return (
     <div style={{ overflowX: "auto" }}>
@@ -277,8 +277,8 @@ function RequestsList({ requests }) {
           </tr>
         </thead>
         <tbody>
-          {requests.map((row) => (
-            <tr key={row.id}>
+          {requests.map((row) =>
+          <tr key={row.id}>
               <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--primary-border)" }}>
                 {REQUEST_TYPE_LABELS[row.request_type] || row.request_type}
               </td>
@@ -292,11 +292,11 @@ function RequestsList({ requests }) {
                 {formatDate(row.due_at)}
               </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
-    </div>
-  );
+    </div>);
+
 }
 
 export function PrivacyPanel() {
@@ -327,7 +327,7 @@ export function PrivacyPanel() {
   }, [tick]);
 
   return (
-    <div className="app-page-card" style={{ padding: "8px 8px 32px" }}>
+    <LayerSurface as="div" style={{ padding: "8px 8px 32px" }}>
       <div className="app-page-stack">
         <Section title="Privacy">
           <p style={{ margin: 0, color: "var(--text-1)", lineHeight: 1.5 }}>
@@ -336,19 +336,19 @@ export function PrivacyPanel() {
             controls (password change, recent sign-in activity) are on{" "}
             <Link href="/account/security">/account/security</Link>.
           </p>
-          {error && (
-            <p role="alert" style={{ margin: "10px 0 0", color: "var(--danger-base, #ef4444)" }}>
+          {error &&
+          <p role="alert" style={{ margin: "10px 0 0", color: "var(--danger-base, #ef4444)" }}>
               {error}
             </p>
-          )}
+          }
         </Section>
 
         <Section title="Your Profile Data">
-          {data ? (
-            <ProfileSummary profile={data.profile} />
-          ) : (
-            <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
-          )}
+          {data ?
+          <ProfileSummary profile={data.profile} /> :
+
+          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          }
         </Section>
 
         <Section title="Download a Copy">
@@ -366,9 +366,9 @@ export function PrivacyPanel() {
               background: "var(--primary)",
               color: "var(--onAccentText)",
               fontWeight: 700,
-              textDecoration: "none",
-            }}
-          >
+              textDecoration: "none"
+            }}>
+
             Download my data (JSON)
           </a>
           <p style={{ margin: "10px 0 0", fontSize: "0.8rem", color: "var(--text-1)" }}>
@@ -378,14 +378,14 @@ export function PrivacyPanel() {
         </Section>
 
         <Section title="Marketing &amp; Communication Consents">
-          {data ? (
-            <ConsentManager
-              initial={data.consents}
-              onUpdated={() => setTick((n) => n + 1)}
-            />
-          ) : (
-            <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
-          )}
+          {data ?
+          <ConsentManager
+            initial={data.consents}
+            onUpdated={() => setTick((n) => n + 1)} /> :
+
+
+          <p style={{ margin: 0, color: "var(--text-1)" }}>Loading...</p>
+          }
         </Section>
 
         <Section title="File a Subject Request">
@@ -396,8 +396,8 @@ export function PrivacyPanel() {
           <RequestsList requests={data?.requests || []} />
         </Section>
       </div>
-    </div>
-  );
+    </LayerSurface>);
+
 }
 
 export default function PrivacyHubPage() {
@@ -411,6 +411,6 @@ export default function PrivacyHubPage() {
           <PrivacyPanel />
         </div>
       </Layout>
-    </ProtectedRoute>
-  );
+    </ProtectedRoute>);
+
 }
