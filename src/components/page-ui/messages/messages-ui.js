@@ -69,6 +69,7 @@ export default function MessagesPageUi(props) {
     handleSendMessage,
     handleStartChat,
     handleThreadCheckboxChange,
+    handleTogglePinnedThread,
     hasSystemUnread,
     isGroupChat,
     isGroupLeader,
@@ -90,6 +91,7 @@ export default function MessagesPageUi(props) {
     openThread,
     orderedSystemNotifications,
     palette,
+    pinnedThreads = [],
     radii,
     replyTo,
     scrollerRef,
@@ -193,22 +195,6 @@ export default function MessagesPageUi(props) {
               alignItems: "center",
               gap: "var(--space-sm)"
             }}>
-                        <Button type="button" variant={activeSystemView ? "primary" : "secondary"} size="sm" pill onClick={openSystemNotificationsThread}>
-                          <span style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "var(--space-1)"
-                }}>
-                            System
-                            {hasSystemUnread && <span aria-hidden="true" style={{
-                    width: "var(--space-sm)",
-                    height: "var(--space-sm)",
-                    borderRadius: "var(--radius-full)",
-                    backgroundColor: "var(--primary)",
-                    display: "inline-block"
-                  }} />}
-                          </span>
-                        </Button>
                         <Button type="button" variant="secondary" size="sm" pill onClick={() => {
                 if (!visibleThreads.length) return;
                 setThreadSelectionMode(true);
@@ -228,7 +214,7 @@ export default function MessagesPageUi(props) {
                 <SearchBar placeholder="Search threads..." value={threadSearchTerm} onChange={event => setThreadSearchTerm(event.target.value)} onClear={() => setThreadSearchTerm("")} style={{
               width: "100%",
               marginTop: "10px",
-              marginBottom: "10px"
+              marginBottom: "0"
             }} />
               </DevLayoutSection>
 
@@ -245,20 +231,83 @@ export default function MessagesPageUi(props) {
             paddingBottom: "6px",
             paddingRight: "2px"
           }}>
+                <DevLayoutSection sectionKey="messages-thread-pins" parentKey="messages-thread-list" sectionType="toolbar" style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 0,
+              width: "100%",
+              flex: "0 0 auto"
+            }}>
+                  {pinnedThreads.length === 0 && <span aria-hidden="true" />}
+                  <button type="button" className={`app-btn app-btn--${activeSystemView ? "primary" : "secondary"} app-btn--pill`} onClick={openSystemNotificationsThread} style={{
+                width: "100%",
+                height: "44px",
+                minWidth: 0,
+                justifyContent: "center",
+                overflow: "hidden"
+              }}>
+                    <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "var(--space-1)",
+                  minWidth: 0
+                }}>
+                      <span style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap"
+                  }}>
+                        System
+                      </span>
+                      {hasSystemUnread && <span aria-label="Unread system messages" style={{
+                    width: "var(--space-sm)",
+                    height: "var(--space-sm)",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "currentColor",
+                    display: "inline-block",
+                    flex: "0 0 auto"
+                  }} />}
+                    </span>
+                  </button>
+                  {pinnedThreads.map(thread => <button key={`pin-${thread.id}`} type="button" className={`app-btn app-btn--${activeThreadId === thread.id && !activeSystemView ? "primary" : "secondary"} app-btn--pill`} onClick={() => openThread(thread.id, thread)} onDoubleClick={() => handleTogglePinnedThread(thread.id)} title="Double click to unpin" style={{
+                width: "100%",
+                height: "44px",
+                minWidth: 0,
+                justifyContent: "center",
+                overflow: "hidden"
+              }}>
+                      <span style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}>
+                        {thread.title}
+                      </span>
+                      {thread.hasUnread && <span aria-label="Unread messages" style={{
+                  width: "var(--space-sm)",
+                  height: "var(--space-sm)",
+                  borderRadius: "var(--radius-full)",
+                  backgroundColor: "currentColor",
+                  display: "inline-block",
+                  flex: "0 0 auto",
+                  marginLeft: "var(--space-1)"
+                }} />}
+                    </button>)}
+                  {Array.from({ length: Math.max(0, pinnedThreads.length === 0 ? 1 : 2 - pinnedThreads.length) }).map((_, index) => <span key={`pin-empty-${index}`} aria-hidden="true" />)}
+                </DevLayoutSection>
                 {loadingThreads && <ThreadRowsSkeleton count={5} />}
                 {!loadingThreads && <>
                     {filteredThreads.length ? <div style={{
                 display: "flex",
                 flexDirection: "column",
-                gap: "10px"
+                gap: "6px"
               }}>
                         {filteredThreads.map(thread => <div key={thread.id} data-dev-section="1" data-dev-section-key={`messages-thread-row-${thread.id}`} data-dev-section-type="section-shell" data-dev-section-parent="messages-thread-list" data-dev-background-token="messages-thread-row" style={{
                   display: "flex",
-                  alignItems: "flex-start",
+                  alignItems: "center",
                   gap: "12px"
                 }}>
                             {threadSelectionMode && <input type="checkbox" checked={selectedThreadIds.includes(thread.id)} onChange={() => handleThreadCheckboxChange(thread.id)} style={{
-                    marginTop: "18px",
                     width: "16px",
                     height: "16px",
                     cursor: "pointer"
@@ -269,15 +318,20 @@ export default function MessagesPageUi(props) {
                       event.preventDefault();
                       openThread(thread.id, thread);
                     }
-                  }} data-dev-section="1" data-dev-section-key={`messages-thread-card-${thread.id}`} data-dev-section-type="content-card" data-dev-section-parent={`messages-thread-row-${thread.id}`} data-dev-background-token={activeThreadId === thread.id ? "messages-thread-card-active" : thread.hasUnread ? "messages-thread-card-unread" : "messages-thread-card"} style={{
+                  }} onDoubleClick={() => threadSelectionMode ? null : handleTogglePinnedThread(thread.id)} title={threadSelectionMode ? undefined : "Double click to pin"} data-dev-section="1" data-dev-section-key={`messages-thread-card-${thread.id}`} data-dev-section-type="content-card" data-dev-section-parent={`messages-thread-row-${thread.id}`} data-dev-background-token={activeThreadId === thread.id ? "messages-thread-card-active" : thread.hasUnread ? "messages-thread-card-unread" : "messages-thread-card"} style={{
                     flex: 1,
+                    height: "44px",
                     borderRadius: "var(--radius-md)",
                     backgroundColor: activeThreadId === thread.id ? "rgba(var(--accent-purple-rgb), 0.12)" : thread.hasUnread ? unreadBackgroundColor : "var(--surface)",
-                    padding: "var(--space-md)",
+                    padding: "0 12px",
                     textAlign: "left",
                     cursor: threadSelectionMode ? "default" : "pointer",
                     boxShadow: activeThreadId === thread.id ? `inset 4px 0 0 ${palette.accent}` : "none",
-                    transition: "background-color 0.16s ease"
+                    transition: "background-color 0.16s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    minWidth: 0
                   }} onMouseEnter={event => {
                     if (threadSelectionMode || activeThreadId === thread.id) return;
                     event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
@@ -287,46 +341,31 @@ export default function MessagesPageUi(props) {
                   }}>
                               <strong style={{
                       display: "block",
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                       fontSize: "var(--text-body)",
                       fontWeight: activeThreadId === thread.id ? 800 : 700,
                       color: systemTitleColor
                     }}>
                                 {thread.title}
                               </strong>
-                              {thread.lastMessage ? <span style={{
-                      display: "block",
-                      marginTop: "var(--space-1)",
-                      fontSize: "var(--text-label)",
-                      color: "var(--text-1)",
-                      lineHeight: 1.45
-                    }}>
-                                  <span style={{
-                        color: systemTitleColor,
-                        fontWeight: activeThreadId === thread.id ? 700 : 600
-                      }}>
-                                    {thread.lastMessage.sender?.name || "Someone"}
-                                  </span>
-                                  {": "}
-                                  {thread.lastMessage.content.length > 64 ? `${thread.lastMessage.content.slice(0, 64)}…` : thread.lastMessage.content}
-                                </span> : <span style={{
-                      fontSize: "var(--text-label)",
-                      color: palette.textMuted
-                    }}>
-                                  No messages yet
-                                </span>}
                               {thread.hasUnread && <span style={{
-                      marginTop: "var(--space-sm)",
+                      width: "18px",
+                      height: "18px",
                       display: "inline-flex",
-                      padding: "3px 8px",
-                      borderRadius: radii.pill,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "var(--radius-full)",
                       backgroundColor: palette.accent,
                       color: "var(--surface)",
-                      fontSize: "var(--text-caption)",
+                      fontSize: "10px",
                       fontWeight: 700,
-                      letterSpacing: "var(--tracking-wide)",
-                      textTransform: "uppercase"
-                    }}>
-                                  Unread
+                      flex: "0 0 auto"
+                    }} aria-label="Unread messages">
+                                  !
                                 </span>}
                             </div>
                           </div>)}

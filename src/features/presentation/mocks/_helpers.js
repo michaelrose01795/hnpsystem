@@ -138,6 +138,8 @@ const SAFE_VALUE = new Proxy({}, {
 function defaultForName(prop) {
   if (typeof prop !== "string") return undefined;
   if (prop === "view") return "section1";
+  if (prop === "ref") return null;
+  if (/Ref$/.test(prop)) return { current: null };
   if (prop === "user") return DEMO_USER;
   if (prop === "session") return { user: DEMO_USER };
   if (prop === "router") return { query: {}, asPath: "/", pathname: "/", push: noop, replace: noop, back: noop };

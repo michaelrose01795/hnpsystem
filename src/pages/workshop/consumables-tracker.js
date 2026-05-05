@@ -21,10 +21,7 @@ import ConsumablesTrackerPageUi from "@/components/page-ui/workshop/workshop-con
 // Cards use the active theme surface unless a nested card explicitly opts into
 // --surface.
 const cardStyle = {
-  backgroundColor: "var(--theme)",
-  borderRadius: "var(--section-card-radius)",
-  padding: "var(--section-card-padding)",
-  border: "var(--section-card-border)"
+  padding: "var(--section-card-padding)"
 };
 
 const sectionTitleStyle = {

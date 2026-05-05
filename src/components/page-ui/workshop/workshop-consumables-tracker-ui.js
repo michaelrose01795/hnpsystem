@@ -8,9 +8,7 @@ export default function ConsumablesTrackerPageUi(props) {
     Link,
     PageShell,
     SearchBar,
-    SectionShell,
     StockCheckPopup,
-    accentDashedBorder,
     budgetInput,
     budgetSaveError,
     budgetSaveMessage,
@@ -137,7 +135,7 @@ export default function ConsumablesTrackerPageUi(props) {
     case "section2":
       return <>
       <PageShell sectionKey="workshop-consumables-tracker-shell">
-        <ContentWidth sectionKey="workshop-consumables-tracker-content" parentKey="workshop-consumables-tracker-shell" widthMode="content" style={{ gap: "10px" }}>
+        <ContentWidth sectionKey="workshop-consumables-tracker-content" parentKey="workshop-consumables-tracker-shell" widthMode="content" style={{ gap: "var(--layout-card-gap)" }}>
           {!orderModalConsumable && showDuplicateModal && potentialDuplicates.length > 0 && <div style={duplicateOverlayStyle}>
               <div style={duplicateModalStyle}>
                 <h3 style={{
@@ -343,10 +341,10 @@ export default function ConsumablesTrackerPageUi(props) {
                   </form>}
               </div>
             </div>}
-            <LayerSurface as="div" style={{
+            <LayerSurface as="div" sectionKey="workshop-consumables-budget-card" parentKey="workshop-consumables-tracker-content" style={{
               ...cardStyle
             }}>
-              <div style={{
+              <div data-presentation="workshop-consumables-budget" style={{
                 display: "flex",
                 flexDirection: "column",
                 gap: "16px"
@@ -493,8 +491,8 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
             </LayerSurface>
 
-            <LayerSurface as="div" style={{ ...cardStyle }}>
-              <div style={{
+            <LayerSurface as="div" sectionKey="workshop-consumables-logs-card" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle }}>
+              <div data-presentation="workshop-consumables-logs" style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -684,8 +682,8 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
             </LayerSurface>
 
-              <LayerSurface as="div" style={{ ...cardStyle }}>
-                <div style={{
+              <LayerSurface as="div" sectionKey="workshop-consumables-totals-card" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle }}>
+                <div data-presentation="workshop-consumables-totals" style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                 gap: "10px"
@@ -759,10 +757,10 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
               </LayerSurface>
 
-            <LayerSurface as="div" style={{
+            <LayerSurface as="div" sectionKey="workshop-consumables-scheduled-card" parentKey="workshop-consumables-tracker-content" style={{
               ...cardStyle
             }}>
-              <div style={{
+              <div data-presentation="workshop-consumables-scheduled" style={{
                 display: "flex",
                 flexWrap: "wrap",
                 justifyContent: "space-between",
@@ -929,10 +927,10 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
             </LayerSurface>
 
-          <LayerSurface as="div" style={{
+          <LayerSurface as="div" sectionKey="workshop-consumables-requests-card" parentKey="workshop-consumables-tracker-content" style={{
               ...cardStyle
             }}>
-            <div style={{
+            <div data-presentation="workshop-consumables-requests" style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",

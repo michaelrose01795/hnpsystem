@@ -1,5 +1,4 @@
 // file location: src/components/page-ui/job-cards/view/job-cards-view-ui.js
-import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function ViewJobCardsUi(props) {
@@ -363,7 +362,7 @@ export default function ViewJobCardsUi(props) {
                     fontSize: "14px",
                     color: "var(--grey-accent)"
                   }}>
-                      <strong>Mileage:</strong> {popupJob.mileage.toLocaleString()} miles
+                      <strong>Mileage:</strong> {Number(popupJob.mileage || 0).toLocaleString()} miles
                     </div>}
                   {/* ✅ Waiting Status */}
                   {popupJob.waitingStatus && popupJob.waitingStatus !== "Neither" && <div style={{

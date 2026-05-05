@@ -111,6 +111,7 @@ const cardStyle = {
 };
 
 const UNREAD_MARKER_STORAGE_KEY = "messagesUnreadMarkerDismissals";
+const PINNED_THREADS_STORAGE_KEY = "messagesPinnedThreadIds";
 
 const SectionTitle = ({ title, subtitle, action }) => {
   const hasHeading = Boolean(title || subtitle);
@@ -390,7 +391,7 @@ const MessageBubble = ({
   const bubbleStyles = {
     padding: "10px 14px",
     borderRadius: radiusValue,
-    backgroundColor: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--search-surface)",
+    backgroundColor: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--surface)",
     color: palette.textPrimary,
     maxWidth: "100%",
     boxShadow: "var(--shadow-md)",
@@ -1001,6 +1002,7 @@ function MessagesPage() {
   const [composeError, setComposeError] = useState("");
   const [newChatModalOpen, setNewChatModalOpen] = useState(false);
   const [threadSearchTerm, setThreadSearchTerm] = useState("");
+  const [pinnedThreadIds, setPinnedThreadIds] = useState([]);
   const [threadSelectionMode, setThreadSelectionMode] = useState(false);
   const [selectedThreadIds, setSelectedThreadIds] = useState([]);
   const [groupEditModalOpen, setGroupEditModalOpen] = useState(false);
@@ -1130,6 +1132,19 @@ function MessagesPage() {
     });
   }, [threadSearchTerm, visibleThreads]);
 
+  const pinnedThreads = useMemo(
+    () =>
+    pinnedThreadIds.
+    map((threadId) => visibleThreads.find((thread) => thread.id === threadId)).
+    filter(Boolean),
+    [pinnedThreadIds, visibleThreads]
+  );
+
+  const unpinnedFilteredThreads = useMemo(
+    () => filteredThreads.filter((thread) => !pinnedThreadIds.includes(thread.id)),
+    [filteredThreads, pinnedThreadIds]
+  );
+
   const userNameColor = "var(--accent-purple)";
   const systemTitleColor = userNameColor;
   const unreadBackgroundColor = "rgba(var(--accent-purple-rgb), 0.14)";
@@ -1224,6 +1239,19 @@ function MessagesPage() {
     }
   }, []);
 
+  const handleTogglePinnedThread = useCallback((threadId) => {
+    if (!threadId) return;
+    setPinnedThreadIds((prev) => {
+      const exists = prev.includes(threadId);
+      if (!exists && prev.length >= 2) return prev;
+      const next = exists ? prev.filter((id) => id !== threadId) : [...prev, threadId];
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(PINNED_THREADS_STORAGE_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -1254,6 +1282,34 @@ function MessagesPage() {
       );
     });
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = window.localStorage.getItem(PINNED_THREADS_STORAGE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        setPinnedThreadIds(parsed.filter((id) => typeof id === "string").slice(0, 2));
+      }
+    } catch {
+
+      // Ignore malformed storage data and start with only the system pin.
+    }}, []);
+
+  useEffect(() => {
+    if (!threads.length) return;
+    setPinnedThreadIds((prev) => {
+      const next = prev.filter((threadId) =>
+      visibleThreads.some((thread) => thread.id === threadId)
+      );
+      if (next.length === prev.length) return prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(PINNED_THREADS_STORAGE_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  }, [threads.length, visibleThreads]);
 
   const fetchThreads = useCallback(async () => {
     if (!dbUserId) return;
@@ -2272,7 +2328,7 @@ function MessagesPage() {
 
   }
 
-  return <MessagesPageUi view="section2" activeSystemView={activeSystemView} activeThread={activeThread} activeThreadId={activeThreadId} activeThreadUnreadMarkerIndex={activeThreadUnreadMarkerIndex} availableCommands={availableCommands} Button={Button} canEditGroup={canEditGroup} canInitiateChat={canInitiateChat} canSend={canSend} cardStyle={cardStyle} Chip={Chip} closeGroupEditModal={closeGroupEditModal} closeNewChatModal={closeNewChatModal} ColleagueRowsSkeleton={ColleagueRowsSkeleton} commandHelpOpen={commandHelpOpen} commandSuggestions={commandSuggestions} composeError={composeError} composeMode={composeMode} ComposeToggleButton={ComposeToggleButton} conversationError={conversationError} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} directory={directory} directoryLoading={directoryLoading} directorySearch={directorySearch} filteredThreads={filteredThreads} formatNotificationTimestamp={formatNotificationTimestamp} groupEditBusy={groupEditBusy} groupEditError={groupEditError} groupEditModalOpen={groupEditModalOpen} groupEditTitle={groupEditTitle} groupLeaderCount={groupLeaderCount} groupManageBusy={groupManageBusy} groupManageError={groupManageError} groupMembersModalOpen={groupMembersModalOpen} groupName={groupName} groupSearchLoading={groupSearchLoading} groupSearchResults={groupSearchResults} groupSearchTerm={groupSearchTerm} handleAddMemberToGroup={handleAddMemberToGroup} handleApproveLeaveRequest={handleApproveLeaveRequest} handleCloseSelectionMode={handleCloseSelectionMode} handleConfirmDeclineLeaveRequest={handleConfirmDeclineLeaveRequest} handleDeleteSelectedThreads={handleDeleteSelectedThreads} handleDirectoryUser={handleDirectoryUser} handleInsertCommandFromHelp={handleInsertCommandFromHelp} handleMessageDraftChange={handleMessageDraftChange} handleMobileBack={handleMobileBack} handleOpenDeclineLeaveRequest={handleOpenDeclineLeaveRequest} handleOpenNewChatModal={handleOpenNewChatModal} handleRemoveMemberFromGroup={handleRemoveMemberFromGroup} handleSaveGroupDetails={handleSaveGroupDetails} handleSelectCommand={handleSelectCommand} handleSendMessage={handleSendMessage} handleStartChat={handleStartChat} handleThreadCheckboxChange={handleThreadCheckboxChange} hasSystemUnread={hasSystemUnread} InlineLoading={InlineLoading} InputField={InputField} isGroupChat={isGroupChat} isGroupLeader={isGroupLeader} isMobileView={isMobileView} isRecipientSelected={isRecipientSelected} leaveDecisionBusy={leaveDecisionBusy} leaveDecisionError={leaveDecisionError} leaveDeclineModal={leaveDeclineModal} leaveDeclineReason={leaveDeclineReason} loadingMessages={loadingMessages} loadingThreads={loadingThreads} MessageBubble={MessageBubble} MessageBubblesSkeleton={MessageBubblesSkeleton} messageDraft={messageDraft} messageReactions={messageReactions} messages={messages} mobilePanelView={mobilePanelView} ModalPortal={ModalPortal} newChatModalOpen={newChatModalOpen} openGroupEditModal={openGroupEditModal} openSystemNotificationsThread={openSystemNotificationsThread} openThread={openThread} orderedSystemNotifications={orderedSystemNotifications} palette={palette} radii={radii} replyTo={replyTo} scrollerRef={scrollerRef} SearchBar={SearchBar} SectionTitle={SectionTitle} selectedRecipients={selectedRecipients} selectedThreadIds={selectedThreadIds} sending={sending} setCommandHelpOpen={setCommandHelpOpen} setComposeError={setComposeError} setComposeMode={setComposeMode} setDirectorySearch={setDirectorySearch} setGroupEditTitle={setGroupEditTitle} setGroupMembersModalOpen={setGroupMembersModalOpen} setGroupName={setGroupName} setGroupSearchTerm={setGroupSearchTerm} setLeaveDecisionError={setLeaveDecisionError} setLeaveDeclineModal={setLeaveDeclineModal} setLeaveDeclineReason={setLeaveDeclineReason} setMessageReactions={setMessageReactions} setReplyTo={setReplyTo} setSelectedRecipients={setSelectedRecipients} setSelectedThreadIds={setSelectedThreadIds} setSystemUnreadMarkerEl={setSystemUnreadMarkerEl} setThreadSearchTerm={setThreadSearchTerm} setThreadSelectionMode={setThreadSelectionMode} setThreadUnreadMarkerEl={setThreadUnreadMarkerEl} shadows={shadows} showCommandSuggestions={showCommandSuggestions} showSystemUnreadMarker={showSystemUnreadMarker} showThreadUnreadMarker={showThreadUnreadMarker} StatusMessage={StatusMessage} systemError={systemError} systemLoading={systemLoading} systemTimestampLabel={systemTimestampLabel} systemTitleColor={systemTitleColor} systemUnreadMarkerIndex={systemUnreadMarkerIndex} threadDeleteBusy={threadDeleteBusy} threadDeleteError={threadDeleteError} ThreadRowsSkeleton={ThreadRowsSkeleton} threadSearchTerm={threadSearchTerm} threadSelectionMode={threadSelectionMode} unreadBackgroundColor={unreadBackgroundColor} user={user} userNameColor={userNameColor} visibleThreads={visibleThreads} />;
+  return <MessagesPageUi view="section2" activeSystemView={activeSystemView} activeThread={activeThread} activeThreadId={activeThreadId} activeThreadUnreadMarkerIndex={activeThreadUnreadMarkerIndex} availableCommands={availableCommands} Button={Button} canEditGroup={canEditGroup} canInitiateChat={canInitiateChat} canSend={canSend} cardStyle={cardStyle} Chip={Chip} closeGroupEditModal={closeGroupEditModal} closeNewChatModal={closeNewChatModal} ColleagueRowsSkeleton={ColleagueRowsSkeleton} commandHelpOpen={commandHelpOpen} commandSuggestions={commandSuggestions} composeError={composeError} composeMode={composeMode} ComposeToggleButton={ComposeToggleButton} conversationError={conversationError} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} directory={directory} directoryLoading={directoryLoading} directorySearch={directorySearch} filteredThreads={unpinnedFilteredThreads} formatNotificationTimestamp={formatNotificationTimestamp} groupEditBusy={groupEditBusy} groupEditError={groupEditError} groupEditModalOpen={groupEditModalOpen} groupEditTitle={groupEditTitle} groupLeaderCount={groupLeaderCount} groupManageBusy={groupManageBusy} groupManageError={groupManageError} groupMembersModalOpen={groupMembersModalOpen} groupName={groupName} groupSearchLoading={groupSearchLoading} groupSearchResults={groupSearchResults} groupSearchTerm={groupSearchTerm} handleAddMemberToGroup={handleAddMemberToGroup} handleApproveLeaveRequest={handleApproveLeaveRequest} handleCloseSelectionMode={handleCloseSelectionMode} handleConfirmDeclineLeaveRequest={handleConfirmDeclineLeaveRequest} handleDeleteSelectedThreads={handleDeleteSelectedThreads} handleDirectoryUser={handleDirectoryUser} handleInsertCommandFromHelp={handleInsertCommandFromHelp} handleMessageDraftChange={handleMessageDraftChange} handleMobileBack={handleMobileBack} handleOpenDeclineLeaveRequest={handleOpenDeclineLeaveRequest} handleOpenNewChatModal={handleOpenNewChatModal} handleRemoveMemberFromGroup={handleRemoveMemberFromGroup} handleSaveGroupDetails={handleSaveGroupDetails} handleSelectCommand={handleSelectCommand} handleSendMessage={handleSendMessage} handleStartChat={handleStartChat} handleThreadCheckboxChange={handleThreadCheckboxChange} handleTogglePinnedThread={handleTogglePinnedThread} hasSystemUnread={hasSystemUnread} InlineLoading={InlineLoading} InputField={InputField} isGroupChat={isGroupChat} isGroupLeader={isGroupLeader} isMobileView={isMobileView} isRecipientSelected={isRecipientSelected} leaveDecisionBusy={leaveDecisionBusy} leaveDecisionError={leaveDecisionError} leaveDeclineModal={leaveDeclineModal} leaveDeclineReason={leaveDeclineReason} loadingMessages={loadingMessages} loadingThreads={loadingThreads} MessageBubble={MessageBubble} MessageBubblesSkeleton={MessageBubblesSkeleton} messageDraft={messageDraft} messageReactions={messageReactions} messages={messages} mobilePanelView={mobilePanelView} ModalPortal={ModalPortal} newChatModalOpen={newChatModalOpen} openGroupEditModal={openGroupEditModal} openSystemNotificationsThread={openSystemNotificationsThread} openThread={openThread} orderedSystemNotifications={orderedSystemNotifications} palette={palette} pinnedThreads={pinnedThreads} radii={radii} replyTo={replyTo} scrollerRef={scrollerRef} SearchBar={SearchBar} SectionTitle={SectionTitle} selectedRecipients={selectedRecipients} selectedThreadIds={selectedThreadIds} sending={sending} setCommandHelpOpen={setCommandHelpOpen} setComposeError={setComposeError} setComposeMode={setComposeMode} setDirectorySearch={setDirectorySearch} setGroupEditTitle={setGroupEditTitle} setGroupMembersModalOpen={setGroupMembersModalOpen} setGroupName={setGroupName} setGroupSearchTerm={setGroupSearchTerm} setLeaveDecisionError={setLeaveDecisionError} setLeaveDeclineModal={setLeaveDeclineModal} setLeaveDeclineReason={setLeaveDeclineReason} setMessageReactions={setMessageReactions} setReplyTo={setReplyTo} setSelectedRecipients={setSelectedRecipients} setSelectedThreadIds={setSelectedThreadIds} setSystemUnreadMarkerEl={setSystemUnreadMarkerEl} setThreadSearchTerm={setThreadSearchTerm} setThreadSelectionMode={setThreadSelectionMode} setThreadUnreadMarkerEl={setThreadUnreadMarkerEl} shadows={shadows} showCommandSuggestions={showCommandSuggestions} showSystemUnreadMarker={showSystemUnreadMarker} showThreadUnreadMarker={showThreadUnreadMarker} StatusMessage={StatusMessage} systemError={systemError} systemLoading={systemLoading} systemTimestampLabel={systemTimestampLabel} systemTitleColor={systemTitleColor} systemUnreadMarkerIndex={systemUnreadMarkerIndex} threadDeleteBusy={threadDeleteBusy} threadDeleteError={threadDeleteError} ThreadRowsSkeleton={ThreadRowsSkeleton} threadSearchTerm={threadSearchTerm} threadSelectionMode={threadSelectionMode} unreadBackgroundColor={unreadBackgroundColor} user={user} userNameColor={userNameColor} visibleThreads={visibleThreads} />;
 
 
 

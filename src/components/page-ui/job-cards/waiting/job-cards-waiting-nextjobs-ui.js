@@ -2,7 +2,6 @@
 
 import React from "react"; // support extracted fragments.
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
-import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function NextJobsPageUi(props) {
   const {
@@ -77,7 +76,7 @@ export default function NextJobsPageUi(props) {
 
     case "section4":
       return <>
-      <div style={{
+      <div data-presentation="nextjobs-board" style={{
     minHeight: "100%",
     display: "flex",
     flexDirection: "column",
@@ -95,7 +94,7 @@ export default function NextJobsPageUi(props) {
       transition: "all 0.2s ease",
       color: "var(--text-1)"
     }}>
-          <div data-dev-section-key="nextjobs-outstanding-header" data-dev-section-parent="nextjobs-outstanding" data-dev-section-type="toolbar" style={{
+          <div data-presentation="nextjobs-outstanding" data-dev-section-key="nextjobs-outstanding-header" data-dev-section-parent="nextjobs-outstanding" data-dev-section-type="toolbar" style={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -338,7 +337,7 @@ export default function NextJobsPageUi(props) {
       flex: "1 0 auto"
     }}>
           
-          <div data-dev-section-key="nextjobs-tech-grid" data-dev-section-parent="nextjobs-technicians" data-dev-section-type="data-table" data-dev-width-mode="full" style={{
+          <div data-presentation="nextjobs-technicians" data-dev-section-key="nextjobs-tech-grid" data-dev-section-parent="nextjobs-technicians" data-dev-section-type="data-table" data-dev-width-mode="full" style={{
         display: "grid",
         gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
         gridAutoRows: PANEL_HEIGHT_PX,
@@ -410,7 +409,8 @@ export default function NextJobsPageUi(props) {
 
         {/* ✅ JOB DETAILS POPUP */}
         {selectedJob && (() => {
-      const detailsRows = getJobDetailsRequestRows(selectedJob);
+      const rawDetailsRows = getJobDetailsRequestRows(selectedJob);
+      const detailsRows = Array.isArray(rawDetailsRows) ? rawDetailsRows : [];
       const hasScrollableDetails = detailsRows.length > 5;
       const assignedToName = selectedJob.assignedTech?.name || "Unassigned";
       return <div className="popup-backdrop" onClick={handleCloseJobDetails}>

@@ -1,12 +1,9 @@
-LAYER SWEEP HANDOFF PROMPT CONT
-
-Have it so you continue with this following "", claude has got to Batch 5 so contiune with that see the current git changes waiting to be made to see whats happened so far
+gets claude to double check handoff has been made correctly. 
 
 
 update the "# Role Page Access Draft" page with the edits
 
-laptop
-npm install bcryptjs
+
 
 Presentation!!!!!!!!!
 /create card doesnt use the create ui for Presentation 
@@ -14,7 +11,36 @@ Presentation!!!!!!!!!
 
 what is the height of the tab buttons? 32px
 
+TODO
+within the "👍
+👎
+❤️
+🔥
+😂
+😮
+Reply2 section remove the borders from around this section and have it so the section bacgkround uses --surface colour and th ebuttons use --theme colour background add a glow effect around the whole of the section evenly to make it look like its hovering
 
+
+
+TODO
+
+move "Select
++" button onto the same row as the search bar within "/messages :: 1.2.2.1.1.1.1.1.2 (messages-thread-search)" section have it so the search bar is made smaller or bigger depening on the size of the screen, not the buttons being changed.
+
+
+
+TODO
+
+disable highligin when double click is used within "/messages :: 1.2.2.1.1.1.1.1.4 (messages-thread-list)" section rows.
+
+
+
+
+
+
+
+TODO
+have it so the background of the topbar uses --surface colour. also add within the showcase section within the "Colour Tokens" section any new colours which are being used under a heading "New" which arent already within the "Colour Tokens" sectin already, also within that section add colours which are the same clours which are withn the "Colour Tokens" section but jsut use a differnt name 
 
 
 

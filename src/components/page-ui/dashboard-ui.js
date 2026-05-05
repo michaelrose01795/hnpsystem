@@ -55,14 +55,14 @@ export default function DashboardUi(props) {
       return <>
       <PageShell sectionKey="dashboard-fallback-shell">
         <ContentWidth sectionKey="dashboard-fallback-content" parentKey="dashboard-fallback-shell" widthMode="content">
-        <div> {/* outer container for dashboard */}
+        <div data-presentation="dashboard-overview"> {/* outer container for dashboard */}
         <LayerSurface as="div" data-dev-section="1" data-dev-section-key="dashboard-fallback-toolbar" data-dev-section-type="toolbar" data-dev-section-parent="dashboard-fallback-content" style={{
                 display: "flex",
                 justifyContent: "flex-end",
                 alignItems: "center",
                 padding: "12px 20px"
               }}>
-          <button onClick={() => setShowSearch(true)} style={{
+          <button data-presentation="dashboard-global-search" onClick={() => setShowSearch(true)} style={{
                   padding: "10px 16px",
                   backgroundColor: "var(--primary)",
                   color: "white",
@@ -76,7 +76,7 @@ export default function DashboardUi(props) {
           </button>
         </LayerSurface>
 
-        <div data-dev-section="1" data-dev-section-key="dashboard-fallback-table-shell" data-dev-section-type="section-shell" data-dev-section-parent="dashboard-fallback-content" data-dev-shell="1" style={{
+        <div data-presentation="dashboard-live-jobs" data-dev-section="1" data-dev-section-key="dashboard-fallback-table-shell" data-dev-section-type="section-shell" data-dev-section-parent="dashboard-fallback-content" data-dev-shell="1" style={{
                 backgroundColor: "var(--danger-surface)",
                 padding: "var(--section-card-padding)",
                 borderRadius: "var(--radius-xs)",

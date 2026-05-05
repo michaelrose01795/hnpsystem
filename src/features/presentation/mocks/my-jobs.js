@@ -38,7 +38,7 @@ export default function MyJobsMock() {
         getMakeModel: (j) => `${j.make} ${j.model}`,
         getStatusBadgeStyle: () => ({}),
         getTechStatusCategory: () => "working",
-        resolveTechStatusLabel: (s) => s || "Working",
+        resolveTechStatusLabel: (job) => job?.tech_status || "Working",
         resolveTechStatusTooltip: () => "",
         summarizePartsPipeline: () => ({ ordered: 1, delivered: 0, fitted: 0 }),
       }}

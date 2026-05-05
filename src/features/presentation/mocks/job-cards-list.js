@@ -117,6 +117,7 @@ export default function JobCardsListMock() {
         emptyStateMessage: "No jobs match the current filter.",
         isOrdersTab: false,
         ordersLoading: false,
+        popupJob: null,
         searchPlaceholder: "Search by job, reg or customer",
         searchValues: { todays: "" },
         statusCounts: { "in-progress": 1, "awaiting-parts": 1, ready: 1 },
