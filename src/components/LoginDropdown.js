@@ -307,6 +307,7 @@ export default function LoginDropdown({
           setSelectedUser(null);
         }}
         className="login-dropdown__control"
+        usePortal={false}
       />
 
       <Dropdown
@@ -338,6 +339,7 @@ export default function LoginDropdown({
           setSelectedUser(null);
         }}
         className="login-dropdown__control"
+        usePortal={false}
       />
 
       <Dropdown
@@ -358,6 +360,7 @@ export default function LoginDropdown({
           setSelectedUser(nextUser);
         }}
         className="login-dropdown__control"
+        usePortal={false}
       />
     </div>
   );

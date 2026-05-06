@@ -180,7 +180,10 @@ export default function CookieBanner() {
       bottom: 16,
       zIndex: 1500,
       maxWidth: 720,
+      maxHeight: "calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom))",
       margin: "0 auto",
+      overflowY: "auto",
+      WebkitOverflowScrolling: "touch",
       // Surface, padding, radius and (no) border all flow from the
       // Shared layer token system declared in globals.css.
       color: "var(--text-1)",
@@ -273,7 +276,11 @@ export default function CookieBanner() {
           display: "flex",
           flexWrap: "wrap",
           gap: 8,
-          justifyContent: "flex-end"
+          justifyContent: "flex-end",
+          position: "sticky",
+          bottom: 0,
+          paddingTop: 4,
+          background: "var(--surface)"
         }}>
 
         {!showCustomise &&

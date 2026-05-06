@@ -21,6 +21,34 @@ function readBorderRadius(el) {
   return null;
 }
 
+function isRectInViewport(rect, pad = 32) {
+  if (!rect || typeof window === "undefined") return false;
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+  return (
+    rect.top >= pad &&
+    rect.left >= pad &&
+    rect.bottom <= viewportHeight - pad &&
+    rect.right <= viewportWidth - pad
+  );
+}
+
+function scrollAnchorIntoView(anchor) {
+  const found = getAnchorRect(anchor);
+  if (!found) return false;
+
+  if (!isRectInViewport(found.rect)) {
+    found.el.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "nearest",
+    });
+  }
+
+  return true;
+}
+
 // Thick brand-accent border around the highlighted feature, with an inverse
 // box-shadow that dims everything else without touching the highlight itself.
 // Padding around the rect (10px) keeps the border off the content.
@@ -34,6 +62,13 @@ export default function PresentationHighlight({ anchor }) {
     }
 
     let rafId = null;
+    let scrollTimeoutId = null;
+
+    function ensureAnchorVisible(attempt = 0) {
+      if (scrollAnchorIntoView(anchor) || attempt >= 6) return;
+      scrollTimeoutId = setTimeout(() => ensureAnchorVisible(attempt + 1), 120);
+    }
+
     function resolve() {
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
@@ -46,12 +81,14 @@ export default function PresentationHighlight({ anchor }) {
       });
     }
 
+    ensureAnchorVisible();
     resolve();
     const interval = setInterval(resolve, 350);
     window.addEventListener("resize", resolve);
     window.addEventListener("scroll", resolve, true);
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
+      if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
       clearInterval(interval);
       window.removeEventListener("resize", resolve);
       window.removeEventListener("scroll", resolve, true);

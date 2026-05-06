@@ -8,15 +8,15 @@ update the "# Role Page Access Draft" page with the edits
 Presentation!!!!!!!!!
 /create card doesnt use the create ui for Presentation 
 
+CHECK
 Have it so within the presnentaion when overview or Business Value popup is highlighting a section, have it so it scrolls the page and makes sure the highlighted section can is within the view of the screen.
 
 
 CEHCK
-have it so for the customer dev login section is within the /login page any customer which is created within the app like within the /create page it shows allows the dev login section
+customer dev login so it hsows the customers created within the app and shows all the correct details.
 
 CEHCK
-have it so we are adding a new global feature, this is a month picker, add this to the showcase section which is following the global.css add it aroudn the calendar picker section as a global item. so lets have it so it has a button on the left named "Prev" and a button on the right named "Next" in the middle of the two buttons where the month is show is also a button with a 100% transparent background which when clicked brings a dropwdonw list of of the months to selected along with options to have a year there as well which also will get shown within the month section. have it so the full section is within a tab style background which is 44px and then the buttons within the month picker are 32px.
-
+monthly pcikers within the app to use global.css style
 
 
 
@@ -28,7 +28,7 @@ look into "Review Media" section after editing photo
 TODO DEEP ONE
 with camera for concerns, hgave ir link rto vhc photo and vedio section  in catagory of wipers etc
 
-
+CHECK
 Mileage to show within the customer page inside previous job section. 
 
 
