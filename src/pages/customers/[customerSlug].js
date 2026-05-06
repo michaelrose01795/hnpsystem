@@ -343,7 +343,14 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
 
       {/* Add Vehicle controls */}
       {!showForm ?
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <div
+        data-dev-section="1"
+        data-dev-section-key="customer-profile-insights-vehicle-add-toolbar"
+        data-dev-section-type="toolbar"
+        data-dev-section-parent="customer-profile-insights-vehicles"
+        data-dev-background-token="transparent"
+        data-dev-text-preview="Vehicle add action"
+        style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
           type="button"
           className="app-btn app-btn--primary app-btn--sm"
@@ -420,6 +427,12 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
           {dvlaData &&
         <LayerSurface as="div"
 
+        data-dev-section="1"
+        data-dev-section-key="customer-profile-insights-vehicle-dvla-preview"
+        data-dev-section-type="content-card"
+        data-dev-section-parent="customer-profile-insights-vehicle-add-form"
+        data-dev-background-token="accent-surface"
+        data-dev-text-preview={`DVLA preview ${newReg.trim().toUpperCase() || "vehicle lookup"}`}
         style={{
 
 
@@ -452,7 +465,14 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
 
           {/* Save / Save without DVLA */}
           {(dvlaData || newReg.trim()) &&
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div
+          data-dev-section="1"
+          data-dev-section-key="customer-profile-insights-vehicle-save-toolbar"
+          data-dev-section-type="toolbar"
+          data-dev-section-parent="customer-profile-insights-vehicle-add-form"
+          data-dev-background-token="transparent"
+          data-dev-text-preview="Vehicle save actions"
+          style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <button
             type="button"
             className="app-btn app-btn--primary app-btn--sm"
@@ -494,6 +514,12 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
 
       <LayerSurface as="div"
 
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-insights-vehicle-grid"
+      data-dev-section-type="section-shell"
+      data-dev-section-parent="customer-profile-insights-vehicles"
+      data-dev-background-token="transparent"
+      data-dev-text-preview={`${vehicles.length} linked vehicle${vehicles.length === 1 ? "" : "s"}`}
       style={{
         display: "grid",
         gap: "16px",
@@ -514,7 +540,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
             data-dev-section="1"
             data-dev-section-key={`customer-profile-insights-vehicle-${vehicle.vehicle_id}`}
             data-dev-section-type="content-card"
-            data-dev-section-parent="customer-profile-insights-vehicles"
+            data-dev-section-parent="customer-profile-insights-vehicle-grid"
             data-dev-background-token="accent-surface"
             style={{
 
@@ -747,6 +773,7 @@ const InsightsTab = ({ vehicles, jobs, customerId, onVehicleAdded }) =>
   data-dev-section-type="section-shell"
   data-dev-section-parent="customer-profile-tab-insights"
   data-dev-background-token="transparent"
+  data-dev-text-preview="Insights tab stack"
   style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
 
     <VehiclesSection vehicles={vehicles} customerId={customerId} onVehicleAdded={onVehicleAdded} />

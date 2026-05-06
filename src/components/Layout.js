@@ -792,6 +792,8 @@ export default function Layout({
     height: "auto",
     minHeight: "100vh",
     width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
     fontFamily: "var(--font-family)",
     background: colors.background || colors.mainBg,
     color: colors.text,
@@ -868,6 +870,7 @@ export default function Layout({
         style={{
           flex: hideSidebar ? "none" : 1,
           maxWidth: mainColumnMaxWidth,
+          minWidth: 0,
           width: hideSidebar ? "100%" : "100%",
           display: "flex",
           flexDirection: "column",

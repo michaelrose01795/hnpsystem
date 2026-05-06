@@ -148,6 +148,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   flex: 1;
   width: 100%;
   max-width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--page-stack-gap);
@@ -3199,6 +3200,32 @@ button.monthpicker-api__picker-cell.is-selected {
   }
 }
 
+@media (max-width: 640px) and (orientation: portrait) {
+  .monthpicker-api {
+    width: min(100%, 260px);
+  }
+
+  .monthpicker-api__control {
+    gap: 2px;
+    padding: 5px;
+  }
+
+  button.monthpicker-api__nav-button {
+    min-width: 46px;
+    padding-inline: 8px;
+  }
+
+  button.monthpicker-api__month-year {
+    padding-inline: 8px;
+  }
+
+  .monthpicker-api__menu {
+    width: min(calc(100vw - 56px), 288px);
+    max-width: 288px;
+    padding: 12px;
+  }
+}
+
 .timepicker-api__display {
   font-size: 1rem;
   font-weight: 600;
@@ -4933,8 +4960,8 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 }
 
-/* Real portrait phones use a widened layout viewport in _document.js, so
-   touch/portrait detection keeps the login cards stacked on those screens. */
+/* Real portrait phones keep login cards stacked even when browser UI changes
+   make CSS width and device width disagree. */
 @media (max-device-width: 640px) and (orientation: portrait), (pointer: coarse) and (orientation: portrait) {
   body:has(.login-page-wrapper) {
     overflow-y: auto;

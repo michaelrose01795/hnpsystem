@@ -25,6 +25,7 @@ export default function LayerSurface({
   backgroundToken = "surface",
   widthMode = "",
   shell = false,
+  ...rest
 }) {
   const surfaceStyle = {
     background: "var(--surface)",
@@ -48,6 +49,7 @@ export default function LayerSurface({
         shell={shell}
         className={className}
         style={surfaceStyle}
+        {...rest}
       >
         {children}
       </DevLayoutSection>
@@ -56,7 +58,7 @@ export default function LayerSurface({
 
   const Component = as;
   return (
-    <Component className={className} style={surfaceStyle}>
+    <Component className={className} style={surfaceStyle} {...rest}>
       {children}
     </Component>
   );

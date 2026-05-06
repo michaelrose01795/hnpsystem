@@ -46,9 +46,6 @@ const getBootTheme = (cookies = {}) => {
   };
 };
 
-// Detect phone-class user agents so we can emit a fit-to-width viewport that loads zoomed out.
-const isPhoneUserAgent = (userAgent = "") => /Android.+Mobile|iPhone|iPod|Mobile.+Firefox|BlackBerry|IEMobile|Opera Mini/i.test(String(userAgent));
-
 const hasAuthenticatedCookie = (cookies = {}) =>
   Object.keys(cookies).some(
     (key) =>
@@ -290,22 +287,15 @@ class MyDocument extends Document {
   static async getInitialProps(ctx) {
     const initialProps = await Document.getInitialProps(ctx);
     const cookies = parseCookieHeader(ctx?.req?.headers?.cookie || "");
-    // Sniff the UA so phone clients get a zoomed-out viewport from the first paint.
-    const userAgent = ctx?.req?.headers?.["user-agent"] || "";
     return {
       ...initialProps,
       bootTheme: getBootTheme(cookies),
       hasAuthCookie: hasAuthenticatedCookie(cookies),
-      isPhone: isPhoneUserAgent(userAgent),
     };
   }
 
   render() {
     const bootTheme = this.props.bootTheme || getBootTheme({});
-    // Phones render the desktop layout scaled to fit; other devices keep the standard viewport.
-    const viewportContent = this.props.isPhone
-      ? "width=1280, initial-scale=1, viewport-fit=cover"
-      : "width=device-width, initial-scale=1, viewport-fit=cover";
 
     return (
       <Html
@@ -315,7 +305,7 @@ class MyDocument extends Document {
         style={{ backgroundColor: bootTheme.background, colorScheme: bootTheme.resolvedMode }}
       >
         <Head>
-          <meta name="viewport" content={viewportContent} />
+          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
           <meta name="theme-color" content={bootTheme.background} />
           <meta name="mobile-web-app-capable" content="yes" />
           <meta name="apple-mobile-web-app-capable" content="yes" />

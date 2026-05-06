@@ -130,6 +130,9 @@ const toLocalRect = (rect, bounds) => ({
 
 const getSectionTextPreview = (node) => {
   if (!node) return "";
+  if (node.hasAttribute?.("data-dev-text-preview")) {
+    return String(node.getAttribute("data-dev-text-preview") || "").replace(/\s+/g, " ").trim().slice(0, 180);
+  }
 
   const rootKey = sanitizeKey(node.getAttribute?.("data-dev-section-key") || "");
   const parts = [];
@@ -744,7 +747,7 @@ export default function DevLayoutOverlay() {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["class", "style", "data-dev-section-key", "data-dev-section-parent", "data-dev-background-token"],
+      attributeFilter: ["class", "style", "data-dev-section-key", "data-dev-section-parent", "data-dev-background-token", "data-dev-text-preview"],
     });
 
     update();
