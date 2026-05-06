@@ -1713,7 +1713,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
     "1px solid color-mix(in srgb, var(--danger) 30%, var(--surface))" :
     "1px solid var(--surface)";
     const restingBackground =
-    "var(--surface)";
+    "var(--theme)";
 
     return (
       <button
@@ -1736,7 +1736,7 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           gap: "8px"
         }}
         onMouseEnter={(event) => {
-          event.currentTarget.style.background = "var(--surface)";
+          event.currentTarget.style.background = "var(--theme)";
           event.currentTarget.style.borderColor = missingLinkedAccount ? "var(--danger)" : "var(--primary)";
           event.currentTarget.style.transform = "translateY(-1px)";
           event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
@@ -1957,7 +1957,7 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
 
   return (
     <div className="popup-backdrop" role="dialog" aria-modal="true" style={popupOverlayStyles}>
-      <div style={{ ...popupCardStyles, padding: "24px" }}>
+      <div style={{ ...popupCardStyles, padding: "24px", width: "min(94vw, 620px)", maxWidth: "620px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
           <h3 style={{ margin: 0 }}>Search parts catalogue</h3>
           <button onClick={onClose} style={secondaryButtonStyle}>
@@ -1985,7 +1985,9 @@ function GoodsInPartSearchModal({ onClose, onSelect, initialQuery = "" }) {
               border: "none",
               borderRadius: "var(--radius-sm)",
               marginBottom: "8px",
-              cursor: "pointer"
+              cursor: "pointer",
+              background: "var(--theme)",
+              color: "var(--text-1)"
             }}
             onClick={() => onSelect(part)}>
             
@@ -2313,6 +2315,16 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
     gap: "12px"
   };
 
+  const availableSectionStyle = {
+    background: "var(--theme)",
+    border: "none",
+    borderRadius: "var(--radius-md)",
+    padding: "12px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  };
+
   const jobCardStyle = (isSelected) => ({
     width: "100%",
     textAlign: "left",
@@ -2352,7 +2364,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
             Cancel
           </button>
         </div>
-        <div style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
+        <div style={{ display: "grid", gap: "8px", marginTop: "12px" }}>
           <div style={modalSectionStyle}>
             <input
               style={inputStyle}
@@ -2397,7 +2409,8 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
               <label style={labelStyle}>Selected for job</label>
               <div style={{ display: "flex", gap: "8px" }}>
                 <button
-                  style={secondaryButtonStyle}
+                  type="button"
+                  style={{ ...secondaryButtonStyle }}
                   onClick={handleSelectAll}
                   disabled={availableItems.length === 0 || submitting}>
                   
@@ -2465,72 +2478,74 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                 </table>
               </div>
             }
-            <div style={{ marginTop: "12px", fontWeight: 600 }}>Available to select</div>
-            {remainingRows.length === 0 ?
-            <div style={{ color: "var(--text-1)" }}>No remaining quantities to select.</div> :
+            <div style={availableSectionStyle}>
+              <div style={{ fontWeight: 600 }}>Available to select</div>
+              {remainingRows.length === 0 ?
+              <div style={{ color: "var(--text-1)" }}>No remaining quantities to select.</div> :
 
-            <div
-              style={{
-                border: "none",
-                borderRadius: "var(--radius-sm)",
-                overflow: "hidden"
-              }}>
-              
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead style={{ background: "var(--surface)" }}>
-                    <tr>
-                      <th style={{ ...invoiceHeaderCellStyle, width: "90px" }}>Add</th>
-                      <th style={invoiceHeaderCellStyle}>Part number</th>
-                      <th style={invoiceHeaderCellStyle}>Description</th>
-                      <th style={{ ...invoiceHeaderCellStyle, width: "90px" }}>Avail</th>
-                      <th style={{ ...invoiceHeaderCellStyle, width: "110px" }}>Add qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {remainingRows.map(({ item, remainingQty }) => {
-                    const pendingValue = pendingQuantities.get(item.id) ?? "1";
-                    return (
-                      <tr key={item.id} style={{ borderTop: "1px solid var(--surface)" }}>
-                          <td style={{ ...invoiceCellStyle, width: "90px" }}>
-                            <button
-                            type="button"
-                            style={secondaryButtonStyle}
-                            onClick={() => {
-                              addToSelected(item, pendingValue);
-                              setError("");
-                            }}
-                            disabled={submitting}>
+              <div
+                style={{
+                  border: "none",
+                  borderRadius: "var(--radius-sm)",
+                  overflow: "hidden"
+                }}>
+                
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead style={{ background: "var(--surface)" }}>
+                      <tr>
+                        <th style={{ ...invoiceHeaderCellStyle, width: "90px" }}>Add</th>
+                        <th style={invoiceHeaderCellStyle}>Part number</th>
+                        <th style={invoiceHeaderCellStyle}>Description</th>
+                        <th style={{ ...invoiceHeaderCellStyle, width: "90px" }}>Avail</th>
+                        <th style={{ ...invoiceHeaderCellStyle, width: "110px" }}>Add qty</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {remainingRows.map(({ item, remainingQty }) => {
+                      const pendingValue = pendingQuantities.get(item.id) ?? "1";
+                      return (
+                        <tr key={item.id} style={{ borderTop: "1px solid var(--surface)" }}>
+                            <td style={{ ...invoiceCellStyle, width: "90px" }}>
+                              <button
+                              type="button"
+                              style={{ ...secondaryButtonStyle }}
+                              onClick={() => {
+                                addToSelected(item, pendingValue);
+                                setError("");
+                              }}
+                              disabled={submitting}>
+                              
+                                Add
+                              </button>
+                            </td>
+                            <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
+                            <td style={{ ...invoiceCellStyle, color: "var(--text-1)" }}>{item.description}</td>
+                            <td style={{ ...invoiceCellStyle, width: "90px" }}>{remainingQty}</td>
+                            <td style={{ ...invoiceCellStyle, width: "110px" }}>
+                              <input
+                              type="number"
+                              min="1"
+                              max={remainingQty}
+                              style={{ ...inputStyle, width: "7ch" }}
+                              value={pendingValue}
+                              onChange={(event) => {
+                                setPendingQuantities((prev) => {
+                                  const next = new Map(prev);
+                                  next.set(item.id, event.target.value);
+                                  return next;
+                                });
+                              }}
+                              disabled={submitting} />
                             
-                              Add
-                            </button>
-                          </td>
-                          <td style={{ ...invoiceCellStyle, fontWeight: 600 }}>{item.part_number}</td>
-                          <td style={{ ...invoiceCellStyle, color: "var(--text-1)" }}>{item.description}</td>
-                          <td style={{ ...invoiceCellStyle, width: "90px" }}>{remainingQty}</td>
-                          <td style={{ ...invoiceCellStyle, width: "110px" }}>
-                            <input
-                            type="number"
-                            min="1"
-                            max={remainingQty}
-                            style={{ ...inputStyle, width: "7ch" }}
-                            value={pendingValue}
-                            onChange={(event) => {
-                              setPendingQuantities((prev) => {
-                                const next = new Map(prev);
-                                next.set(item.id, event.target.value);
-                                return next;
-                              });
-                            }}
-                            disabled={submitting} />
-                          
-                          </td>
-                        </tr>);
+                            </td>
+                          </tr>);
 
-                  })}
-                  </tbody>
-                </table>
-              </div>
-            }
+                    })}
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
           </div>
         </div>
         <div style={{ display: "flex", gap: "12px", marginTop: "16px", justifyContent: "flex-end" }}>

@@ -99,21 +99,25 @@ export default function NextJobsPageUi(props) {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
+        gap: "16px",
         marginBottom: "12px"
       }}>
             <h2 style={{
           fontSize: "18px",
           fontWeight: "600",
           color: "var(--accent-purple)",
+          flexShrink: 0,
           margin: 0
         }}>
               Outstanding Jobs ({outstandingJobs.length})
             </h2>
-          </div>
-          
-          <SearchBar placeholder="Search job number, reg, or customer..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onClear={() => setSearchTerm("")} style={{
-        marginBottom: "12px"
+            <SearchBar placeholder="Search job number, reg, or customer..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} onClear={() => setSearchTerm("")} style={{
+        width: "320px",
+        maxWidth: "45%",
+        minWidth: "220px",
+        marginLeft: "auto"
       }} />
+          </div>
 
           <div data-dev-section-key="nextjobs-outstanding-scroll" data-dev-section-parent="nextjobs-outstanding" data-dev-section-type="section-shell" data-dnd-target-type="outstanding" data-dnd-target-key="outstanding" style={{
         flex: 1,

@@ -994,14 +994,12 @@ export default function StaffVehiclesCard({
             overflowY: "auto",
             borderRadius: "var(--radius-md)",
             overflow: "hidden",
-            border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
-            background: "var(--profile-table-surface)",
+            background: "var(--theme)",
           }}
         >
           {historyEntries.length === 0 ? (
             <div
               style={{
-                border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
                 borderRadius: "var(--radius-sm)",
                 padding: "18px",
                 textAlign: "center",

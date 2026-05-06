@@ -3,7 +3,6 @@ import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitiv
 
 export default function ViewJobCardsUi(props) {
   const {
-    ContentWidth,
     DevLayoutSection,
     DropdownField,
     JobListCard,
@@ -168,11 +167,12 @@ export default function ViewJobCardsUi(props) {
         }
       `}</style>
       <PageShell sectionKey="job-cards-view-shell">
-        <ContentWidth sectionKey="job-cards-view-content" parentKey="job-cards-view-shell" widthMode="content">
       <div className="app-page-stack" style={{
-          gap: "10px"
+          gap: "10px",
+          width: "100%",
+          minHeight: "0"
         }}>
-          <SectionShell sectionKey="job-cards-view-filter-shell" parentKey="job-cards-view-content" style={{
+          <SectionShell sectionKey="job-cards-view-filter-shell" parentKey="job-cards-view-shell" style={{
           display: "flex",
           flexDirection: "column",
           padding: "10px",
@@ -217,7 +217,7 @@ export default function ViewJobCardsUi(props) {
             </div>
           </SectionShell>
 
-          <SectionShell sectionKey="job-cards-view-list-shell" parentKey="job-cards-view-content" style={{
+          <SectionShell sectionKey="job-cards-view-list-shell" parentKey="job-cards-view-shell" style={{
           flex: 1,
           overflow: "hidden",
           padding: "10px",
@@ -229,15 +229,15 @@ export default function ViewJobCardsUi(props) {
             display: "flex",
             flexDirection: "column",
             gap: "10px"
-          }}>
+            }}>
               {isOrdersTab && ordersLoading ? <LayerTheme sectionKey="job-cards-view-orders-loading" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="32px" style={{
               textAlign: "center",
-              color: "var(--info)"
+              color: "var(--text-2)"
             }}>
                   Loading orders...
                 </LayerTheme> : sortedJobs.length === 0 ? <LayerTheme sectionKey="job-cards-view-empty-state" parentKey="job-cards-view-list-viewport" sectionType="state-banner" radius="var(--radius-sm)" padding="32px" style={{
               textAlign: "center",
-              color: "var(--info)"
+              color: "var(--text-2)"
             }}>
                   {emptyStateMessage}
                 </LayerTheme> : sortedJobs.map((job, index) => isOrdersTab ? <OrderListCard key={job.id || job.orderNumber} sectionKey={`job-cards-view-order-row-${job.id || job.orderNumber || index + 1}`} parentKey="job-cards-view-list-viewport" order={job} index={index} onNavigate={() => router.push(`/parts/create-order/${job.orderNumber}`)} /> : <JobListCard key={job.jobNumber} sectionKey={`job-cards-view-job-row-${job.jobNumber || index + 1}`} parentKey="job-cards-view-list-viewport" job={job} index={index} onNavigate={() => handleCardNavigation(job.jobNumber)} onMouseEnter={() => prefetchJob(job.jobNumber)} />)}
@@ -598,7 +598,6 @@ export default function ViewJobCardsUi(props) {
           </DevLayoutSection>
             </>}
       </div>
-      </ContentWidth>
       </PageShell>
     </>; // render extracted page section.
     default:

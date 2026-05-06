@@ -39,7 +39,6 @@
   "exclude": [
     "node_modules",
     "supabase/**/*",
-    "playwright.config.ts",
-    "tests/**/*"
+    "playwright.config.js"
   ]
 }

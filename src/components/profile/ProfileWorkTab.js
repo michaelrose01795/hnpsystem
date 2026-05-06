@@ -566,28 +566,25 @@ function createRecurringRuleLabel() {
 // Import shared recurring overtime utilities (cycle math, matching, grouping, summaries)
 import { groupRulesSmartly, getGroupKey, generateSmartSummary, getUpcomingEntries, detectOverlaps } from "@/lib/overtime/recurringUtils";
 
-function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
-  const [mode, setMode] = useState("single"); // "single" or "bulk"
+function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null, initialMode = "single" }) {
+  const [mode, setMode] = useState("single"); // "single" or "recurring"
+  const recurringRulesRef = useRef(null);
   const [form, setForm] = useState({
     date: "",
     login: "",
     logout: "",
     totalHours: "",
   });
-  const [bulkHours, setBulkHours] = useState("");
-  const [bulkNote, setBulkNote] = useState("");
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
-    setMode("single");
+    setMode(initialMode === "recurring" ? "recurring" : "single");
     setForm({ date: "", login: "", logout: "", totalHours: "" });
-    setBulkHours("");
-    setBulkNote("");
     setError(null);
     setIsSaving(false);
-  }, [isOpen]);
+  }, [initialMode, isOpen]);
 
   if (!isOpen) return null;
 
@@ -611,40 +608,8 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (mode !== "single") return;
     if (isSaving) return;
-
-    if (mode === "bulk") {
-      if (!(Number(bulkHours) > 0)) {
-        setError("Enter total hours greater than 0.");
-        return;
-      }
-      setIsSaving(true);
-      setError(null);
-      try {
-        const response = await fetch("/api/profile/overtime-sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            bulk: true,
-            totalHours: Number(bulkHours),
-            note: bulkNote || undefined,
-            userId,
-          }),
-        });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || !payload?.success) {
-          throw new Error(payload?.message || "Failed to save bulk overtime.");
-        }
-        onSaved?.(payload.data);
-        onClose();
-      } catch (err) {
-        setError(err.message || "Failed to save bulk overtime.");
-      } finally {
-        setIsSaving(false);
-      }
-      return;
-    }
 
     if (!form.date || !form.login) {
       setError("Date and login time are required.");
@@ -686,26 +651,13 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
     }
   };
 
-  const tabStyle = (active) => ({
-    flex: 1,
-    padding: "8px 12px",
-    fontSize: "0.82rem",
-    fontWeight: 600,
-    border: "none",
-    borderBottom: active ? "2px solid var(--accent-purple, #7c3aed)" : "2px solid transparent",
-    background: "none",
-    color: active ? "var(--text-1)" : "var(--text-1)",
-    cursor: "pointer",
-    transition: "color 0.15s, border-color 0.15s",
-  });
-
   return (
     <PopupModal
       isOpen={isOpen}
       onClose={onClose}
-      ariaLabel="Add overtime"
+      ariaLabel="Overtime"
       cardStyle={{
-        width: "min(100%, 520px)",
+        width: mode === "recurring" ? "min(100%, 640px)" : "min(100%, 520px)",
         padding: "24px",
         display: "flex",
         flexDirection: "column",
@@ -714,33 +666,51 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
     >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>Add overtime</h3>
-            <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--text-1)" }}>
-              {mode === "single"
-                ? "Type is saved as overtime. Logout or total hours can be calculated from the other fields."
-                : "Add a lump sum of overtime hours. Only total hours will appear in the attendance table."}
-            </p>
+            <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700 }}>Overtime</h3>
           </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {mode === "single" ? (
+              <Button type="submit" form="manual-overtime-form" variant="primary" size="sm" disabled={isSaving}>
+                {isSaving ? "Saving..." : "Add overtime"}
+              </Button>
+            ) : (
+              <Button type="button" variant="primary" size="sm" onClick={() => recurringRulesRef.current?.openAddForm()}>
+                Add Rule
+              </Button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-1)" }}
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+
+        <div className="app-layout-tab-row" role="tablist" aria-label="Overtime sections" style={{ width: "fit-content", alignSelf: "flex-start" }}>
           <button
             type="button"
-            onClick={onClose}
-            style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", color: "var(--text-1)" }}
+            className="app-tab app-tab--inner"
+            role="tab"
+            aria-selected={mode === "single"}
+            onClick={() => { setMode("single"); setError(null); }}
           >
-            &times;
+            Entry
+          </button>
+          <button
+            type="button"
+            className="app-tab app-tab--inner"
+            role="tab"
+            aria-selected={mode === "recurring"}
+            onClick={() => { setMode("recurring"); setError(null); }}
+          >
+            Recurring
           </button>
         </div>
 
-        <div style={{ display: "flex", borderBottom: "1px solid var(--primary-border, #e5e7eb)" }}>
-          <button type="button" style={tabStyle(mode === "single")} onClick={() => { setMode("single"); setError(null); }}>
-            Single Entry
-          </button>
-          <button type="button" style={tabStyle(mode === "bulk")} onClick={() => { setMode("bulk"); setError(null); }}>
-            Bulk Overtime
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
-          {mode === "single" ? (
+        {mode === "single" ? (
+          <form id="manual-overtime-form" onSubmit={handleSubmit} style={{ display: "grid", gap: "14px" }}>
             <>
               <CalendarField
                 label="Date"
@@ -804,68 +774,25 @@ function ManualOvertimeModal({ isOpen, onClose, onSaved, userId = null }) {
                 <div>Total hours: <strong style={{ color: "var(--text-1)" }}>{form.totalHours || "-"}</strong></div>
               </div>
             </>
-          ) : (
-            <>
-              <label style={modalLabelStyle}>
-                Total Hours
-                <input
-                  className="app-input"
-                  type="number"
-                  min="0.25"
-                  step="0.25"
-                  value={bulkHours}
-                  onChange={(e) => { setBulkHours(e.target.value); setError(null); }}
-                  style={modalInputStyle}
-                  placeholder="e.g. 500"
-                  required
-                />
-              </label>
 
-              <label style={modalLabelStyle}>
-                Note (optional)
-                <input
-                  className="app-input"
-                  type="text"
-                  value={bulkNote}
-                  onChange={(e) => setBulkNote(e.target.value)}
-                  style={modalInputStyle}
-                  placeholder="e.g. Carried over from previous period"
-                />
-              </label>
+            {error ? <div style={{ color: "var(--danger)", fontSize: "0.84rem" }}>{error}</div> : null}
 
-              <div
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "var(--radius-sm)",
-                  background: "rgba(var(--accent-purple-rgb), 0.08)",
-                  fontSize: "0.8rem",
-                  color: "var(--text-1)",
-                }}
-              >
-                <div>Type: <strong style={{ color: "var(--text-1)" }}>Overtime (Bulk)</strong></div>
-                <div>Total hours: <strong style={{ color: "var(--text-1)" }}>{bulkHours || "-"}</strong></div>
-                {bulkNote ? <div>Note: <strong style={{ color: "var(--text-1)" }}>{bulkNote}</strong></div> : null}
-              </div>
-            </>
-          )}
-
-          {error ? <div style={{ color: "var(--danger)", fontSize: "0.84rem" }}>{error}</div> : null}
-
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-            <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" size="sm" disabled={isSaving}>
-              {isSaving ? "Saving..." : mode === "bulk" ? "Add bulk overtime" : "Add overtime"}
-            </Button>
-          </div>
-        </form>
+          </form>
+        ) : (
+          <RecurringOvertimeRulesPanel
+            ref={recurringRulesRef}
+            isOpen={mode === "recurring"}
+            onClose={onClose}
+            userId={userId}
+            onSaved={onSaved}
+          />
+        )}
     </PopupModal>
   );
 }
 
-// Modal for managing recurring overtime rules — grouped list with smart summaries and add/edit form
-function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
+// Panel for managing recurring overtime rules - grouped list with smart summaries and add/edit form
+const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeRulesPanel({ isOpen, onClose, userId = null, onSaved = null }, ref) {
   const [rules, setRules] = useState([]); // saved rules list from DB
   const [isLoading, setIsLoading] = useState(false); // loading state for fetch
   const [isSaving, setIsSaving] = useState(false); // saving state
@@ -909,6 +836,10 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
     setFormData({ days: {}, hours: "", patternType: "weekly", weekParity: null, groupLabel: createRecurringRuleLabel() });
     setError(null);
   };
+
+  React.useImperativeHandle(ref, () => ({
+    openAddForm,
+  }));
 
   // Open edit form — pre-fill with the group's days, hours, pattern, and parity
   const openEditForm = (group) => {
@@ -1014,6 +945,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
           return merged.filter((r) => r.day_of_week !== 0).sort((a, b) => a.day_of_week - b.day_of_week);
         });
       }
+      onSaved?.();
       closeForm(); // collapse form on success
     } catch (err) {
       setError(err.message || "Failed to save rule.");
@@ -1042,6 +974,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
       // Remove deleted rules from local state
       const deletedIds = new Set(ruleIds);
       setRules((prev) => prev.filter((r) => !deletedIds.has(r.rule_id)));
+      onSaved?.();
     } catch (err) {
       setError(err.message || "Failed to remove rule.");
     } finally {
@@ -1323,20 +1256,8 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
   );
 
   return (
-    <PopupModal
-      isOpen={isOpen}
-      onClose={onClose}
-      ariaLabel="Recurring overtime rules"
-      cardStyle={{
-        width: "min(100%, 560px)",
-        padding: "28px 32px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-      }}
-    >
-        {/* Modal header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        <div style={{ display: "none" }}>
           <div>
             <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700 }}>Recurring Overtime Rules</h3>
             <p style={{ margin: "4px 0 0", fontSize: "0.78rem", color: "var(--text-1)", lineHeight: 1.4 }}>
@@ -1353,6 +1274,8 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
         </div>
 
         {/* Smart summary strip — only shown when active rules exist */}
+        <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 700 }}>Recurring Overtime Rules</h3>
+
         {activeRules.length > 0 && !isLoading && (
           <div style={{
             display: "flex",
@@ -1498,8 +1421,7 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
           </div>
         )}
 
-        {/* Footer buttons */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+        <div style={{ display: "none" }}>
           {!formMode ? (
             <button
               type="button"
@@ -1537,9 +1459,9 @@ function RecurringOvertimeModal({ isOpen, onClose, userId = null }) {
             Close
           </button>
         </div>
-    </PopupModal>
+    </div>
   );
-}
+});
 
 export function ProfileWorkTab({
   forcedUserName = null,
@@ -1811,9 +1733,8 @@ export function ProfileWorkTab({
   }, [attendanceLogs, leaveBalances, overtimeSummaries, profile, shouldUseHrData, userProfileData]);
   // Leave request modal state
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
-  const [recurringModalOpen, setRecurringModalOpen] = useState(false); // recurring overtime rules modal
-  const overtimeHistoryRef = useRef(null); // target for "Recurring Rules" deep-link from Attendance History
   const [manualOvertimeModalOpen, setManualOvertimeModalOpen] = useState(false);
+  const [manualOvertimeInitialMode, setManualOvertimeInitialMode] = useState("single");
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [leaveRemoving, setLeaveRemoving] = useState(false);
   const [editingLeaveRequest, setEditingLeaveRequest] = useState(null);
@@ -2286,7 +2207,7 @@ export function ProfileWorkTab({
               sectionKey="profile-work-kpi-card-group"
               parentKey="profile-active-tab-panel"
               sectionType="section-shell"
-              backgroundToken="accent-surface"
+              backgroundToken="theme"
               shell
               style={{
                 ...profileSectionShellStyle,
@@ -2410,7 +2331,7 @@ export function ProfileWorkTab({
               sectionKey="profile-work-summary-card-group"
               parentKey="profile-active-tab-panel"
               sectionType="section-shell"
-              backgroundToken="accent-surface"
+              backgroundToken="theme"
               shell
               style={{
                 ...profileSectionShellStyle,
@@ -2425,7 +2346,7 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  ...profileSurfaceCardStyle,
+                  background: "var(--theme)",
                 }}
                 title="Leave Summary"
                 action={
@@ -2575,8 +2496,7 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  background: "var(--surface)",
-                  border: "var(--section-card-border)",
+                  background: "var(--theme)",
                 }}
                 title="Emergency Contact"
                 action={
@@ -2727,9 +2647,10 @@ export function ProfileWorkTab({
               sectionKey="profile-work-attendance-history-group"
               parentKey="profile-active-tab-panel"
               sectionType="section-shell"
-              backgroundToken="accent-surface"
+              backgroundToken="theme"
               shell
               style={{
+                ...profileSectionShellStyle,
                 display: "grid",
                 gap: "10px",
                 gridTemplateColumns: "minmax(0, 1fr)",
@@ -2744,20 +2665,6 @@ export function ProfileWorkTab({
                   border: "var(--section-card-border)",
                 }}
                 title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Attendance History</span>}
-                action={
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      // Deep-link into the Overtime History section where recurring-rule logs render as rows, then open the manager
-                      overtimeHistoryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                      setRecurringModalOpen(true);
-                    }}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    Recurring Rules
-                  </Button>
-                }
               >
                 {renderAttendanceBody({
                   records: normalRecords,
@@ -2768,7 +2675,7 @@ export function ProfileWorkTab({
                 })}
               </ProfileCard>
 
-              <div ref={overtimeHistoryRef} style={{ scrollMarginTop: "80px" }}>
+              <div style={{ scrollMarginTop: "80px" }}>
               <ProfileCard
                 sectionKey="profile-work-attendance-overtime-history"
                 parentKey="profile-work-attendance-history-group"
@@ -2782,11 +2689,14 @@ export function ProfileWorkTab({
                   !shouldUseHrData && (
                     <Button
                       type="button"
-                      onClick={() => setManualOvertimeModalOpen(true)}
+                      onClick={() => {
+                        setManualOvertimeInitialMode("single");
+                        setManualOvertimeModalOpen(true);
+                      }}
                       variant="primary"
                       size="sm"
                     >
-                      Add overtime
+                      Overtime
                     </Button>
                   )
                 }
@@ -2808,9 +2718,10 @@ export function ProfileWorkTab({
                 sectionKey="profile-work-staff-vehicles-group"
                 parentKey="profile-active-tab-panel"
                 sectionType="section-shell"
-                backgroundToken="accent-surface"
+                backgroundToken="theme"
                 shell
                 style={{
+                  ...profileSectionShellStyle,
                   display: "grid",
                   gap: "10px",
                   gridTemplateColumns: "minmax(0, 1fr)",
@@ -2850,27 +2761,20 @@ export function ProfileWorkTab({
     />
   );
 
-  const recurringOvertimeModalEl = (
-    <RecurringOvertimeModal
-      isOpen={recurringModalOpen}
-      onClose={() => setRecurringModalOpen(false)}
-      userId={dbUserId}
-    />
-  );
-
   const manualOvertimeModalEl = (
     <ManualOvertimeModal
       isOpen={manualOvertimeModalOpen}
       onClose={() => setManualOvertimeModalOpen(false)}
       onSaved={() => setProfileReloadKey((prev) => prev + 1)}
       userId={dbUserId}
+      initialMode={manualOvertimeInitialMode}
     />
   );
 
   return isEmbedded ? (
-    <>{content}{confirmDialogEl}{recurringOvertimeModalEl}{manualOvertimeModalEl}</>
+    <>{content}{confirmDialogEl}{manualOvertimeModalEl}</>
   ) : (
-    <Layout>{content}{confirmDialogEl}{recurringOvertimeModalEl}{manualOvertimeModalEl}</Layout>
+    <Layout>{content}{confirmDialogEl}{manualOvertimeModalEl}</Layout>
   );
 }
 

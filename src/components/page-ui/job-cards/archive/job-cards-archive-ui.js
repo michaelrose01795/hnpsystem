@@ -117,11 +117,10 @@ export default function ArchivedJobsPageUi(props) {
       }}>{error}</p>
           </LayerTheme>}
 
-        <LayerTheme as="section" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell radius="var(--radius-sm)">
-          <LayerSurface sectionKey="job-cards-archive-results-table-scroll" parentKey="job-cards-archive-results-panel" sectionType="content-card" radius="var(--radius-sm)" style={{
+        <LayerTheme as="section" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell radius="var(--radius-sm)" style={{
         overflowX: "auto"
       }}>
-            <DevLayoutSection as="table" sectionKey="job-cards-archive-results-table" parentKey="job-cards-archive-results-table-scroll" sectionType="data-table" backgroundToken="accent-surface" style={{
+          <DevLayoutSection as="table" sectionKey="job-cards-archive-results-table" parentKey="job-cards-archive-results-panel" sectionType="data-table" backgroundToken="accent-surface" style={{
           width: "100%",
           borderCollapse: "collapse"
         }}>
@@ -242,8 +241,7 @@ export default function ArchivedJobsPageUi(props) {
                     </td>
                   </tr>}
               </tbody>
-            </DevLayoutSection>
-          </LayerSurface>
+          </DevLayoutSection>
         </LayerTheme>
       </LayerSurface>
     </>; // render extracted page section.

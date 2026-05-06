@@ -89,10 +89,6 @@ import { stockCatalogueSlide } from "./definitions/stockCatalogue";
 
 // Mobile
 import { mobileDashboardSlide } from "./definitions/mobileDashboard";
-import { mobileJobsSlide } from "./definitions/mobileJobs";
-import { mobileJobDetailSlide } from "./definitions/mobileJobDetail";
-import { mobileAppointmentsSlide } from "./definitions/mobileAppointments";
-import { mobileCreateSlide } from "./definitions/mobileCreate";
 import { mobileDeliverySlide } from "./definitions/mobileDelivery";
 
 // Tech
@@ -191,10 +187,6 @@ export const ALL_SLIDES = [
   stockCatalogueSlide,
 
   mobileDashboardSlide,
-  mobileJobsSlide,
-  mobileJobDetailSlide,
-  mobileAppointmentsSlide,
-  mobileCreateSlide,
   mobileDeliverySlide,
 
   techConsumablesRequestSlide,

@@ -223,7 +223,9 @@ export default function GoodsInPageUi(props) {
     display: "flex",
     flexDirection: "column",
     gap: "18px",
-    padding: "12px"
+    width: "100%",
+    maxWidth: "100%",
+    padding: "8px 0"
   }}>
         {toast && <div style={{
       padding: "12px 16px",
@@ -234,7 +236,7 @@ export default function GoodsInPageUi(props) {
             {toast.message}
           </div>}
 
-        <TabGroup devSectionKey="goods-in-advanced-tabs" devSectionParent="app-layout-page-card" items={ADVANCED_TABS.map(tab => ({
+        <TabGroup className="tab-api--inline" devSectionKey="goods-in-advanced-tabs" devSectionParent="app-layout-page-card" items={ADVANCED_TABS.map(tab => ({
       value: tab.id,
       label: tab.label
     }))} value={activeTab} onChange={value => {
@@ -257,7 +259,7 @@ export default function GoodsInPageUi(props) {
           display: "flex",
           gap: "10px"
         }}>
-              <button style={secondaryButtonStyle} onClick={() => setSupplierModalOpen(true)}>
+              <button style={primaryButtonStyle(false)} onClick={() => setSupplierModalOpen(true)}>
                 Supplier search
               </button>
               <button style={secondaryButtonStyle} onClick={handleScanDocClick} disabled={scanBusy}>
@@ -356,7 +358,7 @@ export default function GoodsInPageUi(props) {
             <h2 style={{
           margin: 0
         }}>Add part</h2>
-            <button style={secondaryButtonStyle} onClick={() => setPartSearchOpen(true)}>
+            <button style={primaryButtonStyle(false)} onClick={() => setPartSearchOpen(true)}>
               Search catalogue
             </button>
           </div>

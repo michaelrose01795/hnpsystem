@@ -206,10 +206,10 @@ const TechConsumableRequestPage = () => {
   const requestPanelStyle = useMemo(
     () => ({
       display: "flex",
-      flexDirection: isMobile ? "column" : "row",
-      flexWrap: "wrap",
-      alignItems: isMobile ? "stretch" : "end",
+      flexDirection: "column",
+      alignItems: "stretch",
       gap: isMobile ? "14px" : "16px",
+      width: "100%",
       padding: isMobile ? "16px" : undefined
     }),
     [isMobile]
@@ -222,16 +222,13 @@ const TechConsumableRequestPage = () => {
       alignItems: isMobile ? "stretch" : "center",
       flexDirection: isMobile ? "column" : "row",
       gap: isMobile ? "12px" : "16px",
-      flex: isMobile ? "1 1 auto" : "0 0 auto",
-      minWidth: isMobile ? 0 : "140px",
-      width: isMobile ? "100%" : "auto"
+      width: "100%"
     }),
     [isMobile]
   );
 
   const requestFormStyle = useMemo(
     () => ({
-      flex: "1 1 720px",
       marginTop: 0,
       display: "grid",
       gridTemplateColumns: isMobile ?

@@ -9,6 +9,7 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { useRouter } from "next/router"; // For reading query params
 import { useUser } from "@/context/UserContext"; // Access current user for check-in attribution
+import { isMobileTechnician } from "@/lib/auth/roles"; // Scope appointments view for mobile mechanics
 import { useNextAction } from "@/context/NextActionContext"; // Trigger follow-up actions after check-in
 import {
   createOrUpdateAppointment,
@@ -378,7 +379,12 @@ export default function Appointments() {
 
   // ---------------- SWR-powered jobs list (auto-refresh, cached, deduplicated) ----------------
   const { jobs: allJobs, mutate: mutateJobs } = useJobsList({ enabled: !!user });
-  const jobs = useMemo(() => (allJobs || []).filter((job) => job.appointment), [allJobs]); // filter to only jobs with appointments
+  const isMobileTechUser = isMobileTechnician(user?.roles); // mobile mechanics see only mobile bookings
+  const jobs = useMemo(() => {
+    const withAppointments = (allJobs || []).filter((job) => job.appointment); // only jobs with appointments
+    if (!isMobileTechUser) return withAppointments;
+    return withAppointments.filter((job) => job.serviceMode === "mobile"); // mobile techs see mobile bookings only
+  }, [allJobs, isMobileTechUser]);
 
   // ---------------- States ----------------
   const [dates, setDates] = useState([]);

@@ -6,7 +6,7 @@ export const appointmentsSlide = {
   title: "Appointments",
   roles: [
     "admin", "admin manager", "owner", "service", "service manager",
-    "workshop manager", "general manager", "receptionist",
+    "workshop manager", "general manager", "receptionist", "mobile technician",
   ],
   workflowIndex: WORKFLOW.APPOINTMENTS,
   steps: [

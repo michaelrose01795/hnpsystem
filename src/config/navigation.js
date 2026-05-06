@@ -88,8 +88,8 @@ export const sidebarSections = [
         roles: ["service"],
       },
       {
-        label: "New Mobile Job",
-        href: "/mobile/create",
+        label: "New Job",
+        href: "/job-cards/create",
         roles: ["service"],
       },
     ],
@@ -115,12 +115,12 @@ export const sidebarSections = [
       },
       {
         label: "Mobile Appointments",
-        href: "/mobile/appointments",
+        href: "/appointments",
         roles: ["service manager"],
       },
       {
-        label: "New Mobile Job",
-        href: "/mobile/create",
+        label: "New Job",
+        href: "/job-cards/create",
         roles: ["service manager"],
       },
     ],
@@ -208,13 +208,13 @@ export const sidebarSections = [
         roles: ["mobile technician"],
       },
       {
-        label: "My Mobile Jobs",
-        href: "/mobile/jobs",
+        label: "My Jobs",
+        href: "/job-cards/myjobs",
         roles: ["mobile technician"],
       },
       {
         label: "Mobile Appointments",
-        href: "/mobile/appointments",
+        href: "/appointments",
         roles: ["mobile technician"],
       },
       {
@@ -224,7 +224,7 @@ export const sidebarSections = [
       },
       {
         label: "New Mobile Job",
-        href: "/mobile/create",
+        href: "/job-cards/create",
         roles: ["mobile technician"],
       },
     ],

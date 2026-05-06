@@ -8,7 +8,6 @@ export default function ClockingPageUi(props) {
     EfficiencyTab,
     FilterToolbarRow,
     PageShell,
-    SectionShell,
     TabGroup,
     pageTab,
     setPageTab,
@@ -17,10 +16,10 @@ export default function ClockingPageUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
-      <PageShell sectionKey="clocking-page-shell" style={{
+      <PageShell sectionKey="clocking-page-shell" className="clocking-page-shell" style={{
     background: "transparent",
-    minHeight: "100vh",
-    padding: "10px 0"
+    minHeight: "auto",
+    padding: "10px 0 var(--clocking-page-edge-gap)"
   }}>
         <ContentWidth sectionKey="clocking-page-content" parentKey="clocking-page-shell" widthMode="content" className="mx-auto w-full max-w-none px-4 sm:px-6 lg:px-10" style={{
       gap: "10px"
@@ -36,13 +35,30 @@ export default function ClockingPageUi(props) {
           </FilterToolbarRow>
 
           {pageTab === "overview" && <ClockingOverviewTab />}
-          {pageTab === "efficiency" && <SectionShell sectionKey="clocking-efficiency-shell" parentKey="clocking-page-content">
-              <DevLayoutSection sectionKey="clocking-efficiency-content" parentKey="clocking-efficiency-shell" sectionType="content-card">
-                <EfficiencyTab editable={false} />
-              </DevLayoutSection>
-            </SectionShell>}
+          {pageTab === "efficiency" && <DevLayoutSection sectionKey="clocking-efficiency-content" parentKey="clocking-page-content" sectionType="content-card" style={{
+            paddingBottom: "var(--clocking-page-edge-gap)"
+          }}>
+              <EfficiencyTab editable={false} />
+            </DevLayoutSection>}
         </ContentWidth>
       </PageShell>
+      <style jsx>{`
+        :global(.clocking-page-shell) {
+          --clocking-page-edge-gap: 1rem;
+        }
+
+        @media (min-width: 640px) {
+          :global(.clocking-page-shell) {
+            --clocking-page-edge-gap: 1.5rem;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          :global(.clocking-page-shell) {
+            --clocking-page-edge-gap: 2.5rem;
+          }
+        }
+      `}</style>
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

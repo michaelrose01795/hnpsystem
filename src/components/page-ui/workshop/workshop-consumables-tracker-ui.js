@@ -1,6 +1,65 @@
 import LayerTheme from "@/components/ui/LayerTheme"; // file location: src/components/page-ui/workshop/workshop-consumables-tracker-ui.js
 import Button from "@/components/ui/Button";
 
+const tableButtonStyle = {
+  minHeight: "32px",
+  height: "32px",
+  padding: "0 12px",
+  borderRadius: "var(--radius-sm)",
+  border: "none",
+  fontSize: "0.82rem",
+  fontWeight: 700,
+  cursor: "pointer",
+  boxShadow: "none"
+};
+
+const tableStatusStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "32px",
+  height: "32px",
+  padding: "0 12px",
+  borderRadius: "var(--radius-sm)",
+  fontSize: "0.8rem",
+  fontWeight: 700,
+  lineHeight: 1,
+  whiteSpace: "nowrap"
+};
+
+function getConsumableStatusPresentation(status) {
+  if (status?.tone === "danger") {
+    return {
+      label: "Overdue",
+      style: {
+        ...tableStatusStyle,
+        background: "var(--danger-surface)",
+        color: "var(--danger-dark)"
+      }
+    };
+  }
+
+  if (status?.tone === "warning") {
+    return {
+      label: "Order now",
+      style: {
+        ...tableStatusStyle,
+        background: "var(--warning-surface)",
+        color: "var(--warning-dark)"
+      }
+    };
+  }
+
+  return {
+    label: "Not required",
+    style: {
+      ...tableStatusStyle,
+      background: "var(--success-surface)",
+      color: "var(--success-dark)"
+    }
+  };
+}
+
 export default function ConsumablesTrackerPageUi(props) {
   const {
     CalendarField,
@@ -89,7 +148,6 @@ export default function ConsumablesTrackerPageUi(props) {
     themedOrderHistoryContainerStyle,
     themedOrderHistoryRowBorder,
     themedOrderHistoryRowStyle,
-    toneToStyles,
     totals
   } = props; // receive page logic props.
 
@@ -348,62 +406,18 @@ export default function ConsumablesTrackerPageUi(props) {
             }}>
               <div data-presentation="workshop-consumables-budget" style={{
                 display: "flex",
-                flexDirection: "column",
+                flexWrap: "wrap",
+                alignItems: "center",
                 gap: "16px"
               }}>
-                <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "16px",
-                  flexWrap: "wrap"
-                }}>
-                  <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "20px",
-                    flexWrap: "wrap"
-                  }}>
-                    <h1 style={{
-                      margin: 0,
-                      fontSize: "1.4rem",
-                      color: "var(--text-1)"
-                    }}>
-                      Workshop Consumables Tracker
-                    </h1>
-                    <div>
-                      <p style={{
-                        margin: 0,
-                        fontSize: "0.8rem",
-                        color: quietLabelColor
-                      }}>
-                        Budget for {monthLabel}
-                      </p>
-                      <strong style={{
-                        fontSize: "1.4rem",
-                        color: "var(--text-1)"
-                      }}>
-                        {financialLoading ? <InlineLoading width={90} height={18} label="Loading budget" /> : formatCurrency(totals.monthlyBudget)}
-                      </strong>
-                    </div>
-                  </div>
-                  <Button type="button" variant="primary" onClick={() => setShowStockCheck(true)}>
+                  <Button type="button" variant="primary" onClick={() => setShowStockCheck(true)} data-dev-section-key="workshop-consumables-stock-check-button" data-dev-section-type="button" data-dev-section-parent="workshop-consumables-budget-card" data-dev-background-token="primary">
                     Stock Check
                   </Button>
-                </div>
-
-                <div style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  alignItems: "flex-start",
-                  gap: "12px"
-                }}>
                   <div style={{
                     display: "inline-flex",
                     alignItems: "center",
-                    minWidth: "280px",
-                    width: "min(100%, 360px)"
+                    minWidth: "220px",
+                    width: "min(100%, 340px)"
                   }}>
                     <MonthPickerField
                       value={selectedMonthValue}
@@ -413,23 +427,21 @@ export default function ConsumablesTrackerPageUi(props) {
                   </div>
                   <div style={{
                     display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                    minWidth: "280px",
-                    flex: "1 1 320px",
-                    maxWidth: "460px"
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    gap: "12px",
+                    marginLeft: "auto"
                   }}>
                     <div style={{
                       display: "flex",
-                      gap: "12px",
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                      justifyContent: "flex-end"
+                      gap: "8px",
+                      flexWrap: "nowrap",
+                      alignItems: "center"
                     }}>
                       <input id="monthlyBudget" type="number" min="0" step="50" value={budgetInput} onChange={handleBudgetInputChange} style={{
                         ...themedBudgetInputStyle,
-                        flex: "1 1 180px",
-                        minWidth: "160px"
+                        flex: "0 0 96px",
+                        minWidth: "96px"
                       }} />
                       <button type="button" onClick={handleBudgetSave} disabled={budgetSaving || financialLoading} style={{
                         ...orderModalButtonStyle,
@@ -442,32 +454,29 @@ export default function ConsumablesTrackerPageUi(props) {
                     </div>
                     {budgetSaveMessage && <p style={{
                       margin: 0,
-                      color: "var(--success-dark)",
-                      textAlign: "right"
+                      color: "var(--success-dark)"
                     }}>
                         {budgetSaveMessage}
                       </p>}
                     {budgetSaveError && <p style={{
                       margin: 0,
-                      color: "var(--text-1)",
-                      textAlign: "right"
+                      color: "var(--text-1)"
                     }}>
                         {budgetSaveError}
                       </p>}
                     {formattedBudgetUpdatedAt && <p style={{
                       margin: 0,
                       color: mutedTextColor,
-                      fontSize: "0.85rem",
-                      textAlign: "right"
+                      fontSize: "0.85rem"
                     }}>
                         Last updated {formattedBudgetUpdatedAt}
                       </p>}
                   </div>
                   {financialError && <p style={{
                     margin: 0,
-                    color: "var(--text-1)"
+                    color: "var(--text-1)",
+                    flexBasis: "100%"
                   }}>{financialError}</p>}
-                </div>
               </div>
             </LayerTheme>
 
@@ -487,16 +496,17 @@ export default function ConsumablesTrackerPageUi(props) {
                   Monthly Logs
                 </h2>
               </div>
-              <div style={{
+              <div data-dev-section-key="workshop-consumables-logs-summary-grid" data-dev-section-type="section-shell" data-dev-section-parent="workshop-consumables-logs-card" data-dev-background-token="transparent" style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                 gap: "10px"
               }}>
-                <div style={{
+                <div data-dev-section-key="workshop-consumables-logs-spend-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="theme" style={{
                   ...cardStyle,
                   padding: "12px",
                   boxShadow: "none",
-                  backgroundColor: "var(--surface)",
+                  backgroundColor: "var(--theme)",
+                  borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
                   <p style={{
@@ -510,11 +520,12 @@ export default function ConsumablesTrackerPageUi(props) {
                     {logsLoading ? <InlineLoading width={80} height={16} label="Loading spend" /> : formatCurrency(logsSummary.spend)}
                   </strong>
                 </div>
-                <div style={{
+                <div data-dev-section-key="workshop-consumables-logs-quantity-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="theme" style={{
                   ...cardStyle,
                   padding: "12px",
                   boxShadow: "none",
-                  backgroundColor: "var(--surface)",
+                  backgroundColor: "var(--theme)",
+                  borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
                   <p style={{
@@ -528,11 +539,12 @@ export default function ConsumablesTrackerPageUi(props) {
                     {logsLoading ? <InlineLoading width={60} height={16} label="Loading quantity" /> : logsSummary.quantity.toLocaleString()}
                   </strong>
                 </div>
-                <div style={{
+                <div data-dev-section-key="workshop-consumables-logs-orders-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="theme" style={{
                   ...cardStyle,
                   padding: "12px",
                   boxShadow: "none",
-                  backgroundColor: "var(--surface)",
+                  backgroundColor: "var(--theme)",
+                  borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
                   <p style={{
@@ -546,11 +558,12 @@ export default function ConsumablesTrackerPageUi(props) {
                     {logsLoading ? <InlineLoading width={60} height={16} label="Loading orders" /> : logsSummary.orders}
                   </strong>
                 </div>
-                <div style={{
+                <div data-dev-section-key="workshop-consumables-logs-suppliers-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="theme" style={{
                   ...cardStyle,
                   padding: "12px",
                   boxShadow: "none",
-                  backgroundColor: "var(--surface)",
+                  backgroundColor: "var(--theme)",
+                  borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
                   <p style={{
@@ -572,7 +585,7 @@ export default function ConsumablesTrackerPageUi(props) {
               <div style={{
                 overflowX: "auto"
               }}>
-                <table style={{
+                <table data-dev-section-key="workshop-consumables-logs-table" data-dev-section-type="data-table" data-dev-section-parent="workshop-consumables-logs-card" data-dev-background-token="transparent" style={{
                   width: "100%",
                   borderCollapse: "separate",
                   borderSpacing: "0 12px"
@@ -663,16 +676,17 @@ export default function ConsumablesTrackerPageUi(props) {
             </LayerTheme>
 
               <LayerTheme as="div" sectionKey="workshop-consumables-totals-card" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle }}>
-                <div data-presentation="workshop-consumables-totals" style={{
+                <div data-presentation="workshop-consumables-totals" data-dev-section-key="workshop-consumables-totals-grid" data-dev-section-type="section-shell" data-dev-section-parent="workshop-consumables-totals-card" data-dev-background-token="transparent" style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                 gap: "10px"
               }}>
-                <div style={{
+                <div data-dev-section-key="workshop-consumables-total-month-spend" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-totals-grid" data-dev-background-token="theme" style={{
                   ...cardStyle,
                   padding: "16px",
                   boxShadow: "none",
-                  backgroundColor: "var(--surface)",
+                  backgroundColor: "var(--theme)",
+                  borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
                   <p style={{
@@ -690,11 +704,12 @@ export default function ConsumablesTrackerPageUi(props) {
                     {financialLoading ? <InlineLoading width={110} height={22} label="Loading month spend" /> : formatCurrency(totals.monthSpend)}
                   </h2>
                 </div>
-                <div style={{
+                <div data-dev-section-key="workshop-consumables-total-projected-spend" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-totals-grid" data-dev-background-token="theme" style={{
                   ...cardStyle,
                   padding: "16px",
                   boxShadow: "none",
-                  backgroundColor: "var(--surface)",
+                  backgroundColor: "var(--theme)",
+                  borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
                   <p style={{
@@ -712,11 +727,12 @@ export default function ConsumablesTrackerPageUi(props) {
                     {financialLoading ? <InlineLoading width={110} height={22} label="Loading projected spend" /> : formatCurrency(totals.projectedSpend)}
                   </h2>
                 </div>
-                <div style={{
+                <div data-dev-section-key="workshop-consumables-total-budget-remaining" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-totals-grid" data-dev-background-token="theme" style={{
                   ...cardStyle,
                   padding: "16px",
                   boxShadow: "none",
-                  backgroundColor: "var(--surface)",
+                  backgroundColor: "var(--theme)",
+                  borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
                   <p style={{
@@ -762,7 +778,7 @@ export default function ConsumablesTrackerPageUi(props) {
                 overflowX: "auto"
               }}>
                 <div style={scheduledTableBodyStyle}>
-                  <table style={{
+                  <table data-dev-section-key="workshop-consumables-scheduled-table" data-dev-section-type="data-table" data-dev-section-parent="workshop-consumables-scheduled-card" data-dev-background-token="transparent" style={{
                     width: "100%",
                     borderCollapse: "separate",
                     borderSpacing: "0 12px"
@@ -828,7 +844,7 @@ export default function ConsumablesTrackerPageUi(props) {
                         </td>
                       </tr> : filteredConsumables.map((item) => {
                         const status = getConsumableStatus(item);
-                        const icon = status.label === "Overdue" ? "⚠️" : status.label === "Not Required" ? "ℹ️" : "⏰";
+                        const statusPresentation = getConsumableStatusPresentation(status);
                         return <tr key={`consumable-${item.id}`} style={{
                           background: highlightRowBackground,
                           borderRadius: "var(--radius-sm)",
@@ -837,9 +853,8 @@ export default function ConsumablesTrackerPageUi(props) {
                             <td style={{
                             padding: "12px"
                           }}>
-                              <span style={toneToStyles(status.tone)}>
-                                {icon}
-                                {status.label}
+                              <span style={statusPresentation.style}>
+                                {statusPresentation.label}
                               </span>
                             </td>
                             <td style={{
@@ -895,7 +910,10 @@ export default function ConsumablesTrackerPageUi(props) {
                               <button type="button" onClick={(event) => {
                               event.stopPropagation();
                               openOrderModal(item);
-                            }} style={orderButtonStyle}>
+                            }} style={{
+                              ...orderButtonStyle,
+                              ...tableButtonStyle
+                            }}>
                                 Order
                               </button>
                             </td>
@@ -939,7 +957,12 @@ export default function ConsumablesTrackerPageUi(props) {
             <div style={{
                 overflowX: "auto"
               }}>
-              <table style={{
+              <div data-dev-section-key="workshop-consumables-requests-scroll" data-dev-section-type="section-shell" data-dev-section-parent="workshop-consumables-requests-card" data-dev-background-token="transparent" style={{
+                maxHeight: "310px",
+                overflowY: "auto",
+                paddingRight: "4px"
+              }}>
+              <table data-dev-section-key="workshop-consumables-requests-table" data-dev-section-type="data-table" data-dev-section-parent="workshop-consumables-requests-scroll" data-dev-background-token="transparent" style={{
                   width: "100%",
                   borderCollapse: "separate",
                   borderSpacing: "0 12px"
@@ -1028,7 +1051,7 @@ export default function ConsumablesTrackerPageUi(props) {
                       }}>
                         {request.status === "pending" ? <button type="button" disabled={orderingRequestId === request.id} onClick={() => handleRequestOrder(request)} style={{
                           ...orderModalButtonStyle,
-                          padding: "6px 14px",
+                          ...tableButtonStyle,
                           fontSize: "0.9rem",
                           width: "auto"
                         }}>
@@ -1063,6 +1086,7 @@ export default function ConsumablesTrackerPageUi(props) {
                     </tr>)}
                 </tbody>
               </table>
+              </div>
             </div>
           </LayerTheme>
         </ContentWidth>

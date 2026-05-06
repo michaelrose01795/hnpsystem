@@ -374,6 +374,7 @@ const MessageBubble = ({
 }) => {
   const senderName = message.sender?.name || "Unknown";
   const [actionsOpen, setActionsOpen] = useState(false);
+  const actionContainerRef = useRef(null);
   const leaveRequestMeta = message?.metadata?.leaveRequest || null;
   const replyToMeta = message?.metadata?.replyTo || null;
   const leaveStatus = String(leaveRequestMeta?.status || "").trim();
@@ -405,6 +406,16 @@ const MessageBubble = ({
     return acc;
   }, {});
 
+  useEffect(() => {
+    if (!actionsOpen) return undefined;
+    const handlePagePointerDown = (event) => {
+      if (actionContainerRef.current?.contains(event.target)) return;
+      setActionsOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePagePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePagePointerDown);
+  }, [actionsOpen]);
+
   return (
     <div
       data-dev-section="1"
@@ -428,6 +439,7 @@ const MessageBubble = ({
         }}>
 
         <div
+          ref={actionContainerRef}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -465,70 +477,23 @@ const MessageBubble = ({
                 fontSize: "0.78rem",
                 maxWidth: "420px",
                 transform: "scale(0.95)",
-                transformOrigin: isMine ? "right bottom" : "left bottom",
-                border: `1px solid ${palette.border}`
+                transformOrigin: isMine ? "right bottom" : "left bottom"
               }}>
 
                 {String(replyToMeta.contentSnippet || "").slice(0, 160)}
               </div>
             </div>
           }
-          {actionsOpen &&
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 10px",
-              borderRadius: radii.pill,
-              backgroundColor: "var(--surface)",
-              boxShadow: "0 0 0 1px rgba(var(--accent-purple-rgb), 0.08), 0 0 22px rgba(var(--accent-purple-rgb), 0.26), 0 12px 28px rgba(var(--shadow-rgb), 0.16)",
-              marginBottom: "8px",
-              position: "relative",
-              zIndex: 5
-            }}>
-
-              {REACTION_EMOJIS.map((emoji) =>
-            <button
-              key={emoji}
-              type="button"
-              className="app-btn app-btn--xs app-btn--pill"
-              onClick={(e) => {
-                e.stopPropagation();
-                onReact?.(emoji);
-                setActionsOpen(false);
-              }}
-              aria-label={`React with ${emoji}`}
-              style={{
-                backgroundColor: "var(--theme)",
-                borderColor: "transparent"
-              }}>
-
-                  {emoji}
-                </button>
-            )}
-              <button
-              type="button"
-              className="app-btn app-btn--xs app-btn--pill"
-              onClick={(e) => {
-                e.stopPropagation();
-                onReply?.();
-                setActionsOpen(false);
-              }}
-              style={{
-                backgroundColor: "var(--theme)",
-                borderColor: "transparent"
-              }}>
-
-                Reply
-              </button>
-            </div>
-          }
           <div
             style={bubbleStyles}
             onClick={() => setActionsOpen((v) => !v)}
             role="button"
-            tabIndex={0}>
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              setActionsOpen((v) => !v);
+            }}>
 
             {renderMessageContent(message.content, userRoles)}
             {leaveRequestMeta ?
@@ -600,6 +565,55 @@ const MessageBubble = ({
               </div> :
             null}
           </div>
+          {actionsOpen &&
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 10px",
+              borderRadius: radii.pill,
+              backgroundColor: "rgba(var(--accent-purple-rgb), 0.12)",
+              boxShadow: "0 0 0 3px rgba(var(--accent-purple-rgb), 0.1), 0 12px 28px rgba(var(--shadow-rgb), 0.16)",
+              marginTop: "8px"
+            }}>
+
+              {REACTION_EMOJIS.map((emoji) =>
+            <button
+              key={emoji}
+              type="button"
+              className="app-btn app-btn--xs app-btn--pill"
+              onClick={(e) => {
+                e.stopPropagation();
+                onReact?.(emoji);
+                setActionsOpen(false);
+              }}
+              aria-label={`React with ${emoji}`}
+              style={{
+                backgroundColor: "var(--theme)",
+                borderColor: "transparent"
+              }}>
+
+                  {emoji}
+                </button>
+            )}
+              <button
+              type="button"
+              className="app-btn app-btn--xs app-btn--pill"
+              onClick={(e) => {
+                e.stopPropagation();
+                onReply?.();
+                setActionsOpen(false);
+              }}
+              style={{
+                backgroundColor: "var(--theme)",
+                borderColor: "transparent"
+              }}>
+
+                Reply
+              </button>
+            </div>
+          }
           {Object.keys(aggregatedReactions).length > 0 &&
           <div
             style={{

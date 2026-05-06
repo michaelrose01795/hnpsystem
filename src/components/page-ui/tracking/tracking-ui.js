@@ -5,15 +5,18 @@ export default function TrackingDashboardUi(props) {
     Button,
     CAR_LOCATIONS,
     DevLayoutSection,
+    DropdownField,
     EquipmentToolsModal,
     InlineLoading,
     KEY_LOCATIONS,
     LocationEntryModal,
     LocationSearchModal,
     OilStockModal,
+    SearchBar,
     SimplifiedTrackingModal,
     StatusMessage,
     TabGroup,
+    TRACKING_FILTER_ALL,
     activeTab,
     closeEntryModal,
     closeSearchModal,
@@ -40,9 +43,24 @@ export default function TrackingDashboardUi(props) {
     setEquipmentModal,
     setOilStockModal,
     setSimplifiedModal,
+    setTrackerSearchTerm,
+    setTrackerStatusFilter,
+    setTrackerVehicleLocationFilter,
     simplifiedModal,
     tabs,
+    trackerSearchTerm,
+    trackerStatusFilter,
+    trackerStatusFilterOptions,
+    trackerVehicleLocationFilter,
+    trackerVehicleLocationFilterOptions,
   } = props; // receive page logic props.
+
+  // Show the inline tracker filters in the toolbar only when the tab group is
+  // visible AND we're not on the narrow portrait-phone layout. When the tab
+  // group is hidden or we're on a small screen, the filters render inside
+  // renderTrackerContent (their original location) instead.
+  const showInlineTrackerFilters =
+    activeTab === "tracker" && !isMobileView && tabs.length > 1; // gate inline filter row.
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -84,6 +102,47 @@ export default function TrackingDashboardUi(props) {
             value: tab.id
           }))} value={activeTab} onChange={setActiveTab} ariaLabel="Tracker tabs" className="tab-api--inline" />
               </DevLayoutSection>
+              {showInlineTrackerFilters && <div style={{
+          display: "flex",
+          gap: "var(--space-sm)",
+          flexWrap: "wrap",
+          alignItems: "center",
+          flex: "1 1 auto",
+          minWidth: 0,
+          justifyContent: "center"
+        }}>
+                  <SearchBar
+            value={trackerSearchTerm}
+            onChange={(event) => setTrackerSearchTerm(event.target.value)}
+            onClear={() => setTrackerSearchTerm("")}
+            placeholder="Search active jobs"
+            ariaLabel="Search active jobs"
+            style={{
+              flex: "1 1 320px",
+              minWidth: "220px"
+            }} />
+
+                  <DropdownField
+            options={trackerStatusFilterOptions}
+            value={trackerStatusFilter}
+            onValueChange={(value) => setTrackerStatusFilter(value || TRACKING_FILTER_ALL)}
+            size="md"
+            style={{
+              flex: "0 1 150px",
+              minWidth: "130px"
+            }} />
+
+                  <DropdownField
+            options={trackerVehicleLocationFilterOptions}
+            value={trackerVehicleLocationFilter}
+            onValueChange={(value) => setTrackerVehicleLocationFilter(value || TRACKING_FILTER_ALL)}
+            size="md"
+            style={{
+              flex: "0 1 160px",
+              minWidth: "140px"
+            }} />
+
+                </div>}
               {activeTab === "tracker" && <div style={{
           display: "flex",
           gap: "var(--space-sm)",

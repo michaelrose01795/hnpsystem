@@ -19,6 +19,7 @@ import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import { addMonths } from "date-fns";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical --surface inner-section primitive
 import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // Extracted presentation layer.
 
 const CAR_LOCATIONS = [
@@ -349,7 +350,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
     <div
       onClick={onClick}
       style={{
-        padding: "20px 24px",
+        padding: "16px 18px",
         borderRadius: "var(--radius-sm)",
         border: "none",
         background: isHighlighted ? "rgba(var(--danger-rgb), 0.08)" : "var(--theme)",
@@ -361,12 +362,15 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         transition: "all 0.2s ease",
         width: "100%",
         maxWidth: "100%",
-        minWidth: 0,
-        height: "160px",
-        overflow: "hidden"
+        minWidth: 0
       }}>
 
-      <div style={{ minWidth: 0 }}>
+      <LayerSurface
+        radius="var(--radius-sm)"
+        padding="10px 12px"
+        gap="4px"
+        style={{ minWidth: 0 }}>
+
         <strong
           style={{
             fontSize: "clamp(0.78rem, 1.4vw, var(--text-h3))",
@@ -382,7 +386,6 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
         </strong>
         <div
           style={{
-            marginTop: "4px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -394,7 +397,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
             style={{
               margin: 0,
               fontSize: "clamp(0.66rem, 1vw, 0.78rem)",
-              color: "var(--info-dark)",
+              color: "var(--text-1)",
               whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -404,27 +407,31 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
 
             {vehicleMeta || "Make/Model/Colour pending"}
           </p>
-          <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--info)", whiteSpace: "nowrap", flexShrink: 0 }}>
+          <p style={{ margin: 0, fontSize: "var(--text-caption)", color: "var(--text-1)", whiteSpace: "nowrap", flexShrink: 0 }}>
             Last moved {formatRelativeTime(entry.updatedAt)}
           </p>
         </div>
-      </div>
+      </LayerSurface>
 
       <div
         style={{
           display: "grid",
           gridTemplateColumns: isMobileView ? "1fr" : "1fr 1fr",
           gap: "8px",
-          marginTop: "8px",
           minWidth: 0
         }}>
 
-        <div style={{ minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Key location</p>
+        <LayerSurface
+          radius="var(--radius-sm)"
+          padding="10px 12px"
+          gap="2px"
+          style={{ minWidth: 0 }}>
+
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--text-1)" }}>Key location</p>
           <strong
             style={{
               fontSize: "clamp(0.72rem, 1.1vw, var(--text-body))",
-              color: "var(--accent-purple)",
+              color: "var(--text-accent)",
               display: "block",
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -433,9 +440,14 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
 
             {normalizeKeyLocationLabel(entry.keyLocation) || "Pending"}
           </strong>
-        </div>
-        <div style={{ minWidth: 0 }}>
-          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--info)" }}>Car location</p>
+        </LayerSurface>
+        <LayerSurface
+          radius="var(--radius-sm)"
+          padding="10px 12px"
+          gap="2px"
+          style={{ minWidth: 0 }}>
+
+          <p style={{ margin: 0, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--text-1)" }}>Car location</p>
           <strong
             style={{
               fontSize: "clamp(0.72rem, 1.1vw, var(--text-body))",
@@ -448,7 +460,7 @@ const CombinedTrackerCard = ({ entry, isHighlighted, onClick, isMobileView = fal
 
             {entry.vehicleLocation || "Unallocated"}
           </strong>
-        </div>
+        </LayerSurface>
       </div>
     </div>);
 
@@ -1781,16 +1793,27 @@ export default function TrackingDashboard() {
     };
   }, [handleAutoMovement]);
 
-  const activeEntries = useMemo(
-    () =>
-    entries.
+  // Entries assigned to the signed-in user float to the top of the list so a
+  // technician sees their own jobs (the same set surfaced on /job-cards/myjobs)
+  // first when finding keys / cars. Within each group we keep the existing
+  // most-recently-updated ordering.
+  const activeEntries = useMemo(() => {
+    const isMine = (entry) => {
+      if (!dbUserId) return false;
+      const assigned = Number(entry?.assignedTo);
+      return Number.isInteger(assigned) && assigned === Number(dbUserId);
+    };
+    return entries.
     filter((entry) => entry.jobId).
-    sort(
-      (a, b) =>
-      new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
-    ),
-    [entries]
-  );
+    sort((a, b) => {
+      const mineA = isMine(a) ? 1 : 0;
+      const mineB = isMine(b) ? 1 : 0;
+      if (mineA !== mineB) return mineB - mineA; // user's own jobs first
+      return (
+        new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+
+    });
+  }, [entries, dbUserId]);
 
   const trackerStatusFilterOptions = useMemo(() => {
     const values = Array.from(
@@ -1957,9 +1980,17 @@ export default function TrackingDashboard() {
     }
   };
 
+  // When the tab group is visible AND we're on a desktop/tablet width, the search bar
+  // and the two dropdowns are rendered inline inside the tab toolbar (in tracking-ui.js)
+  // between the tab group and the Refresh/Add location buttons. We only render them
+  // here when the tab group is hidden (tabs.length <= 1) or the viewport is the
+  // narrow portrait-phone layout — preserving the existing layout in those cases.
+  const renderTrackerToolbarInline = isMobileView || tabs.length <= 1;
+
   const renderTrackerContent = () =>
   <>
-      <DevLayoutSection
+      {renderTrackerToolbarInline &&
+    <DevLayoutSection
       sectionKey="tracking-active-jobs-header"
       parentKey="tracking-page-body"
       sectionType="toolbar"
@@ -1970,7 +2001,7 @@ export default function TrackingDashboard() {
         alignItems: "center"
       }}>
 
-        <SearchBar
+          <SearchBar
         value={trackerSearchTerm}
         onChange={(event) => setTrackerSearchTerm(event.target.value)}
         onClear={() => setTrackerSearchTerm("")}
@@ -1981,7 +2012,7 @@ export default function TrackingDashboard() {
           minWidth: "240px"
         }} />
 
-        <DropdownField
+          <DropdownField
         options={trackerStatusFilterOptions}
         value={trackerStatusFilter}
         onValueChange={(value) => setTrackerStatusFilter(value || TRACKING_FILTER_ALL)}
@@ -1991,7 +2022,7 @@ export default function TrackingDashboard() {
           minWidth: "180px"
         }} />
 
-        <DropdownField
+          <DropdownField
         options={trackerVehicleLocationFilterOptions}
         value={trackerVehicleLocationFilter}
         onValueChange={(value) => setTrackerVehicleLocationFilter(value || TRACKING_FILTER_ALL)}
@@ -2001,7 +2032,8 @@ export default function TrackingDashboard() {
           minWidth: "190px"
         }} />
 
-      </DevLayoutSection>
+        </DevLayoutSection>
+    }
       {entries.length === 0 &&
     <DevLayoutSection
       sectionKey="tracking-active-jobs-empty-state"
@@ -2012,7 +2044,7 @@ export default function TrackingDashboard() {
         borderRadius: "var(--radius-sm)",
         border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
         textAlign: "center",
-        color: "var(--info-dark)"
+        color: "var(--text-1)"
       }}>
 
           No active job tracking data yet.
@@ -2028,7 +2060,7 @@ export default function TrackingDashboard() {
         borderRadius: "var(--radius-sm)",
         border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
         textAlign: "center",
-        color: "var(--info-dark)"
+        color: "var(--text-1)"
       }}>
 
           Waiting for job-mapped tracking entries.
@@ -2044,7 +2076,7 @@ export default function TrackingDashboard() {
         borderRadius: "var(--radius-sm)",
         border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
         textAlign: "center",
-        color: "var(--info-dark)"
+        color: "var(--text-1)"
       }}>
 
           No active jobs match your search or filters.
@@ -2059,9 +2091,6 @@ export default function TrackingDashboard() {
         gridTemplateColumns:
         !isMobileView && isWideTrackerView ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
         gap: "20px",
-        maxHeight: isMobileView ? "none" : "calc(4 * 180px + 3 * 12px)",
-        overflowY: "auto",
-        paddingRight: "4px",
         width: "100%",
         maxWidth: "100%",
         minWidth: 0
@@ -2163,7 +2192,7 @@ export default function TrackingDashboard() {
           borderRadius: "var(--radius-sm)",
           border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
           textAlign: "center",
-          color: "var(--info-dark)"
+          color: "var(--text-1)"
         }}>
 
             Equipment service list is empty.
@@ -2206,7 +2235,7 @@ export default function TrackingDashboard() {
             style={{
               padding: "20px 24px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+              border: "none",
               background: "var(--theme)",
               boxShadow: "none",
               display: "flex",
@@ -2256,7 +2285,7 @@ export default function TrackingDashboard() {
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--info-dark)"
+                  color: "var(--text-1)"
                 }}>
 
                   <span>Last checked</span>
@@ -2267,7 +2296,7 @@ export default function TrackingDashboard() {
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--info-dark)"
+                  color: "var(--text-1)"
                 }}>
 
                   <span>Next due</span>
@@ -2278,7 +2307,7 @@ export default function TrackingDashboard() {
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--info-dark)"
+                  color: "var(--text-1)"
                 }}>
 
                   <span>Check interval</span>
@@ -2365,7 +2394,7 @@ export default function TrackingDashboard() {
           borderRadius: "var(--radius-sm)",
           border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
           textAlign: "center",
-          color: "var(--info-dark)"
+          color: "var(--text-1)"
         }}>
 
             Oil stock checklist is empty.
@@ -2408,7 +2437,7 @@ export default function TrackingDashboard() {
             style={{
               padding: "20px 24px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+              border: "none",
               background: "var(--theme)",
               boxShadow: "none",
               display: "flex",
@@ -2458,7 +2487,7 @@ export default function TrackingDashboard() {
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--info-dark)"
+                  color: "var(--text-1)"
                 }}>
 
                   <span>Stock amount</span>
@@ -2469,7 +2498,7 @@ export default function TrackingDashboard() {
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--info-dark)"
+                  color: "var(--text-1)"
                 }}>
 
                   <span>Last check</span>
@@ -2480,7 +2509,7 @@ export default function TrackingDashboard() {
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--info-dark)"
+                  color: "var(--text-1)"
                 }}>
 
                   <span>Next check</span>
@@ -2491,7 +2520,7 @@ export default function TrackingDashboard() {
                   display: "flex",
                   justifyContent: "space-between",
                   fontSize: "var(--text-body-sm)",
-                  color: "var(--info-dark)"
+                  color: "var(--text-1)"
                 }}>
 
                   <span>Check interval</span>
@@ -2554,7 +2583,7 @@ export default function TrackingDashboard() {
     return renderTrackerContent();
   };
 
-  return <TrackingDashboardUi view="section1" activeTab={activeTab} Button={Button} CAR_LOCATIONS={CAR_LOCATIONS} closeEntryModal={closeEntryModal} closeSearchModal={closeSearchModal} DevLayoutSection={DevLayoutSection} entries={entries} entryModal={entryModal} equipmentLoading={equipmentLoading} equipmentModal={equipmentModal} EquipmentToolsModal={EquipmentToolsModal} error={error} handleDeleteEquipment={handleDeleteEquipment} handleDeleteOilStock={handleDeleteOilStock} handleLocationSelect={handleLocationSelect} handleSave={handleSave} handleSaveEquipment={handleSaveEquipment} handleSaveOilStock={handleSaveOilStock} InlineLoading={InlineLoading} isMobileView={isMobileView} KEY_LOCATIONS={KEY_LOCATIONS} loadEntries={loadEntries} loading={loading} LocationEntryModal={LocationEntryModal} LocationSearchModal={LocationSearchModal} oilLoading={oilLoading} oilStockModal={oilStockModal} OilStockModal={OilStockModal} openEntryModal={openEntryModal} renderActiveTabContent={renderActiveTabContent} searchModal={searchModal} setActiveTab={setActiveTab} setEquipmentModal={setEquipmentModal} setOilStockModal={setOilStockModal} setSimplifiedModal={setSimplifiedModal} simplifiedModal={simplifiedModal} SimplifiedTrackingModal={SimplifiedTrackingModal} StatusMessage={StatusMessage} TabGroup={TabGroup} tabs={tabs} />;
+  return <TrackingDashboardUi view="section1" activeTab={activeTab} Button={Button} CAR_LOCATIONS={CAR_LOCATIONS} closeEntryModal={closeEntryModal} closeSearchModal={closeSearchModal} DevLayoutSection={DevLayoutSection} DropdownField={DropdownField} entries={entries} entryModal={entryModal} equipmentLoading={equipmentLoading} equipmentModal={equipmentModal} EquipmentToolsModal={EquipmentToolsModal} error={error} handleDeleteEquipment={handleDeleteEquipment} handleDeleteOilStock={handleDeleteOilStock} handleLocationSelect={handleLocationSelect} handleSave={handleSave} handleSaveEquipment={handleSaveEquipment} handleSaveOilStock={handleSaveOilStock} InlineLoading={InlineLoading} isMobileView={isMobileView} KEY_LOCATIONS={KEY_LOCATIONS} loadEntries={loadEntries} loading={loading} LocationEntryModal={LocationEntryModal} LocationSearchModal={LocationSearchModal} oilLoading={oilLoading} oilStockModal={oilStockModal} OilStockModal={OilStockModal} openEntryModal={openEntryModal} renderActiveTabContent={renderActiveTabContent} SearchBar={SearchBar} searchModal={searchModal} setActiveTab={setActiveTab} setEquipmentModal={setEquipmentModal} setOilStockModal={setOilStockModal} setSimplifiedModal={setSimplifiedModal} setTrackerSearchTerm={setTrackerSearchTerm} setTrackerStatusFilter={setTrackerStatusFilter} setTrackerVehicleLocationFilter={setTrackerVehicleLocationFilter} simplifiedModal={simplifiedModal} SimplifiedTrackingModal={SimplifiedTrackingModal} StatusMessage={StatusMessage} TabGroup={TabGroup} tabs={tabs} TRACKING_FILTER_ALL={TRACKING_FILTER_ALL} trackerSearchTerm={trackerSearchTerm} trackerStatusFilter={trackerStatusFilter} trackerStatusFilterOptions={trackerStatusFilterOptions} trackerVehicleLocationFilter={trackerVehicleLocationFilter} trackerVehicleLocationFilterOptions={trackerVehicleLocationFilterOptions} />;
 
 
 

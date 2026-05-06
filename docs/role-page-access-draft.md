@@ -88,11 +88,11 @@ Format to edit:
 ## Mobile Technician
 
 - /mobile/dashboard
-- /mobile/jobs
-- /mobile/jobs/[jobNumber]
+- /job-cards/myjobs
+- /job-cards/myjobs/[jobNumber]
 - /mobile/appointments
-- /mobile/create
 - /mobile/delivery/[jobNumber]
+- /job-cards/create
 - /tech/consumables-request
 
 ## MOT Tester
@@ -161,7 +161,6 @@ Format to edit:
 - /job-cards/[jobNumber]
 - /parts/goods-in
 - /mobile/appointments
-- /mobile/create
 - /tracking
 
 ## Techs

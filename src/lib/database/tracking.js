@@ -231,6 +231,7 @@ const normaliseJobJoin = (join) => {
     serviceType: join.type || "",
     makeModel: join.vehicle_make_model || makeModelFromJoin,
     colour: colourFromJoin,
+    assignedTo: join.assigned_to ?? null, // propagate technician assignment for tracking-page prioritisation
   };
 };
 
@@ -247,6 +248,7 @@ const mergeEntry = (entryMap, baseKey, incoming) => {
       colour: incoming.colour || "",
       status: incoming.status,
       jobStatus: incoming.jobStatus || null,
+      assignedTo: incoming.assignedTo ?? null,
       vehicleLocation: incoming.vehicleLocation || null,
       keyLocation: incoming.keyLocation || null,
       keyNotes: incoming.keyNotes || null,
@@ -271,6 +273,7 @@ const mergeEntry = (entryMap, baseKey, incoming) => {
     serviceType: existing.serviceType || incoming.serviceType,
     makeModel: existing.makeModel || incoming.makeModel,
     colour: existing.colour || incoming.colour || "",
+    assignedTo: existing.assignedTo ?? incoming.assignedTo ?? null,
     status: incoming.status || existing.status,
     jobStatus: incoming.jobStatus || existing.jobStatus,
     vehicleLocation: incoming.vehicleLocation || existing.vehicleLocation,
@@ -297,14 +300,14 @@ export const fetchTrackingSnapshot = async () => {
     supabase
       .from("key_tracking_events")
       .select(
-        "key_event_id, job_id, vehicle_id, action, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, status, vehicle_make_model, maintenance_info, checked_in_at, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour), appointments(scheduled_time)), vehicle:vehicle_id(make_model, make, model, colour)"
+        "key_event_id, job_id, vehicle_id, action, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, status, vehicle_make_model, maintenance_info, checked_in_at, assigned_to, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour), appointments(scheduled_time)), vehicle:vehicle_id(make_model, make, model, colour)"
       )
       .order("occurred_at", { ascending: false })
       .limit(50),
     supabase
       .from("vehicle_tracking_events")
       .select(
-        "event_id, job_id, vehicle_id, status, location, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, status, vehicle_make_model, maintenance_info, checked_in_at, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour), appointments(scheduled_time)), vehicle:vehicle_id(make_model, make, model, colour)"
+        "event_id, job_id, vehicle_id, status, location, notes, occurred_at, jobs:job_id(job_number, vehicle_reg, customer, type, status, vehicle_make_model, maintenance_info, checked_in_at, assigned_to, customer_ref:customer_id(name, firstname, lastname), vehicle_ref:vehicle_id(make_model, make, model, colour), appointments(scheduled_time)), vehicle:vehicle_id(make_model, make, model, colour)"
       )
       .order("occurred_at", { ascending: false })
       .limit(50),
@@ -333,6 +336,7 @@ export const fetchTrackingSnapshot = async () => {
       colour: join.colour || event.vehicle?.colour || "",
       status: event.status || join.serviceType || "In Progress",
       jobStatus: event.jobs?.status || null,
+      assignedTo: join.assignedTo ?? null,
       vehicleLocation: event.location || null,
       keyLocation: null,
       keyNotes: null,
@@ -364,6 +368,7 @@ export const fetchTrackingSnapshot = async () => {
       colour: join.colour || event.vehicle?.colour || "",
       status: statusLabelForAction("job_complete"),
       jobStatus: event.jobs?.status || null,
+      assignedTo: join.assignedTo ?? null,
       vehicleLocation: null,
       keyLocation: event.action || null,
       keyNotes: event.notes || null,

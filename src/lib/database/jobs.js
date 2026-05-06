@@ -337,6 +337,7 @@ const _getAllJobsUncached = async () => {
       checked_in_at,
       vhc_completed_at,
       maintenance_info,
+      service_mode,
       warranty_linked_job_id,
       warranty_vhc_master_job_id,
       linked_warranty_job:warranty_linked_job_id(
@@ -824,6 +825,7 @@ const _getJobByNumberUncached = async (jobNumber, options = {}) => {
       checked_in_at,
       vhc_completed_at,
       maintenance_info,
+      service_mode,
       warranty_linked_job_id,
       warranty_vhc_master_job_id,
       linked_warranty_job:warranty_linked_job_id(
@@ -2487,6 +2489,7 @@ const formatJobData = (data) => {
     vhcCompletedAt: data.vhc_completed_at || null,
     maintenanceInfo: data.maintenance_info || {},
     checkedInAt: data.checked_in_at || null,
+    serviceMode: data.service_mode || "workshop",
     
     // ✅ Technician info
     technician: data.technician

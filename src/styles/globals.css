@@ -1233,7 +1233,7 @@ label {
 }
 
 .app-data-table thead th {
-  background: var(--surface);
+  background: var(--secondary-pressed);
   color: var(--text-1);
   font-size: var(--text-label);
   font-weight: 700;
@@ -4554,7 +4554,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .app-table-shell--with-headings thead th {
-  background: var(--page-shell-bg) !important;
+  background: var(--secondary-pressed) !important;
   background-image: none !important;
   color: var(--text-1) !important;
   font-size: 0.72rem;

@@ -17,9 +17,8 @@ import { deriveJobTypeDisplay, formatDetectedJobTypeLabel } from "@/lib/jobType/
 import { revalidateAllJobs } from "@/lib/swr/mutations"; // SWR cache invalidation after mutations
 import { prefetchJob } from "@/lib/swr/prefetch"; // warm SWR cache on hover for instant navigation
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
+import { FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
 import ViewJobCardsUi from "@/components/page-ui/job-cards/view/job-cards-view-ui"; // Extracted presentation layer.
-import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 const TODAY_STATUSES = ["Booked", "Checked In", "In Progress", "Invoiced", "Released"];
@@ -145,7 +144,7 @@ const renderVhcBadge = (job) => {
           alignItems: "center",
           gap: "6px",
           fontSize: "12px",
-          color: "var(--info)"
+          color: "var(--text-2)"
         }}>
         
         <span
@@ -153,7 +152,7 @@ const renderVhcBadge = (job) => {
             width: "10px",
             height: "10px",
             borderRadius: "var(--radius-full)",
-            backgroundColor: "var(--info)"
+            backgroundColor: "var(--text-accent)"
           }} />
         
         Not required
@@ -168,7 +167,7 @@ const renderVhcBadge = (job) => {
         alignItems: "center",
         gap: "6px",
         fontSize: "12px",
-        color: completed ? "var(--success-dark)" : "var(--warning)"
+        color: completed ? "var(--text-2)" : "var(--text-accent)"
       }}>
       
       <span
@@ -176,7 +175,7 @@ const renderVhcBadge = (job) => {
           width: "10px",
           height: "10px",
           borderRadius: "var(--radius-full)",
-          backgroundColor: completed ? "var(--success)" : "var(--primary)"
+          backgroundColor: "var(--text-accent)"
         }} />
       
       {completed ? "VHC complete" : "VHC pending"}
@@ -207,21 +206,17 @@ export default function ViewJobCards() {
   const [activeTab, setActiveTab] = useState("today"); // track active tab
   const [loading, setLoading] = useState(true); // loading state
   const router = useRouter(); // router for navigation
+  const divisionParam = router.query?.division;
   useEffect(() => {
-    const divisionParam = router.query?.division;
-    if (!divisionParam) {
-      setDivisionFilter("All");
+    if (!router.isReady || !divisionParam) {
       return;
     }
-    const normalized = String(divisionParam).trim().toLowerCase();
-    if (normalized === "retail") {
-      setDivisionFilter("Retail");
-    } else if (normalized === "sales") {
-      setDivisionFilter("Sales");
-    } else {
-      setDivisionFilter("All");
-    }
-  }, [router.query?.division]);
+    const nextQuery = { ...router.query };
+    delete nextQuery.division;
+    router.replace({ pathname: router.pathname, query: nextQuery }, undefined, {
+      shallow: true
+    });
+  }, [divisionParam, router]);
   useEffect(() => {
     if (!popupJob?.id) {
       setPopupSnapshot(null);
@@ -368,19 +363,9 @@ export default function ViewJobCards() {
   const handleDivisionFilterChange = useCallback(
     (nextValue) => {
       if (!nextValue || nextValue === divisionFilter) return;
-      const nextFilter = nextValue;
-      setDivisionFilter(nextFilter);
-      const nextQuery = { ...router.query };
-      if (nextFilter === "All") {
-        delete nextQuery.division;
-      } else {
-        nextQuery.division = nextFilter.toLowerCase();
-      }
-      router.replace({ pathname: router.pathname, query: nextQuery }, undefined, {
-        shallow: true
-      });
+      setDivisionFilter(nextValue);
     },
-    [divisionFilter, router]
+    [divisionFilter]
   );
 
   const jobDateLookup = useMemo(
@@ -591,7 +576,7 @@ export default function ViewJobCards() {
   /* ================================
      Page Layout
   ================================ */
-  return <ViewJobCardsUi view="section2" activeStatusFilter={activeStatusFilter} activeTab={activeTab} baseJobs={baseJobs} combinedStatusOptions={combinedStatusOptions} ContentWidth={ContentWidth} DevLayoutSection={DevLayoutSection} divisionFilter={divisionFilter} DropdownField={DropdownField} emptyStateMessage={emptyStateMessage} FilterToolbarRow={FilterToolbarRow} formatDetectedJobTypeLabel={formatDetectedJobTypeLabel} goToJobCard={goToJobCard} handleCardNavigation={handleCardNavigation} handleDivisionFilterChange={handleDivisionFilterChange} handleSearchValueChange={handleSearchValueChange} handleStatusChange={handleStatusChange} handleStatusFilterChange={handleStatusFilterChange} isOrdersTab={isOrdersTab} JobListCard={JobListCard} OrderListCard={OrderListCard} ordersLoading={ordersLoading} PageShell={PageShell} popupCardStyles={popupCardStyles} popupJob={popupJob} popupOverlayStyles={popupOverlayStyles} popupPrimaryActionButtonStyle={popupPrimaryActionButtonStyle} popupQuietActionButtonStyle={popupQuietActionButtonStyle} popupSecondaryActionButtonStyle={popupSecondaryActionButtonStyle} popupStatusLabel={popupStatusLabel} prefetchJob={prefetchJob} router={router} SearchBar={SearchBar} searchPlaceholder={searchPlaceholder} searchValues={searchValues} SectionShell={SectionShell} setActiveTab={setActiveTab} setPopupJob={setPopupJob} sortedJobs={sortedJobs} statusCounts={statusCounts} statusTabs={statusTabs} TabGroup={TabGroup} tabOptions={tabOptions} />;
+  return <ViewJobCardsUi view="section2" activeStatusFilter={activeStatusFilter} activeTab={activeTab} baseJobs={baseJobs} combinedStatusOptions={combinedStatusOptions} DevLayoutSection={DevLayoutSection} divisionFilter={divisionFilter} DropdownField={DropdownField} emptyStateMessage={emptyStateMessage} FilterToolbarRow={FilterToolbarRow} formatDetectedJobTypeLabel={formatDetectedJobTypeLabel} goToJobCard={goToJobCard} handleCardNavigation={handleCardNavigation} handleDivisionFilterChange={handleDivisionFilterChange} handleSearchValueChange={handleSearchValueChange} handleStatusChange={handleStatusChange} handleStatusFilterChange={handleStatusFilterChange} isOrdersTab={isOrdersTab} JobListCard={JobListCard} OrderListCard={OrderListCard} ordersLoading={ordersLoading} PageShell={PageShell} popupCardStyles={popupCardStyles} popupJob={popupJob} popupOverlayStyles={popupOverlayStyles} popupPrimaryActionButtonStyle={popupPrimaryActionButtonStyle} popupQuietActionButtonStyle={popupQuietActionButtonStyle} popupSecondaryActionButtonStyle={popupSecondaryActionButtonStyle} popupStatusLabel={popupStatusLabel} prefetchJob={prefetchJob} router={router} SearchBar={SearchBar} searchPlaceholder={searchPlaceholder} searchValues={searchValues} SectionShell={SectionShell} setActiveTab={setActiveTab} setPopupJob={setPopupJob} sortedJobs={sortedJobs} statusCounts={statusCounts} statusTabs={statusTabs} TabGroup={TabGroup} tabOptions={tabOptions} />;
 
 
 
@@ -1313,7 +1298,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
   const isSalesDivision = jobDivisionLabel.toLowerCase() === "sales";
   const divisionBadgeStyles = {
     backgroundColor: isSalesDivision ? "var(--theme)" : "var(--success-surface)",
-    color: isSalesDivision ? "var(--info)" : "var(--success-dark)"
+    color: isSalesDivision ? "var(--text-accent)" : "var(--text-1)"
   };
 
   // Extract customer requests text
@@ -1331,7 +1316,10 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
       onClick={onNavigate}
       style={{
         padding: "0.75rem 0.9rem",
+        borderRadius: "var(--section-card-radius)",
+        overflow: "hidden",
         backgroundColor: rowBackground,
+        color: "var(--text-2)",
         display: "flex",
         flexDirection: "column",
         gap: "0.65rem",
@@ -1362,7 +1350,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
         }}>
         
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--info-dark)" }}>{job.jobNumber}</span>
+          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--text-1)" }}>{job.jobNumber}</span>
           {/* ✅ Prime/Sub-job badge */}
           {job.primeJobNumber &&
           <span
@@ -1371,7 +1359,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
               padding: "2px 8px",
               borderRadius: "var(--radius-xs)",
               backgroundColor: "var(--primary-surface)",
-              color: "var(--primary)",
+              color: "var(--text-accent)",
               fontWeight: "600"
             }}
             title={job.isPrimeJob ? "Prime Job" : `Sub-job of ${job.primeJobNumber}`}>
@@ -1379,8 +1367,8 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
               {job.isPrimeJob ? "🔗 Prime" : `↳ ${job.primeJobNumber}`}
             </span>
           }
-          <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>{job.reg || "—"}</span>
-          <span style={{ fontSize: "13px", color: "var(--info)" }}>{job.makeModel || "Vehicle pending"}</span>
+          <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-accent)" }}>{job.reg || "—"}</span>
+          <span style={{ fontSize: "13px", color: "var(--text-1)" }}>{job.makeModel || "Vehicle pending"}</span>
         </div>
         <div
           style={{
@@ -1410,7 +1398,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
               padding: "4px 12px",
               borderRadius: "var(--control-radius-xs)",
               backgroundColor: "var(--theme)",
-              color: "var(--accent-purple)",
+              color: "var(--text-accent)",
               fontWeight: 600,
               fontSize: "12px",
               textTransform: "capitalize",
@@ -1433,27 +1421,27 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
         }}>
         
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Customer</span>
-          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{job.customer || "Unknown"}</span>
+          <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Customer</span>
+          <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{job.customer || "Unknown"}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Technician</span>
-          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{assignedTechName}</span>
+          <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Technician</span>
+          <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{assignedTechName}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Job Type</span>
-          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{jobType}</span>
+          <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Job Type</span>
+          <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{jobType}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Appointment</span>
-          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{appointmentLabel}</span>
+          <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Appointment</span>
+          <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{appointmentLabel}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>Customer Status</span>
-          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{waitingLabel}</span>
+          <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>Customer Status</span>
+          <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{waitingLabel}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>VHC</span>
+          <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>VHC</span>
           <span style={{ fontSize: "12px" }}>{renderVhcBadge(job)}</span>
         </div>
       </div>
@@ -1462,10 +1450,10 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
       {customerRequests.length > 0 &&
       <LayerTheme radius="var(--radius-xs)" padding="8px 10px" gap={undefined}>
 
-          <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
+          <div style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
             Customer Requests ({customerRequests.length})
           </div>
-          <div style={{ fontSize: "12px", color: "var(--info-dark)", lineHeight: "1.4" }}>
+          <div style={{ fontSize: "12px", color: "var(--text-1)", lineHeight: "1.4" }}>
             {customerRequests.join(" • ")}
           </div>
         </LayerTheme>
@@ -1497,7 +1485,10 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
       onClick={onNavigate}
       style={{
         padding: "0.75rem 0.9rem",
+        borderRadius: "var(--section-card-radius)",
+        overflow: "hidden",
         backgroundColor: rowBackground,
+        color: "var(--text-2)",
         display: "flex",
         flexDirection: "column",
         gap: "0.65rem",
@@ -1526,13 +1517,13 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
         }}>
         
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--info-dark)" }}>
+          <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--text-1)" }}>
             {order.orderNumber}
           </span>
-          <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>
+          <span style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-accent)" }}>
             {order.customer || "Customer"}
           </span>
-          <span style={{ fontSize: "13px", color: "var(--info)" }}>
+          <span style={{ fontSize: "13px", color: "var(--text-2)" }}>
             {order.makeModel || order.vehicle_reg || "Vehicle pending"}
           </span>
         </div>
@@ -1541,7 +1532,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
             padding: "4px 10px",
             borderRadius: "var(--control-radius)",
             backgroundColor: "var(--theme)",
-            color: "var(--accent-purple)",
+            color: "var(--text-accent)",
             fontWeight: 600,
             fontSize: "12px",
             textTransform: "capitalize"
@@ -1560,31 +1551,31 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
         }}>
         
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+          <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>
             Fulfilment
           </span>
-          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{deliveryLabel}</span>
+          <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{deliveryLabel}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+          <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>
             Scheduled
           </span>
-          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{deliveryWindow}</span>
+          <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{deliveryWindow}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+          <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>
             Items
           </span>
-          <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>
+          <span style={{ color: "var(--text-1)", fontWeight: 500 }}>
             {totalItems} line{totalItems === 1 ? "" : "s"}
           </span>
         </div>
         {order.invoice_total !== undefined &&
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            <span style={{ fontSize: "10px", color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>
+            <span style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>
               Invoice Value
             </span>
-            <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>
+            <span style={{ color: "var(--text-1)", fontWeight: 500 }}>
               £{Number(order.invoice_total || 0).toFixed(2)}
             </span>
           </div>
@@ -1594,10 +1585,10 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
       {items.length > 0 &&
       <LayerTheme radius="var(--radius-xs)" padding="8px 10px" gap={undefined}>
 
-          <div style={{ fontSize: "10px", color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
+          <div style={{ fontSize: "10px", color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600, marginBottom: "4px" }}>
             Parts Summary
           </div>
-          <div style={{ fontSize: "12px", color: "var(--info-dark)", lineHeight: "1.4" }}>
+          <div style={{ fontSize: "12px", color: "var(--text-1)", lineHeight: "1.4" }}>
             {items.
           slice(0, 4).
           map((item) => item.part_name || item.part_number || "Part").

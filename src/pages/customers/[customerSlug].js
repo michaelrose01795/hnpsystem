@@ -341,34 +341,54 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
     data-dev-background-token="surface"
     style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "16px" }}>
 
-      {/* Add Vehicle controls */}
-      {!showForm ?
-      <div
-        data-dev-section="1"
-        data-dev-section-key="customer-profile-insights-vehicle-add-toolbar"
-        data-dev-section-type="toolbar"
-        data-dev-section-parent="customer-profile-insights-vehicles"
-        data-dev-background-token="transparent"
-        data-dev-text-preview="Vehicle add action"
-        style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button
-          type="button"
-          className="app-btn app-btn--primary app-btn--sm"
-          onClick={() => setShowForm(true)}
-          style={{
-            cursor: "pointer"
-          }}>
-
-            Add Vehicle
-          </button>
-        </div> :
-
       <LayerSurface as="div"
+
+      data-dev-section="1"
+      data-dev-section-key="customer-profile-insights-vehicle-grid"
+      data-dev-section-type="section-shell"
+      data-dev-section-parent="customer-profile-insights-vehicles"
+      data-dev-background-token="transparent"
+      data-dev-text-preview={`${vehicles.length} linked vehicle${vehicles.length === 1 ? "" : "s"}`}
+      style={{
+        background: "transparent",
+        padding: 0,
+        display: "flex",
+        flexDirection: "column",
+        gap: "16px",
+      }}>
+
+        {!showForm &&
+        <div
+          data-dev-section="1"
+          data-dev-section-key="customer-profile-insights-vehicle-add-toolbar"
+          data-dev-section-type="toolbar"
+          data-dev-section-parent="customer-profile-insights-vehicle-grid"
+          data-dev-background-token="transparent"
+          data-dev-text-preview="Vehicle add action"
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+            <strong style={{ color: "var(--text-1)", fontSize: "0.95rem" }}>
+              {vehicles.length} linked vehicle{vehicles.length === 1 ? "" : "s"}
+            </strong>
+            <button
+            type="button"
+            className="app-btn app-btn--primary app-btn--sm"
+            onClick={() => setShowForm(true)}
+            style={{
+              cursor: "pointer"
+            }}>
+
+              Add Vehicle
+            </button>
+          </div>
+        }
+
+        {showForm &&
+        <LayerSurface as="div"
 
       data-dev-section="1"
       data-dev-section-key="customer-profile-insights-vehicle-add-form"
       data-dev-section-type="content-card"
-      data-dev-section-parent="customer-profile-insights-vehicles"
+      data-dev-section-parent="customer-profile-insights-vehicle-grid"
       data-dev-background-token="accent-surface"
       style={{
 
@@ -498,7 +518,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
       data-dev-section="1"
       data-dev-section-key="customer-profile-insights-vehicles-empty"
       data-dev-section-type="empty-state"
-      data-dev-section-parent="customer-profile-insights-vehicles"
+      data-dev-section-parent="customer-profile-insights-vehicle-grid"
       data-dev-background-token="transparent"
       style={{
 
@@ -512,20 +532,7 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
           No vehicles linked to this customer yet.
         </LayerSurface> :
 
-      <LayerSurface as="div"
-
-      data-dev-section="1"
-      data-dev-section-key="customer-profile-insights-vehicle-grid"
-      data-dev-section-type="section-shell"
-      data-dev-section-parent="customer-profile-insights-vehicles"
-      data-dev-background-token="transparent"
-      data-dev-text-preview={`${vehicles.length} linked vehicle${vehicles.length === 1 ? "" : "s"}`}
-      style={{
-        display: "grid",
-        gap: "16px",
-        gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))"
-      }}>
-
+      <>
           {vehicles.map((vehicle) => {
           const registration = getVehicleRegistration(vehicle, "Unregistered");
           const makeModel =
@@ -541,48 +548,65 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
             data-dev-section-key={`customer-profile-insights-vehicle-${vehicle.vehicle_id}`}
             data-dev-section-type="content-card"
             data-dev-section-parent="customer-profile-insights-vehicle-grid"
-            data-dev-background-token="accent-surface"
+            data-dev-background-token="theme"
             style={{
 
 
 
+              background: "var(--theme)",
               padding: "20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px"
+              display: "grid",
+              gap: "16px",
+              gridTemplateColumns: "minmax(220px, 0.85fr) minmax(0, 1.4fr)",
+              alignItems: "stretch",
+              width: "100%"
             }}>
 
-                <div>
-                  <p
-                  style={{
-                    fontSize: "0.75rem",
-                    letterSpacing: "0.25em",
-                    textTransform: "uppercase",
-                    color: "var(--grey-accent)",
-                    marginBottom: "4px"
-                  }}>
+                <div
+                style={{
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--surface)",
+                  padding: "14px",
+                  display: "grid",
+                  gap: "12px",
+                  gridTemplateColumns: "minmax(0, 1fr)",
+                  alignItems: "center"
+                }}>
 
-                    Registration
-                  </p>
-                  <p
-                  style={{
-                    margin: 0,
-                    fontSize: "1.3rem",
-                    fontWeight: 700,
-                    color: "var(--info-dark)"
-                  }}>
+                  <div>
+                    <p
+                    style={{
+                      fontSize: "0.68rem",
+                      letterSpacing: "0.2em",
+                      textTransform: "uppercase",
+                      color: "var(--grey-accent)",
+                      margin: "0 0 6px"
+                    }}>
 
-                    {registration}
-                  </p>
-                </div>
+                      Registration
+                    </p>
+                    <p
+                    style={{
+                      margin: 0,
+                      fontSize: "1.35rem",
+                      fontWeight: 800,
+                      color: "var(--info-dark)",
+                      lineHeight: 1.1,
+                      overflowWrap: "anywhere"
+                    }}>
 
-                <div>
-                  <p style={{ margin: 0, fontWeight: 600, color: "var(--text-1)" }}>
-                    {makeModel}
-                  </p>
-                  <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.9rem" }}>
-                    {vehicle.year ? `Year ${vehicle.year}` : "Year unknown"}
-                  </p>
+                      {registration}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 700, color: "var(--text-1)" }}>
+                      {makeModel}
+                    </p>
+                    <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "0.85rem" }}>
+                      {vehicle.year ? `Year ${vehicle.year}` : "Year unknown"}
+                    </p>
+                  </div>
                 </div>
 
                 <div
@@ -605,8 +629,9 @@ const VehiclesSection = ({ vehicles, customerId, onVehicleAdded }) => {
               </LayerSurface>);
 
         })}
-        </LayerSurface>
+        </>
       }
+      </LayerSurface>
     </LayerSurface>);
 
 };
@@ -751,8 +776,8 @@ const CustomerScheduleSection = ({ jobs }) => {
         data-dev-section-key={`customer-profile-insights-appointment-${appointment.appointment_id}`}
         data-dev-section-type="content-card"
         data-dev-section-parent="customer-profile-insights-schedule-list"
-        data-dev-background-token="accent-surface"
-        style={{ padding: "14px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
+        data-dev-background-token="theme"
+        style={{ background: "var(--theme)", padding: "14px", display: "grid", gap: "8px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>
 
               <VehicleField label="When" value={formatDateTime(appointment.scheduled_time)} />
               <VehicleField label="Status" value={appointment.status || "Booked"} />
@@ -1131,14 +1156,7 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
   }
 
   return (
-    <LayerSurface as="div"
-
-    data-dev-section="1"
-    data-dev-section-key="customer-profile-messages-panel"
-    data-dev-section-type="section-shell"
-    data-dev-section-parent="customer-profile-tab-messages"
-    data-dev-background-token="surface"
-    style={{ padding: "18px", display: "flex", flexDirection: "column", gap: "14px" }}>
+    <>
 
       {loading && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading messages...</p>}
       {error && <p style={{ margin: 0, color: "var(--danger)" }}>{error}</p>}
@@ -1146,9 +1164,9 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         data-dev-section="1"
         data-dev-section-key="customer-profile-messages-feed"
         data-dev-section-type="section-shell"
-        data-dev-section-parent="customer-profile-messages-panel"
-        data-dev-background-token="accent-surface"
-        style={{ minHeight: "260px", maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", borderRadius: "var(--radius-md)", background: "var(--theme)", padding: "12px" }}>
+        data-dev-section-parent="customer-profile-tab-messages"
+        data-dev-background-token="surface"
+        style={{ minHeight: "260px", maxHeight: "420px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "12px" }}>
 
         {!loading && !messages.length && <p style={{ margin: 0, color: "var(--text-1)" }}>No messages yet.</p>}
         {messages.map((message) => {
@@ -1174,9 +1192,9 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
         data-dev-section="1"
         data-dev-section-key="customer-profile-messages-composer"
         data-dev-section-type="toolbar"
-        data-dev-section-parent="customer-profile-messages-panel"
-        data-dev-background-token="transparent"
-        style={{ display: "flex", gap: "10px", alignItems: "flex-end", border: "none", boxShadow: "none", outline: "none" }}>
+        data-dev-section-parent="customer-profile-tab-messages"
+        data-dev-background-token="surface"
+        style={{ display: "flex", gap: "10px", alignItems: "flex-end", border: "none", boxShadow: "none", outline: "none", borderRadius: "var(--radius-md)", background: "var(--surface)", padding: "12px" }}>
 
         <textarea
           ref={composerRef}
@@ -1184,14 +1202,14 @@ const CustomerMessagesTab = ({ customerName, customerEmail, dbUserId }) => {
           className="app-input app-input--textarea"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder="Message the company..."
+          placeholder="Message the customer..."
           style={{ flex: 1, height: "42px", minHeight: "42px", maxHeight: "132px", resize: "none", overflowY: "hidden", lineHeight: "20px", border: "none", boxShadow: "none" }} />
 
         <button type="button" className="app-btn app-btn--primary" onClick={handleSend} disabled={sending || !draft.trim()}>
           {sending ? "Sending..." : "Send"}
         </button>
       </div>
-    </LayerSurface>);
+    </>);
 
 };
 

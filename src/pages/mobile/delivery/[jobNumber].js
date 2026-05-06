@@ -65,7 +65,7 @@ function DeliveryInner() {
   return (
     <div style={pageStyle}>
       <header style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-        <Link href={`/mobile/jobs/${encodeURIComponent(jobNumber)}`}>← Back to job</Link>
+        <Link href={`/job-cards/myjobs/${encodeURIComponent(jobNumber)}`}>← Back to job</Link>
         <h1 style={{ margin: 0 }}>Delivery & Completion</h1>
         <ServiceModeBadge mode="mobile" />
       </header>
@@ -92,7 +92,7 @@ function DeliveryInner() {
         {(!job.mobile_outcome || job.mobile_outcome === "unable_to_complete") &&
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             <RedirectToWorkshopButton jobNumber={job.job_number} onRedirected={load} />
-            <Link href={`/mobile/jobs/${encodeURIComponent(jobNumber)}`}>Back to job actions →</Link>
+            <Link href={`/job-cards/myjobs/${encodeURIComponent(jobNumber)}`}>Back to job actions →</Link>
           </div>
         }
       </LayerSurface>

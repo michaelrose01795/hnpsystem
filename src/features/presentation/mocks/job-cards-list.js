@@ -27,8 +27,10 @@ function JobListCard({ job, onClick }) {
       onClick={onClick}
       style={{
         padding: "0.75rem 0.9rem",
-        borderRadius: "var(--radius-sm)",
+        borderRadius: "var(--section-card-radius)",
+        overflow: "hidden",
         backgroundColor: "var(--surface)",
+        color: "var(--text-2)",
         display: "flex",
         flexDirection: "column",
         gap: "0.65rem",
@@ -37,9 +39,9 @@ function JobListCard({ job, onClick }) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: "var(--info-dark)" }}>{job.jobNumber}</span>
-          <span style={{ fontSize: 18, fontWeight: 700, color: "var(--primary)" }}>{job.reg || "—"}</span>
-          <span style={{ fontSize: 13, color: "var(--info)" }}>{job.makeModel || "Vehicle pending"}</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text-1)" }}>{job.jobNumber}</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "var(--text-accent)" }}>{job.reg || "—"}</span>
+          <span style={{ fontSize: 13, color: "var(--text-2)" }}>{job.makeModel || "Vehicle pending"}</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{
@@ -49,13 +51,13 @@ function JobListCard({ job, onClick }) {
             fontSize: 12,
             border: "1px solid currentColor",
             backgroundColor: isSales ? "var(--theme-colour)" : "var(--success-surface)",
-            color: isSales ? "var(--info)" : "var(--success-dark)",
+            color: isSales ? "var(--text-accent)" : "var(--text-1)",
           }}>{job.jobDivision || "Retail"}</span>
           <span style={{
             padding: "4px 12px",
             borderRadius: "var(--control-radius-xs)",
             backgroundColor: "var(--theme-colour)",
-            color: "var(--accent-purple)",
+            color: "var(--text-accent)",
             fontWeight: 600,
             fontSize: 12,
             border: "1px solid currentColor",
@@ -72,17 +74,17 @@ function JobListCard({ job, onClick }) {
           ["VHC", job.vhc || "Pending"],
         ].map(([label, value]) => (
           <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <span style={{ fontSize: 10, color: "var(--info)", textTransform: "uppercase", fontWeight: 600 }}>{label}</span>
-            <span style={{ color: "var(--info-dark)", fontWeight: 500 }}>{value}</span>
+            <span style={{ fontSize: 10, color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600 }}>{label}</span>
+            <span style={{ color: "var(--text-1)", fontWeight: 500 }}>{value}</span>
           </div>
         ))}
       </div>
       {Array.isArray(job.requests) && job.requests.length > 0 && (
         <div style={{ padding: "8px 10px", borderRadius: "var(--radius-xs)", backgroundColor: "var(--theme-colour)" }}>
-          <div style={{ fontSize: 10, color: "var(--warning)", textTransform: "uppercase", fontWeight: 600, marginBottom: 4 }}>
+          <div style={{ fontSize: 10, color: "var(--text-accent)", textTransform: "uppercase", fontWeight: 600, marginBottom: 4 }}>
             Customer Requests ({job.requests.length})
           </div>
-          <div style={{ fontSize: 12, color: "var(--info-dark)", lineHeight: 1.4 }}>
+          <div style={{ fontSize: 12, color: "var(--text-1)", lineHeight: 1.4 }}>
             {job.requests.join(" • ")}
           </div>
         </div>

@@ -160,6 +160,20 @@ const getSectionTextPreview = (node) => {
   while (walker.nextNode()) {
     const text = String(walker.currentNode?.textContent || "").replace(/\s+/g, " ").trim();
     if (!text) continue;
+    // Skip if this fragment exactly repeats the immediately previous fragment
+    // (e.g. a section heading "Appointments today" sitting directly above a
+    // tile labelled "Appointments today" — without this, the overlay preview
+    // reads "Appointments today Appointments today 0 …").
+    const previous = parts.length ? parts[parts.length - 1] : "";
+    if (previous && previous.toLowerCase() === text.toLowerCase()) continue;
+    // Also skip if the new fragment is fully contained within the previous
+    // fragment (or vice versa) when both are short — guards repeats where the
+    // wrapping span/heading text is re-rendered inside a child element.
+    if (previous && text.length <= 40) {
+      const a = previous.toLowerCase();
+      const b = text.toLowerCase();
+      if (a.endsWith(b) || a.startsWith(b)) continue;
+    }
     parts.push(text);
     if (parts.join(" ").length >= 180) break;
   }

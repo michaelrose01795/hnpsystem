@@ -1,4 +1,6 @@
 // file location: src/components/page-ui/clocking/clocking-technician-slug-ui.js
+import Link from "next/link";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 export default function UserClockingHistoryUi(props) {
   const {
@@ -79,7 +81,18 @@ export default function UserClockingHistoryUi(props) {
               {error}
             </div>}
 
-          <section id="live-technician-activity" style={basePanelStyle}>
+          <DevLayoutSection
+            as="section"
+            id="live-technician-activity"
+            sectionKey="clocking-technician-live-activity"
+            parentKey="app-layout-page-card"
+            sectionType="section-shell"
+            shell
+            backgroundToken="theme"
+            style={{
+              ...basePanelStyle,
+              background: "var(--theme)"
+            }}>
             <div style={{
             display: "flex",
             justifyContent: "space-between",
@@ -96,14 +109,20 @@ export default function UserClockingHistoryUi(props) {
                   Live technician activity
                 </h2>
               </div>
-              <span style={{
-              ...badgeBaseStyle,
-              background: "var(--surface)",
-              border: "none",
-              color: "var(--success-dark)"
-            }}>
-                {loading ? "Refreshing…" : "Live"}
-              </span>
+              <Link
+                href="/clocking"
+                style={{
+                  ...buttonSecondaryStyle,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: "44px",
+                  background: "var(--surface)",
+                  color: "var(--text-accent)",
+                  textDecoration: "none"
+                }}>
+                Back
+              </Link>
             </div>
 
             <div style={tableWrapperStyle}>
@@ -162,9 +181,19 @@ export default function UserClockingHistoryUi(props) {
                 </table>
               </div>
             </div>
-          </section>
+          </DevLayoutSection>
 
-          {isManager && <section style={basePanelStyle}>
+          {isManager && <DevLayoutSection
+            as="section"
+            sectionKey="clocking-technician-manual-entry"
+            parentKey="app-layout-page-card"
+            sectionType="section-shell"
+            shell
+            backgroundToken="theme"
+            style={{
+              ...basePanelStyle,
+              background: "var(--theme)"
+            }}>
               <header style={{
             display: "flex",
             justifyContent: "space-between",
@@ -307,7 +336,7 @@ export default function UserClockingHistoryUi(props) {
                   </button>
                 </div>
               </form>
-            </section>}
+            </DevLayoutSection>}
 
           {isManager && lastClockedJobId && lastClockedJobNumber && <ClockingHistorySection jobId={lastClockedJobId} jobNumber={lastClockedJobNumber} requests={[]} jobAllocatedHours={null} refreshSignal={historyRefreshSignal} enableRequestClick={false} title="Clocking history" />}
           </div>

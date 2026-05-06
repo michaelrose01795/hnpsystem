@@ -15,7 +15,6 @@ export default function MessagesPageUi(props) {
     MessageBubblesSkeleton,
     ModalPortal,
     SearchBar,
-    SectionTitle,
     StatusMessage,
     ThreadRowsSkeleton,
     activeSystemView,
@@ -130,11 +129,16 @@ export default function MessagesPageUi(props) {
     threadDeleteError,
     threadSearchTerm,
     threadSelectionMode,
-    unreadBackgroundColor,
     user,
     userNameColor,
     visibleThreads,
   } = props; // receive page logic props.
+  const isCustomerChat = Boolean(
+    isGroupChat &&
+    activeThread?.members?.some((member) =>
+      String(member?.role || "").toLowerCase().includes("customer")
+    )
+  );
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -148,51 +152,39 @@ export default function MessagesPageUi(props) {
     case "section2":
       return <>
       <DevLayoutSection sectionKey="messages-page-shell" sectionType="page-shell" shell widthMode="page" className="app-page-stack" style={{
-    minHeight: "100%"
+    height: "100%",
+    minHeight: isMobileView ? "100%" : 0,
+    overflow: "hidden"
   }}>
         <DevLayoutSection sectionKey="messages-main-layout" parentKey="messages-page-shell" sectionType="section-shell" shell style={{
       flex: 1,
+      height: "100%",
       display: isMobileView ? "flex" : "grid",
       // flex on mobile for single-panel view
       flexDirection: isMobileView ? "column" : undefined,
       gridTemplateColumns: isMobileView ? undefined : "360px minmax(0, 1fr)",
       gap: isMobileView ? "0px" : "20px",
-      minHeight: isMobileView ? "100%" : "520px"
+      minHeight: 0,
+      overflow: "hidden"
     }}>
           <DevLayoutSection sectionKey="messages-threads-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-threads-panel" style={{
         display: isMobileView && mobilePanelView === "conversation" ? "none" : "flex",
         // hide thread list on mobile when viewing a conversation
         flexDirection: "column",
         gap: "18px",
+        flex: 1,
+        minHeight: 0,
         ...(isMobileView ? {
-          flex: 1,
-          minHeight: 0
+          height: "100%"
         } : {})
       }}>
             <DevLayoutSection sectionKey="messages-threads-card" parentKey="messages-threads-panel" sectionType="content-card" backgroundToken="messages-thread-card-shell" style={{
           ...cardStyle,
           background: "var(--theme)",
           flex: 1,
-          minHeight: 0
+          minHeight: 0,
+          overflow: "hidden"
         }}>
-              <DevLayoutSection sectionKey="messages-thread-actions" parentKey="messages-threads-card" sectionType="toolbar" style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px"
-          }}>
-                {threadSelectionMode && <SectionTitle title="Selected" subtitle={selectedThreadIds.length ? `${selectedThreadIds.length} thread(s) selected` : undefined} action={<div style={{
-              display: "flex",
-              gap: "var(--space-sm)"
-            }}>
-                        <Button type="button" variant="danger" size="sm" pill onClick={handleDeleteSelectedThreads} disabled={threadDeleteBusy || !selectedThreadIds.length}>
-                          {threadDeleteBusy ? "Deleting..." : "Delete"}
-                        </Button>
-                        <Button type="button" variant="secondary" size="sm" pill onClick={handleCloseSelectionMode}>
-                          Close
-                        </Button>
-                      </div>} />}
-              </DevLayoutSection>
-
               {threadDeleteError && <StatusMessage tone="danger">{threadDeleteError}</StatusMessage>}
 
               <DevLayoutSection sectionKey="messages-thread-search" parentKey="messages-threads-card" sectionType="filter-row" style={{
@@ -211,7 +203,28 @@ export default function MessagesPageUi(props) {
                 marginBottom: "0"
               }} />
                 </div>
-                {!threadSelectionMode && <div style={{
+                {threadSelectionMode ? <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "var(--space-sm)",
+              flex: "0 0 auto",
+              marginTop: "10px"
+            }}>
+                    <span style={{
+                color: "var(--text-2)",
+                fontSize: "var(--text-small)",
+                fontWeight: 700,
+                whiteSpace: "nowrap"
+              }}>
+                      {selectedThreadIds.length ? `${selectedThreadIds.length} selected` : "Select threads"}
+                    </span>
+                    <Button type="button" variant="danger" size="sm" pill onClick={handleDeleteSelectedThreads} disabled={threadDeleteBusy || !selectedThreadIds.length}>
+                      {threadDeleteBusy ? "Deleting..." : "Delete"}
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" pill onClick={handleCloseSelectionMode}>
+                      Close
+                    </Button>
+                  </div> : <div style={{
               display: "flex",
               alignItems: "center",
               gap: "var(--space-sm)",
@@ -234,7 +247,7 @@ export default function MessagesPageUi(props) {
               <DevLayoutSection sectionKey="messages-thread-list" parentKey="messages-threads-card" sectionType="section-shell" shell backgroundToken="messages-thread-list" className="custom-scrollbar" style={{
             flex: 1,
             minHeight: 0,
-            maxHeight: isMobileView ? "none" : "700px",
+            maxHeight: "none",
             // fill available space on mobile
             overflowY: "auto",
             display: "flex",
@@ -350,7 +363,7 @@ export default function MessagesPageUi(props) {
                     flex: 1,
                     height: "44px",
                     borderRadius: "var(--radius-md)",
-                    backgroundColor: activeThreadId === thread.id ? "rgba(var(--accent-purple-rgb), 0.12)" : thread.hasUnread ? unreadBackgroundColor : "var(--surface)",
+                    backgroundColor: activeThreadId === thread.id ? "rgba(var(--accent-purple-rgb), 0.12)" : "var(--surface)",
                     padding: "0 12px",
                     textAlign: "left",
                     cursor: threadSelectionMode ? "default" : "pointer",
@@ -364,10 +377,10 @@ export default function MessagesPageUi(props) {
                     WebkitUserSelect: "none"
                   }} onMouseEnter={event => {
                     if (threadSelectionMode || activeThreadId === thread.id) return;
-                    event.currentTarget.style.backgroundColor = "rgba(var(--accent-purple-rgb), 0.08)";
+                    event.currentTarget.style.backgroundColor = "var(--surface)";
                   }} onMouseLeave={event => {
                     if (threadSelectionMode || activeThreadId === thread.id) return;
-                    event.currentTarget.style.backgroundColor = thread.hasUnread ? unreadBackgroundColor : "var(--surface)";
+                    event.currentTarget.style.backgroundColor = "var(--surface)";
                   }}>
                               <strong style={{
                       display: "block",
@@ -415,6 +428,8 @@ export default function MessagesPageUi(props) {
         background: "var(--theme)",
         flex: 1,
         minHeight: 0,
+        flexDirection: "column",
+        overflow: "hidden",
         display: isMobileView && mobilePanelView !== "conversation" ? "none" : "flex" // hide conversation panel when thread list is active in portrait phone view
       }}>
             {/* Mobile back button — iPhone-style navigation */}
@@ -553,9 +568,7 @@ export default function MessagesPageUi(props) {
                     {isGroupChat ? <h3 onClick={() => setGroupMembersModalOpen(true)} style={{
                 margin: 0,
                 color: systemTitleColor,
-                cursor: "pointer",
-                textDecoration: "underline",
-                textDecorationStyle: "dotted"
+                cursor: "pointer"
               }} title="Click to view members">
                         {activeThread.title}
                       </h3> : <h3 style={{
@@ -563,7 +576,7 @@ export default function MessagesPageUi(props) {
                 color: systemTitleColor
               }}>{activeThread.title}</h3>}
                   </div>
-                  {isGroupChat && canEditGroup && <div style={{
+                  {isGroupChat && canEditGroup && !isCustomerChat && <div style={{
               display: "flex",
               alignItems: "center",
               gap: "var(--space-3)",
@@ -581,7 +594,7 @@ export default function MessagesPageUi(props) {
             flex: 1,
             minHeight: 0,
             height: isMobileView ? "min(52vh, 360px)" : undefined,
-            maxHeight: isMobileView ? "min(52vh, 360px)" : "540px",
+            maxHeight: isMobileView ? "min(52vh, 360px)" : "none",
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",

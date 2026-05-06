@@ -1411,13 +1411,13 @@ export default function NextJobsPage() {
           data-dev-section-key={`nextjobs-clocking-${panelKey}`}
           data-dev-section-parent={`nextjobs-panel-${panelKey}`}
           data-dev-section-type="stat-card"
-          data-dev-background-token={currentClocking ? "success-surface" : "layer-section-level-1"}
+          data-dev-background-token={currentClocking ? "success-surface" : "danger-surface"}
           style={{
             marginBottom: "12px",
             padding: "12px",
             borderRadius: "var(--radius-xs)",
             border: "none",
-            backgroundColor: currentClocking ? "var(--success-surface)" : "var(--surface)",
+            backgroundColor: currentClocking ? "var(--success-surface)" : "var(--danger-surface)",
             cursor: currentClocking ? "pointer" : "default"
           }}
           onClick={() => handleOpenCurrentClocking(currentClocking, assignee.name)}>

@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/parts/parts-deliveries-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import PartsWorkspaceTabs from "@/components/page-ui/parts/PartsWorkspaceTabs";
 
 export default function PartsDeliveriesPageUi(props) {
   const {
@@ -41,6 +42,7 @@ export default function PartsDeliveriesPageUi(props) {
     case "section2":
       return <>
       <div style={pageStyles.container}>
+        <PartsWorkspaceTabs />
         <LayerSurface as="section" style={pageStyles.headerCard}>
           <div style={{
         display: "flex",

@@ -7,6 +7,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 // Structured job-row skeleton shaped like the real JobRow (title + time stamp + body).
 // Kept local to this file because the mobile dashboard cards use a compact two-column
@@ -41,7 +43,14 @@ const pageStyle = {
   padding: "16px",
   display: "flex",
   flexDirection: "column",
-  gap: "18px"
+  gap: "var(--page-stack-gap, 18px)"
+};
+
+const responsiveGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: "var(--layout-card-gap, 16px)",
+  alignItems: "start"
 };
 
 const cardStyle = {
@@ -102,57 +111,85 @@ function MobileDashboardInner() {
   }, [jobs, today]);
 
   return (
-    <div style={pageStyle}>
-      <header>
-        <h1 style={{ margin: 0 }}>Mobile Dashboard</h1>
-        <p style={{ margin: "4px 0 0", color: "var(--text-1)" }}>
-          Your on-site visits for today and the days ahead.
-        </p>
-      </header>
-
+    <DevLayoutSection
+      sectionKey="mobile-dashboard-page"
+      parentKey="app-layout-page-card"
+      sectionType="page-shell"
+      shell
+      backgroundToken="surface"
+      style={pageStyle}>
       {error &&
-      <LayerSurface style={{ ...cardStyle, color: "var(--danger, #dc2626)" }}>
+      <LayerTheme
+        sectionKey="mobile-dashboard-error"
+        parentKey="mobile-dashboard-page"
+        sectionType="banner"
+        style={{ ...cardStyle, color: "var(--danger, #dc2626)" }}>
         {error}
-      </LayerSurface>
+      </LayerTheme>
       }
 
-      <LayerSurface as="section" style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Today ({today.length})</h2>
-        {loading ?
-        <MobileJobRowsSkeleton count={2} /> :
-        today.length === 0 ?
-        <p>No mobile visits scheduled today.</p> :
+      <DevLayoutSection
+        sectionKey="mobile-dashboard-grid"
+        parentKey="mobile-dashboard-page"
+        sectionType="grid"
+        style={responsiveGridStyle}>
+        <LayerTheme
+          as="section"
+          sectionKey="mobile-dashboard-today"
+          parentKey="mobile-dashboard-grid"
+          sectionType="content-card"
+          style={cardStyle}>
+          <h2 style={{ marginTop: 0 }}>Today ({today.length})</h2>
+          {loading ?
+          <MobileJobRowsSkeleton count={2} /> :
+          today.length === 0 ?
+          <p>No mobile visits scheduled today.</p> :
 
-        today.map((j) => <JobRow key={j.id} job={j} />)
-        }
-      </LayerSurface>
+          today.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-today" />)
+          }
+        </LayerTheme>
 
-      <LayerSurface as="section" style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Upcoming ({upcoming.length})</h2>
-        {loading ?
-        <MobileJobRowsSkeleton count={3} /> :
-        upcoming.length === 0 ?
-        <p>Nothing upcoming.</p> :
+        <LayerTheme
+          as="section"
+          sectionKey="mobile-dashboard-upcoming"
+          parentKey="mobile-dashboard-grid"
+          sectionType="content-card"
+          style={cardStyle}>
+          <h2 style={{ marginTop: 0 }}>Upcoming ({upcoming.length})</h2>
+          {loading ?
+          <MobileJobRowsSkeleton count={3} /> :
+          upcoming.length === 0 ?
+          <p>Nothing upcoming.</p> :
 
-        upcoming.map((j) => <JobRow key={j.id} job={j} />)
-        }
-      </LayerSurface>
+          upcoming.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-upcoming" />)
+          }
+        </LayerTheme>
 
-      <LayerSurface as="section" style={cardStyle}>
-        <h2 style={{ marginTop: 0 }}>Quick actions</h2>
-        <ul style={{ margin: 0, paddingLeft: "20px" }}>
-          <li><Link href="/mobile/appointments">View all appointments</Link></li>
-          <li><Link href="/mobile/jobs">See my mobile jobs</Link></li>
-          <li><Link href="/tech/consumables-request">Request consumables</Link></li>
-        </ul>
-      </LayerSurface>
-    </div>);
+        <LayerTheme
+          as="section"
+          sectionKey="mobile-dashboard-quick-actions"
+          parentKey="mobile-dashboard-grid"
+          sectionType="content-card"
+          style={cardStyle}>
+          <h2 style={{ marginTop: 0 }}>Quick actions</h2>
+          <ul style={{ margin: 0, paddingLeft: "20px" }}>
+            <li><Link href="/appointments">View all appointments</Link></li>
+            <li><Link href="/job-cards/myjobs">See my mobile jobs</Link></li>
+            <li><Link href="/tech/consumables-request">Request consumables</Link></li>
+          </ul>
+        </LayerTheme>
+      </DevLayoutSection>
+    </DevLayoutSection>);
 
 }
 
-function JobRow({ job }) {
+function JobRow({ job, parentKey }) {
   return (
-    <div style={jobRowStyle}>
+    <DevLayoutSection
+      sectionKey={`mobile-dashboard-job-row-${job.id}`}
+      parentKey={parentKey}
+      sectionType="list-row"
+      style={jobRowStyle}>
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <strong>{job.job_number}</strong>
@@ -167,11 +204,11 @@ function JobRow({ job }) {
         </div>
       </div>
       <div style={{ alignSelf: "center" }}>
-        <Link href={`/mobile/jobs/${encodeURIComponent(job.job_number)}`} style={{ fontWeight: 600 }}>
+        <Link href={`/job-cards/myjobs/${encodeURIComponent(job.job_number)}`} style={{ fontWeight: 600 }}>
           Open →
         </Link>
       </div>
-    </div>);
+    </DevLayoutSection>);
 
 }
 

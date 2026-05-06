@@ -9,6 +9,7 @@ import { generateTechnicianSlug } from "@/utils/technicianSlug";
 import ModalPortal from "@/components/popups/ModalPortal";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, FilterToolbarRow, PageShell, SectionShell } from "@/components/ui";
+import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import dynamic from "next/dynamic";
@@ -25,62 +26,71 @@ const SUMMARY_CARD_STYLES = {
   total: {
     background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-selected)"
+    valueColor: "var(--text-accent)"
   },
   inProgress: {
     background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-selected)"
+    valueColor: "var(--text-accent)"
   },
   onMot: {
     background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-selected)"
+    valueColor: "var(--text-accent)"
   },
   teaBreak: {
     background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-selected)"
+    valueColor: "var(--text-accent)"
   },
   waiting: {
     background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-selected)"
+    valueColor: "var(--text-accent)"
   },
   notClocked: {
     background: "var(--surface)",
     border: "none",
-    valueColor: "var(--primary-selected)"
+    valueColor: "var(--text-accent)"
   }
 };
 
 const TECH_STATUS_STYLES = {
   "Not Clocked In": {
-    background: "var(--theme)",
+    background: "var(--danger-surface)",
     border: "none",
-    color: "var(--primary-selected)"
+    color: "var(--text-accent)"
   },
   "Waiting for Job": {
-    background: "var(--theme)",
+    background: "var(--warning-surface)",
     border: "none",
-    color: "var(--primary-selected)"
+    color: "var(--text-accent)"
   },
   "Tea Break": {
-    background: "var(--theme)",
+    background: "var(--warning-surface)",
     border: "none",
-    color: "var(--primary-selected)"
+    color: "var(--text-accent)"
   },
   "In Progress": {
-    background: "var(--theme)",
+    background: "var(--success-surface)",
     border: "none",
-    color: "var(--primary-selected)"
+    color: "var(--text-accent)"
   },
   "On MOT": {
-    background: "var(--theme)",
+    background: "var(--success-surface)",
     border: "none",
-    color: "var(--primary-selected)"
+    color: "var(--text-accent)"
   }
 };
+
+const TECHNICIAN_STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "Not Clocked In", label: "Not clocked in" },
+  { value: "Waiting for Job", label: "Waiting for job" },
+  { value: "Tea Break", label: "Tea break" },
+  { value: "In Progress", label: "Clocked on" },
+  { value: "On MOT", label: "On MOT" }
+];
 
 const formatTime = (value) => {
   if (!value) return "—";
@@ -162,6 +172,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
   const [modalJobNumber, setModalJobNumber] = useState("");
   const [modalError, setModalError] = useState("");
   const [modalSubmitting, setModalSubmitting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const fetchClocking = useCallback(async () => {
     setLoading(true);
@@ -477,6 +488,13 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
     return summary;
   }, [teamStatus]);
+  const filteredTeamStatus = useMemo(() => {
+    if (statusFilter === "all") return teamStatus;
+    return teamStatus.filter((tech) => tech.status === statusFilter);
+  }, [statusFilter, teamStatus]);
+  const selectedStatusFilterLabel =
+  TECHNICIAN_STATUS_FILTER_OPTIONS.find((option) => option.value === statusFilter)?.label ||
+  "selected status";
 
   const formattedLastUpdated = lastUpdated ?
   new Date(lastUpdated).toLocaleTimeString("en-GB", {
@@ -492,17 +510,20 @@ function ClockingOverviewTab({ onSummaryChange }) {
   const modalActionDisabled = modalSubmitting || !modalTechClockedIn && !trimmedModalJobNumber;
   const modalActionLabel = modalTechClockedIn ? "Clock off" : "Clock in";
   const jobNumberInputId = "clocking-job-number-input";
-  const statusPillBaseStyle = {
+  const technicianCardActionStyle = {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "4px 10px",
+    width: "100%",
+    minWidth: 0,
+    height: "44px",
+    padding: "0 14px",
     borderRadius: "var(--control-radius)",
-    fontSize: "0.7rem",
+    border: "none",
+    fontSize: "var(--control-font-size)",
     fontWeight: 600,
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
-    minHeight: "auto"
+    textDecoration: "none",
+    whiteSpace: "nowrap"
   };
 
   return (
@@ -512,7 +533,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
       parentKey="clocking-page-content"
       sectionType="section-shell"
       shell
-      style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px",
+        marginBottom: "var(--clocking-page-edge-gap)"
+      }}>
 
       {/* Summary Stats Section */}
       <DevLayoutSection
@@ -528,18 +554,43 @@ function ClockingOverviewTab({ onSummaryChange }) {
           padding: "10px",
           border: "none",
           boxShadow: "none",
+          color: "var(--text-2)",
           display: "flex",
           flexDirection: "column",
           gap: "10px"
         }}>
 
-        <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>
-            Summary Statistics
-          </h2>
-          <p style={{ margin: "4px 0 0", color: "var(--info)", fontSize: "0.85rem" }}>
-            Last updated {formattedLastUpdated}
-          </p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            flexWrap: "wrap"
+          }}>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              gap: "10px",
+              flexWrap: "wrap",
+              minWidth: 0
+            }}>
+
+            <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-accent)" }}>
+              Summary Statistics
+            </h2>
+            <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.85rem" }}>
+              Last updated {formattedLastUpdated}
+            </p>
+          </div>
+          <DropdownField
+            ariaLabel="Filter technician status"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            options={TECHNICIAN_STATUS_FILTER_OPTIONS}
+            style={{ width: "min(220px, 100%)" }} />
         </div>
 
         {loading && teamStatus.length === 0 ?
@@ -601,7 +652,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 fontSize: "0.78rem",
-                color: "var(--info)"
+                color: "var(--text-1)"
               }}>
 
                 Technicians Total
@@ -609,9 +660,6 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.total.valueColor }}>
                 {summaryStats.total}
               </strong>
-              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
-                All technicians
-              </span>
             </DevLayoutSection>
 
             <DevLayoutSection
@@ -635,7 +683,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 fontSize: "0.78rem",
-                color: "var(--info)"
+                color: "var(--text-1)"
               }}>
 
                 In Progress
@@ -643,9 +691,6 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.inProgress.valueColor }}>
                 {summaryStats.inProgress}
               </strong>
-              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
-                Active on jobs
-              </span>
             </DevLayoutSection>
 
             <DevLayoutSection
@@ -669,7 +714,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 fontSize: "0.78rem",
-                color: "var(--info)"
+                color: "var(--text-1)"
               }}>
 
                 MOT Count
@@ -677,9 +722,6 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.onMot.valueColor }}>
                 {summaryStats.onMot}
               </strong>
-              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
-                On MOT tests
-              </span>
             </DevLayoutSection>
 
             <DevLayoutSection
@@ -703,7 +745,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 fontSize: "0.78rem",
-                color: "var(--info)"
+                color: "var(--text-1)"
               }}>
 
                 Tea Break
@@ -711,9 +753,6 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.teaBreak.valueColor }}>
                 {summaryStats.teaBreak}
               </strong>
-              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
-                On break
-              </span>
             </DevLayoutSection>
 
             <DevLayoutSection
@@ -737,7 +776,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 fontSize: "0.78rem",
-                color: "var(--info)"
+                color: "var(--text-1)"
               }}>
 
                 Waiting
@@ -745,9 +784,6 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.waiting.valueColor }}>
                 {summaryStats.waiting}
               </strong>
-              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
-                Awaiting jobs
-              </span>
             </DevLayoutSection>
 
             <DevLayoutSection
@@ -771,7 +807,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
                 fontSize: "0.78rem",
-                color: "var(--info)"
+                color: "var(--text-1)"
               }}>
 
                 Offline
@@ -779,9 +815,6 @@ function ClockingOverviewTab({ onSummaryChange }) {
               <strong style={{ fontSize: "1.8rem", color: SUMMARY_CARD_STYLES.notClocked.valueColor }}>
                 {summaryStats.notClocked}
               </strong>
-              <span style={{ color: "var(--info-dark)", fontSize: "0.85rem" }}>
-                Not clocked in
-              </span>
             </DevLayoutSection>
           </DevLayoutSection>
         }
@@ -817,13 +850,14 @@ function ClockingOverviewTab({ onSummaryChange }) {
           padding: "10px",
           border: "none",
           boxShadow: "none",
+          color: "var(--text-2)",
           display: "flex",
           flexDirection: "column",
           gap: "10px"
         }}>
 
         <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-accent)" }}>
             Technician Status
           </h2>
         </div>
@@ -859,7 +893,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
               </div>
           )}
           </div> :
-        teamStatus.length === 0 ?
+        filteredTeamStatus.length === 0 ?
         <div
           style={{
             borderRadius: "var(--radius-md)",
@@ -867,10 +901,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
             background: "rgba(var(--grey-accent-rgb), 0.16)",
             border: "none",
             textAlign: "center",
-            color: "var(--info)"
+            color: "var(--text-1)"
           }}>
 
-            No technicians or MOT testers are currently clocked in.
+            {statusFilter === "all" ?
+            "No technicians or MOT testers are currently clocked in." :
+            `No technicians match ${selectedStatusFilterLabel}.`}
           </div> :
 
         <DevLayoutSection
@@ -883,13 +919,14 @@ function ClockingOverviewTab({ onSummaryChange }) {
             gap: "16px"
           }}>
 
-            {teamStatus.map((tech) => {
+            {filteredTeamStatus.map((tech) => {
             const showClockButton =
             tech.status === "Not Clocked In" ||
             tech.status === "In Progress" ||
             tech.status === "On MOT";
             const clockButtonLabel =
-            tech.status === "Not Clocked In" ? "Not clocked in" : "Clocked in";
+            tech.status === "Not Clocked In" ? "Not clocked in" : "Clocked on";
+            const statusActionLabel = showClockButton ? clockButtonLabel : tech.status;
             const statusStyle = TECH_STATUS_STYLES[tech.status] || TECH_STATUS_STYLES["Waiting for Job"];
 
             const handleClockButtonClick = (event) => {
@@ -899,16 +936,12 @@ function ClockingOverviewTab({ onSummaryChange }) {
             };
 
             return (
-              <Link
+              <article
                 key={tech.userId}
-                href={`/clocking/${tech.slug}`}
-                style={{ textDecoration: "none", color: "inherit" }}
                 data-dev-section="1"
                 data-dev-section-key={`clocking-overview-tech-${tech.userId}`}
                 data-dev-section-type="content-card"
-                data-dev-section-parent="clocking-overview-technician-grid">
-
-                  <article
+                data-dev-section-parent="clocking-overview-technician-grid"
                   style={{
                     borderRadius: "var(--radius-md)",
                     padding: "20px",
@@ -920,7 +953,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                     gap: "14px",
                     height: "100%",
                     transition: "all 0.2s ease",
-                    cursor: "pointer"
+                    cursor: "default"
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.position = "relative";
@@ -948,46 +981,11 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           margin: 0,
                           fontSize: "1.1rem",
                           fontWeight: 600,
-                          color: "var(--primary-selected)"
+                          color: "var(--text-accent)"
                         }}>
 
                           {tech.name}
                         </h3>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
-                        {showClockButton ?
-                      <>
-                            <button
-                          type="button"
-                          className="clocking-status-pill"
-                          onClick={handleClockButtonClick}
-                          style={{
-                            ...statusPillBaseStyle,
-                            background: statusStyle.background,
-                            border: statusStyle.border,
-                            color: statusStyle.color,
-                            cursor: "pointer"
-                          }}>
-
-                              {clockButtonLabel}
-                            </button>
-                            {tech.status !== "Not Clocked In" &&
-                        <span style={{ fontSize: "0.7rem", color: "var(--info)" }}>{tech.status}</span>
-                        }
-                          </> :
-
-                      <span
-                        style={{
-                          ...statusPillBaseStyle,
-                          padding: "6px 12px",
-                          background: statusStyle.background,
-                          border: statusStyle.border,
-                          color: statusStyle.color
-                        }}>
-
-                            {tech.status}
-                          </span>
-                      }
                       </div>
                     </div>
 
@@ -1002,7 +1000,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                       style={{
                         borderRadius: "var(--radius-sm)",
                         padding: "12px",
-                        background: "var(--surface)",
+                        background: "var(--theme)",
                         border: "none"
                       }}>
 
@@ -1012,7 +1010,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           fontSize: "0.7rem",
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
-                          color: "var(--info)"
+                          color: "var(--text-1)"
                         }}>
 
                         Current Job
@@ -1022,7 +1020,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           margin: "6px 0 0",
                           fontSize: "1rem",
                           fontWeight: 600,
-                          color: "var(--primary-selected)"
+                          color: "var(--text-accent)"
                         }}>
 
                         {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber ?
@@ -1035,7 +1033,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                       style={{
                         borderRadius: "var(--radius-sm)",
                         padding: "12px",
-                        background: "var(--surface)",
+                        background: "var(--theme)",
                         border: "none"
                       }}>
 
@@ -1045,7 +1043,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           fontSize: "0.7rem",
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
-                          color: "var(--info)"
+                          color: "var(--text-1)"
                         }}>
 
                         Time
@@ -1055,7 +1053,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
                           margin: "6px 0 0",
                           fontSize: "1rem",
                           fontWeight: 600,
-                          color: "var(--primary-selected)"
+                          color: "var(--text-accent)"
                         }}>
 
                         {tech.timeOnActivity}
@@ -1065,45 +1063,55 @@ function ClockingOverviewTab({ onSummaryChange }) {
 
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                      alignItems: "stretch",
+                      gap: "12px",
                       marginTop: "auto",
                       paddingTop: "8px"
                     }}>
 
-                    <span
+                    {showClockButton ?
+                    <button
+                      type="button"
+                      className="clocking-status-pill"
+                      onClick={handleClockButtonClick}
                       style={{
-                        fontSize: "0.7rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        color: "var(--info)"
+                        ...technicianCardActionStyle,
+                        background: statusStyle.background,
+                        border: statusStyle.border,
+                        color: statusStyle.color,
+                        cursor: "pointer"
                       }}>
 
-                      {(tech.status === "In Progress" || tech.status === "On MOT") && tech.jobNumber ?
-                      "Active assignment" :
-                      "Awaiting assignment"}
-                    </span>
+                      {statusActionLabel}
+                    </button> :
+
                     <span
                       style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        padding: "var(--control-padding)",
-                        borderRadius: "var(--control-radius)",
+                        ...technicianCardActionStyle,
+                        background: statusStyle.background,
+                        border: statusStyle.border,
+                        color: statusStyle.color
+                      }}>
+
+                      {statusActionLabel}
+                    </span>
+                    }
+                    <Link
+                      href={`/clocking/${tech.slug}`}
+                      style={{
+                        ...technicianCardActionStyle,
                         background: "var(--primary)",
                         color: "var(--text-2)",
-                        fontSize: "var(--control-font-size)",
-                        fontWeight: 600,
-                        minHeight: "var(--control-height)"
+                        cursor: "pointer"
                       }}>
 
-                      View details
-                      <span style={{ fontSize: "0.9rem" }}>&gt;</span>
-                    </span>
+                      View Details
+                    </Link>
                   </div>
                 </article>
-              </Link>);
+              );
 
           })}
           </DevLayoutSection>

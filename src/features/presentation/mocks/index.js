@@ -93,10 +93,6 @@ import StockCatalogueMock from "./stock-catalogue";
 
 // Mobile
 import MobileDashboardMock from "./mobile-dashboard";
-import MobileJobsMock from "./mobile-jobs";
-import MobileJobDetailMock from "./mobile-job-detail";
-import MobileAppointmentsMock from "./mobile-appointments";
-import MobileCreateMock from "./mobile-create";
 import MobileDeliveryMock from "./mobile-delivery";
 
 // Tech
@@ -204,10 +200,6 @@ export const MOCKS_BY_SLIDE_ID = {
 
   // Mobile
   "mobile-dashboard": MobileDashboardMock,
-  "mobile-jobs": MobileJobsMock,
-  "mobile-job-detail": MobileJobDetailMock,
-  "mobile-appointments": MobileAppointmentsMock,
-  "mobile-create": MobileCreateMock,
   "mobile-delivery": MobileDeliveryMock,
 
   // Tech

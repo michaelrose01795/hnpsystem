@@ -58,7 +58,7 @@ export const getServiceDashboardData = async () => {
       supabase
         .from("jobs")
         .select("id,job_number,vehicle_reg,status,checked_in_at")
-        .not("status", "in", ["Completed", "Complete", "Cancelled", "Collected"])
+        .not("status", "in", "(Completed,Complete,Cancelled,Collected)")
         .order("created_at", { ascending: true })
         .limit(6)
     ),

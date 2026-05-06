@@ -104,6 +104,7 @@ export default function Layout({
   const showHrTabs =
     (router.pathname.startsWith("/hr") && router.pathname !== "/hr/manager") ||
     router.pathname.startsWith("/admin/users");
+  const isMessagesRoute = router.pathname === "/messages";
 
   const [viewportWidth, setViewportWidth] = useState(1440);
   const [viewportHeight, setViewportHeight] = useState(900);
@@ -578,12 +579,12 @@ export default function Layout({
       items: [
         {
           label: "Retail Jobs",
-          href: "/job-cards/view?division=retail",
+          href: "/job-cards/view",
           roles: roleCategories?.Retail || [],
         },
         {
           label: "Sales Jobs",
-          href: "/job-cards/view?division=sales",
+          href: "/job-cards/view",
           roles: roleCategories?.Sales || [],
         },
       ],
@@ -816,6 +817,9 @@ export default function Layout({
     ? `${navDrawerTargetWidth + navButtonPaddingOffset}px`
     : "0px";
   const showNavToggleButton = !hideSidebar && !isTablet; // Hide on tablet/mobile since we use tab-style buttons
+  const fixedMessagesPageHeight = isTablet
+    ? "calc(100vh - 75px - 12px - (var(--page-gutter-y-mobile) * 2))"
+    : "calc(100vh - 75px - 12px - (var(--page-gutter-y) * 2))";
 
   return (
     <DevLayoutSection
@@ -875,11 +879,17 @@ export default function Layout({
           display: "flex",
           flexDirection: "column",
           gap: hideSidebar ? 0 : "12px",
-          padding: hideSidebar ? "0" : undefined,
+          padding: hideSidebar
+            ? "0"
+            : isMessagesRoute
+              ? isTablet
+                ? "var(--page-gutter-y-mobile) var(--page-gutter-x-mobile)"
+                : "var(--page-gutter-y) var(--page-gutter-x) 16px"
+              : undefined,
           background: "transparent",
           height: "auto",
           maxHeight: "none",
-          overflowY: "visible", // allow full page scroll across breakpoints
+          overflowY: isMessagesRoute && !hideSidebar ? "hidden" : "visible", // allow full page scroll across breakpoints
           overflowX: "hidden",
           position: "relative",
           margin: hideSidebar ? "0" : "0",
@@ -1255,6 +1265,10 @@ export default function Layout({
           className="app-page-shell"
           style={{
             flex: 1,
+            minHeight: 0,
+            height: isMessagesRoute && !hideSidebar ? fixedMessagesPageHeight : undefined,
+            maxHeight: isMessagesRoute && !hideSidebar ? fixedMessagesPageHeight : undefined,
+            overflow: isMessagesRoute && !hideSidebar ? "hidden" : undefined,
           }}
         >
           <div
@@ -1262,8 +1276,9 @@ export default function Layout({
             key={contentKey}
             style={{
               maxWidth: hideSidebar ? "100%" : undefined,
-              minHeight: "100%",
-              overflow: "visible",
+              minHeight: isMessagesRoute && !hideSidebar ? 0 : "100%",
+              height: isMessagesRoute && !hideSidebar ? "100%" : undefined,
+              overflow: isMessagesRoute && !hideSidebar ? "hidden" : "visible",
             }}
           >
             <DevLayoutSection
@@ -1285,11 +1300,19 @@ export default function Layout({
                   ? undefined
                   : contentBackground
                     ? { background: contentBackground }
-                    : undefined
+                    : isMessagesRoute
+                      ? {
+                          height: "100%",
+                          minHeight: 0,
+                          overflow: "hidden",
+                          display: "flex",
+                          flexDirection: "column",
+                        }
+                      : undefined
               }
             >
-              <div style={{ width: "100%", minHeight: "100%", position: "relative" }}>
-                <div className="app-page-stack">
+              <div style={{ width: "100%", minHeight: isMessagesRoute && !hideSidebar ? 0 : "100%", height: isMessagesRoute && !hideSidebar ? "100%" : undefined, position: "relative" }}>
+                <div className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
                   {showHrTabs && <HrTabsBar />}
                   {isPreAuthLoading ? <PageSkeleton /> : children}
                 </div>

@@ -179,8 +179,11 @@ export default function MyJobsPage() {
   const hasMotRoleAccess = userRoles.some((roleName) =>
   String(roleName).toLowerCase().includes("mot")
   );
+  const isMobileTech = userRoles.some(
+    (roleName) => String(roleName).toLowerCase().trim() === "mobile technician"
+  );
   const hasTechnicianAccess =
-  username && allowedTechNames.has(username) || hasRoleAccess;
+  username && allowedTechNames.has(username) || hasRoleAccess || isMobileTech;
   const isMotTester =
   username && motTestersList.includes(username) || hasMotRoleAccess;
 
@@ -303,9 +306,22 @@ export default function MyJobsPage() {
         fetchedJobs.map((job) => job?.id).filter(Boolean)
       );
 
-      const assignedJobs = fetchedJobs.filter(
-        (job) => isAssignedToTechnician(job) || shouldShowMotHandoffJob(job, clockingMap)
-      );
+      let assignedJobs;
+      if (isMobileTech) {
+        // Mobile Mechanic eligibility: any job for today with service_mode = "mobile",
+        // regardless of who it's assigned to. "Today" is the local calendar date.
+        const now = new Date();
+        const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        assignedJobs = fetchedJobs.filter(
+          (job) =>
+            String(job?.serviceMode || "").toLowerCase() === "mobile" &&
+            job?.appointment?.date === todayLocal
+        );
+      } else {
+        assignedJobs = fetchedJobs.filter(
+          (job) => isAssignedToTechnician(job) || shouldShowMotHandoffJob(job, clockingMap)
+        );
+      }
 
       // Order matches the board panel on Next Jobs (position → checkedInAt → createdAt)
       const sortedJobs = assignedJobs.sort(compareJobsForBoard);
@@ -320,6 +336,7 @@ export default function MyJobsPage() {
   }, [
   hasTechnicianAccess,
   dbUserId,
+  isMobileTech,
   isAssignedToTechnician,
   fetchOpenClockingByJob,
   shouldShowMotHandoffJob,
@@ -394,6 +411,7 @@ export default function MyJobsPage() {
         const previousAssigned = payload?.old?.assigned_to;
         if (
         isMotTester ||
+        isMobileTech ||
         matchesUserAssignment(nextAssigned) ||
         matchesUserAssignment(previousAssigned))
         {
@@ -409,7 +427,7 @@ export default function MyJobsPage() {
         supabase.removeChannel(channel);
       }
     };
-  }, [dbUserId, fetchJobsForTechnician, normalizedUserNames, isMotTester]);
+  }, [dbUserId, fetchJobsForTechnician, normalizedUserNames, isMotTester, isMobileTech]);
 
   useEffect(() => {
     if (!dbUserId || !jobIdsFilterString) return;

@@ -1,6 +1,7 @@
 // file location: src/components/page-ui/parts/parts-manager-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import PartsWorkspaceTabs from "@/components/page-ui/parts/PartsWorkspaceTabs";
 
 export default function PartsManagerDashboardUi(props) {
   const {
@@ -52,6 +53,7 @@ export default function PartsManagerDashboardUi(props) {
 
     case "section2":
       return <>
+      <PartsWorkspaceTabs />
       {loading ? <div role="status" aria-live="polite" aria-label="Loading parts manager dashboard" style={{
     display: "flex",
     flexDirection: "column",

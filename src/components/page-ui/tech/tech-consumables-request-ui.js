@@ -1,5 +1,6 @@
 // file location: src/components/page-ui/tech/tech-consumables-request-ui.js
 import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 export default function TechConsumableRequestPageUi(props) {
   const {
@@ -89,7 +90,7 @@ export default function TechConsumableRequestPageUi(props) {
     case "section2":
       return <>
       <div style={pageWrapperStyle}>
-        <LayerSurface as="section" sectionKey="tech-consumables-request-panel" sectionType="content-card" style={requestPanelStyle}>
+        <LayerTheme as="section" sectionKey="tech-consumables-request-panel" sectionType="content-card" style={requestPanelStyle}>
           <DevLayoutSection as="div" sectionKey="tech-consumables-request-header" parentKey="tech-consumables-request-panel" sectionType="section-header-row" backgroundToken="transparent" style={requestHeaderStyle}>
             <div>
               <h1 style={{
@@ -219,7 +220,7 @@ export default function TechConsumableRequestPageUi(props) {
               </button>
             </DevLayoutSection>
           </DevLayoutSection>
-        </LayerSurface>
+        </LayerTheme>
 
         <DevLayoutSection as="section" sectionKey="tech-consumables-requests-panel" sectionType="section-shell" shell backgroundToken="accent" className="app-layout-surface-accent">
           <DevLayoutSection as="div" sectionKey="tech-consumables-requests-toolbar" parentKey="tech-consumables-requests-panel" sectionType="toolbar" backgroundToken="transparent" style={requestsToolbarStyle}>
@@ -383,11 +384,15 @@ export default function TechConsumableRequestPageUi(props) {
                           <span style={{
                   display: "inline-flex",
                   alignItems: "center",
+                  justifyContent: "center",
                   gap: "6px",
-                  padding: "4px 10px",
+                  height: "32px",
+                  padding: "0 14px",
                   borderRadius: "var(--radius-pill)",
                   fontWeight: 600,
-                  fontSize: "0.75rem",
+                  fontSize: "0.8rem",
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
                   ...(statusBadgeStyles[request.status] || statusBadgeStyles.pending)
                 }}>
                             {request.status === "fulfilled" ? "✅" : request.status === "urgent" ? "⏰" : request.status === "rejected" ? "✖️" : request.status === "ordered" ? "📦" : "📦"}

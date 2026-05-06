@@ -76,6 +76,17 @@ const requestStatusTone = {
   },
 };
 
+const headerChipBaseStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: "44px",
+  padding: "0 14px",
+  borderRadius: "var(--radius-sm)",
+  fontSize: "0.85rem",
+  fontWeight: 700,
+};
+
 const defaultData = { locations: [], unassigned: [], stockChecks: [] };
 const MAX_SEARCH_SUGGESTIONS = 8;
 
@@ -634,30 +645,59 @@ function StockCheckPopup({
           >
             <span
               style={{
-                padding: "6px 12px",
-                borderRadius: "var(--radius-pill)",
+                ...headerChipBaseStyle,
                 background: "rgba(var(--accent-base-rgb), 0.14)",
                 color: "var(--text-1)",
-                fontSize: "0.85rem",
-                fontWeight: 600,
               }}
             >
               {totalItems} stock items
             </span>
             <span
               style={{
-                padding: "6px 12px",
-                borderRadius: "var(--radius-pill)",
+                ...headerChipBaseStyle,
                 background: pendingRequestCount
                   ? "rgba(var(--warning-rgb), 0.18)"
                   : "rgba(var(--success-rgb), 0.16)",
                 color: pendingRequestCount ? "var(--warning-dark)" : "var(--success-dark)",
-                fontSize: "0.85rem",
-                fontWeight: 600,
               }}
             >
               {pendingRequestCount} pending
             </span>
+            <span
+              style={{
+                ...headerChipBaseStyle,
+                background: selectedCount ? "rgba(var(--accent-base-rgb), 0.16)" : "rgba(var(--text-1-rgb), 0.08)",
+                color: "var(--text-1)",
+              }}
+            >
+              {selectedCount} selected
+            </span>
+            <Button
+              type="button"
+              onClick={() => setSelectedItems(new Set())}
+              variant="secondary"
+              size="sm"
+            >
+              Clear Selection
+            </Button>
+            <Button
+              type="button"
+              onClick={handleEmailSelectedItems}
+              variant="secondary"
+              size="sm"
+              disabled={!selectedCount}
+            >
+              Email
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmitRequest}
+              variant="primary"
+              size="sm"
+              disabled={submitLoading || !selectedCount}
+            >
+              {submitLoading ? "Submitting…" : "Submit Stock Check Request"}
+            </Button>
             <Button
               type="button"
               onClick={closePopup}
@@ -708,7 +748,7 @@ function StockCheckPopup({
             <div
               style={{
                 display: "flex",
-                flexWrap: "wrap",
+                flexDirection: "column",
                 alignItems: "flex-start",
                 gap: "16px",
               }}
@@ -721,9 +761,11 @@ function StockCheckPopup({
                   gap: "16px",
                   flex: "0.95 1 320px",
                   minWidth: "300px",
+                  width: "100%",
+                  order: 2,
                 }}
               >
-              <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", order: 2 }}>
                 <h3 style={sectionHeadingStyle}>Add new consumable</h3>
                 <form
                   onSubmit={handleNewConsumableSubmit}
@@ -779,7 +821,7 @@ function StockCheckPopup({
                 </form>
               </div>
 
-              <div style={{ ...sectionCardStyle, display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", order: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                   <h3 style={sectionHeadingStyle}>Recent stock check requests</h3>
                   <span style={{ ...mutedTextStyle, fontSize: "0.9rem" }}>{requestCount} total</span>
@@ -868,7 +910,7 @@ function StockCheckPopup({
               </div>
             )}
 
-            <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", flex: "1.35 1 420px", minWidth: "320px" }}>
+            <div style={{ ...subtleSectionStyle, display: "flex", flexDirection: "column", gap: "12px", flex: "1.35 1 420px", minWidth: "320px", width: "100%", order: 1 }}>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
                 <div>
                   <h3 style={sectionHeadingStyle}>Consumable stock</h3>
@@ -976,48 +1018,6 @@ function StockCheckPopup({
             </div>
           </div>
 
-        <div
-          style={{
-            ...subtleSectionStyle,
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "12px",
-            padding: "16px 18px",
-          }}
-        >
-          <div>
-            <strong style={{ color: "var(--text-1)", fontSize: "1rem" }}>
-              {selectedCount} item{selectedCount === 1 ? "" : "s"} selected
-            </strong>
-          </div>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <Button
-              type="button"
-              onClick={() => setSelectedItems(new Set())}
-              variant="secondary"
-            >
-              Clear Selection
-            </Button>
-            <Button
-              type="button"
-              onClick={handleEmailSelectedItems}
-              variant="secondary"
-              disabled={!selectedCount}
-            >
-              Email
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSubmitRequest}
-              variant="primary"
-              disabled={submitLoading || !selectedCount}
-            >
-              {submitLoading ? "Submitting…" : "Submit Stock Check Request"}
-            </Button>
-          </div>
-        </div>
     </PopupModal>
     <ConfirmationDialog
       isOpen={!!confirmDialog}

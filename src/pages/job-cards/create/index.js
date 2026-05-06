@@ -9,6 +9,7 @@ import { useRouter } from "next/router"; // for navigation
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useJobs } from "@/context/JobsContext"; // import jobs context
 import { useUser } from "@/context/UserContext"; // import user context for signature + uploads
+import { isMobileTechnician } from "@/lib/auth/roles"; // role helper to gate mobile-mechanic-only saves
 import {
   addCustomerToDatabase,
   checkCustomerExists,
@@ -100,7 +101,8 @@ const createInitialVehicleState = () => ({
 export default function CreateJobCardPage() {
   const router = useRouter(); // Next.js router for navigation
   const { fetchJobs } = useJobs(); // refresh job cache after saves
-  const { dbUserId } = useUser(); // get Supabase user id for uploads + signatures
+  const { user, dbUserId } = useUser(); // get Supabase user id for uploads + signatures
+  const isMobileMechanicUser = isMobileTechnician(user?.roles); // restrict mobile mechanics to eligible jobs only
   const checkSheetCanvasRef = useRef(null); // ref for check-sheet canvas to calculate click offsets
 
   // state for vehicle information
@@ -1266,6 +1268,15 @@ export default function CreateJobCardPage() {
 
       if (!vehicle.reg) {
         alert("Please enter a vehicle registration before saving the job.");
+        return;
+      }
+
+      // Mobile mechanics can only create jobs that pass Mobile Mechanic
+      // Eligibility — the eligibility engine sets isMobileMechanic to true
+      // only when every rule (service · Suzuki · ≤ 3 yrs · ≤ 40 min drive)
+      // passes. Block the save otherwise.
+      if (isMobileMechanicUser && !isMobileMechanic) {
+        alert("Mobile mechanics can only create jobs that meet the Mobile Mechanic Eligibility rules. Select Yes on the eligibility section to continue.");
         return;
       }
 

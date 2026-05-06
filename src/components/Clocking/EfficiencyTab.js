@@ -820,7 +820,7 @@ export default function EfficiencyTab({
   const statCardStyle = {
     borderRadius: "var(--radius-md)",
     padding: "16px",
-    background: "var(--theme)",
+    background: "var(--surface)",
     border: "none",
     display: "flex",
     flexDirection: "column",
@@ -874,11 +874,11 @@ export default function EfficiencyTab({
   const statusCardStyle = () => ({
     ...statCardStyle,
   });
-  const statusLabelStyle = (color) => ({
+  const statusLabelStyle = () => ({
     fontSize: "0.72rem",
     textTransform: "uppercase",
     letterSpacing: "0.08em",
-    color: statusTone(color).label,
+    color: "var(--text-1)",
   });
   const summaryValueStyle = (color) => ({
     fontSize: "1.6rem",
@@ -1039,7 +1039,7 @@ export default function EfficiencyTab({
         sectionKey="tech-efficiency-topbar"
         sectionType="toolbar"
         parentKey="tech-efficiency-page"
-        backgroundToken="surface-toolbar"
+        backgroundToken="theme"
         className="efficiency-topbar"
         style={{
           display: "flex",
@@ -1079,20 +1079,6 @@ export default function EfficiencyTab({
                 })),
               ]}
             />
-          </DevLayoutSection>
-
-          {/* Month navigation */}
-          <DevLayoutSection
-            sectionKey="tech-efficiency-month-nav"
-            sectionType="toolbar"
-            parentKey="tech-efficiency-nav-group"
-            className="efficiency-month-nav"
-            style={{ flex: "0 0 320px", width: "min(100%, 320px)", marginInline: "auto" }}
-          >
-            <MonthPickerField
-              value={selectedMonthValue}
-              onValueChange={handleMonthValueChange}
-              aria-label={`Select efficiency month, currently ${MONTHS[selectedMonth - 1]} ${selectedYear}`} />
           </DevLayoutSection>
 
           {/* Action buttons */}
@@ -1143,6 +1129,21 @@ export default function EfficiencyTab({
               </button>
             )}
           </DevLayoutSection>
+
+          {/* Month navigation */}
+          <DevLayoutSection
+            sectionKey="tech-efficiency-month-nav"
+            sectionType="toolbar"
+            parentKey="tech-efficiency-nav-group"
+            className="efficiency-month-nav"
+            style={{ flex: "0 0 320px", width: "min(100%, 320px)", marginLeft: "auto" }}
+          >
+            <MonthPickerField
+              className="efficiency-month-picker"
+              value={selectedMonthValue}
+              onValueChange={handleMonthValueChange}
+              aria-label={`Select efficiency month, currently ${MONTHS[selectedMonth - 1]} ${selectedYear}`} />
+          </DevLayoutSection>
         </DevLayoutSection>
       </DevLayoutSection>
 
@@ -1150,7 +1151,7 @@ export default function EfficiencyTab({
         sectionKey="tech-efficiency-filter-shell"
         sectionType="content-card"
         parentKey="tech-efficiency-page"
-        backgroundToken="surface-filter-card"
+        backgroundToken="theme"
         className="efficiency-filter-shell"
         style={{ ...themedSectionStyle, padding: "16px 18px", gap: "12px" }}
       >
@@ -1263,7 +1264,7 @@ export default function EfficiencyTab({
             sectionKey="tech-efficiency-overall-summary"
             sectionType="content-card"
             parentKey="tech-efficiency-page"
-            backgroundToken="surface-summary-card"
+            backgroundToken="theme"
             style={themedSectionStyle}
           >
             <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-selected)" }}>
@@ -1341,7 +1342,7 @@ export default function EfficiencyTab({
             sectionKey="tech-efficiency-overall-breakdown"
             sectionType="content-card"
             parentKey="tech-efficiency-page"
-            backgroundToken="surface-table-card"
+            backgroundToken="theme"
             style={themedSectionStyle}
           >
             <h3 style={{ margin: 0, fontSize: "1.15rem", color: "var(--primary-selected)" }}>
@@ -2215,6 +2216,12 @@ export default function EfficiencyTab({
             :global(.efficiency-page) {
               min-width: 0;
             }
+            :global(.efficiency-month-nav) {
+              margin-left: auto;
+            }
+            :global(.efficiency-month-nav .monthpicker-api) {
+              width: 100%;
+            }
             :global([data-theme="dark"]) .efficiency-modal-overlay {
               background: rgba(10, 10, 10, 0.8);
             }
@@ -2244,8 +2251,8 @@ export default function EfficiencyTab({
               :global(.efficiency-month-nav) {
                 justify-content: space-between;
                 gap: 8px !important;
+                margin-left: 0 !important;
               }
-              :global(.efficiency-month-nav button),
               :global(.efficiency-topbar-actions button) {
                 font-size: 0.76rem !important;
                 padding: 8px 12px !important;
