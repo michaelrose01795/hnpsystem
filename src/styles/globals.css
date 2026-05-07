@@ -1233,10 +1233,14 @@ label {
 }
 
 .app-data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   background: var(--secondary-pressed);
   color: var(--text-1);
   font-size: var(--text-label);
   font-weight: 700;
+  box-shadow: 0 1px 0 rgba(var(--accent-base-rgb), 0.14);
 }
 
 .app-data-table tbody tr:last-child td {
@@ -4554,6 +4558,9 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .app-table-shell--with-headings thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
   background: var(--secondary-pressed) !important;
   background-image: none !important;
   color: var(--text-1) !important;
@@ -4563,6 +4570,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   letter-spacing: 0.04em;
   border-bottom: none !important;
   line-height: 1.2;
+  box-shadow: 0 1px 0 rgba(var(--accent-purple-rgb, 122, 92, 250), 0.16) !important;
 }
 
 .app-table-shell--with-headings thead th > * {

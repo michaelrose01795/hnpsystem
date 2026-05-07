@@ -87,6 +87,40 @@ const headerChipBaseStyle = {
   fontWeight: 700,
 };
 
+const tableControlBaseStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  height: "var(--table-action-btn-height)",
+  minHeight: "var(--table-action-btn-height)",
+  padding: "0 var(--space-3)",
+  borderRadius: "var(--radius-pill)",
+  fontSize: "var(--text-label)",
+  fontWeight: 600,
+  lineHeight: 1,
+  whiteSpace: "nowrap",
+};
+
+const tableActionButtonStyle = {
+  ...tableControlBaseStyle,
+  background: "var(--surface)",
+  color: "var(--text-1)",
+  border: "none",
+  cursor: "pointer",
+};
+
+const approveActionButtonStyle = {
+  ...tableActionButtonStyle,
+  background: "var(--success-surface)",
+  color: "var(--success-dark)",
+};
+
+const rejectActionButtonStyle = {
+  ...tableActionButtonStyle,
+  background: "var(--danger-surface)",
+  color: "var(--danger-dark)",
+};
+
 const defaultData = { locations: [], unassigned: [], stockChecks: [] };
 const MAX_SEARCH_SUGGESTIONS = 8;
 
@@ -857,13 +891,10 @@ function StockCheckPopup({
                               </td>
                               <td>
                                 <span
+                                  className="app-table-action-btn"
                                   style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    padding: "2px 10px",
-                                    borderRadius: "var(--radius-pill)",
-                                    fontSize: "0.8rem",
-                                    fontWeight: 600,
+                                    ...tableControlBaseStyle,
+                                    border: "none",
                                     background: tone.background,
                                     color: tone.color,
                                   }}
@@ -874,24 +905,24 @@ function StockCheckPopup({
                               <td>
                                 {request.status === "pending" ? (
                                   <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                                    <Button
+                                    <button
+                                      className="app-table-action-btn"
                                       type="button"
                                       onClick={() => handleRequestStatusUpdate(request.id, "approved")}
-                                      variant="primary"
-                                      size="xs"
                                       disabled={requestUpdateId === request.id}
+                                      style={approveActionButtonStyle}
                                     >
                                       Approve
-                                    </Button>
-                                    <Button
+                                    </button>
+                                    <button
+                                      className="app-table-action-btn"
                                       type="button"
                                       onClick={() => handleRequestStatusUpdate(request.id, "rejected")}
-                                      variant="ghost"
-                                      size="xs"
                                       disabled={requestUpdateId === request.id}
+                                      style={rejectActionButtonStyle}
                                     >
                                       Reject
-                                    </Button>
+                                    </button>
                                   </div>
                                 ) : (
                                   <span style={mutedTextStyle}>No actions</span>

@@ -1,5 +1,4 @@
 import LayerTheme from "@/components/ui/LayerTheme"; // file location: src/components/page-ui/workshop/workshop-consumables-tracker-ui.js
-import Button from "@/components/ui/Button";
 
 const tableButtonStyle = {
   minHeight: "32px",
@@ -410,9 +409,14 @@ export default function ConsumablesTrackerPageUi(props) {
                 alignItems: "center",
                 gap: "16px"
               }}>
-                  <Button type="button" variant="primary" onClick={() => setShowStockCheck(true)} data-dev-section-key="workshop-consumables-stock-check-button" data-dev-section-type="button" data-dev-section-parent="workshop-consumables-budget-card" data-dev-background-token="primary">
+                  <button type="button" onClick={() => setShowStockCheck(true)} data-dev-section-key="workshop-consumables-stock-check-button" data-dev-section-type="button" data-dev-section-parent="workshop-consumables-budget-card" data-dev-background-token="primary" style={{
+                    ...orderModalButtonStyle,
+                    background: "var(--primary)",
+                    color: "var(--surface)",
+                    width: "auto"
+                  }}>
                     Stock Check
-                  </Button>
+                  </button>
                   <div style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -432,6 +436,14 @@ export default function ConsumablesTrackerPageUi(props) {
                     gap: "12px",
                     marginLeft: "auto"
                   }}>
+                    {formattedBudgetUpdatedAt && <p style={{
+                      margin: 0,
+                      color: mutedTextColor,
+                      fontSize: "0.85rem",
+                      whiteSpace: "nowrap"
+                    }}>
+                        Last updated {formattedBudgetUpdatedAt}
+                      </p>}
                     <div style={{
                       display: "flex",
                       gap: "8px",
@@ -464,13 +476,6 @@ export default function ConsumablesTrackerPageUi(props) {
                     }}>
                         {budgetSaveError}
                       </p>}
-                    {formattedBudgetUpdatedAt && <p style={{
-                      margin: 0,
-                      color: mutedTextColor,
-                      fontSize: "0.85rem"
-                    }}>
-                        Last updated {formattedBudgetUpdatedAt}
-                      </p>}
                   </div>
                   {financialError && <p style={{
                     margin: 0,
@@ -501,11 +506,11 @@ export default function ConsumablesTrackerPageUi(props) {
                 gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                 gap: "10px"
               }}>
-                <div data-dev-section-key="workshop-consumables-logs-spend-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="theme" style={{
+                <div data-dev-section-key="workshop-consumables-logs-spend-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
                   ...cardStyle,
                   padding: "12px",
                   boxShadow: "none",
-                  backgroundColor: "var(--theme)",
+                  backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
@@ -520,11 +525,11 @@ export default function ConsumablesTrackerPageUi(props) {
                     {logsLoading ? <InlineLoading width={80} height={16} label="Loading spend" /> : formatCurrency(logsSummary.spend)}
                   </strong>
                 </div>
-                <div data-dev-section-key="workshop-consumables-logs-quantity-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="theme" style={{
+                <div data-dev-section-key="workshop-consumables-logs-quantity-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
                   ...cardStyle,
                   padding: "12px",
                   boxShadow: "none",
-                  backgroundColor: "var(--theme)",
+                  backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
@@ -539,11 +544,11 @@ export default function ConsumablesTrackerPageUi(props) {
                     {logsLoading ? <InlineLoading width={60} height={16} label="Loading quantity" /> : logsSummary.quantity.toLocaleString()}
                   </strong>
                 </div>
-                <div data-dev-section-key="workshop-consumables-logs-orders-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="theme" style={{
+                <div data-dev-section-key="workshop-consumables-logs-orders-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
                   ...cardStyle,
                   padding: "12px",
                   boxShadow: "none",
-                  backgroundColor: "var(--theme)",
+                  backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
@@ -558,11 +563,11 @@ export default function ConsumablesTrackerPageUi(props) {
                     {logsLoading ? <InlineLoading width={60} height={16} label="Loading orders" /> : logsSummary.orders}
                   </strong>
                 </div>
-                <div data-dev-section-key="workshop-consumables-logs-suppliers-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="theme" style={{
+                <div data-dev-section-key="workshop-consumables-logs-suppliers-stat" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-logs-summary-grid" data-dev-background-token="surface" style={{
                   ...cardStyle,
                   padding: "12px",
                   boxShadow: "none",
-                  backgroundColor: "var(--theme)",
+                  backgroundColor: "var(--surface)",
                   borderRadius: "var(--radius-md)",
                   border: "var(--section-card-border)"
                 }}>
