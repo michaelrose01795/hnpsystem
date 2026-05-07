@@ -64,10 +64,16 @@ const emphasizedSectionSurfaceStyle = {
 };
 
 const statusBadgeBaseStyle = {
-  padding: "6px 12px",
-  borderRadius: "var(--radius-sm)",
-  fontSize: "12px",
+  height: "var(--table-action-btn-height, 32px)",
+  minHeight: "var(--table-action-btn-height, 32px)",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "0 12px",
+  borderRadius: "var(--radius-xs)",
+  fontSize: "11px",
   fontWeight: "600",
+  lineHeight: 1,
   whiteSpace: "nowrap"
 };
 
@@ -77,7 +83,7 @@ const getStatusBadgeStyle = (status) => {
       return {
         ...statusBadgeBaseStyle,
         backgroundColor: "var(--theme)",
-        color: "var(--primary)"
+        color: "var(--text-accent)"
       };
     case "complete":
       return {

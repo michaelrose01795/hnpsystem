@@ -676,6 +676,7 @@ const USAGE_REGISTRY = {
   { label: "Job card details", file: "src/pages/job-cards/[jobNumber].js" }],
 
   "table-app-data": [
+  { label: "My Jobs table", file: "src/components/page-ui/job-cards/myjobs/job-cards-myjobs-ui.js", route: "/job-cards/myjobs" },
   { label: "Transaction table", file: "src/components/accounts/TransactionTable.js" },
   { label: "Invoice table", file: "src/components/accounts/InvoiceTable.js" },
   { label: "Account table", file: "src/components/accounts/AccountTable.js" },
@@ -709,7 +710,6 @@ const USAGE_REGISTRY = {
   { label: "popupStyleApi", file: "src/components/popups/popupStyleApi.js" }],
 
   "non-global-tables": [
-  { label: ".myjobs-row (flex grid)", file: "src/pages/job-cards/myjobs/index.js", route: "/job-cards/myjobs" },
   { label: ".partsTable (invoice)", file: "src/features/invoices/styles/invoice.module.css" },
   { label: "VHC item cell", file: "src/components/VHC/VhcSharedComponents.js" }],
 
@@ -3120,15 +3120,15 @@ function GlobalUiShowcase() {
       <ShowcaseCategoryHeader category="Tables" visible={visibleCategorySet.has("Tables")} />
       {isSectionVisible("table-app-data") &&
       <ShowcaseSection title="Table (.app-data-table / .app-table-shell)" itemKey="table-app-data" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
-        <div className="app-table-shell app-table-shell--with-headings">
-          <table className="app-data-table" style={{ width: "100%" }}>
+        <div className="app-table-shell-scroll">
+          <table className="app-data-table app-table-shell app-table-shell--with-headings" style={{ width: "100%" }}>
             <thead>
-              <tr><th>Name</th><th>Role</th><th>Status</th></tr>
+              <tr><th>Status</th><th>Job</th><th>Reg</th><th>Customer</th><th>Make/Model</th><th>Type</th></tr>
             </thead>
             <tbody>
-              <tr><td>Alice</td><td>Tech</td><td><span className="app-badge app-badge--control app-badge--success">Active</span></td></tr>
-              <tr><td>Bob</td><td>Service</td><td><span className="app-badge app-badge--control app-badge--neutral">Idle</span></td></tr>
-              <tr><td>Carol</td><td>Parts</td><td><span className="app-badge app-badge--control app-badge--neutral">Off</span></td></tr>
+              <tr><td><span className="app-badge app-badge--control app-badge--success" style={{ height: "var(--table-action-btn-height, 32px)" }}>In Progress</span></td><td style={{ fontWeight: 700 }}>00076</td><td>AB12 CDE</td><td>Alice Smith</td><td>BMW 320d</td><td>Service</td></tr>
+              <tr><td><span className="app-badge app-badge--control app-badge--warning" style={{ height: "var(--table-action-btn-height, 32px)" }}>Waiting</span></td><td style={{ fontWeight: 700 }}>00077</td><td>FG34 HJK</td><td>Bob Jones</td><td>Ford Transit</td><td>Repair</td></tr>
+              <tr><td><span className="app-badge app-badge--control app-badge--neutral" style={{ height: "var(--table-action-btn-height, 32px)" }}>Complete</span></td><td style={{ fontWeight: 700 }}>00078</td><td>LM56 NOP</td><td>Carol Lee</td><td>Toyota Yaris</td><td>MOT</td></tr>
             </tbody>
           </table>
         </div>
@@ -3171,14 +3171,6 @@ function GlobalUiShowcase() {
       {isSectionVisible("non-global-tables") &&
       <ShowcaseSection title="Non-Global Tables" itemKey="non-global-tables" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving} bordersAllowed>
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div>
-            <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "4px" }}>myjobs-row (flex grid)</div>
-            <div style={{ display: "flex", gap: "8px", padding: "10px", background: "var(--surface)", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-sm)", fontSize: "12px" }}>
-              <span style={{ flex: 1 }}>00076</span>
-              <span style={{ flex: 1 }}>BMW 320d</span>
-              <span style={{ flex: 1 }}><span style={{ padding: "2px 8px", background: "var(--success-surface)", color: "var(--success-text)", borderRadius: "var(--radius-pill)", fontSize: "10px", fontWeight: 700 }}>active</span></span>
-            </div>
-          </div>
           <div>
             <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "4px" }}>partsTable (fixed-layout invoice)</div>
             <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", fontSize: "12px" }}>
@@ -3557,7 +3549,7 @@ function GlobalUiShowcase() {
           [".vhc-*", "VHC inspection cards/sections"],
           [".hr-employees-*", "HR directory rows + pills"],
           [".hr-manager-*", "HR manager tab layout"],
-          [".myjobs-*", "Job cards table grid"],
+          [".myjobs-*", "Job cards table cells + status badges"],
           [".jobcard-*", "Job card tab badges"],
           [".login-*", "Login form + buttons"],
           [".customer-portal-*", "Customer portal layout"],

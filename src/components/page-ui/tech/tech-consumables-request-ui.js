@@ -28,11 +28,12 @@ export default function TechConsumableRequestPageUi(props) {
     requestError,
     requestForm,
     requestFormStyle,
-    requestHeaderStyle,
+    requestMonth,
     requestPanelStyle,
     requestsToolbarStyle,
     searchTerm,
     setRequestForm,
+    setRequestMonth,
     setSearchTerm,
     setShowStockCheck,
     showStockCheck,
@@ -91,40 +92,40 @@ export default function TechConsumableRequestPageUi(props) {
       return <>
       <div style={pageWrapperStyle}>
         <LayerTheme as="section" sectionKey="tech-consumables-request-panel" sectionType="content-card" style={requestPanelStyle}>
-          <DevLayoutSection as="div" sectionKey="tech-consumables-request-header" parentKey="tech-consumables-request-panel" sectionType="section-header-row" backgroundToken="transparent" style={requestHeaderStyle}>
-            <div>
-              <h1 style={{
-            margin: 0,
-            fontSize: "1.6rem",
-            color: "var(--primary-selected)"
-          }}></h1>
-            </div>
-            <DevLayoutSection as="div" sectionKey="tech-consumables-stock-check-action" parentKey="tech-consumables-request-header" sectionType="floating-action" backgroundToken="transparent">
-              <button type="button" onClick={() => setShowStockCheck(true)} style={{
-            padding: "var(--control-padding)",
-            borderRadius: "var(--control-radius)",
-            border: "1px solid var(--ghostbutton-ring)",
-            background: "var(--surface)",
-            color: "var(--primary-selected)",
-            fontWeight: 600,
-            cursor: "pointer",
-            width: isMobile ? "100%" : "auto"
-          }}>
-                Stock Check
-              </button>
-            </DevLayoutSection>
-          </DevLayoutSection>
-
           <DevLayoutSection as="form" sectionKey="tech-consumables-request-form" parentKey="tech-consumables-request-panel" sectionType="form-grid" backgroundToken="transparent" onSubmit={handleSubmit} style={requestFormStyle}>
             <DevLayoutSection as="div" sectionKey="tech-consumables-item-field" parentKey="tech-consumables-request-form" sectionType="form-block" backgroundToken="surface" style={{
           display: "flex",
           flexDirection: "column",
           gap: "6px"
         }}>
-              <label htmlFor="partName" style={fieldLabelStyle}>
-                Consumable
-              </label>
-              <input id="partName" name="partName" type="text" aria-label="Part Name" value={requestForm.partName} onChange={handleInputChange} placeholder="e.g. Nitrile gloves" style={inputStyle} required />
+              <div style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "minmax(0, 1fr)" : "max-content minmax(0, 1fr)",
+            gap: "10px",
+            alignItems: "stretch",
+            width: "100%"
+          }}>
+                <DevLayoutSection as="div" sectionKey="tech-consumables-stock-check-action" parentKey="tech-consumables-item-field" sectionType="floating-action" backgroundToken="transparent">
+                  <button type="button" onClick={() => setShowStockCheck(true)} style={{
+                padding: "var(--control-padding)",
+                borderRadius: "var(--control-radius)",
+                border: "1px solid var(--ghostbutton-ring)",
+                background: "var(--surface)",
+                color: "var(--primary-selected)",
+                fontWeight: 600,
+                cursor: "pointer",
+                width: isMobile ? "100%" : "auto",
+                height: "100%",
+                whiteSpace: "nowrap"
+              }}>
+                    Stock Check
+                  </button>
+                </DevLayoutSection>
+                <input id="partName" name="partName" type="text" aria-label="Part Name" value={requestForm.partName} onChange={handleInputChange} placeholder="Create consumable request" style={{
+              ...inputStyle,
+              minWidth: 0
+            }} required />
+              </div>
               {requestForm.partName.trim() && <DevLayoutSection as="div" sectionKey="tech-consumables-stock-suggestions" parentKey="tech-consumables-item-field" sectionType="content-card" backgroundToken="surface-light" style={{
             marginTop: "4px",
             border: "none",
@@ -194,10 +195,7 @@ export default function TechConsumableRequestPageUi(props) {
           flexDirection: "column",
           gap: "6px"
         }}>
-              <label htmlFor="quantity" style={fieldLabelStyle}>
-                Quantity
-              </label>
-              <input id="quantity" name="quantity" type="number" aria-label="Quantity Needed" min="1" step="1" value={requestForm.quantity} onChange={handleInputChange} style={inputStyle} />
+              <input id="quantity" name="quantity" type="number" aria-label="Quantity Needed" min="1" step="1" value={requestForm.quantity} onChange={handleInputChange} placeholder="Quantity" style={inputStyle} />
             </DevLayoutSection>
 
             <DevLayoutSection as="div" sectionKey="tech-consumables-submit-action" parentKey="tech-consumables-request-form" sectionType="toolbar" backgroundToken="transparent" style={{
@@ -229,13 +227,33 @@ export default function TechConsumableRequestPageUi(props) {
           fontSize: "1.2rem",
           color: "var(--primary-selected)"
         }}>Requests</h2>
-            <DevLayoutSection as="div" sectionKey="tech-consumables-requests-search" parentKey="tech-consumables-requests-toolbar" sectionType="filter-row" backgroundToken="search-surface" style={{
-          maxWidth: isMobile ? "100%" : "240px",
-          width: "100%"
+            <DevLayoutSection as="div" sectionKey="tech-consumables-requests-filters" parentKey="tech-consumables-requests-toolbar" sectionType="filter-row" backgroundToken="transparent" style={{
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center",
+          justifyContent: "flex-end",
+          gap: "10px",
+          width: isMobile ? "100%" : "auto"
         }}>
-              <SearchBar placeholder="Search requests" value={searchTerm} onChange={event => setSearchTerm(event.target.value)} onClear={() => setSearchTerm("")} style={{
-            maxWidth: isMobile ? "100%" : "240px"
-          }} />
+              <DevLayoutSection as="div" sectionKey="tech-consumables-requests-month" parentKey="tech-consumables-requests-filters" sectionType="filter-row" backgroundToken="search-surface" style={{
+            width: isMobile ? "100%" : "170px"
+          }}>
+                <input type="month" aria-label="Filter requests by month" value={requestMonth} onChange={event => setRequestMonth(event.target.value)} style={{
+              ...inputStyle,
+              height: "44px",
+              color: "var(--text-1)",
+              background: "var(--surface)",
+              cursor: "pointer"
+            }} />
+              </DevLayoutSection>
+              <DevLayoutSection as="div" sectionKey="tech-consumables-requests-search" parentKey="tech-consumables-requests-filters" sectionType="filter-row" backgroundToken="search-surface" style={{
+            maxWidth: isMobile ? "100%" : "240px",
+            width: "100%"
+          }}>
+                <SearchBar placeholder="Search requests" value={searchTerm} onChange={event => setSearchTerm(event.target.value)} onClear={() => setSearchTerm("")} style={{
+              maxWidth: isMobile ? "100%" : "240px"
+            }} />
+              </DevLayoutSection>
             </DevLayoutSection>
           </DevLayoutSection>
           {successMessage && <DevLayoutSection as="p" sectionKey="tech-consumables-success-banner" parentKey="tech-consumables-requests-panel" sectionType="state-banner" backgroundToken="success-surface" style={{
@@ -346,7 +364,7 @@ export default function TechConsumableRequestPageUi(props) {
                 </LayerSurface>}
             </DevLayoutSection> : <LayerSurface as="div" sectionKey="tech-consumables-request-auto-data-table-1-shell" parentKey="tech-consumables-requests-panel" sectionType="data-table-shell" padding="0" style={{
         overflowX: "auto",
-        maxHeight: "420px",
+        maxHeight: "604px",
         overflowY: "auto"
       }}>
               <DevLayoutSection as="table" sectionKey="tech-consumables-request-auto-data-table-1" parentKey="tech-consumables-request-auto-data-table-1-shell" sectionType="data-table" backgroundToken="surface" className="app-data-table" style={{
@@ -354,7 +372,10 @@ export default function TechConsumableRequestPageUi(props) {
           background: "var(--surface)"
         }}>
                 <thead data-dev-section="1" data-dev-section-key="tech-consumables-request-auto-data-table-1-headings" data-dev-section-type="table-headings" data-dev-section-parent="tech-consumables-request-auto-data-table-1" style={{
-            background: "var(--theme-hover)"
+            background: "var(--theme-hover)",
+            position: "sticky",
+            top: 0,
+            zIndex: 1
           }}>
                   <tr>
                     <th style={tableHeaderStyle}>Status</th>

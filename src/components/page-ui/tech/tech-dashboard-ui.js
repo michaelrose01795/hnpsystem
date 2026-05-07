@@ -50,7 +50,7 @@ export default function TechsDashboardUi(props) {
       gap: "10px"
     }}>
             <h2 style={{
-        color: "var(--primary)",
+        color: "var(--text-accent)",
         margin: 0
       }}>Access Denied</h2>
             <p style={{
@@ -72,9 +72,9 @@ export default function TechsDashboardUi(props) {
         <DevLayoutSection sectionKey="tech-dashboard-stats-grid" parentKey="tech-dashboard-page" sectionType="section-shell" shell style={statsGridStyle}>
           <StatCard sectionKey="tech-dashboard-stat-assigned" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--theme)", "var(--primary-border)")}>
             <div style={{
-          fontSize: "28px",
-          fontWeight: "700",
-          color: "var(--primary)"
+           fontSize: "28px",
+           fontWeight: "700",
+           color: "var(--text-accent)"
         }}>
               {myJobs.length}
             </div>
@@ -112,9 +112,9 @@ export default function TechsDashboardUi(props) {
               Current Job
             </div>
             <div style={{
-          fontSize: "20px",
-          fontWeight: "700",
-          color: "var(--primary)"
+           fontSize: "20px",
+           fontWeight: "700",
+           color: "var(--text-accent)"
         }}>
               {currentJob ? currentJob.jobNumber : "None"}
             </div>
@@ -122,9 +122,9 @@ export default function TechsDashboardUi(props) {
 
           <StatCard sectionKey="tech-dashboard-stat-hours" parentKey="tech-dashboard-stats-grid" style={buildToneSurfaceStyle("var(--theme)")}>
             <div style={{
-          fontSize: "28px",
-          fontWeight: "700",
-          color: "var(--primary)"
+           fontSize: "28px",
+           fontWeight: "700",
+           color: "var(--text-accent)"
         }}>
               {isClockedIn ? calculateHoursWorked(clockInTime) : "0.0"}h
             </div>
@@ -146,9 +146,9 @@ export default function TechsDashboardUi(props) {
         display: "grid",
         gap: "12px"
       }}>
-              <h2 style={{
-          ...sectionHeadingStyle,
-          color: "var(--primary)"
+               <h2 style={{
+           ...sectionHeadingStyle,
+           color: "var(--text-accent)"
         }}>
                 Currently Working On
               </h2>
@@ -179,25 +179,35 @@ export default function TechsDashboardUi(props) {
               </div>
             </div>
 
-            <DevLayoutSection as="button" type="button" sectionKey="tech-dashboard-current-job-action" parentKey="tech-dashboard-current-job" sectionType="content-card" className="tech-dashboard-primary-button" onClick={() => handleStartJob(currentJob)} onMouseEnter={() => prefetchJob(currentJob?.jobNumber)}>
+            <DevLayoutSection as="button" type="button" sectionKey="tech-dashboard-current-job-action" parentKey="tech-dashboard-current-job" sectionType="content-card" className="app-btn app-btn--primary tech-dashboard-primary-button" onClick={() => handleStartJob(currentJob)} onMouseEnter={() => prefetchJob(currentJob?.jobNumber)}>
               Continue Job
             </DevLayoutSection>
           </SectionShell>}
 
-        {nextJob && !currentJob && <SectionShell sectionKey="tech-dashboard-next-job" parentKey="tech-dashboard-page" backgroundToken="page-card-alt" style={sectionSurfaceStyle}>
+        {nextJob && !currentJob && <SectionShell sectionKey="tech-dashboard-next-job" parentKey="tech-dashboard-page" backgroundToken="page-card-alt" style={{
+      ...sectionSurfaceStyle,
+      display: "grid",
+      gridTemplateColumns: "minmax(0, 1fr) minmax(160px, 220px)",
+      alignItems: "center",
+      gap: "16px"
+    }}>
             <div style={{
         display: "grid",
-        gap: "12px"
+        gap: "10px",
+        minWidth: 0
       }}>
               <h2 style={sectionHeadingStyle}>Next Job Assigned</h2>
               <div style={{
           display: "grid",
-          gap: "6px"
+          gridTemplateColumns: "minmax(90px, 120px) minmax(0, 1fr) minmax(0, 1.4fr)",
+          alignItems: "center",
+          gap: "14px",
+          width: "100%"
         }}>
                 <p style={{
             fontSize: "24px",
             fontWeight: "700",
-            color: "var(--primary)",
+            color: "var(--text-accent)",
             margin: 0
           }}>
                   {nextJob.jobNumber}
@@ -208,16 +218,10 @@ export default function TechsDashboardUi(props) {
                 <p style={detailLabelStyle}>
                   <strong>Vehicle:</strong> {buildVehicleLabel(nextJob)}
                 </p>
-                <p style={{
-            ...sectionCopyStyle,
-            marginTop: "2px"
-          }}>
-                  {nextJob.description || "No description added yet."}
-                </p>
               </div>
             </div>
 
-            <DevLayoutSection as="button" type="button" sectionKey="tech-dashboard-next-job-action" parentKey="tech-dashboard-next-job" sectionType="content-card" className="tech-dashboard-primary-button" onClick={() => handleStartJob(nextJob)} onMouseEnter={() => prefetchJob(nextJob?.jobNumber)}>
+            <DevLayoutSection as="button" type="button" sectionKey="tech-dashboard-next-job-action" parentKey="tech-dashboard-next-job" sectionType="content-card" className="app-btn app-btn--primary tech-dashboard-primary-button" onClick={() => handleStartJob(nextJob)} onMouseEnter={() => prefetchJob(nextJob?.jobNumber)}>
               Start Job
             </DevLayoutSection>
           </SectionShell>}
@@ -229,9 +233,6 @@ export default function TechsDashboardUi(props) {
           gap: "4px"
         }}>
               <h2 style={sectionHeadingStyle}>My Assigned Jobs</h2>
-              <p style={sectionCopyStyle}>
-                Showing the next three jobs currently assigned to you.
-              </p>
             </div>
           </DevLayoutSection>
 
@@ -248,48 +249,45 @@ export default function TechsDashboardUi(props) {
         }}>
                 No jobs assigned yet.
               </p>
-            </DevLayoutSection> : <DevLayoutSection sectionKey="tech-dashboard-assigned-jobs-rows" parentKey="tech-dashboard-assigned-jobs" sectionType="table-rows" style={jobsListStyle}>
-              {visibleJobs.map((job, index) => <DevLayoutSection key={job.id || job.jobNumber || index} as="button" type="button" sectionKey={`tech-dashboard-assigned-job-${index + 1}`} parentKey="tech-dashboard-assigned-jobs-rows" sectionType="content-card" className="app-layout-card tech-dashboard-surface-button" style={{
-          textAlign: "left",
-          justifyContent: "space-between"
-        }} onClick={() => handleStartJob(job)} onMouseEnter={() => prefetchJob(job.jobNumber)}>
-                  <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: "12px",
-            width: "100%"
-          }}>
-                    <div style={{
-              display: "grid",
-              gap: "4px"
+            </DevLayoutSection> : <DevLayoutSection sectionKey="tech-dashboard-assigned-jobs-rows" parentKey="tech-dashboard-assigned-jobs" sectionType="data-table-shell" className="app-table-shell-scroll" style={jobsListStyle}>
+              <table className="app-data-table app-table-shell app-table-shell--with-headings tech-dashboard-assigned-jobs-table" data-dev-section="1" data-dev-section-key="tech-dashboard-assigned-jobs-table" data-dev-section-type="data-table" data-dev-section-parent="tech-dashboard-assigned-jobs-rows">
+                <thead data-dev-section="1" data-dev-section-key="tech-dashboard-assigned-jobs-headings" data-dev-section-type="table-headings" data-dev-section-parent="tech-dashboard-assigned-jobs-table">
+                  <tr>
+                    <th>Job</th>
+                    <th>Customer</th>
+                    <th>Vehicle</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody data-dev-section="1" data-dev-section-key="tech-dashboard-assigned-jobs-body" data-dev-section-type="table-rows" data-dev-section-parent="tech-dashboard-assigned-jobs-table">
+                  {visibleJobs.map((job, index) => <tr key={job.id || job.jobNumber || index} data-dev-section="1" data-dev-section-key={`tech-dashboard-assigned-job-${index + 1}`} data-dev-section-type="table-row" data-dev-section-parent="tech-dashboard-assigned-jobs-body" onClick={() => handleStartJob(job)} onMouseEnter={event => {
+              event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
+              prefetchJob(job.jobNumber);
+            }} onMouseLeave={event => {
+              event.currentTarget.style.zIndex = "0";
+            }} style={{
+              cursor: "pointer",
+              position: "relative",
+              zIndex: 0
             }}>
-                      <p style={{
-                fontSize: "16px",
-                fontWeight: "700",
-                color: "var(--primary)",
-                margin: 0
-              }}>
-                        {job.jobNumber}
-                      </p>
-                      <p style={{
-                fontSize: "14px",
+                    <td style={{
+                color: "var(--text-accent)",
+                fontWeight: 700,
+                whiteSpace: "nowrap"
+              }}>{job.jobNumber}</td>
+                    <td style={{
                 color: "var(--text-1)",
-                margin: 0
-              }}>
-                        {job.customer} | {job.reg}
-                      </p>
-                      <p style={{
-                fontSize: "13px",
-                color: "var(--text-1)",
-                margin: 0
-              }}>
-                        {job.makeModel || "Vehicle details missing"}
-                      </p>
-                    </div>
-                    <div style={getStatusBadgeStyle(job.status)}>{job.status}</div>
-                  </div>
-                </DevLayoutSection>)}
+                whiteSpace: "nowrap"
+              }}>{job.customer} | {job.reg}</td>
+                    <td style={{
+                color: "var(--text-1)"
+              }}>{job.makeModel || "Vehicle details missing"}</td>
+                    <td>
+                      <span className="app-table-action-btn tech-dashboard-status-bubble" style={getStatusBadgeStyle(job.status)}>{job.status}</span>
+                    </td>
+                  </tr>)}
+                </tbody>
+              </table>
 
               {myJobs.length > 3 && <DevLayoutSection sectionKey="tech-dashboard-assigned-jobs-more" parentKey="tech-dashboard-assigned-jobs-rows" sectionType="content-card" className="app-layout-surface-subtle">
                   <p style={{
@@ -304,11 +302,11 @@ export default function TechsDashboardUi(props) {
 
         <SectionShell sectionKey="tech-dashboard-actions-card" parentKey="tech-dashboard-page" backgroundToken="page-card-alt" style={sectionSurfaceStyle}>
           <DevLayoutSection sectionKey="tech-dashboard-actions" parentKey="tech-dashboard-actions-card" sectionType="toolbar" className="app-layout-toolbar-row" style={actionGridStyle}>
-            {dashboardActions.map(action => <DevLayoutSection key={action.key} as="button" type="button" sectionKey={`tech-dashboard-action-${action.key}`} parentKey="tech-dashboard-actions" sectionType="content-card" className="app-layout-card tech-dashboard-action-button" onClick={() => router.push(action.href)}>
+            {dashboardActions.map(action => <DevLayoutSection key={action.key} as="button" type="button" sectionKey={`tech-dashboard-action-${action.key}`} parentKey="tech-dashboard-actions" sectionType="content-card" className="app-btn app-btn--primary tech-dashboard-action-button" onClick={() => router.push(action.href)}>
                 <div style={{
             fontSize: "16px",
             fontWeight: "700",
-            color: "var(--text-1)"
+            color: "inherit"
           }}>
                   {action.label}
                 </div>
@@ -355,7 +353,8 @@ export default function TechsDashboardUi(props) {
           align-items: center;
           justify-content: center;
           text-align: center;
-          background: var(--surface);
+          background: var(--primary);
+          color: var(--text-2);
         }
 
         .tech-dashboard-surface-button:hover,
@@ -373,7 +372,7 @@ export default function TechsDashboardUi(props) {
 
         .tech-dashboard-action-button:hover,
         .tech-dashboard-action-button:focus-visible {
-          background: var(--theme);
+          background: var(--primary-selected);
           z-index: var(--hover-surface-z, 80);
         }
       `}</style>

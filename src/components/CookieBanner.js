@@ -9,6 +9,9 @@
 //   - localStorage 'hnp.cookieConsent.v1' — the consent record (categories
 //     + timestamp + anonymousId). Used to hide the banner on subsequent
 //     visits.
+//   - first-party cookie 'hnp_cookie_consent' (1 year) mirrors the consent
+//     record so the banner is remembered per browser/device even if
+//     localStorage is unavailable or reset.
 //   - first-party cookie 'hnp_anon_id' (1 year) — stable anonymous id
 //     mirrored to /api/cookies/consent for evidential proof.
 //
@@ -18,6 +21,7 @@ import React, { useEffect, useMemo, useState } from "react";import LayerSurface 
 
 const STORAGE_KEY = "hnp.cookieConsent.v1";
 const ANON_COOKIE = "hnp_anon_id";
+const CONSENT_COOKIE = "hnp_cookie_consent";
 const POLICY_VERSION = "v1.0";
 const COOKIE_TTL_DAYS = 365;
 
@@ -83,6 +87,25 @@ const readCookie = (name) => {
   return null;
 };
 
+const readStoredConsent = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // Fall back to the consent cookie below.
+    }
+  }
+
+  const rawCookie = readCookie(CONSENT_COOKIE);
+  if (!rawCookie) return null;
+  try {
+    return JSON.parse(rawCookie);
+  } catch {
+    return null;
+  }
+};
+
 const ensureAnonymousId = () => {
   const existing = readCookie(ANON_COOKIE);
   if (existing) return existing;
@@ -105,17 +128,8 @@ export default function CookieBanner() {
   useEffect(() => {
     setMounted(true);
     if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        setOpen(true);
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (parsed?.policyVersion !== POLICY_VERSION) {
-        setOpen(true);
-      }
-    } catch {
+    const storedConsent = readStoredConsent();
+    if (!storedConsent || storedConsent.policyVersion !== POLICY_VERSION) {
       setOpen(true);
     }
   }, []);
@@ -132,8 +146,11 @@ export default function CookieBanner() {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch {
 
-      // best effort; banner will reappear next session if storage is blocked
-    }try {
+      // best effort; the cookie mirror below still remembers the choice
+    }
+    setCookie(CONSENT_COOKIE, JSON.stringify(payload), COOKIE_TTL_DAYS);
+    setOpen(false);
+    try {
       await fetch("/api/cookies/consent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -147,7 +164,7 @@ export default function CookieBanner() {
     } catch {
 
       // server-side mirror is best-effort; the local choice still applies
-    }setOpen(false);
+    }
   };
 
   const acceptAll = () => {

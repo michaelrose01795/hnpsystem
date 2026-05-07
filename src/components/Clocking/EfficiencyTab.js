@@ -2209,121 +2209,175 @@ export default function EfficiencyTab({
               </form>
             </div>
           </div>
-          <style jsx>{`
-            :global(.efficiency-page) {
-              min-width: 0;
-            }
-            :global(.efficiency-month-nav) {
-              margin-left: auto;
-            }
-            :global(.efficiency-month-nav .monthpicker-api) {
-              width: 100%;
-            }
-            :global([data-theme="dark"]) .efficiency-modal-overlay {
-              background: rgba(10, 10, 10, 0.8);
-            }
-            :global(:not([data-theme="dark"])) .efficiency-modal-overlay {
-              background: rgba(50, 50, 50, 0.45);
-            }
-            @media (max-width: 430px) {
-              :global(.efficiency-page) {
-                gap: 12px !important;
-              }
-              :global(.efficiency-page h3) {
-                font-size: 1rem !important;
-              }
-              :global(.efficiency-topbar) {
-                gap: 8px !important;
-                align-items: stretch !important;
-              }
-              :global(.efficiency-topbar-nav-group),
-              :global(.efficiency-topbar-tabs),
-              :global(.efficiency-month-nav),
-              :global(.efficiency-topbar-actions) {
-                width: 100%;
-              }
-              :global(.efficiency-topbar-nav-group) {
-                gap: 8px !important;
-              }
-              :global(.efficiency-month-nav) {
-                justify-content: space-between;
-                gap: 8px !important;
-                margin-left: 0 !important;
-              }
-              :global(.efficiency-topbar-actions button) {
-                font-size: 0.76rem !important;
-                padding: 8px 12px !important;
-                border-radius: 10px !important;
-              }
-              :global(.efficiency-topbar-actions) {
-                display: grid !important;
-                grid-template-columns: 1fr 1fr;
-              }
-              :global(.efficiency-filter-shell) {
-                padding: 12px !important;
-                gap: 10px !important;
-              }
-              :global(.efficiency-filter-shell > div:first-child) {
-                gap: 8px !important;
-                justify-content: flex-start !important;
-              }
-              :global(.efficiency-period-toggle .tab-api__item) {
-                font-size: 0.75rem !important;
-                padding: 8px 10px !important;
-              }
-              :global(.efficiency-search-wrap) {
-                flex-basis: 100% !important;
-                width: 100% !important;
-              }
-              :global(.efficiency-summary-grid) {
-                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                gap: 10px !important;
-              }
-              :global(.efficiency-summary-grid > div) {
-                padding: 12px !important;
-                border-radius: 12px !important;
-                min-width: 0 !important;
-              }
-              :global(.efficiency-summary-grid span) {
-                font-size: 0.62rem !important;
-              }
-              :global(.efficiency-summary-grid strong) {
-                font-size: 1.1rem !important;
-              }
-              :global(.efficiency-summary-grid > div[style*="grid-column: span 2"]) {
-                grid-column: 1 / -1 !important;
-                min-width: 0 !important;
-              }
-              :global(.efficiency-table-wrap) {
-                overflow-x: auto !important;
-              }
-              :global(.efficiency-table-wrap table) {
-                min-width: 720px;
-                font-size: 0.78rem !important;
-              }
-              :global(.efficiency-table-wrap th),
-              :global(.efficiency-table-wrap td) {
-                padding: 9px 10px !important;
-              }
-              :global(.efficiency-job-modal) {
-                width: min(100%, 96vw) !important;
-                padding: 20px 18px !important;
-                gap: 14px !important;
-              }
-              :global(.efficiency-job-modal form) {
-                gap: 14px !important;
-              }
-              :global(.efficiency-job-modal form > div[style*="grid-template-columns: 1fr 1fr"]) {
-                grid-template-columns: 1fr !important;
-                gap: 12px !important;
-              }
-              :global(.efficiency-job-modal button) {
-                font-size: 0.82rem !important;
-              }
-            }
-          `}</style>
         </ModalPortal>
       )}
+      <style jsx>{`
+        :global(.efficiency-page) {
+          min-width: 0;
+        }
+        :global(.efficiency-month-nav) {
+          margin-left: auto;
+        }
+        :global(.efficiency-month-nav .monthpicker-api) {
+          width: 100%;
+        }
+        :global([data-theme="dark"]) .efficiency-modal-overlay {
+          background: rgba(10, 10, 10, 0.8);
+        }
+        :global(:not([data-theme="dark"])) .efficiency-modal-overlay {
+          background: rgba(50, 50, 50, 0.45);
+        }
+        @media (max-width: 600px) and (orientation: portrait) {
+          :global(.efficiency-page) {
+            gap: 12px !important;
+          }
+          :global(.efficiency-page h3) {
+            font-size: 1rem !important;
+            overflow-wrap: anywhere;
+          }
+          :global(.efficiency-topbar) {
+            gap: 8px !important;
+            align-items: center !important;
+            flex-wrap: nowrap !important;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+          }
+          :global(.efficiency-topbar-nav-group) {
+            flex: 0 0 max-content !important;
+            width: max-content !important;
+            min-width: 100%;
+            flex-wrap: nowrap !important;
+            justify-content: flex-start !important;
+            gap: 8px !important;
+          }
+          :global(.efficiency-topbar-tabs) {
+            flex: 0 0 auto !important;
+            width: auto !important;
+            min-width: 0;
+          }
+          :global(.efficiency-topbar-tabs .tab-api) {
+            display: flex;
+            flex-wrap: nowrap;
+            width: max-content;
+          }
+          :global(.efficiency-topbar-tabs .tab-api__item) {
+            flex: 0 0 auto;
+            font-size: 0.78rem !important;
+            padding-inline: 10px !important;
+          }
+          :global(.efficiency-month-nav) {
+            flex: 0 0 240px !important;
+            width: 240px !important;
+            margin-left: 0 !important;
+          }
+          :global(.efficiency-topbar-actions) {
+            display: flex !important;
+            flex: 0 0 auto !important;
+            width: auto !important;
+          }
+          :global(.efficiency-topbar-actions button) {
+            flex: 0 0 auto;
+            font-size: 0.76rem !important;
+            padding: 8px 12px !important;
+            border-radius: 10px !important;
+            white-space: nowrap;
+          }
+          :global(.efficiency-filter-shell) {
+            padding: 12px !important;
+            gap: 10px !important;
+          }
+          :global(.efficiency-filter-shell > div:first-child) {
+            gap: 8px !important;
+            justify-content: flex-start !important;
+          }
+          :global(.efficiency-filter-shell > div:first-child > div) {
+            min-width: min(100%, 180px) !important;
+            max-width: 100% !important;
+          }
+          :global(.efficiency-period-toggle) {
+            flex: 1 1 100% !important;
+            width: 100%;
+          }
+          :global(.efficiency-period-toggle .tab-api) {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+          }
+          :global(.efficiency-period-toggle .tab-api__item) {
+            flex: 1 1 calc(33.333% - 6px);
+            min-width: 78px;
+            font-size: 0.75rem !important;
+            padding: 8px 10px !important;
+          }
+          :global(.efficiency-filter-calendar),
+          :global(.efficiency-tech-filter-dropdown),
+          :global(.efficiency-filter-calendar .calendar-api__control),
+          :global(.efficiency-tech-filter-dropdown .dropdown-api__control),
+          :global(.efficiency-search-wrap),
+          :global(.efficiency-search-wrap .searchbar-api) {
+            width: 100% !important;
+          }
+          :global(.efficiency-search-wrap) {
+            flex: 1 1 100% !important;
+            min-width: 0 !important;
+          }
+          :global(.efficiency-summary-grid) {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+          :global(.efficiency-summary-grid > div) {
+            padding: 12px !important;
+            border-radius: 12px !important;
+            min-width: 0 !important;
+            overflow-wrap: anywhere;
+          }
+          :global(.efficiency-summary-grid span) {
+            font-size: 0.62rem !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+          }
+          :global(.efficiency-summary-grid strong) {
+            font-size: 1.05rem !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+          }
+          :global(.efficiency-summary-grid > div[style*="grid-column: span 2"]) {
+            grid-column: 1 / -1 !important;
+            min-width: 0 !important;
+          }
+          :global(.efficiency-table-wrap) {
+            max-width: 100%;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          :global(.efficiency-table-wrap table) {
+            min-width: 720px;
+            font-size: 0.78rem !important;
+          }
+          :global(.efficiency-table-wrap th),
+          :global(.efficiency-table-wrap td) {
+            padding: 9px 10px !important;
+          }
+          :global(.efficiency-job-modal) {
+            width: min(100%, 96vw) !important;
+            padding: 20px 18px !important;
+            gap: 14px !important;
+          }
+          :global(.efficiency-job-modal form) {
+            gap: 14px !important;
+          }
+          :global(.efficiency-job-modal form > div[style*="grid-template-columns: 1fr 1fr"]) {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          :global(.efficiency-job-modal button) {
+            font-size: 0.82rem !important;
+          }
+        }
+      `}</style>
       <ConfirmationDialog
         isOpen={!!confirmDialog}
         message={confirmDialog?.message}

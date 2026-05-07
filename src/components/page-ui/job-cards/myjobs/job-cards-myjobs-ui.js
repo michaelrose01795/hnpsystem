@@ -1,11 +1,9 @@
 // file location: src/components/page-ui/job-cards/myjobs/job-cards-myjobs-ui.js
 import Button from "@/components/ui/Button";
-import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function MyJobsPageUi(props) {
   const {
-    DevLayoutSection,
     InlineLoading,
     JobCardModal,
     SKELETON_ROW_COUNT,
@@ -26,7 +24,6 @@ export default function MyJobsPageUi(props) {
     prefilledJobNumber,
     resolveTechStatusLabel,
     resolveTechStatusTooltip,
-    router,
     rowSkeletonCells,
     searchTerm,
     setFilter,
@@ -34,7 +31,6 @@ export default function MyJobsPageUi(props) {
     setSearchTerm,
     setShowStartJobModal,
     showStartJobModal,
-    summarizePartsPipeline,
   } = props; // receive page logic props.
 
   switch (props.view) { // choose the page section requested by logic.
@@ -84,16 +80,6 @@ export default function MyJobsPageUi(props) {
       <div className="app-page-stack" style={{
     minHeight: "100%"
   }}>
-        {/* Header */}
-        <DevLayoutSection sectionKey="myjobs-page-header" sectionType="toolbar" parentKey="app-layout-page-card" className="myjobs-page-header" style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center"
-    }}>
-          <div></div>
-
-        </DevLayoutSection>
-
         {/* Search and Filter Bar */}
         <LayerTheme sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="app-layout-page-card" backgroundToken="theme-filter-card" className="myjobs-filter-toolbar" style={{
       display: "flex",
@@ -129,7 +115,7 @@ export default function MyJobsPageUi(props) {
         }].map(({
           value,
           label
-        }) => <Button key={value} type="button" variant="control" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>
+        }) => <Button key={value} type="button" variant="primary" className={filter === value ? "is-active" : ""} onClick={() => setFilter(value)}>
                 {label}
               </Button>)}
           </div>
@@ -143,77 +129,35 @@ export default function MyJobsPageUi(props) {
       overflow: "hidden",
       minHeight: 0
     }}>
-          {loading ? <div data-dev-section="1" data-dev-section-key="myjobs-results-scroll" data-dev-section-type="content-card" data-dev-section-parent="myjobs-results-shell" role="status" aria-live="polite" aria-label="Loading jobs" style={{
+          {loading ? <div className="app-table-shell-scroll" data-dev-section="1" data-dev-section-key="myjobs-results-scroll" data-dev-section-type="data-table" data-dev-section-parent="myjobs-results-shell" role="status" aria-live="polite" aria-label="Loading jobs" style={{
         flex: 1,
         overflowY: "hidden",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-        paddingRight: "8px",
         minHeight: 0
       }}>
-              {/* Header strip — identical to the real header so the column
-                  rhythm matches when real data arrives. */}
-              <div className="myjobs-header" data-dev-section="1" data-dev-section-key="myjobs-results-header" data-dev-section-type="table-headings" data-dev-section-parent="myjobs-results-scroll" style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          padding: "8px 16px",
-          borderRadius: "var(--radius-sm)",
-          backgroundColor: "var(--theme-hover)",
-          border: "none",
-          fontSize: "12px",
-          fontWeight: "700",
-          color: "var(--primary-selected)",
-          textTransform: "uppercase",
-          letterSpacing: "0.04em"
-        }}>
-                <div style={{
-            minWidth: "110px",
-            textAlign: "center"
-          }}>Status</div>
-                <div style={{
-            minWidth: "90px"
-          }}>Job</div>
-                <div style={{
-            minWidth: "80px"
-          }}>Reg</div>
-                <div style={{
-            minWidth: "140px",
-            flex: "0 0 auto"
-          }}>Customer</div>
-                <div style={{
-            minWidth: "160px",
-            flex: "1 1 auto"
-          }}>Make/Model</div>
-                <div style={{
-            minWidth: "80px"
-          }}>Type</div>
-              </div>
+              <table className="app-data-table app-table-shell app-table-shell--with-headings myjobs-table" data-dev-section="1" data-dev-section-key="myjobs-results-table-loading" data-dev-section-type="data-table" data-dev-section-parent="myjobs-results-scroll">
+                <thead data-dev-section="1" data-dev-section-key="myjobs-results-header" data-dev-section-type="table-headings" data-dev-section-parent="myjobs-results-table-loading">
+                  <tr>
+                    <th>Status</th>
+                    <th>Job</th>
+                    <th>Reg</th>
+                    <th>Customer</th>
+                    <th>Make/Model</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody data-dev-section="1" data-dev-section-key="myjobs-results-loading-rows" data-dev-section-type="table-rows" data-dev-section-parent="myjobs-results-table-loading">
               {Array.from({
           length: SKELETON_ROW_COUNT
-        }).map((_, rowIndex) => <div key={`myjobs-skeleton-${rowIndex}`} className="myjobs-row" data-dev-section="1" data-dev-section-key={`myjobs-row-skeleton-${rowIndex}`} data-dev-section-type="content-card" data-dev-section-parent="myjobs-results-scroll" style={{
-          border: "none",
-          padding: "12px 16px",
-          borderRadius: "var(--radius-sm)",
-          backgroundColor: "var(--surface)",
-          display: "flex",
-          alignItems: "center",
-          gap: "12px"
-        }}>
-                  {/* Status badge skeleton — matches the pill shape + min-width */}
-                  <SkeletonBlock width="110px" height="24px" borderRadius="var(--radius-xs)" />
-                  <SkeletonBlock width={rowSkeletonCells[1].width} height="16px" />
-                  <SkeletonBlock width={rowSkeletonCells[2].width} height="14px" />
-                  <SkeletonBlock width={rowSkeletonCells[3].width} height="14px" />
-                  <div style={{
-            flex: "1 1 auto",
-            minWidth: "160px"
-          }}>
-                    <SkeletonBlock width={rowSkeletonCells[4].width} height="14px" />
-                  </div>
-                  <SkeletonBlock width={rowSkeletonCells[5].width} height="12px" />
-                </div>)}
+        }).map((_, rowIndex) => <tr key={`myjobs-skeleton-${rowIndex}`} data-dev-section="1" data-dev-section-key={`myjobs-row-skeleton-${rowIndex}`} data-dev-section-type="table-row" data-dev-section-parent="myjobs-results-loading-rows">
+                    <td><SkeletonBlock width="110px" height="24px" borderRadius="var(--radius-xs)" /></td>
+                    <td><SkeletonBlock width={rowSkeletonCells[1].width} height="16px" /></td>
+                    <td><SkeletonBlock width={rowSkeletonCells[2].width} height="14px" /></td>
+                    <td><SkeletonBlock width={rowSkeletonCells[3].width} height="14px" /></td>
+                    <td><SkeletonBlock width={rowSkeletonCells[4].width} height="14px" /></td>
+                    <td><SkeletonBlock width={rowSkeletonCells[5].width} height="12px" /></td>
+                  </tr>)}
+                </tbody>
+              </table>
             </div> : filteredJobs.length === 0 ? <div data-dev-section="1" data-dev-section-key="myjobs-empty-state" data-dev-section-type="content-card" data-dev-section-parent="myjobs-results-shell" data-dev-background-token="surface-empty-state" style={{
         backgroundColor: "transparent",
         padding: "60px",
@@ -241,51 +185,23 @@ export default function MyJobsPageUi(props) {
         }}>
                 {searchTerm ? "Try adjusting your search or filter criteria" : "You currently have no jobs assigned to you"}
               </p>
-            </div> : <div data-dev-section="1" data-dev-section-key="myjobs-results-scroll" data-dev-section-type="content-card" data-dev-section-parent="myjobs-results-shell" style={{
+            </div> : <div className="app-table-shell-scroll" data-dev-section="1" data-dev-section-key="myjobs-results-scroll" data-dev-section-type="data-table" data-dev-section-parent="myjobs-results-shell" style={{
         flex: 1,
         overflowY: "auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
-        paddingRight: "8px",
         minHeight: 0
       }}>
-              <div className="myjobs-header" data-dev-section="1" data-dev-section-key="myjobs-results-header" data-dev-section-type="table-headings" data-dev-section-parent="myjobs-results-scroll" style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          padding: "8px 16px",
-          borderRadius: "var(--radius-sm)",
-          backgroundColor: "var(--theme-hover)",
-          border: "none",
-          fontSize: "12px",
-          fontWeight: "700",
-          color: "var(--primary-selected)",
-          textTransform: "uppercase",
-          letterSpacing: "0.04em"
-        }}>
-                <div style={{
-            minWidth: "110px",
-            textAlign: "center"
-          }}>Status</div>
-                <div style={{
-            minWidth: "90px"
-          }}>Job</div>
-                <div style={{
-            minWidth: "80px"
-          }}>Reg</div>
-                <div style={{
-            minWidth: "140px",
-            flex: "0 0 auto"
-          }}>Customer</div>
-                <div style={{
-            minWidth: "160px",
-            flex: "1 1 auto"
-          }}>Make/Model</div>
-                <div style={{
-            minWidth: "80px"
-          }}>Type</div>
-              </div>
+              <table className="app-data-table app-table-shell app-table-shell--with-headings myjobs-table" data-dev-section="1" data-dev-section-key="myjobs-results-table" data-dev-section-type="data-table" data-dev-section-parent="myjobs-results-scroll">
+                <thead data-dev-section="1" data-dev-section-key="myjobs-results-header" data-dev-section-type="table-headings" data-dev-section-parent="myjobs-results-table">
+                  <tr>
+                    <th>Status</th>
+                    <th>Job</th>
+                    <th>Reg</th>
+                    <th>Customer</th>
+                    <th>Make/Model</th>
+                    <th>Type</th>
+                  </tr>
+                </thead>
+                <tbody data-dev-section="1" data-dev-section-key="myjobs-results-rows" data-dev-section-type="table-rows" data-dev-section-parent="myjobs-results-table">
               {filteredJobs.map(job => {
           const isClockedOn = activeJobIds.has(job.id);
           const displayStatusLabel = resolveTechStatusLabel(job, {
@@ -295,126 +211,88 @@ export default function MyJobsPageUi(props) {
           const statusTooltip = resolveTechStatusTooltip(job, {
             isClockedOn
           });
-          const description = job.description?.trim();
           const makeModel = getMakeModel(job);
-
-          // ✅ VHC Status Indicator
-          const vhcRequired = job.vhcRequired === true;
-          const vhcColor = vhcRequired ? "var(--info)" : "var(--danger)"; // Green if required, Red if not
-          const vhcBgColor = vhcRequired ? "var(--success)" : "var(--danger-surface)";
-          const vhcText = vhcRequired ? "VHC Required" : "No VHC";
-          const handleVhcBadgeClick = event => {
-            if (!vhcRequired || !job.jobNumber) return;
-            event.stopPropagation();
-            router.push(`/job-cards/myjobs/${job.jobNumber}?tab=vhc`);
-          };
-          const handleVhcBadgeKeyDown = event => {
-            if (!vhcRequired) return;
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              handleVhcBadgeClick(event);
-            }
-          };
           const jobType = deriveJobTypeDisplay(job, {
             includeExtraCount: true
           });
-          const partsPending = (job.partsRequests || []).some(request => {
-            const status = (request.status || "").toLowerCase();
-            return !["picked", "fitted", "cancelled"].includes(status);
-          });
-          const partsIndicatorColor = partsPending ? "var(--danger)" : "var(--info)";
-          const jobPipeline = summarizePartsPipeline(job.partsAllocations || [], {
-            quantityField: "quantityRequested"
-          });
-          const stageBadges = (jobPipeline.stageSummary || []).filter(stage => stage.count > 0);
-          return <div key={job.id || job.jobNumber} className="myjobs-row" data-dev-section="1" data-dev-section-key={`myjobs-row-${job.id || job.jobNumber}`} data-dev-section-type="content-card" data-dev-section-parent="myjobs-results-scroll" data-dev-background-token={`myjobs-status-${getTechStatusCategory(displayStatusLabel)}`} onClick={() => handleJobClick(job)} style={{
-            border: "none",
-            padding: "12px 16px",
-            borderRadius: "var(--radius-sm)",
-            backgroundColor: "var(--surface)",
+          return <tr key={job.id || job.jobNumber} className="myjobs-row" data-dev-section="1" data-dev-section-key={`myjobs-row-${job.id || job.jobNumber}`} data-dev-section-type="table-row" data-dev-section-parent="myjobs-results-rows" data-dev-background-token={`myjobs-status-${getTechStatusCategory(displayStatusLabel)}`} onClick={() => handleJobClick(job)} style={{
             cursor: "pointer",
             transition: "all 0.2s ease",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
             position: "relative",
             zIndex: 0
           }} onMouseEnter={e => {
-            e.currentTarget.style.transform = "translateY(-1px)";
-            e.currentTarget.style.borderColor = "var(--primary)";
             e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
             prefetchJob(job.jobNumber); // warm SWR cache on hover
           }} onMouseLeave={e => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.borderColor = "var(--primary-border)";
             e.currentTarget.style.zIndex = "0";
           }}>
                     {/* Status Badge */}
-                    <div className="myjobs-cell myjobs-status" title={statusTooltip} style={{
+                    <td className="myjobs-cell myjobs-status-cell" title={statusTooltip}>
+                      <span className="myjobs-status-badge" style={{
               backgroundColor: statusStyle.background,
               color: statusStyle.color,
-              padding: "6px 12px",
+              height: "var(--table-action-btn-height, 32px)",
+              padding: "0 12px",
               borderRadius: "var(--radius-xs)",
               fontSize: "11px",
               fontWeight: "700",
               whiteSpace: "nowrap",
               minWidth: "110px",
-              textAlign: "center"
+              textAlign: "center",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center"
             }}>
                       {displayStatusLabel}
-                    </div>
+                      </span>
+                    </td>
 
                     {/* Job Number */}
-                    <span className="myjobs-cell myjobs-jobnumber" style={{
+                    <td className="myjobs-cell myjobs-jobnumber" style={{
               fontSize: "16px",
               fontWeight: "700",
-              color: "var(--text-1)",
-              minWidth: "90px"
+              color: "var(--text-1)"
             }}>
                       {job.jobNumber || "No Job #"}
-                    </span>
+                    </td>
 
                     {/* Registration */}
-                    <span className="myjobs-cell myjobs-reg" style={{
+                    <td className="myjobs-cell myjobs-reg" style={{
               fontSize: "14px",
               color: "var(--text-1)",
-              fontWeight: "600",
-              minWidth: "80px"
+              fontWeight: "600"
             }}>
                       {job.reg || "No Reg"}
-                    </span>
+                    </td>
 
                     {/* Customer */}
-                    <span className="myjobs-cell myjobs-customer" style={{
+                    <td className="myjobs-cell myjobs-customer" style={{
               fontSize: "13px",
-              color: "var(--text-1)",
-              minWidth: "140px",
-              flex: "0 0 auto"
+              color: "var(--text-1)"
             }}>
                       {job.customer || "Unknown"}
-                    </span>
+                    </td>
 
                     {/* Make/Model */}
-                    <span className="myjobs-cell myjobs-make" style={{
+                    <td className="myjobs-cell myjobs-make" style={{
               fontSize: "13px",
-              color: "var(--text-1)",
-              minWidth: "160px",
-              flex: "1 1 auto"
+              color: "var(--text-1)"
             }}>
                       {makeModel}
-                    </span>
+                    </td>
 
                     {/* Job Type */}
-                    <span className="myjobs-cell myjobs-type" style={{
+                    <td className="myjobs-cell myjobs-type" style={{
               fontSize: "12px",
-              color: "var(--text-1)",
-              minWidth: "80px"
+              color: "var(--text-1)"
             }}>
                       {jobType}
-                    </span>
+                    </td>
 
-                  </div>;
+                  </tr>;
         })}
+                </tbody>
+              </table>
             </div>}
         </LayerTheme>
 

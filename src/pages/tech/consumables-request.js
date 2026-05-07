@@ -112,6 +112,7 @@ const TechConsumableRequestPage = () => {
   const [stockLoading, setStockLoading] = useState(false);
   const [stockError, setStockError] = useState("");
   const [addingTemporaryItem, setAddingTemporaryItem] = useState(false);
+  const [requestMonth, setRequestMonth] = useState("");
 
   const fetchRequests = useCallback(async () => {
     setLoadingRequests(true);
@@ -195,13 +196,13 @@ const TechConsumableRequestPage = () => {
 
   const filteredRequests = useMemo(() => {
     const needle = searchTerm.trim().toLowerCase(); // Normalise search term
-    if (!needle) return requests; // Return all requests when search is empty
     return requests.filter((request) =>
-    [request.itemName, request.status, request.requestedByName].
-    filter(Boolean).
-    some((field) => field.toLowerCase().includes(needle))
+    (!requestMonth || (request.requestedAt && request.requestedAt.slice(0, 7) === requestMonth)) &&
+    (!needle || [request.itemName, request.status, request.requestedByName].
+      filter(Boolean).
+      some((field) => field.toLowerCase().includes(needle)))
     ); // Perform case-insensitive search across key fields
-  }, [requests, searchTerm]);
+  }, [requestMonth, requests, searchTerm]);
 
   const requestPanelStyle = useMemo(
     () => ({
@@ -233,7 +234,7 @@ const TechConsumableRequestPage = () => {
       display: "grid",
       gridTemplateColumns: isMobile ?
       "minmax(0, 1fr)" :
-      "minmax(280px, 1fr) minmax(140px, 180px) minmax(180px, 220px)",
+      "minmax(320px, 1fr) minmax(88px, 104px) minmax(180px, 220px)",
       gap: isMobile ? "12px" : "16px",
       alignItems: "end",
       width: "100%"
@@ -405,7 +406,7 @@ const TechConsumableRequestPage = () => {
 
   }
 
-  return <TechConsumableRequestPageUi view="section2" addingTemporaryItem={addingTemporaryItem} createTemporaryStockItem={createTemporaryStockItem} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} fetchRequests={fetchRequests} fieldLabelStyle={fieldLabelStyle} filteredRequests={filteredRequests} findStockItemByName={findStockItemByName} handleInputChange={handleInputChange} handleSubmit={handleSubmit} inputStyle={inputStyle} isMobile={isMobile} isWorkshopManager={isWorkshopManager} loadingRequests={loadingRequests} pageWrapperStyle={pageWrapperStyle} requestCardMetaGridStyle={requestCardMetaGridStyle} requestCardStyle={requestCardStyle} requestError={requestError} requestForm={requestForm} requestFormStyle={requestFormStyle} requestHeaderStyle={requestHeaderStyle} requestPanelStyle={requestPanelStyle} requestsToolbarStyle={requestsToolbarStyle} SearchBar={SearchBar} searchTerm={searchTerm} setRequestForm={setRequestForm} setSearchTerm={setSearchTerm} setShowStockCheck={setShowStockCheck} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} StockCheckPopup={StockCheckPopup} stockError={stockError} stockLoading={stockLoading} stockMatches={stockMatches} successMessage={successMessage} tableHeaderStyle={tableHeaderStyle} />;
+  return <TechConsumableRequestPageUi view="section2" addingTemporaryItem={addingTemporaryItem} createTemporaryStockItem={createTemporaryStockItem} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} fetchRequests={fetchRequests} fieldLabelStyle={fieldLabelStyle} filteredRequests={filteredRequests} findStockItemByName={findStockItemByName} handleInputChange={handleInputChange} handleSubmit={handleSubmit} inputStyle={inputStyle} isMobile={isMobile} isWorkshopManager={isWorkshopManager} loadingRequests={loadingRequests} pageWrapperStyle={pageWrapperStyle} requestCardMetaGridStyle={requestCardMetaGridStyle} requestCardStyle={requestCardStyle} requestError={requestError} requestForm={requestForm} requestFormStyle={requestFormStyle} requestHeaderStyle={requestHeaderStyle} requestMonth={requestMonth} requestPanelStyle={requestPanelStyle} requestsToolbarStyle={requestsToolbarStyle} SearchBar={SearchBar} searchTerm={searchTerm} setRequestForm={setRequestForm} setRequestMonth={setRequestMonth} setSearchTerm={setSearchTerm} setShowStockCheck={setShowStockCheck} showStockCheck={showStockCheck} statusBadgeStyles={statusBadgeStyles} StockCheckPopup={StockCheckPopup} stockError={stockError} stockLoading={stockLoading} stockMatches={stockMatches} successMessage={successMessage} tableHeaderStyle={tableHeaderStyle} />;
 
 
 
