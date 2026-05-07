@@ -25,4 +25,8 @@ if [[ "${1:-}" == "dev" ]]; then
   exec "$NODE_BIN" "$(node_path "$ROOT_DIR/tools/scripts/vercel-dev.js")" "$@"
 fi
 
-exec "$NODE_BIN" "$(node_path "$ROOT_DIR/node_modules/vercel/dist/vc.js")" "$@"
+if [[ -f "$ROOT_DIR/node_modules/vercel/dist/vc.js" ]]; then
+  exec "$NODE_BIN" "$(node_path "$ROOT_DIR/node_modules/vercel/dist/vc.js")" "$@"
+fi
+
+exec npx --yes vercel "$@"

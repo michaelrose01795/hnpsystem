@@ -1,8 +1,8 @@
 // file location: src/components/page-ui/dashboard/valeting/dashboard-valeting-ui.js
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 export default function ValetingDashboardUi(props) {
   const {
-    LayerSurface,
     LayerTheme,
     MetricCard,
     QueueBoard,
@@ -15,9 +15,25 @@ export default function ValetingDashboardUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
-      <div>
+      <DevLayoutSection
+        sectionKey="dashboard-valeting-shell"
+        parentKey="app-layout-page-card"
+        sectionType="page-shell"
+        shell
+        backgroundToken="transparent"
+        data-dev-text-preview="Valeting dashboard"
+        style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}
+      >
         {/* Wash bay overview — outer LayerTheme (tinted) so MetricCards inside flip to LayerSurface */}
-        <LayerTheme as="section" gap="12px">
+        <LayerTheme
+          as="section"
+          sectionKey="dashboard-valeting-wash-overview"
+          parentKey="dashboard-valeting-shell"
+          sectionType="content-card"
+          backgroundToken="theme"
+          gap="12px"
+          data-dev-text-preview="Wash bay overview"
+        >
           <h2 style={{
         margin: 0,
         fontSize: "1.2rem",
@@ -29,61 +45,99 @@ export default function ValetingDashboardUi(props) {
       }}>Gathering metrics…</p> : error ?
       <p style={{
         color: "var(--primary)"
-      }}>{error}</p> : <div style={{
+      }}>{error}</p> : <DevLayoutSection
+        sectionKey="dashboard-valeting-wash-metrics"
+        parentKey="dashboard-valeting-wash-overview"
+        sectionType="section-shell"
+        backgroundToken="transparent"
+        data-dev-text-preview="Wash bay metrics"
+        style={{
         display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
+        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
         gap: "16px"
       }}>
-              <MetricCard label="Cars waiting wash" value={data.waitingCount} helper="Checked in but not started" />
-              <MetricCard label="Cars washed" value={data.washedCount} helper="Wash completed" />
-              <MetricCard label="Cars delayed" value={data.delayedCount} helper="Includes delay flag" />
-              <MetricCard label="Cars in queue" value={data.waitingQueue.length} helper="Vehicles queued right now" />
-            </div>}
+              <MetricCard sectionKey="dashboard-valeting-cars-waiting-wash" parentKey="dashboard-valeting-wash-metrics" label="Cars waiting wash" value={data.waitingCount} helper="Checked in but not started" />
+              <MetricCard sectionKey="dashboard-valeting-cars-washed" parentKey="dashboard-valeting-wash-metrics" label="Cars washed" value={data.washedCount} helper="Wash completed" />
+              <MetricCard sectionKey="dashboard-valeting-cars-delayed" parentKey="dashboard-valeting-wash-metrics" label="Cars delayed" value={data.delayedCount} helper="Includes delay flag" />
+              <MetricCard sectionKey="dashboard-valeting-cars-in-queue" parentKey="dashboard-valeting-wash-metrics" label="Cars in queue" value={data.waitingQueue.length} helper="Vehicles queued right now" />
+            </DevLayoutSection>}
         </LayerTheme>
 
-        {/* Queue trend — outer LayerTheme; trend rows inside flip to LayerSurface */}
-        <LayerTheme as="section" gap="12px">
-          <div>
-            <h2 style={{
-          margin: 0,
-          fontSize: "1.2rem",
-          color: "var(--primary-selected)"
-        }}>Queue trend</h2>
-            <p style={{
-          margin: "6px 0 0",
+        <DevLayoutSection
+          sectionKey="dashboard-valeting-queue-split"
+          parentKey="dashboard-valeting-shell"
+          sectionType="section-shell"
+          backgroundToken="transparent"
+          data-dev-text-preview="Queue trend and queue board"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: "var(--layout-card-gap)",
+            alignItems: "stretch"
+          }}
+        >
+          {/* Queue trend — outer LayerTheme; trend rows inside flip to LayerSurface */}
+          <LayerTheme
+            as="section"
+            sectionKey="dashboard-valeting-queue-trend"
+            parentKey="dashboard-valeting-queue-split"
+            sectionType="content-card"
+            backgroundToken="theme"
+            gap="12px"
+            data-dev-text-preview="Queue trend"
+            style={{ minWidth: 0 }}
+          >
+            <div>
+              <h2 style={{
+            margin: 0,
+            fontSize: "1.2rem",
+            color: "var(--primary-selected)"
+          }}>Queue trend</h2>
+              <p style={{
+            margin: "6px 0 0",
+            color: "var(--info)"
+          }}>Wash starts last 7 days</p>
+            </div>
+            {loading ?
+        <p style={{
           color: "var(--info)"
-        }}>Wash starts last 7 days</p>
-          </div>
-          {loading ?
-      <p style={{
-        color: "var(--info)"
-      }}>Building trend view…</p> : <TrendBlock data={data.trends} />
-      }
-        </LayerTheme>
+        }}>Building trend view…</p> : <TrendBlock data={data.trends} />
+        }
+          </LayerTheme>
 
-        {/* Queue board — outer LayerSurface; rows inside flip to LayerTheme */}
-        <LayerSurface as="section" gap="12px">
-          <div>
-            <h2 style={{
-          margin: 0,
-          fontSize: "1.2rem",
-          color: "var(--primary-selected)"
-        }}>Queue board</h2>
-            <p style={{
-          margin: "6px 0 0",
+          {/* Queue board — outer LayerTheme uses --theme; rows inside flip to LayerSurface */}
+          <LayerTheme
+            as="section"
+            sectionKey="dashboard-valeting-queue-board"
+            parentKey="dashboard-valeting-queue-split"
+            sectionType="content-card"
+            backgroundToken="theme"
+            gap="12px"
+            data-dev-text-preview="Queue board"
+            style={{ minWidth: 0 }}
+          >
+            <div>
+              <h2 style={{
+            margin: 0,
+            fontSize: "1.2rem",
+            color: "var(--primary-selected)"
+          }}>Queue board</h2>
+              <p style={{
+            margin: "6px 0 0",
+            color: "var(--info)"
+          }}>Cars checked in and ready</p>
+            </div>
+            {loading ?
+        <p style={{
           color: "var(--info)"
-        }}>Cars checked in and ready</p>
-          </div>
-          {loading ?
-      <p style={{
-        color: "var(--info)"
-      }}>Refreshing queue…</p> : error ?
-      <p style={{
-        color: "var(--primary)"
-      }}>{error}</p> : <QueueBoard queue={data.waitingQueue} />
-      }
-        </LayerSurface>
-      </div>
+        }}>Refreshing queue…</p> : error ?
+        <p style={{
+          color: "var(--primary)"
+        }}>{error}</p> : <QueueBoard queue={data.waitingQueue} />
+        }
+          </LayerTheme>
+        </DevLayoutSection>
+      </DevLayoutSection>
     </>; // render extracted page section.
     default:
       return null; // keep unknown sections visually empty.

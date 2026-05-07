@@ -4,12 +4,21 @@
 import React, { useEffect, useState } from "react"; // React runtime + hooks
 import { getValetingDashboardData } from "@/lib/database/dashboard/valeting"; // fetch valet dashboard metrics
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 // MetricCard — single stat tile. Lives inside an outer LayerTheme section,
 // so per the strict alternation rule it renders as a LayerSurface.
 import ValetingDashboardUi from "@/components/page-ui/dashboard/valeting/dashboard-valeting-ui"; // Extracted presentation layer.
-const MetricCard = ({ label, value, helper }) => (
-  <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 0 }}>
+const MetricCard = ({ label, value, helper, sectionKey, parentKey }) => (
+  <LayerSurface
+    sectionKey={sectionKey}
+    parentKey={parentKey}
+    sectionType="stat-card"
+    backgroundToken="surface"
+    radius="var(--radius-sm)"
+    data-dev-text-preview={label}
+    style={{ minWidth: 0 }}
+  >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
@@ -22,10 +31,22 @@ const MetricCard = ({ label, value, helper }) => (
 const TrendBlock = ({ data }) => {
   const max = Math.max(1, ...(data || []).map((point) => point.count)); // find max for proportional bar widths
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {(data || []).map((point) =>
+    <DevLayoutSection
+      sectionKey="dashboard-valeting-trend-list"
+      parentKey="dashboard-valeting-queue-trend"
+      sectionType="section-shell"
+      backgroundToken="transparent"
+      data-dev-text-preview="Wash starts trend list"
+      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+    >
+      {(data || []).map((point, index) =>
       <LayerSurface
         key={point.label}
+        sectionKey={`dashboard-valeting-trend-${index + 1}`}
+        parentKey="dashboard-valeting-trend-list"
+        sectionType="stat-card"
+        backgroundToken="surface"
+        data-dev-text-preview={`${point.label} ${point.count}`}
         radius="var(--radius-sm)"
         padding="8px 12px"
         style={{
@@ -46,21 +67,42 @@ const TrendBlock = ({ data }) => {
           <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </LayerSurface>
       )}
-    </div>);
+    </DevLayoutSection>);
 
 };
 
-// QueueBoard — waiting cars table. Sits inside the third "Queue board"
-// LayerSurface section, so rows render as LayerTheme.
+// QueueBoard — waiting cars table. Sits inside the themed "Queue board"
+// section, so rows render as LayerSurface for alternation.
 const QueueBoard = ({ queue }) =>
-<div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+<DevLayoutSection
+  sectionKey="dashboard-valeting-queue-board-list"
+  parentKey="dashboard-valeting-queue-board"
+  sectionType="section-shell"
+  backgroundToken="transparent"
+  data-dev-text-preview="Cars checked in and ready list"
+  style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+>
     {queue.length === 0 ?
-  <LayerTheme radius="var(--radius-sm)" padding="16px" style={{ color: "var(--info)" }}>
+  <LayerSurface
+    sectionKey="dashboard-valeting-queue-empty"
+    parentKey="dashboard-valeting-queue-board-list"
+    sectionType="content-card"
+    backgroundToken="surface"
+    radius="var(--radius-sm)"
+    padding="16px"
+    data-dev-text-preview="No cars waiting"
+    style={{ color: "var(--info)" }}
+  >
         No cars waiting.
-      </LayerTheme> :
+      </LayerSurface> :
 
   <>
-        <div
+        <DevLayoutSection
+      sectionKey="dashboard-valeting-queue-headings"
+      parentKey="dashboard-valeting-queue-board-list"
+      sectionType="table-headings"
+      backgroundToken="transparent"
+      data-dev-text-preview="Vehicle Status Queue headings"
       style={{
         display: "grid",
         gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr) auto",
@@ -73,8 +115,13 @@ const QueueBoard = ({ queue }) =>
           <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Vehicle</span>
           <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Status</span>
           <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Queue</span>
-        </div>
-        <div
+        </DevLayoutSection>
+        <DevLayoutSection
+      sectionKey="dashboard-valeting-queue-rows"
+      parentKey="dashboard-valeting-queue-board-list"
+      sectionType="table-rows"
+      backgroundToken="transparent"
+      data-dev-text-preview="Queue rows"
       style={{
         display: "flex",
         flexDirection: "column",
@@ -85,8 +132,13 @@ const QueueBoard = ({ queue }) =>
       }}>
 
           {queue.map((job) =>
-      <LayerTheme
+      <LayerSurface
         key={job.id}
+        sectionKey={`dashboard-valeting-queue-row-${job.id}`}
+        parentKey="dashboard-valeting-queue-rows"
+        sectionType="content-card"
+        backgroundToken="surface"
+        data-dev-text-preview={`${job.job_number || "Job"} ${job.vehicle_reg || "Plate"} ${job.waiting_status || "Ready"}`}
         radius="var(--radius-sm)"
         padding="14px 16px"
         style={{
@@ -116,12 +168,12 @@ const QueueBoard = ({ queue }) =>
 
                 {job.waiting_status || "Ready"}
               </span>
-            </LayerTheme>
+            </LayerSurface>
       )}
-        </div>
+        </DevLayoutSection>
       </>
   }
-  </div>;
+  </DevLayoutSection>;
 
 
 // default empty state for dashboard data

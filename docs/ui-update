@@ -8,10 +8,12 @@ GENERAL  (shared across roles — review once)
 
 - /tracking (DONE
 
-- /profile (CHECK ALL)
-Remove "Recurring Rules" button and change "Add overtime" button to "Overtime"
+- /profile (IN PRGORESS)
+remove "Security, Privacy" buttons from the personal tab, only show within the work tab inside the /profile page. have it so all of the cards and sections within "/profile :: 1.2.2.1.1.2.1 (profile-personal-dashboard-unlocked)" section doesnt use borders. 
 
-Have it so the tab section within the "Overtime" background doesnt go to the full width of the popup, but to the width of the buttons. have it so the cards within "/profile :: 1.2.1.1.1.1.7 (profile-work-leave-summary) — “Leave Summary Request leave Entitlement 25 days Taken 0 day…”", "/profile :: 1.2.1.1.1.1.8 (profile-work-emergency-contact) — “Emergency Contact Edit Name Bob Phone 099887889889 Relation…”", "/profile :: 1.2.1.1.1.1.2.1.2.2 (profile-work-staff-vehicles-history-table-shell) — “No repair history yet.”" cards uses "--theme" and dosent not have border on them BORDER IS BANNED FROM BEING ADDED. 
+check tables and bottom section.
+
+
 
 ====================================================
 RETAIL
@@ -29,8 +31,7 @@ Service Manager
 
 - /job-cards/archive (DONE
 
-- /parts/goods-in (CHECK)
-Remove "Goods In, Deliveries, Delivery/Collection Planner" tab gorup from /parts/goods-in page. 
+- /parts/goods-in (DONE
 
 - /mobile/appointments (DONE CHECK NEW PAGE
 
@@ -44,15 +45,14 @@ Remove "Goods In, Deliveries, Delivery/Collection Planner" tab gorup from /parts
 Workshop Manager
 ----------------------------------------------------
 
-- /clocking (CHECK) 
-HAVE THE GAP AT THE BOTTOM OF THE PAGE AND THE /clocking :: 1.2.1.1.1.1.1 (clocking-overview-shell) section to be the same gap as the left of the page and the left of the /clocking :: 1.2.1.1.1.1.1 (clocking-overview-shell) section. 
-
+- /clocking (DONE
 
 - /workshop/consumables-tracker (CHECK ALL)
-Move the "Clear Selection, Email, Submit Stock Check Request" buttons into the top card section where it says "Stock Check" within the "Stock Check" popup within the "/workshop/consumables-tracker" page. 
+Have it so the cards wihtin "/workshop/consumables-tracker :: 1.2.2.1.1.1.2.1 (workshop-consumables-logs-summary-grid)" section use "--surface" colour background. 
 
-have it so everything within the "/workshop/consumables-tracker :: 1.2.2.1.1.1.1 (workshop-consumables-budget-card) — “Prev May 2026 Next Save Budget Budget saved. Last updated 0…”" is on the same row within a larger screen. 
+Move "Last updated 06 May 2026, 15:58" within "/workshop/consumables-tracker :: 1.2.2.1.1.1.1 (workshop-consumables-budget-card) — “Prev May 2026 Next Save Budget Last updated 06 May 2026, 15…”" section to the left side of "0, Save Budget" button and text field. have it so "Stock Check" button follows the same button style as "Save Budget"
 
+have it os the "Status" coloumn within "Recent stock check requests" table which is wihtin "Stock Check" popup uses button stlye in "bubble" style, this would be so the status column bubbles now use the button style for within tables which is 32px height. and the same with the buttons within "Actions" column. 
 
 ----------------------------------------------------
 After Sales Director
@@ -105,17 +105,17 @@ MOT Tester
 ----------------------------------------------------
 
 - /dashboard/mot
-have it so "/dashboard/mot :: 1.2.1.1.3 (dashboard-mot-auto-content-card-3) — “Trend Tests checked in over the last 7 days Wed 0 Thu 0 Fri…”", "/dashboard/mot :: 1.2.1.1.2 (dashboard-mot-auto-content-card-2) — “Recent MOT jobs Latest registered jobs Recent MOTs No recor…”", "/dashboard/mot :: 1.2.1.1.1 (dashboard-mot-auto-content-card-1) — “Daily MOT tally Tests today 0 Checked in today Passed 0 Com…”" cards use "--theme" colour background. remove "MOT workspace Today's test board Track pass/fail rates, retests, and the queue for testers." text and section 
+have it so "/dashboard/mot :: 1.2.1.1.3 (dashboard-mot-auto-content-card-3) — “Trend Tests checked in over the last 7 days Wed 0 Thu 0 Fri…”", "/dashboard/mot :: 1.2.1.1.2 (dashboard-mot-auto-content-card-2) — “Recent MOT jobs Latest registered jobs Recent MOTs No recor…”", "/dashboard/mot :: 1.2.1.1.1 (dashboard-mot-auto-content-card-1) — “Daily MOT tally Tests today 0 Checked in today Passed 0 Com…”" cards use "--theme" colour background. remove "MOT workspace Today's test board Track pass/fail rates, retests, and the queue for testers." text and section. as well as setting the text to use "--text1, --text2, --text-accesnt"
 
 
 ----------------------------------------------------
 Valet Service
 ----------------------------------------------------
 
-- /valet
-Have it so "Showing 12 jobs" section is within a 44px button style "success" theme lable
+- /valet (CHECK CODEX)
+Have it so within "/valet" page the "Showing 12 jobs" section is within a 44px button style "success" theme lable
 
-- /dashboard/valeting
+- /dashboard/valeting (CHECK CODEX)
 improve the dev overlay within "/dashboard/valeting :: 1.2.1.1 (app-layout-page-card) — “Wash bay overview Cars waiting wash 16 Checked in but not s…”" seciton. 
 
 Hvae it so "Queue board" uses "--theme" colour background. and have it so "Queue trend" and "Queue board" are using a 50/50 split of the page section width. 

@@ -1,8 +1,6 @@
 // file location: src/pages/api/jobcards/[jobNumber]/parse-checksheet.js
-export const runtime = "nodejs"; // Ensure Vercel uses the Node.js runtime for file system access
+export const runtime = "nodejs"; // Ensure Vercel uses the Node.js runtime for multipart upload handling
 
-import fs from "fs"; // Node.js file system utilities to manage uploaded files
-import path from "path"; // Path helper to build cross-platform temporary paths
 import { withRoleGuard } from "@/lib/auth/roleGuard";
 
 export const config = {
@@ -11,7 +9,7 @@ export const config = {
   },
 };
 
-// Helper to persist uploaded browser File objects onto disk
+// Helper to read uploaded browser File objects without writing temporary files
 async function parseMultipartForm(req) {
   const contentType = req.headers["content-type"] || ""; // Pull the incoming request content type
 
@@ -37,16 +35,9 @@ async function parseMultipartForm(req) {
     if (value instanceof File) {
       const arrayBuffer = await value.arrayBuffer(); // Convert browser File into raw bytes
       const fileBuffer = Buffer.from(arrayBuffer); // Convert the ArrayBuffer to a Node.js Buffer
-      const uploadsDir = path.join(process.cwd(), "tmp", "uploads"); // Temporary storage directory inside the repo
-      fs.mkdirSync(uploadsDir, { recursive: true }); // Ensure the directory exists before writing
-      const tempFilePath = path.join(
-        uploadsDir,
-        `${Date.now()}-${value.name.replace(/[^a-zA-Z0-9._-]/g, "_")}` // Sanitize filename for safety
-      );
-      fs.writeFileSync(tempFilePath, fileBuffer); // Persist the uploaded file to disk
       fileRecord = {
         fieldName: key, // Original form field name
-        filepath: tempFilePath, // Temporary file path on disk
+        filepath: null, // No disk path because PDF parsing is currently disabled
         originalFilename: value.name, // Original filename from the browser
         mimetype: value.type || "application/octet-stream", // MIME type information
         size: fileBuffer.length, // File size in bytes
@@ -73,7 +64,7 @@ async function handler(req, res, session) {
 
   const { jobNumber } = req.query; // Pull job identifier from route parameters
 
-  let uploadedFilePath = null; // Track the temporary file so we can clean it up later
+  let uploadedFilePath = null; // Kept for future PDF parsing, currently no temp file is written
   let parsedFields = {}; // Container for parsed multipart fields
   let parsedFile = null; // Container for parsed file metadata
 
@@ -219,9 +210,9 @@ async function handler(req, res, session) {
       message: err.message,
     });
   } finally {
-    if (uploadedFilePath && fs.existsSync(uploadedFilePath)) {
+    if (uploadedFilePath) {
       try {
-        fs.unlinkSync(uploadedFilePath); // Ensure temporary files are removed regardless of outcome
+        uploadedFilePath = null; // No temporary file is written while parsing is disabled
       } catch (cleanupErr) {
         console.warn("⚠️ Failed to cleanup temp file:", cleanupErr); // Warn if cleanup fails but do not crash the request
       }

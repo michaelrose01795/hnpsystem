@@ -25,7 +25,7 @@ import PayslipDetailPopup from "./PayslipDetailPopup";
 const cardSurfaceStyle = {
   background: "var(--profile-card-bg, var(--surface))",
   borderRadius: "var(--radius-md, 12px)",
-  border: "var(--profile-card-border, 1px solid rgba(var(--accent-purple-rgb), 0.28))",
+  border: "none",
   padding: 0,
   display: "flex",
   flexDirection: "column",
@@ -45,7 +45,7 @@ function PayslipRow({ kind, payslip, onClick }) {
     gap: "10px",
     alignItems: "center",
     padding: "8px 12px",
-    borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)",
+    borderTop: "none",
     background: "transparent",
     color: "var(--text-1)",
     textAlign: "left",

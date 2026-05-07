@@ -38,16 +38,19 @@ async function main() {
   }
 
   const isWindows = process.platform === "win32";
-  const vercelBin = path.join(
+  const localVercelBin = path.join(
     process.cwd(),
     "node_modules",
     ".bin",
     isWindows ? "vercel.cmd" : "vercel"
   );
+  const hasLocalVercelBin = fs.existsSync(localVercelBin);
+  const vercelCommand = hasLocalVercelBin ? localVercelBin : "npx";
+  const vercelArgs = hasLocalVercelBin ? ["dev"] : ["--yes", "vercel", "dev"];
 
   let openedBrowser = false;
   const extraArgs = process.argv.slice(2);
-  const child = spawn(vercelBin, ["dev", "--non-interactive", ...extraArgs], {
+  const child = spawn(vercelCommand, [...vercelArgs, "--non-interactive", ...extraArgs], {
     env: { ...process.env, HNP_SKIP_NEXT_DEV_OPEN: "1" },
     stdio: ["inherit", "pipe", "pipe"],
     shell: isWindows,

@@ -25,6 +25,7 @@ export default function LayerTheme({
   backgroundToken = "theme",
   widthMode = "",
   shell = false,
+  ...rest
 }) {
   const themeStyle = {
     background: "var(--theme)",
@@ -48,6 +49,7 @@ export default function LayerTheme({
         shell={shell}
         className={className}
         style={themeStyle}
+        {...rest}
       >
         {children}
       </DevLayoutSection>
@@ -56,7 +58,7 @@ export default function LayerTheme({
 
   const Component = as;
   return (
-    <Component className={className} style={themeStyle}>
+    <Component className={className} style={themeStyle} {...rest}>
       {children}
     </Component>
   );

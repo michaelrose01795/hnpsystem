@@ -988,7 +988,7 @@ export default function StaffVehiclesCard({
           sectionKey={`${overlayParentKey}-history-table-shell`}
           parentKey={`${overlayParentKey}-history`}
           sectionType="data-table-shell"
-          backgroundToken="surface"
+          backgroundToken="theme"
           style={{
             maxHeight: "360px",
             overflowY: "auto",

@@ -2021,14 +2021,15 @@ export function ProfileWorkTab({
         parentKey={parentKey}
         sectionType="data-table-shell"
         backgroundToken="surface"
+        className="app-table-shell-scroll"
         style={{
           maxHeight: shouldScroll ? "290px" : "none",
           overflowY: shouldScroll ? "auto" : "visible",
+          overflowX: "auto",
           marginTop: "10px",
           borderRadius: "var(--radius-md)",
-          overflow: "hidden",
-          border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
-          background: "var(--profile-table-surface)",
+          border: "none",
+          background: "var(--surface)",
         }}
       >
         <DevLayoutSection
@@ -2037,14 +2038,19 @@ export function ProfileWorkTab({
           parentKey={parentKey}
           sectionType="data-table"
           backgroundToken="surface"
-          style={{ width: "100%", borderCollapse: "collapse", background: "var(--profile-table-surface)", tableLayout: "fixed" }}
+          className="app-data-table"
+          style={{
+            width: "100%",
+            minWidth: "640px",
+            tableLayout: "fixed",
+          }}
         >
           <colgroup>
-            <col style={{ width: "112px" }} />
-            <col style={{ width: "92px" }} />
-            <col style={{ width: "104px" }} />
-            <col style={{ width: "120px" }} />
-            <col />
+            <col style={{ width: "22%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "16%" }} />
+            <col style={{ width: "18%" }} />
+            <col style={{ width: "29%" }} />
           </colgroup>
           <DevLayoutSection
             as="thead"
@@ -2053,23 +2059,12 @@ export function ProfileWorkTab({
             sectionType="table-headings"
             backgroundToken="accent-dark"
           >
-            <tr
-              style={{
-                color: "var(--text-2, #ffffff)",
-                fontSize: "0.72rem",
-                textTransform: "uppercase",
-                letterSpacing: "0.04em",
-                position: "sticky",
-                top: 0,
-                background: "var(--accent-dark, var(--accent-purple))",
-                zIndex: 1,
-              }}
-            >
-              <th style={{ textAlign: "left", padding: "12px 10px 12px 14px", whiteSpace: "nowrap" }}>Date</th>
-              <th style={{ textAlign: "center", padding: "12px 8px" }}>Login</th>
-              <th style={{ textAlign: "center", padding: "12px 8px" }}>Logout</th>
-              <th style={{ textAlign: "center", padding: "12px 8px" }}>Total Hours</th>
-              <th style={{ textAlign: "center", padding: "12px 14px 12px 8px" }}>Type</th>
+            <tr>
+              <th style={{ textAlign: "left", whiteSpace: "nowrap" }}>Date</th>
+              <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>Login</th>
+              <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>Logout</th>
+              <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>Total Hours</th>
+              <th style={{ textAlign: "center", whiteSpace: "nowrap" }}>Type</th>
             </tr>
           </DevLayoutSection>
           <DevLayoutSection
@@ -2078,25 +2073,16 @@ export function ProfileWorkTab({
             parentKey={keyPrefix}
             sectionType="table-rows"
             backgroundToken="accent-surface"
-            style={{
-              background: "var(--profile-table-surface)",
-            }}
           >
-            {records.map((entry, index) => {
+            {records.map((entry) => {
               const nextDay = isNextDayClocking(entry.clockIn, entry.clockOut);
               return (
                 <tr
                   key={entry.id}
-                  style={{
-                    borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.18)",
-                    background: index % 2 === 0
-                      ? "var(--profile-table-surface)"
-                      : "var(--profile-table-alt-surface)",
-                  }}
                 >
-                  <td style={{ padding: "14px 10px 14px 14px", fontWeight: 600, whiteSpace: "nowrap", verticalAlign: "middle" }}>{formatDate(entry.date)}</td>
-                  <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>{formatTime(entry.clockIn)}</td>
-                  <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>
+                  <td style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{formatDate(entry.date)}</td>
+                  <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>{formatTime(entry.clockIn)}</td>
+                  <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                     {entry.clockOut ? formatTime(entry.clockOut) : (
                       <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--success)", background: "rgba(var(--success-rgb, 67,160,71), 0.12)", padding: "2px 8px", borderRadius: "var(--radius-pill)" }}>Active</span>
                     )}
@@ -2104,14 +2090,14 @@ export function ProfileWorkTab({
                       <span style={{ fontSize: "0.7rem", color: "var(--warning)", marginLeft: "4px" }}>+1d</span>
                     )}
                   </td>
-                  <td style={{ textAlign: "center", padding: "14px 8px", verticalAlign: "middle" }}>
+                  <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                     {nextDay ? (
                       <span style={{ color: "var(--warning)", fontWeight: 600 }}>Next Day</span>
                     ) : (
                       `${Number(entry.totalHours ?? 0).toFixed(2)}h`
                     )}
                   </td>
-                  <td style={{ textAlign: "center", padding: "14px 14px 14px 8px", verticalAlign: "middle" }}>
+                  <td style={{ textAlign: "center" }}>
                     <StatusTag label={getTypeLabel(entry)} tone={getTypeTone(entry)} />
                   </td>
                 </tr>
@@ -2346,7 +2332,8 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  background: "var(--theme)",
+                  background: "var(--surface)",
+                  border: "none",
                 }}
                 title="Leave Summary"
                 action={
@@ -2384,7 +2371,6 @@ export function ProfileWorkTab({
                         style={{
                           ...emergencyInfoCardStyle,
                           background: "var(--theme)",
-                          border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
                         }}
                       >
                         <span style={emergencyInfoLabelStyle}>Remaining</span>
@@ -2401,7 +2387,6 @@ export function ProfileWorkTab({
                           padding: "12px 14px",
                           borderRadius: "var(--radius-md)",
                           background: "var(--theme)",
-                          border: "1px solid rgba(var(--accent-purple-rgb), 0.1)",
                         }}
                       >
                         <span style={{ fontSize: "0.78rem", color: "var(--text-1)", fontWeight: 700 }}>
@@ -2428,7 +2413,7 @@ export function ProfileWorkTab({
                                 padding: "10px 12px",
                                 borderRadius: "var(--radius-sm)",
                                 background: "var(--surface)",
-                                border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+                                border: "none",
                                 textAlign: "left",
                                 cursor: isEditable ? "pointer" : "default",
                               }}
@@ -2496,7 +2481,8 @@ export function ProfileWorkTab({
                 parentKey="profile-active-tab-panel"
                 backgroundToken="accent-surface"
                 style={{
-                  background: "var(--theme)",
+                  background: "var(--surface)",
+                  border: "none",
                 }}
                 title="Emergency Contact"
                 action={
@@ -2609,7 +2595,6 @@ export function ProfileWorkTab({
                           padding: "12px 14px",
                           borderRadius: "var(--radius-md)",
                           background: "var(--theme)",
-                          border: "1px solid rgba(var(--accent-purple-rgb), 0.1)",
                         }}
                       >
                         <span
@@ -2791,7 +2776,7 @@ const emergencyInfoCardStyle = {
   gap: "6px",
   padding: "12px 14px",
   borderRadius: "var(--radius-md)",
-  border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
+  border: "none",
   background: "var(--theme)",
   alignContent: "start",
   minHeight: "78px",

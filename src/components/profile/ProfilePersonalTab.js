@@ -69,7 +69,8 @@ const passcodeInputStyle = {
 };
 
 const toolbarButtonStyle = {
-  minWidth: "112px",
+  minWidth: "72px",
+  flex: "0 0 auto",
 };
 
 function PasscodeModal({
@@ -438,7 +439,7 @@ function PersonalDashboard({ dashboard, finance }) {
   const neutralPanelStyle = useMemo(
     () => ({
       background: "var(--surface)",
-      border: "1px solid rgba(var(--text-1-rgb), 0.08)",
+      border: "none",
       borderRadius: "var(--radius-md)",
     }),
     []
@@ -517,7 +518,6 @@ function PersonalDashboard({ dashboard, finance }) {
           sectionType="content-card"
           style={{
             ...neutralPanelStyle,
-            borderStyle: "dashed",
             padding: isMobile ? "20px 16px" : "28px 20px",
             color: "var(--text-1)",
             fontSize: "0.84rem",
@@ -658,8 +658,18 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
 
     return (
       <DevLayoutSection sectionKey="profile-personal-header-actions" parentKey="profile-tab-actions" sectionType="toolbar">
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <div style={{ width: "min(100%, 320px)", minWidth: "280px" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            flexWrap: "nowrap",
+            justifyContent: "flex-end",
+            overflowX: "auto",
+            maxWidth: "100%",
+          }}
+        >
+          <div style={{ width: "260px", minWidth: "240px", flex: "0 0 auto" }}>
             <MonthPickerField
               value={finance.model.selectedMonthKey}
               onValueChange={finance.setSelectedMonth}
@@ -754,6 +764,9 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
           parentKey="profile-active-tab-panel"
           sectionType="section-shell"
           shell
+          style={{
+            border: "none",
+          }}
         >
           <PersonalDashboard
             dashboard={{

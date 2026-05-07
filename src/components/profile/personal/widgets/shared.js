@@ -50,13 +50,13 @@ export const widgetTextAreaStyle = {
 
 export const widgetAccentSurfaceStyle = {
   background: "var(--theme)",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.24)",
+  border: "none",
   borderRadius: "var(--radius-md)",
 };
 
 export const widgetInsetSurfaceStyle = {
   background: "var(--surface)",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
+  border: "none",
   borderRadius: "var(--radius-sm)",
 };
 
@@ -118,7 +118,7 @@ export function DataRow({ label, value, accent, muted = false }) {
         gap: "8px",
         padding: "5px 0",
         fontSize: "0.82rem",
-        borderBottom: "1px solid rgba(var(--accent-base-rgb), 0.12)",
+        borderBottom: "none",
       }}
     >
       <span style={{ color: muted ? "var(--text-1)" : "var(--text-1)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
@@ -137,8 +137,8 @@ export function MetricPill({ label, value, accent = "var(--accent-base)" }) {
         padding: "8px 10px",
         borderRadius: "10px",
         background: "var(--surface)",
-        border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
-        borderLeft: `2px solid ${accent}`,
+        border: "none",
+        borderLeft: "none",
       }}
     >
       <span style={{ fontSize: "0.66rem", color: "var(--text-1)", fontWeight: 600 }}>
@@ -153,7 +153,7 @@ export function MetricPill({ label, value, accent = "var(--accent-base)" }) {
 
 /** Divider line between sections inside a card. */
 export function CardDivider() {
-  return <div style={{ borderTop: "1px solid rgba(var(--accent-base-rgb), 0.12)", margin: "4px 0" }} />;
+  return <div style={{ borderTop: "none", margin: "4px 0" }} />;
 }
 
 export function SectionLabel({ children }) {
@@ -185,7 +185,7 @@ export function EmptyState({ children }) {
         borderRadius: "var(--radius-sm)",
         padding: "12px 14px",
         background: "var(--surface)",
-        border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
+        border: "none",
         color: "var(--text-1)",
         fontSize: "0.8rem",
         lineHeight: 1.5,

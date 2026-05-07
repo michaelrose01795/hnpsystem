@@ -536,8 +536,7 @@ function ClockingOverviewTab({ onSummaryChange }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "10px",
-        marginBottom: "var(--clocking-page-edge-gap)"
+        gap: "10px"
       }}>
 
       {/* Summary Stats Section */}

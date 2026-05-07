@@ -19,7 +19,7 @@ export default function ClockingPageUi(props) {
       <PageShell sectionKey="clocking-page-shell" className="clocking-page-shell" style={{
     background: "transparent",
     minHeight: "auto",
-    padding: "10px 0 var(--clocking-page-edge-gap)"
+    padding: "10px 0 0"
   }}>
         <ContentWidth sectionKey="clocking-page-content" parentKey="clocking-page-shell" widthMode="content" className="mx-auto w-full max-w-none px-4 sm:px-6 lg:px-10" style={{
       gap: "10px"

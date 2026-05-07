@@ -78,32 +78,34 @@ export function ProfilePage({
             personalDisabled={personalDisabled} />
           
           </DevLayoutSection>
-          <DevLayoutSection sectionKey="profile-account-links" parentKey="profile-tab-toolbar" sectionType="toolbar">
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              flexWrap: "wrap"
-            }}>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setOpenPanel("security")}
-              >
-                Security
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setOpenPanel("privacy")}
-              >
-                Privacy
-              </Button>
-            </div>
-          </DevLayoutSection>
+          {isWorkTab ? (
+            <DevLayoutSection sectionKey="profile-account-links" parentKey="profile-tab-toolbar" sectionType="toolbar">
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                flexWrap: "wrap"
+              }}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setOpenPanel("security")}
+                >
+                  Security
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setOpenPanel("privacy")}
+                >
+                  Privacy
+                </Button>
+              </div>
+            </DevLayoutSection>
+          ) : null}
           <DevLayoutSection sectionKey="profile-tab-actions" parentKey="profile-tab-toolbar" sectionType="toolbar">
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
               <ProfileThemeControls visible={isWorkTab} />

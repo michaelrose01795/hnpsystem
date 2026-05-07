@@ -63,14 +63,14 @@ function InlineValuePair({ leftLabel, leftValue, rightLabel, rightValue }) {
         padding: "8px 10px",
         borderRadius: "10px",
         background: "var(--surface)",
-        border: "1px solid rgba(var(--primary-rgb), 0.08)",
+        border: "none",
       }}
     >
       <div style={{ display: "grid", gap: "2px" }}>
         <span style={{ fontSize: "0.66rem", color: "var(--text-1)", fontWeight: 600 }}>{leftLabel}</span>
         <span style={{ fontSize: "0.88rem", color: "var(--text-1)", fontWeight: 700 }}>{leftValue}</span>
       </div>
-      <div style={{ display: "grid", gap: "2px", justifyItems: "end", borderLeft: "2px solid var(--primary)", paddingLeft: "10px" }}>
+      <div style={{ display: "grid", gap: "2px", justifyItems: "end", borderLeft: "none", paddingLeft: "10px" }}>
         <span style={{ fontSize: "0.66rem", color: "var(--text-1)", fontWeight: 600 }}>{rightLabel}</span>
         <span style={{ fontSize: "0.88rem", color: "var(--text-1)", fontWeight: 700, textAlign: "right" }}>{rightValue}</span>
       </div>
@@ -124,7 +124,7 @@ export function BaseWidget({
         flexDirection: "column",
         gap: "10px",
         ...widgetAccentSurfaceStyle,
-        borderColor: "rgba(var(--primary-rgb), 0.14)",
+        border: "none",
         borderRadius: "16px",
         padding: "10px",
         minHeight: 0,
@@ -210,7 +210,7 @@ export function IncomeWidget({ widget, onOpenSettings, finance }) {
   const monthLabel = formatMonthLabel(finance.model.selectedMonthKey);
   const incomeSectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -342,7 +342,7 @@ export function WorkSummaryWidget({ widget, onOpenSettings, finance }) {
   const totalWorkedHours = Number(month.pay.totalWorkedHours ?? month.pay.hoursWorked ?? 0);
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -421,7 +421,7 @@ export function SpendingWidget({ widget, onOpenSettings, finance }) {
   const creditCards = buildDisplayRowsNewestFirst(month.monthState.creditCards || []);
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -519,7 +519,7 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
   const totalBalance = accountBalances.reduce((sum, a) => sum + a.currentBalance, 0);
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   const accountNameMap = {};
@@ -563,7 +563,7 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
                       padding: "8px 10px",
                       borderRadius: "10px",
                       background: "var(--surface)",
-                      border: "1px solid rgba(var(--primary-rgb), 0.08)",
+                      border: "none",
                     }}
                   >
                     <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "4px", alignItems: "start" }}>
@@ -609,7 +609,7 @@ export function SavingsWidget({ widget, onOpenSettings, finance }) {
                       padding: "8px 10px",
                       borderRadius: "10px",
                       background: "var(--surface)",
-                      border: "1px solid rgba(var(--primary-rgb), 0.08)",
+                      border: "none",
                     }}
                   >
                     <div style={{ display: "grid", gap: "2px" }}>
@@ -709,7 +709,7 @@ export function BillsWidget({ widget, onOpenSettings, finance, widgetDataMap, wi
   const moneyLeftAfterPayments = afterTaxIncome - totalPayments;
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -761,7 +761,7 @@ export function FuelWidget({ widget, onOpenSettings, finance }) {
   const fuelEntries = buildDisplayRowsNewestFirst(month.monthState.fuelEntries || [], 5);
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -903,7 +903,7 @@ export function MortgageWidget({
 
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -1046,7 +1046,7 @@ export function HolidayWidget({ widget, finance, onOpenSettings, widgetData }) {
   const linkedHolidayRows = Object.values(linkedHolidayGroups);
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -1132,7 +1132,7 @@ export function CustomWidget({ widget, widgetData, onOpenSettings }) {
   const note = settings.customNote ?? widget?.config?.note ?? "";
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -1176,7 +1176,7 @@ export function NetPositionWidget({ widget, onOpenSettings, finance }) {
   const positive = month.totals.difference >= 0;
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -1347,7 +1347,7 @@ export function ChartWidget({
 
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -1402,7 +1402,7 @@ export function NotesWidget({ widget, datasets, actions }) {
 
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -1495,7 +1495,7 @@ export function AttachmentsWidget({ widget, datasets, actions }) {
 
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   return (
@@ -1621,7 +1621,7 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
 
   const sectionStyle = {
     background: "var(--theme)",
-    border: "1px solid rgba(var(--primary-rgb), 0.14)",
+    border: "none",
   };
 
   const toggleExpanded = useCallback(() => setExpanded((prev) => !prev), []);
@@ -1690,7 +1690,7 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
                     Show less
                   </button>
                 ) : null}
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "1px solid rgba(var(--primary-rgb), 0.12)", paddingTop: "6px", marginTop: "2px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "none", paddingTop: "6px", marginTop: "2px" }}>
                   <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>Total in accounts</span>
                   <span style={{ fontSize: "0.88rem", fontWeight: 800, color: accountsTotal < 0 ? "var(--danger, #c62828)" : "var(--success, #2e7d32)" }}>
                     {formatCurrency(accountsTotal)}
@@ -1717,7 +1717,7 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
                     negative
                   />
                 ))}
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "1px solid rgba(var(--primary-rgb), 0.12)", paddingTop: "6px", marginTop: "2px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "none", paddingTop: "6px", marginTop: "2px" }}>
                   <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>Total owed</span>
                   <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--danger, #c62828)" }}>
                     {formatCurrency(creditCardTotal)}
@@ -1740,7 +1740,7 @@ export function FinanceOverviewWidget({ widget, onOpenSettings, finance }) {
               <span style={{ color: "var(--text-1)" }}>Total Out</span>
               <span style={{ fontWeight: 700, color: "var(--danger, #c62828)" }}>{formatCurrency(totalOut)}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "1px solid rgba(var(--primary-rgb), 0.12)", paddingTop: "6px", marginTop: "2px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", borderTop: "none", paddingTop: "6px", marginTop: "2px" }}>
               <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-1)" }}>Difference</span>
               <span style={{ fontSize: "0.88rem", fontWeight: 800, color: differencePositive ? "var(--success, #2e7d32)" : "var(--danger, #c62828)" }}>
                 {formatCurrency(difference)}

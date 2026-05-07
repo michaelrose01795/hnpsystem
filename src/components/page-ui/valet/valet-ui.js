@@ -128,9 +128,23 @@ export default function ValetDashboardUi(props) {
         }}>
               All days
             </button>
-            <span style={{
+            <span
+              className="app-btn"
+              data-dev-section-key="valet-showing-jobs-label"
+              data-dev-section-type="badge"
+              data-dev-section-parent="valet-filter-row"
+              data-dev-background-token="success-surface"
+              style={{
+          minHeight: "44px",
+          height: "44px",
+          padding: "0 16px",
+          borderRadius: "var(--control-radius)",
+          background: "var(--success-surface)",
+          color: "var(--success-text)",
           fontSize: "14px",
-          color: "var(--grey-accent)"
+          fontWeight: 700,
+          cursor: "default",
+          pointerEvents: "none"
         }}>
               Showing {filteredJobs.length} job
               {filteredJobs.length === 1 ? "" : "s"}
