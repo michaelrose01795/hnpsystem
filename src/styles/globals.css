@@ -1410,9 +1410,64 @@ label {
   color: var(--onAccentText);
 }
 
+/* Customer portal layout grid — sidebar stacks on small screens, side-by-side on lg+ */
+.customer-portal-layout-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-stack-gap);
+  width: 100%;
+  align-items: stretch;
+}
+
+.customer-portal-sidebar {
+  width: 100%;
+}
+
+/* Responsive nav-shell visibility (CustomerNavShell). Desktop rail and mobile
+ * Menu button live in the DOM together; CSS picks which one is visible so the
+ * desktop left-rail appears on first paint without waiting for hydration. */
+.customer-portal-nav-desktop {
+  display: none;
+  width: 100%;
+}
+
+.customer-portal-nav-mobile {
+  display: block;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .customer-portal-layout-grid {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .customer-portal-nav-desktop {
+    display: block;
+    width: 260px;
+    min-width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+  }
+
+  .customer-portal-nav-mobile {
+    display: none;
+  }
+
+  .customer-portal-sidebar {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* Legacy customer-portal-* classes — kept rendering as borderless surfaces so any
+ * lingering references still hit a tokenised background. New code must use
+ * <LayerSurface> / <LayerTheme>. */
 .customer-portal-shell {
   min-height: 100vh;
-  background: var(--theme);
+  background: var(--page-shell-bg);
 }
 
 .customer-portal-layout {
@@ -1435,16 +1490,14 @@ label {
 
 .customer-portal-card {
   border-radius: var(--page-card-radius);
-  border: var(--page-card-border);
-  background: var(--page-card-bg);
+  background: var(--surface);
   padding: var(--section-card-padding);
   box-shadow: none;
 }
 
 .customer-portal-card--muted {
   border-radius: var(--radius-lg);
-  border: var(--control-border);
-  background: var(--surface);
+  background: var(--theme);
   padding: var(--space-md);
   box-shadow: none;
 }
@@ -1468,7 +1521,6 @@ label {
 
 .customer-portal-empty {
   border-radius: var(--radius-lg);
-  border: none;
   padding: var(--space-md) var(--space-lg);
   text-align: center;
   color: var(--text-1);

@@ -98,6 +98,7 @@ export default function Layout({
   const { usersByRole } = useRoster();
   const router = useRouter();
   const [showLoginShellLoading, setShowLoginShellLoading] = useState(false);
+  const isCustomerRoute = (router.pathname || "").startsWith("/customer");
   const hideSidebar =
     (router.pathname === "/login" && !showLoginShellLoading) ||
     router.pathname === "/loginPresentation";
@@ -820,6 +821,13 @@ export default function Layout({
   const fixedMessagesPageHeight = isTablet
     ? "calc(100vh - 75px - 12px - (var(--page-gutter-y-mobile) * 2))"
     : "calc(100vh - 75px - 12px - (var(--page-gutter-y) * 2))";
+
+  // Customer portal owns its own shell (CustomerLayout). Bypass the staff app
+  // chrome — no global Sidebar, no topbar, no status sidebar, no floating
+  // notes — and render the page directly so it can occupy the full viewport.
+  if (isCustomerRoute) {
+    return <>{children}</>;
+  }
 
   return (
     <DevLayoutSection

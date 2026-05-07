@@ -4,9 +4,72 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import CustomerSidebar from "@/features/customerPortal/components/CustomerSidebar";
+import CustomerNavShell from "@/features/customerPortal/components/CustomerNavShell";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 
 const CUSTOMER_ROLE_ALLOWLIST = ["CUSTOMER"];
+
+function PortalShell({ children }) {
+  return (
+    <DevLayoutSection
+      sectionKey="customer-portal-shell"
+      sectionType="page-shell"
+      shell
+      backgroundToken="customer-portal-shell"
+      className="app-page-shell"
+      style={{
+        minHeight: "100dvh",
+        background: "var(--page-shell-bg)",
+        padding: "var(--page-gutter-y) var(--page-gutter-x)",
+        boxSizing: "border-box",
+      }}
+    >
+      <DevLayoutSection
+        sectionKey="customer-portal-content-width"
+        parentKey="customer-portal-shell"
+        sectionType="section-shell"
+        backgroundToken="customer-portal-content-width"
+        style={{
+          width: "min(100%, var(--page-width-content, 1280px))",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--page-stack-gap)",
+        }}
+      >
+        {children}
+      </DevLayoutSection>
+    </DevLayoutSection>
+  );
+}
+
+function PortalCenteredCard({ children }) {
+  return (
+    <PortalShell>
+      <div
+        style={{
+          flex: 1,
+          minHeight: "60vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "16px",
+        }}
+      >
+        <LayerSurface
+          radius="var(--page-card-radius)"
+          padding="var(--page-card-padding)"
+          style={{ width: "100%", maxWidth: "32rem", textAlign: "center" }}
+        >
+          {children}
+        </LayerSurface>
+      </div>
+    </PortalShell>
+  );
+}
 
 export default function CustomerLayout({ children }) {
   const router = useRouter();
@@ -20,126 +83,267 @@ export default function CustomerLayout({ children }) {
 
   if (userLoading) {
     return (
-      <div className="customer-portal-shell">
-        <div className="customer-portal-layout">
+      <PortalShell>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--page-stack-gap)",
+            width: "100%",
+          }}
+        >
           <CustomerSidebar />
-          <div className="customer-portal-stack">
-            <main className="customer-portal-stack">
-              <PageSkeleton />
-            </main>
+          <div style={{ width: "100%" }}>
+            <PageSkeleton />
           </div>
         </div>
-      </div>
+      </PortalShell>
     );
   }
 
   if (!user) {
     return (
-      <div className="customer-portal-shell flex items-center justify-center">
-        <div className="customer-portal-card text-center" style={{ maxWidth: "32rem" }}>
-          <div className="space-y-4">
-            <h1 className="text-2xl font-semibold text-[var(--text-1)]">Customer Portal</h1>
-            <p className="text-[var(--text-1)]">
-              Please log in with the email you used when booking your vehicle in.
-            </p>
+      <PortalCenteredCard>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <h1
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: 600,
+              color: "var(--text-1)",
+              margin: 0,
+            }}
+          >
+            Customer Portal
+          </h1>
+          <p style={{ color: "var(--text-1)", margin: 0 }}>
+            Please log in with the email you used when booking your vehicle in.
+          </p>
+          <div>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-full bg-[var(--primary)] px-5 py-2 font-semibold text-white hover:bg-[var(--primary-selected)]"
+              className="app-btn app-btn--primary"
+              style={{ display: "inline-flex" }}
             >
               Go to login
             </Link>
           </div>
         </div>
-      </div>
+      </PortalCenteredCard>
     );
   }
 
   if (!isCustomer) {
     return (
-      <div className="customer-portal-shell flex items-center justify-center px-4">
-        <div className="customer-portal-card text-center" style={{ maxWidth: "32rem" }}>
-          <div className="space-y-4">
-            <h1 className="text-2xl font-semibold text-[var(--text-1)]">Restricted area</h1>
-            <p className="text-[var(--text-1)]">
-              This part of the platform is dedicated to customers only. Switch to a customer user
-              through the developer login to preview the experience.
-            </p>
+      <PortalCenteredCard>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <h1
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: 600,
+              color: "var(--text-1)",
+              margin: 0,
+            }}
+          >
+            Restricted area
+          </h1>
+          <p style={{ color: "var(--text-1)", margin: 0 }}>
+            This part of the platform is dedicated to customers only. Switch to a customer user
+            through the developer login to preview the experience.
+          </p>
+          <div>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-full bg-[var(--primary)] px-5 py-2 font-semibold text-white hover:bg-[var(--primary-selected)]"
+              className="app-btn app-btn--primary"
+              style={{ display: "inline-flex" }}
             >
               Switch user
             </Link>
           </div>
         </div>
-      </div>
+      </PortalCenteredCard>
     );
   }
 
-  const portalUrl =
-    process.env.NEXT_PUBLIC_CUSTOMER_PORTAL_URL || "https://www.hpautomotive.co.uk";
+  const portalUrl = "https://www.humphriesandparks.net/";
 
   const handleLogout = async () => {
     await logout?.();
     router.replace("/login");
   };
 
+  // Layout pattern follows the canonical hierarchy:
+  //   .app-page-shell → LayerSurface (page card) → app-page-stack → LayerTheme (section card)
+  // CustomerNavShell renders a left-rail sidebar on lg+ and a Menu/drawer on
+  // smaller screens; the main column owns whatever width is left over.
   return (
-    <div className="customer-portal-shell">
-      <div className="customer-portal-layout">
-        <CustomerSidebar />
+    <PortalShell>
+      <DevLayoutSection
+        sectionKey="customer-portal-layout-grid"
+        parentKey="customer-portal-content-width"
+        sectionType="section-shell"
+        backgroundToken="customer-portal-layout-grid"
+        className="customer-portal-layout-grid"
+      >
+        <CustomerNavShell />
 
-        <div className="customer-portal-stack">
-          <header className="customer-portal-card">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="customer-portal-card--muted">
-                <p className="text-[0.65rem] uppercase tracking-[0.25em] text-[var(--primary)]">
+        <LayerSurface
+          sectionKey="customer-portal-page-card"
+          parentKey="customer-portal-layout-grid"
+          sectionType="content-card"
+          radius="var(--page-card-radius)"
+          padding="var(--page-card-padding)"
+          gap="var(--page-stack-gap)"
+          style={{ flex: 1, minWidth: 0 }}
+        >
+          <LayerTheme
+            sectionKey="customer-portal-header"
+            parentKey="customer-portal-page-card"
+            sectionType="content-card"
+            radius="var(--section-card-radius)"
+            padding="var(--section-card-padding)"
+          >
+            <div
+              style={{
+                display: "grid",
+                gap: "var(--space-4)",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              }}
+            >
+              <LayerSurface
+                sectionKey="customer-portal-header-signed-in"
+                parentKey="customer-portal-header"
+                sectionType="content-card"
+                radius="var(--radius-md)"
+                padding="var(--space-4)"
+                gap="var(--space-1)"
+              >
+                <p
+                  style={{
+                    fontSize: "0.65rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.25em",
+                    color: "var(--text-accent)",
+                    margin: 0,
+                  }}
+                >
                   Signed in
                 </p>
-                <p className="mt-1 text-sm font-semibold text-[var(--text-1)]">
+                <p
+                  style={{
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    color: "var(--text-1)",
+                    margin: 0,
+                    wordBreak: "break-word",
+                  }}
+                >
                   {user.username || "Customer"}
                 </p>
-              </div>
-              <div className="customer-portal-card--muted">
-                <p className="text-[0.65rem] uppercase tracking-[0.25em] text-[var(--primary)]">
+              </LayerSurface>
+
+              <LayerSurface
+                sectionKey="customer-portal-header-link"
+                parentKey="customer-portal-header"
+                sectionType="content-card"
+                radius="var(--radius-md)"
+                padding="var(--space-4)"
+                gap="var(--space-2)"
+              >
+                <p
+                  style={{
+                    fontSize: "0.65rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.25em",
+                    color: "var(--text-accent)",
+                    margin: 0,
+                  }}
+                >
                   Portal link
                 </p>
                 <a
                   href={portalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1 inline-flex text-sm font-semibold text-[var(--primary-selected)] underline"
+                  className="app-btn app-btn--secondary"
+                  style={{ alignSelf: "flex-start" }}
                 >
                   Open website
                 </a>
-              </div>
-              <div className="customer-portal-card--muted">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-[0.65rem] uppercase tracking-[0.25em] text-[var(--primary)]">
+              </LayerSurface>
+
+              <LayerSurface
+                sectionKey="customer-portal-header-session"
+                parentKey="customer-portal-header"
+                sectionType="content-card"
+                radius="var(--radius-md)"
+                padding="var(--space-4)"
+                gap="var(--space-2)"
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "0.65rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.25em",
+                      color: "var(--text-accent)",
+                      margin: 0,
+                    }}
+                  >
                     Session
                   </p>
-                  <span className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--danger)]">
-                    VHC linked
-                  </span>
+                  <span className="app-badge app-badge--accent-soft">VHC linked</span>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-[var(--text-1)]">Active</p>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "0.875rem",
+                      fontWeight: 600,
+                      color: "var(--text-1)",
+                      margin: 0,
+                    }}
+                  >
+                    Active
+                  </p>
                   <button
+                    type="button"
                     onClick={handleLogout}
-                    className="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-selected)]"
+                    className="app-btn app-btn--primary"
                   >
                     Logout
                   </button>
                 </div>
-              </div>
+              </LayerSurface>
             </div>
-          </header>
+          </LayerTheme>
 
-          <main className="customer-portal-stack">
+          <DevLayoutSection
+            sectionKey="customer-portal-page-stack"
+            parentKey="customer-portal-page-card"
+            sectionType="page-shell"
+            backgroundToken="customer-portal-page-stack"
+            className="app-page-stack"
+            style={{ width: "100%", minWidth: 0 }}
+          >
             {children}
-          </main>
-        </div>
-      </div>
-    </div>
+          </DevLayoutSection>
+        </LayerSurface>
+      </DevLayoutSection>
+    </PortalShell>
   );
 }

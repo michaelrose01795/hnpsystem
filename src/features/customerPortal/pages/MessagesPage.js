@@ -30,6 +30,15 @@ const buildQuery = (params = {}) => {
   return stringified ? `?${stringified}` : "";
 };
 
+// Strip leading icon glyphs / emoji (ℹ️, ⚠️, ✅, etc.) from system-notification
+// messages so the customer-facing list reads as clean status text.
+const stripLeadingNotificationIcon = (message = "") => {
+  if (!message) return "";
+  return String(message)
+    .replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}\s]+/u, "")
+    .trim();
+};
+
 // Helper function to format notification timestamps
 const formatNotificationTimestamp = (value) => {
   if (!value) return "Unknown time";
@@ -154,7 +163,7 @@ const renderMessageContentWithLinks = (content) => {
           key={match.index}
           href={`/job-cards/${jobNumber}?tab=vhc`}
           style={{
-            color: "var(--primary)",
+            color: "var(--text-accent)",
             textDecoration: "underline",
             fontWeight: 600,
           }}
@@ -173,7 +182,7 @@ const renderMessageContentWithLinks = (content) => {
           style={{
             fontWeight: 600,
             textDecoration: "underline",
-            color: "var(--primary)",
+            color: "var(--text-accent)",
           }}
           title={`Customer: ${custName}`}
         >
@@ -829,7 +838,9 @@ export default function CustomerMessagesPage() {
   }, [showUnreadDivider]);
 
   const latestSystemNotification = systemNotifications?.[0];
-  const latestSystemMessage = latestSystemNotification?.message || "No system updates yet.";
+  const latestSystemMessage =
+    stripLeadingNotificationIcon(latestSystemNotification?.message) ||
+    "No system updates yet.";
   const latestSystemTimestamp = latestSystemNotification?.created_at || null;
   const latestSystemTime = latestSystemTimestamp ? new Date(latestSystemTimestamp).getTime() : 0;
   const lastViewedTime = lastSystemViewedAt ? new Date(lastSystemViewedAt).getTime() : 0;
@@ -845,7 +856,7 @@ export default function CustomerMessagesPage() {
   return (
     <CustomerLayout>
       {error && (
-        <div className="mb-4 rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
+        <div className="mb-4 rounded-2xl bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
           {error}
         </div>
       )}
@@ -854,11 +865,11 @@ export default function CustomerMessagesPage() {
         <div className="space-y-4">
           {mobileView === "threads" ? (
             /* ── Thread list view (like iOS Messages inbox) ── */
-            <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-4">
-              <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
+            <section className="rounded-3xl bg-[var(--surface)] p-4">
+              <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-[var(--text-2)]">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-white">Messages</p>
-                  <h3 className="text-lg font-semibold text-white">Your conversations</h3>
+                  <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-2)]">Messages</p>
+                  <h3 className="text-lg font-semibold text-[var(--text-2)]">Your conversations</h3>
                 </div>
               </header>
 
@@ -868,7 +879,7 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={() => setComposerOpen(true)}
                     disabled={composerCreating}
-                    className="flex-1 rounded-full border border-dashed border-[var(--primary)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex-1 rounded-full bg-[var(--theme)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-[var(--text-accent)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     + New
                   </button>
@@ -876,18 +887,18 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={fetchThreads}
                     disabled={threadsLoading}
-                    className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full bg-[var(--surface)] px-3 py-2 text-xs font-semibold text-[var(--text-accent)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {threadsLoading ? "…" : "Refresh"}
                   </button>
                 </div>
                 {conversationFeedback && (
-                  <p className="rounded-2xl border border-[var(--success)] bg-[var(--success-surface)] px-3 py-2 text-sm text-[var(--success-dark)]">
+                  <p className="rounded-2xl bg-[var(--success-surface)] px-3 py-2 text-sm text-[var(--success-dark)]">
                     {conversationFeedback}
                   </p>
                 )}
                 {conversationError && (
-                  <p className="rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-3 py-2 text-sm text-[var(--danger-dark)]">
+                  <p className="rounded-2xl bg-[var(--danger-surface)] px-3 py-2 text-sm text-[var(--danger-dark)]">
                     {conversationError}
                   </p>
                 )}
@@ -896,17 +907,17 @@ export default function CustomerMessagesPage() {
                 <button
                   type="button"
                   onClick={openSystemNotificationsThread}
-                  className="w-full text-left rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-sm transition"
+                  className="w-full text-left rounded-2xl bg-[var(--surface)] px-4 py-3 text-sm transition"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-semibold text-[var(--text-1)]">System notifications</p>
                     <div className="flex items-center gap-1">
                       {hasSystemUnread && (
-                        <span className="rounded-full bg-[var(--primary)] px-2 py-0.5 text-[0.6rem] font-semibold text-white">
+                        <span className="rounded-full bg-[var(--primary)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--text-2)]">
                           New
                         </span>
                       )}
-                      <span className="rounded-full border border-[var(--surface)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--danger)]">
+                      <span className="rounded-full bg-[var(--danger-surface)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--danger-dark)]">
                         Read only
                       </span>
                     </div>
@@ -925,7 +936,7 @@ export default function CustomerMessagesPage() {
                           key={thread.id}
                           type="button"
                           onClick={() => openThread(thread)}
-                          className="w-full text-left rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 transition active:bg-[var(--surface)]"
+                          className="w-full text-left rounded-2xl bg-[var(--surface)] px-4 py-3 transition active:bg-[var(--surface)]"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-sm font-semibold text-[var(--text-1)] line-clamp-1">
@@ -958,12 +969,12 @@ export default function CustomerMessagesPage() {
             </section>
           ) : (
             /* ── Chat view (like iOS Messages conversation) ── */
-            <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-4">
+            <section className="rounded-3xl bg-[var(--surface)] p-4">
               {/* Back button */}
               <button
                 type="button"
                 onClick={() => { setMobileView("threads"); setActiveThread(null); setIsSystemThreadActive(false); }}
-                className="mb-3 flex items-center gap-1 text-sm font-semibold text-[var(--primary)]"
+                className="mb-3 flex items-center gap-1 text-sm font-semibold text-[var(--text-accent)]"
               >
                 <span style={{ fontSize: "18px", lineHeight: 1 }}>&lsaquo;</span> Messages
               </button>
@@ -972,7 +983,7 @@ export default function CustomerMessagesPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="text-lg font-semibold text-[var(--text-1)]">System notifications</h4>
-                    <span className="rounded-full bg-[var(--danger-surface)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--danger)]">
+                    <span className="rounded-full bg-[var(--danger-surface)] px-2 py-0.5 text-[0.6rem] font-semibold text-[var(--danger-dark)]">
                       Read only
                     </span>
                   </div>
@@ -999,9 +1010,11 @@ export default function CustomerMessagesPage() {
                         {systemNotifications.map((note) => (
                           <article
                             key={`system-${note.notification_id}`}
-                            className="space-y-1 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm"
+                            className="space-y-1 rounded-2xl bg-[var(--surface)] px-3 py-2 text-sm"
                           >
-                            <p className="text-sm text-[var(--text-1)]">{note.message || "System update"}</p>
+                            <p className="text-sm text-[var(--text-1)]">
+                              {stripLeadingNotificationIcon(note.message) || "System update"}
+                            </p>
                             <p className="text-[0.6rem] text-[var(--text-1)]">
                               {formatNotificationTimestamp(note.created_at)}
                             </p>
@@ -1065,7 +1078,7 @@ export default function CustomerMessagesPage() {
                               {isFirstUnread && (
                                 <div ref={unreadDividerRef} className="flex items-center gap-2 py-1">
                                   <div className="h-px flex-1 bg-[var(--primary)]" />
-                                  <span className="shrink-0 text-[0.6rem] font-semibold uppercase tracking-[0.15em] text-[var(--primary)]">
+                                  <span className="shrink-0 text-[0.6rem] font-semibold uppercase tracking-[0.15em] text-[var(--text-accent)]">
                                     New
                                   </span>
                                   <div className="h-px flex-1 bg-[var(--primary)]" />
@@ -1074,21 +1087,21 @@ export default function CustomerMessagesPage() {
                               <div
                                 className={`rounded-2xl px-3 py-2 text-sm ${
                                   isMine
-                                    ? "ml-8 bg-[var(--primary)] text-white"
-                                    : "mr-8 border border-[var(--surface)] bg-[var(--surface)]"
+                                    ? "ml-8 bg-[var(--primary)] text-[var(--text-2)]"
+                                    : "mr-8 bg-[var(--surface)]"
                                 }`}
                               >
                                 {!isMine && (
                                   <p className="text-xs font-semibold text-[var(--text-1)] mb-0.5">{senderName}</p>
                                 )}
-                                <p className={isMine ? "text-white" : "text-[var(--text-1)]"}>
+                                <p className={isMine ? "text-[var(--text-2)]" : "text-[var(--text-1)]"}>
                                   {renderMessageContentWithLinks(message.content)}
                                 </p>
-                                <p className={`text-[0.6rem] mt-0.5 ${isMine ? "text-white/70" : "text-[var(--text-1)]"}`}>
+                                <p className={`text-[0.6rem] mt-0.5 ${isMine ? "text-[var(--text-2)]/70" : "text-[var(--text-1)]"}`}>
                                   {formatMessageTimestamp(message.createdAt)}
                                 </p>
                                 {message.metadata?.jobNumber && (
-                                  <p className={`text-[0.6rem] ${isMine ? "text-white/70" : "text-[var(--text-1)]"}`}>
+                                  <p className={`text-[0.6rem] ${isMine ? "text-[var(--text-2)]/70" : "text-[var(--text-1)]"}`}>
                                     Job #{message.metadata.jobNumber}
                                   </p>
                                 )}
@@ -1126,7 +1139,7 @@ export default function CustomerMessagesPage() {
                               borderBottom: idx < commandSuggestions.length - 1 ? "var(--separating-line)" : "none",
                             }}
                           >
-                            <span className="text-sm font-bold text-[var(--primary)]">{cmd.command}</span>
+                            <span className="text-sm font-bold text-[var(--text-accent)]">{cmd.command}</span>
                             <span className="ml-2 text-xs text-[var(--text-1)]">{cmd.description}</span>
                           </button>
                         ))}
@@ -1139,13 +1152,13 @@ export default function CustomerMessagesPage() {
                         value={messageDraft}
                         onChange={handleMessageDraftChange}
                         placeholder="Message…"
-                        className="flex-1 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+                        className="flex-1 rounded-2xl bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
                         style={{ resize: "none", maxHeight: "80px" }}
                       />
                       <button
                         type="submit"
                         disabled={!dbUserId || sendingMessage || !messageDraft.trim()}
-                        className="shrink-0 rounded-full bg-[var(--primary)] p-2.5 text-white disabled:opacity-40"
+                        className="shrink-0 rounded-full bg-[var(--primary)] p-2.5 text-[var(--text-2)] disabled:opacity-40"
                         aria-label="Send"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1165,33 +1178,144 @@ export default function CustomerMessagesPage() {
         </div>
       ) : (
       /* ── Desktop: existing 2-column layout ── */
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5">
-          <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
+      <div
+        style={{
+          display: "grid",
+          gap: "var(--page-stack-gap)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
+          width: "100%",
+        }}
+      >
+        <section
+          style={{
+            background: "var(--surface)",
+            borderRadius: "var(--page-card-radius)",
+            padding: "var(--section-card-padding)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--space-4)",
+          }}
+        >
+          <header
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              background: "var(--primary)",
+              color: "var(--text-2)",
+              borderRadius: "var(--radius-md)",
+              padding: "12px 16px",
+            }}
+          >
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-white">Message centre</p>
-              <h3 className="text-xl font-semibold text-white">Message the right person</h3>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.3em",
+                  color: "var(--text-2)",
+                }}
+              >
+                Message centre
+              </p>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: "1.15rem",
+                  fontWeight: 600,
+                  color: "var(--text-2)",
+                }}
+              >
+                Message the right person
+              </h3>
             </div>
-            <span className="rounded-full border border-white/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-white">
-              Conversations stay linked to your job
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "4px 10px",
+                borderRadius: "var(--radius-pill)",
+                background: "rgba(var(--text-2-rgb), 0.18)",
+                color: "var(--text-2)",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+              }}
+            >
+              Conversations linked to your job
             </span>
           </header>
 
-          <div className="mt-4 space-y-6">
-            <div className="space-y-3 rounded-2xl border border-[var(--surface)] bg-[var(--danger-surface)] p-4">
-              <div className="flex flex-wrap items-center justify-between gap-4">
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--space-4)",
+            }}
+          >
+            <div
+              style={{
+                background: "var(--theme)",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--space-4)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-3)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                }}
+              >
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.3em",
+                      color: "var(--text-accent)",
+                    }}
+                  >
                     Live conversations
                   </p>
-                  <h4 className="text-lg font-semibold text-[var(--text-1)]">Your messages</h4>
+                  <h4
+                    style={{
+                      margin: 0,
+                      fontSize: "1.05rem",
+                      fontWeight: 600,
+                      color: "var(--text-1)",
+                    }}
+                  >
+                    Your messages
+                  </h4>
                 </div>
-                <div className="flex gap-3">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   <button
                     type="button"
                     onClick={() => setComposerOpen(true)}
                     disabled={composerCreating}
-                    className="rounded-full border border-dashed border-[var(--primary)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "var(--radius-pill)",
+                      background: "var(--primary)",
+                      color: "var(--text-2)",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      cursor: composerCreating ? "not-allowed" : "pointer",
+                      opacity: composerCreating ? 0.6 : 1,
+                    }}
                   >
                     + New conversation
                   </button>
@@ -1199,22 +1323,38 @@ export default function CustomerMessagesPage() {
                     type="button"
                     onClick={fetchThreads}
                     disabled={threadsLoading}
-                    className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "var(--radius-pill)",
+                      background: "var(--surface)",
+                      color: "var(--text-1)",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      cursor: threadsLoading ? "not-allowed" : "pointer",
+                      opacity: threadsLoading ? 0.6 : 1,
+                    }}
                   >
                     {threadsLoading ? "Refreshing…" : "Refresh"}
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-[var(--text-1)]">
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.8rem",
+                  color: "var(--text-1)",
+                  opacity: 0.85,
+                }}
+              >
                 System alerts stay pinned above your chats so you never miss a stock or VHC update.
               </p>
               {conversationFeedback && (
-                <p className="rounded-2xl border border-[var(--success)] bg-[var(--success-surface)] px-4 py-3 text-sm text-[var(--success-dark)]">
+                <p className="rounded-2xl bg-[var(--success-surface)] px-4 py-3 text-sm text-[var(--success-dark)]">
                   {conversationFeedback}
                 </p>
               )}
               {conversationError && (
-                <p className="rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
+                <p className="rounded-2xl bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
                   {conversationError}
                 </p>
               )}
@@ -1222,10 +1362,10 @@ export default function CustomerMessagesPage() {
                 <button
                   type="button"
                   onClick={openSystemNotificationsThread}
-                  className={`w-full text-left rounded-2xl border px-4 py-3 text-sm transition ${
+                  className={`w-full text-left rounded-2xl px-4 py-3 text-sm transition ${
                     isSystemThreadActive
-                      ? "border-[var(--primary)] bg-[var(--surface)]"
-                      : "border-[var(--surface)] bg-[var(--surface)]"
+                      ? "bg-[var(--primary-soft,var(--theme))]"
+                      : "bg-[var(--surface)]"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -1235,11 +1375,11 @@ export default function CustomerMessagesPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {hasSystemUnread && (
-                        <span className="rounded-full bg-[var(--primary)] px-3 py-1 text-[0.65rem] font-semibold text-white">
+                        <span className="rounded-full bg-[var(--primary)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--text-2)]">
                           Unread
                         </span>
                       )}
-                      <span className="rounded-full border border-[var(--surface)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--danger)]">
+                      <span className="rounded-full bg-[var(--danger-surface)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--danger-dark)]">
                         Read only
                       </span>
                     </div>
@@ -1256,10 +1396,10 @@ export default function CustomerMessagesPage() {
                           key={thread.id}
                           type="button"
                           onClick={() => openThread(thread)}
-                          className={`w-full text-left rounded-2xl border px-4 py-3 transition ${
+                          className={`w-full text-left rounded-2xl px-4 py-3 transition ${
                             isActiveThread
-                              ? "border-[var(--primary)] bg-[var(--surface)]"
-                              : "border-[var(--surface)] bg-[var(--surface)]"
+                              ? "bg-[var(--primary-soft,var(--theme))]"
+                              : "bg-[var(--surface)]"
                           }`}
                         >
                           <div className="flex items-center justify-between gap-3">
@@ -1267,7 +1407,7 @@ export default function CustomerMessagesPage() {
                               {thread.title || "Conversation"}
                             </p>
                             {thread.hasUnread && (
-                              <span className="rounded-full bg-[var(--primary)] px-3 py-1 text-xs font-semibold text-white">
+                              <span className="rounded-full bg-[var(--primary)] px-3 py-1 text-xs font-semibold text-[var(--text-2)]">
                                 Unread
                               </span>
                             )}
@@ -1288,51 +1428,158 @@ export default function CustomerMessagesPage() {
             </div>
 
             {isSystemThreadActive ? (
-              <div className="space-y-4 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] p-4">
-                <div className="flex items-center justify-between">
+              <div
+                style={{
+                  background: "var(--surface)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "var(--space-4)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-3)",
+                }}
+              >
+                <header
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    background: "var(--primary)",
+                    color: "var(--text-2)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "12px 16px",
+                  }}
+                >
                   <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">System thread</p>
-                    <h4 className="text-lg font-semibold text-[var(--text-1)]">System notifications</h4>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.3em",
+                        color: "var(--text-2)",
+                      }}
+                    >
+                      System thread
+                    </p>
+                    <h4
+                      style={{
+                        margin: 0,
+                        fontSize: "1.05rem",
+                        fontWeight: 600,
+                        color: "var(--text-2)",
+                      }}
+                    >
+                      System notifications
+                    </h4>
                   </div>
-                  <span className="rounded-full bg-[var(--danger-surface)] px-3 py-1 text-xs font-semibold text-[var(--danger)]">
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "4px 10px",
+                      borderRadius: "var(--radius-pill)",
+                      background: "rgba(var(--text-2-rgb), 0.18)",
+                      color: "var(--text-2)",
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.18em",
+                    }}
+                  >
                     Read only
                   </span>
-                </div>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
+                </header>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "var(--space-2)",
+                    maxHeight: "320px",
+                    overflowY: "auto",
+                  }}
+                >
                   {systemLoading && (
-                    <p className="text-sm text-[var(--text-1)]">Loading notifications…</p>
+                    <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--text-1)" }}>
+                      Loading notifications…
+                    </p>
                   )}
                   {!systemLoading && systemError && (
-                    <p className="text-sm text-[var(--danger)]">{systemError}</p>
+                    <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--danger-dark)" }}>
+                      {systemError}
+                    </p>
                   )}
                   {!systemLoading && !systemError && systemNotifications.length === 0 && (
-                    <p className="text-sm text-[var(--text-1)]">No system notifications yet.</p>
+                    <p
+                      style={{
+                        margin: 0,
+                        padding: "var(--space-4)",
+                        textAlign: "center",
+                        background: "var(--theme)",
+                        borderRadius: "var(--radius-md)",
+                        fontSize: "0.875rem",
+                        color: "var(--text-1)",
+                      }}
+                    >
+                      No system notifications yet.
+                    </p>
                   )}
-                  {!systemLoading && !systemError && systemNotifications.length > 0 && (
-                    <div className="space-y-3">
-                      {systemNotifications.map((note) => (
-                        <article
-                          key={`system-${note.notification_id}`}
-                          className="space-y-1 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-sm"
+                  {!systemLoading && !systemError && systemNotifications.length > 0 &&
+                    systemNotifications.map((note) => (
+                      <article
+                        key={`system-${note.notification_id}`}
+                        style={{
+                          background: "var(--theme)",
+                          borderRadius: "var(--radius-md)",
+                          padding: "12px 14px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                        }}
+                      >
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.9rem",
+                            color: "var(--text-1)",
+                            lineHeight: 1.4,
+                          }}
                         >
-                          <p className="text-sm text-[var(--text-1)]">{note.message || "System update"}</p>
-                          <p className="text-[0.65rem] text-[var(--text-1)]">
-                            {formatNotificationTimestamp(note.created_at)}
-                          </p>
-                        </article>
-                      ))}
-                    </div>
-                  )}
+                          {stripLeadingNotificationIcon(note.message) || "System update"}
+                        </p>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.7rem",
+                            color: "var(--text-1)",
+                            opacity: 0.7,
+                          }}
+                        >
+                          {formatNotificationTimestamp(note.created_at)}
+                        </p>
+                      </article>
+                    ))}
                 </div>
-                <p className="text-xs text-[var(--text-1)]">
+
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.75rem",
+                    color: "var(--text-1)",
+                    opacity: 0.75,
+                  }}
+                >
                   Only the system posts here; this thread cannot be deleted or renamed.
                 </p>
               </div>
             ) : activeThread ? (
-              <div className="space-y-4 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] p-4">
+              <div className="space-y-4 rounded-2xl bg-[var(--surface)] p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Active thread</p>
+                    <p className="text-xs uppercase tracking-[0.35em] text-[var(--text-accent)]">Active thread</p>
                     <h4 className="text-lg font-semibold text-[var(--text-1)]">{activeThread.title}</h4>
                   </div>
                   <span className="text-xs text-[var(--text-1)]">
@@ -1369,15 +1616,15 @@ export default function CustomerMessagesPage() {
                                 className="flex items-center gap-3 py-1"
                               >
                                 <div className="h-px flex-1 bg-[var(--primary)]" />
-                                <span className="shrink-0 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--primary)]">
+                                <span className="shrink-0 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[var(--text-accent)]">
                                   New messages
                                 </span>
                                 <div className="h-px flex-1 bg-[var(--primary)]" />
                               </div>
                             )}
                           <div
-                            className={`space-y-1 rounded-2xl border px-4 py-3 text-sm ${
-                              isMine ? "border-[var(--surface)] bg-[var(--surface)]" : "border-[var(--surface)] bg-[var(--surface)]"
+                            className={`space-y-1 rounded-2xl px-4 py-3 text-sm ${
+                              isMine ? "bg-[var(--primary-soft,var(--theme))]" : "bg-[var(--surface)]"
                             }`}
                           >
                             <div className="flex items-center justify-between">
@@ -1404,7 +1651,7 @@ export default function CustomerMessagesPage() {
                             )}
                             <div className="flex flex-wrap items-center gap-2">
                               {message.savedForever ? (
-                                <span className="rounded-full border border-[var(--surface)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--primary)]">
+                                <span className="rounded-full bg-[var(--theme)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--text-accent)]">
                                   Saved forever
                                 </span>
                               ) : (
@@ -1412,7 +1659,7 @@ export default function CustomerMessagesPage() {
                                   type="button"
                                   onClick={() => handleSaveMessage(message)}
                                   disabled={savingMessageId === message.id}
-                                  className="rounded-full border border-[var(--surface)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--primary)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  className="rounded-full bg-[var(--theme)] px-3 py-1 text-[0.65rem] font-semibold text-[var(--text-accent)] hover:border-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                   {savingMessageId === message.id ? "Saving…" : "Save forever"}
                                 </button>
@@ -1449,13 +1696,13 @@ export default function CustomerMessagesPage() {
                           key={index}
                           type="button"
                           onClick={() => handleSelectCommand(cmd)}
-                          className="w-full border-b border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-left hover:bg-[var(--surface)]"
+                          className="w-full bg-[var(--surface)] px-4 py-3 text-left hover:bg-[var(--theme)]"
                           style={{
                             borderBottom: index < commandSuggestions.length - 1 ? "var(--separating-line)" : "none",
                           }}
                         >
                           <div className="flex flex-col gap-1">
-                            <span className="text-sm font-bold text-[var(--primary)]">
+                            <span className="text-sm font-bold text-[var(--text-accent)]">
                               {cmd.command}
                             </span>
                             <span className="text-xs text-[var(--text-1)]">
@@ -1476,13 +1723,13 @@ export default function CustomerMessagesPage() {
                     value={messageDraft}
                     onChange={handleMessageDraftChange}
                     placeholder="Type your message… (type / for commands)"
-                    className="w-full rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+                    className="w-full rounded-2xl bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
                   />
                   <div className="flex justify-end">
                     <button
                       type="submit"
                       disabled={!dbUserId || sendingMessage || !messageDraft.trim()}
-                      className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
+                      className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-2)] hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
                     >
                       {sendingMessage ? "Sending…" : "Send"}
                     </button>
@@ -1490,7 +1737,7 @@ export default function CustomerMessagesPage() {
                 </form>
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-[var(--surface)] bg-[var(--surface)] p-6 text-sm text-[var(--text-1)]">
+              <div className="rounded-2xl bg-[var(--theme)] p-6 text-sm text-[var(--text-1)]">
                 Select a conversation to view messages and replies.
               </div>
             )}
@@ -1501,76 +1748,283 @@ export default function CustomerMessagesPage() {
       )}
       {/* Composer modal (shared between mobile & desktop) */}
       {composerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className={`w-full rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-6 ${isMobile ? "max-w-full mx-2" : "max-w-2xl"}`}>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-[var(--primary)]">Compose</p>
-                <h3 className={`font-semibold text-[var(--text-1)] ${isMobile ? "text-lg" : "text-xl"}`}>Create a group chat</h3>
-                <p className="text-sm text-[var(--text-1)]">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Create a group chat"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+            background: "rgba(0, 0, 0, 0.45)",
+          }}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setComposerOpen(false);
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: isMobile ? "100%" : "640px",
+              maxHeight: "calc(100dvh - 32px)",
+              background: "var(--surface)",
+              borderRadius: "var(--page-card-radius)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.25)",
+            }}
+          >
+            <header
+              style={{
+                background: "var(--primary)",
+                color: "var(--text-2)",
+                padding: "16px 20px",
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.3em",
+                    color: "var(--text-2)",
+                  }}
+                >
+                  Compose
+                </p>
+                <h3
+                  style={{
+                    margin: "4px 0 0",
+                    fontSize: isMobile ? "1.1rem" : "1.3rem",
+                    fontWeight: 600,
+                    color: "var(--text-2)",
+                  }}
+                >
+                  Create a group chat
+                </h3>
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    fontSize: "0.8rem",
+                    lineHeight: 1.4,
+                    color: "var(--text-2)",
+                    opacity: 0.92,
+                  }}
+                >
                   Search by name, check the people you need, and create a new thread.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setComposerOpen(false)}
-                className="rounded-full border border-[var(--surface)] px-3 py-1 text-xs font-semibold text-[var(--primary)]"
+                aria-label="Close composer"
+                style={{
+                  flexShrink: 0,
+                  padding: "6px 14px",
+                  borderRadius: "var(--radius-pill)",
+                  background: "rgba(var(--text-2-rgb), 0.18)",
+                  color: "var(--text-2)",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
               >
                 Close
               </button>
-            </div>
-            <div className="mt-4 space-y-3">
-              <label className="text-xs font-semibold uppercase text-[var(--text-1)]">Search users</label>
-              <SearchBar
-                value={composerSearch}
-                onChange={(event) => setComposerSearch(event.target.value)}
-                onClear={() => setComposerSearch("")}
-                placeholder="Find teammates by name or email"
-              />
-              <div className="max-h-60 overflow-y-auto space-y-2 rounded-2xl border border-[var(--search-surface-muted)] bg-[var(--search-surface)] p-3 text-[var(--search-text)]">
-                {composerLoading && <InlineLoading width={160} label="Searching your roster" />}
+            </header>
+
+            <div
+              style={{
+                padding: "20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+                overflowY: "auto",
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label
+                  htmlFor="composer-search"
+                  style={{
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.18em",
+                    color: "var(--text-1)",
+                  }}
+                >
+                  Search users
+                </label>
+                <SearchBar
+                  value={composerSearch}
+                  onChange={(event) => setComposerSearch(event.target.value)}
+                  onClear={() => setComposerSearch("")}
+                  placeholder="Find teammates by name or email"
+                />
+              </div>
+
+              <div
+                style={{
+                  background: "var(--theme)",
+                  borderRadius: "var(--radius-md)",
+                  padding: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                }}
+              >
+                {composerLoading && (
+                  <InlineLoading width={160} label="Searching your roster" />
+                )}
                 {!composerLoading && composerError && (
-                  <p className="text-sm text-[var(--search-text)]">{composerError}</p>
+                  <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--danger-dark)" }}>
+                    {composerError}
+                  </p>
                 )}
                 {!composerLoading && !composerError && !composerHasSearch && (
-                  <p className="text-sm text-[var(--search-text)]">Type a name to see matching users.</p>
+                  <p
+                    style={{
+                      margin: 0,
+                      padding: "16px 12px",
+                      textAlign: "center",
+                      fontSize: "0.875rem",
+                      color: "var(--text-1)",
+                      opacity: 0.75,
+                    }}
+                  >
+                    Type a name to see matching users.
+                  </p>
                 )}
-                {!composerLoading && !composerError && composerHasSearch && composerResults.length === 0 && (
-                  <p className="text-sm text-[var(--search-text)]">No users match that search.</p>
-                )}
-                {!composerLoading && !composerError && composerResults.length > 0 && (
-                  <div className="space-y-2">
-                    {composerResults.map((user) => {
-                      const isSelected = composerSelection.some((entry) => entry.id === user.id);
-                      return (
-                        <label
-                          key={user.id}
-                          className="flex cursor-pointer items-center justify-between rounded-2xl border border-[var(--danger-surface)] bg-[var(--surface)] px-3 py-2 text-sm transition hover:border-[var(--primary)]"
+                {!composerLoading &&
+                  !composerError &&
+                  composerHasSearch &&
+                  composerResults.length === 0 && (
+                    <p
+                      style={{
+                        margin: 0,
+                        padding: "16px 12px",
+                        textAlign: "center",
+                        fontSize: "0.875rem",
+                        color: "var(--text-1)",
+                        opacity: 0.75,
+                      }}
+                    >
+                      No users match that search.
+                    </p>
+                  )}
+                {!composerLoading &&
+                  !composerError &&
+                  composerResults.length > 0 &&
+                  composerResults.map((user) => {
+                    const isSelected = composerSelection.some(
+                      (entry) => entry.id === user.id
+                    );
+                    return (
+                      <label
+                        key={user.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "12px",
+                          padding: "10px 12px",
+                          background: "var(--surface)",
+                          borderRadius: "var(--radius-md)",
+                          cursor: "pointer",
+                          transition: "background 0.15s ease",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            minWidth: 0,
+                            flex: 1,
+                          }}
                         >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleComposerUser(user)}
-                              className="h-4 w-4 rounded border-[var(--primary)]"
-                            />
-                            <div>
-                              <p className="font-semibold text-[var(--text-1)]">{user.name}</p>
-                              <p className="text-[0.65rem] uppercase tracking-[0.2em] text-[var(--text-1)]">
-                                {user.role || "Team member"}
-                              </p>
-                            </div>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleComposerUser(user)}
+                            style={{
+                              width: "16px",
+                              height: "16px",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div style={{ minWidth: 0 }}>
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                color: "var(--text-1)",
+                              }}
+                            >
+                              {user.name}
+                            </p>
+                            <p
+                              style={{
+                                margin: 0,
+                                fontSize: "0.65rem",
+                                fontWeight: 600,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.18em",
+                                color: "var(--text-accent)",
+                              }}
+                            >
+                              {user.role || "Team member"}
+                            </p>
                           </div>
-                          <span className="text-xs text-[var(--text-1)]">{user.email}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: "0.75rem",
+                            color: "var(--text-1)",
+                            opacity: 0.75,
+                            textAlign: "right",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {user.email}
+                        </span>
+                      </label>
+                    );
+                  })}
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm text-[var(--text-1)]">
+
+            <footer
+              style={{
+                background: "var(--theme)",
+                padding: "14px 20px",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "0.85rem",
+                  color: "var(--text-1)",
+                }}
+              >
                 Selected {composerSelection.length} colleague
                 {composerSelection.length === 1 ? "" : "s"}
               </span>
@@ -1578,11 +2032,30 @@ export default function CustomerMessagesPage() {
                 type="button"
                 onClick={handleCreateGroup}
                 disabled={composerCreating || composerSelection.length === 0}
-                className="rounded-full bg-[var(--primary)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  padding: "10px 20px",
+                  borderRadius: "var(--radius-pill)",
+                  background:
+                    composerCreating || composerSelection.length === 0
+                      ? "var(--theme)"
+                      : "var(--primary)",
+                  color:
+                    composerCreating || composerSelection.length === 0
+                      ? "var(--text-1)"
+                      : "var(--text-2)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  cursor:
+                    composerCreating || composerSelection.length === 0
+                      ? "not-allowed"
+                      : "pointer",
+                  opacity:
+                    composerCreating || composerSelection.length === 0 ? 0.7 : 1,
+                }}
               >
                 {composerCreating ? "Creating…" : "Create chat"}
               </button>
-            </div>
+            </footer>
           </div>
         </div>
       )}

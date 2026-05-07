@@ -58,8 +58,11 @@ function AppWrapper({ Component, pageProps }) {
   const asPath = router?.asPath || "";
   const asPathWithoutQuery = asPath.split("?")[0] || "";
   const notesHiddenRoutes = new Set(["/", "/login", "/presentation"]);
+  const isCustomerRoute = pathname.startsWith("/customer");
   const hideNotesWidget =
-    notesHiddenRoutes.has(pathname) || notesHiddenRoutes.has(asPathWithoutQuery);
+    isCustomerRoute ||
+    notesHiddenRoutes.has(pathname) ||
+    notesHiddenRoutes.has(asPathWithoutQuery);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
 
   // Remove legacy reload/boot classes that can persist on iOS Safari and block manual reloads.

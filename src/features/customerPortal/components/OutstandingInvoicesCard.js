@@ -1,5 +1,7 @@
 // file location: src/features/customerPortal/components/OutstandingInvoicesCard.js
 import React from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 export default function OutstandingInvoicesCard({ invoices = [] }) {
   const handlePayInvoice = (invoice) => {
@@ -7,55 +9,187 @@ export default function OutstandingInvoicesCard({ invoices = [] }) {
     window.open(invoice.paymentLink, "_blank", "noopener,noreferrer");
   };
 
+  const total = invoices.reduce((sum, invoice) => sum + Number(invoice.total || 0), 0);
+
   return (
-    <section className="customer-portal-card">
-      <header className="customer-portal-header">
-        <p className="text-xs uppercase tracking-[0.35em] text-white">Outstanding invoices</p>
-        <h3 className="text-xl font-semibold text-white">Pay securely online</h3>
+    <LayerSurface
+      as="section"
+      sectionKey="customer-outstanding-invoices"
+      sectionType="content-card"
+      radius="var(--page-card-radius)"
+      padding="var(--section-card-padding)"
+      gap="var(--space-4)"
+    >
+      <header
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          background: "var(--primary)",
+          color: "var(--text-2)",
+          borderRadius: "var(--radius-md)",
+          padding: "12px 16px",
+        }}
+      >
+        <div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "0.7rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.3em",
+              color: "var(--text-2)",
+              opacity: 0.9,
+            }}
+          >
+            Outstanding invoices
+          </p>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "1.15rem",
+              fontWeight: 600,
+              color: "var(--text-2)",
+            }}
+          >
+            Pay securely online
+          </h3>
+        </div>
+        {invoices.length > 0 && (
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "4px 10px",
+              borderRadius: "var(--radius-pill)",
+              background: "rgba(var(--text-2-rgb), 0.18)",
+              color: "var(--text-2)",
+              fontSize: "0.7rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.18em",
+            }}
+          >
+            Total £{total.toFixed(2)}
+          </span>
+        )}
       </header>
 
-      <div className="mt-4 space-y-3 text-sm">
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-3)",
+        }}
+      >
         {invoices.map((invoice) => (
-          <div
+          <LayerTheme
             key={invoice.id}
-            className="customer-portal-card--muted text-[var(--text-1)]"
+            radius="var(--radius-md)"
+            padding="var(--space-4)"
+            gap="var(--space-3)"
           >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[var(--text-1)]">
-                  Invoice #{invoice.id.slice(0, 8)}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    color: "var(--text-1)",
+                  }}
+                >
+                  Invoice #{String(invoice.id).slice(0, 8)}
                 </p>
-                <p className="text-xs text-[var(--text-1)]">
+                <p
+                  style={{
+                    margin: "4px 0 0",
+                    fontSize: "0.75rem",
+                    color: "var(--text-1)",
+                    opacity: 0.75,
+                  }}
+                >
                   Job: {invoice.jobId || "N/A"} · Issued {invoice.createdAt}
                 </p>
               </div>
-              <span className="text-base font-semibold text-[var(--text-1)]">
+              <span
+                style={{
+                  fontSize: "1.15rem",
+                  fontWeight: 700,
+                  color: "var(--text-accent)",
+                }}
+              >
                 £{invoice.total.toFixed(2)}
               </span>
             </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--text-1)]">
-              <p>VAT included: £{invoice.vat.toFixed(2)}</p>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.75rem",
+                  color: "var(--text-1)",
+                  opacity: 0.75,
+                }}
+              >
+                VAT included: £{invoice.vat.toFixed(2)}
+              </p>
               <button
+                type="button"
                 onClick={() => handlePayInvoice(invoice)}
                 disabled={!invoice.paymentLink}
-                className="rounded-full border border-[var(--surface)] bg-[var(--primary)] px-4 py-2 text-xs font-semibold text-white hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:bg-[var(--danger)] disabled:text-white/70"
+                className="app-btn app-btn--primary"
               >
                 {invoice.paymentLink ? "Pay now" : "Payment link unavailable"}
               </button>
             </div>
             {!invoice.paymentLink && (
-              <p className="mt-2 text-[11px] text-[var(--text-1)]">
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.7rem",
+                  color: "var(--text-1)",
+                  opacity: 0.7,
+                }}
+              >
                 Please contact the service team to request a new payment link.
               </p>
             )}
-          </div>
+          </LayerTheme>
         ))}
         {invoices.length === 0 && (
-          <p className="customer-portal-empty text-sm">
+          <p
+            style={{
+              margin: 0,
+              padding: "var(--space-4) var(--space-3)",
+              textAlign: "center",
+              fontSize: "0.875rem",
+              color: "var(--text-1)",
+              background: "var(--theme)",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
             Great news! You have no outstanding invoices.
           </p>
         )}
       </div>
-    </section>
+    </LayerSurface>
   );
 }

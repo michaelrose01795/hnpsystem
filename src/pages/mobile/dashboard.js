@@ -6,7 +6,6 @@ import Link from "next/link";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ServiceModeBadge from "@/components/mobile/ServiceModeBadge";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
-import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
@@ -43,29 +42,92 @@ const pageStyle = {
   padding: "clamp(12px, 2.5vw, 20px)",
   display: "flex",
   flexDirection: "column",
-  gap: "var(--page-stack-gap, 18px)",
+  gap: "16px",
   width: "100%",
   boxSizing: "border-box"
 };
 
-const responsiveGridStyle = {
+const summaryGridStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
-  gap: "var(--layout-card-gap, 16px)",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+  gap: "12px",
   alignItems: "start"
 };
 
+const contentGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+  gap: "16px",
+  alignItems: "start"
+};
+
+const stackStyle = {
+  display: "grid",
+  gap: "16px",
+  minWidth: 0
+};
+
 const sectionHeadingStyle = {
-  marginTop: 0,
-  marginBottom: "8px",
-  fontSize: "clamp(1rem, 1.6vw, 1.15rem)",
-  color: "var(--text-accent)"
+  margin: 0,
+  fontSize: "1rem",
+  color: "var(--text-1)",
+  fontWeight: 700
+};
+
+const sectionHeaderStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+  marginBottom: "12px",
+  flexWrap: "wrap"
 };
 
 const sectionEmptyStyle = {
   margin: 0,
   color: "var(--text-2)",
-  fontSize: "0.9rem"
+  fontSize: "0.9rem",
+  padding: "10px 0"
+};
+
+const countBadgeStyle = {
+  minHeight: "32px",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "0 12px",
+  borderRadius: "var(--radius-sm)",
+  background: "var(--surface)",
+  color: "var(--text-accent)",
+  fontSize: "0.85rem",
+  fontWeight: 700,
+  whiteSpace: "nowrap"
+};
+
+const summaryCardStyle = {
+  padding: "14px",
+  minHeight: "82px",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "space-between",
+  gap: "8px",
+  background: "var(--surface)",
+  borderRadius: "var(--radius-md)"
+};
+
+const summaryLabelStyle = {
+  color: "var(--text-2)",
+  fontSize: "0.78rem",
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em"
+};
+
+const summaryValueStyle = {
+  color: "var(--text-accent)",
+  fontSize: "1.5rem",
+  fontWeight: 800,
+  lineHeight: 1
 };
 
 const quickActionsListStyle = {
@@ -78,15 +140,18 @@ const quickActionsListStyle = {
 };
 
 const quickActionLinkStyle = {
-  display: "block",
-  padding: "10px 12px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+  padding: "0 14px",
   borderRadius: "var(--radius-sm)",
   background: "var(--surface)",
   color: "var(--text-1)",
   textDecoration: "none",
-  fontWeight: 500,
+  fontWeight: 700,
   minHeight: "44px",
-  lineHeight: "24px"
+  lineHeight: "20px"
 };
 
 const jobRowStyle = {
@@ -94,8 +159,17 @@ const jobRowStyle = {
   gridTemplateColumns: "minmax(0, 1fr) auto",
   gap: "12px",
   alignItems: "center",
-  padding: "12px 0",
+  padding: "12px",
+  borderRadius: "var(--radius-sm)",
+  background: "var(--surface)",
   borderBottom: "var(--separating-line)"
+};
+
+const getLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 function formatWindow(startIso, endIso) {
@@ -130,8 +204,7 @@ function MobileDashboardInner() {
   }, []);
 
   const today = useMemo(() => {
-    const now = new Date();
-    const todayIso = now.toISOString().slice(0, 10);
+    const todayIso = getLocalDateKey();
     return jobs.filter((j) => (j.appointment_window_start || "").slice(0, 10) === todayIso);
   }, [jobs]);
 
@@ -162,42 +235,75 @@ function MobileDashboardInner() {
       </LayerTheme>
       }
 
+      <LayerTheme
+        as="section"
+        sectionKey="mobile-dashboard-summary"
+        parentKey="mobile-dashboard-page"
+        sectionType="content-card"
+        padding="var(--section-card-padding)">
+        <DevLayoutSection
+          sectionKey="mobile-dashboard-summary-grid"
+          parentKey="mobile-dashboard-summary"
+          sectionType="grid"
+          style={summaryGridStyle}>
+          <SummaryCard label="Today" value={loading ? "-" : today.length} />
+          <SummaryCard label="Upcoming" value={loading ? "-" : upcoming.length} />
+          <SummaryCard label="Total mobile jobs" value={loading ? "-" : jobs.length} />
+        </DevLayoutSection>
+      </LayerTheme>
+
       <DevLayoutSection
         sectionKey="mobile-dashboard-grid"
         parentKey="mobile-dashboard-page"
         sectionType="grid"
-        style={responsiveGridStyle}>
-        <LayerTheme
-          as="section"
-          sectionKey="mobile-dashboard-today"
+        style={contentGridStyle}>
+        <DevLayoutSection
+          sectionKey="mobile-dashboard-workload"
           parentKey="mobile-dashboard-grid"
-          sectionType="content-card"
-          padding="var(--section-card-padding)">
-          <h2 style={sectionHeadingStyle}>Today ({today.length})</h2>
-          {loading ?
-          <MobileJobRowsSkeleton count={2} /> :
-          today.length === 0 ?
-          <p style={sectionEmptyStyle}>No mobile visits scheduled today.</p> :
+          sectionType="grid"
+          style={stackStyle}>
+          <LayerTheme
+            as="section"
+            sectionKey="mobile-dashboard-today"
+            parentKey="mobile-dashboard-workload"
+            sectionType="content-card"
+            padding="var(--section-card-padding)">
+            <div style={sectionHeaderStyle}>
+              <h2 style={sectionHeadingStyle}>Today</h2>
+              <span style={countBadgeStyle}>{today.length} visit{today.length === 1 ? "" : "s"}</span>
+            </div>
+            {loading ?
+            <MobileJobRowsSkeleton count={2} /> :
+            today.length === 0 ?
+            <p style={sectionEmptyStyle}>No mobile visits scheduled today.</p> :
 
-          today.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-today" />)
-          }
-        </LayerTheme>
+            <div style={stackStyle}>
+              {today.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-today" />)}
+            </div>
+            }
+          </LayerTheme>
 
-        <LayerTheme
-          as="section"
-          sectionKey="mobile-dashboard-upcoming"
-          parentKey="mobile-dashboard-grid"
-          sectionType="content-card"
-          padding="var(--section-card-padding)">
-          <h2 style={sectionHeadingStyle}>Upcoming ({upcoming.length})</h2>
-          {loading ?
-          <MobileJobRowsSkeleton count={3} /> :
-          upcoming.length === 0 ?
-          <p style={sectionEmptyStyle}>Nothing upcoming.</p> :
+          <LayerTheme
+            as="section"
+            sectionKey="mobile-dashboard-upcoming"
+            parentKey="mobile-dashboard-workload"
+            sectionType="content-card"
+            padding="var(--section-card-padding)">
+            <div style={sectionHeaderStyle}>
+              <h2 style={sectionHeadingStyle}>Upcoming</h2>
+              <span style={countBadgeStyle}>{upcoming.length} job{upcoming.length === 1 ? "" : "s"}</span>
+            </div>
+            {loading ?
+            <MobileJobRowsSkeleton count={3} /> :
+            upcoming.length === 0 ?
+            <p style={sectionEmptyStyle}>Nothing upcoming.</p> :
 
-          upcoming.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-upcoming" />)
-          }
-        </LayerTheme>
+            <div style={stackStyle}>
+              {upcoming.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-upcoming" />)}
+            </div>
+            }
+          </LayerTheme>
+        </DevLayoutSection>
 
         <LayerTheme
           as="section"
@@ -205,14 +311,30 @@ function MobileDashboardInner() {
           parentKey="mobile-dashboard-grid"
           sectionType="content-card"
           padding="var(--section-card-padding)">
-          <h2 style={sectionHeadingStyle}>Quick actions</h2>
+          <div style={sectionHeaderStyle}>
+            <h2 style={sectionHeadingStyle}>Quick actions</h2>
+          </div>
           <ul style={quickActionsListStyle}>
-            <li><Link href="/appointments" style={quickActionLinkStyle}>View all appointments</Link></li>
-            <li><Link href="/job-cards/myjobs" style={quickActionLinkStyle}>See my mobile jobs</Link></li>
-            <li><Link href="/tech/consumables-request" style={quickActionLinkStyle}>Request consumables</Link></li>
+            <li><Link href="/appointments" style={quickActionLinkStyle}><span>Appointments</span><span>Open</span></Link></li>
+            <li><Link href="/job-cards/myjobs" style={quickActionLinkStyle}><span>My jobs</span><span>Open</span></Link></li>
+            <li><Link href="/tech/consumables-request" style={quickActionLinkStyle}><span>Request parts</span><span>Open</span></Link></li>
+            <li><Link href="/job-cards/create" style={quickActionLinkStyle}><span>New mobile job</span><span>Open</span></Link></li>
           </ul>
         </LayerTheme>
       </DevLayoutSection>
+    </DevLayoutSection>);
+
+}
+
+function SummaryCard({ label, value }) {
+  return (
+    <DevLayoutSection
+      sectionKey={`mobile-dashboard-summary-${String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+      parentKey="mobile-dashboard-summary-grid"
+      sectionType="content-card"
+      style={summaryCardStyle}>
+      <span style={summaryLabelStyle}>{label}</span>
+      <strong style={summaryValueStyle}>{value}</strong>
     </DevLayoutSection>);
 
 }
@@ -251,7 +373,7 @@ function JobRow({ job, parentKey }) {
           alignItems: "center",
           whiteSpace: "nowrap"
         }}>
-        Open →
+        Open
       </Link>
     </DevLayoutSection>);
 

@@ -160,28 +160,16 @@ export default function MyJobsPageUi(props) {
               </table>
             </div> : filteredJobs.length === 0 ? <div data-dev-section="1" data-dev-section-key="myjobs-empty-state" data-dev-section-type="content-card" data-dev-section-parent="myjobs-results-shell" data-dev-background-token="surface-empty-state" style={{
         backgroundColor: "transparent",
-        padding: "60px",
+        padding: "24px",
         textAlign: "center",
         margin: "auto",
-        maxWidth: "520px"
+        maxWidth: "360px"
       }}>
-              <div style={{
-          fontSize: "64px",
-          marginBottom: "20px"
-        }}>
-                {searchTerm ? "🔍" : "📭"}
-              </div>
-              <h3 style={{
-          fontSize: "20px",
-          fontWeight: "600",
-          color: "var(--text-1)",
-          marginBottom: "8px"
-        }}>
-                {searchTerm ? "No jobs found" : "No jobs assigned"}
-              </h3>
               <p style={{
-          color: "var(--grey-accent)",
-          fontSize: "14px"
+          color: "var(--text-1)",
+          fontSize: "0.95rem",
+          fontWeight: 600,
+          margin: 0
         }}>
                 {searchTerm ? "Try adjusting your search or filter criteria" : "You currently have no jobs assigned to you"}
               </p>

@@ -1,177 +1,450 @@
 // file location: src/features/customerPortal/components/VehicleGarageCard.js
 import Link from "next/link";
 import React from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const isVideo = (type = "") => type.toLowerCase().startsWith("video/");
 const isImage = (type = "") => type.toLowerCase().startsWith("image/");
 
+function FactTile({ label, value }) {
+  return (
+    <div
+      style={{
+        background: "var(--surface)",
+        borderRadius: "var(--radius-md)",
+        padding: "10px 12px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+        minWidth: 0,
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          fontSize: "0.65rem",
+          textTransform: "uppercase",
+          letterSpacing: "0.18em",
+          color: "var(--text-1)",
+          opacity: 0.7,
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          margin: 0,
+          fontSize: "0.875rem",
+          fontWeight: 600,
+          color: "var(--text-1)",
+          wordBreak: "break-word",
+        }}
+      >
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
+function MediaTile({ item }) {
+  return (
+    <div
+      style={{
+        height: "80px",
+        width: "96px",
+        overflow: "hidden",
+        borderRadius: "var(--radius-md)",
+        background: "var(--surface)",
+        flexShrink: 0,
+      }}
+    >
+      {isVideo(item.type) ? (
+        <video
+          src={item.url}
+          muted
+          playsInline
+          loop
+          style={{ height: "100%", width: "100%", objectFit: "cover" }}
+        />
+      ) : isImage(item.type) ? (
+        <img
+          src={item.url}
+          alt="VHC media"
+          style={{ height: "100%", width: "100%", objectFit: "cover" }}
+        />
+      ) : (
+        <div
+          style={{
+            display: "flex",
+            height: "100%",
+            width: "100%",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "0.65rem",
+            color: "var(--text-1)",
+          }}
+        >
+          {item.folder || "file"}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function VehicleGarageCard({ vehicles = [] }) {
   return (
-    <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5">
-      <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
+    <LayerSurface
+      as="section"
+      sectionKey="customer-vehicle-garage"
+      sectionType="content-card"
+      radius="var(--page-card-radius)"
+      padding="var(--section-card-padding)"
+      gap="var(--space-4)"
+    >
+      <header
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          background: "var(--primary)",
+          color: "var(--text-2)",
+          borderRadius: "var(--radius-md)",
+          padding: "12px 16px",
+        }}
+      >
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-white">My garage</p>
-          <h3 className="text-xl font-semibold text-white">Vehicles on my profile</h3>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "0.7rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.3em",
+              color: "var(--text-2)",
+              opacity: 0.9,
+            }}
+          >
+            My garage
+          </p>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "1.15rem",
+              fontWeight: 600,
+              color: "var(--text-2)",
+            }}
+          >
+            Vehicles on my profile
+          </h3>
         </div>
-        <button
-          type="button"
-          className="rounded-full border border-white/40 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/20"
+        <Link
+          href={{
+            pathname: "/customer/messages",
+            query: { subject: "Add another vehicle to my profile" },
+          }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "8px 14px",
+            borderRadius: "var(--radius-pill)",
+            background: "rgba(var(--text-2-rgb), 0.18)",
+            color: "var(--text-2)",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
         >
           Add another vehicle
-        </button>
+        </Link>
       </header>
 
-      <div className="mt-4 space-y-4">
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-3)",
+        }}
+      >
         {vehicles.map((vehicle) => {
           const mediaItems = vehicle.latestVhc?.mediaItems?.slice(0, 3) || [];
           return (
-            <div
+            <LayerTheme
               key={vehicle.id || vehicle.reg}
-              className="rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-5 text-sm text-[var(--text-1)]"
+              radius="var(--radius-md)"
+              padding="var(--space-4)"
+              gap="var(--space-3)"
             >
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-semibold text-[var(--text-1)]">
-                <span>{vehicle.makeModel}</span>
-                <span className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-1 text-xs text-[var(--text-1)]">
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: "12px",
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    color: "var(--text-1)",
+                  }}
+                >
+                  {vehicle.makeModel}
+                </p>
+                <span
+                  className="app-badge app-badge--accent-soft"
+                  style={{ fontSize: "0.7rem" }}
+                >
                   {vehicle.reg}
                 </span>
               </div>
-              <div className="mt-2 grid gap-2 text-xs md:grid-cols-3">
-                <p>
-                  <span className="text-[var(--text-1)]">VIN:</span> {vehicle.vin}
-                </p>
-                <p>
-                  <span className="text-[var(--text-1)]">Mileage:</span> {vehicle.mileage} miles
-                </p>
-                <p>
-                  <span className="text-[var(--text-1)]">Next service:</span> {vehicle.nextService}
-                </p>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: "var(--space-2)",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+                }}
+              >
+                <FactTile label="VIN" value={vehicle.vin} />
+                <FactTile label="Mileage" value={vehicle.mileage ? `${vehicle.mileage} miles` : null} />
+                <FactTile label="Next service" value={vehicle.nextService} />
               </div>
 
-              <div className="mt-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--primary)]">Workshop visits</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.18em",
+                    color: "var(--text-accent)",
+                  }}
+                >
+                  Workshop visits
+                </p>
                 {vehicle.jobs?.length ? (
-                  <ul className="mt-2 space-y-2 text-xs">
+                  <ul
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      listStyle: "none",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
                     {vehicle.jobs.map((job) => (
                       <li
                         key={job.id}
-                        className="rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2"
+                        style={{
+                          background: "var(--surface)",
+                          borderRadius: "var(--radius-md)",
+                          padding: "10px 12px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                        }}
                       >
-                        <div className="flex flex-wrap items-center justify-between gap-2 text-[var(--text-1)]">
-                          <span className="font-semibold">{job.jobNumber}</span>
-                          <span className="rounded-full bg-[var(--surface)] px-2 py-0.5 text-[11px] font-semibold text-[var(--danger)]">
-                            {job.status}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "8px",
+                          }}
+                        >
+                          <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-1)" }}>
+                            {job.jobNumber}
                           </span>
+                          <span className="app-badge app-badge--danger-soft">{job.status}</span>
                         </div>
-                        <p className="mt-1 text-[11px] text-[var(--text-1)]">
+                        <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-1)" }}>
                           {job.concern}
                         </p>
-                        <p className="text-[11px] text-[var(--text-1)]">
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.7rem",
+                            color: "var(--text-1)",
+                            opacity: 0.7,
+                          }}
+                        >
                           Opened {job.createdAt}
                         </p>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 rounded-xl border border-dashed border-[var(--surface)] px-3 py-4 text-center text-xs text-[var(--text-1)]">
+                  <p
+                    style={{
+                      margin: 0,
+                      padding: "var(--space-3)",
+                      textAlign: "center",
+                      fontSize: "0.75rem",
+                      color: "var(--text-1)",
+                      background: "var(--surface)",
+                      borderRadius: "var(--radius-md)",
+                    }}
+                  >
                     No workshop history yet for this registration.
                   </p>
                 )}
               </div>
 
-              <div className="mt-4 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+              <LayerSurface
+                radius="var(--radius-md)"
+                padding="var(--space-4)"
+                gap="var(--space-3)"
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                  }}
+                >
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--primary)]">Latest VHC</p>
-                    {vehicle.latestVhc ? (
-                      <p className="text-sm font-semibold text-[var(--text-1)]">
-                        Shared {vehicle.latestVhc.createdAt} · {vehicle.latestVhc.status}
-                      </p>
-                    ) : (
-                      <p className="text-sm font-semibold text-[var(--text-1)]">
-                        Awaiting inspection
-                      </p>
-                    )}
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.7rem",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.18em",
+                        color: "var(--text-accent)",
+                      }}
+                    >
+                      Latest VHC
+                    </p>
+                    <p
+                      style={{
+                        margin: "4px 0 0",
+                        fontSize: "0.875rem",
+                        fontWeight: 600,
+                        color: "var(--text-1)",
+                      }}
+                    >
+                      {vehicle.latestVhc
+                        ? `Shared ${vehicle.latestVhc.createdAt} · ${vehicle.latestVhc.status}`
+                        : "Awaiting inspection"}
+                    </p>
                   </div>
                   {vehicle.latestVhc && (
                     <Link
                       href={`/customer/vhc?vehicle=${encodeURIComponent(vehicle.reg)}&job=${
                         vehicle.latestVhc.jobNumber || ""
                       }`}
-                      className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-4 py-2 text-[11px] font-semibold text-[var(--primary-selected)] hover:bg-[var(--surface)]"
+                      className="app-btn app-btn--secondary"
                     >
                       View VHC
                     </Link>
                   )}
                 </div>
                 {vehicle.latestVhc ? (
-                  <div className="mt-3 text-xs text-[var(--text-1)]">
-                    <p>
-                      <span className="font-semibold text-[var(--dangerMain)]">{vehicle.latestVhc.redItems}</span> red ·{" "}
-                      <span className="font-semibold text-[var(--warningMain)]">{vehicle.latestVhc.amberItems}</span> amber
-                      advisories
+                  <>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.8rem",
+                        color: "var(--text-1)",
+                      }}
+                    >
+                      <span style={{ color: "var(--dangerMain)", fontWeight: 600 }}>
+                        {vehicle.latestVhc.redItems}
+                      </span>{" "}
+                      red ·{" "}
+                      <span style={{ color: "var(--warningMain)", fontWeight: 600 }}>
+                        {vehicle.latestVhc.amberItems}
+                      </span>{" "}
+                      amber advisories
                     </p>
                     {mediaItems.length ? (
-                      <div className="mt-3 flex flex-wrap gap-3">
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "var(--space-2)",
+                        }}
+                      >
                         {mediaItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="h-20 w-24 overflow-hidden rounded-lg border border-[var(--surface)] bg-[var(--surface)]"
-                          >
-                            {isVideo(item.type) ? (
-                              <video
-                                src={item.url}
-                                className="h-full w-full object-cover"
-                                muted
-                                playsInline
-                                controls={false}
-                                loop
-                              />
-                            ) : isImage(item.type) ? (
-                              <img src={item.url} alt="VHC media" className="h-full w-full object-cover" />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[10px] text-[var(--text-1)]">
-                                {item.folder || "file"}
-                              </div>
-                            )}
-                          </div>
+                          <MediaTile key={item.id} item={item} />
                         ))}
                       </div>
                     ) : (
-                      <p className="mt-2 text-[11px] text-[var(--text-1)]">
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "0.7rem",
+                          color: "var(--text-1)",
+                          opacity: 0.75,
+                        }}
+                      >
                         Media will appear once the workshop uploads it.
                       </p>
                     )}
-                  </div>
+                  </>
                 ) : (
-                  <p className="mt-2 text-xs text-[var(--text-1)]">
+                  <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-1)" }}>
                     We will display the inspection summary once the workshop shares it with you.
                   </p>
                 )}
-              </div>
+              </LayerSurface>
 
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                }}
+              >
                 <Link
-                  href={vehicle.accessoriesLink || `/customer/parts?vehicle=${encodeURIComponent(vehicle.reg)}`}
-                  className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--primary-selected)] hover:bg-[var(--surface)]"
+                  href={
+                    vehicle.accessoriesLink ||
+                    `/customer/parts?vehicle=${encodeURIComponent(vehicle.reg)}`
+                  }
+                  className="app-btn app-btn--secondary"
                 >
                   View accessories
                 </Link>
                 <Link
-                  href={vehicle.shopLink || `/customer/parts?vehicle=${encodeURIComponent(vehicle.reg)}&view=shop`}
-                  className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-[var(--primary-selected)] hover:bg-[var(--surface)]"
+                  href={
+                    vehicle.shopLink ||
+                    `/customer/parts?vehicle=${encodeURIComponent(vehicle.reg)}&view=shop`
+                  }
+                  className="app-btn app-btn--secondary"
                 >
                   Shop for this vehicle
                 </Link>
               </div>
-            </div>
+            </LayerTheme>
           );
         })}
         {vehicles.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-[var(--surface)] px-4 py-8 text-center text-sm text-[var(--text-1)]">
+          <p
+            style={{
+              margin: 0,
+              padding: "var(--space-4) var(--space-3)",
+              textAlign: "center",
+              fontSize: "0.875rem",
+              color: "var(--text-1)",
+              background: "var(--theme)",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
             No vehicles on file yet. Use the button above to connect your car to the portal.
           </p>
         )}
       </div>
-    </section>
+    </LayerSurface>
   );
 }

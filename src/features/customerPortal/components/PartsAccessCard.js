@@ -1,49 +1,176 @@
 // file location: src/features/customerPortal/components/PartsAccessCard.js
 import React from "react";
+import Link from "next/link";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 export default function PartsAccessCard({ parts = [] }) {
   return (
-    <section className="customer-portal-card">
-      <header className="customer-portal-header">
+    <LayerSurface
+      as="section"
+      sectionKey="customer-parts-access"
+      sectionType="content-card"
+      radius="var(--page-card-radius)"
+      padding="var(--section-card-padding)"
+      gap="var(--space-4)"
+    >
+      <header
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          background: "var(--primary)",
+          color: "var(--text-2)",
+          borderRadius: "var(--radius-md)",
+          padding: "12px 16px",
+        }}
+      >
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-white">Parts & accessories</p>
-          <h3 className="text-xl font-semibold text-white">Compatible with my cars</h3>
-        </div>
-        <button className="rounded-full border border-white/40 bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/20">
-          Browse catalogue
-        </button>
-      </header>
-      <div className="mt-4 space-y-3">
-        {parts.map((part) => (
-          <div
-            key={part.id}
-            className="customer-portal-card--muted text-sm text-[var(--text-1)]"
+          <p
+            style={{
+              margin: 0,
+              fontSize: "0.7rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.3em",
+              color: "var(--text-2)",
+              opacity: 0.9,
+            }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-semibold text-[var(--text-1)]">{part.title}</p>
-                <p className="text-xs text-[var(--text-1)]">
-                  Applies to: {part.appliesTo.join(", ")}
-                </p>
-              </div>
-              <span className="text-base font-semibold text-[var(--text-1)]">
+            Parts &amp; accessories
+          </p>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: "1.15rem",
+              fontWeight: 600,
+              color: "var(--text-2)",
+            }}
+          >
+            Compatible with my cars
+          </h3>
+        </div>
+        <Link
+          href="/customer/parts"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "8px 14px",
+            borderRadius: "var(--radius-pill)",
+            background: "rgba(var(--text-2-rgb), 0.18)",
+            color: "var(--text-2)",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          Browse catalogue
+        </Link>
+      </header>
+
+      <div
+        style={{
+          display: "grid",
+          gap: "var(--space-3)",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
+        }}
+      >
+        {parts.map((part) => (
+          <LayerTheme
+            key={part.id}
+            radius="var(--radius-md)"
+            padding="var(--space-4)"
+            gap="var(--space-2)"
+          >
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  color: "var(--text-1)",
+                  flex: "1 1 auto",
+                  minWidth: 0,
+                }}
+              >
+                {part.title}
+              </p>
+              <span
+                style={{
+                  fontSize: "1rem",
+                  fontWeight: 700,
+                  color: "var(--text-accent)",
+                }}
+              >
                 {part.price}
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--text-1)]">
-              <span>{part.availability}</span>
-              <button className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-3 py-1 font-semibold text-[var(--primary-selected)]">
+            <p
+              style={{
+                margin: 0,
+                fontSize: "0.7rem",
+                color: "var(--text-1)",
+                opacity: 0.75,
+              }}
+            >
+              Applies to: {part.appliesTo.join(", ")}
+            </p>
+            <div
+              style={{
+                marginTop: "var(--space-2)",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px",
+              }}
+            >
+              <span className="app-badge app-badge--accent-soft">
+                {part.availability}
+              </span>
+              <Link
+                href={{
+                  pathname: "/customer/messages",
+                  query: {
+                    subject: `Quote request: ${part.title}`,
+                    partId: part.id,
+                  },
+                }}
+                className="app-btn app-btn--secondary"
+              >
                 Request quote
-              </button>
+              </Link>
             </div>
-          </div>
+          </LayerTheme>
         ))}
         {parts.length === 0 && (
-          <p className="customer-portal-empty text-sm">
+          <p
+            style={{
+              margin: 0,
+              padding: "var(--space-4) var(--space-3)",
+              textAlign: "center",
+              fontSize: "0.875rem",
+              color: "var(--text-1)",
+              background: "var(--theme)",
+              borderRadius: "var(--radius-md)",
+              gridColumn: "1 / -1",
+            }}
+          >
             We will load compatible parts once your vehicle is connected to the portal.
           </p>
         )}
       </div>
-    </section>
+    </LayerSurface>
   );
 }

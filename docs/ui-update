@@ -22,14 +22,14 @@ Mobile Technician
 ----------------------------------------------------
 
 - /mobile/dashboard (CHECK)
-Have it so "/mobile/dashboard :: 1.2.2.1.1.3 (mobile-dashboard-today) — “Today ( 0 ) No mobile visits scheduled today.”", "/mobile/dashboard :: 1.2.2.1.1.4 (mobile-dashboard-upcoming) — “Upcoming ( 0 ) Nothing upcoming.”", "/mobile/dashboard :: 1.2.2.1.1.5 (mobile-dashboard-quick-actions) — “Quick actions View all appointments See my mobile jobs Requ…”" sections use "--theme" colour background. Remove "Mobile Dashboard Your on-site visits for today and the days ahead." text and section and improve the layout of the page better and adjsut the layout depending on size of the screen being used.
+have it so /mobile/dashboard :: 1.2.2.1.1 (mobile-dashboard-page) sections use the correct "--text-1, --text-2, --text-accent" text colours. 
 
-- /mobile/jobs (CHECK)
-Remove "/mobile/jobs" page and have it so the mobile mechanic role has access to the "/job-cards/myjobs" page layout but for the mobile mechanic user they only have access to view any job for that day which is classes as Eligibility for Mobile Mechanic.
+- /tech/consumables-request (DONE
 
-- /tech/consumables-request (CHECK)
-have it so "/tech/consumables-request :: 1.2.2.1.1 (tech-consumables-request-panel)" card uses "--theme" colour background. have it so the contents within that sectioin use the whole width of the card. and have it so the "Status" coloumn follows the same style as the "/consumables-request" page request section with the "bubbles" now uses 32px button style height (32px not 44px because inside a table).
+- /appointments
+have it so within "/appointments :: 1.2.2.1.1 (appointments-auto-content-card-2) — “Select time Book Appointment”" section the "job number" text field follows the heigth of 44px, make sure this is the global cahnge for text fields. and make sure the same with the "Book Appointment" button. remove the 
 
+"Job Divisions" and sales or retail jobs button from all sidebars. 
 
 ----------------------------------------------------
 Parts Manager
@@ -125,6 +125,19 @@ Presentation
 - /loginPresentation    (presentation role-picker)
 
 - /presentation         (presentation runner shell)
+
+
+====================================================
+CUSTOMER
+====================================================
+
+- /customer (IN PROGRESS)
+
+
+TODO
+Make sure to link everything to the database etc and have everything with the /customer and other pages fully set up to the database tables correclty. also change the them of the logo image to dark theme within the sidebar for the /customer page section, have it so that top red filed section height is smaller but nothing else changes (EG HAVE IT SO THE EDGES OF THE SECTION IS CLOSER TO THE IMAGE). 
+
+have the "Compose Create a group chat Search by name, check the people you need, and create a new thread." popup decide who the best person it so message automatically so the csutomer doesnt chose. have it so the customer views the section like a /message page style uses with a feed on the left of the popup which is linked per job and or general enquirys and then a caht box section on the rigth, make the popup bigger to supprot this. Remove the "Search by name, check the people you need, and create a new thread." text
 
 
 ====================================================

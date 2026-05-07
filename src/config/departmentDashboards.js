@@ -25,7 +25,7 @@ export const departmentDashboardShortcuts = [
     description: "Technician personal dashboard with job assignments and clocking",
   },
   {
-    label: "Mobile Technician Dashboard",
+    label: "Mobile Tech Dashboard",
     href: "/mobile/dashboard",
     roles: ["mobile technician"],
     description: "Today's on-site jobs, appointment windows, and parts status for mobile visits",

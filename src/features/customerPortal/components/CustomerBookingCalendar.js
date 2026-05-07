@@ -4,6 +4,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const STATUS_BADGES = {
   green: "Good availability",
@@ -11,10 +13,16 @@ const STATUS_BADGES = {
   red: "Fully booked",
 };
 
-const STATUS_CLASSES = {
-  green: "border-0 bg-[var(--success-surface)] text-[var(--success-text)]",
-  amber: "border-0 bg-[var(--warning-surface)] text-[var(--warning-text)]",
-  red: "border-0 bg-[var(--danger-surface)] text-[var(--danger-text)]",
+const STATUS_BG = {
+  green: "var(--success-surface)",
+  amber: "var(--warning-surface)",
+  red: "var(--danger-surface)",
+};
+
+const STATUS_TEXT = {
+  green: "var(--success-text)",
+  amber: "var(--warning-text)",
+  red: "var(--danger-text)",
 };
 
 const STATUS_NOTES = {
@@ -85,133 +93,237 @@ export default function CustomerBookingCalendar() {
   const nextAvailable = slots.find((slot) => slot.status !== "red");
 
   return (
-    <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5">
-      <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
-        <p className="text-xs uppercase tracking-[0.35em] text-white">Booking calendar</p>
-        <h3 className="text-xl font-semibold text-white">Pick a day that works for you</h3>
-        <p className="mt-1 text-sm text-white">
+    <LayerSurface
+      as="section"
+      sectionKey="customer-booking-calendar"
+      sectionType="content-card"
+      radius="var(--page-card-radius)"
+      padding="var(--section-card-padding)"
+      gap="var(--space-4)"
+    >
+      <header
+        style={{
+          background: "var(--primary)",
+          color: "var(--text-2)",
+          borderRadius: "var(--radius-md)",
+          padding: "12px 16px",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.7rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.3em",
+            color: "var(--text-2)",
+            opacity: 0.9,
+          }}
+        >
+          Booking calendar
+        </p>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: "1.15rem",
+            fontWeight: 600,
+            color: "var(--text-2)",
+          }}
+        >
+          Pick a day that works for you
+        </h3>
+        <p
+          style={{
+            margin: "6px 0 0",
+            fontSize: "0.8rem",
+            color: "var(--text-2)",
+            opacity: 0.85,
+          }}
+        >
           Green = plenty of slots, amber = limited slots, red = fully booked.
         </p>
       </header>
 
       {error && (
-        <div className="mt-4 rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] p-4 text-sm text-[var(--danger-dark)]">
+        <div
+          style={{
+            padding: "12px 16px",
+            borderRadius: "var(--radius-md)",
+            background: "var(--danger-surface)",
+            color: "var(--danger-dark)",
+            fontSize: "0.875rem",
+          }}
+        >
           {error}
         </div>
       )}
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        style={{
+          display: "grid",
+          gap: "var(--space-2)",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
+        }}
+      >
         {loading
           ? Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
-                className="h-24 animate-pulse rounded-2xl bg-[var(--surface)]"
+                style={{
+                  height: "96px",
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--theme)",
+                  animation: "pulse 1.5s ease-in-out infinite",
+                }}
               />
             ))
           : slots.map((slot) => {
               const isSelected = selectedSlot?.date === slot.date;
+              const status = slot.status || "green";
               return (
                 <button
                   key={slot.date}
                   type="button"
                   onClick={() => setSelectedSlot(slot)}
-                  className={`rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                    STATUS_CLASSES[slot.status] ?? STATUS_CLASSES.green
-                  } ${isSelected ? "ring-2 ring-[var(--primary)]" : ""}`}
+                  style={{
+                    background: STATUS_BG[status] || STATUS_BG.green,
+                    color: STATUS_TEXT[status] || STATUS_TEXT.green,
+                    borderRadius: "var(--radius-md)",
+                    padding: "12px",
+                    textAlign: "left",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    transition: "transform 0.15s ease",
+                    boxShadow: isSelected
+                      ? "0 0 0 2px var(--primary)"
+                      : "none",
+                    cursor: "pointer",
+                  }}
                 >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-[var(--text-1)]">
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "6px",
+                    }}
+                  >
+                    <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600 }}>
                       {slot.displayDate}
                     </p>
                     {slot.isToday && (
-                      <span className="rounded-full border border-[var(--surface)] bg-[var(--surface)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.3em] text-[var(--text-1)]">
+                      <span
+                        className="app-badge app-badge--accent-soft"
+                        style={{ fontSize: "0.65rem" }}
+                      >
                         Today
                       </span>
                     )}
                   </div>
-                  <p className="mt-2 text-2xl font-bold text-[var(--text-1)]">
+                  <p style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700 }}>
                     {slot.count} job{slot.count !== 1 ? "s" : ""}
                   </p>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em]">
-                    {STATUS_BADGES[slot.status] || STATUS_BADGES.green}
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.7rem",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.18em",
+                    }}
+                  >
+                    {STATUS_BADGES[status] || STATUS_BADGES.green}
                   </p>
-
-                  {slot.status === "amber" && (
-                    <p className="mt-2 text-sm font-medium text-[var(--warningMain)]">
-                      Limited slots — book soon
-                    </p>
-                  )}
-
-                  {slot.status === "red" && (
-                    <p className="mt-2 text-sm font-medium text-[var(--dangerMain)]">
-                      Fully booked — choose another day
-                    </p>
-                  )}
                 </button>
               );
             })}
       </div>
 
       {!loading && !slots.length && !error && (
-        <p className="mt-4 rounded-2xl border border-dashed border-[var(--surface)] bg-[var(--surface)] p-4 text-sm text-[var(--text-1)]">
+        <p
+          style={{
+            margin: 0,
+            padding: "var(--space-4)",
+            textAlign: "center",
+            fontSize: "0.875rem",
+            color: "var(--text-1)",
+            background: "var(--theme)",
+            borderRadius: "var(--radius-md)",
+          }}
+        >
           We are still collecting availability. Please check back shortly.
         </p>
       )}
 
       {selectedSlot && (
-        <div className="mt-6 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] p-4">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <p className="text-sm text-[var(--text-1)]">Selected date</p>
-            <p className="text-lg font-semibold text-[var(--text-1)]">
+        <LayerTheme
+          radius="var(--radius-md)"
+          padding="var(--space-4)"
+          gap="var(--space-2)"
+        >
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "baseline",
+              gap: "8px",
+            }}
+          >
+            <span style={{ fontSize: "0.8rem", color: "var(--text-1)", opacity: 0.7 }}>
+              Selected date
+            </span>
+            <span style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-1)" }}>
               {selectedSlot.friendlyDate}
-            </p>
+            </span>
           </div>
-          <p className="mt-1 text-lg text-[var(--text-1)]">
-            {selectedSlot.count} booking
-            {selectedSlot.count !== 1 ? "s" : ""}
+          <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--text-1)" }}>
+            {selectedSlot.count} booking{selectedSlot.count !== 1 ? "s" : ""}
           </p>
-          <p className="mt-2 text-sm font-medium text-[var(--text-1)]">
+          <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-1)" }}>
             {STATUS_NOTES[selectedSlot.status] ?? STATUS_NOTES.green}
           </p>
 
-          {selectedSlot.status === "red" && (
-            <p className="mt-2 text-sm text-[var(--dangerMain)]">
-              Red days prevent new bookings. Please pick a different date or
-              message us if it&apos;s urgent.
-            </p>
-          )}
-
-          {selectedSlot.status === "amber" && (
-            <p className="mt-2 text-sm text-[var(--warningMain)]">
-              Amber days show limited slots — we&apos;ll confirm availability
-              while they last.
-            </p>
-          )}
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div
+            style={{
+              marginTop: "var(--space-2)",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
             <button
               type="button"
               onClick={handleRequestSlot}
               disabled={selectedSlot.status === "red"}
-              className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition ${
+              className={
                 selectedSlot.status === "red"
-                  ? "cursor-not-allowed border border-[var(--surface)] bg-[var(--surface)] text-[var(--text-1)]"
-                  : "bg-[var(--primary)] text-white hover:bg-[var(--primary-selected)]"
-              }`}
+                  ? "app-btn app-btn--secondary"
+                  : "app-btn app-btn--primary"
+              }
             >
               {selectedSlot.status === "red"
                 ? "Not available"
                 : "Request this date"}
             </button>
-
-            <p className="text-xs uppercase tracking-[0.3em] text-[var(--text-1)]">
+            <p
+              style={{
+                margin: 0,
+                fontSize: "0.7rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+                color: "var(--text-1)",
+                opacity: 0.7,
+              }}
+            >
               {nextAvailable
                 ? `Next open slot: ${nextAvailable.displayDate}`
                 : "No open slots yet"}
             </p>
           </div>
-        </div>
+        </LayerTheme>
       )}
-    </section>
+    </LayerSurface>
   );
 }

@@ -1,7 +1,30 @@
 // file location: src/features/customerPortal/components/CustomerDetailsCard.js
 import React, { useEffect, useState } from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const CONTACT_OPTIONS = ["Email", "Phone", "SMS", "WhatsApp", "No Preference"];
+
+const inputStyle = {
+  width: "100%",
+  marginTop: "6px",
+  padding: "10px 12px",
+  borderRadius: "var(--radius-md)",
+  background: "var(--theme)",
+  border: "var(--input-ring)",
+  fontSize: "0.875rem",
+  color: "var(--text-1)",
+  outline: "none",
+};
+
+const labelStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  color: "var(--text-1)",
+};
 
 export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {} }) {
   const [formState, setFormState] = useState({
@@ -28,8 +51,10 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
       telephone: customer.telephone || "",
       address: customer.address || "",
       postcode: customer.postcode || "",
-      contactPreference: (customer.contact_preference || "Email")
-        .replace(/^\w/, (l) => l.toUpperCase()),
+      contactPreference: (customer.contact_preference || "Email").replace(
+        /^\w/,
+        (l) => l.toUpperCase()
+      ),
     });
   }, [customer]);
 
@@ -52,9 +77,7 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
     try {
       const response = await fetch("/api/customer/profile", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerId: customer.id,
           firstname: formState.firstname,
@@ -72,7 +95,6 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
       if (!response.ok) {
         throw new Error(payload?.error || "Failed to update details");
       }
-
       setMessage("Details saved successfully.");
       onDetailsSaved();
     } catch (err) {
@@ -83,104 +105,152 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5">
-      <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
-        <p className="text-xs uppercase tracking-[0.35em] text-white">My details</p>
-        <h3 className="text-xl font-semibold text-white">Keep your profile up to date</h3>
+    <LayerSurface
+      as="section"
+      sectionKey="customer-details-card"
+      sectionType="content-card"
+      radius="var(--page-card-radius)"
+      padding="var(--section-card-padding)"
+      gap="var(--space-4)"
+    >
+      <header
+        style={{
+          background: "var(--primary)",
+          color: "var(--text-2)",
+          borderRadius: "var(--radius-md)",
+          padding: "12px 16px",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.7rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.3em",
+            color: "var(--text-2)",
+            opacity: 0.9,
+          }}
+        >
+          My details
+        </p>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: "1.15rem",
+            fontWeight: 600,
+            color: "var(--text-2)",
+          }}
+        >
+          Keep your profile up to date
+        </h3>
       </header>
 
-      <form onSubmit={handleSubmit} className="mt-4 grid gap-4 text-sm">
+      <LayerTheme
+        as="form"
+        onSubmit={handleSubmit}
+        radius="var(--radius-md)"
+        padding="var(--space-4)"
+        gap="var(--space-3)"
+      >
         {(message || error) && (
           <div
-            className={`rounded-2xl border px-3 py-2 text-xs ${
-              error
-                ? "border-[var(--danger)] bg-[var(--danger-surface)] text-[var(--danger-dark)]"
-                : "border-[var(--success)] bg-[var(--success-surface)] text-[var(--success-dark)]"
-            }`}
+            style={{
+              margin: 0,
+              padding: "8px 12px",
+              borderRadius: "var(--radius-md)",
+              background: error ? "var(--danger-surface)" : "var(--success-surface)",
+              color: error ? "var(--danger-dark)" : "var(--success-dark)",
+              fontSize: "0.75rem",
+            }}
           >
             {error || message}
           </div>
         )}
 
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+        <div
+          style={{
+            display: "grid",
+            gap: "var(--space-3)",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
+          }}
+        >
+          <label style={labelStyle}>
             First name
             <input
               type="text"
               value={formState.firstname}
               onChange={(event) => handleInputChange("firstname", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+              style={inputStyle}
             />
           </label>
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+          <label style={labelStyle}>
             Last name
             <input
               type="text"
               value={formState.lastname}
               onChange={(event) => handleInputChange("lastname", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+              style={inputStyle}
             />
           </label>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+          <label style={labelStyle}>
             Email address
             <input
               type="email"
               value={formState.email}
               onChange={(event) => handleInputChange("email", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+              style={inputStyle}
             />
           </label>
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+          <label style={labelStyle}>
             Mobile phone
             <input
               type="tel"
               value={formState.mobile}
               onChange={(event) => handleInputChange("mobile", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+              style={inputStyle}
             />
           </label>
-        </div>
-
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+          <label style={labelStyle}>
             Landline
             <input
               type="tel"
               value={formState.telephone}
               onChange={(event) => handleInputChange("telephone", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+              style={inputStyle}
             />
           </label>
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+          <label style={labelStyle}>
             Postcode
             <input
               type="text"
               value={formState.postcode}
-              onChange={(event) => handleInputChange("postcode", event.target.value.toUpperCase())}
-              className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+              onChange={(event) =>
+                handleInputChange("postcode", event.target.value.toUpperCase())
+              }
+              style={inputStyle}
             />
           </label>
         </div>
 
-        <label className="text-xs font-semibold text-[var(--text-1)]">
+        <label style={labelStyle}>
           Address
           <textarea
             value={formState.address}
             onChange={(event) => handleInputChange("address", event.target.value)}
             rows={3}
-            className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+            style={{ ...inputStyle, resize: "vertical" }}
           />
         </label>
 
-        <label className="text-xs font-semibold text-[var(--text-1)]">
+        <label style={labelStyle}>
           Contact preference
           <select
             value={formState.contactPreference}
-            onChange={(event) => handleInputChange("contactPreference", event.target.value)}
-            className="mt-1 w-full rounded-xl border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+            onChange={(event) =>
+              handleInputChange("contactPreference", event.target.value)
+            }
+            style={inputStyle}
           >
             {CONTACT_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -190,16 +260,16 @@ export default function CustomerDetailsCard({ customer, onDetailsSaved = () => {
           </select>
         </label>
 
-        <div className="flex justify-end">
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full border border-[var(--surface)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:bg-[var(--danger)]"
+            className="app-btn app-btn--primary"
           >
             {saving ? "Saving..." : "Save changes"}
           </button>
         </div>
-      </form>
-    </section>
+      </LayerTheme>
+    </LayerSurface>
   );
 }

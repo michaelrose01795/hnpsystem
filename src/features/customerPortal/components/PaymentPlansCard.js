@@ -1,55 +1,177 @@
 // file location: src/features/customerPortal/components/PaymentPlansCard.js
 import React from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
+
+function PlanFact({ label, value }) {
+  return (
+    <div
+      style={{
+        background: "var(--surface)",
+        borderRadius: "var(--radius-md)",
+        padding: "10px 12px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
+        minWidth: 0,
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          fontSize: "0.65rem",
+          textTransform: "uppercase",
+          letterSpacing: "0.18em",
+          color: "var(--text-1)",
+          opacity: 0.7,
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          margin: 0,
+          fontSize: "0.875rem",
+          fontWeight: 600,
+          color: "var(--text-1)",
+        }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
 
 export default function PaymentPlansCard({ paymentPlans = [] }) {
   return (
-    <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5">
-      <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
-        <p className="text-xs uppercase tracking-[0.35em] text-white">Payment plans</p>
-        <h3 className="text-xl font-semibold text-white">Manage ongoing agreements</h3>
+    <LayerSurface
+      as="section"
+      sectionKey="customer-payment-plans"
+      sectionType="content-card"
+      radius="var(--page-card-radius)"
+      padding="var(--section-card-padding)"
+      gap="var(--space-4)"
+    >
+      <header
+        style={{
+          background: "var(--primary)",
+          color: "var(--text-2)",
+          borderRadius: "var(--radius-md)",
+          padding: "12px 16px",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.7rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.3em",
+            color: "var(--text-2)",
+            opacity: 0.9,
+          }}
+        >
+          Payment plans
+        </p>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: "1.15rem",
+            fontWeight: 600,
+            color: "var(--text-2)",
+          }}
+        >
+          Manage ongoing agreements
+        </h3>
       </header>
 
-      <div className="mt-4 space-y-3 text-sm">
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-3)",
+        }}
+      >
         {paymentPlans.map((plan) => (
-          <div
+          <LayerTheme
             key={plan.id}
-            className="rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-4 text-[var(--text-1)]"
+            radius="var(--radius-md)"
+            padding="var(--space-4)"
+            gap="var(--space-3)"
           >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-semibold text-[var(--text-1)]">{plan.name}</p>
-                <p className="text-xs text-[var(--text-1)]">{plan.description}</p>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "12px",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    color: "var(--text-1)",
+                  }}
+                >
+                  {plan.name}
+                </p>
+                <p
+                  style={{
+                    margin: "4px 0 0",
+                    fontSize: "0.75rem",
+                    color: "var(--text-1)",
+                    opacity: 0.75,
+                  }}
+                >
+                  {plan.description}
+                </p>
               </div>
               <span
-                className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
+                className={
                   plan.status === "active"
-                    ? "bg-[var(--theme)] text-[var(--info-dark)]"
-                    : "bg-[var(--danger-surface)] text-[var(--danger)]"
-                }`}
+                    ? "app-badge app-badge--accent-soft"
+                    : "app-badge app-badge--danger-soft"
+                }
               >
                 {plan.status}
               </span>
             </div>
-            <div className="mt-3 grid gap-2 text-xs md:grid-cols-3">
-              <p>
-                <span className="text-[var(--text-1)]">Total:</span> £{plan.totalAmount.toFixed(2)}
-              </p>
-              <p>
-                <span className="text-[var(--text-1)]">Balance due:</span> £{plan.balanceDue.toFixed(2)}
-              </p>
-              <p>
-                <span className="text-[var(--text-1)]">Next payment:</span>{" "}
-                {plan.nextPaymentDate} ({plan.frequency})
-              </p>
+            <div
+              style={{
+                display: "grid",
+                gap: "var(--space-2)",
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+              }}
+            >
+              <PlanFact label="Total" value={`£${plan.totalAmount.toFixed(2)}`} />
+              <PlanFact label="Balance due" value={`£${plan.balanceDue.toFixed(2)}`} />
+              <PlanFact
+                label="Next payment"
+                value={`${plan.nextPaymentDate} (${plan.frequency})`}
+              />
             </div>
-          </div>
+          </LayerTheme>
         ))}
         {paymentPlans.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-[var(--surface)] px-4 py-8 text-center text-sm text-[var(--text-1)]">
+          <p
+            style={{
+              margin: 0,
+              padding: "var(--space-4) var(--space-3)",
+              textAlign: "center",
+              fontSize: "0.875rem",
+              color: "var(--text-1)",
+              background: "var(--theme)",
+              borderRadius: "var(--radius-md)",
+            }}
+          >
             No payment plans are active on your account.
           </p>
         )}
       </div>
-    </section>
+    </LayerSurface>
   );
 }

@@ -203,11 +203,6 @@ export const sidebarSections = [
     category: "departments",
     items: [
       {
-        label: "Mobile Dashboard",
-        href: "/mobile/dashboard",
-        roles: ["mobile technician"],
-      },
-      {
         label: "My Jobs",
         href: "/job-cards/myjobs",
         roles: ["mobile technician"],

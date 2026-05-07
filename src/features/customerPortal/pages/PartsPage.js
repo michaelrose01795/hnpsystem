@@ -5,10 +5,11 @@ import { useRouter } from "next/router";
 import CustomerLayout from "@/features/customerPortal/components/CustomerLayout";
 import PartsAccessCard from "@/features/customerPortal/components/PartsAccessCard";
 import VehicleGarageCard from "@/features/customerPortal/components/VehicleGarageCard";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { useCustomerPortalData } from "@/features/customerPortal/hooks/useCustomerPortalData";
 
 export default function CustomerPartsPage() {
-  const { parts, vehicles, isLoading, error } = useCustomerPortalData();
+  const { parts, vehicles, error } = useCustomerPortalData();
   const router = useRouter();
   const vehicleFilter = (router.query.vehicle || "").toString().toUpperCase();
   const filteredParts = useMemo(() => {
@@ -24,19 +25,31 @@ export default function CustomerPartsPage() {
   return (
     <CustomerLayout>
       {error && (
-        <div className="mb-4 rounded-2xl border border-[var(--danger)] bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
+        <div className="rounded-2xl bg-[var(--danger-surface)] px-4 py-3 text-sm text-[var(--danger-dark)]">
           {error}
         </div>
       )}
       {activeVehicle && (
-        <div className="mb-4 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-xs text-[var(--text-1)]">
+        <div className="rounded-2xl bg-[var(--theme)] px-4 py-3 text-xs text-[var(--text-1)]">
           Showing accessories for <strong>{activeVehicle.makeModel}</strong> · {activeVehicle.reg}
         </div>
       )}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <DevLayoutSection
+        sectionKey="customer-parts-grid"
+        parentKey="customer-portal-page-stack"
+        sectionType="section-shell"
+        backgroundToken="customer-parts-grid"
+        style={{
+          display: "grid",
+          gap: "var(--page-stack-gap)",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+          width: "100%",
+        }}
+      >
         <PartsAccessCard parts={filteredParts} />
         <VehicleGarageCard vehicles={vehicles} />
-      </div>
+      </DevLayoutSection>
     </CustomerLayout>
   );
 }

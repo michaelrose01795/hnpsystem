@@ -150,9 +150,7 @@ export default function LoginDropdown({
       if (users.length === 0) return;
 
       const firstUser = users.find((user) => typeof user !== "string");
-      const label = isManagerRole(department)
-        ? department
-        : String(firstUser?.department || department).trim() || department;
+      const label = String(department || firstUser?.department || "").trim() || department;
       const key = normalizeValue(label);
       const existing = groups.get(key);
 
@@ -252,6 +250,14 @@ export default function LoginDropdown({
 
   const wrapperClassName = ["login-dropdown", className].filter(Boolean).join(" ").trim();
 
+  // The Customers area only ever has a single department ("Customer"), so the
+  // intermediate department dropdown is busywork — we auto-select it and hide
+  // it from the UI so the dev jumps straight to the user picker.
+  const isSingleDepartmentCategory = useMemo(() => {
+    if (!selectedCategory) return false;
+    return normalizeValue(selectedCategory) === "customers";
+  }, [selectedCategory]);
+
   const categoryOptions = useMemo(
     () =>
       Object.keys(roleCategories || {}).map((category) => ({
@@ -292,6 +298,17 @@ export default function LoginDropdown({
     ? String(selectedUser.id ?? selectedUser.user_id ?? selectedUser.email ?? selectedUser.name ?? "")
     : "";
 
+  // Auto-select the single department when the chosen area only has one
+  // (currently: Customers → "Customer"). This bypasses the Department dropdown
+  // entirely and unblocks the User dropdown immediately.
+  useEffect(() => {
+    if (!isSingleDepartmentCategory) return;
+    if (departmentOptions.length === 0) return;
+    const firstDepartment = departmentOptions[0].value;
+    if (normalizeValue(selectedDepartment) === normalizeValue(firstDepartment)) return;
+    setSelectedDepartment(firstDepartment);
+  }, [isSingleDepartmentCategory, departmentOptions, selectedDepartment, setSelectedDepartment]);
+
   return (
     <div className={wrapperClassName}>
       <Dropdown
@@ -310,37 +327,39 @@ export default function LoginDropdown({
         usePortal={false}
       />
 
-      <Dropdown
-        label="Select Department"
-        placeholder="Choose a department"
-        options={departmentOptions}
-        value={selectedDepartment || ""}
-        disabled={!selectedCategory}
-        onChange={(raw) => {
-          const nextDepartment =
-            (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
-          const nextGroup = departmentGroups.find(
-            (group) => group.key === normalizeValue(nextDepartment)
-          );
-          const nextUsers = (nextGroup?.users || []).map((user, index) =>
-            toUserOption(user, index, nextDepartment)
-          );
-          setSelectedDepartment(nextDepartment);
-          if (nextUsers.length === 1) {
-            const onlyUser = nextUsers[0];
-            setSelectedUser(onlyUser);
-            onSingleUserDepartmentLogin?.({
-              category: selectedCategory,
-              department: nextDepartment,
-              user: onlyUser,
-            });
-            return;
-          }
-          setSelectedUser(null);
-        }}
-        className="login-dropdown__control"
-        usePortal={false}
-      />
+      {!isSingleDepartmentCategory && (
+        <Dropdown
+          label="Select Department"
+          placeholder="Choose a department"
+          options={departmentOptions}
+          value={selectedDepartment || ""}
+          disabled={!selectedCategory}
+          onChange={(raw) => {
+            const nextDepartment =
+              (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
+            const nextGroup = departmentGroups.find(
+              (group) => group.key === normalizeValue(nextDepartment)
+            );
+            const nextUsers = (nextGroup?.users || []).map((user, index) =>
+              toUserOption(user, index, nextDepartment)
+            );
+            setSelectedDepartment(nextDepartment);
+            if (nextUsers.length === 1) {
+              const onlyUser = nextUsers[0];
+              setSelectedUser(onlyUser);
+              onSingleUserDepartmentLogin?.({
+                category: selectedCategory,
+                department: nextDepartment,
+                user: onlyUser,
+              });
+              return;
+            }
+            setSelectedUser(null);
+          }}
+          className="login-dropdown__control"
+          usePortal={false}
+        />
+      )}
 
       <Dropdown
         label="Select User"

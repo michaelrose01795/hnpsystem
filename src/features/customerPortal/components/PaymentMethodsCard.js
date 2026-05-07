@@ -1,7 +1,30 @@
 // file location: src/features/customerPortal/components/PaymentMethodsCard.js
 import React, { useState } from "react";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const brandOptions = ["Visa", "Mastercard", "Amex", "Discover"];
+
+const inputStyle = {
+  width: "100%",
+  marginTop: "6px",
+  padding: "10px 12px",
+  borderRadius: "var(--radius-md)",
+  background: "var(--theme)",
+  border: "var(--input-ring)",
+  fontSize: "0.875rem",
+  color: "var(--text-1)",
+  outline: "none",
+};
+
+const labelStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  fontSize: "0.75rem",
+  fontWeight: 600,
+  color: "var(--text-1)",
+};
 
 export default function PaymentMethodsCard({
   paymentMethods = [],
@@ -29,12 +52,10 @@ export default function PaymentMethodsCard({
       setError("Customer profile missing. Please reload the portal.");
       return;
     }
-
     if (!formState.last4 || formState.last4.length !== 4) {
       setError("Please enter the last 4 digits of your card.");
       return;
     }
-
     if (!formState.expiryMonth || !formState.expiryYear) {
       setError("Provide a valid expiry month and year.");
       return;
@@ -46,9 +67,7 @@ export default function PaymentMethodsCard({
     try {
       const response = await fetch("/api/customer/payment-methods", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerId,
           nickname: formState.nickname,
@@ -82,72 +101,175 @@ export default function PaymentMethodsCard({
   };
 
   return (
-    <section className="rounded-3xl border border-[var(--surface)] bg-[var(--surface)] p-5">
-      <header className="rounded-2xl bg-[var(--primary)] px-4 py-3 text-white">
-        <p className="text-xs uppercase tracking-[0.35em] text-white">Payment methods</p>
-        <h3 className="text-xl font-semibold text-white">Saved debit / credit cards</h3>
+    <LayerSurface
+      as="section"
+      sectionKey="customer-payment-methods"
+      sectionType="content-card"
+      radius="var(--page-card-radius)"
+      padding="var(--section-card-padding)"
+      gap="var(--space-4)"
+    >
+      <header
+        style={{
+          background: "var(--primary)",
+          color: "var(--text-2)",
+          borderRadius: "var(--radius-md)",
+          padding: "12px 16px",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.7rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.3em",
+            color: "var(--text-2)",
+            opacity: 0.9,
+          }}
+        >
+          Payment methods
+        </p>
+        <h3
+          style={{
+            margin: 0,
+            fontSize: "1.15rem",
+            fontWeight: 600,
+            color: "var(--text-2)",
+          }}
+        >
+          Saved debit / credit cards
+        </h3>
       </header>
 
-      <div className="mt-4 space-y-3">
+      <div
+        style={{
+          display: "grid",
+          gap: "var(--space-3)",
+          gridTemplateColumns:
+            "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
+        }}
+      >
         {paymentMethods.map((method) => (
-          <div
+          <LayerTheme
             key={method.id}
-            className="rounded-2xl border border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--text-1)]"
+            radius="var(--radius-md)"
+            padding="var(--space-4)"
+            gap="var(--space-1)"
           >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[var(--text-1)]">
-                  {method.nickname || `${method.brand} •••• ${method.last4}`}
-                </p>
-                <p className="text-xs text-[var(--text-1)]">
-                  Expires {String(method.expiryMonth).padStart(2, "0")}/{String(method.expiryYear).slice(-2)}
-                </p>
-                <p className="text-[11px] text-[var(--text-1)]">
-                  Added {new Date(method.savedAt).toLocaleDateString()}
-                </p>
-              </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px",
+              }}
+            >
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  color: "var(--text-1)",
+                }}
+              >
+                {method.nickname || `${method.brand} •••• ${method.last4}`}
+              </p>
               {method.isDefault && (
-                <span className="rounded-full bg-[var(--surface)] px-3 py-1 text-[11px] font-semibold text-[var(--danger)]">
-                  Default
-                </span>
+                <span className="app-badge app-badge--accent-soft">Default</span>
               )}
             </div>
-          </div>
+            <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--text-1)" }}>
+              Expires {String(method.expiryMonth).padStart(2, "0")}/
+              {String(method.expiryYear).slice(-2)}
+            </p>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "0.7rem",
+                color: "var(--text-1)",
+                opacity: 0.7,
+              }}
+            >
+              Added {new Date(method.savedAt).toLocaleDateString()}
+            </p>
+          </LayerTheme>
         ))}
         {paymentMethods.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-[var(--surface)] px-4 py-6 text-center text-sm text-[var(--text-1)]">
+          <p
+            style={{
+              margin: 0,
+              padding: "var(--space-4) var(--space-3)",
+              textAlign: "center",
+              fontSize: "0.875rem",
+              color: "var(--text-1)",
+              background: "var(--theme)",
+              borderRadius: "var(--radius-md)",
+              gridColumn: "1 / -1",
+            }}
+          >
             No cards saved yet. Add one below to speed up checkout.
           </p>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 rounded-2xl border border-[var(--surface)] bg-[var(--surface)] p-4 text-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--primary)]">
+      <LayerTheme
+        as="form"
+        onSubmit={handleSubmit}
+        radius="var(--radius-md)"
+        padding="var(--space-4)"
+        gap="var(--space-3)"
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: "0.7rem",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.18em",
+            color: "var(--text-accent)",
+          }}
+        >
           Add a payment method
         </p>
         {error && (
-          <p className="mt-2 rounded-lg border border-[var(--danger)] bg-[var(--danger-surface)] px-3 py-2 text-xs text-[var(--danger-dark)]">
+          <p
+            style={{
+              margin: 0,
+              padding: "8px 12px",
+              borderRadius: "var(--radius-md)",
+              background: "var(--danger-surface)",
+              color: "var(--danger-dark)",
+              fontSize: "0.75rem",
+            }}
+          >
             {error}
           </p>
         )}
 
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+        <div
+          style={{
+            display: "grid",
+            gap: "var(--space-3)",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
+          }}
+        >
+          <label style={labelStyle}>
             Nickname
             <input
               type="text"
               value={formState.nickname}
               onChange={(event) => handleInputChange("nickname", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] placeholder:text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
               placeholder="E.g. Personal Visa"
+              style={inputStyle}
             />
           </label>
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+          <label style={labelStyle}>
             Card brand
             <select
               value={formState.brand}
               onChange={(event) => handleInputChange("brand", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+              style={inputStyle}
             >
               {brandOptions.map((brand) => (
                 <option key={brand} value={brand}>
@@ -158,19 +280,28 @@ export default function PaymentMethodsCard({
           </label>
         </div>
 
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+        <div
+          style={{
+            display: "grid",
+            gap: "var(--space-3)",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+          }}
+        >
+          <label style={labelStyle}>
             Last 4 digits
             <input
               type="text"
               maxLength={4}
               value={formState.last4}
-              onChange={(event) => handleInputChange("last4", event.target.value.replace(/\D/g, ""))}
-              className="mt-1 w-full rounded-lg border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
+              onChange={(event) =>
+                handleInputChange("last4", event.target.value.replace(/\D/g, ""))
+              }
               placeholder="1234"
+              style={inputStyle}
             />
           </label>
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+          <label style={labelStyle}>
             Expiry month
             <input
               type="number"
@@ -178,43 +309,52 @@ export default function PaymentMethodsCard({
               max={12}
               value={formState.expiryMonth}
               onChange={(event) => handleInputChange("expiryMonth", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
               placeholder="MM"
+              style={inputStyle}
             />
           </label>
-          <label className="text-xs font-semibold text-[var(--text-1)]">
+          <label style={labelStyle}>
             Expiry year
             <input
               type="number"
               min={new Date().getFullYear()}
               value={formState.expiryYear}
               onChange={(event) => handleInputChange("expiryYear", event.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--surface)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text-1)] focus:border-[var(--primary)] focus:outline-none"
               placeholder="YYYY"
+              style={inputStyle}
             />
           </label>
         </div>
 
-        <label className="mt-3 flex items-center gap-2 text-xs font-semibold text-[var(--text-1)]">
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            color: "var(--text-1)",
+          }}
+        >
           <input
             type="checkbox"
             checked={formState.isDefault}
             onChange={(event) => handleInputChange("isDefault", event.target.checked)}
-            className="h-4 w-4 rounded text-[var(--primary)] focus:ring-[var(--primary)]"
+            style={{ width: "16px", height: "16px" }}
           />
-            Set as default payment method
+          Set as default payment method
         </label>
 
-        <div className="mt-4 flex justify-end">
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full border border-[var(--surface)] bg-[var(--primary)] px-5 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-selected)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="app-btn app-btn--primary"
           >
             {saving ? "Saving..." : "Save card"}
           </button>
         </div>
-      </form>
-    </section>
+      </LayerTheme>
+    </LayerSurface>
   );
 }
