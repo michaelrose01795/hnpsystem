@@ -130,7 +130,7 @@ const primaryButtonStyle = (disabled = false) => ({
 const secondaryButtonStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--primary)",
+  border: "1px solid var(--ghostbutton-ring)",
   fontWeight: 600,
   fontSize: "0.9rem",
   background: "transparent",
@@ -1709,9 +1709,6 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
     const displayName = result.company_name || result.trading_name || result.account_number;
     const city = result.billing_city || "Unknown city";
     const phone = result.phone || result.telephone || result.mobile || "";
-    const restingBorder = missingLinkedAccount ?
-    "1px solid color-mix(in srgb, var(--danger) 30%, var(--surface))" :
-    "1px solid var(--surface)";
     const restingBackground =
     "var(--theme)";
 
@@ -1723,27 +1720,24 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
           minHeight: "92px",
           textAlign: "left",
           padding: "14px",
-          border: restingBorder,
           borderRadius: "var(--radius-md)",
           marginBottom: index === results.length - 1 ? 0 : "10px",
           cursor: "pointer",
           background: restingBackground,
           color: "var(--text-1)",
           boxShadow: "var(--shadow-sm)",
-          transition: "background 0.15s ease, border-color 0.15s ease, transform 0.15s ease",
+          transition: "background 0.15s ease, transform 0.15s ease",
           display: "flex",
           flexDirection: "column",
           gap: "8px"
         }}
         onMouseEnter={(event) => {
           event.currentTarget.style.background = "var(--theme)";
-          event.currentTarget.style.borderColor = missingLinkedAccount ? "var(--danger)" : "var(--primary)";
           event.currentTarget.style.transform = "translateY(-1px)";
           event.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
         }}
         onMouseLeave={(event) => {
           event.currentTarget.style.background = restingBackground;
-          event.currentTarget.style.border = restingBorder;
           event.currentTarget.style.transform = "translateY(0)";
           event.currentTarget.style.zIndex = "0";
         }}
@@ -1765,7 +1759,6 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
               fontWeight: 700,
               color: "var(--primary)",
               background: "color-mix(in srgb, var(--primary) 12%, transparent)",
-              border: "1px solid color-mix(in srgb, var(--primary) 28%, var(--surface))",
               borderRadius: "var(--radius-pill)",
               padding: "3px 8px",
               whiteSpace: "nowrap"
@@ -1805,9 +1798,6 @@ function SupplierSearchModal({ onClose, onSelect, initialQuery = "" }) {
               background: missingLinkedAccount ?
               "color-mix(in srgb, var(--danger) 10%, transparent)" :
               "color-mix(in srgb, var(--success) 10%, transparent)",
-              border: missingLinkedAccount ?
-              "1px solid color-mix(in srgb, var(--danger) 28%, var(--surface))" :
-              "1px solid color-mix(in srgb, var(--success) 28%, var(--surface))",
               borderRadius: "var(--radius-pill)",
               padding: "2px 8px",
               fontWeight: 600
@@ -2448,7 +2438,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                   </thead>
                   <tbody>
                     {selectedRows.map(({ item, selectedQty }) =>
-                  <tr key={item.id} style={{ borderTop: "1px solid var(--surface)" }}>
+                  <tr key={item.id} style={{ borderTop: "1px solid var(--separating-line)" }}>
                         <td style={{ ...invoiceCellStyle, width: "90px" }}>
                           <button
                         type="button"
@@ -2504,7 +2494,7 @@ function JobAssignmentModal({ items, onClose, onAssigned, onFinish, actingUserUu
                       {remainingRows.map(({ item, remainingQty }) => {
                       const pendingValue = pendingQuantities.get(item.id) ?? "1";
                       return (
-                        <tr key={item.id} style={{ borderTop: "1px solid var(--surface)" }}>
+                        <tr key={item.id} style={{ borderTop: "1px solid var(--separating-line)" }}>
                             <td style={{ ...invoiceCellStyle, width: "90px" }}>
                               <button
                               type="button"

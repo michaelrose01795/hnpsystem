@@ -103,7 +103,7 @@ export default function TechConsumableRequestPageUi(props) {
               <button type="button" onClick={() => setShowStockCheck(true)} style={{
             padding: "var(--control-padding)",
             borderRadius: "var(--control-radius)",
-            border: "1px solid var(--primary)",
+            border: "1px solid var(--ghostbutton-ring)",
             background: "var(--surface)",
             color: "var(--primary-selected)",
             fontWeight: 600,
@@ -173,7 +173,7 @@ export default function TechConsumableRequestPageUi(props) {
                   {requestForm.partName.trim() && !stockLoading && !findStockItemByName(requestForm.partName) && <button type="button" onClick={() => createTemporaryStockItem(requestForm.partName.trim())} disabled={addingTemporaryItem} style={{
               padding: "6px 12px",
               borderRadius: "var(--control-radius)",
-              border: "1px solid var(--primary)",
+              border: "1px solid var(--ghostbutton-ring)",
               background: addingTemporaryItem ? "rgba(var(--primary-rgb),0.35)" : "var(--surface)",
               color: "var(--primary-selected)",
               fontWeight: 600,

@@ -311,7 +311,6 @@ const getSectionStyle = (isMobileView) => ({
   "var(--page-card-padding)",
   borderRadius: "var(--radius-xl)",
   background: "var(--section-card-bg)",
-  border: "var(--section-card-border)",
   display: "flex",
   flexDirection: "column",
   gap: isMobileView ? "16px" : "18px",
@@ -490,7 +489,6 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
           display: "flex",
           flexDirection: "column",
           gap: "14px",
-          border: "1px solid var(--search-surface-muted)",
           color: "var(--search-text)"
         }}>
 
@@ -528,7 +526,6 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
             style={{
               padding: "var(--space-4)",
               borderRadius: "var(--radius-md)",
-              border: "1px solid var(--search-surface-muted)",
               background: "var(--search-surface)",
               color: "var(--search-text)",
               display: "flex",
@@ -550,7 +547,6 @@ const LocationSearchModal = ({ type, options, onClose, onSelect }) => {
             style={{
               padding: "18px",
               borderRadius: "var(--radius-md)",
-              border: "1px dashed var(--search-surface-muted)",
               textAlign: "center",
               color: "var(--search-text)"
             }}>
@@ -1046,8 +1042,7 @@ const SimplifiedTrackingModal = ({ initialData, onClose, onSave }) => {
             gap: "var(--space-3)",
             padding: "var(--space-md)",
             backgroundColor: "var(--surface)",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--primary-border)"
+            borderRadius: "var(--radius-sm)"
           }}>
 
           <div>
@@ -2042,7 +2037,6 @@ export default function TrackingDashboard() {
       style={{
         padding: "12px",
         borderRadius: "var(--radius-sm)",
-        border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
         textAlign: "center",
         color: "var(--text-1)"
       }}>
@@ -2058,7 +2052,6 @@ export default function TrackingDashboard() {
       style={{
         padding: "12px",
         borderRadius: "var(--radius-sm)",
-        border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
         textAlign: "center",
         color: "var(--text-1)"
       }}>
@@ -2074,7 +2067,6 @@ export default function TrackingDashboard() {
       style={{
         padding: "12px",
         borderRadius: "var(--radius-sm)",
-        border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
         textAlign: "center",
         color: "var(--text-1)"
       }}>
@@ -2190,7 +2182,6 @@ export default function TrackingDashboard() {
           gridColumn: "1 / -1",
           padding: "12px",
           borderRadius: "var(--radius-sm)",
-          border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
           textAlign: "center",
           color: "var(--text-1)"
         }}>
@@ -2392,7 +2383,6 @@ export default function TrackingDashboard() {
           gridColumn: "1 / -1",
           padding: "12px",
           borderRadius: "var(--radius-sm)",
-          border: "1px dashed rgba(var(--grey-accent-rgb), 0.6)",
           textAlign: "center",
           color: "var(--text-1)"
         }}>

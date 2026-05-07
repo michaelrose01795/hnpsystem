@@ -11,6 +11,7 @@
 }
 
 .box {
+  /* Diagram primitive — dashed box outline is the overlay's visualization purpose */
   position: absolute;
   border: 2px dashed rgba(var(--accent-base-rgb), 0.74);
   background: transparent;
@@ -73,7 +74,6 @@
   line-height: 1.4;
   box-shadow: none;
   pointer-events: none;
-  border: 1px solid rgba(var(--surface-rgb), 0.14);
 }
 
 .labelCreate {
@@ -86,7 +86,6 @@
   border-radius: 12px;
   background: rgba(var(--surface-rgb), 0.96);
   color: var(--text-1);
-  border-color: rgba(var(--accent-base-rgb), 0.24);
   box-shadow: 0 8px 18px rgba(var(--text-1-rgb), 0.12);
 }
 
@@ -116,20 +115,17 @@
 .labelSidebar {
   background: rgba(var(--warning-rgb), 0.92);
   color: var(--warning-dark);
-  border-color: transparent;
 }
 
 .labelSidebarColumn {
   background: rgba(var(--accent-base-rgb), 0.96);
   color: var(--onAccentText);
-  border-color: rgba(var(--accent-base-rgb), 0.4);
   box-shadow: 0 6px 16px rgba(var(--accent-base-rgb), 0.18);
 }
 
 .labelSidebarPrimary {
   background: rgba(var(--warning-rgb), 0.98);
   color: var(--warning-dark);
-  border-color: transparent;
   box-shadow: 0 6px 16px rgba(var(--warning-rgb), 0.18);
 }
 
@@ -171,7 +167,6 @@
   max-height: min(78vh, 720px);
   overflow: hidden;
   border-radius: 18px;
-  border: 1.5px solid rgba(var(--accent-base-rgb), 0.6);
   background: rgba(var(--surface-rgb), 0.96);
   color: var(--text-1);
   box-shadow:
@@ -198,7 +193,7 @@
   gap: 8px;
   padding: 7px 14px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(var(--accent-base-rgb), 0.5);
+  border: 1px solid var(--ghostbutton-ring);
   background: rgba(var(--surface-rgb), 0.96);
   color: var(--text-1);
   font-size: 0.72rem;
@@ -214,7 +209,7 @@
 }
 
 .launcher:hover {
-  border-color: rgba(var(--accent-base-rgb), 0.85);
+  border-color: var(--ghostbutton-ring);
   box-shadow:
     0 8px 22px rgba(var(--text-1-rgb), 0.18),
     0 0 0 1px rgba(var(--accent-base-rgb), 0.24);
@@ -246,7 +241,7 @@
   height: 28px;
   padding: 0;
   border-radius: 8px;
-  border: 1px solid rgba(var(--accent-base-rgb), 0.22);
+  border: 1px solid var(--ghostbutton-ring);
   background: rgba(var(--surface-rgb), 0.7);
   color: var(--text-1);
   font-size: 0.88rem;
@@ -257,7 +252,7 @@
 
 .iconBtn:hover {
   color: var(--text-1);
-  border-color: rgba(var(--accent-base-rgb), 0.55);
+  border-color: var(--ghostbutton-ring);
 }
 
 .iconBtnSm {
@@ -280,7 +275,6 @@
   gap: 6px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1.5px solid rgba(var(--accent-base-rgb), 0.35);
   background: rgba(var(--accent-base-rgb), 0.05);
 }
 
@@ -289,7 +283,6 @@
   flex-direction: column;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid rgba(var(--accent-base-rgb), 0.2);
   border-radius: 12px;
   background: rgba(var(--surface-rgb), 0.5);
 }
@@ -331,7 +324,7 @@
   height: var(--switch-size);
   border-radius: var(--radius-pill);
   background: rgba(var(--text-1-rgb), 0.16);
-  border: 1px solid rgba(var(--text-1-rgb), 0.1);
+  border: 1px solid var(--checkbox-ring);
   padding: 0;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
@@ -353,7 +346,7 @@
 
 .switchOn {
   background: var(--accent-base);
-  border-color: var(--accent-base);
+  border-color: var(--checkbox-ring);
 }
 
 .switchOn::after {
@@ -376,7 +369,6 @@
   padding: 3px;
   border-radius: var(--radius-pill);
   background: rgba(var(--text-1-rgb), 0.08);
-  border: 1px solid rgba(var(--text-1-rgb), 0.08);
 }
 
 .modeBtn {
@@ -427,7 +419,7 @@
 .bulkBtn {
   padding: 3px 9px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(var(--accent-base-rgb), 0.24);
+  border: 1px solid var(--ghostbutton-ring);
   background: rgba(var(--surface-rgb), 0.6);
   color: var(--text-1);
   font-size: 0.62rem;
@@ -439,7 +431,7 @@
 
 .bulkBtn:hover:not(:disabled) {
   color: var(--text-1);
-  border-color: rgba(var(--accent-base-rgb), 0.55);
+  border-color: var(--ghostbutton-ring);
 }
 
 .bulkBtn:disabled {
@@ -459,7 +451,6 @@
   gap: 8px;
   padding: 6px 8px;
   border-radius: 8px;
-  border: 1px solid transparent;
   background: rgba(var(--surface-rgb), 0.4);
   color: var(--text-1);
   cursor: pointer;
@@ -469,7 +460,6 @@
 
 .categoryPill:hover:not(:disabled) {
   background: rgba(var(--surface-rgb), 0.6);
-  border-color: rgba(var(--accent-base-rgb), 0.22);
 }
 
 .categoryPill:disabled {
@@ -479,7 +469,6 @@
 
 .categoryPillActive {
   background: rgba(var(--accent-base-rgb), 0.1);
-  border-color: rgba(var(--accent-base-rgb), 0.45);
   color: var(--text-1);
 }
 
@@ -490,7 +479,7 @@
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  border: 1.5px solid rgba(var(--text-1-rgb), 0.28);
+  border: 1.5px solid var(--checkbox-ring);
   background: rgba(var(--surface-rgb), 0.9);
   color: transparent;
   font-size: 0.64rem;
@@ -500,11 +489,12 @@
 
 .categoryCheckOn {
   background: var(--accent-base);
-  border-color: var(--accent-base);
+  border-color: var(--checkbox-ring);
   color: var(--onAccentText, #fff);
 }
 
 .categorySwatch {
+  /* Diagram primitive — colour swatch in legend */
   width: 10px;
   height: 10px;
   border-radius: 3px;
@@ -529,7 +519,6 @@
   gap: 8px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1.5px solid rgba(var(--accent-base-rgb), 0.35);
   background: rgba(var(--accent-base-rgb), 0.05);
 }
 
@@ -543,7 +532,7 @@
 .ghostBtn {
   padding: 3px 10px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(var(--text-1-rgb), 0.18);
+  border: 1px solid var(--ghostbutton-ring);
   background: transparent;
   color: var(--text-1);
   font-size: 0.66rem;
@@ -555,13 +544,13 @@
 
 .ghostBtn:hover {
   color: var(--text-1);
-  border-color: rgba(var(--text-1-rgb), 0.35);
+  border-color: var(--ghostbutton-ring);
 }
 
 .copyBtn {
   padding: 5px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(var(--accent-base-rgb), 0.3);
+  border: 1px solid var(--ghostbutton-ring);
   background: rgba(var(--surface-rgb), 0.85);
   color: var(--text-1);
   font-size: 0.7rem;
@@ -570,7 +559,7 @@
 }
 
 .copyBtn:hover {
-  border-color: rgba(var(--accent-base-rgb), 0.7);
+  border-color: var(--ghostbutton-ring);
   background: rgba(var(--accent-base-rgb), 0.1);
 }
 
@@ -579,7 +568,6 @@
   padding: 8px 14px 12px;
   font-size: 0.66rem;
   color: var(--text-1);
-  border-top: 1px solid rgba(var(--accent-base-rgb), 0.14);
   background: rgba(var(--surface-rgb), 0.4);
 }
 
@@ -588,7 +576,6 @@
   padding: 1px 5px;
   margin: 0 2px;
   border-radius: 4px;
-  border: 1px solid rgba(var(--text-1-rgb), 0.18);
   background: rgba(var(--surface-rgb), 0.85);
   font-family: var(--font-family-mono);
   font-size: 0.6rem;
@@ -598,7 +585,6 @@
 .panelCreate {
   width: min(640px, calc(100vw - 24px));
   max-height: min(84vh, 860px);
-  border-color: rgba(var(--accent-base-rgb), 0.7);
   background: rgba(var(--surface-rgb), 0.22);
   backdrop-filter: blur(16px) saturate(1.15);
   -webkit-backdrop-filter: blur(16px) saturate(1.15);
@@ -665,7 +651,6 @@
 }
 
 .sectionBlock {
-  border: 1px solid rgba(var(--accent-base-rgb), 0.22);
   border-radius: 14px;
   padding: 10px 12px;
   display: flex;
@@ -727,6 +712,7 @@
 }
 
 .legendSwatch {
+  /* Diagram primitive — legend colour swatch */
   width: 18px;
   height: 18px;
   border-width: 2px;
@@ -744,7 +730,6 @@
 
 .summaryCard {
   border-radius: 12px;
-  border: 1px solid rgba(var(--accent-base-rgb), 0.18);
   background: var(--theme);
   padding: 8px 10px;
   display: grid;
@@ -754,7 +739,6 @@
 .panelCreate .summaryCard,
 .panelCreate .sectionBlock {
   background: rgba(var(--surface-rgb), 0.38);
-  border-color: rgba(var(--accent-base-rgb), 0.24);
 }
 
 .summaryLabel {
@@ -778,25 +762,21 @@
   font-weight: 700;
   background: var(--theme);
   color: var(--text-1);
-  border: 1px solid rgba(var(--accent-base-rgb), 0.18);
 }
 
 .tagWarn {
   background: rgba(var(--warning-rgb), 0.14);
   color: var(--warning-dark);
-  border-color: transparent;
 }
 
 .tagDanger {
   background: rgba(var(--danger-rgb), 0.14);
   color: var(--danger-dark);
-  border-color: transparent;
 }
 
 .tagSuccess {
   background: rgba(var(--success-rgb), 0.14);
   color: var(--success-dark);
-  border-color: transparent;
 }
 
 .copyStatus {

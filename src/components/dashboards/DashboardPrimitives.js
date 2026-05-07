@@ -8,7 +8,6 @@ export const MetricPill = ({ label, value, accent = "var(--primary-selected)", h
     style={{
       borderRadius: "var(--control-radius)",
       padding: "14px 16px",
-      border: `1px solid ${accent}33`,
       background: `${accent}0f`,
       display: "flex",
       flexDirection: "column",

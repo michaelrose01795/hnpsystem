@@ -56,7 +56,6 @@ const mutedRowStyle = {
 
 const hintRowStyle = {
   ...mutedRowStyle,
-  borderTop: "1px solid var(--primary-border)",
   fontWeight: 600,
 };
 

@@ -149,21 +149,21 @@ export default function RopaPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Name</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Lawful basis</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Purpose</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Last reviewed</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Name</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Lawful basis</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Purpose</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Last reviewed</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.name}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.lawful_basis || "—"}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.name}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.lawful_basis || "—"}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                       {row.purpose ? row.purpose.slice(0, 120) : "—"}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.last_reviewed_at || "—"}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.last_reviewed_at || "—"}</td>
                   </tr>
                 ))}
               </tbody>

@@ -8,7 +8,7 @@ export const lightTheme = {
   background: "var(--surface)",
   surface: "var(--surface)",
   surfaceLight: "var(--surfaceHover)",
-  border: "var(--primary-border)",
+  border: "none",
   textPrimary: "var(--text-1)",
   textSecondary: "var(--text-1)",
   primaryColor: "var(--primary)",

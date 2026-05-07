@@ -355,7 +355,6 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
           maxWidth: "600px",
           maxHeight: "90vh",
           overflowY: "auto",
-          border: "none",
           padding: "32px",
         }}
         onClick={(e) => e.stopPropagation()} // Prevent overlay close when clicking inside
@@ -380,7 +379,6 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
               padding: "16px", // Inner padding
               backgroundColor: "var(--surface)", // Light red bg
               borderRadius: "var(--radius-xs)", // Rounded
-              border: "2px solid var(--primary)" // Accent border
             }}
           >
             <h3
@@ -408,15 +406,12 @@ export default function JobCardModal({ isOpen, onClose, prefilledJobNumber = "" 
                   marginBottom: "8px", // Gap between items
                   cursor: "pointer", // ✅ NEW: Show it's clickable
                   transition: "all 0.2s", // ✅ NEW: Smooth hover effect
-                  border: "1px solid transparent" // ✅ NEW: Invisible border for hover
                 }}
                 onMouseEnter={(e) => { // ✅ NEW: Hover effect
                   e.currentTarget.style.backgroundColor = "var(--surface)";
-                  e.currentTarget.style.borderColor = "var(--primary)";
                 }}
                 onMouseLeave={(e) => { // ✅ NEW: Remove hover effect
                   e.currentTarget.style.backgroundColor = "var(--surface)";
-                  e.currentTarget.style.borderColor = "transparent";
                 }}
               >
                 <div style={{ flex: 1 }}> {/* Left column */}

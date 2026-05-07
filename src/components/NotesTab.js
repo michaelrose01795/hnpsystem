@@ -405,7 +405,6 @@ export default function NotesTabNew({
                 padding: "10px 20px",
                 backgroundColor: "var(--primary)",
                 color: "var(--text-2)",
-                border: "1px solid var(--primary)",
                 borderRadius: "var(--radius-xs)",
                 cursor: "pointer",
                 fontSize: "14px",
@@ -492,7 +491,6 @@ export default function NotesTabNew({
                       padding: "10px 18px",
                       backgroundColor: !newNoteText.trim() || savingNewNote ? "var(--surface)" : "var(--primary)",
                       color: !newNoteText.trim() || savingNewNote ? "var(--text-1)" : "white",
-                      border: "1px solid var(--primary-selected)",
                       borderRadius: "var(--radius-xs)",
                       cursor: !newNoteText.trim() || savingNewNote ? "not-allowed" : "pointer",
                       fontSize: "14px",
@@ -690,7 +688,7 @@ export default function NotesTabNew({
 
                 {/* Actions */}
                 {canEdit && !isEditing && (
-                  <div style={{ display: "flex", gap: "12px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid var(--surface)" }}>
+                  <div style={{ display: "flex", gap: "12px", marginTop: "12px", paddingTop: "12px" }}>
                     <button
                       onClick={() => handleEditNote(note)}
                       style={{

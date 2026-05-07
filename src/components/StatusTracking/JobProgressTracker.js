@@ -272,7 +272,7 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
         />
       )}
 
-      {/* Group dot */}
+      {/* Group dot — timeline diagram primitive, exempt from border ban */}
       <span
         style={{
           position: "absolute",
@@ -282,6 +282,7 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
           height: isCompact ? "12px" : "14px",
           borderRadius: "var(--radius-full)",
           backgroundColor: nodeColor,
+          // timeline dot 2px halo — diagram primitive, not a surface border
           border: "2px solid var(--surface)",
           zIndex: 2,
         }}
@@ -346,7 +347,6 @@ function TimelineGroup({ entry, isCompact, isExpanded, onToggle, nodeColor, conn
             gap: "4px",
             marginTop: "4px",
             paddingLeft: "8px", // Indent children slightly
-            borderLeft: `2px solid var(--primary-border)`, // Visual indent marker
           }}
         >
           {group.items.map((child, childIndex) => {
@@ -698,6 +698,7 @@ export default function JobProgressTracker({
                   height: isCompact ? "12px" : "14px",
                   borderRadius: "var(--radius-full)",
                   backgroundColor: nodeColor,
+                  // timeline dot 2px halo — diagram primitive, not a surface border
                   border: "2px solid var(--surface)",
                   boxShadow: isCurrent
                     ? "0 0 10px rgba(var(--danger-rgb), 0.3)" // Subtle glow for current status

@@ -307,7 +307,6 @@ export default function UserDiagnosticDevPageUi(props) {
           letterSpacing: "0.05em",
           color: "var(--text-1)",
           marginBottom: "10px",
-          borderBottom: "1px solid var(--surface)",
           paddingBottom: "6px"
         }}>
             {group.section}

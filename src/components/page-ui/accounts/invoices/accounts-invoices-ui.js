@@ -39,7 +39,6 @@ export default function InvoicesPageUi(props) {
               </Button>
               <Button type="button" variant="secondary" onClick={() => router.push("/accounts")} style={{
             background: "rgba(var(--primary-rgb), 0.12)",
-            borderColor: "rgba(var(--primary-rgb), 0.28)",
             color: "var(--primary-selected)"
           }}>
                 Accounts

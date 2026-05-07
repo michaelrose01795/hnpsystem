@@ -138,7 +138,6 @@ export default function PublicSharePreviewPageUi(props) {
         {/* Header */}
         <header style={{
       background: "var(--surface)",
-      borderBottom: "1px solid var(--theme)",
       padding: "16px 24px",
       position: "sticky",
       top: 0,
@@ -249,7 +248,6 @@ export default function PublicSharePreviewPageUi(props) {
                 {/* Read-only pill - theme aware */}
                 <div style={{
               ...readOnlyPillStyle,
-              borderColor: "rgba(var(--accent-purple-rgb), 0.25)",
               color: "var(--accent-purple)"
             }}>
                   Read-only
@@ -263,8 +261,7 @@ export default function PublicSharePreviewPageUi(props) {
 
         {/* Tab Navigation */}
         <div style={{
-      background: "var(--surface)",
-      borderBottom: "1px solid var(--theme)"
+      background: "var(--surface)"
     }}>
           <div style={{
         maxWidth: "1200px",
@@ -279,7 +276,6 @@ export default function PublicSharePreviewPageUi(props) {
             padding: "16px 24px",
             background: "transparent",
             border: "none",
-            borderBottom: activeTab === tab.id ? "3px solid var(--primary)" : "3px solid transparent",
             fontWeight: activeTab === tab.id ? 700 : 500,
             fontSize: "14px",
             color: activeTab === tab.id ? "var(--primary)" : "var(--info)",
@@ -324,7 +320,6 @@ export default function PublicSharePreviewPageUi(props) {
         {/* Footer */}
         <footer style={{
       background: "var(--surface)",
-      borderTop: "1px solid var(--theme)",
       padding: "16px 24px",
       marginTop: "auto"
     }}>

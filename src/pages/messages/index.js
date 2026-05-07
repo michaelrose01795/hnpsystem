@@ -102,7 +102,6 @@ const shadows = appShellTheme.shadows;
 
 const cardStyle = {
   background: "var(--section-card-bg)",
-  border: "var(--section-card-border)",
   borderRadius: "var(--radius-lg)",
   padding: "var(--section-card-padding)",
   display: "flex",
@@ -312,7 +311,6 @@ const renderMessageContent = (content, userRoles = []) => {
             fontWeight: jobBadgeLabel ? 700 : 600,
             display: jobBadgeLabel ? "inline-flex" : "inline",
             alignItems: "center",
-            border: jobBadgeLabel ? `1px solid rgba(var(--accent-purple-rgb), 0.32)` : "none",
             borderRadius: jobBadgeLabel ? radii.pill : 0,
             padding: jobBadgeLabel ? "2px 10px" : 0,
             margin: jobBadgeLabel ? "0 3px" : 0,

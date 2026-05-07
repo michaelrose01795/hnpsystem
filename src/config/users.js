@@ -34,5 +34,6 @@ export const roleCategories = {
     "Painters",
     "Contractors",
   ],
+  Mobile: ["Mobile Technician"],
   Customers: ["Customer"],
 };

@@ -109,7 +109,6 @@ export default function ValetDashboardUi(props) {
             <button type="button" onClick={() => setSelectedDay(getTodayDateValue())} style={{
           padding: "10px 14px",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
           background: "var(--surface)",
           color: "var(--text-1)",
           fontWeight: 600,
@@ -120,7 +119,6 @@ export default function ValetDashboardUi(props) {
             <button type="button" onClick={() => setSelectedDay("")} style={{
           padding: "10px 14px",
           borderRadius: "var(--radius-sm)",
-          border: "1px solid rgba(var(--grey-accent-rgb), 0.3)",
           background: "var(--surface)",
           color: "var(--text-1)",
           fontWeight: 600,

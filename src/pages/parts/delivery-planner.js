@@ -145,7 +145,6 @@ const modalFieldColumnStyle = {
 
 const plannerTabButton = (active) => ({
   borderRadius: "var(--radius-pill)",
-  border: active ? "1px solid var(--primary)" : "1px solid var(--surface)",
   background: active ? "var(--primary)" : "var(--surface)",
   color: active ? "var(--surface)" : "var(--primary-selected)",
   padding: "8px 18px",

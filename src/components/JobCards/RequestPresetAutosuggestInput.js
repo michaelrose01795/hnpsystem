@@ -195,7 +195,6 @@ export default function RequestPresetAutosuggestInput({
             left: `${menuPosition.left}px`,
             width: `${menuPosition.width}px`,
             backgroundColor: "var(--control-menu-bg)",
-            border: "1px solid var(--surface)",
             borderRadius: "var(--radius-md)",
             maxHeight: "280px",
             overflow: "hidden",
@@ -227,7 +226,7 @@ export default function RequestPresetAutosuggestInput({
                     borderBottom:
                       index === suggestions.length - 1
                         ? "none"
-                        : "1px solid rgba(var(--primary-rgb), 0.14)",
+                        : "1px solid var(--separating-line)",
                     backgroundColor: active ? "rgba(var(--primary-rgb), 0.14)" : "transparent",
                     color: active ? "var(--primary)" : "var(--text-1)",
                     cursor: "pointer",

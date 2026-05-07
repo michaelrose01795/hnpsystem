@@ -1123,7 +1123,7 @@ export default function CustomerMessagesPage() {
                             onClick={() => handleSelectCommand(cmd)}
                             className="w-full bg-[var(--surface)] px-3 py-2 text-left hover:bg-[var(--surface)]"
                             style={{
-                              borderBottom: idx < commandSuggestions.length - 1 ? "1px solid var(--surface)" : "none",
+                              borderBottom: idx < commandSuggestions.length - 1 ? "var(--separating-line)" : "none",
                             }}
                           >
                             <span className="text-sm font-bold text-[var(--primary)]">{cmd.command}</span>
@@ -1451,7 +1451,7 @@ export default function CustomerMessagesPage() {
                           onClick={() => handleSelectCommand(cmd)}
                           className="w-full border-b border-[var(--surface)] bg-[var(--surface)] px-4 py-3 text-left hover:bg-[var(--surface)]"
                           style={{
-                            borderBottom: index < commandSuggestions.length - 1 ? "1px solid var(--surface)" : "none",
+                            borderBottom: index < commandSuggestions.length - 1 ? "var(--separating-line)" : "none",
                           }}
                         >
                           <div className="flex flex-col gap-1">

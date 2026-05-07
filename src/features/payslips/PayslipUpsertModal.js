@@ -210,7 +210,6 @@ export default function PayslipUpsertModal({
         <div
           style={{
             padding: "20px 24px",
-            borderBottom: "1px solid rgba(var(--text-1-rgb), 0.08)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -396,7 +395,6 @@ export default function PayslipUpsertModal({
         <div
           style={{
             padding: "16px 24px",
-            borderTop: "1px solid rgba(var(--text-1-rgb), 0.08)",
             display: "flex",
             justifyContent: "flex-end",
             gap: "10px",

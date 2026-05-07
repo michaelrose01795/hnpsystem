@@ -16,11 +16,6 @@ const STATUS_BG = {
   amber: "rgba(var(--warning-rgb), 0.14)",
 };
 
-const STATUS_BORDER = {
-  red:   "rgba(var(--danger-rgb), 0.55)",
-  amber: "rgba(var(--warning-rgb), 0.55)",
-};
-
 const STATUS_LABEL = {
   red: "Red",
   amber: "Amber",
@@ -110,7 +105,6 @@ export default function ConcernPickerModal({ isOpen, title = "Link capture to a 
                   width: "100%",
                   padding: "var(--space-3)",
                   borderRadius: "var(--radius-sm)",
-                  border: `1px solid ${STATUS_BORDER[concern.status] || "var(--secondary-border)"}`,
                   background: STATUS_BG[concern.status] || "var(--surface)",
                   color: "var(--text-1)",
                   textAlign: "left",

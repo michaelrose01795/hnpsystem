@@ -564,9 +564,6 @@ function StockCheckPopup({
           flexDirection: "column",
           gap: "8px",
           padding: "12px",
-          border: checked
-            ? "1px solid rgba(var(--accent-base-rgb), 0.26)"
-            : "1px solid rgba(var(--accent-base-rgb), 0.12)",
           borderRadius: "var(--radius-sm)",
           background: checked ? "var(--theme)" : "var(--surface)",
         }}
@@ -760,7 +757,6 @@ function StockCheckPopup({
               <div
                 style={{
                   ...sectionCardStyle,
-                  borderColor: "transparent",
                   background: "var(--danger-surface)",
                 }}
               >
@@ -771,7 +767,6 @@ function StockCheckPopup({
               <div
                 style={{
                   ...sectionCardStyle,
-                  borderColor: "transparent",
                   background: "var(--success-surface)",
                 }}
               >
@@ -894,7 +889,6 @@ function StockCheckPopup({
                                   className="app-table-action-btn"
                                   style={{
                                     ...tableControlBaseStyle,
-                                    border: "none",
                                     background: tone.background,
                                     color: tone.color,
                                   }}
@@ -1000,7 +994,6 @@ function StockCheckPopup({
                     padding: "12px",
                     borderRadius: "var(--radius-sm)",
                     background: "var(--surface)",
-                    border: "1px solid rgba(var(--accent-base-rgb), 0.12)",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>

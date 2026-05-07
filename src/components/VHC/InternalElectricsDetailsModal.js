@@ -79,7 +79,6 @@ export default function InternalElectricsDetailsModal({
       : {
           transform: vhcModalContentStyles.baseCard.transform,
           boxShadow: "none",
-          borderColor: vhcModalContentStyles.baseCard.borderColor,
         };
     Object.entries(source).forEach(([key, value]) => {
       element.style[key] = value;

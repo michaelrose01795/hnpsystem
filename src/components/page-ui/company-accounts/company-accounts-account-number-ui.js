@@ -89,11 +89,10 @@ export default function CompanyAccountDetailPageUi(props) {
                 </div>
               </div>
 
-              {/* Tabs Navigation — separator border kept on a non-surface tab strip */}
+              {/* Tabs Navigation */}
               <div style={{
           display: "flex",
           gap: "8px",
-          borderBottom: "1px solid var(--surface)",
           paddingBottom: "8px",
           overflowX: "auto"
         }} className="tabs-scroll-container">
@@ -130,14 +129,13 @@ export default function CompanyAccountDetailPageUi(props) {
           minHeight: "200px"
         }}>{renderTabContent()}</div>
 
-              {/* Action Buttons — separator border kept on the toolbar strip (non-surface) */}
+              {/* Action Buttons */}
               <div style={{
           display: "flex",
           gap: "10px",
           justifyContent: "flex-end",
           flexWrap: "wrap",
-          paddingTop: "12px",
-          borderTop: "1px solid var(--surface)"
+          paddingTop: "12px"
         }}>
                 {permissions.canEditAccount && <>
                     <button type="button" onClick={() => setMode("edit")} style={{

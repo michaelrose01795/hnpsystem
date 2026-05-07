@@ -25,7 +25,6 @@ export default function TimePicker({
     ? {
         ...style,
         border: undefined,
-        borderColor: undefined,
         borderWidth: undefined,
         borderStyle: undefined,
         borderRadius: undefined,

@@ -90,8 +90,7 @@ const JOB_PART_STATUSES = [
 const cardStyle = {
   backgroundColor: "var(--section-card-bg)",
   borderRadius: "var(--section-card-radius)",
-  padding: "var(--section-card-padding)",
-  border: "var(--section-card-border)"
+  padding: "var(--section-card-padding)"
 };
 
 const sectionTitleStyle = {
@@ -115,7 +114,7 @@ const secondaryButtonStyle = {
   ...buttonStyle,
   backgroundColor: "var(--surface)",
   color: "var(--primary)",
-  border: "1px solid var(--primary)"
+  border: "1px solid var(--ghostbutton-ring)"
 };
 
 const tableStyle = {
@@ -1199,7 +1198,7 @@ function StockCataloguePage() {
                       textAlign: "left",
                       padding: "10px 12px",
                       border: "none",
-                      borderBottom: "1px solid var(--surface)",
+                      borderBottom: "var(--separating-line)",
                       background: isSelected ? "var(--surface)" : "transparent",
                       cursor: "pointer"
                     }}>
@@ -1423,7 +1422,7 @@ function StockCataloguePage() {
                     textAlign: "left",
                     padding: "6px 10px",
                     border: "none",
-                    borderBottom: "1px solid var(--surface)",
+                    borderBottom: "var(--separating-line)",
                     background: cat.name === newPartForm.category ? "var(--surface)" : "transparent",
                     cursor: "pointer",
                     fontWeight: cat.name === newPartForm.category ? 700 : 500
@@ -1537,7 +1536,7 @@ function StockCataloguePage() {
                       textAlign: "left",
                       padding: "6px 10px",
                       border: "none",
-                      borderBottom: "1px solid var(--surface)",
+                      borderBottom: "var(--separating-line)",
                       background:
                       code === newPartForm.storageLocation ?
                       "var(--surface)" :

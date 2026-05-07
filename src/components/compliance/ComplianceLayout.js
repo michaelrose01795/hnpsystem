@@ -40,7 +40,6 @@ export default function ComplianceLayout({ title, children }) {
                   flexWrap: "wrap",
                   gap: 6,
                   paddingBottom: 8,
-                  borderBottom: "1px solid var(--primary-border)"
                 }}>
 
                 {TABS.map((tab) => {
@@ -58,8 +57,7 @@ export default function ComplianceLayout({ title, children }) {
                         textDecoration: "none",
                         background: active ? "var(--primary)" : "transparent",
                         color: active ? "var(--onAccentText)" : "var(--text-1)",
-                        fontWeight: active ? 700 : 500,
-                        border: active ? "none" : "1px solid var(--primary-border)"
+                        fontWeight: active ? 700 : 500
                       }}>
 
                       {tab.label}

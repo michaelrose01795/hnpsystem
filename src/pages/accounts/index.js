@@ -315,7 +315,7 @@ export default function AccountsListPage() {
           {linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading links…</p>}
           {!linkedLoading && linkedInvoices.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>No invoice references available.</p>}
           {linkedInvoices.map((invoice) =>
-          <div key={invoice.id || invoice.invoice_id} style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div key={invoice.id || invoice.invoice_id} style={{ borderTop: "var(--separating-line)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
                 <div>
                   <strong style={{ display: "block", color: "var(--text-1)" }}>{invoice.invoice_number || invoice.invoice_id || "Invoice"}</strong>
@@ -355,7 +355,7 @@ export default function AccountsListPage() {
           {linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>Loading links…</p>}
           {!linkedLoading && linkedGoodsIn.length === 0 && <p style={{ margin: 0, color: "var(--text-1)" }}>No goods-in references available.</p>}
           {linkedGoodsIn.map((record) =>
-          <div key={record.id || record.goods_in_number} style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div key={record.id || record.goods_in_number} style={{ borderTop: "var(--separating-line)", paddingTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
                 <div>
                   <strong style={{ display: "block", color: "var(--text-1)" }}>{record.goods_in_number || "Goods in"}</strong>

@@ -449,13 +449,11 @@ export default function EfficiencyTab({
           background: "var(--success-surface)",
           text: "var(--success)",
           label: "var(--success)",
-          border: "rgba(34, 197, 94, 0.22)",
         }
       : {
           background: "var(--danger-surface)",
           text: "var(--danger)",
           label: "var(--danger)",
-          border: "rgba(239, 68, 68, 0.22)",
         };
   const formatSignedHours = (value) => {
     const numeric = Number(value || 0);
@@ -846,20 +844,20 @@ export default function EfficiencyTab({
     letterSpacing: "0.08em",
     color: "var(--grey-accent)",
     background: "var(--surface)",
-    borderBottom: "1px solid var(--surface)",
+    borderBottom: "1px solid var(--separating-line)",
     padding: "12px 16px",
   };
 
   const tdStyle = {
     padding: "12px 16px",
-    borderBottom: "1px solid var(--surface)",
+    borderBottom: "1px solid var(--separating-line)",
     color: "var(--text-color)",
   };
 
   const themedTableHeadingStyle = {
     ...thStyle,
     background: "var(--theme-hover)",
-    borderBottom: "1px solid rgba(var(--accent-base-rgb), 0.24)",
+    borderBottom: "1px solid var(--separating-line)",
     color: "var(--primary-selected)",
   };
 
@@ -1660,7 +1658,6 @@ export default function EfficiencyTab({
                         width: "var(--control-height-xs)",
                         height: "var(--control-height-xs)",
                         borderRadius: "var(--input-radius)",
-                        border: detailEditMode ? "1px solid var(--primary)" : "1px solid var(--surface)",
                         background: detailEditMode ? "var(--primary)" : "var(--surface)",
                         color: detailEditMode ? "var(--surface)" : "var(--primary)",
                         fontSize: "0.95rem",

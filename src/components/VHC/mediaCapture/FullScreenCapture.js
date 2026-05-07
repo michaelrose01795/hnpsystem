@@ -516,7 +516,6 @@ function FloatingWidget({ widget, onRemove }) {
         color: "var(--hud-text)",
         borderRadius: "var(--radius-md)",
         boxShadow: "var(--hud-shadow-md)",
-        border: "1px solid var(--hud-divider)",
         pointerEvents: "auto",
         userSelect: "none",
         WebkitUserSelect: "none",
@@ -1747,7 +1746,6 @@ export default function FullScreenCapture({
                 padding: isModal ? "var(--space-5)" : "var(--space-3) var(--space-4)",
                 borderRadius: "var(--radius-md)",
                 background: "var(--hud-surface-glass)",
-                border: "1px solid var(--hud-divider)",
                 boxShadow: "var(--hud-shadow-md)",
                 color: "var(--hud-text)",
                 textAlign: "center",
@@ -1822,7 +1820,7 @@ export default function FullScreenCapture({
                     style={{
                       padding: "var(--space-2) var(--space-4)",
                       borderRadius: "var(--radius-pill)",
-                      border: "1px solid var(--hud-border)",
+                      border: "1px solid var(--ghostbutton-ring)",
                       background: "var(--hud-surface)",
                       color: "var(--hud-text)",
                       fontWeight: 700,
@@ -1840,7 +1838,6 @@ export default function FullScreenCapture({
                     style={{
                       padding: "var(--space-2) var(--space-4)",
                       borderRadius: "var(--radius-pill)",
-                      border: "1px solid rgba(var(--accentMainRgb), 0.6)",
                       background: "var(--primary)",
                       color: "var(--onAccentText)",
                       fontWeight: 800,
@@ -1863,7 +1860,7 @@ export default function FullScreenCapture({
                     style={{
                       padding: "var(--space-2) var(--space-4)",
                       borderRadius: "var(--radius-pill)",
-                      border: "1px solid var(--hud-border)",
+                      border: "1px solid var(--ghostbutton-ring)",
                       background: "var(--hud-surface)",
                       color: "var(--hud-text)",
                       fontWeight: 700,
@@ -1881,7 +1878,6 @@ export default function FullScreenCapture({
                     style={{
                       padding: "var(--space-2) var(--space-4)",
                       borderRadius: "var(--radius-pill)",
-                      border: "1px solid rgba(var(--accentMainRgb), 0.6)",
                       background: "var(--primary)",
                       color: "var(--onAccentText)",
                       fontWeight: 800,
@@ -1923,7 +1919,6 @@ export default function FullScreenCapture({
             padding: "var(--space-2) var(--space-4)",
             borderRadius: "var(--radius-md)",
             background: "var(--hud-surface-glass)",
-            border: "1px solid var(--hud-divider)",
             boxShadow: "var(--hud-shadow-md)",
             color: "var(--hud-text)",
             textAlign: "center",
@@ -1952,7 +1947,7 @@ export default function FullScreenCapture({
             style={{
               padding: "var(--space-2) var(--space-4)",
               borderRadius: "var(--radius-pill)",
-              border: "1px solid var(--hud-border)",
+              border: "1px solid var(--ghostbutton-ring)",
               background: "var(--hud-surface)",
               color: "var(--hud-text)",
               fontSize: "var(--text-caption)",

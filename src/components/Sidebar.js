@@ -533,6 +533,7 @@ export default function Sidebar({
                       <span
                         aria-hidden="true"
                         style={{
+                          // CSS triangle (caret arrow) — diagram primitive, not a surface border
                           width: 0,
                           height: 0,
                           borderTop: "5px solid transparent",

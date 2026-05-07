@@ -20,7 +20,6 @@ const defaultFilters = { department: "all", status: "all", employmentType: "all"
 const surfaceButtonStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--input-radius)",
-  border: "1px solid var(--surface)",
   background: "var(--surface)",
   fontWeight: 600,
   color: "var(--text-1)",
@@ -29,14 +28,13 @@ const surfaceButtonStyle = {
 
 const primaryButtonStyle = {
   ...surfaceButtonStyle,
-  border: "1px solid rgba(var(--primary-rgb), 0.18)",
   background: "var(--primary)",
   color: "var(--text-2)",
 };
 
 const accentFieldSurface = {
   background: "var(--surface)",
-  border: "1px solid var(--surface)",
+  border: "1px solid var(--input-ring)",
 };
 
 const buildUniqueList = (items = []) => {
@@ -767,7 +765,6 @@ export default function EmployeesTab() {
                 style={{
                   padding: "16px",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px dashed var(--surface)",
                   textAlign: "center",
                   color: "var(--text-1)",
                   background: "var(--surface)",
@@ -1204,7 +1201,7 @@ function SearchableMultiSelect({
           minHeight: "42px",
           padding: "8px 10px",
           borderRadius: "var(--radius-xs)",
-          border: hasError ? "none" : "1px solid var(--surface)",
+          border: hasError ? "none" : "1px solid var(--input-ring)",
           boxShadow: hasError ? "0 0 0 2px rgba(var(--danger-rgb), 0.12)" : "none",
           background: "var(--surface)",
           display: "flex",
@@ -1224,7 +1221,6 @@ function SearchableMultiSelect({
                 toggleValue(item.value);
               }}
               style={{
-                border: "1px solid rgba(var(--primary-rgb), 0.24)",
                 borderRadius: "var(--radius-pill)",
                 padding: "8px 12px",
                 background: "rgba(var(--primary-rgb), 0.12)",
@@ -1279,7 +1275,6 @@ function SearchableMultiSelect({
             borderRadius: "var(--radius-xs)",
             marginTop: "4px",
             zIndex: 1000,
-            border: "1px solid var(--surface)",
           }}
         >
           <div style={{ maxHeight: "210px", overflowY: "auto" }}>
@@ -1340,9 +1335,6 @@ function SectionHeading({ title, hasError = false, errorCount = 0 }) {
         textTransform: "uppercase",
         letterSpacing: "0.04em",
         paddingBottom: "6px",
-        borderBottom: hasError
-          ? "2px solid rgba(var(--danger-rgb), 0.35)"
-          : "2px solid rgba(var(--primary-rgb), 0.15)",
       }}
     >
       <span>{title}</span>
@@ -1379,7 +1371,7 @@ function EmployeeDetailsFields({
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--surface)",
+    border: "1px solid var(--input-ring)",
     background: "var(--surface)",
     color: "var(--text-1)",
   };
@@ -1404,7 +1396,6 @@ function EmployeeDetailsFields({
   const getSectionShellStyle = (section) => {
     const hasError = Boolean(sectionErrors[section]?.length);
     return {
-      border: hasError ? "none" : "1px solid var(--surface)",
       borderRadius: "var(--radius-sm)",
       padding: "12px",
       background: hasError ? "rgba(var(--danger-rgb), 0.06)" : "var(--surface)",
@@ -1647,7 +1638,7 @@ function AddressSearchField({ value, onChange }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--surface)",
+    border: "1px solid var(--input-ring)",
     background: "var(--surface)",
     fontSize: "0.9rem",
   };
@@ -1696,7 +1687,6 @@ function AddressSearchField({ value, onChange }) {
               right: 0,
               zIndex: 20,
               background: "var(--surface)",
-              border: "1px solid var(--surface)",
               borderRadius: "var(--radius-xs)",
               marginTop: "4px",
               maxHeight: "200px",
@@ -1711,7 +1701,7 @@ function AddressSearchField({ value, onChange }) {
                   padding: "8px 12px",
                   cursor: "pointer",
                   fontSize: "0.85rem",
-                  borderBottom: i < results.length - 1 ? "1px solid var(--surface)" : "none",
+                  borderBottom: i < results.length - 1 ? "var(--separating-line)" : "none",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "var(--surface)")}
@@ -1750,7 +1740,7 @@ function EmergencyContactSection({ value, onChange, userId }) {
   const inputStyle = {
     padding: "10px",
     borderRadius: "var(--radius-xs)",
-    border: "1px solid var(--surface)",
+    border: "1px solid var(--input-ring)",
     background: "var(--surface)",
     fontSize: "0.9rem",
   };
@@ -1758,7 +1748,6 @@ function EmergencyContactSection({ value, onChange, userId }) {
   return (
     <div
       style={{
-        border: "1px solid var(--surface)",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
         background: "var(--surface)",
@@ -1835,7 +1824,7 @@ const buttonStylePrimary = {
 
 const buttonStyleGhost = {
   ...surfaceButtonStyle,
-  border: "1px solid rgba(var(--primary-rgb), 0.18)",
+  border: "1px solid var(--ghostbutton-ring)",
   color: "var(--primary)",
 };
 
@@ -1844,7 +1833,6 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
     <div
       style={{
         marginTop: "12px",
-        border: "1px solid rgba(var(--primary-rgb), 0.14)",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
         background: "var(--surface)",
@@ -1867,7 +1855,7 @@ function SampleAutofillBlock({ value, onChange, onApply, onClear }) {
         style={{
           padding: "12px",
           borderRadius: "var(--input-radius)",
-          border: "1px solid var(--surface)",
+          border: "1px solid var(--input-ring)",
           background: "var(--surface)",
           resize: "vertical",
         }}

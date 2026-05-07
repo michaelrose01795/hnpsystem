@@ -328,7 +328,6 @@ export default function InvoiceBuilderPopup({
             <div
               key={line.id}
               style={{
-                border: "1px solid var(--theme)",
                 borderRadius: "var(--input-radius)",
                 padding: "12px",
                 marginBottom: "10px",
@@ -385,7 +384,6 @@ export default function InvoiceBuilderPopup({
             <div
               style={{
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--theme)",
                 overflow: "hidden"
               }}
             >
@@ -411,7 +409,7 @@ export default function InvoiceBuilderPopup({
                     display: "grid",
                     gridTemplateColumns: "2fr 1fr 1fr 1fr",
                     padding: "12px",
-                    borderTop: "1px solid var(--theme)",
+                    borderTop: "1px solid var(--separating-line)",
                     fontSize: "14px"
                   }}
                 >
@@ -441,7 +439,6 @@ export default function InvoiceBuilderPopup({
           <div
             style={{
               borderRadius: "var(--input-radius)",
-              border: "1px solid var(--theme)",
               padding: "12px",
               background: "var(--surface)"
             }}
@@ -468,7 +465,6 @@ export default function InvoiceBuilderPopup({
           <div
             style={{
               borderRadius: "var(--input-radius)",
-              border: "1px solid var(--theme)",
               padding: "12px",
               background: "var(--surface)"
             }}
@@ -502,7 +498,6 @@ export default function InvoiceBuilderPopup({
               marginBottom: "18px",
               padding: "16px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--theme)",
               background: "var(--theme)"
             }}
           >
@@ -606,7 +601,6 @@ export default function InvoiceBuilderPopup({
           <div
             style={{
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--theme)",
               padding: "14px",
               background: "var(--theme)",
               display: previewOpen ? "block" : "none"
@@ -646,7 +640,7 @@ export default function InvoiceBuilderPopup({
             </div>
             <div
               style={{
-                borderTop: "1px solid var(--info)",
+                borderTop: "1px solid var(--separating-line)",
                 marginTop: "8px",
                 paddingTop: "8px",
                 display: "flex",
@@ -674,7 +668,6 @@ export default function InvoiceBuilderPopup({
             style={{
               padding: "10px 18px",
               borderRadius: "var(--radius-xs)",
-              border: "1px solid var(--theme)",
               background: "var(--surface)",
               cursor: "pointer"
             }}

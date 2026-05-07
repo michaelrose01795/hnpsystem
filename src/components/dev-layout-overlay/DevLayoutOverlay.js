@@ -1240,7 +1240,7 @@ export default function DevLayoutOverlay() {
                           padding: "4px 8px",
                           fontSize: 11,
                           borderRadius: 999,
-                          border: "1px solid rgba(255,255,255,0.18)",
+                          border: "1px solid var(--ghostbutton-ring)",
                           background: auditDraft.status === option.id ? "var(--primary)" : "transparent",
                           color: auditDraft.status === option.id ? "var(--onAccentText)" : "inherit",
                           cursor: "pointer",
@@ -1273,7 +1273,7 @@ export default function DevLayoutOverlay() {
                       fontSize: 11,
                       background: "transparent",
                       color: "inherit",
-                      border: "1px solid rgba(255,255,255,0.18)",
+                      border: "1px solid var(--ghostbutton-ring)",
                       borderRadius: 6,
                       cursor: "pointer",
                     }}

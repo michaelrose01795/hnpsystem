@@ -75,7 +75,6 @@ export default function PayslipsListPopup({
         <div
           style={{
             padding: "20px 24px",
-            borderBottom: "1px solid rgba(var(--text-1-rgb), 0.08)",
             display: "grid",
             gap: "16px",
           }}
@@ -226,7 +225,6 @@ export default function PayslipsListPopup({
                       alignItems: "center",
                       padding: "12px 14px",
                       borderRadius: "var(--radius-md, 12px)",
-                      border: "1px solid rgba(var(--text-1-rgb), 0.08)",
                       background: "var(--surface)",
                       color: "var(--text-1)",
                       cursor: "pointer",

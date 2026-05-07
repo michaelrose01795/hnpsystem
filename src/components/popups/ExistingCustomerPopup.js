@@ -101,7 +101,7 @@ export default function ExistingCustomerPopup({ onClose, onSelect, onCreateNew }
                   backgroundColor:
                     selectedCustomer?.id === c.id ? "var(--surface)" : "var(--surface)",
                   color: "var(--text-1)",
-                  borderBottom: "1px solid var(--surface)",
+                  borderBottom: "1px solid var(--separating-line)",
                   fontSize: "14px",
                   fontWeight: selectedCustomer?.id === c.id ? 600 : 500,
                 }}

@@ -38,33 +38,24 @@
   border-radius: 50%;
 }
 
-.app-toast--info {
-  border-left: 4px solid var(--primary);
-}
+/* Toasts no longer carry a coloured left border — borders are only allowed on
+   inputs, checkboxes, ghost buttons, and focus rings. The variant is signalled
+   by the icon colour and surface tint. */
 .app-toast--info .app-toast__icon {
   background: var(--secondary);
   color: var(--primary);
 }
 
-.app-toast--success {
-  border-left: 4px solid var(--success-base);
-}
 .app-toast--success .app-toast__icon {
   background: var(--success-surface);
   color: var(--success-strong);
 }
 
-.app-toast--warning {
-  border-left: 4px solid var(--warning-base);
-}
 .app-toast--warning .app-toast__icon {
   background: var(--warning-surface);
   color: var(--warning-strong);
 }
 
-.app-toast--error {
-  border-left: 4px solid var(--danger-base);
-}
 .app-toast--error .app-toast__icon {
   background: var(--danger-surface);
   color: var(--danger-strong);

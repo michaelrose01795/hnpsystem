@@ -114,9 +114,14 @@
       "Bash(Select-Object Name)",
       "PowerShell(Get-ChildItem -Path \"c:\\\\hnpsystem\\\\src\\\\pages\\\\vhc\" -Recurse -File | ForEach-Object { $_.FullName.Replace\\(\"c:\\\\hnpsystem\\\\\", \"\"\\).Replace\\(\"\\\\\", \"/\"\\) })",
       "Bash(powershell -Command \"\\(Get-Content 'src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js' -Raw\\) -replace '</section>', '</LayerSurface>' | Set-Content 'src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js' -NoNewline\")",
-      "Bash(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\src\" -Directory)"
+      "Bash(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\src\" -Directory)",
+      "Bash(node tools/scripts/check-borders.js)",
+      "Bash(node tools/scripts/check-borders.js 2>&1 | grep -oE 'src/[^:]+' | sort -u > /tmp/border-violators.txt; wc -l /tmp/border-violators.txt; echo '---'; cat /tmp/border-violators.txt)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
   }
 }

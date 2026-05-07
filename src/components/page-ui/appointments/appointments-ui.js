@@ -125,7 +125,6 @@ export default function AppointmentsUi(props) {
             display: "flex",
             flexDirection: "column",
             borderRadius: "var(--radius-md)",
-            border: "1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12)",
             background: "var(--surface)",
             overflow: "hidden"
           }}>
@@ -250,7 +249,6 @@ export default function AppointmentsUi(props) {
                     const severityStyle = severityStyleSource[severity];
                     const isCalmDay = severity === "green" || !severityStyle;
                     const isToday = isSameDate(date, new Date());
-                    const severityBorderLeft = !isCalmDay && severityStyle?.borderColor ? `4px solid ${severityStyle.borderColor}` : "4px solid var(--success)";
                     const bookingPercentDisplay = Number.isFinite(bookingPercent) ? bookingPercent.toFixed(0) : "0";
                     const availabilityLabelColor = isCalmDay ? "var(--success-dark)" : severityStyle?.textColor || "var(--text-1)";
 
@@ -265,7 +263,7 @@ export default function AppointmentsUi(props) {
                     // Shared cell padding rhythm (12px 10px, with first/last getting 14px outer padding) — matches global table feel.
                     const tdBase = {
                       padding: "12px 10px",
-                      borderTop: index === 0 ? "none" : "1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12)",
+                      borderTop: index === 0 ? "none" : "var(--separating-line)",
                       fontSize: "0.85rem",
                       lineHeight: 1.35,
                       verticalAlign: "middle"
@@ -280,7 +278,6 @@ export default function AppointmentsUi(props) {
                     }}>
                     <td style={{
                         ...tdFirst,
-                        borderLeft: severityBorderLeft,
                         fontWeight: isSelected ? "700" : "600"
                       }}>
                       <span style={{
@@ -427,7 +424,6 @@ export default function AppointmentsUi(props) {
           {/* ✅ Enhanced Jobs Table — always shown (toggle removed) */}
           <div style={{
               overflowX: "auto",
-              border: "var(--control-border)",
               borderRadius: "var(--radius-md)",
               background: "var(--theme)"
             }}>
@@ -454,7 +450,7 @@ export default function AppointmentsUi(props) {
                       fontSize: "11px",
                       letterSpacing: "0.05em",
                       textTransform: "uppercase",
-                      borderBottom: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+                      borderBottom: "var(--separating-line)",
                       position: "sticky",
                       top: 0,
                       zIndex: 1,
@@ -468,7 +464,7 @@ export default function AppointmentsUi(props) {
                 {sortedJobs.length > 0 ? sortedJobs.map((job, idx) => {
                     const isCheckedIn = isJobActuallyCheckedIn(job);
                     const isCurrentlyCheckingIn = checkingInJobId === job.id;
-                    const cellBorder = "1px solid rgba(var(--accent-base-rgb), 0.12)";
+                    const cellBorder = "var(--separating-line)";
                     const rowBackground = highlightJob === job.jobNumber ? "var(--success-surface)" : idx % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)";
                     return <tr key={idx} style={{
                       backgroundColor: rowBackground,
@@ -680,7 +676,7 @@ export default function AppointmentsUi(props) {
               fontFamily: "inherit",
               resize: "vertical",
               outline: "none"
-            }} value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} placeholder="Enter notes about this day's schedule..." onFocus={(e) => e.target.style.borderColor = "var(--primary)"} onBlur={(e) => e.target.style.borderColor = "var(--surface)"} />
+            }} value={currentNote} onChange={(e) => setCurrentNote(e.target.value)} placeholder="Enter notes about this day's schedule..." />
           <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -725,8 +721,7 @@ export default function AppointmentsUi(props) {
           {/* Header */}
           <div style={{
                 marginBottom: "18px",
-                paddingBottom: "14px",
-                borderBottom: "var(--control-border)"
+                paddingBottom: "14px"
               }}>
             <h3 style={{
                   margin: "0 0 8px",
@@ -777,8 +772,7 @@ export default function AppointmentsUi(props) {
                     gap: "12px",
                     padding: "10px 12px",
                     borderRadius: "var(--radius-sm)",
-                    background: "var(--section-card-bg)",
-                    border: "var(--control-border)"
+                    background: "var(--section-card-bg)"
                   }}>
                     {/* Avatar initial */}
                     <div style={{

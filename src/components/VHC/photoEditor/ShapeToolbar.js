@@ -52,7 +52,6 @@ const BAR_BASE = {
   alignItems: "center",
   padding: "var(--space-2)",
   background: "var(--surface)",
-  border: "1px solid var(--primary-border)",
   borderRadius: "var(--radius-md)",
   boxShadow: "var(--shadow-md)",
   backdropFilter: "saturate(1.2) blur(6px)",
@@ -82,7 +81,6 @@ function ToolButton({ active, disabled, onClick, title, children }) {
         alignItems: "center",
         justifyContent: "center",
         borderRadius: "var(--control-radius)",
-        border: `1px solid ${active ? "var(--primary-border)" : "transparent"}`,
         background: active ? "var(--secondary-hover)" : "transparent",
         color: active ? "var(--primary)" : "var(--text-1)",
         cursor: disabled ? "not-allowed" : "pointer",
@@ -109,8 +107,8 @@ function Swatch({ color, active, onClick, label }) {
         borderRadius: "50%",
         background: color,
         border: active
-          ? "3px solid var(--text-1)"
-          : "2px solid var(--primary-border)",
+          ? "3px solid var(--checkbox-ring)"
+          : "2px solid var(--checkbox-ring)",
         cursor: "pointer",
         padding: 0,
         transition: "var(--control-transition)",

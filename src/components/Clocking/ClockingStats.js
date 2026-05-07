@@ -12,7 +12,6 @@ export default function ClockingStats() {
     <div
       style={{
         padding: "10px 16px",
-        border: "1px solid var(--primary)",
         borderRadius: "var(--radius-xs)",
         marginTop: "10px",
         backgroundColor: "var(--surface)",

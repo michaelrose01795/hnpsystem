@@ -108,8 +108,7 @@ const QueueBoard = ({ queue }) =>
         gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1fr) auto",
         gap: "12px",
         alignItems: "center",
-        padding: "0 8px 10px",
-        borderBottom: "1px solid rgba(var(--primary-rgb), 0.14)"
+        padding: "0 8px 10px"
       }}>
 
           <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Vehicle</span>
@@ -162,8 +161,7 @@ const QueueBoard = ({ queue }) =>
             background: "rgba(var(--primary-rgb), 0.1)", // pill badge — non-surface decorative element
             color: "var(--primary-selected)",
             fontSize: "0.82rem",
-            fontWeight: 600,
-            border: "1px solid rgba(var(--primary-rgb), 0.14)" // pill badge — non-surface decorative element
+            fontWeight: 600
           }}>
 
                 {job.waiting_status || "Ready"}

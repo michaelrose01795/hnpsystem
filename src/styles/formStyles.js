@@ -3,7 +3,6 @@
 
 export const fieldGroupStyles = {
   background: "var(--section-card-bg)",
-  border: "var(--section-card-border)",
   borderRadius: "var(--section-card-radius)",
   padding: "var(--section-card-padding)",
   display: "flex",
@@ -15,7 +14,7 @@ export const inputStyles = {
   width: "100%",
   padding: "var(--input-padding)",
   borderRadius: "var(--input-radius)",
-  border: "var(--input-border)",
+  border: "var(--input-ring)",
   background: "var(--input-bg)",
   color: "var(--surfaceText)",
 };

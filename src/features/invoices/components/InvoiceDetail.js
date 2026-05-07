@@ -146,7 +146,7 @@ const RequestBlock = ({ request, linkedParts, isEditable = false, onOpenEditor =
     <section
       className={styles.requestBlock}
       onClick={isEditable ? () => onOpenEditor?.(request) : undefined}
-      style={isEditable ? { cursor: "pointer", borderColor: "var(--primary-selected)" } : undefined}
+      style={isEditable ? { cursor: "pointer" } : undefined}
       title={isEditable ? "Click to edit proforma row overrides" : undefined}
     >
       <div className={styles.requestHeader}>
@@ -706,7 +706,6 @@ export default function InvoiceDetail({
                 disabled={emailStatus === "Sending..."}
                 style={{
                   background: customerEmail ? "var(--primary-selected)" : "var(--grey-accent-light)",
-                  borderColor: customerEmail ? "var(--primary-selected)" : "var(--grey-accent-light)",
                   cursor: customerEmail ? "pointer" : "not-allowed",
                   opacity: emailStatus === "Sending..." ? 0.7 : 1,
                 }}
@@ -955,7 +954,7 @@ export default function InvoiceDetail({
                 ))}
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-                <button type="button" onClick={handleCloseProformaEditor} className={styles.printButton} style={{ background: "var(--surface)", color: "var(--text-1)", borderColor: "var(--surface)" }}>
+                <button type="button" onClick={handleCloseProformaEditor} className={styles.printButton} style={{ background: "var(--surface)", color: "var(--text-1)" }}>
                   Cancel
                 </button>
                 <button type="button" onClick={handleSaveProformaOverride} className={styles.printButton} disabled={overrideSaving}>

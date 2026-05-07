@@ -56,7 +56,6 @@ export const PRESENTATION_ROLES = [
     label: "After Sales Director",
     demoName: "Demo After Sales Director",
     routes: [
-      "/dashboard/after-sales",
       "/dashboard",
       "/job-cards/view",
       "/job-cards/[jobNumber]",

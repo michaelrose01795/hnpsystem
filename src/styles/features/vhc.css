@@ -162,8 +162,6 @@
   background: var(--surface);
   border-radius: var(--radius-xs);
   margin-bottom: 8px;
-  border-left-width: 4px;
-  border-left-style: solid;
 }
 
 .vhc-summary-item__section {

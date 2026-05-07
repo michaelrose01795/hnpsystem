@@ -1,63 +1,8 @@
 UI THEME / SURFACE REVIEW — SIDEBAR PAGES PER USER
 
 ====================================================
-GENERAL  (shared across roles — review once)
-====================================================
-
-- /messages (DONE
-
-- /tracking (DONE
-
-- /profile (IN PRGORESS)
-remove "Security, Privacy" buttons from the personal tab, only show within the work tab inside the /profile page. have it so all of the cards and sections within "/profile :: 1.2.2.1.1.2.1 (profile-personal-dashboard-unlocked)" section doesnt use borders. 
-
-check tables and bottom section.
-
-have it so "/profile :: 1.2.1.1.1.1.4.1 (profile-work-attendance-history) — “Attendance History”" and "/profile :: 1.2.1.1.1.1.4.2 (profile-work-attendance-overtime-history) — “Overtime History”" table show 4 rows and then add a scroll. 
-
-====================================================
 RETAIL
 ====================================================
-
-----------------------------------------------------
-Service Manager
-----------------------------------------------------
-
-- /job-cards/waiting/nextjobs (DONE
-
-- /job-cards/view (DONE
-
-- /job-cards/view?division=retail (DONE
-
-- /job-cards/archive (DONE
-
-- /parts/goods-in (DONE
-
-- /mobile/appointments (DONE CHECK NEW PAGE
-
-- /mobile/create (DONE CHECK NEW PAGE
-
-- /dashboard/service (DONE
-
--/customers/[fisrtlastname] (DONE
-
-----------------------------------------------------
-Workshop Manager
-----------------------------------------------------
-
-- /clocking (DONE
-
-- /workshop/consumables-tracker (CHECK ALL)
-have it so the cards within "/workshop/consumables-tracker :: 1.2.1.1.1.1.3.1 (workshop-consumables-totals-grid)" section us "--surface" colour background. 
-
-
-
-----------------------------------------------------
-After Sales Director
-----------------------------------------------------
-
-- /dashboard/after-sales
-
 
 ----------------------------------------------------
 Techs
@@ -74,15 +19,14 @@ Techs
 Mobile Technician
 ----------------------------------------------------
 
-- /mobile/dashboard  
-TODO
-Have it so "/mobile/dashboard :: 1.2.2.1.1.3 (mobile-dashboard-today) — “Today ( 0 ) No mobile visits scheduled today.”", "/mobile/dashboard :: 1.2.2.1.1.4 (mobile-dashboard-upcoming) — “Upcoming ( 0 ) Nothing upcoming.”", "/mobile/dashboard :: 1.2.2.1.1.5 (mobile-dashboard-quick-actions) — “Quick actions View all appointments See my mobile jobs Requ…”" sections use "--theme" colour background. Remove "Mobile Dashboard Your on-site visits for today and the days ahead." text and section and improve the layout of the page better and adjsut the layout depending on size of the screen being used. 
+- /mobile/dashboard (CHECK)
+Have it so "/mobile/dashboard :: 1.2.2.1.1.3 (mobile-dashboard-today) — “Today ( 0 ) No mobile visits scheduled today.”", "/mobile/dashboard :: 1.2.2.1.1.4 (mobile-dashboard-upcoming) — “Upcoming ( 0 ) Nothing upcoming.”", "/mobile/dashboard :: 1.2.2.1.1.5 (mobile-dashboard-quick-actions) — “Quick actions View all appointments See my mobile jobs Requ…”" sections use "--theme" colour background. Remove "Mobile Dashboard Your on-site visits for today and the days ahead." text and section and improve the layout of the page better and adjsut the layout depending on size of the screen being used.
 
 - /mobile/jobs (CHECK)
-Remove "/mobile/jobs" page and have it so the mobile mechanic role has access to the "/job-cards/myjobs" page layout but for the mobile mechanic user they only have access to view any job for that day which is classes as Eligibility for Mobile Mechanic. 
+Remove "/mobile/jobs" page and have it so the mobile mechanic role has access to the "/job-cards/myjobs" page layout but for the mobile mechanic user they only have access to view any job for that day which is classes as Eligibility for Mobile Mechanic.
 
 - /tech/consumables-request (CHECK)
-have it so "/tech/consumables-request :: 1.2.2.1.1 (tech-consumables-request-panel)" card uses "--theme" colour background. have it so the contents within that sectioin use the whole width of the card. and have it so the "Status" coloumn follows the same style as the "/consumables-request" page request section with the "bubbles" now uses 32px button style height (32px not 44px because inside a table). 
+have it so "/tech/consumables-request :: 1.2.2.1.1 (tech-consumables-request-panel)" card uses "--theme" colour background. have it so the contents within that sectioin use the whole width of the card. and have it so the "Status" coloumn follows the same style as the "/consumables-request" page request section with the "bubbles" now uses 32px button style height (32px not 44px because inside a table).
 
 
 ----------------------------------------------------
@@ -102,8 +46,9 @@ Parts Manager
 MOT Tester
 ----------------------------------------------------
 
-- /dashboard/mot
-have it so "/dashboard/mot :: 1.2.1.1.3 (dashboard-mot-auto-content-card-3) — “Trend Tests checked in over the last 7 days Wed 0 Thu 0 Fri…”", "/dashboard/mot :: 1.2.1.1.2 (dashboard-mot-auto-content-card-2) — “Recent MOT jobs Latest registered jobs Recent MOTs No recor…”", "/dashboard/mot :: 1.2.1.1.1 (dashboard-mot-auto-content-card-1) — “Daily MOT tally Tests today 0 Checked in today Passed 0 Com…”" cards use "--theme" colour background. remove "MOT workspace Today's test board Track pass/fail rates, retests, and the queue for testers." text and section. as well as setting the text to use "--text1, --text2, --text-accesnt"
+- /dashboard/mot (CHECK)
+Improve the text within the /dashboard/mot page to use "--text1, --text2, --text-accent as well
+
 
 
 ----------------------------------------------------
@@ -114,9 +59,9 @@ Valet Service
 Have it so within "/valet" page the "Showing 12 jobs" section is within a 44px button style "success" theme lable
 
 - /dashboard/valeting (CHECK CODEX)
-improve the dev overlay within "/dashboard/valeting :: 1.2.1.1 (app-layout-page-card) — “Wash bay overview Cars waiting wash 16 Checked in but not s…”" seciton. 
+improve the dev overlay within "/dashboard/valeting :: 1.2.1.1 (app-layout-page-card) — “Wash bay overview Cars waiting wash 16 Checked in but not s…”" seciton.
 
-Hvae it so "Queue board" uses "--theme" colour background. and have it so "Queue trend" and "Queue board" are using a 50/50 split of the page section width. 
+Hvae it so "Queue board" uses "--theme" colour background. and have it so "Queue trend" and "Queue board" are using a 50/50 split of the page section width.
 
 
 ====================================================
@@ -178,3 +123,53 @@ Presentation
 - /loginPresentation    (presentation role-picker)
 
 - /presentation         (presentation runner shell)
+
+
+====================================================
+DONE
+====================================================
+
+====================================================
+GENERAL  (shared across roles — review once)
+====================================================
+
+- /messages (DONE
+
+- /tracking (DONE
+
+- /profile (DONE
+
+
+====================================================
+RETAIL
+====================================================
+
+----------------------------------------------------
+Service Manager
+----------------------------------------------------
+
+- /job-cards/waiting/nextjobs (DONE
+
+- /job-cards/view (DONE
+
+- /job-cards/view?division=retail (DONE
+
+- /job-cards/archive (DONE
+
+- /parts/goods-in (DONE
+
+- /mobile/appointments (DONE CHECK NEW PAGE
+
+- /mobile/create (DONE CHECK NEW PAGE
+
+- /dashboard/service (DONE
+
+-/customers/[fisrtlastname] (DONE
+
+----------------------------------------------------
+Workshop Manager
+----------------------------------------------------
+
+- /clocking (DONE
+
+- /workshop/consumables-tracker (DONE

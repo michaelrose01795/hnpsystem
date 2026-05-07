@@ -31,7 +31,6 @@ const STAGE_STYLE = {
   height: "100%",
   minHeight: 0,
   background: "var(--surfaceMutedToken, var(--surfaceMuted))",
-  border: "1px solid var(--primary-border)",
   borderRadius: "var(--radius-md)",
   overflow: "hidden",
   display: "flex",

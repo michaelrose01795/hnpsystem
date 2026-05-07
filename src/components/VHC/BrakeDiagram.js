@@ -1,3 +1,4 @@
+// All borders in this file are diagram primitives — exempt from border ban.
 import React from "react";
 import themeConfig from "@/styles/appTheme";
 import CarImage from "@/components/VHC/CarImage";

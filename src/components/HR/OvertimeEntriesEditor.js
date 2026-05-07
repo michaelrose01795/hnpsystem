@@ -180,7 +180,7 @@ export default function OvertimeEntriesEditor({
               </tr>
             ) : (
               localEntries.map((entry) => (
-                <tr key={entry.id} style={{ borderTop: "1px solid var(--theme)" }}>
+                <tr key={entry.id} style={{ borderTop: "var(--separating-line)" }}>
                   <td style={{ padding: "12px 0", fontWeight: 600 }}>
                     {new Date(entry.date).toLocaleDateString()}
                   </td>
@@ -222,7 +222,7 @@ const labelStyle = {
 const inputStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--radius-xs)",
-  border: "1px solid var(--theme)",
+  border: "1px solid var(--input-ring)",
   fontWeight: 500,
 };
 

@@ -85,7 +85,7 @@ export default function RedirectToWorkshopButton({ jobNumber, onRedirected }) {
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 rows={4}
-                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--primary-border-subtle)" }}
+                style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid var(--input-ring)" }}
                 placeholder="e.g. part not available on van, vehicle requires ramp access"
               />
             </label>

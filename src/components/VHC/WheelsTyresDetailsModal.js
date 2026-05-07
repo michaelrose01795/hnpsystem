@@ -303,7 +303,6 @@ function AutoCompleteInput({ value, onChange, options, placeholder, onSelect }) 
         maxHeight: "240px",
         overflowY: "auto",
         backgroundColor: "var(--surface)",
-        border: "1px solid var(--primary-border)",
         borderRadius: "var(--radius-sm)",
         zIndex: 99999,
         boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
@@ -1255,7 +1254,6 @@ export default function WheelsTyresDetailsModal({
                       style={{
                         padding: "16px",
                         borderRadius: "var(--radius-md)",
-                        border: `1px dashed ${palette.border}`,
                         backgroundColor: palette.accentSurface,
                         color: palette.textMuted,
                         fontSize: "13px",
@@ -1272,7 +1270,6 @@ export default function WheelsTyresDetailsModal({
                           justifyContent: "space-between",
                           alignItems: "center",
                           borderRadius: "var(--radius-md)",
-                          border: `1px solid ${palette.border}`,
                           padding: "12px 16px",
                           background: palette.surface,
                           cursor: "pointer",

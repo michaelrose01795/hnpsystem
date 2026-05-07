@@ -230,7 +230,6 @@ export default function PasswordResetNewPage() {
                     padding: "8px 10px",
                     borderRadius: "var(--radius-xs, 6px)",
                     background: "rgba(239, 68, 68, 0.1)",
-                    border: "1px solid rgba(239, 68, 68, 0.4)",
                     color: "#ef4444",
                     fontSize: "0.85rem",
                     marginBottom: 12,

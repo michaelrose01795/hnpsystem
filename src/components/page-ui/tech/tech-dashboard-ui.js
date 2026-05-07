@@ -348,7 +348,6 @@ export default function TechsDashboardUi(props) {
 
         .tech-dashboard-surface-button {
           background: var(--surface);
-          border: 1px solid rgba(var(--accent-base-rgb), 0.14);
         }
 
         .tech-dashboard-action-button {
@@ -357,7 +356,6 @@ export default function TechsDashboardUi(props) {
           justify-content: center;
           text-align: center;
           background: var(--surface);
-          border: 1px solid rgba(var(--accent-base-rgb), 0.14);
         }
 
         .tech-dashboard-surface-button:hover,
@@ -370,13 +368,11 @@ export default function TechsDashboardUi(props) {
 
         .tech-dashboard-surface-button:hover,
         .tech-dashboard-surface-button:focus-visible {
-          border-color: rgba(var(--accent-base-rgb), 0.3);
           background: var(--theme);
         }
 
         .tech-dashboard-action-button:hover,
         .tech-dashboard-action-button:focus-visible {
-          border-color: rgba(var(--accent-base-rgb), 0.3);
           background: var(--theme);
           z-index: var(--hover-surface-z, 80);
         }

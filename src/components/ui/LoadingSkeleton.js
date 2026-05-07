@@ -121,7 +121,7 @@ export function SkeletonMetricCard() {
         gap: "10px",
         minWidth: "200px",
         flex: 1,
-        border: "1px solid var(--accent-base)",
+        border: "1px solid var(--accent-base)", // skeleton-primitive: draws metric-card outline
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -250,7 +250,7 @@ export default function PageLoadingSkeleton({
           style={{
             background: "var(--surface)",
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--accent-base)",
+            border: "1px solid var(--accent-base)", // skeleton-primitive: draws table-card outline
             padding: "16px",
           }}
         >

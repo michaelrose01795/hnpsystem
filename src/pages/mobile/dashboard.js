@@ -25,7 +25,7 @@ function MobileJobRowsSkeleton({ count = 2 }) {return (
           gridTemplateColumns: "1fr auto",
           gap: "10px",
           padding: "12px 0",
-          borderBottom: "1px solid var(--primary-border-subtle, rgba(15,23,42,0.08))"
+          borderBottom: "var(--separating-line)"
         }}>
         
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -40,29 +40,62 @@ function MobileJobRowsSkeleton({ count = 2 }) {return (
 }
 
 const pageStyle = {
-  padding: "16px",
+  padding: "clamp(12px, 2.5vw, 20px)",
   display: "flex",
   flexDirection: "column",
-  gap: "var(--page-stack-gap, 18px)"
+  gap: "var(--page-stack-gap, 18px)",
+  width: "100%",
+  boxSizing: "border-box"
 };
 
 const responsiveGridStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
   gap: "var(--layout-card-gap, 16px)",
   alignItems: "start"
 };
 
-const cardStyle = {
-  padding: "16px"
+const sectionHeadingStyle = {
+  marginTop: 0,
+  marginBottom: "8px",
+  fontSize: "clamp(1rem, 1.6vw, 1.15rem)",
+  color: "var(--text-accent)"
+};
+
+const sectionEmptyStyle = {
+  margin: 0,
+  color: "var(--text-2)",
+  fontSize: "0.9rem"
+};
+
+const quickActionsListStyle = {
+  margin: 0,
+  padding: 0,
+  listStyle: "none",
+  display: "flex",
+  flexDirection: "column",
+  gap: "8px"
+};
+
+const quickActionLinkStyle = {
+  display: "block",
+  padding: "10px 12px",
+  borderRadius: "var(--radius-sm)",
+  background: "var(--surface)",
+  color: "var(--text-1)",
+  textDecoration: "none",
+  fontWeight: 500,
+  minHeight: "44px",
+  lineHeight: "24px"
 };
 
 const jobRowStyle = {
   display: "grid",
-  gridTemplateColumns: "1fr auto",
-  gap: "10px",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
+  gap: "12px",
+  alignItems: "center",
   padding: "12px 0",
-  borderBottom: "1px solid var(--primary-border-subtle, rgba(15,23,42,0.08))"
+  borderBottom: "var(--separating-line)"
 };
 
 function formatWindow(startIso, endIso) {
@@ -123,7 +156,8 @@ function MobileDashboardInner() {
         sectionKey="mobile-dashboard-error"
         parentKey="mobile-dashboard-page"
         sectionType="banner"
-        style={{ ...cardStyle, color: "var(--danger, #dc2626)" }}>
+        padding="var(--section-card-padding)"
+        style={{ color: "var(--danger-base)" }}>
         {error}
       </LayerTheme>
       }
@@ -138,12 +172,12 @@ function MobileDashboardInner() {
           sectionKey="mobile-dashboard-today"
           parentKey="mobile-dashboard-grid"
           sectionType="content-card"
-          style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Today ({today.length})</h2>
+          padding="var(--section-card-padding)">
+          <h2 style={sectionHeadingStyle}>Today ({today.length})</h2>
           {loading ?
           <MobileJobRowsSkeleton count={2} /> :
           today.length === 0 ?
-          <p>No mobile visits scheduled today.</p> :
+          <p style={sectionEmptyStyle}>No mobile visits scheduled today.</p> :
 
           today.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-today" />)
           }
@@ -154,12 +188,12 @@ function MobileDashboardInner() {
           sectionKey="mobile-dashboard-upcoming"
           parentKey="mobile-dashboard-grid"
           sectionType="content-card"
-          style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Upcoming ({upcoming.length})</h2>
+          padding="var(--section-card-padding)">
+          <h2 style={sectionHeadingStyle}>Upcoming ({upcoming.length})</h2>
           {loading ?
           <MobileJobRowsSkeleton count={3} /> :
           upcoming.length === 0 ?
-          <p>Nothing upcoming.</p> :
+          <p style={sectionEmptyStyle}>Nothing upcoming.</p> :
 
           upcoming.map((j) => <JobRow key={j.id} job={j} parentKey="mobile-dashboard-upcoming" />)
           }
@@ -170,12 +204,12 @@ function MobileDashboardInner() {
           sectionKey="mobile-dashboard-quick-actions"
           parentKey="mobile-dashboard-grid"
           sectionType="content-card"
-          style={cardStyle}>
-          <h2 style={{ marginTop: 0 }}>Quick actions</h2>
-          <ul style={{ margin: 0, paddingLeft: "20px" }}>
-            <li><Link href="/appointments">View all appointments</Link></li>
-            <li><Link href="/job-cards/myjobs">See my mobile jobs</Link></li>
-            <li><Link href="/tech/consumables-request">Request consumables</Link></li>
+          padding="var(--section-card-padding)">
+          <h2 style={sectionHeadingStyle}>Quick actions</h2>
+          <ul style={quickActionsListStyle}>
+            <li><Link href="/appointments" style={quickActionLinkStyle}>View all appointments</Link></li>
+            <li><Link href="/job-cards/myjobs" style={quickActionLinkStyle}>See my mobile jobs</Link></li>
+            <li><Link href="/tech/consumables-request" style={quickActionLinkStyle}>Request consumables</Link></li>
           </ul>
         </LayerTheme>
       </DevLayoutSection>
@@ -190,24 +224,35 @@ function JobRow({ job, parentKey }) {
       parentKey={parentKey}
       sectionType="list-row"
       style={jobRowStyle}>
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <strong>{job.job_number}</strong>
+      <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: "4px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+          <strong style={{ color: "var(--text-accent)" }}>{job.job_number}</strong>
           <ServiceModeBadge mode="mobile" />
         </div>
         <div style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>
           {job.vehicle_reg} · {job.vehicle_make_model}
         </div>
-        <div style={{ fontSize: "0.85rem" }}>{job.service_address} {job.service_postcode}</div>
-        <div style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+        <div style={{ fontSize: "0.85rem", color: "var(--text-2)", overflowWrap: "anywhere" }}>
+          {job.service_address} {job.service_postcode}
+        </div>
+        <div style={{ fontSize: "0.85rem", color: "var(--text-2)" }}>
           {formatWindow(job.appointment_window_start, job.appointment_window_end)}
         </div>
       </div>
-      <div style={{ alignSelf: "center" }}>
-        <Link href={`/job-cards/myjobs/${encodeURIComponent(job.job_number)}`} style={{ fontWeight: 600 }}>
-          Open →
-        </Link>
-      </div>
+      <Link
+        href={`/job-cards/myjobs/${encodeURIComponent(job.job_number)}`}
+        style={{
+          fontWeight: 600,
+          color: "var(--text-accent)",
+          textDecoration: "none",
+          padding: "10px 14px",
+          minHeight: "44px",
+          display: "inline-flex",
+          alignItems: "center",
+          whiteSpace: "nowrap"
+        }}>
+        Open →
+      </Link>
     </DevLayoutSection>);
 
 }

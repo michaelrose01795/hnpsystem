@@ -39,7 +39,6 @@ export default function AccountSummary({ summary }) {
               key={card.key}
               style={{
                 borderRadius: "var(--control-radius)",
-                border: "1px solid rgba(var(--primary-rgb), 0.08)",
                 padding: "16px",
                 background: card.emphasize ? "var(--theme)" : "var(--surface-2, var(--surface))"
               }}>

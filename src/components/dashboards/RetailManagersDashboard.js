@@ -474,7 +474,6 @@ export default function RetailManagersDashboard({ user }) {
                   flexDirection: "column",
                   gap: "6px",
                   background: "var(--theme)",
-                  border: "1px solid rgba(var(--primary-rgb), 0.18)",
                   borderRadius: "var(--radius-sm)",
                   padding: "12px"
                 }}>
@@ -518,7 +517,6 @@ export default function RetailManagersDashboard({ user }) {
               <div
                 key={job.jobNumber}
                 style={{
-                  border: "1px solid rgba(var(--primary-rgb), 0.18)",
                   borderRadius: "var(--radius-sm)",
                   padding: "12px",
                   background: "var(--theme)"

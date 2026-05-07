@@ -25,7 +25,6 @@ function AccentOptionContent({ label, light, dark }) {
           width: "12px",
           height: "12px",
           borderRadius: "var(--radius-pill)",
-          border: "1px solid rgba(var(--text-1-rgb), 0.2)",
           background: light,
           flexShrink: 0
         }} />

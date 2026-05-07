@@ -79,9 +79,8 @@ const STYLES = {
     color: "var(--text-1, var(--info-dark))",
   },
   nextStepCard: {
-    borderLeft: "3px solid var(--accent-purple)", // Accent left border for emphasis
     backgroundColor: "var(--surface)",
-    borderRadius: "0 var(--radius-xs) var(--radius-xs) 0",
+    borderRadius: "var(--radius-xs)",
     padding: "10px 12px",
     display: "flex",
     flexDirection: "column",

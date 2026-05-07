@@ -174,7 +174,6 @@ export default function NextJobsPageUi(props) {
                   padding: "14px",
                   position: "relative",
                   borderRadius: "var(--radius-md)",
-                  border: draggingJob?.jobNumber === job.jobNumber ? "2px dashed var(--primary)" : isSearchHighlighted ? "none" : "1px solid var(--surface)",
                   backgroundColor: draggingJob?.jobNumber === job.jobNumber ? "var(--surface)" : isSearchHighlighted ? "var(--success-surface)" : "var(--surface)",
                   cursor: hasAccess ? "grab" : "pointer",
                   transition: "border 0.2s, background-color 0.2s, transform 0.2s",
@@ -231,7 +230,6 @@ export default function NextJobsPageUi(props) {
                     overflowY: "auto",
                     padding: "12px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--theme)",
                     backgroundColor: "var(--surface)",
                     boxShadow: "0 12px 28px rgba(var(--shadow-rgb), 0.18)",
                     zIndex: 3
@@ -382,7 +380,6 @@ export default function NextJobsPageUi(props) {
       maxWidth: "260px",
       padding: "10px 12px",
       borderRadius: "var(--radius-md)",
-      border: "1px solid rgba(var(--primary-rgb), 0.28)",
       background: "rgba(255, 255, 255, 0.96)",
       boxShadow: "0 12px 28px rgba(0, 0, 0, 0.16)"
     }}>
@@ -561,8 +558,7 @@ export default function NextJobsPageUi(props) {
                   alignItems: "start",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  backgroundColor: "var(--surface)",
-                  border: "1px solid var(--theme)"
+                  backgroundColor: "var(--surface)"
                 }}>
                           <div style={{
                     fontSize: "12px",

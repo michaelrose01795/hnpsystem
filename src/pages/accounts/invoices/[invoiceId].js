@@ -91,7 +91,7 @@ export default function InvoiceDetailPage() {
     return () => controller.abort();
   }, [invoiceId]);
   const infoRow = (label, value) =>
-  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid rgba(var(--primary-rgb), 0.08)" }}>
+  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "var(--separating-line)" }}>
       <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{label}</span>
       <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{value || "—"}</span>
     </div>;

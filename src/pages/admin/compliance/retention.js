@@ -85,27 +85,27 @@ export default function RetentionPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Entity type</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Retention</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Action</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Legal basis</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Notes</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Run (log only)</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Entity type</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Retention</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Action</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Legal basis</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Notes</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Run (log only)</th>
                 </tr>
               </thead>
               <tbody>
                 {policies.map((row) => (
                   <tr key={row.entity_type}>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)", fontWeight: 600 }}>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)", fontWeight: 600 }}>
                       {row.entity_type}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.retention_period}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.action}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.legal_basis || "—"}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.retention_period}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.action}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.legal_basis || "—"}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                       {row.notes ? row.notes.slice(0, 80) : "—"}
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                       <Button
                         type="button"
                         variant="secondary"
@@ -132,23 +132,23 @@ export default function RetentionPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>When</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Entity</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Action</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Dry-run?</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Processed</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Actioned</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>When</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Entity</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Action</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Dry-run?</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Processed</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Actioned</th>
                 </tr>
               </thead>
               <tbody>
                 {runs.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{fmt(row.ran_at)}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.entity_type}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.action}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.dry_run ? "yes" : "no"}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.rows_processed}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.rows_actioned}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.ran_at)}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.entity_type}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.action}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.dry_run ? "yes" : "no"}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.rows_processed}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.rows_actioned}</td>
                   </tr>
                 ))}
               </tbody>

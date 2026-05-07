@@ -38,7 +38,6 @@ function resolvePresetColors() {
 
 const PANEL_STYLE = {
   background: "var(--surface)",
-  border: "1px solid var(--primary-border)",
   borderRadius: "var(--radius-md)",
   padding: "var(--space-4)",
 };
@@ -388,7 +387,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
         aria-pressed={active}
         style={{
           ...TOOL_BUTTON_STYLE,
-          border: `1px solid ${active ? "var(--primary-border)" : "var(--primary-border)"}`,
           background: active ? "var(--secondary-hover)" : "var(--surface)",
           color: active ? "var(--primary)" : "var(--text-1)",
           fontWeight: active ? 700 : 500,
@@ -460,8 +458,8 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                       borderRadius: "var(--control-radius)",
                       background: c,
                       border: active
-                        ? "3px solid var(--primary)"
-                        : "1px solid var(--primary-border)",
+                        ? "3px solid var(--checkbox-ring)"
+                        : "1px solid var(--checkbox-ring)",
                       cursor: "pointer",
                       transition: "var(--control-transition)",
                     }}
@@ -480,7 +478,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 flex: 1,
                 padding: "var(--space-sm)",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--primary-border)",
                 background: "var(--surface)",
                 color: canUndo ? "var(--text-1)" : "var(--text-1)",
                 fontSize: "var(--text-body-sm)",
@@ -502,7 +499,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
                 flex: 1,
                 padding: "var(--space-sm)",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--primary-border)",
                 background: "var(--surface)",
                 color: canRedo ? "var(--text-1)" : "var(--text-1)",
                 fontSize: "var(--text-body-sm)",
@@ -523,7 +519,6 @@ export default function PhotoEditorModal({ isOpen, photoFile, onSave, onCancel, 
           style={{
             background: "var(--surfaceMutedToken)",
             borderRadius: "var(--radius-md)",
-            border: "1px solid var(--primary-border)",
             overflow: "hidden",
             display: "flex",
             alignItems: "center",

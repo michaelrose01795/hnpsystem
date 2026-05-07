@@ -108,7 +108,6 @@ export default function PartsJobCardPageUi(props) {
                     {isCustomerEditing ? <>
                         <button type="button" onClick={handleSaveCustomerDetails} disabled={savingCustomerDetails} style={{
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--primary)",
                     background: "var(--primary)",
                     color: "var(--surface)",
                     padding: "8px 14px",
@@ -132,7 +131,6 @@ export default function PartsJobCardPageUi(props) {
                         </button>
                       </> : <button type="button" onClick={handleStartCustomerEdit} style={{
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--primary)",
                   background: "var(--primary)",
                   color: "var(--surface)",
                   padding: "8px 14px",
@@ -191,7 +189,6 @@ export default function PartsJobCardPageUi(props) {
                       </button>
                       <button type="button" onClick={() => setShowNewCustomer(true)} style={{
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--primary)",
                     background: "var(--primary)",
                     color: "var(--surface)",
                     padding: "10px 18px",

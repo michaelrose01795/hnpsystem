@@ -103,7 +103,6 @@ export default function GoodsInPageUi(props) {
       return <>
       <style jsx>{`
         .bin-suggestions {
-          border: 1px solid var(--surface);
           background: rgba(var(--surface-rgb), 0.98);
           box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
         }
@@ -134,7 +133,6 @@ export default function GoodsInPageUi(props) {
           flex-wrap: wrap;
         }
         .add-part-fields-shell {
-          border: 1px solid var(--surface);
           background: var(--surface);
           border-radius: var(--control-radius);
           padding: 12px;
@@ -170,7 +168,6 @@ export default function GoodsInPageUi(props) {
           gap: 16px;
         }
         .invoice-details-shell {
-          border: 1px solid var(--surface);
           background: var(--surface);
           border-radius: var(--control-radius);
           padding: 12px;

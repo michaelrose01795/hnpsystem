@@ -12,7 +12,7 @@ const MetricCard = ({ label, value, helper }) => (
   <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 160 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-2)" }}>{helper}</p>}
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-1)", opacity: 0.7 }}>{helper}</p>}
   </LayerSurface>
 );
 
@@ -22,7 +22,7 @@ const TrendBlock = ({ data }) => {
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       {(data || []).map((point) => (
         <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-2)" }}>{point.label}</span>
+          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-1)", opacity: 0.75 }}>{point.label}</span>
           <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
             <div
               style={{
@@ -45,7 +45,7 @@ const CardList = ({ title, items }) => (
   <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
     <p style={{ margin: 0, fontWeight: 600, color: "var(--text-accent)" }}>{title}</p>
     {items.length === 0 ? (
-      <p style={{ margin: 0, color: "var(--text-2)" }}>No records.</p>
+      <p style={{ margin: 0, color: "var(--text-1)", opacity: 0.7 }}>No records.</p>
     ) : (
       items.map((job) => (
         <div
@@ -54,9 +54,9 @@ const CardList = ({ title, items }) => (
         >
           <div>
             <strong style={{ color: "var(--text-accent)" }}>{job.job_number || "-"}</strong>
-            <p style={{ margin: "4px 0 0", color: "var(--text-2)" }}>{job.vehicle_reg || "Plate"}</p>
+            <p style={{ margin: "4px 0 0", color: "var(--text-1)", opacity: 0.7 }}>{job.vehicle_reg || "Plate"}</p>
           </div>
-          <span style={{ color: "var(--text-2)" }}>{job.completion_status || "Pending"}</span>
+          <span style={{ color: "var(--text-1)", opacity: 0.75 }}>{job.completion_status || "Pending"}</span>
         </div>
       ))
     )}

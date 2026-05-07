@@ -274,8 +274,7 @@ export default function CreateJobCardPageUi(props) {
       marginBottom: "8px",
       display: "flex",
       alignItems: "center",
-      gap: "12px",
-      border: "1px solid var(--primary-hover)"
+      gap: "12px"
     }}>
             <span style={{
         fontSize: "18px"
@@ -337,8 +336,7 @@ export default function CreateJobCardPageUi(props) {
             alignItems: "flex-start",
             justifyContent: "flex-start",
             gap: "12px",
-            paddingBottom: "12px",
-            borderBottom: "1px solid var(--accent-border)"
+            paddingBottom: "12px"
           }}>
                 <div style={{
               minWidth: 0
@@ -716,7 +714,6 @@ export default function CreateJobCardPageUi(props) {
                     return <button key={pref} type="button" onClick={() => toggleContactPreference(pref)} style={{
                       padding: "8px 14px",
                       borderRadius: "var(--control-radius)",
-                      border: active ? "1px solid var(--primary)" : "1px solid transparent",
                       backgroundColor: active ? "var(--surface)" : "transparent",
                       color: active ? "var(--text-1)" : "var(--text-1)",
                       fontSize: "13px",
@@ -755,7 +752,6 @@ export default function CreateJobCardPageUi(props) {
                 padding: input.field === "email" ? "12px 14px" : input.field === "mobile" || input.field === "telephone" ? "12px 14px" : "10px 12px",
                 borderRadius: "var(--radius-sm)",
                 background: "var(--surface)",
-                border: "1px solid var(--accent-border)",
                 minWidth: 0
               }}>
                             <div style={{
@@ -857,7 +853,7 @@ export default function CreateJobCardPageUi(props) {
                   fontSize: "14px",
                   backgroundColor: "var(--theme)",
                   color: "var(--accent-purple)",
-                  border: "1px solid var(--accent-purple)",
+                  border: "1px solid var(--ghostbutton-ring)",
                   borderRadius: "var(--radius-xs)",
                   cursor: isSavingCustomer ? "not-allowed" : "pointer",
                   fontWeight: "600",
@@ -933,7 +929,7 @@ export default function CreateJobCardPageUi(props) {
               fontSize: "14px",
               backgroundColor: "var(--theme)",
               color: "var(--accent-purple)",
-              border: "1px solid var(--accent-purple)",
+              border: "1px solid var(--ghostbutton-ring)",
               borderRadius: "var(--radius-xs)",
               cursor: "pointer",
               fontWeight: "600",

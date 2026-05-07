@@ -14,7 +14,6 @@ function formatTime(seconds = 0) {
 
 const cardStyle = {
   background: "var(--hud-surface-strong)",
-  border: "1px solid var(--hud-divider)",
   borderRadius: "var(--radius-lg)",
   padding: "var(--space-4)",
   display: "grid",
@@ -192,7 +191,7 @@ function Switch({ checked, onChange, disabled }) {
         width: 48,
         height: 44,
         borderRadius: "var(--control-radius)",
-        border: "1px solid var(--hud-divider)",
+        border: "1px solid var(--checkbox-ring)",
         background: checked ? "rgba(59,130,246,0.85)" : "rgba(255,255,255,0.12)",
         cursor: disabled ? "not-allowed" : "pointer",
         transition: "background 160ms ease",

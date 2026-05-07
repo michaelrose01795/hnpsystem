@@ -68,7 +68,6 @@ export default function DashboardClocking() {
             key={tech.userId || tech.id || tech.user}
             style={{
               backgroundColor: "var(--surface)",
-              border: "1px solid var(--primary-border)",
               borderRadius: "var(--radius-xs)",
               padding: "var(--space-4)",
               textAlign: "center",

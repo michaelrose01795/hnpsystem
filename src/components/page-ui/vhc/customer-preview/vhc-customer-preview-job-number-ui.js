@@ -115,7 +115,6 @@ export default function CustomerPreviewPageUi(props) {
         {/* Header */}
         <header style={{
       background: "var(--surface)",
-      borderBottom: "1px solid var(--theme)",
       padding: "16px 24px",
       position: "sticky",
       top: 0,
@@ -206,7 +205,7 @@ export default function CustomerPreviewPageUi(props) {
           padding: "10px 20px",
           background: "var(--surface)",
           color: "var(--accent-purple)",
-          border: "1px solid var(--theme)",
+          border: "1px solid var(--ghostbutton-ring)",
           borderRadius: "var(--radius-sm)",
           fontWeight: 600,
           cursor: "pointer",
@@ -220,8 +219,7 @@ export default function CustomerPreviewPageUi(props) {
 
         {/* Tab Navigation */}
         <div style={{
-      background: "var(--surface)",
-      borderBottom: "1px solid var(--theme)"
+      background: "var(--surface)"
     }}>
           <div style={{
         maxWidth: "1200px",
@@ -236,7 +234,6 @@ export default function CustomerPreviewPageUi(props) {
             padding: "16px 24px",
             background: "transparent",
             border: "none",
-            borderBottom: activeTab === tab.id ? "3px solid var(--primary)" : "3px solid transparent",
             fontWeight: activeTab === tab.id ? 700 : 500,
             fontSize: "14px",
             color: activeTab === tab.id ? "var(--primary)" : "var(--info)",
@@ -281,7 +278,6 @@ export default function CustomerPreviewPageUi(props) {
         {/* Footer */}
         <footer style={{
       background: "var(--surface)",
-      borderTop: "1px solid var(--theme)",
       padding: "16px 24px",
       marginTop: "auto"
     }}>

@@ -88,7 +88,7 @@ export default function HrDashboardUi(props) {
               alignItems: "center",
               justifyContent: "space-between",
               paddingBottom: "var(--space-3)",
-              borderBottom: "1px solid var(--primary-border)",
+              borderBottom: "var(--separating-line)",
               gap: "var(--space-3)"
             }}>
                       <div style={{
@@ -185,7 +185,7 @@ export default function HrDashboardUi(props) {
             flexDirection: "column",
             gap: "var(--space-1)",
             paddingBottom: "var(--space-3)",
-            borderBottom: "1px solid var(--primary-border)"
+            borderBottom: "var(--separating-line)"
           }}>
                     <div style={{
               display: "flex",

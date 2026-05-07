@@ -1,7 +1,6 @@
 /* // file location: src/features/invoices/styles/invoice.module.css */
 .invoiceShell { /* // outer container with padding and print friendly background */
   background: var(--surface); /* // match app surface color */
-  border: 1px solid var(--surface); /* // subtle border for print feel */
   border-radius: var(--radius-md); /* // soften corners */
   padding: 24px; /* // internal spacing */
   color: var(--text-1); /* // ensure readable text */
@@ -15,7 +14,6 @@
   justify-content: space-between; /* // separate company and print button */
   flex-wrap: wrap; /* // allow wrap for mobile */
   gap: 16px; /* // spacing between columns */
-  border-bottom: 2px solid var(--surface); /* // emphasize top section */
   padding-bottom: 16px; /* // spacing below content */
 } /* // end companyHeader */
 
@@ -58,7 +56,7 @@
 .secondaryActionButton {
   padding: 10px 18px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--surface);
+  border: var(--ghostbutton-ring);
   background: var(--surface);
   color: var(--text-1);
   font-weight: 600;
@@ -72,7 +70,6 @@
 } /* // end headerGrid */
 
 .headerBox { /* // shared header card */
-  border: 1px solid var(--surface); /* // subtle border */
   border-radius: var(--radius-sm); /* // soft corners */
   padding: 16px; /* // internal spacing */
   background: var(--surface-secondary, var(--surface)); /* // support dark mode tokens */
@@ -100,7 +97,6 @@
   display: grid; /* // grid layout */
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* // responsive columns */
   gap: 12px; /* // spacing between columns */
-  border: 1px solid var(--surface); /* // border for emphasis */
   border-radius: var(--radius-sm); /* // soft corners */
   padding: 12px; /* // internal spacing */
 } /* // end vehicleRow */
@@ -118,7 +114,6 @@
 } /* // end vehicleItem span */
 
 .requestBlock { /* // container for each request section */
-  border: 1px solid var(--surface); /* // border to separate requests */
   border-radius: var(--control-radius); /* // soft corners */
   padding: 16px; /* // internal spacing */
   display: flex; /* // flex column reflow */
@@ -153,7 +148,7 @@
   text-transform: uppercase; /* // printed style */
   letter-spacing: 0.05em; /* // spacing */
   color: var(--text-1); /* // muted color */
-  border-bottom: 1px solid var(--surface); /* // underline header */
+  border-bottom: var(--separating-line); /* // underline header */
   padding: 8px; /* // spacing */
   background: var(--surface-secondary, var(--surface)); /* // subtle background */
   position: sticky; /* // optional sticky header */
@@ -162,7 +157,7 @@
 
 .partsTable td { /* // table cell styling */
   padding: 8px; /* // consistent spacing */
-  border-bottom: 1px solid var(--surface); /* // row divider */
+  border-bottom: var(--separating-line); /* // row divider */
   font-size: 0.9rem; /* // text size */
   vertical-align: top; /* // keep multi-line cells aligned from top */
 } /* // end partsTable td */
@@ -223,7 +218,6 @@
   display: grid; /* // use grid for columns */
   grid-template-columns: repeat(auto-fit, minmax(160px, auto)); /* // responsive columns */
   gap: 12px; /* // spacing */
-  border-top: 2px solid var(--primary-selected); /* // accent border top */
   padding-top: 12px; /* // spacing above totals */
 } /* // end totalsFooter */
 
@@ -231,7 +225,6 @@
   background: var(--surface-secondary, var(--surface)); /* // subtle background */
   border-radius: var(--control-radius-xs); /* // soft corners */
   padding: 12px; /* // spacing */
-  border: 1px solid var(--surface); /* // border */
 } /* // end totalCard */
 
 .totalCard span { /* // label text */
@@ -247,7 +240,6 @@
 } /* // end totalCard strong */
 
 .paymentDetails { /* // payment/bank detail box */
-  border: 1px solid var(--surface); /* // subtle border */
   border-radius: var(--radius-sm); /* // corners */
   padding: 16px; /* // spacing */
   background: var(--surface); /* // solid surface background */
@@ -267,7 +259,6 @@
 } /* // end paymentGrid */
 
 .statusMessage { /* // shared style for error/empty states */
-  border: 1px solid var(--surface); /* // border */
   border-radius: var(--radius-sm); /* // corners */
   padding: 18px; /* // spacing */
   text-align: center; /* // center text */
@@ -280,7 +271,6 @@
 
 .info { /* // info modifier for fallback notice */
   color: var(--primary-selected); /* // informative text color */
-  border-color: var(--primary-selected); /* // highlight border */
   background: rgba(124, 77, 255, 0.08); /* // subtle tint */
 } /* // end info */
 
@@ -290,7 +280,6 @@
   gap: 6px;
   padding: 6px 12px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--surface);
   font-size: 0.85rem;
   font-weight: 700;
 }
@@ -305,7 +294,6 @@
   gap: var(--layout-card-gap);
   align-items: flex-start;
   padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--primary-border);
 }
 
 .paymentModalGrid {
@@ -365,7 +353,6 @@
 }
 
 .paymentTestCard {
-  border: 1px dashed var(--primary);
   border-radius: var(--radius-sm);
   padding: var(--space-3);
   background: var(--theme, var(--surface));

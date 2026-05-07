@@ -495,7 +495,6 @@ export default function PartsDeliveryPlannerPageUi(props) {
                     <button type="submit" style={{
                 borderRadius: "var(--radius-sm)",
                 padding: "10px 18px",
-                border: "1px solid var(--primary)",
                 background: "var(--primary)",
                 color: "var(--surface)",
                 fontWeight: 600,
@@ -533,7 +532,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                     <thead>
                       <tr style={{
                 background: "var(--surface)",
-                borderBottom: "2px solid var(--surface)"
+                borderBottom: "var(--separating-line)"
               }}>
                         {["Day / Date", "Collections", "Total parts", "Earliest slot", "Load"].map(heading => <th key={heading} style={{
                   textAlign: "left",
@@ -563,7 +562,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                 }}>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface)"
+                    borderTop: "var(--separating-line)"
                   }}>
                               <div style={{
                       fontWeight: 600,
@@ -580,25 +579,25 @@ export default function PartsDeliveryPlannerPageUi(props) {
                             </td>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface)"
+                    borderTop: "var(--separating-line)"
                   }}>
                               {summary.jobCount}
                             </td>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface)"
+                    borderTop: "var(--separating-line)"
                   }}>
                               {summary.totalQuantity}
                             </td>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface)"
+                    borderTop: "var(--separating-line)"
                   }}>
                               {summary.earliestWindow ? formatTime(summary.earliestWindow) : "TBC"}
                             </td>
                             <td style={{
                     padding: "12px 14px",
-                    borderTop: "1px solid var(--surface)"
+                    borderTop: "var(--separating-line)"
                   }}>
                               <span style={{
                       padding: "6px 12px",
@@ -606,8 +605,7 @@ export default function PartsDeliveryPlannerPageUi(props) {
                       fontSize: "0.8rem",
                       fontWeight: 600,
                       background: isSelected ? "var(--primary)" : tone.background,
-                      color: isSelected ? "var(--surface)" : tone.color,
-                      border: isSelected ? "1px solid var(--primary)" : "1px solid transparent"
+                      color: isSelected ? "var(--surface)" : tone.color
                     }}>
                                 {tone.label}
                               </span>

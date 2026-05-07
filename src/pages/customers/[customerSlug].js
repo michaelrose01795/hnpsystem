@@ -889,7 +889,6 @@ const HistoryTab = ({ jobs }) => {
                 style={{
                   borderRadius: "var(--radius-pill)",
                   padding: "6px 16px",
-                  border: "1px solid var(--surface)",
                   background: "var(--surface)",
                   color: "var(--primary-selected)",
                   fontWeight: 600,
@@ -940,7 +939,6 @@ const HistoryTab = ({ jobs }) => {
                 style={{
                   borderRadius: "var(--radius-pill)",
                   padding: "10px 18px",
-                  border: "1px solid var(--surface)",
                   color: "var(--text-1)"
                 }}>
 

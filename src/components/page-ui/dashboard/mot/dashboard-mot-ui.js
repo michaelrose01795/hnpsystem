@@ -15,7 +15,7 @@ export default function MotDashboardUi(props) {
     <LayerTheme as="section" className="app-section-card" gap="12px">
       <div>
         <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-accent)" }}>{title}</h2>
-        {subtitle && <p style={{ margin: "6px 0 0", color: "var(--text-2)" }}>{subtitle}</p>}
+        {subtitle && <p style={{ margin: "6px 0 0", color: "var(--text-1)", opacity: 0.75 }}>{subtitle}</p>}
       </div>
       {children}
     </LayerTheme>
@@ -27,7 +27,7 @@ export default function MotDashboardUi(props) {
         <div>
           <MotSection title="Daily MOT tally">
             {loading ? (
-              <p style={{ color: "var(--text-2)" }}>Loading daily totals...</p>
+              <p style={{ color: "var(--text-1)", opacity: 0.7 }}>Loading daily totals...</p>
             ) : error ? (
               <p style={{ color: "var(--text-accent)" }}>{error}</p>
             ) : (

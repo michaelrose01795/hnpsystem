@@ -250,7 +250,7 @@ export default function TimelineTrimControl({
             pointerEvents: "none",
           }}
         />
-        {/* Active clip range */}
+        {/* Active clip range — diagram primitive, exempt from border ban */}
         <div
           style={{
             position: "absolute",
@@ -504,9 +504,9 @@ function Switch({ checked, onChange, disabled }) {
 
 function ToolButton({ onClick, disabled, tone = "default", children }) {
   const palette = {
-    default: { bg: "var(--control-bg)", color: "var(--surfaceText)", border: "var(--primary-border)" },
-    danger: { bg: "rgba(var(--danger-rgb), 0.12)", color: "var(--danger)", border: "transparent" },
-    ghost: { bg: "transparent", color: "var(--surfaceTextMuted)", border: "var(--primary-border)" },
+    default: { bg: "var(--control-bg)", color: "var(--surfaceText)" },
+    danger: { bg: "rgba(var(--danger-rgb), 0.12)", color: "var(--danger)" },
+    ghost: { bg: "transparent", color: "var(--surfaceTextMuted)", border: "var(--ghostbutton-ring)" },
   }[tone];
 
   return (
@@ -521,7 +521,7 @@ function ToolButton({ onClick, disabled, tone = "default", children }) {
         gap: 6,
         background: palette.bg,
         color: palette.color,
-        border: `1px solid ${palette.border}`,
+        ...(palette.border ? { border: `1px solid ${palette.border}` } : {}),
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
       }}

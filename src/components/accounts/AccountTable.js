@@ -170,7 +170,7 @@ export default function AccountTable({
                   onMouseLeave={() => setHoveredAccountId((current) => current === account.account_id ? null : current)}
                   style={{
                     background: isSelected ? "rgba(var(--primary-rgb), 0.16)" : isHovered ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)",
-                    borderTop: "1px solid rgba(var(--primary-rgb), 0.08)",
+                    borderBottom: "1px solid var(--separating-line)",
                     transition: "background-color 0.18s ease"
                   }}>
 

@@ -42,7 +42,6 @@ const MetricCard = ({ sectionKey, parentKey, label, value, helper }) => (
       minWidth: "140px",
       flex: "1 1 140px",
       background: "var(--surface)",
-      border: "1px solid var(--primary-border)",
     }}
   >
     <p style={{ margin: 0, textTransform: "uppercase", fontSize: "0.75rem", color: "var(--primary-selected)" }}>
@@ -58,7 +57,7 @@ const Section = ({ sectionKey, parentKey, title, subtitle, children, style }) =>
     sectionKey={sectionKey}
     parentKey={parentKey}
     className="app-section-card"
-    style={{ gap: "12px", background: "var(--theme)", border: "1px solid rgba(var(--primary-rgb), 0.18)", ...style }}
+    style={{ gap: "12px", background: "var(--theme)", ...style }}
   >
     <div>
       <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--primary-selected)" }}>{title}</h2>
@@ -76,7 +75,6 @@ const TrendBlock = ({ sectionKey, parentKey, title, data }) => {
       parentKey={parentKey}
       sectionType="content-card"
       style={{
-        border: "1px solid rgba(var(--primary-rgb), 0.18)",
         borderRadius: "var(--radius-sm)",
         padding: "16px",
         background: "var(--theme)",

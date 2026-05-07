@@ -180,17 +180,17 @@ export default function DpiasPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>System / Feature</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Status</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Risk</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Next review</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>System / Feature</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Status</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Risk</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Next review</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.system_or_feature}</td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.system_or_feature}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                       <select
                         value={row.status}
                         disabled={busyId === row.id}
@@ -203,7 +203,7 @@ export default function DpiasPage() {
                         ))}
                       </select>
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                       <select
                         value={row.risk_level || "medium"}
                         disabled={busyId === row.id}
@@ -216,7 +216,7 @@ export default function DpiasPage() {
                         ))}
                       </select>
                     </td>
-                    <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{fmt(row.next_review)}</td>
+                    <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.next_review)}</td>
                   </tr>
                 ))}
               </tbody>

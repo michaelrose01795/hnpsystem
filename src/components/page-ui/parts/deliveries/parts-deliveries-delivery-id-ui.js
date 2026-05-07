@@ -257,8 +257,7 @@ export default function DeliveryRoutePageUi(props) {
           <button type="button" onClick={handleAddStopClick} style={{
         ...buttonStyle,
         background: "var(--primary)",
-        color: "var(--surface)",
-        border: "1px solid var(--primary)"
+        color: "var(--surface)"
       }}>
             Add Stop
           </button>
@@ -626,7 +625,6 @@ export default function DeliveryRoutePageUi(props) {
                       </button>
                       {stop.job?.job_number && <button type="button" onClick={() => handleConfirmDelivery(stop)} disabled={stop.status === "delivered" || actionLoading} style={{
                 borderRadius: "var(--radius-xs)",
-                border: "1px solid var(--accent-purple)",
                 background: "var(--accent-purple)",
                 color: "var(--surface)",
                 padding: "6px 12px",

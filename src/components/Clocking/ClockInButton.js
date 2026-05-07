@@ -20,7 +20,7 @@ export default function ClockInButton() {
       <Button
         onClick={handleClockIn}
         className="w-full"
-        style={{ marginTop: "var(--space-2)", background: "var(--danger)", borderColor: "transparent" }}
+        style={{ marginTop: "var(--space-2)", background: "var(--danger)" }}
       >
         {clockedIn ? "View Clocking" : "Clock In"}
       </Button>

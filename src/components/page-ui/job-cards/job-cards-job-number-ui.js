@@ -317,9 +317,7 @@ export default function JobCardDetailPageUi(props) {
               }}>…</span>}
                 {relatedJobs.map(rJob => {
                 const statusColor = rJob.status === "Open" || rJob.status === "Released" ? "var(--success-dark)" : rJob.status === "Complete" ? "var(--accent-strong)" : "var(--warning)";
-                return <button key={rJob.id} className="app-btn app-btn--sm app-btn--secondary" style={{
-                  border: "1px solid var(--accent-base)"
-                }} onClick={() => router.push(`/job-cards/${rJob.jobNumber}`)}>
+                return <button key={rJob.id} className="app-btn app-btn--sm app-btn--secondary" onClick={() => router.push(`/job-cards/${rJob.jobNumber}`)}>
                       #{rJob.jobNumber}
                       <span style={{
                     fontSize: "11px",

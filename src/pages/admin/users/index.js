@@ -656,7 +656,7 @@ const modalCloseButtonStyle = {
 const secondaryButtonStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--theme)",
+  border: "1px solid var(--ghostbutton-ring)",
   background: "var(--surface)",
   color: "var(--info-dark)",
   fontWeight: 600,

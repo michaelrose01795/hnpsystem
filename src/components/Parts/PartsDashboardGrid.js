@@ -169,7 +169,6 @@ export default function PartsDashboardGrid({
                       padding: "12px 14px",
                       marginBottom: "12px",
                       borderRadius: "var(--radius-sm)",
-                      border: "1px dashed rgba(var(--primary-rgb),0.3)",
                       background: "var(--theme)"
                     }}>
 
@@ -199,7 +198,7 @@ export default function PartsDashboardGrid({
                 key={item.title}
                 style={{
                   padding: "10px 0",
-                  borderBottom: "1px solid rgba(var(--shadow-rgb),0.06)"
+                  borderBottom: "1px solid var(--separating-line)"
                 }}>
 
                   <div style={{ fontWeight: 600 }}>{item.title}</div>
@@ -240,7 +239,7 @@ export default function PartsDashboardGrid({
               key={delivery.reference}
               style={{
                 padding: "10px 0",
-                borderBottom: "1px solid rgba(var(--shadow-rgb),0.06)"
+                borderBottom: "1px solid var(--separating-line)"
               }}>
 
                 <div style={{ fontWeight: 600 }}>{delivery.supplier}</div>

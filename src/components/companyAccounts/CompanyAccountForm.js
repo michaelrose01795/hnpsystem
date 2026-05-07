@@ -298,7 +298,6 @@ export default function CompanyAccountForm({
             style={{
               padding: "10px 16px",
               borderRadius: "var(--control-radius-xs)",
-              border: "1px solid var(--surface-border, var(--surface))",
               background: "var(--surface)",
               color: "var(--text-1)",
             }}

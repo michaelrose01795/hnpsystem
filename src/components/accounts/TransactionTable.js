@@ -118,7 +118,7 @@ export default function TransactionTable({ transactions, loading, filters, onFil
               key={txn.transaction_id}
               onMouseEnter={() => setHoveredTransactionId(txn.transaction_id)}
               onMouseLeave={() => setHoveredTransactionId((current) => current === txn.transaction_id ? null : current)}
-              style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", background: hoveredTransactionId === txn.transaction_id ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)", transition: "background-color 0.18s ease" }}>
+              style={{ borderBottom: "1px solid var(--separating-line)", background: hoveredTransactionId === txn.transaction_id ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)", transition: "background-color 0.18s ease" }}>
 
                 <td style={{ padding: "12px" }}>{txn.transaction_date ? new Date(txn.transaction_date).toLocaleDateString("en-GB") : "—"}</td>
                 <td style={{ padding: "12px", fontWeight: 600 }}>{txn.transaction_id || "—"}</td>

@@ -26,7 +26,6 @@ const infoGrid = {
 const tabButtonStyle = (active) => ({
   padding: "10px 18px",
   borderRadius: "var(--radius-pill)",
-  border: active ? "1px solid var(--primary-selected)" : "1px solid var(--surface)",
   background: active ? "var(--primary-selected)" : "var(--surface)",
   color: active ? "var(--surface)" : "var(--primary-selected)",
   fontWeight: 600,
@@ -541,7 +540,6 @@ function StatusStageButton({ label, active, completed, onClick, disabled }) {
       disabled={disabled}
       style={{
         borderRadius: "var(--radius-sm)",
-        border: active ? "1px solid var(--primary-selected)" : "1px solid var(--surface)",
         padding: "10px 14px",
         minWidth: "160px",
         textAlign: "left",

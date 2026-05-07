@@ -962,7 +962,7 @@ export default function CustomerPreviewPage() {
       <tr
         key={item.id}
         style={{
-          borderBottom: "1px solid var(--theme)",
+          borderBottom: "var(--separating-line)",
           background: getRowBackground(),
           transition: "background 0.2s ease"
         }}>
@@ -1103,8 +1103,7 @@ export default function CustomerPreviewPage() {
             color: theme.text || "var(--accent-purple)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
-            fontSize: "12px",
-            borderBottom: "1px solid var(--theme)"
+            fontSize: "12px"
           }}>
           
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1186,7 +1185,6 @@ export default function CustomerPreviewPage() {
           key={item.label}
           style={{
             padding: "12px",
-            border: `1px solid ${item.color}33`,
             borderRadius: "var(--radius-sm)",
             background: `${item.color}11`
           }}>

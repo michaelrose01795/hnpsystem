@@ -363,7 +363,7 @@ function ConsumablesTrackerPage() {
   const themedBudgetInputStyle = useMemo(
     () => ({
       ...budgetInputStyle,
-      border: isDark ? "1px solid rgba(var(--accent-purple-rgb),0.45)" : budgetInputStyle.border,
+      border: "var(--input-ring)",
       background: isDark ? "var(--surface)" : "var(--surface)",
       color: "var(--text-1)"
     }),
@@ -372,9 +372,6 @@ function ConsumablesTrackerPage() {
   const themedOrderHistoryContainerStyle = useMemo(
     () => ({
       ...orderHistoryContainerStyle,
-      border: isDark ?
-      "1px solid rgba(var(--accent-purple-rgb),0.25)" :
-      orderHistoryContainerStyle.border,
       background: isDark ? "var(--surface)" : orderHistoryContainerStyle.background
     }),
     [isDark]
@@ -392,9 +389,7 @@ function ConsumablesTrackerPage() {
     }),
     [mutedTextColor]
   );
-  const themedOrderHistoryRowBorder = isDark ?
-  "1px solid rgba(var(--accent-purple-rgb),0.2)" :
-  orderHistoryRowBorder;
+  const themedOrderHistoryRowBorder = orderHistoryRowBorder;
   const statusNotificationPendingRef = useRef(new Map());
 
   const closeOrderModal = useCallback(() => {

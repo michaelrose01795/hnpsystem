@@ -28,7 +28,6 @@ export default function ClockingList() {
                 gridTemplateColumns: "1.4fr 0.8fr 0.8fr",
                 gap: "12px",
                 padding: "10px 0",
-                borderTop: i === 0 ? "none" : "1px solid var(--skeleton-border, rgba(0,0,0,0.06))",
               }}
             >
               <SkeletonBlock width="70%" height="12px" />

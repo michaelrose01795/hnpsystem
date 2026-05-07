@@ -113,7 +113,7 @@ export default function AdminUserManagementUi(props) {
               <textarea value={companyProfile.payment_reference_hint} onChange={event => handleCompanyInputChange("payment_reference_hint", event.target.value)} placeholder="Payment reference hint" rows={3} style={{
           padding: "var(--input-padding)",
           borderRadius: "var(--input-radius)",
-          border: "var(--input-border)",
+          border: "var(--input-ring)",
           gridColumn: "1 / -1"
         }} />
             </div>}
@@ -171,7 +171,7 @@ export default function AdminUserManagementUi(props) {
                 </thead>
                 <tbody>
                   {dbUsers.map(account => <tr key={account.id} style={{
-              borderTop: "1px solid var(--theme)"
+              borderTop: "var(--separating-line)"
             }}>
                       <td style={{
                 padding: "12px 0",
@@ -323,7 +323,7 @@ export default function AdminUserManagementUi(props) {
               role,
               members
             }) => <tr key={role} style={{
-              borderTop: "1px solid var(--theme)"
+              borderTop: "var(--separating-line)"
             }}>
                       <td style={{
                 padding: "12px 0",
@@ -338,7 +338,6 @@ export default function AdminUserManagementUi(props) {
                             {members.map(member => <button key={`${role}-${member.id || member.displayName}`} type="button" onClick={() => handleProfileView(member)} style={{
                     padding: "6px 10px",
                     borderRadius: "var(--radius-pill)",
-                    border: "1px solid var(--theme)",
                     background: activeUser === member.displayName ? "var(--accent-purple)" : "white",
                     color: activeUser === member.displayName ? "white" : "var(--info-dark)",
                     fontSize: "0.85rem",
@@ -383,7 +382,6 @@ export default function AdminUserManagementUi(props) {
               <iframe title={`${previewMember.displayName} profile`} src={`/admin/profiles/${encodeURIComponent(previewMember.key || previewMember.displayName)}`} style={{
           width: "100%",
           height: "500px",
-          border: "1px solid var(--theme)",
           borderRadius: "var(--radius-sm)"
         }} />
               <div style={{

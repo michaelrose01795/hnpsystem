@@ -166,10 +166,6 @@ export default function ConfirmationDialog({
                   display: "flex",
                   flexDirection: "column",
                   gap: "4px",
-                  // Subtle inner border using the matching label colour at low
-                  // alpha keeps the tile readable in dark mode where flat
-                  // surfaces can blend into the dialog background.
-                  border: "1px solid rgba(0,0,0,0.04)",
                 }}
               >
                 <span
@@ -215,7 +211,6 @@ export default function ConfirmationDialog({
           style={{
             padding: "var(--control-padding)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--primary-border)",
             backgroundColor: "var(--surface)",
             color: "var(--text-1)",
             cursor: "pointer",
@@ -231,7 +226,6 @@ export default function ConfirmationDialog({
           style={{
             padding: "var(--control-padding)",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--primary)",
             backgroundColor: "var(--primary)",
             color: "var(--text-2)",
             cursor: "pointer",

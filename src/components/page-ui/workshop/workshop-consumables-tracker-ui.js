@@ -1,4 +1,5 @@
 import LayerTheme from "@/components/ui/LayerTheme"; // file location: src/components/page-ui/workshop/workshop-consumables-tracker-ui.js
+import LayerSurface from "@/components/ui/LayerSurface";
 
 const tableButtonStyle = {
   minHeight: "32px",
@@ -511,8 +512,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   padding: "12px",
                   boxShadow: "none",
                   backgroundColor: "var(--surface)",
-                  borderRadius: "var(--radius-md)",
-                  border: "var(--section-card-border)"
+                  borderRadius: "var(--radius-md)"
                 }}>
                   <p style={{
                     margin: 0,
@@ -530,8 +530,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   padding: "12px",
                   boxShadow: "none",
                   backgroundColor: "var(--surface)",
-                  borderRadius: "var(--radius-md)",
-                  border: "var(--section-card-border)"
+                  borderRadius: "var(--radius-md)"
                 }}>
                   <p style={{
                     margin: 0,
@@ -549,8 +548,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   padding: "12px",
                   boxShadow: "none",
                   backgroundColor: "var(--surface)",
-                  borderRadius: "var(--radius-md)",
-                  border: "var(--section-card-border)"
+                  borderRadius: "var(--radius-md)"
                 }}>
                   <p style={{
                     margin: 0,
@@ -568,8 +566,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   padding: "12px",
                   boxShadow: "none",
                   backgroundColor: "var(--surface)",
-                  borderRadius: "var(--radius-md)",
-                  border: "var(--section-card-border)"
+                  borderRadius: "var(--radius-md)"
                 }}>
                   <p style={{
                     margin: 0,
@@ -686,14 +683,7 @@ export default function ConsumablesTrackerPageUi(props) {
                 gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                 gap: "10px"
               }}>
-                <div data-dev-section-key="workshop-consumables-total-month-spend" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-totals-grid" data-dev-background-token="theme" style={{
-                  ...cardStyle,
-                  padding: "16px",
-                  boxShadow: "none",
-                  backgroundColor: "var(--theme)",
-                  borderRadius: "var(--radius-md)",
-                  border: "var(--section-card-border)"
-                }}>
+                <LayerSurface as="div" padding="16px" data-dev-section-key="workshop-consumables-total-month-spend" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-totals-grid" data-dev-background-token="surface" style={{ boxShadow: "none" }}>
                   <p style={{
                     margin: 0,
                     color: quietLabelColor,
@@ -708,15 +698,8 @@ export default function ConsumablesTrackerPageUi(props) {
                   }}>
                     {financialLoading ? <InlineLoading width={110} height={22} label="Loading month spend" /> : formatCurrency(totals.monthSpend)}
                   </h2>
-                </div>
-                <div data-dev-section-key="workshop-consumables-total-projected-spend" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-totals-grid" data-dev-background-token="theme" style={{
-                  ...cardStyle,
-                  padding: "16px",
-                  boxShadow: "none",
-                  backgroundColor: "var(--theme)",
-                  borderRadius: "var(--radius-md)",
-                  border: "var(--section-card-border)"
-                }}>
+                </LayerSurface>
+                <LayerSurface as="div" padding="16px" data-dev-section-key="workshop-consumables-total-projected-spend" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-totals-grid" data-dev-background-token="surface" style={{ boxShadow: "none" }}>
                   <p style={{
                     margin: 0,
                     color: quietLabelColor,
@@ -731,15 +714,8 @@ export default function ConsumablesTrackerPageUi(props) {
                   }}>
                     {financialLoading ? <InlineLoading width={110} height={22} label="Loading projected spend" /> : formatCurrency(totals.projectedSpend)}
                   </h2>
-                </div>
-                <div data-dev-section-key="workshop-consumables-total-budget-remaining" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-totals-grid" data-dev-background-token="theme" style={{
-                  ...cardStyle,
-                  padding: "16px",
-                  boxShadow: "none",
-                  backgroundColor: "var(--theme)",
-                  borderRadius: "var(--radius-md)",
-                  border: "var(--section-card-border)"
-                }}>
+                </LayerSurface>
+                <LayerSurface as="div" padding="16px" data-dev-section-key="workshop-consumables-total-budget-remaining" data-dev-section-type="stat-card" data-dev-section-parent="workshop-consumables-totals-grid" data-dev-background-token="surface" style={{ boxShadow: "none" }}>
                   <p style={{
                     margin: 0,
                     color: quietLabelColor,
@@ -754,7 +730,7 @@ export default function ConsumablesTrackerPageUi(props) {
                   }}>
                     {financialLoading ? <InlineLoading width={110} height={22} label="Loading budget remaining" /> : formatCurrency(Math.max(totals.budgetRemaining, -999999))}
                   </h2>
-                </div>
+                </LayerSurface>
               </div>
               </LayerTheme>
 

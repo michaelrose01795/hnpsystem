@@ -127,7 +127,6 @@ const jobDetailsPopupPrimaryButtonStyle = {
   padding: "12px 16px",
   borderRadius: "var(--radius-xs)",
   cursor: "pointer",
-  border: "1px solid var(--accent-purple)",
   fontSize: "14px",
   fontWeight: "600",
   transition: "background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease"
@@ -150,7 +149,7 @@ const jobDetailsPopupQuietButtonStyle = {
   ...jobDetailsPopupPrimaryButtonStyle,
   backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
-  border: "1px solid var(--theme)"
+  border: "1px solid var(--ghostbutton-ring)"
 };
 
 const getJobRequestsCountFromPayload = (payload) => {

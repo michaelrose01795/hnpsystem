@@ -63,7 +63,6 @@ export default function TyresSection({
         flexDirection: "column", // Stack children vertically
         gap: "12px", // Provide spacing between sections
         backgroundColor: palette.surface, // Match dashboard surface colour
-        border: `1px solid ${palette.border}`, // Provide subtle border
         borderRadius: "var(--radius-md)", // Match rounded card styling
         padding: "16px", // Add internal spacing
         boxShadow: "none", // Apply soft for elevation
@@ -103,7 +102,6 @@ export default function TyresSection({
               right: 0,
               backgroundColor: "var(--search-surface)",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--search-surface-muted)",
               boxShadow: "none",
               maxHeight: "220px",
               overflowY: "auto",

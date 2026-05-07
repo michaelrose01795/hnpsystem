@@ -24,7 +24,6 @@ export default function Popup({ isOpen, onClose, children }) {
           borderRadius: "var(--input-radius)",
           backgroundColor: "var(--primary)",
           color: "white",
-          border: "1px solid var(--primary-hover)",
           cursor: "pointer",
           fontWeight: 600,
         }}

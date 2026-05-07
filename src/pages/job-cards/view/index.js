@@ -107,7 +107,6 @@ const popupPrimaryActionButtonStyle = {
   padding: "12px 20px",
   backgroundColor: "var(--accent-purple)",
   color: "var(--text-2)",
-  border: "1px solid var(--accent-purple)",
   borderRadius: "var(--radius-xs)",
   cursor: "pointer",
   fontSize: "14px",
@@ -127,7 +126,7 @@ const popupQuietActionButtonStyle = {
   padding: "12px 20px",
   backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
-  border: "1px solid var(--theme)",
+  border: "1px solid var(--ghostbutton-ring)",
   borderRadius: "var(--radius-xs)",
   cursor: "pointer",
   fontSize: "14px",
@@ -1386,7 +1385,6 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
               fontWeight: 600,
               fontSize: "12px",
               textTransform: "capitalize",
-              border: "1px solid currentColor",
               letterSpacing: "0.3px",
               ...divisionBadgeStyles
             }}>
@@ -1402,7 +1400,6 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
               fontWeight: 600,
               fontSize: "12px",
               textTransform: "capitalize",
-              border: "1px solid currentColor",
               letterSpacing: "0.3px"
             }}>
             

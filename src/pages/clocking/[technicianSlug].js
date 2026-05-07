@@ -693,13 +693,13 @@ export default function UserClockingHistory() {
     letterSpacing: "0.08em",
     color: "var(--grey-accent)",
     background: "var(--surface)",
-    borderBottom: "1px solid var(--surface)",
+    borderBottom: "var(--separating-line)",
     padding: "14px 18px"
   };
 
   const tableCellStyle = {
     padding: "14px 18px",
-    borderBottom: "1px solid var(--surface)",
+    borderBottom: "var(--separating-line)",
     color: "var(--text-color)"
   };
 

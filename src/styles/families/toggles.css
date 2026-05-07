@@ -50,7 +50,8 @@
   appearance: none;
   width: 18px;
   height: 18px;
-  border: 2px solid var(--control-bg-hover);
+  /* Checkboxes are one of the four allowed "ring" use-cases. */
+  border: var(--checkbox-ring);
   border-radius: var(--radius-xs);
   background: var(--surface);
   cursor: pointer;
@@ -74,12 +75,12 @@
   transform: rotate(45deg) translate(-1px, -1px);
 }
 
-/* Radio variant — styled native radio */
+/* Radio variant — styled native radio. Radios share the checkbox ring token. */
 .app-toggle--radio {
   appearance: none;
   width: 18px;
   height: 18px;
-  border: 2px solid var(--control-bg-hover);
+  border: var(--checkbox-ring);
   border-radius: 50%;
   background: var(--surface);
   cursor: pointer;

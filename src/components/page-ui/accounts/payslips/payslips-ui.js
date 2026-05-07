@@ -187,10 +187,10 @@ export default function PayslipsAdminPageUi(uiProps) {
                     const tone = getStatusTone(slip.status);
                     return (
                       <tr key={slip.id} style={{ background: "var(--surface)" }}>
-                        <td style={{ padding: "10px 12px", borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)" }}>
+                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)" }}>
                           <strong style={{ color: "var(--text-1)" }}>{formatDate(slip.paidDate)}</strong>
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)" }}>
+                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)" }}>
                           <div style={{ display: "grid", gap: "2px" }}>
                             <span style={{ color: "var(--text-1)", fontWeight: 600 }}>
                               {slip.user?.name || `User ${slip.userId}`}
@@ -200,19 +200,19 @@ export default function PayslipsAdminPageUi(uiProps) {
                             ) : null}
                           </div>
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)", color: "var(--text-1)" }}>
+                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", color: "var(--text-1)" }}>
                           {slip.user?.department || "—"}
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)", color: "var(--text-1)" }}>
+                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", color: "var(--text-1)" }}>
                           {formatPeriodLabel(slip)}
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)", textAlign: "right", fontWeight: 600 }}>
+                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", textAlign: "right", fontWeight: 600 }}>
                           {formatCurrency(slip.grossPay)}
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)", textAlign: "right", fontWeight: 700, color: "var(--accentText, var(--accent))" }}>
+                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", textAlign: "right", fontWeight: 700, color: "var(--accentText, var(--accent))" }}>
                           {formatCurrency(slip.netPay)}
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)" }}>
+                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)" }}>
                           <span
                             style={{
                               padding: "2px 8px",
@@ -228,7 +228,7 @@ export default function PayslipsAdminPageUi(uiProps) {
                             {formatStatusLabel(slip.status)}
                           </span>
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)", textAlign: "right" }}>
+                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", textAlign: "right" }}>
                           <div style={{ display: "inline-flex", gap: "6px" }}>
                             <Button type="button" variant="ghost" size="xs" onClick={() => setActivePayslip(slip)}>
                               View

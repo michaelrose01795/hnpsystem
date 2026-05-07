@@ -80,7 +80,6 @@ const _p = { // CSS variable token aliases for this layout (matches appTheme pal
   backgroundGradient: "var(--surface)", // page background
   modalGradient: "var(--surface)", // card/modal background
   surface: "var(--surface)", // default surface
-  border: "var(--primary-border)", // border colour
   textPrimary: "var(--text-1)", // primary text colour
   textMuted: "var(--text-1)" // muted/secondary text colour
 };const _r = { // CSS variable border radius aliases (matches appTheme radii)
@@ -109,7 +108,7 @@ const vhcLayoutStyles = { // page layout style map — only used on this page
   sectionSubtitle: { fontSize: "13px", color: _p.textMuted, margin: 0 },
   sectionsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--space-md)" },
   sectionCard: { position: "relative", textAlign: "left", backgroundColor: _p.surface, borderRadius: _r.lg, padding: "var(--space-6)", boxShadow: "none", cursor: "pointer", transition: "transform 0.2s ease, border-color 0.2s ease", display: "flex", flexDirection: "column", gap: "var(--space-3)" },
-  sectionCardHover: { transform: "translateY(-3px)", boxShadow: "none", borderColor: _p.accent },
+  sectionCardHover: { transform: "translateY(-3px)", boxShadow: "none" },
   cardTitle: { fontSize: "16px", fontWeight: "700", color: _p.textPrimary, margin: 0 },
   cardSubtitle: { fontSize: "13px", color: _p.textMuted, margin: 0, lineHeight: 1.4 },
   badge: { alignSelf: "flex-start", padding: "var(--space-xs) var(--space-3)", borderRadius: _r.pill, fontSize: "11px", fontWeight: "700", letterSpacing: "0.4px", textTransform: "uppercase", border: "1px solid transparent" },
@@ -4731,7 +4730,6 @@ function getPreviewHeading(doc = {}) {
 
 const previewHeaderButtonStyle = {
   padding: "6px 14px",
-  border: "1px solid rgba(var(--primary-rgb), 0.42)",
   borderRadius: "var(--input-radius)",
   backgroundColor: "rgba(var(--primary-rgb), 0.5)",
   color: "var(--text-2)",
@@ -4809,7 +4807,6 @@ function DocumentsTab({
               style={{
                 display: "flex", alignItems: "center", gap: "10px",
                 padding: "16px 20px",
-                borderBottom: "1px solid rgba(var(--surface-rgb), 0.28)",
                 backgroundColor: "rgba(var(--surface-rgb), 0.9)",
                 backdropFilter: "blur(18px)",
                 WebkitBackdropFilter: "blur(18px)",
@@ -4840,7 +4837,7 @@ function DocumentsTab({
                   style={{
                     flex: 1, padding: "6px 10px",
                     borderRadius: "var(--input-radius)",
-                    border: "1px solid var(--primary)",
+                    border: "1px solid var(--input-ring)",
                     fontSize: "14px", fontWeight: 600,
                     color: "var(--text-1)",
                     backgroundColor: "rgba(var(--surface-rgb), 0.78)",
@@ -5101,7 +5098,6 @@ function DocumentsTab({
                 <div
                 style={{
                   display: "flex", gap: "6px", padding: "8px 12px",
-                  borderTop: "1px solid var(--surface)",
                   backgroundColor: "var(--surface)"
                 }}>
                 

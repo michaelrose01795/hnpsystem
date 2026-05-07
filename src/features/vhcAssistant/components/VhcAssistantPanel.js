@@ -112,7 +112,6 @@ export default function VhcAssistantPanel({
         {/* Next action column */}
         <div style={{
           borderRadius: "var(--radius-xs)",
-          border: "1px solid var(--surface)",
           backgroundColor: "var(--surface)",
           padding: "12px",
           alignSelf: "start",

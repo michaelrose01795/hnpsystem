@@ -66,7 +66,7 @@ export default function VHCModalShell({
           data-dev-section-key={sectionKey ? `${sectionKey}-header` : undefined}
           data-dev-section-type="toolbar"
           data-dev-section-parent={sectionKey ? `${sectionKey}-container` : undefined}
-          style={{ ...vhcModalStyles.header, position: "relative", zIndex: 3, border: "none", ...(inlineMode ? { borderBottom: "none" } : {}) }}
+          style={{ ...vhcModalStyles.header, position: "relative", zIndex: 3, border: "none" }}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
             <h2 style={vhcModalStyles.headerTitle}>{title}</h2>

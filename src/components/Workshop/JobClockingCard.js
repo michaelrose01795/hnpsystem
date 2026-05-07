@@ -378,7 +378,6 @@ export default function JobClockingCard() {
                   alignItems: "center",
                   padding: "16px",
                   backgroundColor: "var(--surface)",
-                  border: "2px solid var(--primary)",
                   borderRadius: "var(--radius-sm)"
                 }}
               >
@@ -564,7 +563,6 @@ export default function JobClockingCard() {
             <div style={{
               maxHeight: "400px",
               overflowY: "auto",
-              border: "none",
               borderRadius: "var(--radius-xs)"
             }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -599,7 +597,7 @@ export default function JobClockingCard() {
                       <tr
                         key={job.id}
                         style={{
-                          borderBottom: "1px solid var(--theme)",
+                          borderBottom: "1px solid var(--separating-line)",
                           transition: "background-color 0.2s"
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--theme)"}
@@ -696,7 +694,7 @@ const tableHeaderStyle = {
   color: "var(--info)",
   textTransform: "uppercase",
   letterSpacing: "0.5px",
-  borderBottom: "2px solid var(--surface)"
+  borderBottom: "2px solid var(--separating-line)"
 };
 
 const tableCellStyle = {

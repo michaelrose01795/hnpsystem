@@ -52,7 +52,7 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
     <div
       style={{
         padding: "14px 14px",
-        borderBottom: "1px solid var(--theme)",
+        borderBottom: "1px solid var(--separating-line)",
         background: rowBg,
         display: "flex",
         flexDirection: "column",
@@ -126,7 +126,6 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
               minHeight: 44,
               padding: "10px 12px",
               borderRadius: "var(--radius-sm)",
-              border: isAuthorized ? "2px solid var(--success)" : "1px solid var(--theme)",
               background: isAuthorized ? "var(--success-surface)" : "var(--surface)",
               color: isAuthorized ? "var(--success)" : "var(--text-1)",
               fontWeight: 600,
@@ -146,7 +145,6 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
               minHeight: 44,
               padding: "10px 12px",
               borderRadius: "var(--radius-sm)",
-              border: isDeclined ? "2px solid var(--danger)" : "1px solid var(--theme)",
               background: isDeclined ? "var(--danger-surface)" : "var(--surface)",
               color: isDeclined ? "var(--danger)" : "var(--text-1)",
               fontWeight: 600,
@@ -196,7 +194,6 @@ function Section({ title, items, severity, interactive, onUpdateStatus, updating
           textTransform: "uppercase",
           letterSpacing: "0.06em",
           fontSize: 12,
-          borderBottom: "1px solid var(--theme)",
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "space-between",
@@ -259,7 +256,6 @@ function TotalsGrid({ totals }) {
           key={it.label}
           style={{
             padding: 12,
-            border: `1px solid ${it.color}33`,
             borderRadius: "var(--radius-sm)",
             background: `${it.color}11`
           }}
@@ -452,7 +448,6 @@ export default function VhcCustomerView({
         <header
           style={{
             background: "var(--surface)",
-            borderBottom: "1px solid var(--theme)",
             position: "sticky",
             top: 0,
             zIndex: 50,
@@ -501,7 +496,6 @@ export default function VhcCustomerView({
                   minHeight: 36,
                   padding: "8px 14px",
                   borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--primary-border)",
                   background: "var(--surface)",
                   color: "var(--text-1)",
                   fontWeight: 600,
@@ -520,7 +514,6 @@ export default function VhcCustomerView({
               display: "flex",
               gap: 4,
               marginTop: 10,
-              borderBottom: "1px solid var(--theme)",
               marginLeft: -14,
               marginRight: -14,
               padding: "0 14px",
@@ -536,10 +529,6 @@ export default function VhcCustomerView({
                   padding: "10px 14px",
                   background: "transparent",
                   border: "none",
-                  borderBottom:
-                    activeTab === tab.id
-                      ? "3px solid var(--primary)"
-                      : "3px solid transparent",
                   fontWeight: activeTab === tab.id ? 700 : 500,
                   fontSize: 13,
                   color: activeTab === tab.id ? "var(--primary)" : "var(--info)",
@@ -628,7 +617,6 @@ export default function VhcCustomerView({
         <footer
           style={{
             background: "var(--surface)",
-            borderTop: "1px solid var(--theme)",
             padding: "12px 14px",
             textAlign: "center"
           }}

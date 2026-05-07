@@ -507,11 +507,17 @@ const COLOUR_GROUPS = [
 
 },
 {
-  title: "Text & Borders",
+  title: "Text",
   swatches: [
   "text-1", "text-2", "text-accent",
-  "textfieldbackground",
-  "secondary-border", "primary-border"]
+  "textfieldbackground"]
+
+},
+{
+  title: "Borders — Rings & Separator (CLAUDE.md §3.0a)",
+  swatches: [
+  "input-ring", "checkbox-ring", "ghostbutton-ring",
+  "focus-ring", "separating-line"]
 
 },
 {
@@ -860,7 +866,6 @@ function UsagePopup({ itemKey, title, onClose }) {
           width: "min(620px, 100%)",
           maxHeight: "80vh",
           overflowY: "auto",
-          border: "1px solid var(--primary-border)",
           boxShadow: "0 24px 64px rgba(0,0,0,0.4)"
         }}>
         
@@ -1090,15 +1095,33 @@ function ShowcaseSection({ title, itemKey, onOpenUsage, noteText: noteTextProp, 
 }
 
 function ColourSwatch({ token }) {
-  const swatchStyle = token === "secondary-border" ?
+  const swatchStyle =
+  // Ring tokens — render as a surface tile with the ring drawn around it.
+  token === "input-ring" || token === "checkbox-ring" || token === "ghostbutton-ring" ?
   {
     background: "var(--surface)",
-    border: "var(--control-border)"
+    border: `var(--${token})`
   } :
-  token === "primary-border" ?
+  // Focus ring is a box-shadow primitive, not a border.
+  token === "focus-ring" ?
   {
     background: "var(--surface)",
-    border: "1px solid var(--primary-border)"
+    border: "none",
+    boxShadow: "var(--focus-ring)"
+  } :
+  // Separating line — demonstrate the row-bottom rule on a surface tile.
+  token === "separating-line" ?
+  {
+    background: "var(--surface)",
+    border: "none",
+    borderBottom: "var(--separating-line)"
+  } :
+  // Legacy aliases (still referenced from older notes) — both now resolve to
+  // transparent so render the surface alone.
+  token === "secondary-border" || token === "primary-border" ?
+  {
+    background: "var(--surface)",
+    border: "none"
   } :
   {
     background: `var(--${token})`,

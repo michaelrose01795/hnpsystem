@@ -19,7 +19,6 @@ const UI_LABELS = {
   "dashboard-managers": "Dashboard — Managers",
   "dashboard-accounts": "Dashboard — Accounts",
   "dashboard-admin": "Dashboard — Admin",
-  "dashboard-after-sales": "Dashboard — After Sales",
   "dashboard-mot": "Dashboard — MOT",
   "dashboard-painting": "Dashboard — Painting",
   "dashboard-parts": "Dashboard — Parts",

@@ -1447,7 +1447,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
           max-height: 400px !important;
           background: var(--surface) !important;
           border-radius: 12px !important;
-          border: 2px solid var(--primary) !important;
         }
 
         /* Calendar specific sizing */
@@ -1770,7 +1769,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                     width: "100%",
                     padding: "10px",
                     border: "none",
-                    borderBottom: "1px solid var(--surface)",
+                    borderBottom: "1px solid var(--separating-line)",
                     textAlign: "left",
                     background: isSelected ? "var(--theme)" : "transparent",
                     cursor: "pointer",
@@ -1791,7 +1790,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
         {selectedCatalogPart && (
           <div
             style={{
-              border: "1px solid var(--accent-purple)",
               borderRadius: "var(--radius-sm)",
               padding: "12px",
               background: "var(--theme)",
@@ -1897,7 +1895,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   width: "100%",
                   padding: "10px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--accent-purple)",
                   background: !canAllocateParts ? "var(--surface)" : "var(--surface)",
                   color: !canAllocateParts ? "var(--text-1)" : "var(--accent-purple)",
                   fontWeight: 600,
@@ -2027,7 +2024,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   textAlign: "center",
                   color: "var(--info)",
                   fontSize: "var(--text-label)",
-                  border: "1px dashed var(--surface)",
                   borderRadius: "var(--radius-xs)",
                 }}
               >
@@ -2068,7 +2064,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             background: "transparent",
                             zIndex: 1,
                             border: "none",
-                            borderBottom: "1px solid transparent",
                           }}
                         >
                           Select
@@ -2083,7 +2078,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           background: "transparent",
                           zIndex: 1,
                           border: "none",
-                          borderBottom: "1px solid transparent",
                         }}
                       >
                         Part
@@ -2097,7 +2091,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           background: "transparent",
                           zIndex: 1,
                           border: "none",
-                          borderBottom: "1px solid transparent",
                         }}
                       >
                         Qty
@@ -2158,10 +2151,8 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                           textAlign: "center",
                           verticalAlign: "middle",
                           border: "none",
-                          borderRight: "none",
                           borderTopLeftRadius: "8px",
                           borderBottomLeftRadius: "8px",
-                          borderBottom: "6px solid var(--theme)",
                         }}>
                           <input
                             type="checkbox"
@@ -2181,12 +2172,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             padding: "9px 12px",
                             verticalAlign: "middle",
                             border: "none",
-                            borderRight: assignMode ? "none" : "none",
-                            borderLeft: "none",
                             borderTopLeftRadius: assignMode ? "0" : "10px",
                             borderBottomLeftRadius: assignMode ? "0" : "10px",
-                            borderBottom: "6px solid var(--theme)",
-                          }}>
+                            }}>
                             <div style={{
                               display: "flex",
                               alignItems: "center",
@@ -2272,11 +2260,9 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                             color: isRemoved ? "var(--text-2)" : "var(--text-1)",
                             textDecoration: isRemoved ? "line-through" : "none",
                             border: "none",
-                            borderLeft: "none",
                             borderTopRightRadius: "8px",
                             borderBottomRightRadius: "8px",
-                            borderBottom: "6px solid var(--theme)",
-                            fontWeight: 600,
+                              fontWeight: 600,
                           }}>
                             {part.quantity}
                           </td>
@@ -2339,7 +2325,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   style={{
                     padding: "6px 10px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--surface)",
                     background: "var(--surface)",
                     color: "var(--text-1)",
                     fontSize: "var(--text-caption)",
@@ -2404,7 +2389,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                   textAlign: "center",
                   color: "var(--info)",
                   fontSize: "var(--text-label)",
-                  border: "1px dashed var(--surface)",
                   borderRadius: "var(--radius-xs)",
                 }}
               >
@@ -2426,7 +2410,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         Customer Requests
                       </div>
                       {customerRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", border: "1px dashed var(--surface)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
+                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
                           No customer requests reported.
                         </div>
                       ) : (
@@ -2449,10 +2433,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                               style={{
                                 padding: "12px",
                                 borderRadius: "var(--radius-sm)",
-                                border:
-                                  assignMode && String(assignTargetRequestId) === String(request.id)
-                                    ? "1px solid var(--accent-purple)"
-                                    : "1px solid transparent",
                                 background: "var(--surface)",
                                 cursor: assignMode && request.canAllocate ? "pointer" : "default",
                                 boxShadow:
@@ -2500,7 +2480,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     marginTop: "10px",
                                     marginLeft: "14px",
                                     paddingLeft: "12px",
-                                    borderLeft: "2px solid var(--surface)",
                                   }}
                                 >
                                   <table
@@ -2523,7 +2502,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                     </thead>
                                     <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-customer-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-customer-table-${request.id}`}>
                                       {allocatedParts.map((part) => (
-                                        <tr key={part.id} style={{ background: "var(--theme)", borderTop: "1px solid var(--surface)" }}>
+                                        <tr key={part.id} style={{ background: "var(--theme)" }}>
                                           <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
                                             <span className="parts-allocate-cell-scroll">
                                               {part.partNumber}
@@ -2603,7 +2582,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                         VHC Requests
                       </div>
                       {vhcRequests.length === 0 ? (
-                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", border: "1px dashed var(--surface)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
+                        <div style={{ padding: "10px", fontSize: "var(--text-caption)", color: "var(--info)", borderRadius: "var(--radius-xs)", textAlign: "center" }}>
                           No VHC requests reported.
                         </div>
                       ) : (
@@ -2638,10 +2617,6 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                   style={{
                                     padding: "12px",
                                     borderRadius: "var(--radius-sm)",
-                                    border:
-                                      assignMode && String(assignTargetRequestId) === String(request.id)
-                                        ? "1px solid var(--accent-purple)"
-                                        : "1px solid transparent",
                                     background: "var(--surface)",
                                     cursor: assignMode && request.canAllocate ? "pointer" : "default",
                                     boxShadow:
@@ -2694,8 +2669,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         marginTop: "10px",
                                         marginLeft: "14px",
                                         paddingLeft: "12px",
-                                        borderLeft: "2px solid var(--surface)",
-                                      }}
+                                          }}
                                     >
                                       <table
                                         data-dev-section="1"
@@ -2717,7 +2691,7 @@ const PartsTabNew = forwardRef(function PartsTabNew(
                                         </thead>
                                         <tbody data-dev-section="1" data-dev-section-key={`jobcard-parts-allocate-vhc-table-${request.id}-rows`} data-dev-section-type="table-rows" data-dev-section-parent={`jobcard-parts-allocate-vhc-table-${request.id}`}>
                                           {allocatedParts.map((part) => (
-                                            <tr key={part.id} style={{ background: "var(--theme)", borderTop: "1px solid var(--surface)" }}>
+                                            <tr key={part.id} style={{ background: "var(--theme)" }}>
                                               <td style={{ padding: "6px", fontWeight: 600, color: "var(--accent-purple)" }}>
                                                 <span className="parts-allocate-cell-scroll">
                                                   {part.partNumber}

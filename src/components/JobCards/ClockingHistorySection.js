@@ -371,7 +371,7 @@ export default function ClockingHistorySection({
                         position: "sticky",
                         top: 0,
                         backgroundColor: "var(--surface)",
-                        borderBottom: "1px solid var(--surface)",
+                        borderBottom: "1px solid var(--separating-line)",
                         textAlign: "left",
                         fontSize: "0.75rem",
                         letterSpacing: "0.08em",
@@ -409,7 +409,7 @@ export default function ClockingHistorySection({
                         cursor: row.isActive ? "pointer" : "default",
                       }}
                     >
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--surface)", fontWeight: 600 }}>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)", fontWeight: 600 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                           <span>{row.technicianName}</span>
                           {row.isActive ? (
@@ -433,7 +433,7 @@ export default function ClockingHistorySection({
                       <td
                         style={{
                           padding: "12px 14px",
-                          borderBottom: "1px solid var(--surface)",
+                          borderBottom: "1px solid var(--separating-line)",
                           color: enableRequestClick ? "var(--primary)" : "var(--text-1)",
                           fontWeight: enableRequestClick ? 600 : 500,
                           cursor: enableRequestClick ? "pointer" : "default"
@@ -453,14 +453,14 @@ export default function ClockingHistorySection({
                       >
                         {row.requestLabel}
                       </td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--surface)" }}>{row.dateOn}</td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--surface)" }}>{row.timeOn}</td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--surface)" }}>{row.dateOff}</td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--surface)" }}>{row.timeOff}</td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--surface)" }}>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>{row.dateOn}</td>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>{row.timeOn}</td>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>{row.dateOff}</td>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>{row.timeOff}</td>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>
                         {row.timeTaken !== null ? `${row.timeTaken.toFixed(2)}h` : "—"}
                       </td>
-                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--surface)" }}>
+                      <td style={{ padding: "12px 14px", borderBottom: "1px solid var(--separating-line)" }}>
                         {row.requestHours !== null ? `${row.requestHours.toFixed(2)}h` : "—"}
                       </td>
                     </tr>
@@ -474,7 +474,7 @@ export default function ClockingHistorySection({
                       colSpan={7}
                       style={{
                         padding: "12px 14px",
-                        borderTop: "1px solid var(--surface)",
+                        borderTop: "1px solid var(--separating-line)",
                         fontWeight: 600,
                         textAlign: "right",
                         color: "var(--grey-accent)"
@@ -485,7 +485,7 @@ export default function ClockingHistorySection({
                     <td
                       style={{
                         padding: "12px 14px",
-                        borderTop: "1px solid var(--surface)",
+                        borderTop: "1px solid var(--separating-line)",
                         fontWeight: 600,
                         color: "var(--text-1)"
                       }}
@@ -572,7 +572,6 @@ export default function ClockingHistorySection({
                 style={{
                   padding: "8px 14px",
                   borderRadius: "var(--control-radius-xs)",
-                  border: "1px solid var(--primary-border)",
                   backgroundColor: "transparent",
                   color: "var(--text-1)",
                   fontWeight: 600,

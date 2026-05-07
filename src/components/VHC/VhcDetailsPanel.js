@@ -1097,7 +1097,6 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
             style={{
               padding: "8px 14px",
               borderRadius: "var(--input-radius)",
-              border: "1px solid var(--primary)",
               background: "var(--primary)",
               color: "var(--surface)",
               fontWeight: 600,
@@ -1217,13 +1216,6 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                   <div
                     style={{
                       borderRadius: "var(--radius-sm)",
-                      border: `1px solid ${
-                        config.key === "wheelsTyres"
-                          ? wheelRowsTint.blockBorder
-                          : isBrakeSummaryItem
-                            ? brakeRowsTint.blockBorder
-                            : "var(--theme)"
-                      }`,
                       background:
                         config.key === "wheelsTyres"
                           ? wheelRowsTint.blockBg
@@ -1332,7 +1324,6 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                       flexDirection: "column",
                       gap: "8px",
                       borderRadius: "var(--radius-sm)",
-                      border: "1px solid var(--theme)",
                       background: "var(--surface)",
                       padding: "10px",
                     }}
@@ -1347,7 +1338,6 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                           fontSize: "13px",
                           color: "var(--info-dark)",
                           background: SEVERITY_THEME[normaliseColour(concern.status)]?.background || "var(--surface)",
-                          border: `1px solid ${SEVERITY_THEME[normaliseColour(concern.status)]?.border || "var(--theme)"}`,
                           borderRadius: "var(--input-radius)",
                           padding: "8px 10px",
                         }}
@@ -1376,7 +1366,6 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
       ) : (
         <div
           style={{
-            border: "1px dashed var(--primary)",
             borderRadius: "var(--radius-sm)",
             padding: "16px",
             background: "var(--theme)",
@@ -4392,7 +4381,7 @@ export default function VhcDetailsPanel({
             disabled={selectedSet.size === 0}
             style={{
               ...buttonBaseStyle,
-              border: "1px solid var(--primary)",
+              border: "1px solid var(--ghostbutton-ring)",
               backgroundColor: selectedSet.size === 0 ? "var(--theme)" : "var(--surface)",
               color: "var(--primary)",
               cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
@@ -4409,7 +4398,7 @@ export default function VhcDetailsPanel({
                 disabled={selectedSet.size === 0}
                 style={{
                   ...buttonBaseStyle,
-                  border: "1px solid var(--primary)",
+                  border: "1px solid var(--ghostbutton-ring)",
                   backgroundColor: selectedSet.size === 0 ? "var(--theme)" : "var(--surface)",
                   color: "var(--primary)",
                   cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
@@ -4782,7 +4771,7 @@ export default function VhcDetailsPanel({
                   <tr
                     key={item.id}
                     style={{
-                      borderBottom: "1px solid var(--theme)",
+                      borderBottom: "1px solid var(--separating-line)",
                       background: getExplicitBackground(),
                       transition: "background 0.2s ease",
                     }}
@@ -4906,7 +4895,7 @@ export default function VhcDetailsPanel({
                             fontStyle: "italic",
                             color: "var(--info)",
                             background: "transparent",
-                            border: "1px dashed var(--primary-border)",
+                            border: "1px dashed var(--ghostbutton-ring)",
                             borderRadius: "var(--radius-xs)",
                             padding: "4px 8px",
                             textAlign: "left",
@@ -5142,7 +5131,7 @@ export default function VhcDetailsPanel({
                             width: "50px",
                             padding: "4px 6px",
                             borderRadius: "var(--radius-xs)",
-                            border: "1px solid var(--theme)",
+                            border: "1px solid var(--input-ring)",
                             fontSize: "13px",
                           }}
                           disabled={
@@ -5166,7 +5155,6 @@ export default function VhcDetailsPanel({
                               maxWidth: "calc(100vw - 48px)",
                               maxHeight: "240px",
                               overflowY: "auto",
-                              border: "1px solid var(--theme)",
                               borderRadius: "var(--input-radius)",
                               background: "var(--surface)",
                               boxShadow: "0 12px 24px rgba(var(--text-1-rgb), 0.14)",
@@ -5212,7 +5200,7 @@ export default function VhcDetailsPanel({
                                   style={{
                                     width: "100%",
                                     border: "none",
-                                    borderBottom: "1px solid var(--surface)",
+                                    borderBottom: "1px solid var(--separating-line)",
                                     background: "var(--surface)",
                                     textAlign: "left",
                                     padding: "9px 11px",
@@ -5304,7 +5292,7 @@ export default function VhcDetailsPanel({
                             width: "70px",
                             padding: "4px 6px",
                             borderRadius: "var(--radius-xs)",
-                            border: "1px solid var(--theme)",
+                            border: "1px solid var(--input-ring)",
                             fontSize: "13px",
                           }}
                           disabled={readOnly || severity === "authorized" || severity === "declined"}
@@ -5523,7 +5511,7 @@ export default function VhcDetailsPanel({
           flexDirection: "column",
           gap: "10px",
           padding: "14px 16px",
-          borderBottom: "1px solid var(--theme)",
+          borderBottom: "1px solid var(--separating-line)",
           background: getRowBackground(),
         }}
       >
@@ -5705,7 +5693,6 @@ export default function VhcDetailsPanel({
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             fontSize: "12px",
-            borderBottom: "1px solid var(--theme)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -7288,7 +7275,7 @@ export default function VhcDetailsPanel({
                   <tr
                     onClick={() => handleVhcItemRowClick(vhcId)}
                     style={{
-                      borderBottom: isExpanded ? "none" : "1px solid var(--theme)",
+                      borderBottom: isExpanded ? "none" : "1px solid var(--separating-line)",
                       background: rowBackground,
                       cursor: "pointer",
                       transition: "background 0.2s ease",
@@ -7422,7 +7409,7 @@ export default function VhcDetailsPanel({
                   {/* Expandable Details Row */}
                   {isExpanded && (
                     <tr>
-                      <td colSpan="5" style={{ padding: "0", borderBottom: "1px solid var(--theme)" }}>
+                      <td colSpan="5" style={{ padding: "0", borderBottom: "1px solid var(--separating-line)" }}>
                         <div
                           className="vhc-parts-identified-expanded"
                           data-dev-section="1"
@@ -7450,7 +7437,6 @@ export default function VhcDetailsPanel({
                                 style={{
                                   padding: "8px 14px",
                                   borderRadius: "var(--radius-xs)",
-                                  border: "1px solid var(--primary)",
                                   background: canAddPart ? "var(--primary)" : "var(--surface)",
                                   color: canAddPart ? "var(--surface)" : "var(--info)",
                                   fontWeight: 600,
@@ -7470,7 +7456,6 @@ export default function VhcDetailsPanel({
                               padding: "24px",
                               borderRadius: "var(--radius-sm)",
                               background: "var(--theme)",
-                              border: "1px solid var(--theme)",
                               textAlign: "center",
                               color: "var(--info)",
                               fontSize: "13px",
@@ -7505,7 +7490,7 @@ export default function VhcDetailsPanel({
                                       const surcharge = details.surcharge || false;
 
                                       return (
-                                        <tr key={`${partKey}-summary`} style={{ borderBottom: "1px solid var(--theme)" }}>
+                                        <tr key={`${partKey}-summary`} style={{ borderBottom: "1px solid var(--separating-line)" }}>
                                           <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--primary)" }}>
                                             {partName}
                                           </td>
@@ -7632,8 +7617,8 @@ export default function VhcDetailsPanel({
                       style={{
                         padding: "10px 16px",
                         background: "var(--surface)",
-                        borderTop: "1px solid var(--success-surface)",
-                        borderBottom: "1px solid var(--success-surface)",
+                        borderTop: "1px solid var(--separating-line)",
+                        borderBottom: "1px solid var(--separating-line)",
                         color: "var(--success-dark)",
                         fontWeight: 700,
                         fontSize: "12px",
@@ -7686,7 +7671,7 @@ export default function VhcDetailsPanel({
                     <tr
                       key={vhcId}
                       style={{
-                        borderBottom: "1px solid var(--theme)",
+                        borderBottom: "1px solid var(--separating-line)",
                         background: rowBackground,
                         transition: "background 0.2s ease",
                       }}
@@ -7795,7 +7780,7 @@ export default function VhcDetailsPanel({
                   <tr
                     key={vhcId}
                     style={{
-                      borderBottom: "1px solid var(--theme)",
+                      borderBottom: "1px solid var(--separating-line)",
                       background: rowBackground,
                       transition: "background 0.2s ease",
                     }}
@@ -7961,7 +7946,6 @@ export default function VhcDetailsPanel({
     return (
       <div
         style={{
-          border: "1px solid var(--theme)",
           borderRadius: "var(--radius-md)",
           background: "var(--surface)",
           overflow: "hidden",
@@ -8013,7 +7997,7 @@ export default function VhcDetailsPanel({
                   <tr
                     key={partItem.id}
                     style={{
-                      borderBottom: "1px solid var(--theme)",
+                      borderBottom: "1px solid var(--separating-line)",
                       background: "var(--surface)",
                     }}
                   >
@@ -8084,7 +8068,6 @@ export default function VhcDetailsPanel({
                             style={{
                               padding: "8px 16px",
                               borderRadius: "var(--radius-xs)",
-                              border: "1px solid var(--primary)",
                               background: readOnly ? "var(--surface)" : "var(--primary)",
                               color: readOnly ? "var(--info)" : "var(--surface)",
                               fontWeight: 600,
@@ -8216,7 +8199,6 @@ export default function VhcDetailsPanel({
           <div
             key={file.file_id}
             style={{
-              border: "1px solid var(--theme)",
               borderRadius: "var(--radius-sm)",
               overflow: "hidden",
               background: "var(--surface)",
@@ -8398,7 +8380,6 @@ export default function VhcDetailsPanel({
                 type="button"
                 onClick={() => router.push("/job-cards/view")}
                 style={{
-                  border: "1px solid var(--theme)",
                 borderRadius: "var(--input-radius)",
                 padding: "8px 14px",
                 background: "var(--surface)",
@@ -8424,7 +8405,6 @@ export default function VhcDetailsPanel({
                   router.push(`/tracking?${params.toString()}`);
                 }}
                 style={{
-                  border: "1px solid var(--primary)",
                   borderRadius: "var(--input-radius)",
                   padding: "8px 18px",
                   background: "var(--primary)",
@@ -8443,7 +8423,6 @@ export default function VhcDetailsPanel({
                   router.push(target);
                 }}
                 style={{
-                  border: "1px solid var(--primary)",
                   borderRadius: "var(--input-radius)",
                   padding: "8px 18px",
                   background: "var(--primary)",
@@ -8546,7 +8525,6 @@ export default function VhcDetailsPanel({
                       >
                         <div
                           style={{
-                            borderBottom: "none",
                             paddingBottom: "10px",
                           }}
                         >
@@ -8796,7 +8774,6 @@ export default function VhcDetailsPanel({
                       {!hasHealthData ? (
                         <div
                           style={{
-                            border: "1px solid var(--theme)",
                             borderRadius: "var(--radius-md)",
                             padding: "20px",
                             background: "var(--theme)",
@@ -8909,7 +8886,6 @@ export default function VhcDetailsPanel({
                     >
                       <div
                         style={{
-                          borderBottom: "none",
                           paddingBottom: "10px",
                         }}
                       >
@@ -9136,7 +9112,6 @@ export default function VhcDetailsPanel({
                       {!hasHealthData ? (
                         <div
                           style={{
-                            border: "1px solid var(--theme)",
                             borderRadius: "var(--radius-md)",
                             padding: "20px",
                             background: "var(--theme)",
@@ -9298,7 +9273,6 @@ export default function VhcDetailsPanel({
                 style={{
                   padding: "10px 16px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--theme)",
                   background: "var(--surface)",
                   color: "var(--info-dark)",
                   fontWeight: 600,
@@ -9314,7 +9288,6 @@ export default function VhcDetailsPanel({
                 style={{
                   padding: "10px 18px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--primary)",
                   background: addingParts || selectedParts.length === 0 ? "var(--surface)" : "var(--primary)",
                   color: addingParts || selectedParts.length === 0 ? "var(--info)" : "var(--surface)",
                   fontWeight: 700,
@@ -9349,7 +9322,7 @@ export default function VhcDetailsPanel({
                   minWidth: "220px",
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--theme)",
+                  border: "1px solid var(--input-ring)",
                   background: "var(--surface)",
                   fontSize: "14px",
                   color: "var(--text-1)",
@@ -9361,7 +9334,7 @@ export default function VhcDetailsPanel({
                 style={{
                   padding: "10px 14px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--primary)",
+                  border: "1px solid var(--ghostbutton-ring)",
                   background: "var(--surface)",
                   color: "var(--primary)",
                   fontWeight: 600,
@@ -9377,7 +9350,6 @@ export default function VhcDetailsPanel({
                 style={{
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--theme)",
                   background: "var(--surface)",
                   color: "var(--info-dark)",
                   fontWeight: 700,
@@ -9408,7 +9380,6 @@ export default function VhcDetailsPanel({
                       });
                     }}
                     style={{
-                      border: "1px solid var(--theme)",
                       borderRadius: "var(--radius-pill)",
                       padding: "6px 10px",
                       background: "var(--surface)",
@@ -9476,7 +9447,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--theme)",
+                      border: "1px solid var(--input-ring)",
                       background: "var(--surface)",
                       color: "var(--text-1)",
                     }}
@@ -9496,7 +9467,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--theme)",
+                      border: "1px solid var(--input-ring)",
                       background: "var(--surface)",
                       color: "var(--text-1)",
                     }}
@@ -9513,7 +9484,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--theme)",
+                      border: "1px solid var(--input-ring)",
                       background: "var(--surface)",
                       color: "var(--text-1)",
                     }}
@@ -9529,7 +9500,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--theme)",
+                      border: "1px solid var(--input-ring)",
                       background: "var(--surface)",
                       color: "var(--text-1)",
                     }}
@@ -9545,7 +9516,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--theme)",
+                      border: "1px solid var(--input-ring)",
                       background: "var(--surface)",
                       color: "var(--text-1)",
                       resize: "vertical",
@@ -9565,7 +9536,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--theme)",
+                      border: "1px solid var(--input-ring)",
                       background: "var(--surface)",
                       color: "var(--text-1)",
                     }}
@@ -9584,7 +9555,7 @@ export default function VhcDetailsPanel({
                       width: "100%",
                       padding: "10px 12px",
                       borderRadius: "var(--input-radius)",
-                      border: "1px solid var(--theme)",
+                      border: "1px solid var(--input-ring)",
                       background: "var(--surface)",
                       color: "var(--text-1)",
                     }}
@@ -9598,7 +9569,6 @@ export default function VhcDetailsPanel({
                   style={{
                     padding: "10px 16px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--theme)",
                     background: "var(--surface)",
                     color: "var(--info-dark)",
                     fontWeight: 600,
@@ -9615,7 +9585,6 @@ export default function VhcDetailsPanel({
                   style={{
                     padding: "10px 16px",
                     borderRadius: "var(--radius-xs)",
-                    border: "1px solid var(--primary)",
                     background: newPartSaving ? "var(--surface)" : "var(--primary)",
                     color: newPartSaving ? "var(--info)" : "var(--surface)",
                     fontWeight: 700,
@@ -9654,7 +9623,7 @@ export default function VhcDetailsPanel({
                         onClick={() => handleSelectSearchPart(part)}
                         style={{
                           cursor: "pointer",
-                          borderBottom: "1px solid var(--theme)",
+                          borderBottom: "1px solid var(--separating-line)",
                         }}
                         onMouseEnter={(event) => {
                           event.currentTarget.style.background = "var(--theme)";
@@ -9711,7 +9680,7 @@ export default function VhcDetailsPanel({
                         const partKey = `${addPartsTarget?.vhcId}-${part.id}`;
                         const details = partDetails[partKey] || {};
                         return (
-                          <tr key={`existing-${part.id}`} style={{ borderBottom: "1px solid var(--theme)" }}>
+                          <tr key={`existing-${part.id}`} style={{ borderBottom: "1px solid var(--separating-line)" }}>
                             <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--primary)" }}>
                               {part.part?.name || "Part"}
                             </td>
@@ -9791,7 +9760,7 @@ export default function VhcDetailsPanel({
                   </thead>
                   <tbody>
                     {selectedParts.map((entry) => (
-                      <tr key={entry.part?.id} style={{ borderBottom: "1px solid var(--theme)" }}>
+                      <tr key={entry.part?.id} style={{ borderBottom: "1px solid var(--separating-line)" }}>
                         <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--primary)" }}>
                           {entry.part?.name || "Part"}
                         </td>
@@ -9900,16 +9869,16 @@ export default function VhcDetailsPanel({
                         width: "100%",
                         padding: "12px 16px",
                         borderRadius: "var(--radius-sm)",
-                        border: "2px solid var(--surface)",
+                        border: "2px solid var(--input-ring)",
                         backgroundColor: "var(--surface)",
                         fontSize: "15px",
                         transition: "border-color 0.2s",
                       }}
                       onFocus={(event) => {
-                        event.target.style.borderColor = "var(--primary)";
+                        event.target.style.borderColor = "var(--focus-ring)";
                       }}
                       onBlur={(event) => {
-                        event.target.style.borderColor = "var(--surface)";
+                        event.target.style.borderColor = "var(--input-ring)";
                       }}
                     />
                   </div>
@@ -9934,16 +9903,16 @@ export default function VhcDetailsPanel({
                         width: "100%",
                         padding: "12px 16px",
                         borderRadius: "var(--radius-sm)",
-                        border: "2px solid var(--surface)",
+                        border: "2px solid var(--input-ring)",
                         backgroundColor: "var(--surface)",
                         fontSize: "15px",
                         transition: "border-color 0.2s",
                       }}
                       onFocus={(event) => {
-                        event.target.style.borderColor = "var(--primary)";
+                        event.target.style.borderColor = "var(--focus-ring)";
                       }}
                       onBlur={(event) => {
-                        event.target.style.borderColor = "var(--surface)";
+                        event.target.style.borderColor = "var(--input-ring)";
                       }}
                     />
                   </div>
@@ -9961,7 +9930,6 @@ export default function VhcDetailsPanel({
                     <div
                       style={{
                         borderRadius: "var(--radius-sm)",
-                        border: "2px solid var(--surface)",
                         background: "var(--surface)",
                         padding: "12px 14px",
                         display: "grid",
@@ -10014,7 +9982,6 @@ export default function VhcDetailsPanel({
                     style={{
                       padding: "10px 18px",
                       borderRadius: "var(--input-radius)",
-                      border: "2px solid var(--primary)",
                       background: "var(--primary)",
                       color: "white",
                       fontWeight: "bold",

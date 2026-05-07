@@ -14,7 +14,6 @@ import { buildErrorAlert } from "@/lib/notifications/buildErrorAlert";
 
 const PANEL_STYLE = {
   background: "var(--surface)",
-  border: "1px solid var(--primary-border)",
   borderRadius: "var(--radius-md)",
   padding: "var(--space-4)",
 };
@@ -155,7 +154,6 @@ export default function MediaUploadConfirmModal({
         <div
           style={{
             background: "var(--surfaceMutedToken)",
-            border: "1px solid var(--primary-border)",
             borderRadius: "var(--radius-md)",
             overflow: "hidden",
             display: "flex",

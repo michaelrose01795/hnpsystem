@@ -70,7 +70,7 @@ function ProfileSummary({ profile }) {
           gridTemplateColumns: "minmax(160px, 1fr) 2fr",
           gap: 12,
           padding: "8px 0",
-          borderBottom: "1px solid var(--primary-border)"
+          borderBottom: "1px solid var(--separating-line)"
         }}>
 
           <span style={{ color: "var(--text-1)" }}>{label}</span>
@@ -141,7 +141,6 @@ function ConsentManager({ initial, onUpdated }) {
               alignItems: "center",
               gap: 12,
               padding: "10px 12px",
-              border: "1px solid var(--primary-border)",
               borderRadius: "var(--radius-xs, 6px)"
             }}>
 
@@ -270,25 +269,25 @@ function RequestsList({ requests }) {
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
         <thead>
           <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--primary-border)" }}>Type</th>
-            <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Status</th>
-            <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Filed</th>
-            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--primary-border)" }}>Due by</th>
+            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line)" }}>Type</th>
+            <th style={{ padding: 8, borderBottom: "1px solid var(--separating-line)" }}>Status</th>
+            <th style={{ padding: 8, borderBottom: "1px solid var(--separating-line)" }}>Filed</th>
+            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--separating-line)" }}>Due by</th>
           </tr>
         </thead>
         <tbody>
           {requests.map((row) =>
           <tr key={row.id}>
-              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--primary-border)" }}>
+              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--separating-line)" }}>
                 {REQUEST_TYPE_LABELS[row.request_type] || row.request_type}
               </td>
-              <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+              <td style={{ padding: 8, borderBottom: "1px solid var(--separating-line)" }}>
                 {STATUS_LABELS[row.status] || row.status}
               </td>
-              <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+              <td style={{ padding: 8, borderBottom: "1px solid var(--separating-line)" }}>
                 {formatDate(row.received_at)}
               </td>
-              <td style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--primary-border)" }}>
+              <td style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--separating-line)" }}>
                 {formatDate(row.due_at)}
               </td>
             </tr>

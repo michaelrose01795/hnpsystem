@@ -272,7 +272,6 @@ export default function NewsFeedUi(props) {
             {/* Footer Actions */}
             <div style={{
           padding: "24px 32px",
-          borderTop: "1px solid var(--surface)",
           display: "flex",
           justifyContent: "flex-end",
           gap: "12px"

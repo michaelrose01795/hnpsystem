@@ -39,7 +39,7 @@ function CopyDevInfoButton({ devInfo }) {
       onClick={handleCopy}
       title="Copy error details for developer"
       style={{
-        border: "1px solid currentColor",
+        border: "1px solid var(--ghostbutton-ring)",
         background: "transparent",
         color: "inherit",
         borderRadius: "var(--radius-pill)",

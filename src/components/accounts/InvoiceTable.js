@@ -215,7 +215,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                     tabIndex={navigationDisabled ? undefined : 0}
                     role={navigationDisabled ? undefined : "button"}
                     aria-label={navigationDisabled ? undefined : `Open invoice ${getInvoiceDisplayValue(invoice)}`}
-                    style={{ borderTop: "1px solid rgba(var(--primary-rgb), 0.08)", background: hoveredInvoiceId === invoice.invoice_id ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)", transition: "background-color 0.18s ease", cursor: navigationDisabled ? "default" : "pointer" }}>
+                    style={{ borderBottom: "1px solid var(--separating-line)", background: hoveredInvoiceId === invoice.invoice_id ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)", transition: "background-color 0.18s ease", cursor: navigationDisabled ? "default" : "pointer" }}>
 
                   <td style={{ padding: "12px", fontWeight: 600 }}>{getInvoiceDisplayValue(invoice)}</td>
                   <td style={{ padding: "12px" }}>{getCustomerDisplayValue(invoice)}</td>

@@ -32,6 +32,29 @@ Before writing or changing any code:
 
 ## 3. Design System — Non-Negotiable
 
+### 3.0a Borders — THE LAW (Border Sweep, 2026-05-07)
+
+**Borders are banned everywhere except five specific use-cases.** Each has its own token; the word "border" is reserved for things that aren't decorative outlines.
+
+| Use-case | Token | Notes |
+|---|---|---|
+| Row-bottom rule inside tables / lists | `--separating-line` | The ONLY allowed "line within a list". Never apply to the outer table edge — only to row separators (`border-bottom` on `tr`/`td`). |
+| Form inputs (text / select / textarea) | `--input-ring` | Replaces the deprecated `--input-border` / `--control-border`. |
+| Checkboxes & radios | `--checkbox-ring` | Used by `input[type="checkbox"]`, `input[type="radio"]`, `.app-toggle--checkbox`, `.app-toggle--radio`. |
+| Ghost buttons | `--ghostbutton-ring` | Used by `.app-btn--ghost`. No other button variant carries an outline. |
+| Keyboard focus | `--focus-ring` | Applied via `box-shadow`, not `border`. Supersedes ad-hoc `--control-ring` usage. |
+
+**Banned tokens (resolve to `transparent` / `none` and will be deleted):**
+`--primary-border`, `--secondary-border`, `--section-card-border`, `--page-card-border`, `--nav-shell-border`, `--nav-link-border`, `--nav-link-border-active`, `--profile-card-border`, `--calendar-today-row-border`, `--hud-border`, `--hud-border-strong`, `--skeleton-border`, `--control-border`. Do not introduce new references — they're aliases for `transparent` / `none` so legacy declarations render no visible outline.
+
+**Rules:**
+1. Outside the five use-cases above, **never** write `border: …` on a card, section, panel, nav link, toolbar, toast, calendar cell, badge, or chip — neither in CSS nor inline.
+2. The word **border** in token names is reserved for the legacy/banned set. New outline tokens use **ring** (or `--separating-line` for table row rules).
+3. Toasts, calendar today-rows, and similar variant signalling now rely on background tint + icon colour, not coloured side-borders.
+4. `border-radius`, `border-collapse`, `border-spacing`, `box-sizing: border-box`, and transparent placeholder borders for layout (e.g. `border: 1px solid transparent` to prevent hover-shift) are **not** affected by this rule.
+
+**Enforcement:** `npm run check:borders` ([tools/scripts/check-borders.js](tools/scripts/check-borders.js)) scans `src/` for forbidden `border: …` declarations and exits non-zero on violations. Run it before committing any UI change. Functional diagram primitives (TyreDiagram, BrakeDiagram, photo/video editors, LoadingSkeleton, email templates) are allowlisted inside the script.
+
 ### 3.0 Layer Primitives — THE LAW (post-Layer-Sweep, 2026-05-05)
 
 **Only two surface primitives exist for the entire app:**

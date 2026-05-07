@@ -157,7 +157,7 @@ export default function ArchivedJobsPageUi(props) {
                 {filteredResults.map(job => {
               const badge = STATUS_BADGES[job.status] || defaultStatusBadge;
               return <tr key={job.id} data-dev-section-key={`job-cards-archive-results-row-${job.id}`} style={{
-                borderTop: "1px solid var(--primary-border)",
+                borderTop: "var(--separating-line)",
                 background: "var(--surface)",
                 transition: "background-color 0.18s ease, box-shadow 0.18s ease"
               }} onMouseEnter={event => {

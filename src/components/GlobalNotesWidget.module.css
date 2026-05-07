@@ -426,7 +426,7 @@
 
 .commandSuggestionItem {
   padding: 8px 10px;
-  border-bottom: 1px solid rgba(var(--primary-rgb), 0.12);
+  border-bottom: 1px solid var(--separating-line);
   cursor: pointer;
 }
 
@@ -559,7 +559,6 @@
 
 .emptyState {
   height: 100%;
-  border: 1px dashed var(--primary-border);
   border-radius: var(--control-radius);
   background: rgba(var(--primary-rgb), 0.05);
   display: grid;
@@ -679,7 +678,7 @@
   gap: 2px 8px;
   align-items: center;
   padding: 9px 10px;
-  border-bottom: 1px solid rgba(var(--primary-rgb), 0.06);
+  border-bottom: 1px solid var(--separating-line);
   min-height: 44px;
 }
 

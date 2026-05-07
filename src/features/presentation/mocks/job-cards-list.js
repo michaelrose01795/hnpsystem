@@ -49,7 +49,6 @@ function JobListCard({ job, onClick }) {
             borderRadius: "var(--control-radius-xs)",
             fontWeight: 600,
             fontSize: 12,
-            border: "1px solid currentColor",
             backgroundColor: isSales ? "var(--theme-colour)" : "var(--success-surface)",
             color: isSales ? "var(--text-accent)" : "var(--text-1)",
           }}>{job.jobDivision || "Retail"}</span>
@@ -60,7 +59,6 @@ function JobListCard({ job, onClick }) {
             color: "var(--text-accent)",
             fontWeight: 600,
             fontSize: 12,
-            border: "1px solid currentColor",
           }}>{job.status || "Status pending"}</span>
         </div>
       </div>

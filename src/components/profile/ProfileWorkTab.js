@@ -131,7 +131,6 @@ function ProfileCard({
   const cardStyle = {
     background: "var(--profile-card-bg, var(--surface))",
     borderRadius: "var(--radius-md)",
-    border: "var(--profile-card-border, 1px solid rgba(var(--accent-purple-rgb), 0.28))",
     padding: "16px",
     display: "flex",
     flexDirection: "column",
@@ -200,7 +199,6 @@ function KpiCard(props) {
   const cardStyle = {
     background: "var(--profile-card-bg, var(--surface))",
     borderRadius: "var(--radius-md)",
-    border: "var(--profile-card-border, 1px solid rgba(var(--accent-purple-rgb), 0.28))",
     padding: "14px",
     display: "flex",
     flexDirection: "column",
@@ -509,7 +507,7 @@ const modalLabelStyle = {
 const modalInputStyle = {
   padding: "10px 12px",
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--primary-border, #ccc)",
+  border: "1px solid var(--input-ring)",
   background: "var(--surface)",
   color: "var(--text-1)",
   fontSize: "0.9rem",
@@ -522,7 +520,6 @@ const modalStatStyle = {
   gap: "4px",
   padding: "12px 14px",
   borderRadius: "var(--radius-md)",
-  border: "1px solid rgba(var(--accent-purple-rgb), 0.14)",
   background: "rgba(var(--accent-purple-rgb), 0.06)",
 };
 
@@ -1014,7 +1011,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
       style={{
         padding: "14px",
         borderRadius: "var(--radius-sm)",
-        border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
         background: "rgba(var(--accent-purple-rgb), 0.04)",
         display: "flex",
         flexDirection: "column",
@@ -1035,7 +1031,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
                 fontSize: "0.75rem",
                 fontWeight: 600,
                 cursor: "pointer",
-                border: "1px dashed var(--primary-border, rgba(0,0,0,0.12))",
                 background: "var(--surface)",
                 color: "var(--text-1)",
               }}
@@ -1056,9 +1051,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
             style={{
               padding: "6px 12px",
               borderRadius: "var(--radius-sm)",
-              border: formData.days[dow]
-                ? "1px solid var(--accent-purple)"
-                : "1px solid var(--primary-border, rgba(0,0,0,0.12))",
               background: formData.days[dow] ? "var(--accent-purple)" : "var(--surface)",
               color: formData.days[dow] ? "white" : "var(--text-1)",
               fontWeight: 600,
@@ -1082,7 +1074,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
             fontWeight: 600,
             fontSize: "0.82rem",
             cursor: "pointer",
-            border: formData.patternType === "weekly" ? "1px solid var(--accent-purple)" : "1px solid var(--primary-border, rgba(0,0,0,0.12))",
             background: formData.patternType === "weekly" ? "var(--accent-purple)" : "var(--surface)",
             color: formData.patternType === "weekly" ? "white" : "var(--text-1)",
           }}
@@ -1098,7 +1089,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
             fontWeight: 600,
             fontSize: "0.82rem",
             cursor: "pointer",
-            border: formData.patternType === "alternate" ? "1px solid var(--accent-purple)" : "1px solid var(--primary-border, rgba(0,0,0,0.12))",
             background: formData.patternType === "alternate" ? "var(--accent-purple)" : "var(--surface)",
             color: formData.patternType === "alternate" ? "white" : "var(--text-1)",
           }}
@@ -1120,7 +1110,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
                   fontSize: "0.80rem",
                   fontWeight: 600,
                   cursor: "pointer",
-                  border: formData.weekParity === parity ? "1px solid var(--accent-purple)" : "1px solid var(--primary-border, rgba(0,0,0,0.12))",
                   background: formData.weekParity === parity ? "var(--accent-purple)" : "var(--surface)",
                   color: formData.weekParity === parity ? "white" : "var(--text-1)",
                 }}
@@ -1147,7 +1136,7 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
             flex: 1,
             padding: "var(--control-padding)",
             borderRadius: "var(--radius-xs)",
-            border: "1px solid var(--theme)",
+            border: "1px solid var(--input-ring)",
             fontWeight: 500,
             height: "var(--control-height)",
             boxSizing: "border-box",
@@ -1162,7 +1151,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
           padding: "8px 12px",
           borderRadius: "var(--radius-xs)",
           background: "rgba(249, 115, 22, 0.08)",
-          border: "1px solid rgba(249, 115, 22, 0.25)",
           fontSize: "0.78rem",
           color: "var(--text-1)",
         }}>
@@ -1201,7 +1189,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
           style={{
             padding: "8px 14px",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--accent-purple)",
             background: "var(--accent-purple)",
             color: "white",
             fontWeight: 600,
@@ -1218,7 +1205,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
           style={{
             padding: "8px 14px",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--primary-border, rgba(0,0,0,0.12))",
             background: "var(--surface)",
             color: "var(--text-1)",
             fontWeight: 600,
@@ -1283,7 +1269,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
             padding: "10px 14px",
             borderRadius: "var(--radius-sm)",
             background: "rgba(var(--accent-purple-rgb), 0.04)",
-            border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
             fontSize: "0.80rem",
             color: "var(--text-1)",
             flexWrap: "wrap",
@@ -1334,7 +1319,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
                     background: isHovered && !isInactive
                       ? "rgba(var(--accent-purple-rgb), 0.12)" // hover highlight
                       : "rgba(var(--accent-purple-rgb), 0.06)",
-                    border: "1px solid rgba(var(--accent-purple-rgb), 0.2)",
                     cursor: isInactive ? "default" : "pointer",
                     transition: "background 0.15s ease",
                     opacity: isInactive ? 0.5 : 1,
@@ -1429,7 +1413,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
               style={{
                 padding: "8px 14px",
                 borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--accent-purple)",
                 background: "var(--accent-purple)",
                 color: "white",
                 fontWeight: 600,
@@ -1448,7 +1431,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
             style={{
               padding: "8px 14px",
               borderRadius: "var(--radius-sm)",
-              border: "1px solid var(--primary-border, rgba(0,0,0,0.12))",
               background: "var(--surface)",
               color: "var(--text-1)",
               fontWeight: 600,
@@ -1910,14 +1892,12 @@ export function ProfileWorkTab({
 
   const profileSectionShellStyle = {
     background: "var(--theme)",
-    border: "var(--section-card-border)",
     borderRadius: "var(--radius-lg)",
     padding: "var(--section-card-padding)",
   };
 
   const profileSurfaceCardStyle = {
     background: "var(--surface)",
-    border: "var(--section-card-border)",
   };
 
   // Overtime rows distinguish between recurring-rule-generated ("Auto Log") and user-entered ("Logged") so the user can tell them apart in-table
@@ -1951,7 +1931,6 @@ export function ProfileWorkTab({
           gap: "8px",
           padding: "4px",
           borderRadius: "var(--radius-md)",
-          border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
           background: "var(--profile-table-surface)",
         }}
       >
@@ -1969,7 +1948,6 @@ export function ProfileWorkTab({
                 padding: "12px 14px",
                 borderRadius: "var(--radius-md)",
                 background: "var(--surface)",
-                border: "1px solid rgba(var(--accent-purple-rgb), 0.12)",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
@@ -2225,13 +2203,13 @@ export function ProfileWorkTab({
                     gridTemplateColumns: "1fr 1fr 1fr",
                     flex: 1,
                   }}>
-                    <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                    <div style={{ padding: "6px 8px", textAlign: "center" }}>
                       <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-1)" }}>Work</div>
                       <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accent-purple)" }}>
                         {aggregatedStats?.monthlyWeekdayHours?.toFixed(2) ?? "0.00"}h
                       </div>
                     </div>
-                    <div style={{ padding: "6px 8px", textAlign: "center", borderRight: "1px solid rgba(var(--accent-purple-rgb), 0.12)" }}>
+                    <div style={{ padding: "6px 8px", textAlign: "center" }}>
                       <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-1)" }}>Overtime</div>
                       <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--danger, #e53935)" }}>
                         {aggregatedStats?.monthlyOvertimeHours?.toFixed(2) ?? "0.00"}h
@@ -2250,7 +2228,6 @@ export function ProfileWorkTab({
                     alignItems: "center",
                     gap: "6px",
                     padding: "8px 10px",
-                    borderTop: "1px solid rgba(var(--accent-purple-rgb), 0.15)",
                     background: "var(--surface)",
                   }}>
                     <span style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-1)" }}>Total</span>
@@ -2647,7 +2624,6 @@ export function ProfileWorkTab({
                 backgroundToken="accent-surface"
                 style={{
                   background: "var(--surface)",
-                  border: "var(--section-card-border)",
                 }}
                 title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Attendance History</span>}
               >
@@ -2667,7 +2643,6 @@ export function ProfileWorkTab({
                 backgroundToken="accent-surface"
                 style={{
                   background: "var(--surface)",
-                  border: "var(--section-card-border)",
                 }}
                 title={<span style={{ color: "var(--accent-dark, var(--accent-purple))" }}>Overtime History</span>}
                 action={

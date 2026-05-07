@@ -18,34 +18,32 @@ const STATUS_STYLES = {
   red: {
     bg: "rgba(var(--danger-rgb), 0.22)",
     bgActive: "rgba(var(--danger-rgb), 0.34)",
-    border: "none",
+    accent: "transparent",
     label: "rgba(var(--danger-rgb), 0.85)",
     title: "Red",
   },
   amber: {
     bg: "rgba(var(--warning-rgb), 0.20)",
     bgActive: "rgba(var(--warning-rgb), 0.34)",
-    border: "none",
+    accent: "transparent",
     label: "rgba(var(--warning-rgb), 0.9)",
     title: "Amber",
   },
   green: {
     bg: "rgba(var(--success-rgb), 0.18)",
     bgActive: "rgba(var(--success-rgb), 0.32)",
-    border: "none",
+    accent: "transparent",
     label: "rgba(var(--success-rgb), 0.9)",
     title: "Green",
   },
   default: {
     bg: "rgba(var(--accentMainRgb), 0.18)",
     bgActive: "rgba(var(--accentMainRgb), 0.32)",
-    border: "rgba(var(--accentMainRgb), 0.60)",
+    accent: "rgba(var(--accentMainRgb), 0.60)",
     label: "rgba(var(--accentMainRgb), 0.9)",
     title: "Info",
   },
 };
-
-const ACTIVE_BORDER = "var(--hud-border-strong)";
 
 function ConcernRow({ row, onInsert, isActive }) {
   const status = STATUS_STYLES[row.status] || STATUS_STYLES.default;
@@ -69,7 +67,6 @@ function ConcernRow({ row, onInsert, isActive }) {
         alignItems: "center",
         gap: "var(--space-sm)",
         padding: "var(--space-2) var(--space-3)",
-        border: `1px solid ${isActive ? ACTIVE_BORDER : status.border}`,
         borderRadius: "var(--radius-sm)",
         background: isActive ? status.bgActive : status.bg,
         color: "var(--hud-text)",
@@ -90,8 +87,8 @@ function ConcernRow({ row, onInsert, isActive }) {
           width: 10,
           height: 10,
           borderRadius: "var(--radius-pill)",
-          background: isActive ? "var(--hud-text)" : status.border,
-          boxShadow: isActive ? `0 0 0 2px ${status.border}` : "none",
+          background: isActive ? "var(--hud-text)" : status.accent,
+          boxShadow: isActive ? `0 0 0 2px ${status.accent}` : "none",
         }}
       />
 

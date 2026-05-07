@@ -349,7 +349,6 @@ export default function DocumentsUploadPopup({
             <label
               htmlFor="documents-input"
               style={{
-                border: "2px dashed var(--primary)",
                 borderRadius: "var(--radius-md)",
                 padding: "28px",
                 textAlign: "center",
@@ -386,7 +385,7 @@ export default function DocumentsUploadPopup({
                     key={`${file.name}-${idx}`}
                     style={{
                       padding: "8px",
-                      borderBottom: "1px solid var(--surface)"
+                      borderBottom: "1px solid var(--separating-line)"
                     }}
                   >
                     {renamingIndex === idx ? (
@@ -568,8 +567,7 @@ export default function DocumentsUploadPopup({
                         style={{
                           padding: "12px",
                           backgroundColor: "var(--theme)",
-                          borderRadius: "var(--input-radius)",
-                          border: `1px solid ${statusColor}`
+                          borderRadius: "var(--input-radius)"
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
@@ -660,7 +658,7 @@ export default function DocumentsUploadPopup({
               {existingDocuments.length > 0 && (
                 <>
                   {uploadProgress.length > 0 && (
-                    <div style={{ borderTop: "1px solid var(--surface)", margin: "4px 0" }} />
+                    <div style={{ margin: "4px 0" }} />
                   )}
                   <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "600", color: "var(--primary)" }}>
                     Uploaded Documents ({existingDocuments.length})

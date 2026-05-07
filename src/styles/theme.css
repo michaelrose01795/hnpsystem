@@ -46,7 +46,12 @@
   --secondary-hover: rgba(var(--accentMainRgb), 0.14);
   --secondary-pressed: rgba(var(--accentMainRgb), 0.2);
   --theme: rgba(var(--accentMainRgb), 0.1);
-  --primary-border: var(--primary-hover);
+  /* DEPRECATED — borders are now banned everywhere except table row separators
+     (use --separating-line), inputs (--input-ring), checkboxes (--checkbox-ring),
+     ghost buttons (--ghostbutton-ring) and focus rings (--focus-ring). All other
+     legacy *-border tokens resolve to transparent so any straggler usage renders
+     no visible outline. */
+  --primary-border: transparent;
   --surface-rgb: 255, 255, 255;
   --surface-gradient: var(--surface);
   --skeleton-base: #ececef;
@@ -54,7 +59,15 @@
   --skeleton-border: transparent;
   --skeleton-radius: 8px;
   --skeleton-animation-duration: 1.8s;
-  --table-border: 1px solid rgba(var(--accent-base-rgb), 0.14);
+  /* Row-separator line for tables / lists — the ONLY legitimate "border-like"
+     token outside inputs/checkboxes/ghost buttons/focus rings. */
+  --separating-line: 1px solid rgba(var(--accent-base-rgb), 0.14);
+  --table-border: var(--separating-line); /* legacy alias — prefer --separating-line */
+  /* Outline tokens (formerly *-border) for the four legitimate ring use-cases. */
+  --input-ring: 1px solid var(--secondary-hover);
+  --checkbox-ring: 2px solid var(--accent-strong);
+  --ghostbutton-ring: 1px solid var(--primary);
+  --focus-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.12);
   /* Canonical row + in-row action button heights. Demonstrated by the
      "Table States" section in /dev/user-diagnostic. Editing these tokens
      updates every table in the repo that uses .app-data-table. */
@@ -167,7 +180,7 @@
   --calendar-amber-selected-bg: var(--warning-text);
   --calendar-red-selected-bg: var(--danger-text);
   --calendar-today-row-bg: var(--theme);
-  --calendar-today-row-border: rgba(var(--accent-base-rgb), 0.35);
+  --calendar-today-row-border: transparent; /* DEPRECATED — borders banned outside lists/inputs/checkboxes/ghost buttons/focus rings */
   --calendar-today-pill-bg: var(--theme-hover);
   --calendar-today-pill-text: var(--text-1);
   --search-surface: var(--surface);
@@ -201,7 +214,7 @@
   --input-radius: var(--control-radius);
   --input-padding: var(--control-padding);
   --input-bg: var(--control-bg);
-  --input-border: var(--control-border);
+  --input-border: var(--input-ring); /* legacy alias — prefer --input-ring (inputs are an allowed ring use-case) */
   --page-max-width: 1680px;
   --page-content-max-width: 100%;
   --page-gutter-x: 20px;
@@ -226,8 +239,8 @@
   --nav-link-bg: var(--secondary);
   --nav-link-bg-hover: var(--secondary-hover);
   --nav-link-bg-active: var(--primary);
-  --nav-link-border: 1px solid var(--primary-border);
-  --nav-link-border-active: 1px solid var(--primary-border);
+  --nav-link-border: none; /* DEPRECATED — borders banned outside lists/inputs/checkboxes/ghost buttons/focus rings */
+  --nav-link-border-active: none; /* DEPRECATED — borders banned outside lists/inputs/checkboxes/ghost buttons/focus rings */
   --control-height: 44px;
   --control-height-sm: 40px;
   --control-height-xs: 34px;
@@ -249,10 +262,10 @@
   --control-label-size: 0.82rem;
   --control-label-weight: 600;
   --control-gap: 10px;
-  --secondary-border: var(--secondary-hover);
-  --control-border: 1px solid var(--secondary-border);
-  --control-border-hover: var(--secondary-border);
-  --control-border-focus: var(--secondary-border);
+  --secondary-border: transparent; /* DEPRECATED — see --primary-border note above */
+  --control-border: none; /* DEPRECATED — inputs use --input-ring directly */
+  --control-border-hover: var(--secondary-hover); /* colour-only alias for hover ring */
+  --control-border-focus: var(--secondary-hover); /* colour-only alias for focus ring */
   --control-bg: var(--secondary);
   --control-bg-hover: var(--secondary-hover);
   --control-bg-active: var(--secondary-hover);
@@ -389,8 +402,8 @@
   --hud-surface-strong: rgba(15, 23, 42, 0.82);
   --hud-surface-subtle: rgba(15, 23, 42, 0.38);
   --hud-surface-glass: rgba(15, 23, 42, 0.94);
-  --hud-border: rgba(255, 255, 255, 0.16);
-  --hud-border-strong: rgba(255, 255, 255, 0.28);
+  --hud-border: transparent; /* DEPRECATED — borders banned outside lists/inputs/checkboxes/ghost buttons/focus rings */
+  --hud-border-strong: transparent; /* DEPRECATED — borders banned outside lists/inputs/checkboxes/ghost buttons/focus rings */
   --hud-divider: rgba(255, 255, 255, 0.08);
   --hud-rail: rgba(255, 255, 255, 0.18);
   --hud-text: #f8fafc;
@@ -433,8 +446,13 @@
   --skeleton-border: transparent;
   --skeleton-radius: 8px;
   --skeleton-animation-duration: 1.8s;
-  --primary-border: var(--primary-hover);
-  --table-border: 1px solid rgba(var(--accent-base-rgb), 0.2);
+  --primary-border: transparent; /* DEPRECATED — see light-theme note */
+  --separating-line: 1px solid rgba(var(--accent-base-rgb), 0.2);
+  --table-border: var(--separating-line); /* legacy alias — prefer --separating-line */
+  --input-ring: 1px solid var(--secondary-hover);
+  --checkbox-ring: 2px solid var(--accent-strong);
+  --ghostbutton-ring: 1px solid var(--primary);
+  --focus-ring: 0 0 0 3px rgba(var(--accentMainRgb), 0.18);
   --text-1: var(--surfaceText);
   --text-1-rgb: 248, 247, 255;
   --text-2: #0a0a0c;
@@ -542,7 +560,7 @@
   --calendar-amber-selected-bg: var(--warning-text);
   --calendar-red-selected-bg: var(--danger-text);
   --calendar-today-row-bg: var(--theme);
-  --calendar-today-row-border: rgba(var(--accent-base-rgb), 0.55);
+  --calendar-today-row-border: transparent; /* DEPRECATED — see light-theme note */
   --calendar-today-pill-bg: var(--theme-hover);
   --calendar-today-pill-text: var(--text-1);
   --search-surface: #2a2a32;
@@ -560,10 +578,10 @@
   --layer-gradient: var(--secondary);
   --scrollbar-thumb: var(--accent-strong);
   --scrollbar-thumb-hover: var(--primary-hover);
-  --secondary-border: var(--secondary-hover);
-  --control-border: 1px solid var(--secondary-border);
-  --control-border-hover: var(--secondary-border);
-  --control-border-focus: var(--secondary-border);
+  --secondary-border: transparent; /* DEPRECATED — see light-theme note */
+  --control-border: none; /* DEPRECATED — inputs use --input-ring directly */
+  --control-border-hover: var(--secondary-hover);
+  --control-border-focus: var(--secondary-hover);
   --control-bg: var(--secondary);
   --control-bg-hover: var(--secondary-hover);
   --control-bg-active: var(--secondary-hover);
@@ -619,8 +637,8 @@
   --nav-link-bg: var(--secondary);
   --nav-link-bg-hover: var(--secondary-hover);
   --nav-link-bg-active: var(--primary);
-  --nav-link-border: 1px solid var(--primary-border);
-  --nav-link-border-active: 1px solid var(--primary-border);
+  --nav-link-border: none; /* DEPRECATED — see light-theme note */
+  --nav-link-border-active: none; /* DEPRECATED — see light-theme note */
   --shadow-sm: none;
   --shadow-md: none;
   --shadow-lg: none;

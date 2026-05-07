@@ -268,7 +268,6 @@ export default function StockCataloguePageUi(props) {
 
                   {jobParts.length === 0 ? <div style={{
             background: "var(--surface)",
-            border: "1px dashed var(--primary-hover)",
             borderRadius: "var(--radius-xs)",
             padding: "16px",
             color: "var(--danger)",
@@ -315,7 +314,7 @@ export default function StockCataloguePageUi(props) {
                   const stageId = mapPartStatusToPipelineId(part.status);
                   const stageMeta = getPipelineStageMeta(stageId);
                   return <tr key={part.id} style={{
-                    borderBottom: "1px solid var(--surface)"
+                    borderBottom: "var(--separating-line)"
                   }}>
                               <td style={{
                       padding: "10px",
@@ -495,7 +494,7 @@ export default function StockCataloguePageUi(props) {
                     const sourceMeta = resolveSourceMeta(request.source);
                     const statusMeta = resolveStatusStyles(request.status);
                     return <tr key={request.request_id} style={{
-                      borderBottom: "1px solid var(--surface)"
+                      borderBottom: "var(--separating-line)"
                     }}>
                                   <td style={{
                         padding: "10px"
@@ -546,7 +545,6 @@ export default function StockCataloguePageUi(props) {
                     </div>}
                 </> : <div style={{
           background: "var(--surface)",
-          border: "1px dashed var(--primary-hover)",
           borderRadius: "var(--radius-xs)",
           padding: "16px",
           color: "var(--danger)",
@@ -649,7 +647,7 @@ export default function StockCataloguePageUi(props) {
               }} style={{
                 padding: "10px 12px",
                 cursor: "pointer",
-                borderBottom: "1px solid var(--surface)",
+                borderBottom: "var(--separating-line)",
                 fontWeight: locationFilter === "all" ? 600 : 400,
                 background: locationFilter === "all" ? "var(--surface)" : "transparent"
               }} onMouseEnter={e => {
@@ -743,7 +741,7 @@ export default function StockCataloguePageUi(props) {
                 setSelectedPart(part);
                 setIsPartModalOpen(true);
               }} style={{
-                borderBottom: "1px solid var(--surface)",
+                borderBottom: "var(--separating-line)",
                 cursor: "pointer",
                 transition: "background 0.15s ease"
               }} onMouseEnter={e => {
@@ -838,7 +836,6 @@ export default function StockCataloguePageUi(props) {
           justifyContent: "space-between",
           alignItems: "center",
           paddingBottom: "16px",
-          borderBottom: "1px solid var(--surface)",
           marginBottom: "20px"
         }}>
                 <div style={{
@@ -1066,7 +1063,6 @@ export default function StockCataloguePageUi(props) {
                       <div style={{
                   marginTop: "12px",
                   paddingTop: "12px",
-                  borderTop: "1px solid var(--surface)",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center"
@@ -1173,8 +1169,7 @@ export default function StockCataloguePageUi(props) {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    paddingTop: "8px",
-                    borderTop: "1px solid var(--surface)"
+                    paddingTop: "8px"
                   }}>
                           <span style={{
                       fontSize: "var(--text-body-sm)",
@@ -1419,7 +1414,7 @@ export default function StockCataloguePageUi(props) {
                     const sourceMeta = resolveSourceMeta(link.source);
                     const statusMeta = resolveStatusStyles(link.status);
                     return <tr key={`${link.type}-${link.job_id}-${link.request_id || ""}-${link.status}`} style={{
-                      borderBottom: "1px solid var(--surface)",
+                      borderBottom: "var(--separating-line)",
                       transition: "background 0.15s ease"
                     }} onMouseEnter={e => {
                       e.currentTarget.style.background = "var(--surface)";

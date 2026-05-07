@@ -28,7 +28,6 @@ import DashboardWorkshopMock from "./dashboard-workshop";
 import DashboardManagersMock from "./dashboard-managers";
 import DashboardAccountsMock from "./dashboard-accounts";
 import DashboardAdminMock from "./dashboard-admin";
-import DashboardAfterSalesMock from "./dashboard-after-sales";
 import DashboardMotMock from "./dashboard-mot";
 import DashboardPaintingMock from "./dashboard-painting";
 import DashboardPartsMock from "./dashboard-parts";
@@ -135,7 +134,6 @@ export const MOCKS_BY_SLIDE_ID = {
   "dashboard-managers": DashboardManagersMock,
   "dashboard-accounts": DashboardAccountsMock,
   "dashboard-admin": DashboardAdminMock,
-  "dashboard-after-sales": DashboardAfterSalesMock,
   "dashboard-mot": DashboardMotMock,
   "dashboard-painting": DashboardPaintingMock,
   "dashboard-parts": DashboardPartsMock,

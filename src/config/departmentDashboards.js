@@ -37,12 +37,6 @@ export const departmentDashboardShortcuts = [
     description: "Advisor capacity, arrivals, and daily targets",
   },
   {
-    label: "After Sales Dashboard",
-    href: "/dashboard/after-sales",
-    roles: ["after sales director", "after sales manager", "aftersales manager"],
-    description: "After-sales throughput, escalations, and queue health",
-  },
-  {
     label: "Managers Dashboard",
     href: "/dashboard/managers",
     roles: [

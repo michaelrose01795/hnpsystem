@@ -299,7 +299,6 @@ export default function ViewJobCardsUi(props) {
                       borderRadius: "var(--control-radius-xs)",
                       fontSize: "12px",
                       fontWeight: "600",
-                      border: "1px solid currentColor",
                       letterSpacing: "0.3px"
                     }}>
                         {popupJob.jobDivision}

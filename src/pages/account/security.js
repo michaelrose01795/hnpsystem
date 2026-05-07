@@ -200,25 +200,25 @@ function RecentActivity() {
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
         <thead>
           <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-            <th style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--primary-border)" }}>When</th>
-            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--primary-border)" }}>Event</th>
-            <th style={{ padding: "8px 8px", borderBottom: "1px solid var(--primary-border)" }}>IP</th>
-            <th style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--primary-border)" }}>Device</th>
+            <th style={{ padding: "8px 8px 8px 0", borderBottom: "var(--separating-line)" }}>When</th>
+            <th style={{ padding: "8px 8px", borderBottom: "var(--separating-line)" }}>Event</th>
+            <th style={{ padding: "8px 8px", borderBottom: "var(--separating-line)" }}>IP</th>
+            <th style={{ padding: "8px 0 8px 8px", borderBottom: "var(--separating-line)" }}>Device</th>
           </tr>
         </thead>
         <tbody>
           {events.map((event) => (
             <tr key={event.id}>
-              <td style={{ padding: "8px 8px 8px 0", borderBottom: "1px solid var(--primary-border)" }}>
+              <td style={{ padding: "8px 8px 8px 0", borderBottom: "var(--separating-line)" }}>
                 {formatTimestamp(event.occurredAt)}
               </td>
-              <td style={{ padding: "8px 8px", borderBottom: "1px solid var(--primary-border)" }}>
+              <td style={{ padding: "8px 8px", borderBottom: "var(--separating-line)" }}>
                 {ACTION_LABELS[event.action] || event.action}
               </td>
-              <td style={{ padding: "8px 8px", borderBottom: "1px solid var(--primary-border)", fontFamily: "var(--font-family-mono, monospace)", fontSize: "0.8rem" }}>
+              <td style={{ padding: "8px 8px", borderBottom: "var(--separating-line)", fontFamily: "var(--font-family-mono, monospace)", fontSize: "0.8rem" }}>
                 {event.ip || "—"}
               </td>
-              <td style={{ padding: "8px 0 8px 8px", borderBottom: "1px solid var(--primary-border)", fontSize: "0.8rem", color: "var(--text-1)" }}>
+              <td style={{ padding: "8px 0 8px 8px", borderBottom: "var(--separating-line)", fontSize: "0.8rem", color: "var(--text-1)" }}>
                 {event.userAgent ? event.userAgent.slice(0, 80) : "—"}
               </td>
             </tr>

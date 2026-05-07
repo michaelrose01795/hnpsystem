@@ -325,7 +325,6 @@ const GlobalSearch = ({
               padding: "12px 16px",
               borderRadius: "var(--control-radius)",
               backgroundColor: dropdownBackground,
-              border: `1px solid ${drawerBorderColor}`,
 
               color: textColor,
               fontSize: "0.85rem",
@@ -340,8 +339,6 @@ const GlobalSearch = ({
             style={{
               backgroundColor: dropdownBackground,
               borderRadius: "var(--radius-md)",
-
-              border: `1px solid ${drawerBorderColor}`,
               overflow: "hidden",
               maxHeight: "280px",
               overflowY: "auto",
@@ -372,10 +369,10 @@ const GlobalSearch = ({
                     width: "100%",
                     padding: "14px 16px",
                     border: "none",
-                      borderBottom:
-                        index === combinedResults.length - 1
+                    borderBottom:
+                      index === combinedResults.length - 1
                         ? "none"
-                        : `1px solid ${isDarkMode ? "rgba(var(--primary-rgb), 0.3)" : "rgba(var(--primary-rgb), 0.14)"}`,
+                        : "1px solid var(--separating-line)",
                     backgroundColor: itemBackground,
                     color: itemColor,
                     cursor: "pointer",
@@ -423,7 +420,6 @@ const GlobalSearch = ({
               padding: "16px",
               borderRadius: "var(--control-radius)",
               backgroundColor: dropdownBackground,
-              border: `1px solid ${drawerBorderColor}`,
 
               color: textColor,
               fontSize: "0.85rem",

@@ -160,7 +160,6 @@ export const FinancialTotalsGrid = ({ totals }) => {
           key={item.label}
           style={{
             padding: "12px",
-            border: `1px solid ${item.color}33`,
             borderRadius: "var(--radius-sm)",
             background: `${item.color}11`,
           }}

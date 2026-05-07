@@ -337,9 +337,6 @@ function AddWidgetModal({
                   alignItems: "flex-start",
                   gap: "10px",
                   borderRadius: "var(--radius-sm)",
-                  border: isVisible
-                    ? "1px solid rgba(var(--primary-rgb), 0.22)"
-                    : "1px solid rgba(var(--primary-rgb), 0.08)",
                   background: isVisible
                     ? "rgba(var(--primary-rgb), 0.08)"
                     : "var(--surface)",
@@ -707,7 +704,6 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
         shell
         style={{
           background: "var(--surface)",
-          border: "1px solid rgba(var(--text-1-rgb), 0.08)",
           borderRadius: "14px",
           padding: "24px",
           color: "var(--text-1)",
@@ -786,7 +782,6 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
           shell
           style={{
             background: "var(--surface)",
-            border: "1px solid rgba(var(--text-1-rgb), 0.08)",
             borderRadius: "14px",
             padding: "24px",
             display: "grid",

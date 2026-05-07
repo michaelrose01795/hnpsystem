@@ -199,13 +199,13 @@ export default function BreachesPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: "var(--text-1)" }}>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Detected</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Hours elapsed</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Category</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Severity</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Status</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>ICO ref</th>
-                  <th style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>Action</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Detected</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Hours elapsed</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Category</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Severity</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Status</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>ICO ref</th>
+                  <th style={{ padding: 8, borderBottom: "var(--separating-line)" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,17 +214,17 @@ export default function BreachesPage() {
                   const overdue = elapsed > 72 && !row.ico_notified_at && row.status !== "closed";
                   return (
                     <tr key={row.id}>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{fmt(row.detected_at)}</td>
+                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{fmt(row.detected_at)}</td>
                       <td style={{
                         padding: 8,
-                        borderBottom: "1px solid var(--primary-border)",
+                        borderBottom: "var(--separating-line)",
                         color: overdue ? "var(--danger-base, #ef4444)" : "inherit",
                         fontWeight: overdue ? 700 : 400,
                       }}>
                         {elapsed}h{overdue ? " ⚠" : ""}
                       </td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>{row.category || "—"}</td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>{row.category || "—"}</td>
+                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                         <select
                           value={row.severity || "medium"}
                           disabled={busyId === row.id}
@@ -237,7 +237,7 @@ export default function BreachesPage() {
                           ))}
                         </select>
                       </td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                         <select
                           value={row.status}
                           disabled={busyId === row.id}
@@ -250,7 +250,7 @@ export default function BreachesPage() {
                           ))}
                         </select>
                       </td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                         <input
                           type="text"
                           defaultValue={row.ico_reference || ""}
@@ -268,7 +268,7 @@ export default function BreachesPage() {
                           style={{ minHeight: 32, width: 130 }}
                         />
                       </td>
-                      <td style={{ padding: 8, borderBottom: "1px solid var(--primary-border)" }}>
+                      <td style={{ padding: 8, borderBottom: "var(--separating-line)" }}>
                         {row.status !== "closed" && (
                           <Button
                             type="button"

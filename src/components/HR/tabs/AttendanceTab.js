@@ -9,7 +9,6 @@ import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 const buttonStyleSecondary = {
   padding: "var(--control-padding)",
   borderRadius: "var(--input-radius)",
-  border: "1px solid var(--surface)",
   background: "var(--surface)",
   color: "var(--text-1)",
   fontWeight: 600,
@@ -61,7 +60,7 @@ export default function AttendanceTab() {
               </thead>
               <tbody>
                 {attendanceLogs.map((log) => (
-                  <tr key={log.id} style={{ borderTop: "1px solid var(--surface)" }}>
+                  <tr key={log.id} style={{ borderTop: "var(--separating-line)" }}>
                     <td style={{ padding: "12px 0", fontWeight: 600 }}>{log.employeeName}</td>
                     <td>{new Date(log.date).toLocaleDateString()}</td>
                     <td>{log.clockIn ? new Date(log.clockIn).toLocaleTimeString() : "—"}</td>
@@ -90,7 +89,7 @@ export default function AttendanceTab() {
                   flexDirection: "column",
                   gap: "6px",
                   paddingBottom: "12px",
-                  borderBottom: "1px solid var(--theme)",
+                  borderBottom: "var(--separating-line)",
                 }}
               >
                 <span style={{ fontWeight: 600, color: "var(--primary)" }}>{entry.employee}</span>
@@ -116,7 +115,7 @@ export default function AttendanceTab() {
           </thead>
           <tbody>
             {absenceRecords.map((record) => (
-              <tr key={record.id} style={{ borderTop: "1px solid var(--surface)" }}>
+              <tr key={record.id} style={{ borderTop: "var(--separating-line)" }}>
                 <td style={{ padding: "12px 0", fontWeight: 600 }}>{record.employee}</td>
                 <td>{record.type}</td>
                 <td>{new Date(record.startDate).toLocaleDateString()}</td>

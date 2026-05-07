@@ -384,7 +384,6 @@ export default function WorkshopManagerDashboard() {
             borderRadius: "var(--radius-md)",
             padding: "18px",
             background: "var(--surface)",
-            border: "1px solid rgba(var(--text-1-rgb), 0.12)",
             display: "flex",
             flexDirection: "column",
             gap: "6px"

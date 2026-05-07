@@ -77,8 +77,7 @@ const getStatusBadgeStyle = (status) => {
       return {
         ...statusBadgeBaseStyle,
         backgroundColor: "var(--theme)",
-        color: "var(--primary)",
-        border: "1px solid rgba(var(--accent-base-rgb), 0.2)"
+        color: "var(--primary)"
       };
     case "complete":
       return {

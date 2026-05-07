@@ -91,7 +91,7 @@ function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentCol
               gridTemplateColumns: "minmax(0,2fr) 80px 80px minmax(80px,1fr)",
               gap: "8px",
               padding: "10px 12px",
-              borderTop: "1px solid rgba(var(--text-1-rgb), 0.06)",
+              borderTop: "var(--separating-line)",
               fontSize: "0.88rem",
               color: "var(--text-1)",
             }}
@@ -120,7 +120,7 @@ function RowsTable({ rows = [], fallbackLabel, totalLabel, totalValue, accentCol
           display: "flex",
           justifyContent: "space-between",
           padding: "10px 12px",
-          borderTop: "1px solid rgba(var(--text-1-rgb), 0.12)",
+          borderTop: "var(--separating-line)",
           background: "rgba(var(--text-1-rgb), 0.04)",
           fontWeight: 700,
           color: accentColor,
@@ -184,7 +184,6 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
           style={{
             padding: "20px 24px",
             background: "var(--theme, var(--surface))",
-            borderBottom: "1px solid rgba(var(--text-1-rgb), 0.08)",
             display: "flex",
             gap: "16px",
             justifyContent: "space-between",

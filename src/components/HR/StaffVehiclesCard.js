@@ -533,7 +533,6 @@ export default function StaffVehiclesCard({
                 type="button"
                 onClick={() => setConfirmRemoveId(null)}
                 style={{
-                  border: "1px solid rgba(var(--primary-rgb), 0.22)",
                   borderRadius: "var(--input-radius)",
                   padding: "var(--control-padding)",
                   background: "rgba(var(--surface-rgb, 255, 255, 255), 0.4)",
@@ -589,7 +588,6 @@ export default function StaffVehiclesCard({
         {localVehicles.length === 0 && (
           <div
             style={{
-              border: "1px dashed rgba(var(--primary-rgb), 0.28)",
               borderRadius: "var(--radius-md)",
               padding: "var(--page-card-padding)",
               textAlign: "center",
@@ -670,9 +668,6 @@ export default function StaffVehiclesCard({
                       borderRadius: "var(--input-radius)",
                       fontSize: "0.8rem",
                       fontWeight: 700,
-                      border: vehicle.payrollDeductionEnabled
-                        ? "1px solid rgba(var(--success-rgb), 0.28)"
-                        : "1px solid rgba(var(--primary-rgb), 0.22)",
                       color: vehicle.payrollDeductionEnabled ? "var(--success)" : "var(--text-1)",
                       background: vehicle.payrollDeductionEnabled
                         ? "rgba(var(--success-rgb), 0.14)"
@@ -1071,7 +1066,7 @@ export default function StaffVehiclesCard({
                   <tr
                     key={`${entry.id}-${entry.vehicle?.id}`}
                     style={{
-                      borderTop: "1px solid rgba(var(--accent-base-rgb), 0.18)",
+                      borderTop: "var(--separating-line)",
                       background: index % 2 === 0
                         ? "var(--profile-table-surface)"
                         : "var(--profile-table-alt-surface)",
@@ -1126,7 +1121,6 @@ export default function StaffVehiclesCard({
             marginTop: "22px",
             padding: "16px",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid rgba(var(--primary-rgb), 0.2)",
             background: "var(--theme)",
           }}
         >
@@ -1256,7 +1250,7 @@ const historyLabelStyle = {
 const historyInputStyle = {
   padding: "var(--control-padding)",
   borderRadius: "var(--input-radius)",
-  border: "1px solid rgba(var(--primary-rgb), 0.22)",
+  border: "1px solid var(--input-ring)",
   fontSize: "0.9rem",
   fontWeight: 500,
   background: "rgba(var(--surface-rgb, 255, 255, 255), 0.86)",
@@ -1264,7 +1258,6 @@ const historyInputStyle = {
 };
 
 const primaryActionButton = {
-  border: "1px solid var(--primary)",
   borderRadius: "var(--input-radius)",
   padding: "var(--control-padding)",
   background: "var(--primary)",
@@ -1275,7 +1268,7 @@ const primaryActionButton = {
 };
 
 const secondaryActionButton = {
-  border: "1px solid rgba(var(--primary-rgb), 0.34)",
+  border: "1px solid var(--ghostbutton-ring)",
   borderRadius: "var(--input-radius)",
   padding: "var(--control-padding)",
   background: "rgba(var(--surface-rgb, 255, 255, 255), 0.38)",
@@ -1298,7 +1291,6 @@ const dangerActionButton = {
 
 const staffVehiclesCardStyle = {
   background: "var(--surface)",
-  border: "var(--section-card-border)",
 };
 
 function VehicleInfo({ label, value }) {

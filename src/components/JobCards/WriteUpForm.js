@@ -578,7 +578,6 @@ const sectionBoxStyle = {
   backgroundColor: "var(--layer-section-level-3)",
   padding: "var(--section-card-padding)",
   borderRadius: "var(--radius-md)",
-  border: "1px solid var(--theme)",
   display: "flex",
   flexDirection: "column",
   minHeight: "360px",
@@ -587,7 +586,6 @@ const sectionBoxStyle = {
 const darkSectionBoxStyle = {
   ...sectionBoxStyle,
   backgroundColor: "var(--surface)",
-  border: "1px solid var(--surface)",
 };
 
 const sectionScrollerStyle = {
@@ -751,7 +749,6 @@ const addSectionButtonStyle = {
   height: "24px",
   minHeight: "24px",
   borderRadius: "4px",
-  border: "1px solid var(--accent-purple)",
   backgroundColor: "var(--surface)",
   color: "var(--accent-purple)",
   fontSize: "12px",
@@ -816,7 +813,6 @@ const checkboxStyle = {
 
 const causeRowStyle = {
   borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--accent-purple)",
   backgroundColor: "var(--theme)",
   padding: "12px",
   display: "flex",
@@ -2726,7 +2722,6 @@ function WriteUpForm({
                   style={{
                     ...sectionBoxStyle,
                     backgroundColor: "var(--surface)",
-                    border: "1px solid var(--theme)",
                   }}
                 >
                   <div style={sectionHeaderStyle}>
@@ -2906,8 +2901,8 @@ function WriteUpForm({
                           flex: 1,
                           backgroundColor: "var(--theme)",
                         }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--info)")}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--input-ring)")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--input-ring)")}
                       />
                     ) : (
                       <input
@@ -2919,8 +2914,8 @@ function WriteUpForm({
                           flex: 1,
                           backgroundColor: "var(--theme)",
                         }}
-                        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary)")}
-                        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--info)")}
+                        onFocus={(e) => (e.currentTarget.style.borderColor = "var(--input-ring)")}
+                        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--input-ring)")}
                       />
                     )}
                 </div>

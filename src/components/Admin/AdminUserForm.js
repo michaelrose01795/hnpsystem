@@ -152,12 +152,6 @@ export default function AdminUserForm({ onCreated }) {
                 : message.type === "success"
                 ? "rgba(var(--info-rgb), 0.12)"
                 : "rgba(var(--accent-purple-rgb), 0.1)",
-            border:
-              message.type === "error"
-                ? "1px solid rgba(var(--primary-rgb), 0.3)"
-                : message.type === "success"
-                ? "1px solid rgba(var(--info-rgb), 0.3)"
-                : "1px solid rgba(var(--accent-purple-rgb), 0.2)",
             borderRadius: "var(--radius-sm)",
             padding: "12px",
             color:
@@ -196,7 +190,7 @@ const labelStyle = {
 
 const inputStyle = {
   borderRadius: "var(--control-radius-xs)",
-  border: "1px solid var(--theme)",
+  border: "1px solid var(--input-ring)",
   padding: "10px 12px",
   fontWeight: 500,
   color: "var(--accent-purple)",
@@ -216,7 +210,7 @@ const primaryButtonStyle = {
 const secondaryButtonStyle = {
   padding: "10px 16px",
   borderRadius: "var(--control-radius-xs)",
-  border: "1px solid var(--accent-purple)",
+  border: "1px solid var(--ghostbutton-ring)",
   background: "var(--surface)",
   color: "var(--accent-purple)",
   fontWeight: 600,

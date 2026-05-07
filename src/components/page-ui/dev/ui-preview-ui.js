@@ -18,7 +18,6 @@ export function UiPreviewShell({ uiKey, label, children }) {
           gap: 12,
           padding: "10px 16px",
           background: "var(--surfaceMutedToken, var(--theme))",
-          borderBottom: "1px solid var(--border)",
           fontSize: 12,
           color: "var(--text-1)"
         }}>
@@ -93,7 +92,6 @@ export function UiPreviewIndex({ groups }) {
                     gap: 4,
                     padding: "10px 12px",
                     borderRadius: "var(--radius-sm)",
-                    border: "1px solid var(--border)",
                     background: "var(--surface)",
                     textDecoration: "none",
                     color: "var(--text-1)"

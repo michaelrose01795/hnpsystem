@@ -764,8 +764,7 @@ export default function TechJobDetailPageUi(props) {
                   <div style={{
                 padding: "16px",
                 backgroundColor: "var(--theme)",
-                borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--theme)"
+                borderRadius: "var(--radius-sm)"
               }}>
                     <div style={{
                   fontSize: "13px",
@@ -1210,9 +1209,7 @@ export default function TechJobDetailPageUi(props) {
                             Critical Issues ({vhcSummaryItems.red.length})
                           </strong>
                         </div>
-                        {vhcSummaryItems.red.map((item, idx) => <div key={idx} className="vhc-summary-item" style={{
-                    borderLeftColor: "var(--danger)"
-                  }}>
+                        {vhcSummaryItems.red.map((item, idx) => <div key={idx} className="vhc-summary-item">
                             <div className="vhc-summary-item__section" style={{
                       color: "var(--danger)"
                     }}>
@@ -1233,9 +1230,7 @@ export default function TechJobDetailPageUi(props) {
                             Advisory Items ({vhcSummaryItems.amber.length})
                           </strong>
                         </div>
-                        {vhcSummaryItems.amber.map((item, idx) => <div key={idx} className="vhc-summary-item" style={{
-                    borderLeftColor: "var(--warning)"
-                  }}>
+                        {vhcSummaryItems.amber.map((item, idx) => <div key={idx} className="vhc-summary-item">
                             <div className="vhc-summary-item__section" style={{
                       color: "var(--warning)"
                     }}>
@@ -1264,9 +1259,7 @@ export default function TechJobDetailPageUi(props) {
                             {showGreenItems ? "Hide" : "Show"}
                           </span>
                         </div>
-                        {showGreenItems && vhcSummaryItems.green.map((item, idx) => <div key={idx} className="vhc-summary-item" style={{
-                    borderLeftColor: "var(--success)"
-                  }}>
+                        {showGreenItems && vhcSummaryItems.green.map((item, idx) => <div key={idx} className="vhc-summary-item">
                             <div className="vhc-summary-item__section" style={{
                       color: "var(--success)"
                     }}>
@@ -1362,7 +1355,7 @@ export default function TechJobDetailPageUi(props) {
             }} placeholder="e.g. Front right brake pad set (OEM) for MK3 1.6 diesel." style={{
               width: "100%",
               borderRadius: "var(--control-radius-xs)",
-              border: "1px solid var(--theme)",
+              border: "1px solid var(--input-ring)",
               padding: "12px",
               fontSize: "14px",
               resize: "vertical",
@@ -1372,7 +1365,7 @@ export default function TechJobDetailPageUi(props) {
             }} onFocus={e => {
               e.currentTarget.style.borderColor = "var(--warning)";
             }} onBlur={e => {
-              e.currentTarget.style.borderColor = "var(--theme)";
+              e.currentTarget.style.borderColor = "var(--input-ring)";
             }} />
                 <div style={{
               display: "flex",
@@ -1396,7 +1389,7 @@ export default function TechJobDetailPageUi(props) {
                   width: "80px",
                   padding: "6px 10px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--theme)",
+                  border: "1px solid var(--input-ring)",
                   fontSize: "14px"
                 }} />
                   </label>
@@ -1411,7 +1404,7 @@ export default function TechJobDetailPageUi(props) {
                   marginTop: "4px",
                   padding: "6px 10px",
                   borderRadius: "var(--radius-xs)",
-                  border: "1px solid var(--theme)",
+                  border: "1px solid var(--input-ring)",
                   fontSize: "14px",
                   maxWidth: "240px"
                 }}>
@@ -1498,7 +1491,6 @@ export default function TechJobDetailPageUi(props) {
                 const sourceLabel = request.requested_by ? `Tech${requesterName ? ` (${requesterName})` : ""}` : "VHC";
                 return <div key={request.request_id} style={{
                   padding: "16px",
-                  border: "1px solid var(--theme)",
                   borderRadius: "var(--control-radius-xs)",
                   backgroundColor: "var(--theme)",
                   display: "flex",
@@ -1628,7 +1620,6 @@ export default function TechJobDetailPageUi(props) {
                 return <div key={row.vhc_id} style={{
                   padding: "14px 16px",
                   border: "none",
-                  borderLeft: "4px solid var(--success)",
                   borderRadius: "var(--control-radius-xs)",
                   backgroundColor: "var(--success-surface)",
                   display: "flex",
@@ -1739,7 +1730,6 @@ export default function TechJobDetailPageUi(props) {
               padding: "10px 20px",
               backgroundColor: "var(--primary)",
               color: "var(--text-2)",
-              border: "1px solid var(--primary)",
               borderRadius: "var(--radius-xs)",
               cursor: "pointer",
               fontSize: "14px",

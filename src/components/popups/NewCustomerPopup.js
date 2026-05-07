@@ -303,7 +303,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                       style={{
                         padding: "12px 24px",
                         borderRadius: "var(--input-radius)",
-                        border: "2px solid var(--primary)",
                         backgroundColor: "var(--primary)",
                         color: "white",
                         fontSize: "14px",
@@ -350,7 +349,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               {lookupState.suggestions.length > 0 && (
                 <div
                   style={{
-                    border: "2px solid var(--surface)",
                     borderRadius: "var(--input-radius)",
                     maxHeight: "200px",
                     overflowY: "auto",
@@ -366,7 +364,7 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
                         width: "100%",
                         padding: "14px 16px",
                         border: "none",
-                        borderBottom: index < lookupState.suggestions.length - 1 ? "1px solid var(--surface)" : "none",
+                        borderBottom: index < lookupState.suggestions.length - 1 ? "1px solid var(--separating-line)" : "none",
                         textAlign: "left",
                         backgroundColor: "var(--surface)",
                         cursor: "pointer",
@@ -445,7 +443,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
         <div
           style={{
             padding: "24px 32px",
-            borderTop: "1px solid var(--surface)",
             display: "flex",
             justifyContent: "flex-end",
             gap: "12px",
@@ -457,7 +454,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             style={{
               padding: "12px 24px",
               borderRadius: "var(--input-radius)",
-              border: "2px solid var(--surface)",
               backgroundColor: "transparent",
               fontSize: "15px",
               fontWeight: "bold",
@@ -466,11 +462,9 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
               transition: "all 0.2s",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--primary)";
               e.currentTarget.style.backgroundColor = "var(--surface)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--surface)";
               e.currentTarget.style.backgroundColor = "transparent";
             }}
           >
@@ -483,7 +477,6 @@ export default function NewCustomerPopup({ onClose, onSelect, initialName }) {
             style={{
               padding: "12px 24px",
               borderRadius: "var(--input-radius)",
-              border: "2px solid var(--primary-selected)",
               backgroundColor: "var(--primary)",
               color: "white",
               fontSize: "15px",

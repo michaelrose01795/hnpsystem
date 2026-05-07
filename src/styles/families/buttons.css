@@ -109,7 +109,8 @@
 .app-btn--ghost {
   background: transparent !important;
   color: var(--accentText) !important;
-  border: 1px solid var(--primary) !important;
+  /* Ghost buttons are one of the four allowed "ring" use-cases. */
+  border: var(--ghostbutton-ring) !important;
 }
 .app-btn--ghost:hover,
 .app-btn--ghost:focus-visible {
@@ -141,7 +142,7 @@
   background: var(--primary-pressed) !important;
 }
 .app-btn[data-demo-state="focus"] {
-  box-shadow: var(--control-ring) !important;
+  box-shadow: var(--focus-ring) !important;
   outline: none !important;
 }
 

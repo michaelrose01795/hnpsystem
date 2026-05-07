@@ -786,7 +786,8 @@ input[type="checkbox"] {
   -moz-appearance: none;
   width: 18px;
   height: 18px;
-  border: 2px solid var(--accent-strong);
+  /* Checkboxes are one of the four allowed "ring" use-cases. */
+  border: var(--checkbox-ring);
   border-radius: 4px;
   background: var(--surface);
   cursor: pointer;
@@ -1203,7 +1204,6 @@ label {
 .app-data-table {
   width: 100%;
   border-collapse: collapse;
-  border: var(--table-border);
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--surface);
@@ -1212,7 +1212,9 @@ label {
 .app-data-table th,
 .app-data-table td {
   padding: var(--space-3) var(--space-md);
-  border-bottom: var(--table-border);
+  /* Row-bottom rule = the only "border-like" line allowed inside a table.
+     Use --separating-line, never --primary-border or other deprecated tokens. */
+  border-bottom: var(--separating-line);
   text-align: left;
 }
 
@@ -1263,7 +1265,9 @@ label {
   border-radius: var(--radius-xs);
   background: var(--surface);
   color: var(--text-1);
-  border: 1px solid var(--primary-border);
+  /* No border — table action buttons sit on the row separator alone.
+     Borders are only allowed on inputs, checkboxes, ghost buttons, focus rings. */
+  border: none;
   cursor: pointer;
   line-height: 1;
 }

@@ -129,7 +129,7 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
   };
 
   const settingRow = (label, description, control) => (
-    <div style={{ border: "none", borderRadius: "var(--radius-md)", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", background: embedded ? "var(--surface)" : "transparent" }}>
+    <div style={{ borderRadius: "var(--radius-md)", padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", background: embedded ? "var(--surface)" : "transparent" }}>
       <div style={{ flex: "1 1 280px" }}>
         <h3 style={{ margin: 0, fontSize: "1rem", color: "var(--text-1)" }}>{label}</h3>
         <p style={{ margin: "4px 0 0", color: "var(--text-1)", fontSize: "0.9rem" }}>{description}</p>
@@ -151,7 +151,6 @@ export default function AccountsSettingsPanel({ embedded = false, onClose }) {
     padding: "20px",
     borderRadius: "var(--radius-lg)",
     background: "var(--surface)",
-    border: "1px solid rgba(var(--primary-rgb), 0.1)",
   };
 
   return (

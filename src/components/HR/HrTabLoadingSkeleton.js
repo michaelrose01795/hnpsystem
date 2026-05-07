@@ -34,7 +34,6 @@ function TableRows({ rows = 6, cols = 4 }) {
             gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
             gap: "10px",
             padding: "12px 0",
-            borderTop: rowIndex === 0 ? "none" : "1px solid rgba(var(--primary-rgb), 0.08)",
           }}
         >
           {Array.from({ length: cols }).map((__, colIndex) => (
@@ -62,7 +61,7 @@ function ListRows({ rows = 5 }) {
             flexDirection: "column",
             gap: "8px",
             paddingBottom: "12px",
-            borderBottom: index === rows - 1 ? "none" : "1px solid rgba(var(--primary-rgb), 0.08)",
+            borderBottom: index === rows - 1 ? "none" : "1px solid var(--separating-line)",
           }}
         >
           <SkeletonBlock width="42%" height="14px" borderRadius="6px" />

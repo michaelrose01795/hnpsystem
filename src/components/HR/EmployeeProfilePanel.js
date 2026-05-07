@@ -7,7 +7,6 @@ import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 // Outer "main" card uses the accent-surface theme colour; all inner blocks sit on --surface.
 const mainCardStyle = {
   borderRadius: "var(--radius-md)",
-  border: "1px solid rgba(var(--accent-base-rgb), 0.22)",
   background: "var(--theme)",
   padding: "20px",
   display: "flex",
@@ -112,7 +111,7 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
           style={{
             padding: "10px 18px",
             borderRadius: "var(--radius-sm)",
-            border: "1px solid rgba(var(--accent-base-rgb), 0.32)",
+            border: "1px solid var(--ghostbutton-ring)",
             background: "var(--surface)",
             color: "var(--text-1)",
             fontWeight: 700,
@@ -377,7 +376,6 @@ export default function EmployeeProfilePanel({ employee, onEdit }) {
                 sectionType="content-card"
                 style={{
                   borderRadius: "var(--radius-sm)",
-                  border: "1px dashed rgba(var(--grey-accent-rgb), 0.4)",
                   padding: "14px",
                   color: "var(--text-1)",
                   fontSize: "0.85rem",

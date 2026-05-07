@@ -557,7 +557,6 @@ export default function MessagesPageUi(props) {
             justifyContent: "space-between",
             alignItems: "flex-start",
             gap: "16px",
-            borderBottom: `1px solid ${palette.border}`,
             paddingBottom: "12px",
             flexWrap: "wrap"
           }}>
@@ -708,7 +707,6 @@ export default function MessagesPageUi(props) {
               maxHeight: "240px",
               overflowY: "auto",
               backgroundColor: "var(--surface)",
-              border: `1px solid ${palette.border}`,
               borderRadius: radii.lg,
               boxShadow: shadows.lg,
               zIndex: 1000
@@ -722,7 +720,7 @@ export default function MessagesPageUi(props) {
                 width: "100%",
                 textAlign: "left",
                 padding: "var(--space-3) var(--space-4)",
-                borderBottom: index < commandSuggestions.length - 1 ? `1px solid ${palette.border}` : "none",
+                borderBottom: index < commandSuggestions.length - 1 ? "var(--separating-line)" : "none",
                 backgroundColor: "var(--surface)",
                 cursor: "pointer",
                 transition: "background-color 0.15s"
@@ -845,7 +843,6 @@ export default function MessagesPageUi(props) {
         width: "min(520px, 100%)",
         backgroundColor: "var(--surface)",
         borderRadius: "var(--radius-lg)",
-        border: `1px solid ${palette.border}`,
         boxShadow: shadows.lg,
         padding: "24px",
         display: "flex",
@@ -916,7 +913,6 @@ export default function MessagesPageUi(props) {
         overflowY: "auto",
         backgroundColor: "var(--surface)",
         borderRadius: "var(--radius-lg)",
-        border: `1px solid ${palette.border}`,
         boxShadow: shadows.lg,
         padding: "24px",
         display: "flex",
@@ -963,7 +959,6 @@ export default function MessagesPageUi(props) {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                border: `1px solid ${palette.border}`,
                 borderRadius: "var(--radius-sm)",
                 padding: "10px 12px",
                 backgroundColor: "var(--surface)",
@@ -997,7 +992,6 @@ export default function MessagesPageUi(props) {
             </div>
 
             {isGroupLeader && <div style={{
-          border: "1px dashed var(--search-surface-muted)",
           borderRadius: "var(--radius-md)",
           padding: "12px",
           backgroundColor: "var(--search-surface)",
@@ -1034,7 +1028,6 @@ export default function MessagesPageUi(props) {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              border: `1px solid ${palette.border}`,
               borderRadius: "var(--radius-sm)",
               padding: "8px 12px",
               backgroundColor: "var(--surface)"
@@ -1282,7 +1275,6 @@ export default function MessagesPageUi(props) {
             padding: "8px 12px",
             backgroundColor: "var(--theme)",
             borderRadius: radii.lg,
-            borderLeft: `3px solid ${palette.accent}`,
             fontSize: "var(--text-body-sm)"
           }}>
                 <strong style={{
@@ -1321,7 +1313,6 @@ export default function MessagesPageUi(props) {
                     padding: "10px 12px",
                     backgroundColor: "var(--theme)",
                     borderRadius: radii.lg,
-                    borderLeft: `3px solid ${palette.accent}`,
                     cursor: "pointer",
                     transition: "all 0.15s ease"
                   }} onMouseEnter={e => {
@@ -1353,14 +1344,12 @@ export default function MessagesPageUi(props) {
               {/* Tips Section */}
               <div style={{
             marginTop: "8px",
-            paddingTop: "16px",
-            borderTop: `1px solid ${palette.border}`
+            paddingTop: "16px"
           }}>
                 <div style={{
               padding: "12px",
               backgroundColor: "var(--success-surface)",
-              borderRadius: radii.lg,
-              borderLeft: `4px solid var(--success)`
+              borderRadius: radii.lg
             }}>
                 <strong style={{
                 color: "var(--success)"
@@ -1378,8 +1367,7 @@ export default function MessagesPageUi(props) {
               <div style={{
               padding: "12px",
               backgroundColor: "var(--warning-surface)",
-              borderRadius: radii.lg,
-              borderLeft: `4px solid var(--warning)`
+              borderRadius: radii.lg
             }}>
                 <strong style={{
                 color: "var(--warning)"
