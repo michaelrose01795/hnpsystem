@@ -116,7 +116,14 @@
       "Bash(powershell -Command \"\\(Get-Content 'src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js' -Raw\\) -replace '</section>', '</LayerSurface>' | Set-Content 'src/components/page-ui/parts/goods-in/parts-goods-in-goods-in-number-ui.js' -NoNewline\")",
       "Bash(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\src\" -Directory)",
       "Bash(node tools/scripts/check-borders.js)",
-      "Bash(node tools/scripts/check-borders.js 2>&1 | grep -oE 'src/[^:]+' | sort -u > /tmp/border-violators.txt; wc -l /tmp/border-violators.txt; echo '---'; cat /tmp/border-violators.txt)"
+      "Bash(node tools/scripts/check-borders.js 2>&1 | grep -oE 'src/[^:]+' | sort -u > /tmp/border-violators.txt; wc -l /tmp/border-violators.txt; echo '---'; cat /tmp/border-violators.txt)",
+      "Bash(git pull *)",
+      "Bash(awk 'NR>=1770 && NR<=1820' c:/hnpsystem/src/pages/stock-catalogue.js)",
+      "Bash(awk 'NR>=3780 && NR<=3920' c:/hnpsystem/src/styles/globals.css)",
+      "Bash(awk 'NR>=1250 && NR<=1320' c:/hnpsystem/src/styles/globals.css)",
+      "Bash(awk 'NR>=1200 && NR<=1255' c:/hnpsystem/src/styles/globals.css)",
+      "Bash(awk 'NR>=1700 && NR<=1780' c:/hnpsystem/src/pages/stock-catalogue.js)",
+      "Bash(awk 'NR>=1080 && NR<=1200' c:/hnpsystem/src/styles/globals.css)"
     ],
     "deny": [],
     "ask": [],

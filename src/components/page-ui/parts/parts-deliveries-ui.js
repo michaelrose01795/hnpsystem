@@ -43,7 +43,7 @@ export default function PartsDeliveriesPageUi(props) {
       return <>
       <div style={pageStyles.container}>
         <PartsWorkspaceTabs />
-        <LayerSurface as="section" style={pageStyles.headerCard}>
+        <LayerSurface as="section" sectionKey="parts-deliveries-header" sectionType="content-card" data-dev-text-preview="Driver view header" style={pageStyles.headerCard}>
           <div style={{
         display: "flex",
         flexDirection: "column",
@@ -70,7 +70,7 @@ export default function PartsDeliveriesPageUi(props) {
             </p>
           </div>
 
-          <div style={pageStyles.controls}>
+          <div data-dev-section="1" data-dev-section-key="parts-deliveries-controls" data-dev-section-type="toolbar" data-dev-section-parent="parts-deliveries-header" data-dev-text-preview="Day picker controls" style={pageStyles.controls}>
             <div>
               <div style={{
             fontSize: "0.9rem",
@@ -109,7 +109,7 @@ export default function PartsDeliveriesPageUi(props) {
             </div>
           </div>
 
-          <div style={{
+          <div data-dev-section="1" data-dev-section-key="parts-deliveries-counts" data-dev-section-type="stat-card" data-dev-section-parent="parts-deliveries-header" data-dev-text-preview="Queued / completed counts" style={{
         display: "flex",
         gap: "20px",
         flexWrap: "wrap"
@@ -135,7 +135,7 @@ export default function PartsDeliveriesPageUi(props) {
           </div>
         </LayerSurface>
 
-        <LayerSurface as="section" style={pageStyles.listCard}>
+        <LayerSurface as="section" sectionKey="parts-deliveries-list" sectionType="content-card" data-dev-text-preview="Delivery list" style={pageStyles.listCard}>
           <div style={{
         display: "flex",
         flexDirection: "column",

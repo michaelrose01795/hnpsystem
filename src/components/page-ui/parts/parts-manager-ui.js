@@ -103,7 +103,7 @@ export default function PartsManagerDashboardUi(props) {
   }}>{error}</div> : <>
           <PartsOpsDashboard title="Parts Manager Dashboard" subtitle="Live queue, inbound deliveries and inventory status pulled from Supabase" data={dashboardData} />
 
-          <LayerSurface style={sectionCardStyle}>
+          <LayerSurface sectionKey="parts-manager-pipeline" sectionType="content-card" data-dev-text-preview="Parts Pipeline" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Parts Pipeline</div>
             <div style={{
         display: "grid",
@@ -148,7 +148,7 @@ export default function PartsManagerDashboardUi(props) {
         gridTemplateColumns: "minmax(0, 2fr) minmax(280px, 1fr)",
         gap: "20px"
       }}>
-              <LayerSurface style={sectionCardStyle}>
+              <LayerSurface sectionKey="parts-manager-queue-snapshot" sectionType="data-table" data-dev-text-preview="Queue Snapshot table" style={sectionCardStyle}>
                 <div style={sectionTitleStyle}>Queue Snapshot</div>
                 <table style={performanceTableStyle}>
                   <thead>
@@ -244,7 +244,7 @@ export default function PartsManagerDashboardUi(props) {
           flexDirection: "column",
           gap: "20px"
         }}>
-                <LayerSurface style={sectionCardStyle}>
+                <LayerSurface sectionKey="parts-manager-status-buckets" sectionType="content-card" data-dev-text-preview="Status Buckets" style={sectionCardStyle}>
                   <div style={sectionTitleStyle}>Status Buckets</div>
                   {dashboardData.teamAvailability.map(bucket => <div key={bucket.name} style={{
               padding: "10px 0",
@@ -265,7 +265,7 @@ export default function PartsManagerDashboardUi(props) {
                     </div>)}
                 </LayerSurface>
 
-                <LayerSurface style={sectionCardStyle}>
+                <LayerSurface sectionKey="parts-manager-focus-items" sectionType="content-card" data-dev-text-preview="Focus Items" style={sectionCardStyle}>
                   <div style={sectionTitleStyle}>Focus Items</div>
                   {dashboardData.focusItems.map(item => <div key={item.title} style={{
               padding: "10px 0",
@@ -288,7 +288,7 @@ export default function PartsManagerDashboardUi(props) {
               </div>
             </div>
 
-            <LayerSurface style={sectionCardStyle}>
+            <LayerSurface sectionKey="parts-manager-top-queue-lines" sectionType="data-table" data-dev-text-preview="Top Queue Lines" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Top Queue Lines</div>
               <table style={performanceTableStyle}>
                 <thead>
@@ -335,7 +335,7 @@ export default function PartsManagerDashboardUi(props) {
               </table>
             </LayerSurface>
 
-            <LayerSurface style={sectionCardStyle}>
+            <LayerSurface sectionKey="parts-manager-low-stock" sectionType="data-table" data-dev-text-preview="Low Stock Parts Overview" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Low Stock Parts Overview</div>
               {lowStockRows.length === 0 ? <div style={{
           color: "var(--grey-accent)"
@@ -419,7 +419,7 @@ export default function PartsManagerDashboardUi(props) {
                 </table>}
             </LayerSurface>
 
-          <LayerSurface style={sectionCardStyle}>
+          <LayerSurface sectionKey="parts-manager-tech-requests" sectionType="data-table" data-dev-text-preview="Tech Requests" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Tech Requests</div>
             {techRequests.length === 0 ? <div style={{
           color: "var(--grey-accent)"

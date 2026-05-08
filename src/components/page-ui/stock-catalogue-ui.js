@@ -78,48 +78,42 @@ export default function StockCataloguePageUi(props) {
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <>
-      <div style={{
-    padding: "24px",
-    maxWidth: "100%",
-    margin: "0 auto"
-  }}>
-        <div style={{
+        <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Find Job Card" style={{
       ...cardStyle,
+      backgroundColor: "var(--theme)",
       marginBottom: "20px"
     }}>
-          <div style={{
+          <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job-header" data-dev-section-type="toolbar" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Find Job Card header" style={{
         display: "flex",
+        flexWrap: "wrap",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: "12px"
+        gap: "12px",
+        marginBottom: "16px"
       }}>
-            <h2 style={sectionTitleStyle}>Find Job Card</h2>
-            <button onClick={() => setJobCardSectionExpanded(!jobCardSectionExpanded)} style={buttonStyle}>
-              {jobCardSectionExpanded ? "Collapse" : "Search Job"}
-            </button>
-          </div>
-
-          {jobCardSectionExpanded && <>
-              <form onSubmit={event => {
+            <h2 style={{ ...sectionTitleStyle, marginBottom: 0 }}>Find Job Card</h2>
+            <form data-dev-section="1" data-dev-section-key="stock-catalogue-find-job-search-form" data-dev-section-type="filter-row" data-dev-section-parent="stock-catalogue-find-job-header" data-dev-text-preview="Job search form" onSubmit={event => {
           event.preventDefault();
           searchJob(jobSearch);
         }} style={{
           display: "flex",
           gap: "12px",
-          marginBottom: "16px"
+          flex: "1 1 320px",
+          maxWidth: "640px"
         }}>
-                <input type="text" placeholder="Job number or registration" value={jobSearch} onChange={event => setJobSearch(event.target.value)} style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: "var(--radius-xs)",
-            border: "none"
-          }} />
-                <button type="submit" style={buttonStyle} disabled={jobLoading}>
-                  {jobLoading ? "Searching..." : "Search"}
-                </button>
-              </form>
+              <input type="text" placeholder="Job number or registration" value={jobSearch} onChange={event => setJobSearch(event.target.value)} style={{
+          flex: 1,
+          padding: "12px",
+          borderRadius: "var(--radius-xs)",
+          border: "none"
+        }} />
+              <button type="submit" style={buttonStyle} disabled={jobLoading}>
+                {jobLoading ? "Searching..." : "Search"}
+              </button>
+            </form>
+          </div>
 
-              {jobError && <div style={{
+          {jobError && <div style={{
           color: "var(--danger)",
           marginBottom: "12px",
           fontWeight: 600
@@ -128,13 +122,13 @@ export default function StockCataloguePageUi(props) {
                 </div>}
 
               {jobData ? <>
-                  <div style={{
+                  <div data-dev-section="1" data-dev-section-key="stock-catalogue-job-summary-grid" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Job / Vehicle / Status summary" style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
             gap: "12px",
             marginBottom: "16px"
           }}>
-                    <div style={{
+                    <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-job" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Job summary card" style={{
               background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
               padding: "14px",
@@ -153,7 +147,7 @@ export default function StockCataloguePageUi(props) {
                       </div>
                       <div>{jobData.description || "No description"}</div>
                     </div>
-                    <div style={{
+                    <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-vehicle" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Vehicle summary card" style={{
               background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
               padding: "14px",
@@ -169,7 +163,7 @@ export default function StockCataloguePageUi(props) {
               }}>{jobData.reg}</div>
                       <div>{jobData.makeModel || `${jobData.make} ${jobData.model}`}</div>
                     </div>
-                    <div style={{
+                    <div data-dev-section="1" data-dev-section-key="stock-catalogue-summary-status" data-dev-section-type="stat-card" data-dev-section-parent="stock-catalogue-job-summary-grid" data-dev-text-preview="Job status summary card" style={{
               background: "var(--surface)",
               borderRadius: "var(--radius-sm)",
               padding: "14px",
@@ -189,7 +183,7 @@ export default function StockCataloguePageUi(props) {
                     </div>
                   </div>
 
-                  <div style={{
+                  <div data-dev-section="1" data-dev-section-key="stock-catalogue-parts-header" data-dev-section-type="toolbar" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Parts on this Job header" style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -203,53 +197,17 @@ export default function StockCataloguePageUi(props) {
                     </h3>
                   </div>
 
-                  {jobParts.length > 0 && <div style={{
-            display: "flex",
+                  {jobParts.length > 0 && <div data-dev-section="1" data-dev-section-key="stock-catalogue-pipeline-filters" data-dev-section-type="filter-row" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Pipeline stage filter chips" className="tab-api" style={{
+            height: "auto",
+            minHeight: "44px",
             flexWrap: "wrap",
-            gap: "10px",
             marginBottom: "12px"
           }}>
-                      <button type="button" onClick={() => setSelectedPipelineStage("all")} aria-pressed={selectedPipelineStage === "all"} style={{
-              borderRadius: "var(--radius-md)",
-              border: "none",
-              backgroundColor: selectedPipelineStage === "all" ? "var(--danger-surface)" : "var(--surface)",
-              padding: "8px 14px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              gap: "2px",
-              cursor: "pointer",
-              fontWeight: 600,
-              color: selectedPipelineStage === "all" ? "var(--primary)" : "var(--primary-selected)"
-            }}>
-                        <span>All Parts</span>
-                        <small style={{
-                fontSize: "var(--text-caption)",
-                color: "var(--grey-accent-dark)"
-              }}>
-                          {jobParts.length} line{jobParts.length === 1 ? "" : "s"} total
-                        </small>
+                      <button type="button" onClick={() => setSelectedPipelineStage("all")} aria-pressed={selectedPipelineStage === "all"} className={`tab-api__item${selectedPipelineStage === "all" ? " is-active" : ""}`}>
+                        All Parts ({jobParts.length})
                       </button>
-                      {partsPipeline.stageSummary.map(stage => <button key={stage.id} type="button" onClick={() => setSelectedPipelineStage(stage.id)} aria-pressed={selectedPipelineStage === stage.id} style={{
-              borderRadius: "var(--radius-md)",
-              border: "none",
-              backgroundColor: selectedPipelineStage === stage.id ? "var(--danger-surface)" : "var(--surface)",
-              padding: "8px 14px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              gap: "2px",
-              cursor: "pointer",
-              fontWeight: 600,
-              color: selectedPipelineStage === stage.id ? "var(--primary)" : "var(--primary-selected)"
-            }}>
-                          <span>{stage.label}</span>
-                          <small style={{
-                fontSize: "var(--text-caption)",
-                color: "var(--grey-accent-dark)"
-              }}>
-                            {stage.count} line{stage.count === 1 ? "" : "s"}
-                          </small>
+                      {partsPipeline.stageSummary.map(stage => <button key={stage.id} type="button" onClick={() => setSelectedPipelineStage(stage.id)} aria-pressed={selectedPipelineStage === stage.id} className={`tab-api__item${selectedPipelineStage === stage.id ? " is-active" : ""}`}>
+                          {stage.label} ({stage.count})
                         </button>)}
                     </div>}
 
@@ -266,7 +224,7 @@ export default function StockCataloguePageUi(props) {
                       {getPipelineStageMeta(selectedPipelineStage).label}.
                     </div>}
 
-                  {jobParts.length === 0 ? <div style={{
+                  {jobParts.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-job-parts-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="No parts linked empty state" style={{
             background: "var(--surface)",
             borderRadius: "var(--radius-xs)",
             padding: "16px",
@@ -274,68 +232,59 @@ export default function StockCataloguePageUi(props) {
             textAlign: "center"
           }}>
                       No parts linked to this job. Add required parts to get started.
-                    </div> : <div style={{
+                    </div> : <div data-dev-section="1" data-dev-section-key="stock-catalogue-job-parts-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Job parts table scroll" style={{
             overflowX: "auto"
           }}>
-                      <table style={tableStyle}>
+                      <table data-dev-section="1" data-dev-section-key="stock-catalogue-job-parts-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-job-parts-scroll" data-dev-text-preview="Job parts table" className="app-data-table">
                         <thead>
-                          <tr style={{
-                  background: "var(--surface)",
-                  color: "var(--danger)"
-                }}>
-                            <th style={{
-                    textAlign: "left",
-                    padding: "10px"
-                  }}>Part</th>
-                            <th style={{
-                    textAlign: "left",
-                    padding: "10px"
-                  }}>Qty</th>
-                            <th style={{
-                    textAlign: "left",
-                    padding: "10px"
-                  }}>Stage</th>
-                            <th style={{
-                    textAlign: "left",
-                    padding: "10px"
-                  }}>Status</th>
-                            <th style={{
-                    textAlign: "left",
-                    padding: "10px"
-                  }}>Pre-pick</th>
-                            <th style={{
-                    textAlign: "left",
-                    padding: "10px"
-                  }}>Notes</th>
+                          <tr>
+                            <th style={{ width: "26%" }}>Part</th>
+                            <th style={{ width: "12%" }}>Qty</th>
+                            <th style={{ width: "12%" }}>Stage</th>
+                            <th style={{ width: "14%" }}>Status</th>
+                            <th style={{ width: "14%" }}>Pre-pick</th>
+                            <th style={{ width: "22%" }}>Notes</th>
                           </tr>
                         </thead>
                         <tbody>
                           {displayedJobParts.map(part => {
                   const stageId = mapPartStatusToPipelineId(part.status);
                   const stageMeta = getPipelineStageMeta(stageId);
-                  return <tr key={part.id} style={{
-                    borderBottom: "var(--separating-line)"
+                  const rawNotes = part.request_notes || "";
+                  const metaMatch = rawNotes.match(/VHC_META:(\{.*\})/);
+                  let vhcMeta = null;
+                  let notesText = rawNotes;
+                  if (metaMatch) {
+                    try {
+                      vhcMeta = JSON.parse(metaMatch[1]);
+                    } catch (_) {
+                      vhcMeta = null;
+                    }
+                    notesText = rawNotes.replace(metaMatch[0], "").trim();
+                  }
+                  const metaChip = (label, value) => <span className="app-table-action-btn" style={{
+                    cursor: "default",
+                    whiteSpace: "nowrap",
+                    background: value ? "rgba(var(--success-rgb), 0.18)" : "var(--surface)",
+                    color: value ? "var(--success-dark)" : "var(--text-1)"
                   }}>
-                              <td style={{
-                      padding: "10px",
-                      verticalAlign: "top"
-                    }}>
-                                <div style={{
-                        fontWeight: 600
-                      }}>
+                                {label} <strong style={{ marginLeft: "4px" }}>{value ? "Yes" : "No"}</strong>
+                              </span>;
+                  return <tr key={part.id}>
+                              <td style={{ verticalAlign: "middle" }}>
+                                <div style={{ fontWeight: 600 }}>
                                   {part.part?.part_number} · {part.part?.name}
                                 </div>
                                 <div style={{
                         fontSize: "var(--text-body-sm)",
                         color: "var(--grey-accent-dark)"
                       }}>
-                                  {part.part?.storage_location || "No bin"} · Stock:{" "}
-                                  {part.part?.qty_in_stock}
+                                  {part.part?.storage_location || "No bin"} · Stock: {part.part?.qty_in_stock}
                                 </div>
                                 <div style={{
                         marginTop: "6px",
                         display: "flex",
-                        gap: "8px",
+                        gap: "6px",
                         flexWrap: "wrap"
                       }}>
                                   {(() => {
@@ -345,102 +294,81 @@ export default function StockCataloguePageUi(props) {
                                   {part.vhc_item_id ? <RequirementBadge label={`VHC #${part.vhc_item_id}`} background="rgba(var(--danger-rgb), 0.18)" color="var(--danger)" /> : null}
                                 </div>
                               </td>
-                              <td style={{
-                      padding: "10px",
-                      verticalAlign: "top"
-                    }}>
-                                <div>Requested: {part.quantity_requested}</div>
-                                <div>Allocated: {part.quantity_allocated}</div>
-                                <div>Fitted: {part.quantity_fitted}</div>
-                                <button onClick={() => handleJobPartUpdate(part.id, {
+                              <td style={{ verticalAlign: "middle" }}>
+                                <div style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "6px",
+                        marginBottom: "6px"
+                      }}>
+                                  <span className="app-table-action-btn" style={{ cursor: "default" }}>
+                                    Req <strong style={{ marginLeft: "4px" }}>{part.quantity_requested}</strong>
+                                  </span>
+                                  <span className="app-table-action-btn" style={{ cursor: "default" }}>
+                                    Alloc <strong style={{ marginLeft: "4px" }}>{part.quantity_allocated}</strong>
+                                  </span>
+                                  <span className="app-table-action-btn" style={{ cursor: "default" }}>
+                                    Fitted <strong style={{ marginLeft: "4px" }}>{part.quantity_fitted}</strong>
+                                  </span>
+                                </div>
+                                <button className="app-table-action-btn" onClick={() => handleJobPartUpdate(part.id, {
                         quantityFitted: part.quantity_allocated,
                         status: "fitted"
                       })} style={{
-                        ...secondaryButtonStyle,
-                        marginTop: "6px",
-                        padding: "6px 10px",
-                        fontSize: "var(--text-label)"
+                        background: "var(--primary)",
+                        color: "var(--text-2)"
                       }}>
                                   Mark fitted
                                 </button>
                               </td>
-                              <td style={{
-                      padding: "10px",
-                      verticalAlign: "top"
-                    }}>
-                                <span style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        padding: "4px 10px",
-                        borderRadius: "var(--radius-pill)",
-                        fontSize: "var(--text-label)",
-                        fontWeight: 600,
-                        backgroundColor: "var(--surface)",
-                        color: "var(--danger)",
-                        marginBottom: "6px"
+                              <td style={{ verticalAlign: "middle" }}>
+                                <span className="app-table-action-btn" style={{
+                        cursor: "default",
+                        color: "var(--danger)"
                       }}>
                                   {stageMeta.label}
                                 </span>
                                 <div style={{
+                        marginTop: "4px",
                         fontSize: "var(--text-caption)",
                         color: "var(--grey-accent-dark)"
                       }}>
                                   {stageMeta.description}
                                 </div>
                               </td>
-                              <td style={{
-                      padding: "10px",
-                      verticalAlign: "top"
-                    }}>
-                                <select value={part.status} onChange={event => handleJobPartUpdate(part.id, {
+                              <td style={{ verticalAlign: "middle" }}>
+                                <select className="app-input" value={part.status} onChange={event => handleJobPartUpdate(part.id, {
                         status: event.target.value
-                      })} style={{
-                        width: "170px",
-                        padding: "8px",
-                        borderRadius: "var(--radius-xs)",
-                        border: "none"
-                      }}>
+                      })}>
                                   {JOB_PART_STATUSES.map(statusValue => <option key={statusValue} value={statusValue}>
                                       {statusValue.replace(/_/g, " ")}
                                     </option>)}
                                 </select>
                               </td>
-                              <td style={{
-                      padding: "10px",
-                      verticalAlign: "top"
-                    }}>
-                                <select value={part.pre_pick_location || ""} onChange={event => handleJobPartUpdate(part.id, {
+                              <td style={{ verticalAlign: "middle" }}>
+                                <select className="app-input" value={part.pre_pick_location || ""} onChange={event => handleJobPartUpdate(part.id, {
                         prePickLocation: event.target.value
-                      })} style={{
-                        width: "170px",
-                        padding: "8px",
-                        borderRadius: "var(--radius-xs)",
-                        border: "none"
-                      }}>
+                      })}>
                                   {PRE_PICK_OPTIONS.map(option => <option key={option.value} value={option.value}>
                                       {option.label}
                                     </option>)}
                                 </select>
-                                <div style={{
-                        marginTop: "8px"
-                      }}>
-                                  <button onClick={() => handleJobPartUpdate(part.id, {
-                          status: "cancelled"
-                        })} style={{
-                          ...secondaryButtonStyle,
-                          padding: "6px 10px",
-                          fontSize: "var(--text-label)"
-                        }}>
-                                    Cancel
-                                  </button>
-                                </div>
                               </td>
                               <td style={{
-                      padding: "10px",
-                      verticalAlign: "top",
-                      fontSize: "var(--text-body)"
+                      verticalAlign: "middle",
+                      fontSize: "var(--text-body-sm)"
                     }}>
-                                {part.request_notes || "—"}
+                                {notesText ? <div style={{ marginBottom: vhcMeta ? "6px" : 0 }}>{notesText}</div> : null}
+                                {!notesText && !vhcMeta ? "—" : null}
+                                {vhcMeta ? <div style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "6px"
+                      }}>
+                                  {metaChip("Warranty", !!vhcMeta.warranty)}
+                                  {metaChip("Back order", !!vhcMeta.backOrder)}
+                                  {metaChip("Surcharge", !!vhcMeta.surcharge)}
+                                </div> : null}
                               </td>
                             </tr>;
                 })}
@@ -448,17 +376,17 @@ export default function StockCataloguePageUi(props) {
                       </table>
                     </div>}
 
-                  {jobRequests.length > 0 && <div style={{
+                  {jobRequests.length > 0 && <div data-dev-section="1" data-dev-section-key="stock-catalogue-workshop-requests" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Workshop Requests block" style={{
             marginTop: "20px"
           }}>
                       <h4 style={{
               ...sectionTitleStyle,
               marginBottom: "8px"
             }}>Workshop Requests</h4>
-                      <div style={{
+                      <div data-dev-section="1" data-dev-section-key="stock-catalogue-workshop-requests-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-workshop-requests" style={{
               overflowX: "auto"
             }}>
-                        <table style={{
+                        <table data-dev-section="1" data-dev-section-key="stock-catalogue-workshop-requests-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-workshop-requests-scroll" data-dev-text-preview="Workshop Requests table" style={{
                 ...tableStyle,
                 fontSize: "var(--text-body)"
               }}>
@@ -532,7 +460,7 @@ export default function StockCataloguePageUi(props) {
                       </div>
                     </div>}
 
-                  {pendingJobParts.length > 0 && <div style={{
+                  {pendingJobParts.length > 0 && <div data-dev-section="1" data-dev-section-key="stock-catalogue-pending-warning" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Pending parts warning" style={{
             marginTop: "20px",
             padding: "16px",
             borderRadius: "var(--radius-xs)",
@@ -543,7 +471,7 @@ export default function StockCataloguePageUi(props) {
                       <strong>{pendingJobParts.length} part(s)</strong> awaiting stock or action for
                       this VHC. Ensure orders are raised or picked.
                     </div>}
-                </> : <div style={{
+                </> : <div data-dev-section="1" data-dev-section-key="stock-catalogue-find-job-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-find-job" data-dev-text-preview="Find Job empty state" style={{
           background: "var(--surface)",
           borderRadius: "var(--radius-xs)",
           padding: "16px",
@@ -552,17 +480,17 @@ export default function StockCataloguePageUi(props) {
         }}>
                   Search a job to view current parts requirements.
                 </div>}
-            </>}
         </div>
 
-        <div style={{
+        <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-page" data-dev-text-preview="Stock Catalogue card" style={{
       ...cardStyle,
+      backgroundColor: "var(--theme)",
       marginTop: "20px"
     }} id="stock-catalogue">
           <h2 style={sectionTitleStyle}>Stock Catalogue</h2>
 
           {/* Search and Filter Controls */}
-          <div style={{
+          <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-filters" data-dev-section-type="filter-row" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory search and filters" style={{
         display: "flex",
         gap: "12px",
         marginBottom: "12px",
@@ -577,32 +505,16 @@ export default function StockCataloguePageUi(props) {
           display: "flex",
           gap: "8px"
         }}>
-              <select value={filterType} onChange={e => {
+              <select className="app-input" value={filterType} onChange={e => {
             setFilterType(e.target.value);
             setStatusFilter("all");
             setLocationFilter("all");
-          }} style={{
-            padding: "12px",
-            borderRadius: "var(--radius-xs)",
-            border: "none",
-            background: "var(--surface)",
-            color: "var(--text-1)",
-            fontSize: "var(--text-body)",
-            minWidth: "140px"
-          }}>
+          }} style={{ minWidth: "140px", width: "auto" }}>
                 <option value="status">Filter by Status</option>
                 <option value="location">Filter by Location</option>
               </select>
 
-              {filterType === "status" && <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{
-            padding: "12px",
-            borderRadius: "var(--radius-xs)",
-            border: "none",
-            background: "var(--surface)",
-            color: "var(--text-1)",
-            fontSize: "var(--text-body)",
-            minWidth: "140px"
-          }}>
+              {filterType === "status" && <select className="app-input" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ minWidth: "140px", width: "auto" }}>
                   <option value="all">All Status</option>
                   <option value="low_stock">Low Stock</option>
                   <option value="in_stock">Good Stock</option>
@@ -613,18 +525,9 @@ export default function StockCataloguePageUi(props) {
               {filterType === "location" && <div style={{
             position: "relative"
           }}>
-                  <input type="text" placeholder="Search location..." value={locationSearchTerm} onChange={e => setLocationSearchTerm(e.target.value)} onFocus={() => {
+                  <input className="app-input" type="text" placeholder="Search location..." value={locationSearchTerm} onChange={e => setLocationSearchTerm(e.target.value)} onFocus={() => {
               document.getElementById('location-dropdown').style.display = 'block';
-            }} style={{
-              padding: "12px",
-              borderRadius: "var(--radius-xs)",
-              border: "none",
-              background: "var(--surface)",
-              color: "var(--text-1)",
-              fontSize: "var(--text-body)",
-              minWidth: "140px",
-              outline: "none"
-            }} />
+            }} style={{ minWidth: "140px", width: "auto" }} />
                   <div id="location-dropdown" style={{
               display: "none",
               position: "absolute",
@@ -686,16 +589,16 @@ export default function StockCataloguePageUi(props) {
               {inventoryError}
             </div>}
 
-          <div style={{
+          <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory results scroll area" style={{
         maxHeight: "600px",
         overflowY: "auto"
       }}>
-            {inventoryLoading ? <div style={{
+            {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory loading state" style={{
           color: "var(--grey-accent-light)"
-        }}>Loading inventory...</div> : inventory.length === 0 ? <div style={{
+        }}>Loading inventory...</div> : inventory.length === 0 ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-empty" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory empty state" style={{
           color: "var(--grey-accent-light)"
         }}>No parts found. Refine your search.</div> : <>
-                <table style={{
+                <table data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-table" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory results table" style={{
             ...tableStyle,
             fontSize: "var(--text-body)"
           }}>
@@ -1474,7 +1377,6 @@ export default function StockCataloguePageUi(props) {
 
         {renderAddToJobModal()}
         {renderDeliveryModal()}
-      </div>
       <ConfirmationDialog isOpen={!!confirmDialog} message={confirmDialog?.message} cancelLabel="Cancel" confirmLabel="Yes" onCancel={() => setConfirmDialog(null)} onConfirm={confirmDialog?.onConfirm} />
     </>; // render extracted page section.
     default:

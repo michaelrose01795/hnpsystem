@@ -21,27 +21,30 @@ Techs
 Mobile Technician
 ----------------------------------------------------
 
-- /mobile/dashboard (CHECK)
-have it so /mobile/dashboard :: 1.2.2.1.1 (mobile-dashboard-page) sections use the correct "--text-1, --text-2, --text-accent" text colours. 
+- /mobile/dashboard (DONE
 
 - /tech/consumables-request (DONE
 
-- /appointments
-have it so within "/appointments :: 1.2.2.1.1 (appointments-auto-content-card-2) — “Select time Book Appointment”" section the "job number" text field follows the heigth of 44px, make sure this is the global cahnge for text fields. and make sure the same with the "Book Appointment" button. remove the 
+- /appointments (TODO)
+have it so within "/appointments :: 1.2.2.1.1 (appointments-auto-content-card-2) — “Select time Book Appointment”" section the "job number" text field follows the heigth of 44px, make sure this is the global cahnge for text fields. and make sure the same with the "Book Appointment" button. 
 
-"Job Divisions" and sales or retail jobs button from all sidebars. 
+remove the "Job Divisions" and sales or retail jobs button from all sidebars. 
 
 ----------------------------------------------------
 Parts Manager
 ----------------------------------------------------
 
-- /stock-catalogue
+- /stock-catalogue (CHECK)
 
 - /parts/deliveries
+have it so "/parts/deliveries :: 1.2.1.1.2 (parts-deliveries-header) — “Driver view header”" section and "/parts/deliveries :: 1.2.1.1.3 (parts-deliveries-list) — “Delivery list”" use "--theme" colour background and then the have the cards and sections within those to use "--surface" colour backgrounds. remove "Driver view Parts deliveries Quickly review today’s drop offs, mark jobs as delivered, and reorder the list for the van." section. remove "/parts/delivery-planner :: 1.2.1.1.1 (parts-delivery-planner-auto-tab-row-1) — “Goods In Deliveries Delivery/Collection Planner Manager”" tab from every page. 
 
-- /parts/manager
+- /parts/manager (CONTINUE)
+have it os the contenets within "/parts/manager :: 1.2.2.1 (app-layout-page-card) — “Goods In Deliveries Delivery/Collection Planner Manager Par…”" section use the full width of the page like the news feed page. remove "Parts Department Parts Manager Dashboard Live queue, inbound deliveries and inventory status pulled from Supabase" text. 
+
 
 - /dashboard/parts
+have it so "Parts desk Operations overview Live stock, inbound, and request telemetry from the parts catalogue." section is removed. have it so "/dashboard/parts :: 1.2.1.1.2 (dashboard-parts-auto-content-card-2) — “Requests trend Last 7 days Sat 0 Sun 0 Mon 0 Tue 0 Wed 0 Th…”" and "/dashboard/parts :: 1.2.1.1.3 (dashboard-parts-auto-content-card-3) — “Stock levels Lowest availability items No low stock alerts …”" follow a 50/50 split side by side section on one row, and then do the same within "/dashboard/parts :: 1.2.1.1.4 (dashboard-parts-auto-content-card-4) — “Requests by status waiting_authorisation 3”" and "/dashboard/parts :: 1.2.1.1.5 (dashboard-parts-auto-content-card-5) — “Recent requests Most recent entries Recent requests Request…”" on anoyher row. improve the user ui so the text for example " waiting_authorisation" is more user friendly. make sure to use the corrct "--text-1, --text-2, --text-accent" 
 
 
 ----------------------------------------------------
