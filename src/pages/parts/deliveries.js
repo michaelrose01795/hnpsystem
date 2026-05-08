@@ -6,6 +6,7 @@ import { useTheme } from "@/styles/themeProvider";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import ModalPortal from "@/components/popups/ModalPortal";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import Button from "@/components/ui/Button";
 import PartsDeliveriesPageUi from "@/components/page-ui/parts/parts-deliveries-ui"; // Extracted presentation layer.
 
 const pageStyles = {
@@ -22,15 +23,16 @@ const pageStyles = {
     gap: "14px"
   },
   controls: {
-    display: "flex",
-    flexWrap: "wrap",
+    flexDirection: "row",
+    flexWrap: "nowrap",
     gap: "12px",
     alignItems: "center",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    width: "100%"
   },
   dateControls: {
     display: "flex",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     gap: "10px",
     alignItems: "center"
   },
@@ -86,27 +88,6 @@ const statusChipStyle = (status) => {
     textTransform: "uppercase",
     ...(variants[status] || variants.scheduled)
   };
-};
-
-const markButtonStyle = (isCompleted) => ({
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  padding: "var(--control-padding)",
-  fontWeight: 600,
-  cursor: isCompleted ? "default" : "pointer",
-  background: isCompleted ? "rgba(var(--success-rgb,34,139,34),0.2)" : "var(--primary)",
-  color: isCompleted ? "var(--success, #297C3B)" : "var(--surface)",
-  flex: "1 1 180px",
-  textAlign: "center"
-});
-
-const arrowButtonStyle = {
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  background: "var(--danger-surface)",
-  padding: "6px 10px",
-  fontWeight: 700,
-  cursor: "pointer"
 };
 
 const modalOverlayStyle = {
@@ -495,45 +476,31 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
         <div style={pageStyles.reorderGroup}>
           <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>Reorder</span>
           <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              type="button"
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => onMove(job.id, "up")}
               disabled={index === 0 || actionDisabled}
-              style={{
-                ...arrowButtonStyle,
-                opacity: index === 0 || actionDisabled ? 0.5 : 1,
-                cursor: index === 0 || actionDisabled ? "not-allowed" : "pointer"
-              }}
               aria-label="Move job up">
-              
               ↑
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => onMove(job.id, "down")}
               disabled={index === total - 1 || actionDisabled}
-              style={{
-                ...arrowButtonStyle,
-                opacity: index === total - 1 || actionDisabled ? 0.5 : 1,
-                cursor: index === total - 1 || actionDisabled ? "not-allowed" : "pointer"
-              }}
               aria-label="Move job down">
-              
               ↓
-            </button>
+            </Button>
           </div>
         </div>
-        <button
-          type="button"
+        <Button
+          variant={isCompleted ? "secondary" : "primary"}
           onClick={() => onMarkDelivered(job)}
           disabled={isCompleted || actionDisabled}
-          style={{
-            ...markButtonStyle(isCompleted),
-            opacity: isCompleted || actionDisabled ? 0.7 : 1
-          }}>
-          
+          style={{ flex: "1 1 180px" }}>
           {isCompleted ? "Delivered" : "Mark as delivered"}
-        </button>
+        </Button>
       </div>
     </article>);
 
@@ -541,7 +508,6 @@ function DeliveryJobRow({ job, index, total, onView, onMove, onMarkDelivered, ac
 
 function DeliveryJobViewModal({ job, onClose }) {
   const items = Array.isArray(job.items) ? job.items : [];
-  const closeButtonColor = "var(--accent-purple)";
 
   return (
     <ModalPortal>
@@ -562,23 +528,9 @@ function DeliveryJobViewModal({ job, onClose }) {
             </p>
             <h3 style={{ margin: "6px 0 0", color: "var(--primary-selected)" }}>{job.invoice_number || "Invoice"}</h3>
           </div>
-          <button
-              type="button"
-              onClick={onClose}
-              style={{
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-                fontSize: "0.95rem",
-                color: closeButtonColor,
-                fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.05em"
-              }}
-              aria-label="Close delivery details">
-              
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close delivery details">
             Close
-          </button>
+          </Button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
@@ -653,20 +605,9 @@ function DeliveryJobViewModal({ job, onClose }) {
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button
-              type="button"
-              onClick={onClose}
-              style={{
-                borderRadius: "var(--radius-sm)",
-                border: "none",
-                background: "var(--surface)",
-                padding: "var(--control-padding)",
-                fontWeight: 600,
-                cursor: "pointer"
-              }}>
-              
+          <Button variant="secondary" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </div>
         </div>
       </div>

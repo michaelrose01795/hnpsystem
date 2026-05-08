@@ -1,7 +1,7 @@
 // file location: src/components/page-ui/parts/parts-deliveries-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
-import PartsWorkspaceTabs from "@/components/page-ui/parts/PartsWorkspaceTabs";
+import Button from "@/components/ui/Button";
 
 export default function PartsDeliveriesPageUi(props) {
   const {
@@ -42,35 +42,8 @@ export default function PartsDeliveriesPageUi(props) {
     case "section2":
       return <>
       <div style={pageStyles.container}>
-        <PartsWorkspaceTabs />
-        <LayerSurface as="section" sectionKey="parts-deliveries-header" sectionType="content-card" data-dev-text-preview="Driver view header" style={pageStyles.headerCard}>
-          <div style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px"
-      }}>
-            <p style={{
-          margin: 0,
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: "var(--primary-selected)",
-          fontSize: "0.85rem"
-        }}>
-              Driver view
-            </p>
-            <h1 style={{
-          margin: 0,
-          color: "var(--primary)"
-        }}>Parts deliveries</h1>
-            <p style={{
-          margin: 0,
-          color: "var(--info)"
-        }}>
-              Quickly review today&rsquo;s drop offs, mark jobs as delivered, and reorder the list for the van.
-            </p>
-          </div>
-
-          <div data-dev-section="1" data-dev-section-key="parts-deliveries-controls" data-dev-section-type="toolbar" data-dev-section-parent="parts-deliveries-header" data-dev-text-preview="Day picker controls" style={pageStyles.controls}>
+        <LayerTheme as="section" sectionKey="parts-deliveries-header" sectionType="content-card" data-dev-text-preview="Driver view header" style={pageStyles.headerCard}>
+          <LayerSurface data-dev-section="1" data-dev-section-key="parts-deliveries-controls" data-dev-section-type="toolbar" data-dev-section-parent="parts-deliveries-header" data-dev-text-preview="Day picker controls" style={pageStyles.controls}>
             <div>
               <div style={{
             fontSize: "0.9rem",
@@ -83,33 +56,17 @@ export default function PartsDeliveriesPageUi(props) {
           }}>{formatIsoDate(selectedDate)}</div>
             </div>
             <div style={pageStyles.dateControls}>
-              <button type="button" onClick={() => setSelectedDate(prev => adjustIsoDate(prev, -1))} style={{
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            background: "var(--surface)",
-            color: "var(--primary-selected)",
-            padding: "var(--control-padding)",
-            cursor: "pointer",
-            fontWeight: 600
-          }}>
+              <Button variant="secondary" onClick={() => setSelectedDate(prev => adjustIsoDate(prev, -1))}>
                 Previous day
-              </button>
-              <CalendarField value={selectedDate} onChange={value => setSelectedDate(value)} name="selectedDate" />
-              <button type="button" onClick={() => setSelectedDate(prev => adjustIsoDate(prev, 1))} style={{
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            background: "var(--primary-selected)",
-            color: "var(--surface)",
-            padding: "var(--control-padding)",
-            cursor: "pointer",
-            fontWeight: 600
-          }}>
+              </Button>
+              <CalendarField value={selectedDate} onValueChange={value => setSelectedDate(value)} name="selectedDate" />
+              <Button variant="primary" onClick={() => setSelectedDate(prev => adjustIsoDate(prev, 1))}>
                 Next day
-              </button>
+              </Button>
             </div>
-          </div>
+          </LayerSurface>
 
-          <div data-dev-section="1" data-dev-section-key="parts-deliveries-counts" data-dev-section-type="stat-card" data-dev-section-parent="parts-deliveries-header" data-dev-text-preview="Queued / completed counts" style={{
+          <LayerSurface data-dev-section="1" data-dev-section-key="parts-deliveries-counts" data-dev-section-type="stat-card" data-dev-section-parent="parts-deliveries-header" data-dev-text-preview="Queued / completed counts" style={{
         display: "flex",
         gap: "20px",
         flexWrap: "wrap"
@@ -132,11 +89,11 @@ export default function PartsDeliveriesPageUi(props) {
             fontSize: "1.6rem"
           }}>{completedCount}</strong>
             </div>
-          </div>
-        </LayerSurface>
+          </LayerSurface>
+        </LayerTheme>
 
-        <LayerSurface as="section" sectionKey="parts-deliveries-list" sectionType="content-card" data-dev-text-preview="Delivery list" style={pageStyles.listCard}>
-          <div style={{
+        <LayerTheme as="section" sectionKey="parts-deliveries-list" sectionType="content-card" data-dev-text-preview="Delivery list" style={pageStyles.listCard}>
+          <LayerSurface style={{
         display: "flex",
         flexDirection: "column",
         gap: "4px"
@@ -151,7 +108,7 @@ export default function PartsDeliveriesPageUi(props) {
         }}>
               Tap a job to view invoice details. Use the arrows to change the drive order.
             </p>
-          </div>
+          </LayerSurface>
           {error && <div style={{
         color: "var(--danger)",
         fontWeight: 600
@@ -164,7 +121,7 @@ export default function PartsDeliveriesPageUi(props) {
               <SkeletonKeyframes />
               {Array.from({
           length: 4
-        }).map((_, i) => <LayerTheme key={i} padding="12px" gap="0" style={{
+        }).map((_, i) => <LayerSurface key={i} padding="12px" gap="0" style={{
           display: "grid",
           gridTemplateColumns: "36px 1fr auto",
           gap: 12
@@ -179,13 +136,13 @@ export default function PartsDeliveriesPageUi(props) {
                     <SkeletonBlock width="75%" height="10px" />
                   </div>
                   <SkeletonBlock width="56px" height="18px" />
-                </LayerTheme>)}
+                </LayerSurface>)}
             </div>}
           {!loading && sortedJobs.length === 0 && <div style={{
         color: "var(--info)"
       }}>No deliveries queued for this day.</div>}
           {!loading && sortedJobs.map((job, index) => <DeliveryJobRow key={job.id} job={job} index={index} total={sortedJobs.length} onView={setViewJob} onMove={handleMoveJob} onMarkDelivered={handleMarkDelivered} actionDisabled={rowActionId === job.id} />)}
-        </LayerSurface>
+        </LayerTheme>
       </div>
       {viewJob && <DeliveryJobViewModal job={viewJob} onClose={() => setViewJob(null)} />}
     </>; // render extracted page section.

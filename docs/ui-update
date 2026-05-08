@@ -36,11 +36,12 @@ Parts Manager
 
 - /stock-catalogue (CHECK)
 
-- /parts/deliveries
-have it so "/parts/deliveries :: 1.2.1.1.2 (parts-deliveries-header) — “Driver view header”" section and "/parts/deliveries :: 1.2.1.1.3 (parts-deliveries-list) — “Delivery list”" use "--theme" colour background and then the have the cards and sections within those to use "--surface" colour backgrounds. remove "Driver view Parts deliveries Quickly review today’s drop offs, mark jobs as delivered, and reorder the list for the van." section. remove "/parts/delivery-planner :: 1.2.1.1.1 (parts-delivery-planner-auto-tab-row-1) — “Goods In Deliveries Delivery/Collection Planner Manager”" tab from every page. 
+- /parts/deliveries (CHECK)
 
 - /parts/manager (CONTINUE)
-have it os the contenets within "/parts/manager :: 1.2.2.1 (app-layout-page-card) — “Goods In Deliveries Delivery/Collection Planner Manager Par…”" section use the full width of the page like the news feed page. remove "Parts Department Parts Manager Dashboard Live queue, inbound deliveries and inventory status pulled from Supabase" text. 
+have it os the contenets within "/parts/manager :: 1.2.2.1 (app-layout-page-card) — “Goods In Deliveries Delivery/Collection Planner Manager Par…”" section use the full width of the page like the news feed page. remove "Parts Department Parts Manager Dashboard Live queue, inbound deliveries and inventory status pulled from Supabase" text. have it so the cards within "/parts/manager :: 1.2.1.1 (app-layout-page-card) — “Parts Department Parts Manager Dashboard Live queue, inboun…”" section use "--theme" colour background
+
+move "Parts Manager Dashboard"buttom within "Dashboard" sectioninsidd the side bar
 
 
 - /dashboard/parts
