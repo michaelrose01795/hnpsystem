@@ -10,7 +10,7 @@ const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const LOGOUT_BARRIER_MS = 8000;
 const DEV_AUTH_BYPASS_ENABLED = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === "true";
 const PLAYWRIGHT_AUTH_ENABLED = process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH === "1";
-const NETWORK_TIMEOUT_MS = 4000;
+const NETWORK_TIMEOUT_MS = 15000;
 const CAN_USE_DEV_AUTH =
   process.env.NODE_ENV !== "production" || DEV_AUTH_BYPASS_ENABLED || PLAYWRIGHT_AUTH_ENABLED;
 const isBrowser = () => typeof document !== "undefined";

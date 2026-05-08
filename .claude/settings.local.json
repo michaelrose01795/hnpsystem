@@ -123,7 +123,11 @@
       "Bash(awk 'NR>=1250 && NR<=1320' c:/hnpsystem/src/styles/globals.css)",
       "Bash(awk 'NR>=1200 && NR<=1255' c:/hnpsystem/src/styles/globals.css)",
       "Bash(awk 'NR>=1700 && NR<=1780' c:/hnpsystem/src/pages/stock-catalogue.js)",
-      "Bash(awk 'NR>=1080 && NR<=1200' c:/hnpsystem/src/styles/globals.css)"
+      "Bash(awk 'NR>=1080 && NR<=1200' c:/hnpsystem/src/styles/globals.css)",
+      "Bash(powershell -Command \"\\(Get-Content src/components/Parts/PartsDashboardGrid.js -Raw\\) -replace 'LayerSurface', 'LayerTheme' | Set-Content -NoNewline src/components/Parts/PartsDashboardGrid.js -Encoding utf8\")",
+      "PowerShell($path = 'c:\\\\hnpsystem\\\\src\\\\components\\\\Parts\\\\PartsDashboardGrid.js'; $bytes = [System.IO.File]::ReadAllBytes\\($path\\); $text = [System.Text.Encoding]::UTF8.GetString\\($bytes\\); $text = $text.Replace\\([string]\\([char]0xC2 + [char]0xA3\\), [string][char]0xA3\\).Replace\\([string]\\([char]0xC2 + [char]0xB7\\), [string][char]0xB7\\).Replace\\([string]\\([char]0xE2 + [char]0x80 + [char]0x94\\), [string][char]0x2014\\).Replace\\([string]\\([char]0xE2 + [char]0x80 + [char]0xA2\\), [string][char]0x2022\\); $utf8 = New-Object System.Text.UTF8Encoding $false; [System.IO.File]::WriteAllText\\($path, $text, $utf8\\))",
+      "PowerShell($path = 'c:\\\\hnpsystem\\\\src\\\\components\\\\Parts\\\\PartsDashboardGrid.js'; $bytes = [System.IO.File]::ReadAllBytes\\($path\\); $text = [System.Text.Encoding]::UTF8.GetString\\($bytes\\); $idx = $text.IndexOf\\([char]0x00E2 + [string][char]0x20AC\\); if \\($idx -lt 0\\) { Write-Output 'not found pattern1' }; $idx2 = $text.IndexOf\\(\"supplier\"\\); Write-Output \"idx2=$idx2\"; if \\($idx2 -gt 0\\) { for \\($i=$idx2; $i -lt $idx2+60; $i++\\) { Write-Output \\(\"{0}: U+{1:X4} {2}\" -f $i, [int]$text[$i], $text[$i]\\) } })",
+      "PowerShell($path = 'c:\\\\hnpsystem\\\\src\\\\components\\\\Parts\\\\PartsDashboardGrid.js'; $text = [System.IO.File]::ReadAllText\\($path, [System.Text.Encoding]::UTF8\\); $emdash = [string][char]0x00E2 + [string][char]0x20AC + [string][char]0x201D; $bullet = [string][char]0x00E2 + [string][char]0x20AC + [string][char]0x00A2; $text = $text.Replace\\($emdash, [string][char]0x2014\\).Replace\\($bullet, [string][char]0x2022\\); $utf8 = New-Object System.Text.UTF8Encoding $false; [System.IO.File]::WriteAllText\\($path, $text, $utf8\\))"
     ],
     "deny": [],
     "ask": [],

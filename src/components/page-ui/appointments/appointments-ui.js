@@ -84,9 +84,9 @@ export default function AppointmentsUi(props) {
           </div>
             <input type="text" value={jobNumber} onChange={handleJobNumberInputChange} placeholder="Job Number" disabled={isLoading} style={{
               width: "100%",
-              minHeight: "var(--control-height-sm)",
-              padding: "var(--control-padding-sm)",
-              borderRadius: "var(--control-radius-sm)"
+              minHeight: "var(--control-height)",
+              padding: "var(--control-padding)",
+              borderRadius: "var(--control-radius)"
             }} />
             <DropdownField value={time} onChange={(e) => setTime(e.target.value)} disabled={isLoading} placeholder="Select time" style={{
               width: "100%"
@@ -97,11 +97,11 @@ export default function AppointmentsUi(props) {
             </DropdownField>
             <button onClick={() => handleAddAppointment(selectedDay.toISOString().split("T")[0])} disabled={isLoading} style={{
               width: "100%",
-              minHeight: "var(--control-height-sm)",
+              minHeight: "var(--control-height)",
               backgroundColor: isLoading ? "var(--surface)" : "var(--primary)",
               color: "white",
               border: "none",
-              borderRadius: "var(--control-radius-sm)",
+              borderRadius: "var(--control-radius)",
               cursor: isLoading ? "not-allowed" : "pointer",
               fontWeight: "600",
               fontSize: "var(--control-font-size)",

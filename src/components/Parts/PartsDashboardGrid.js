@@ -1,9 +1,10 @@
 // Shared layout shell for the parts dashboards
-import React from "react";import LayerSurface from "@/components/ui/LayerSurface";
+import React from "react";import LayerTheme from "@/components/ui/LayerTheme";
 
 const containerStyle = {
-  padding: "24px",
-  maxWidth: "1400px",
+  width: "100%",
+  maxWidth: "100%",
+  padding: "8px 0",
   margin: "0 auto",
   display: "flex",
   flexDirection: "column",
@@ -71,40 +72,21 @@ export default function PartsDashboardGrid({
 }) {
   return (
     <div style={containerStyle}>
-      <header>
-        <p
-          style={{
-            marginBottom: "4px",
-            color: "var(--primary-selected)",
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            fontWeight: 700,
-            fontSize: "0.85rem"
-          }}>
-
-          Parts Department
-        </p>
-        <h1 style={{ margin: 0, color: "var(--primary)", fontSize: "2rem" }}>{title}</h1>
-        {subtitle ?
-        <p style={{ marginTop: "6px", color: "var(--grey-accent-dark)", maxWidth: "760px" }}>{subtitle}</p> :
-        null}
-      </header>
-
       <div style={summaryGridStyle}>
         {summaryCards.map((card, index) =>
-        <LayerSurface as="div" key={card.label} sectionKey={`parts-ops-summary-${index + 1}`} sectionType="stat-card" data-dev-text-preview={`Summary card: ${card.label}`} style={summaryCardStyle}>
+        <LayerTheme as="div" key={card.label} sectionKey={`parts-ops-summary-${index + 1}`} sectionType="stat-card" data-dev-text-preview={`Summary card: ${card.label}`} style={summaryCardStyle}>
             <div style={{ fontSize: "0.85rem", color: "var(--primary-selected)", fontWeight: 600 }}>{card.label}</div>
             <div style={{ fontSize: "1.9rem", fontWeight: 700, color: "var(--primary)", margin: "8px 0" }}>
               {card.value}
             </div>
             {card.helper ? <div style={{ color: "var(--grey-accent)" }}>{card.helper}</div> : null}
-          </LayerSurface>
+          </LayerTheme>
         )}
       </div>
 
       <div style={splitGridStyle}>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <LayerSurface as="div" sectionKey="parts-ops-active-job-queue" sectionType="data-table" data-dev-text-preview="Active Job Queue" style={sectionCardStyle}>
+          <LayerTheme as="div" sectionKey="parts-ops-active-job-queue" sectionType="data-table" data-dev-text-preview="Active Job Queue" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Active Job Queue</div>
             <table style={tableStyle}>
               <thead>
@@ -148,10 +130,10 @@ export default function PartsDashboardGrid({
                 )}
               </tbody>
             </table>
-          </LayerSurface>
+          </LayerTheme>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px" }}>
-            <LayerSurface as="div" sectionKey="parts-ops-inventory-alerts" sectionType="content-card" data-dev-text-preview="Inventory Alerts" style={sectionCardStyle}>
+            <LayerTheme as="div" sectionKey="parts-ops-inventory-alerts" sectionType="content-card" data-dev-text-preview="Inventory Alerts" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Inventory Alerts</div>
               {inventoryAlerts.map((alert) => {
                 const statusLabel =
@@ -190,8 +172,8 @@ export default function PartsDashboardGrid({
                   </div>);
 
               })}
-            </LayerSurface>
-            <LayerSurface as="div" sectionKey="parts-ops-team-focus" sectionType="content-card" data-dev-text-preview="Team Focus" style={sectionCardStyle}>
+            </LayerTheme>
+            <LayerTheme as="div" sectionKey="parts-ops-team-focus" sectionType="content-card" data-dev-text-preview="Team Focus" style={sectionCardStyle}>
               <div style={sectionTitleStyle}>Team Focus</div>
               {focusItems.map((item) =>
               <div
@@ -206,12 +188,12 @@ export default function PartsDashboardGrid({
                   <div style={{ fontSize: "0.8rem", color: "var(--primary-selected)", marginTop: "4px" }}>{item.owner}</div>
                 </div>
               )}
-            </LayerSurface>
+            </LayerTheme>
           </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <LayerSurface as="div" sectionKey="parts-ops-team-availability" sectionType="content-card" data-dev-text-preview="Team Availability" style={sectionCardStyle}>
+          <LayerTheme as="div" sectionKey="parts-ops-team-availability" sectionType="content-card" data-dev-text-preview="Team Availability" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Team Availability</div>
             {teamAvailability.map((entry) =>
             <div
@@ -231,8 +213,8 @@ export default function PartsDashboardGrid({
                 </div>
               </div>
             )}
-          </LayerSurface>
-          <LayerSurface as="div" sectionKey="parts-ops-inbound-deliveries" sectionType="content-card" data-dev-text-preview="Inbound Deliveries" style={sectionCardStyle}>
+          </LayerTheme>
+          <LayerTheme as="div" sectionKey="parts-ops-inbound-deliveries" sectionType="content-card" data-dev-text-preview="Inbound Deliveries" style={sectionCardStyle}>
             <div style={sectionTitleStyle}>Inbound Deliveries</div>
             {deliveries.map((delivery) =>
             <div
@@ -251,7 +233,7 @@ export default function PartsDashboardGrid({
                 </div>
               </div>
             )}
-          </LayerSurface>
+          </LayerTheme>
         </div>
       </div>
     </div>);

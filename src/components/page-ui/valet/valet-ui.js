@@ -4,6 +4,7 @@ export default function ValetDashboardUi(props) {
   const {
     CalendarField,
     DevLayoutSection,
+    LayerTheme,
     InlineLoading,
     SearchBar,
     VALET_ROW_HEIGHT,
@@ -148,48 +149,6 @@ export default function ValetDashboardUi(props) {
               {filteredJobs.length === 1 ? "" : "s"}
             </span>
           </DevLayoutSection>
-          {!loading && filteredJobs.length > 0 && <DevLayoutSection sectionKey="valet-table-header" parentKey="valet-controls-shell" sectionType="toolbar" style={{
-        display: "grid",
-        gridTemplateColumns: VALET_TABLE_COLUMNS,
-        gap: "10px",
-        width: "100%",
-        padding: "0 16px 4px",
-        alignItems: "center",
-        fontSize: "11px",
-        fontWeight: 700,
-        color: "var(--text-1)",
-        textTransform: "uppercase",
-        letterSpacing: "0.03em"
-      }}>
-              <span style={{
-          minWidth: 0
-        }}>Job Number</span>
-              <span style={{
-          minWidth: 0
-        }}>Reg</span>
-              <span style={{
-          minWidth: 0
-        }}>Customer</span>
-              <span style={{
-          textAlign: "center",
-          minWidth: 0
-        }}>Vehicle Here</span>
-              <span style={{
-          textAlign: "center",
-          minWidth: 0
-        }}>Workshop</span>
-              <span style={{
-          textAlign: "center",
-          minWidth: 0
-        }}>MOT</span>
-              <span style={{
-          textAlign: "center",
-          minWidth: 0
-        }}>Wash</span>
-              <span style={{
-          textAlign: "right"
-        }}>EST TECH COMPLETION</span>
-            </DevLayoutSection>}
           {error && <DevLayoutSection sectionKey="valet-error-banner" parentKey="valet-controls-shell" sectionType="content-card" style={{
         padding: "12px 16px",
         borderRadius: "var(--radius-xs)",
@@ -218,23 +177,45 @@ export default function ValetDashboardUi(props) {
       fontSize: "16px"
     }}>
             {selectedDay ? `No valet jobs found for ${formatDateOnlyLabel(selectedDay)}.` : "No jobs requiring wash were found."}
-          </DevLayoutSection> : <DevLayoutSection sectionKey="valet-jobs-list" parentKey="valet-shell" sectionType="section-shell" style={{
-      display: "flex",
-      flexDirection: "column",
-      gap: "14px",
-      paddingBottom: "24px",
+          </DevLayoutSection> : <LayerTheme sectionKey="valet-jobs-list" parentKey="valet-shell" sectionType="data-table-shell" className="app-table-shell-scroll" style={{
       width: "100%"
     }}>
-            {filteredJobs.map(job => <DevLayoutSection key={job.id} sectionKey={`valet-job-row-${job.id}`} parentKey="valet-jobs-list" sectionType="content-card" style={{
-        minHeight: VALET_ROW_HEIGHT
-      }}>
-                <ValetJobRow job={job} checklist={valetState[job.id] || buildChecklist(job)} onToggle={handleToggle} isSaving={Boolean(savingMap[job.id])} etaSignals={etaSignalsByJobId[job.id] || null} now={etaNow} onOpenJob={selectedJob => {
+            <table
+              className="app-table-shell app-table-shell--with-headings"
+              data-dev-section="1"
+              data-dev-section-key="valet-jobs-table"
+              data-dev-section-type="data-table"
+              data-dev-section-parent="valet-jobs-list"
+              style={{ width: "100%" }}>
+              <thead
+                data-dev-section="1"
+                data-dev-section-key="valet-jobs-headings"
+                data-dev-section-type="table-headings"
+                data-dev-section-parent="valet-jobs-table">
+                <tr>
+                  <th>Job Number</th>
+                  <th>Reg</th>
+                  <th>Customer</th>
+                  <th style={{ textAlign: "center" }}>Vehicle Here</th>
+                  <th style={{ textAlign: "center" }}>Workshop</th>
+                  <th style={{ textAlign: "center" }}>MOT</th>
+                  <th style={{ textAlign: "center" }}>Wash</th>
+                  <th style={{ textAlign: "right" }}>EST Tech Completion</th>
+                </tr>
+              </thead>
+              <tbody
+                data-dev-section="1"
+                data-dev-section-key="valet-jobs-rows"
+                data-dev-section-type="table-rows"
+                data-dev-section-parent="valet-jobs-table">
+                {filteredJobs.map(job => <ValetJobRow key={job.id} job={job} checklist={valetState[job.id] || buildChecklist(job)} onToggle={handleToggle} isSaving={Boolean(savingMap[job.id])} etaSignals={etaSignalsByJobId[job.id] || null} now={etaNow} onOpenJob={selectedJob => {
           const selectedJobNumber = selectedJob?.jobNumber;
           if (!selectedJobNumber) return;
           void router.push(`/job-cards/valet/${encodeURIComponent(selectedJobNumber)}`);
-        }} />
-              </DevLayoutSection>)}
-          </DevLayoutSection>}
+        }} />)}
+              </tbody>
+            </table>
+          </LayerTheme>}
       </DevLayoutSection>
     </>; // render extracted page section.
     default:

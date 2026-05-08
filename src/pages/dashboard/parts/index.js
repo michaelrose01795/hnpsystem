@@ -8,14 +8,14 @@ import Section from "@/components/Section"; // shared titled section card — co
 import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
 import PartsDashboardUi from "@/components/page-ui/dashboard/parts/dashboard-parts-ui"; // Extracted presentation layer.
 
-// MetricCard — single stat tile. Lives inside a Section (LayerSurface),
-// so per the strict alternation rule it renders as a LayerTheme.
+// MetricCard — single stat tile. Lives inside a themed section (LayerTheme)
+// on this dashboard, so per the strict alternation rule it renders as a LayerSurface.
 const MetricCard = ({ label, value, helper }) => (
-  <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 180 }}>
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
-    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </LayerTheme>
+  <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 180 }}>
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
+    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-2)" }}>{helper}</p>}
+  </LayerSurface>
 );
 
 
@@ -43,19 +43,29 @@ const TrendBlock = ({ data }) => {
 
 };
 
-// ListBlock — list block inside a Section (LayerSurface), renders as LayerTheme.
+const humanizeStatusLabel = (value) => {
+  if (!value) return "Unknown";
+  return String(value)
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+// ListBlock — list block inside a themed section (LayerTheme), renders as LayerSurface.
 const ListBlock = ({ title, items }) => (
-  <LayerTheme radius="var(--radius-sm)" padding="12px" gap="8px">
-    <p style={{ margin: 0, fontWeight: 600, color: "var(--primary-selected)" }}>{title}</p>
+  <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
+    <p style={{ margin: 0, fontWeight: 600, color: "var(--text-accent)" }}>{title}</p>
     {(items || []).length === 0 ?
-      <p style={{ margin: 0, color: "var(--info)" }}>No records yet.</p> :
+      <p style={{ margin: 0, color: "var(--text-2)" }}>No records yet.</p> :
       items.map((entry) =>
-        <div key={entry.request_id} style={{ fontSize: "0.85rem", color: "var(--info-dark)" }}>
-          Request <strong>{entry.request_id}</strong> · {entry.status}
+        <div key={entry.request_id} style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>
+          Request <strong style={{ color: "var(--text-accent)" }}>{entry.request_id}</strong>
+          <span style={{ color: "var(--text-2)" }}> · {humanizeStatusLabel(entry.status)}</span>
         </div>
       )
     }
-  </LayerTheme>
+  </LayerSurface>
 );
 
 

@@ -11,7 +11,9 @@ import PartsDeliveriesPageUi from "@/components/page-ui/parts/parts-deliveries-u
 
 const pageStyles = {
   container: {
-    padding: "20px",
+    width: "100%",
+    maxWidth: "100%",
+    padding: "8px 0",
     display: "flex",
     flexDirection: "column",
     gap: "20px"

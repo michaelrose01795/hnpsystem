@@ -25,7 +25,7 @@ Mobile Technician
 
 - /tech/consumables-request (DONE
 
-- /appointments (TODO)
+- /appointments (CHECK)
 have it so within "/appointments :: 1.2.2.1.1 (appointments-auto-content-card-2) — “Select time Book Appointment”" section the "job number" text field follows the heigth of 44px, make sure this is the global cahnge for text fields. and make sure the same with the "Book Appointment" button. 
 
 remove the "Job Divisions" and sales or retail jobs button from all sidebars. 
@@ -34,40 +34,30 @@ remove the "Job Divisions" and sales or retail jobs button from all sidebars.
 Parts Manager
 ----------------------------------------------------
 
-- /stock-catalogue (CHECK)
+- /stock-catalogue (DONE
 
-- /parts/deliveries (CHECK)
+- /parts/deliveries (DONE
 
-- /parts/manager (CONTINUE)
-have it os the contenets within "/parts/manager :: 1.2.2.1 (app-layout-page-card) — “Goods In Deliveries Delivery/Collection Planner Manager Par…”" section use the full width of the page like the news feed page. remove "Parts Department Parts Manager Dashboard Live queue, inbound deliveries and inventory status pulled from Supabase" text. have it so the cards within "/parts/manager :: 1.2.1.1 (app-layout-page-card) — “Parts Department Parts Manager Dashboard Live queue, inboun…”" section use "--theme" colour background
+- /parts/manager (DONE
 
-move "Parts Manager Dashboard"buttom within "Dashboard" sectioninsidd the side bar
-
-
-- /dashboard/parts
-have it so "Parts desk Operations overview Live stock, inbound, and request telemetry from the parts catalogue." section is removed. have it so "/dashboard/parts :: 1.2.1.1.2 (dashboard-parts-auto-content-card-2) — “Requests trend Last 7 days Sat 0 Sun 0 Mon 0 Tue 0 Wed 0 Th…”" and "/dashboard/parts :: 1.2.1.1.3 (dashboard-parts-auto-content-card-3) — “Stock levels Lowest availability items No low stock alerts …”" follow a 50/50 split side by side section on one row, and then do the same within "/dashboard/parts :: 1.2.1.1.4 (dashboard-parts-auto-content-card-4) — “Requests by status waiting_authorisation 3”" and "/dashboard/parts :: 1.2.1.1.5 (dashboard-parts-auto-content-card-5) — “Recent requests Most recent entries Recent requests Request…”" on anoyher row. improve the user ui so the text for example " waiting_authorisation" is more user friendly. make sure to use the corrct "--text-1, --text-2, --text-accent" 
-
+- /dashboard/parts (DONE
 
 ----------------------------------------------------
 MOT Tester
 ----------------------------------------------------
 
-- /dashboard/mot (CHECK)
-Improve the text within the /dashboard/mot page to use "--text1, --text2, --text-accent as well
-
+- /dashboard/mot (DONE
 
 
 ----------------------------------------------------
 Valet Service
 ----------------------------------------------------
 
-- /valet (CHECK CODEX)
-Have it so within "/valet" page the "Showing 12 jobs" section is within a 44px button style "success" theme lable
+- /valet (DONE
 
-- /dashboard/valeting (CHECK CODEX)
-improve the dev overlay within "/dashboard/valeting :: 1.2.1.1 (app-layout-page-card) — “Wash bay overview Cars waiting wash 16 Checked in but not s…”" seciton.
+- /dashboard/valeting (CHECK)
+have it so "/dashboard/valeting :: 1.2.2.1.1 (dashboard-valeting-shell) — “Valeting dashboard”" section follows and uses "--text-1, --text-2, --text-accent"
 
-Hvae it so "Queue board" uses "--theme" colour background. and have it so "Queue trend" and "Queue board" are using a 50/50 split of the page section width.
 
 
 ====================================================

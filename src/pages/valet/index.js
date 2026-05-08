@@ -5,6 +5,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import LayerTheme from "@/components/ui/LayerTheme";
 import { useUser } from "@/context/UserContext";
 import { getAllJobs, updateJob } from "@/lib/database/jobs";
 import { getValetEtaSignals } from "@/lib/database/valetEtaSignals";
@@ -401,25 +402,14 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
   };
 
   return (
-    <div
+    <tr
       style={{
-        border: "none",
-        padding: "12px 16px",
-        borderRadius: "var(--radius-sm)",
-        backgroundColor: "var(--theme)",
-        boxShadow: "none",
-        display: "grid",
-        gridTemplateColumns: VALET_TABLE_COLUMNS,
-        gap: "6px",
-        alignItems: "center",
-        width: "100%",
-        minHeight: VALET_ROW_HEIGHT,
-        boxSizing: "border-box",
+        height: VALET_ROW_HEIGHT,
         color: cancelled ? "var(--text-1)" : "inherit",
         textDecoration: cancelled ? "line-through" : "none",
         opacity: cancelled ? 0.72 : 1
       }}>
-      
+      <td>
       <button
         type="button"
         onClick={(event) => {
@@ -446,6 +436,8 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
         
         {job.jobNumber || "No Job Number"}
       </button>
+      </td>
+      <td>
       <span
         style={{
           fontSize: "16px",
@@ -456,9 +448,11 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           overflow: "hidden",
           textOverflow: "ellipsis"
         }}>
-        
+
         {job.reg || "N/A"}
       </span>
+      </td>
+      <td>
       <span
         style={{
           fontSize: "14px",
@@ -468,17 +462,20 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           overflow: "hidden",
           textOverflow: "ellipsis"
         }}>
-        
+
         {job.customer || "No customer assigned"}
       </span>
+      </td>
 
       {[
       { field: "vehicleHere", label: "Vehicle Here", manual: false },
       { field: "workshop", label: "Workshop", manual: false },
       { field: "mot", label: "MOT", manual: false }].
       map(({ field, label, manual }) =>
-      <div
+      <td
         key={field}
+        style={{ textAlign: "center" }}>
+        <div
         style={{
           display: "flex",
           justifyContent: "center",
@@ -486,7 +483,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           minWidth: 0,
           width: "100%"
         }}>
-        
+
           <input
           type="checkbox"
           checked={Boolean(checklist[field])}
@@ -501,10 +498,12 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
             cursor: isSaving || !manual ? "not-allowed" : "pointer",
             opacity: manual ? 1 : 0.9
           }} />
-        
+
         </div>
+        </td>
       )}
 
+      <td style={{ textAlign: "center" }}>
       <div
         style={{
           display: "flex",
@@ -513,7 +512,7 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           minWidth: 0,
           width: "100%"
         }}>
-        
+
         <div
           style={{
             width: "20px",
@@ -579,7 +578,9 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
           null}
         </div>
       </div>
+      </td>
 
+      <td style={{ textAlign: "right" }}>
       <span
         style={{
           fontSize: "13px",
@@ -617,7 +618,8 @@ const ValetJobRow = ({ job, checklist, onToggle, isSaving, onOpenJob, etaSignals
         <span style={{ color: "var(--text-1)" }}>Awaiting timing data</span>
         }
       </span>
-    </div>);
+      </td>
+    </tr>);
 
 };
 
@@ -988,7 +990,7 @@ export default function ValetDashboard() {
 
   }
 
-  return <ValetDashboardUi view="section4" buildChecklist={buildChecklist} CalendarField={CalendarField} DevLayoutSection={DevLayoutSection} error={error} etaNow={etaNow} etaSignalsByJobId={etaSignalsByJobId} filteredJobs={filteredJobs} formatDateOnlyLabel={formatDateOnlyLabel} getTodayDateValue={getTodayDateValue} handleToggle={handleToggle} loading={loading} router={router} savingMap={savingMap} SearchBar={SearchBar} searchTerm={searchTerm} selectedDay={selectedDay} setSearchTerm={setSearchTerm} setSelectedDay={setSelectedDay} VALET_ROW_HEIGHT={VALET_ROW_HEIGHT} VALET_TABLE_COLUMNS={VALET_TABLE_COLUMNS} ValetJobRow={ValetJobRow} valetState={valetState} />;
+  return <ValetDashboardUi view="section4" buildChecklist={buildChecklist} CalendarField={CalendarField} DevLayoutSection={DevLayoutSection} LayerTheme={LayerTheme} error={error} etaNow={etaNow} etaSignalsByJobId={etaSignalsByJobId} filteredJobs={filteredJobs} formatDateOnlyLabel={formatDateOnlyLabel} getTodayDateValue={getTodayDateValue} handleToggle={handleToggle} loading={loading} router={router} savingMap={savingMap} SearchBar={SearchBar} searchTerm={searchTerm} selectedDay={selectedDay} setSearchTerm={setSearchTerm} setSelectedDay={setSelectedDay} VALET_ROW_HEIGHT={VALET_ROW_HEIGHT} VALET_TABLE_COLUMNS={VALET_TABLE_COLUMNS} ValetJobRow={ValetJobRow} valetState={valetState} />;
 
 
 

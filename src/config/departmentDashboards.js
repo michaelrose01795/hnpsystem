@@ -57,6 +57,12 @@ export const departmentDashboardShortcuts = [
     description: "Parts queue, inbound deliveries, and critical items",
   },
   {
+    label: "Parts Manager Dashboard",
+    href: "/parts/manager",
+    roles: ["parts manager"],
+    description: "View stock, spending, and income KPIs",
+  },
+  {
     label: "MOT Dashboard",
     href: "/dashboard/mot",
     roles: ["mot tester"],

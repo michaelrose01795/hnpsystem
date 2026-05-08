@@ -13,8 +13,9 @@ import {
 import PartsManagerDashboardUi from "@/components/page-ui/parts/parts-manager-ui"; // Extracted presentation layer.
 
 const containerStyle = {
-  padding: "0 24px 48px",
+  width: "100%",
   maxWidth: "100%",
+  padding: "8px 0",
   margin: "0 auto",
   display: "flex",
   flexDirection: "column",

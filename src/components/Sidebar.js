@@ -129,15 +129,12 @@ export default function Sidebar({
     sections
       .map((section) => ({
         ...section,
-        items:
-          hasRestrictedJobSectionRole && section.label === "Job Divisions"
-            ? []
-            : (section.items || []).filter(
-                (item) =>
-                  hasAccess(item) &&
-                  (!item.href || !hiddenHrRoutes.has(item.href)) &&
-                  !(hasRestrictedJobSectionRole && item.href === "/job-cards/archive")
-              ),
+        items: (section.items || []).filter(
+          (item) =>
+            hasAccess(item) &&
+            (!item.href || !hiddenHrRoutes.has(item.href)) &&
+            !(hasRestrictedJobSectionRole && item.href === "/job-cards/archive")
+        ),
       }))
       .filter((section) => section.items.length > 0);
 

@@ -590,7 +590,7 @@ export default function StockCataloguePageUi(props) {
             </div>}
 
           <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-scroll" data-dev-section-type="data-table" data-dev-section-parent="stock-catalogue-inventory" data-dev-text-preview="Inventory results scroll area" style={{
-        maxHeight: "600px",
+        maxHeight: "290px", // ~5 rows (≈42px each) + sticky header — scrolls beyond row 5
         overflowY: "auto"
       }}>
             {inventoryLoading ? <div data-dev-section="1" data-dev-section-key="stock-catalogue-inventory-loading" data-dev-section-type="content-card" data-dev-section-parent="stock-catalogue-inventory-scroll" data-dev-text-preview="Inventory loading state" style={{
@@ -602,7 +602,7 @@ export default function StockCataloguePageUi(props) {
             ...tableStyle,
             fontSize: "var(--text-body)"
           }}>
-                  <thead>
+                  <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                     <tr style={{
                 background: "var(--surface)",
                 color: "var(--danger)"

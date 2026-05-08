@@ -573,26 +573,7 @@ export default function Layout({
         },
       ]
     : [];
-  const jobDivisionSidebarSections = [
-    {
-      label: "Job Divisions",
-      category: "departments",
-      items: [
-        {
-          label: "Retail Jobs",
-          href: "/job-cards/view",
-          roles: roleCategories?.Retail || [],
-        },
-        {
-          label: "Sales Jobs",
-          href: "/job-cards/view",
-          roles: roleCategories?.Sales || [],
-        },
-      ],
-    },
-  ];
   const serviceSidebarSections = [
-    ...jobDivisionSidebarSections,
     ...accountsSidebarSections,
   ];
   const combinedSidebarSections = [...sidebarSections, ...serviceSidebarSections];
