@@ -1,6 +1,3 @@
-handoff sweep for codex again!!!!!!!!!!!!
-
-
 update the "# Role Page Access Draft" page with the edits
 
 
@@ -545,3 +542,107 @@ TODO — Compliance follow-ups (in-app, deferred)
 - Versioned privacy policy + cookie policy + employee privacy notice pages under /legal/* (drafted by lawyer; templates referenced from CookieBanner).
 - Hash-chain verifier job for audit_log (re-walks the chain, alerts on break).
 - Schedule retention dry-run weekly + apply monthly (currently manual; see PHASE_8_RETENTION_RUNBOOK.md).
+
+
+
+
+
+
+
+You are working inside my GitHub repo for my Next.js dealership project.
+
+I want you to rebuild the external website content from:
+https://www.humphriesandparks.net
+
+into a new fully functioning single-scroll website experience inside my repo.
+
+Important repo rules:
+- Use .js files only, not .tsx.
+- Every file must start with: // file location: ...
+- Show full paste-ready files, not snippets.
+- Follow the existing global.css styling, theme variables, spacing, fonts, buttons, cards, and layout patterns.
+- Do not break existing routes.
+- Create a new folder: /src/singlescroll
+- The new page must open at: /website
+
+Main task:
+Read https://www.humphriesandparks.net and extract/rebuild the public-facing dealership content into a single-scroll user-friendly page.
+
+Bring across:
+- Text content
+- Images
+- Vehicle/car gallery content
+- Page sections
+- Trust points
+- Offers
+- Service and parts info
+- Motability info
+- About details
+- Blog previews if available
+- Contact details
+- Calls to action
+
+Top navigation tabs:
+- New
+- Used
+- Offers
+- Sell Your Car
+- Service & Parts
+- Motability
+- About Us
+- Blog
+- Contact Us
+
+Navigation behaviour:
+- These tabs must stay at the top.
+- All tabs should scroll smoothly to their matching section on the single-scroll page.
+- The only exception is car gallery tabs, these can behave like filters/tabs inside the vehicle gallery section instead of scrolling.
+- The page should feel like one connected dealership website, not separate pages stacked randomly.
+
+Route and folder requirements:
+- Create the folder: /src/singlescroll
+- Create the required components inside that folder.
+- Create or update the Next.js route so visiting /website opens this single-scroll website.
+- Keep all single-scroll logic organised inside /src/singlescroll.
+
+Design requirements:
+- Modern dealership website style.
+- Clean, premium, easy to use.
+- Mobile-friendly.
+- Top sticky nav.
+- Smooth scrolling.
+- Clear vehicle gallery with New/Used filtering.
+- Strong hero section.
+- Clear CTAs like View Cars, Book a Service, Sell Your Car, Contact Us.
+- Use existing global.css styles and existing app theme conventions where possible.
+- Do not hardcode messy inline styling if global styles already exist.
+
+Animation requirements:
+- Add subtle cinematic scroll feel.
+- Use GSAP ScrollTrigger only if suitable.
+- Use parallax/depth effects for hero, cars, images, and section transitions.
+- Keep it smooth and not heavy.
+- If Three.js is too much for this repo, use layered images and parallax instead.
+- Prioritise usability over flashy effects.
+
+Build process:
+1. Inspect the repo structure.
+2. Find the correct routing setup.
+3. Create /src/singlescroll.
+4. Scrape/read the external website content manually from https://www.humphriesandparks.net.
+5. Rebuild the content into structured data/components.
+6. Create the /website route.
+7. Add sticky top tabs.
+8. Make all normal nav tabs scroll to sections.
+9. Add vehicle gallery tabs/filters for New and Used vehicles.
+10. Test mobile and desktop.
+11. Keep existing website/app pages untouched.
+
+Output required:
+- Exact npm install command if packages are needed.
+- Full list of files created or changed.
+- Full code for every file created or changed.
+- Explain how to open the new page.
+- Explain what content was moved from the external website.
+
+and install "npm install gsap" if needed

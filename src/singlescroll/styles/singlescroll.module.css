@@ -1,0 +1,1306 @@
+/* file location: src/singlescroll/styles/singlescroll.module.css
+   Page-scoped styles for the public single-scroll site.
+
+   Design intent:
+   - One continuous, flowing surface — no chunky tinted bands. Sections
+     transition via soft gradient washes instead of hard background swaps.
+   - Premium typography rhythm: large hero, tight section heads, generous
+     body line-height.
+   - All colour comes from theme tokens (the page is rendered with the red
+     + light theme override applied in WebsitePage.js).
+   - Borders are deliberately avoided on surfaces (per CLAUDE.md §3.0a) —
+     the only `border:` declarations below are on form controls, focus
+     rings, and the table-style row separators inside the contact card. */
+
+/* ====================== ROOT ====================== */
+.page {
+  --nav-height: 68px;
+  --section-pad-y: clamp(72px, 11vw, 128px);
+  --hero-overlay: linear-gradient(
+    180deg,
+    rgba(15, 15, 15, 0.55) 0%,
+    rgba(15, 15, 15, 0.18) 38%,
+    rgba(15, 15, 15, 0.6) 100%
+  );
+
+  background: var(--surface);
+  color: var(--text-1);
+  font-family: var(--font-family-base, inherit);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+.page * { box-sizing: border-box; }
+
+.page section {
+  scroll-margin-top: calc(var(--nav-height) + 12px);
+}
+
+/* ====================== TOP NAV ====================== */
+.nav {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  box-shadow: 0 1px 0 rgba(var(--accentMainRgb), 0.06), 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+.navInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 10px 28px;
+  min-height: var(--nav-height);
+}
+
+.navBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.navLogo {
+  height: 38px;
+  width: auto;
+  display: block;
+}
+
+.navBrandText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.navBrandName {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-1);
+  letter-spacing: -0.01em;
+}
+
+.navBrandTagline {
+  font-size: 11px;
+  color: var(--accentText);
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+}
+
+/* Container for the global TabGroup so it sits inline in the sticky nav.
+   The TabGroup brings its own .tab-api styles globally — we just ensure
+   it can scroll horizontally on small screens without breaking layout. */
+.navTabsWrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.navTabsWrap::-webkit-scrollbar { display: none; }
+
+.navCta {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .navCta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accentText);
+    color: var(--onAccentText);
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 16px;
+    min-height: 40px;
+    border-radius: var(--radius-sm, 12px);
+    text-decoration: none;
+    flex-shrink: 0;
+    transition: background 0.18s ease, transform 0.18s ease;
+    letter-spacing: 0.2px;
+  }
+  .navCta:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+  }
+}
+
+@media (max-width: 767px) {
+  .navInner { padding: 8px 14px; gap: 10px; }
+  .navBrandText { display: none; }
+}
+
+/* Scroll-progress bar at the bottom edge of the nav. */
+.navProgress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(var(--accentMainRgb), 0.08);
+  overflow: hidden;
+}
+.navProgressBar {
+  height: 100%;
+  width: 100%;
+  background: var(--accentText);
+  transform-origin: 0 50%;
+  transition: transform 0.08s linear;
+}
+
+/* ====================== HERO ====================== */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #fff;
+  overflow: hidden;
+  isolation: isolate;
+  margin-top: calc(var(--nav-height) * -1);
+  padding-top: var(--nav-height);
+  background: #080809;
+}
+
+/* The 3D canvas slot — fills the hero, sits behind everything but the
+   background gradient. Pointer events disabled so it doesn't steal clicks
+   from the CTA buttons sitting on top of it. */
+.heroSceneSlot {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.sceneCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sceneCanvas > :global(canvas) {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  background: transparent;
+}
+
+.sceneVignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.55) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, transparent 18%, transparent 75%, rgba(0, 0, 0, 0.6) 100%);
+}
+
+/* Poster fallback — sits under the 3D canvas at low opacity to give the
+   3D scene a sense of "place" (the dealership shape behind the chrome). */
+.heroBgWrap {
+  position: absolute;
+  inset: -10% -5%;
+  z-index: -1;
+  will-change: transform;
+  opacity: 0.18;
+  filter: blur(3px) saturate(0.8);
+  pointer-events: none;
+}
+
+.heroBg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.04);
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: var(--hero-overlay);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Soft fade from the hero into the trust bar — kills the hard edge. */
+.hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 140px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, var(--surface) 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.heroInner {
+  max-width: 920px;
+  padding: 96px 28px 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  position: relative;
+  z-index: 2;
+  will-change: transform, opacity;
+  transition: transform 0.08s linear;
+}
+
+.heroEyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(var(--accentMainRgb), 0.92);
+  padding: 7px 16px;
+  border-radius: 999px;
+  box-shadow: 0 4px 18px rgba(var(--accentMainRgb), 0.35);
+}
+
+.heroHeadline {
+  font-size: clamp(40px, 6.6vw, 76px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  margin: 0;
+  text-shadow: 0 4px 32px rgba(0, 0, 0, 0.4);
+  max-width: 14ch;
+}
+
+.heroSubhead {
+  font-size: clamp(16px, 1.6vw, 20px);
+  line-height: 1.55;
+  max-width: 640px;
+  color: rgba(255, 255, 255, 0.94);
+  margin: 0;
+  font-weight: 400;
+}
+
+.heroCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+/* Subtle hint that there's more below. */
+.heroScrollHint {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  pointer-events: none;
+  animation: heroBob 2.4s ease-in-out infinite;
+}
+@keyframes heroBob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, 6px); }
+}
+.heroScrollHintLine {
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.7) 100%);
+}
+
+/* ====================== BUTTONS ====================== */
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 13px 24px;
+  min-height: 48px;
+  border-radius: var(--radius-sm, 12px);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  border: 1px solid transparent;
+  letter-spacing: 0.1px;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+
+.btnPrimary {
+  background: var(--accentText);
+  color: var(--onAccentText);
+  box-shadow: 0 8px 24px rgba(var(--accentMainRgb), 0.28);
+}
+.btnPrimary:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 12px 32px rgba(var(--accentMainRgb), 0.36);
+}
+
+.btnGhost {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: var(--ghostbutton-ring);
+  border-color: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.btnGhost:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.btnGhostDark {
+  background: var(--surface);
+  color: var(--accentText);
+  border: var(--ghostbutton-ring);
+}
+.btnGhostDark:hover { background: var(--secondary); }
+
+/* ====================== TRUST BAR ====================== */
+.trustBar {
+  position: relative;
+  background: var(--surface);
+  padding: 36px 0 30px;
+  margin-top: -2px;
+}
+
+.trustGrid {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 28px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 20px 8px;
+  text-align: center;
+}
+
+.trustItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trustValue {
+  font-size: clamp(20px, 2.6vw, 28px);
+  font-weight: 800;
+  color: var(--accentText);
+  letter-spacing: -0.02em;
+}
+
+.trustLabel {
+  font-size: 12px;
+  color: var(--text-1);
+  opacity: 0.7;
+  letter-spacing: 0.3px;
+}
+
+/* ====================== BRAND STRIP ====================== */
+.brandStrip {
+  background: var(--surface);
+  padding: 24px 0 40px;
+}
+
+.brandStripInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 28px 56px;
+}
+
+.brandStripLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-1);
+  opacity: 0.5;
+}
+
+.brandLogo {
+  height: 26px;
+  width: auto;
+  filter: grayscale(100%);
+  opacity: 0.6;
+  transition: opacity 0.25s ease, filter 0.25s ease;
+}
+.brandLogo:hover {
+  opacity: 1;
+  filter: none;
+}
+
+/* ====================== SECTION SHELL ====================== */
+.section {
+  padding: var(--section-pad-y) 28px;
+  max-width: 1320px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Tinted band — uses a soft vertical gradient instead of a flat tint so it
+   melts into the white sections above and below it, not slapped on. */
+.sectionTinted {
+  background:
+    linear-gradient(180deg, var(--surface) 0%, var(--theme) 8%, var(--theme) 92%, var(--surface) 100%);
+  max-width: none;
+  margin: 0;
+}
+.sectionTinted > * {
+  max-width: 1320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sectionDark {
+  background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
+  color: #fff;
+  max-width: none;
+}
+
+.sectionHead {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 44px;
+  max-width: 760px;
+}
+
+.sectionHeadCenter {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  align-items: center;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accentText);
+}
+
+.heading {
+  font-size: clamp(30px, 4.4vw, 52px);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--text-1);
+}
+
+.lead {
+  font-size: clamp(16px, 1.4vw, 18px);
+  line-height: 1.65;
+  color: var(--text-1);
+  opacity: 0.8;
+  margin: 0;
+  max-width: 640px;
+}
+
+/* ====================== VEHICLE GALLERY ====================== */
+.galleryFilters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.filterTab {
+  appearance: none;
+  background: var(--surface);
+  color: var(--text-1);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 18px;
+  min-height: 42px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: var(--ghostbutton-ring);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.filterTab:hover {
+  transform: translateY(-1px);
+  background: var(--secondary);
+}
+
+.filterTabActive {
+  background: var(--accentText);
+  color: var(--onAccentText);
+  border-color: transparent;
+}
+.filterTabActive:hover {
+  background: var(--primary-hover);
+}
+
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px;
+}
+
+/* ====================== VEHICLE CARD ====================== */
+.vCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+}
+.vCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+.vImageWrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md, 16px);
+  overflow: hidden;
+  background: var(--surfaceMutedToken);
+}
+
+.vImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.vCard:hover .vImage { transform: scale(1.06); }
+
+.vBadge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--accentText);
+  color: var(--onAccentText);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(var(--accentMainRgb), 0.3);
+}
+
+.vMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 6px 10px;
+}
+
+.vYear {
+  font-size: 11px;
+  color: var(--text-1);
+  opacity: 0.55;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.vTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1.25;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.vPrice {
+  margin-top: 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accentText);
+  letter-spacing: -0.01em;
+}
+
+/* ====================== OFFERS ====================== */
+.offersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 22px;
+}
+
+.offerCard {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-lg, 20px);
+  overflow: hidden;
+  background: #111;
+  cursor: pointer;
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.32s ease;
+}
+.offerCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18);
+}
+
+.offerImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.offerCard:hover .offerImg { transform: scale(1.06); }
+
+.offerOverlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0.82) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0) 30%);
+}
+
+.offerContent {
+  position: absolute;
+  inset: 0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  color: #fff;
+  gap: 6px;
+}
+
+.offerTitle {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.offerHeadline {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.offerBody {
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.88;
+  margin: 0;
+  max-width: 36ch;
+}
+
+/* ====================== SELL YOUR CAR ====================== */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+  margin-bottom: 36px;
+}
+
+.step {
+  position: relative;
+  padding: 32px 26px 28px;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+}
+.step:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px rgba(var(--accentMainRgb), 0.08);
+}
+
+.stepNumber {
+  font-size: 52px;
+  font-weight: 800;
+  color: var(--accentText);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 14px;
+  display: block;
+}
+
+.stepTitle {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--text-1);
+  letter-spacing: -0.01em;
+}
+
+.stepBody {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-1);
+  opacity: 0.78;
+  margin: 0;
+}
+
+.benefitsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  color: var(--text-1);
+  line-height: 1.5;
+}
+
+.benefitDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: var(--accentText);
+  box-shadow: 0 0 0 4px rgba(var(--accentMainRgb), 0.12);
+}
+
+/* ====================== SPLIT (image + text) ====================== */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+.split[data-reverse="true"] { direction: rtl; }
+.split[data-reverse="true"] > * { direction: ltr; }
+
+@media (max-width: 880px) {
+  .split { grid-template-columns: 1fr; gap: 32px; }
+}
+
+.splitMedia {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-lg, 20px);
+  overflow: hidden;
+  background: var(--surfaceMutedToken);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+}
+
+.splitMediaImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.8s ease;
+}
+.splitMedia:hover .splitMediaImg { transform: scale(1.04); }
+
+.splitBody {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.splitBody p {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-1);
+  opacity: 0.85;
+  margin: 0;
+}
+
+/* ====================== MOTABILITY ====================== */
+.motabilityBrands {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.motabilityBrand {
+  padding: 22px;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.motabilityBrand:hover { transform: translateY(-2px); }
+
+.motabilityBrandName {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accentText);
+  margin: 0 0 10px;
+}
+
+.motabilityModelList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.motabilityModelChip {
+  font-size: 13px;
+  background: var(--theme);
+  color: var(--text-1);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-weight: 500;
+}
+
+.motabilityPrice {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--accentText);
+  letter-spacing: -0.02em;
+  margin: 8px 0 0;
+}
+
+/* ====================== BLOG ====================== */
+.blogGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 22px;
+}
+
+.blogCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+}
+.blogCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+}
+
+.blogImageWrap {
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-md, 16px);
+  overflow: hidden;
+  background: var(--surfaceMutedToken);
+}
+
+.blogImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.blogCard:hover .blogImg { transform: scale(1.05); }
+
+.blogDate {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  color: var(--text-1);
+  opacity: 0.55;
+  font-weight: 700;
+}
+
+.blogTitle {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-1);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.blogExcerpt {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-1);
+  opacity: 0.78;
+  margin: 0;
+}
+
+/* ====================== CONTACT ====================== */
+.contactGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+@media (max-width: 880px) {
+  .contactGrid { grid-template-columns: 1fr; }
+}
+
+.contactCard {
+  padding: 32px;
+}
+
+.contactBlock + .contactBlock { margin-top: 24px; }
+
+.contactLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--accentText);
+  margin: 0 0 8px;
+}
+
+.contactPhone {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-1);
+  text-decoration: none;
+  letter-spacing: -0.025em;
+}
+.contactPhone:hover { color: var(--accentText); }
+
+.contactAddress {
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text-1);
+  margin: 0;
+}
+
+.hoursTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.hoursTable td {
+  padding: 9px 0;
+  font-size: 14px;
+  color: var(--text-1);
+  border-bottom: var(--separating-line);
+}
+.hoursTable tr:last-child td { border-bottom: none; }
+.hoursTable td:last-child { text-align: right; opacity: 0.78; }
+
+.mapWrap {
+  border-radius: var(--radius-lg, 20px);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: var(--surfaceMutedToken);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.1);
+}
+.mapWrap iframe {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.socials {
+  display: flex;
+  gap: 8px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+.socialLink {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--theme);
+  color: var(--text-1);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.socialLink:hover { background: var(--theme-hover); color: var(--accentText); }
+
+/* ====================== FOOTER ====================== */
+.footer {
+  background: #0f0f0f;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 56px 28px 32px;
+}
+
+.footerInner {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.footerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footerLogo {
+  height: 40px;
+  width: auto;
+}
+
+.footerLinks {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.footerLinks a {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+.footerLinks a:hover { color: #fff; }
+
+.footerLegal {
+  font-size: 12px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+.footerCopy {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 6px;
+}
+
+/* ===================================================================
+   IMMERSIVE 3D ADDITIONS
+   =================================================================== */
+
+/* ====================== CARD 3D TILT ====================== */
+.card3d {
+  --c3d-rx: 0deg;
+  --c3d-ry: 0deg;
+  --c3d-lift: 0px;
+  --c3d-glare-x: 50%;
+  --c3d-glare-y: 50%;
+  --c3d-glare-opacity: 0;
+  --c3d-transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+  perspective: 1100px;
+  transform-style: preserve-3d;
+  height: 100%;
+  cursor: pointer;
+}
+
+.card3dInner {
+  position: relative;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform:
+    rotateX(var(--c3d-rx))
+    rotateY(var(--c3d-ry))
+    translateZ(var(--c3d-lift));
+  transition: var(--c3d-transition);
+  will-change: transform;
+}
+
+.card3dGlare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at var(--c3d-glare-x) var(--c3d-glare-y),
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0) 35%
+  );
+  opacity: var(--c3d-glare-opacity);
+  transition: opacity 0.4s ease;
+  mix-blend-mode: screen;
+  z-index: 4;
+}
+
+/* When a vehicle/blog card is wrapped in Card3D, suppress its own
+   translateY hover — the wrapper owns the lift now. Image-zoom and
+   shadow stay. */
+.card3d .vCard,
+.card3d .blogCard,
+.card3d .offerCard {
+  transform: none !important;
+}
+.card3d:hover .vCard,
+.card3d:hover .blogCard,
+.card3d:hover .offerCard {
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(var(--accentMainRgb), 0.08);
+}
+
+/* The Card3D shell on a vehicle card — inherits height so the inner
+   LayerSurface fills it correctly inside grid cells. */
+.vCard3dShell {
+  height: 100%;
+}
+
+/* ====================== STORYTELLER (scroll-pinned) ====================== */
+.story {
+  position: relative;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(var(--accentMainRgb), 0.12) 0%, transparent 55%),
+    linear-gradient(180deg, var(--surface) 0%, #f7f4f4 50%, var(--surface) 100%);
+  /* Total scroll height = pinned 1× + 3 fades × 1× viewport each. */
+}
+
+.storyPinned {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  perspective: 1400px;
+}
+
+.storyStageWrap {
+  position: relative;
+  width: min(820px, 92vw);
+  height: 70vh;
+  max-height: 560px;
+  transform-style: preserve-3d;
+}
+
+.storyStage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 32px;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+.storyEyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accentText);
+}
+
+.storyBig {
+  font-size: clamp(120px, 22vw, 240px);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  background: linear-gradient(180deg, var(--accentText) 0%, #7a1212 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0;
+  text-shadow: 0 30px 60px rgba(var(--accentMainRgb), 0.18);
+  display: block;
+}
+
+.storyTitle {
+  font-size: clamp(24px, 3.6vw, 38px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-1);
+  margin: 0;
+  max-width: 22ch;
+}
+
+.storyBody {
+  font-size: clamp(15px, 1.4vw, 17px);
+  line-height: 1.65;
+  color: var(--text-1);
+  opacity: 0.78;
+  margin: 0;
+  max-width: 56ch;
+}
+
+.storyProgress {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+
+.storyProgressDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(var(--accentMainRgb), 0.25);
+}
+
+/* Reduced-motion fallback for the storyteller — show all stages stacked
+   instead of pinning. */
+@media (prefers-reduced-motion: reduce) {
+  .storyPinned {
+    height: auto;
+    flex-direction: column;
+    gap: 64px;
+    padding: 80px 0;
+  }
+  .storyStageWrap {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 80px;
+  }
+  .storyStage {
+    position: static;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .storyProgress { display: none; }
+}
+
+/* ====================== DEPTH-PERSPECTIVE REVEAL HINTS ====================== */
+/* Anything tagged data-reveal that wants extra depth — currently driven by
+   the GSAP useScrollAnimations hook. The CSS below just sets a stable
+   transform-origin + 3D context so GSAP-applied translateZ values render
+   correctly without flickering. */
+.page section,
+.page article {
+  transform-style: preserve-3d;
+}
+
+/* Slight perspective on grids that contain Card3D so the tilt has somewhere
+   to project against, not just an isolated stacking context. */
+.galleryGrid,
+.offersGrid,
+.blogGrid {
+  perspective: 1600px;
+}
