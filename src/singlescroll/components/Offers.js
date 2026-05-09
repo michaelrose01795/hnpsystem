@@ -11,6 +11,7 @@ export default function Offers() {
   return (
     <section id="offers" className={`${styles.section} ${styles.sectionTinted}`} data-parallax-container>
       <SectionHeading
+        number="02"
         eyebrow="Latest Offers"
         title="Manufacturer offers, from people you can trust"
         lead="0% finance, customer savings, and the new e-Vitara on PCH — refreshed every month."

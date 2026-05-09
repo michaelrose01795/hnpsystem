@@ -1,51 +1,81 @@
 // file location: src/singlescroll/three/CameraRig.js
-// Scroll-driven camera. Reads the global scroll progress ref each frame and
-// eases the camera position/rotation toward a target derived from scroll +
-// time. Pure useFrame work — no React re-renders.
+// Persistent scroll-driven camera. Reads global scroll progress (0..1 across
+// the WHOLE page) every frame and continuously moves the camera through the
+// scene. This is what makes the 3D object feel "dragged" from one section
+// into the next — the camera (and the object's apparent screen position)
+// flow smoothly with scroll.
 //
-// Behaviour:
-//   - At scroll = 0   : camera sits at hero pose, slow auto-orbit.
-//   - At scroll ≈ 0.12: camera has pulled back and up, "letting go" of the
-//                       scene as the user moves into the page content.
-//   - The orbit continues subtly so even at rest the scene feels alive.
+// Pose is parametric — sin/cos waves of scroll progress drive the orbit
+// angle, radius, height and look-at target. No discrete keyframes to
+// maintain; the curves are tuned so each scene section catches the object
+// at a meaningful pose.
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 
-const HERO_RANGE = 0.12;
+// Scene sections — these scroll progress positions are roughly where the
+// scene-section content is centred in the viewport. The camera curves are
+// tuned so the object sits in a flattering pose at each.
+//   ~0.00  hero       camera close, low angle, full chrome torus front-and-centre
+//   ~0.16  diorama    camera pulled back, subtle high angle
+//   ~0.62  timeline   camera approaches from the side — historical "monument" feel
+//   ~0.78  reviews    camera close again, slightly above
+
+const TAU = Math.PI * 2;
+
+function ease(p) {
+  // smoothstep — gentle starts/stops between sections
+  return p * p * (3 - 2 * p);
+}
+
+function poseForScroll(s) {
+  const e = ease(s);
+
+  // Orbit angle: ~1.5 full revolutions across the page
+  const angle = e * TAU * 1.4 + 0.4;
+
+  // Radius pulses — closer at scene sections, further at card sections
+  const radius = 5.4
+    + Math.sin(s * TAU * 2.8) * 1.6
+    + e * 1.4;
+
+  // Height also pulses with a slow rise across the page
+  const height = 0.9
+    + Math.cos(s * TAU * 1.9 + 0.6) * 0.9
+    + e * 0.8;
+
+  return {
+    pos: new THREE.Vector3(Math.sin(angle) * radius, height, Math.cos(angle) * radius),
+    look: new THREE.Vector3(0, 0.4, 0),
+  };
+}
 
 export default function CameraRig({ scrollRef, mouseRef }) {
   const { camera } = useThree();
-  const target = useRef(new THREE.Vector3(0, 0.4, 0));
+  const targetPos = useRef(new THREE.Vector3());
+  const targetLook = useRef(new THREE.Vector3(0, 0.4, 0));
+  const currLook = useRef(new THREE.Vector3(0, 0.4, 0));
   const tmp = useRef(new THREE.Vector3());
 
   useFrame((state, delta) => {
-    const t = state.clock.elapsedTime;
     const scroll = scrollRef?.current ?? 0;
-    const local = Math.min(1, scroll / HERO_RANGE); // 0 at hero, 1 once past
+    const { pos, look } = poseForScroll(scroll);
 
-    // Auto-orbit angle (slow, idle).
-    const orbit = t * 0.08;
-
-    // Mouse parallax (capped) for subtle "look-around" feel.
+    // Mouse parallax
     const mx = (mouseRef?.current?.x ?? 0) * 0.4;
     const my = (mouseRef?.current?.y ?? 0) * 0.25;
 
-    // Radius / height push back as user scrolls into the page.
-    const radius = 5.4 + local * 2.2;
-    const height = 0.75 + local * 1.3;
+    targetPos.current.copy(pos);
+    targetPos.current.x += mx;
+    targetPos.current.y += my;
+    targetLook.current.copy(look);
 
-    tmp.current.set(
-      Math.sin(orbit) * radius + mx,
-      height + my,
-      Math.cos(orbit) * radius
-    );
-
-    // Smooth ease toward target position (frame-rate independent).
-    const lerp = 1 - Math.pow(0.0001, delta);
-    camera.position.lerp(tmp.current, lerp);
-    camera.lookAt(target.current);
+    // Frame-rate-independent ease toward target.
+    const lerpAmt = 1 - Math.pow(0.0001, delta);
+    camera.position.lerp(targetPos.current, lerpAmt);
+    currLook.current.lerp(targetLook.current, lerpAmt);
+    camera.lookAt(currLook.current);
   });
 
   return null;

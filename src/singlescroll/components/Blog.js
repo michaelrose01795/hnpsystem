@@ -11,6 +11,7 @@ export default function Blog() {
   return (
     <section id="blog" className={styles.section}>
       <SectionHeading
+        number="10"
         eyebrow="From the Blog"
         title="Helpful guides for car buyers in Kent"
         lead="Practical, plain-English advice from the showroom floor."

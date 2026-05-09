@@ -1,131 +1,141 @@
 // file location: src/singlescroll/components/Storyteller.js
-// Scroll-pinned "story" section — three dramatic stages that crossfade as
-// the user scrolls past. Built with GSAP ScrollTrigger pin + scrub for the
-// classic premium-website cinematic feel.
+// "The H&P Promise" — an immersive 3D diorama showcasing the four trust
+// pillars all at once, instead of the previous fragile pin-and-crossfade.
 //
-// The section is 4× viewport tall but pinned at 1× — each stage owns a
-// portion of the scroll range and fades in/out via opacity + translateZ.
+// Layout:
+//   - A single ~100vh section with strong 3D perspective.
+//   - A central rotating chrome ring (pure CSS 3D — no extra Three.js).
+//   - Four trust pillars arranged around it as floating tilted panels at
+//     different z-depths.
+//   - The whole scene parallaxes against the user's mouse + scroll, giving
+//     the feeling of moving through a 3D installation.
+//
+// Pure CSS-transform driven — robust, no pin, no scroll-spacer surprises.
 
 import { useEffect, useRef } from "react";
-import { siteContent } from "../data/siteContent";
 import useReducedMotion from "../hooks/useReducedMotion";
 import styles from "../styles/singlescroll.module.css";
 
-const STAGES = [
+const PILLARS = [
   {
-    eyebrow: "Since 1947",
     big: "75+",
-    title: "Three generations of Kent dealership",
-    body: "Family-run from day one. The same family. The same showroom in West Malling. The same idea — treat customers like part of the family.",
+    eyebrow: "Since 1947",
+    title: "Three generations of family",
+    body: "Same family, same showroom in West Malling. Treating customers like part of the H&P family from day one.",
+    pos: "tl",
+    depth: -120,
   },
   {
-    eyebrow: "5.0 average · 97 reviews",
     big: "5.0★",
+    eyebrow: "97 reviews",
     title: "The reviews speak for us",
-    body: "Multi-award-winning. Recognised by AutoTrader Retailer Awards, JudgeService, and Google. Our customers come back, and they tell their friends.",
+    body: "Multi-award-winning. Recognised by AutoTrader, JudgeService and Google. Customers come back, and tell their friends.",
+    pos: "tr",
+    depth: -60,
   },
   {
-    eyebrow: "120-point inspection",
     big: "120",
+    eyebrow: "Point inspection",
     title: "Every used car. No exceptions.",
-    body: "Each used car arrives with a 120-point inspection, a free 6-month warranty, and a minimum 6-month MOT. Buy with confidence.",
+    body: "Every used car arrives with a 120-point inspection, free 6-month warranty and minimum 6-month MOT.",
+    pos: "bl",
+    depth: -60,
   },
   {
-    eyebrow: "Approved EV retailer",
     big: "EV",
+    eyebrow: "Approved retailer",
     title: "Ready for what's next",
-    body: "Certified Electric Vehicle Approved by the Office for Low Emission Vehicles. Authorised retailer for the new Suzuki e-Vitara — Suzuki's first all-electric SUV.",
+    body: "Certified by the Office for Low Emission Vehicles. Authorised retailer for the new Suzuki e-Vitara.",
+    pos: "br",
+    depth: -120,
   },
 ];
 
 export default function Storyteller() {
-  const sectionRef = useRef(null);
-  const stageRefs = useRef([]);
+  const sceneRef = useRef(null);
   const reduced = useReducedMotion();
 
+  // Mouse-driven scene tilt — the whole diorama leans toward the cursor.
   useEffect(() => {
     if (typeof window === "undefined" || reduced) return;
-    let cleanups = [];
-    let cancelled = false;
+    const el = sceneRef.current;
+    if (!el) return;
 
-    (async () => {
-      const { gsap } = await import("gsap");
-      const { ScrollTrigger } = await import("gsap/ScrollTrigger");
-      if (cancelled) return;
-      gsap.registerPlugin(ScrollTrigger);
+    let raf = null;
+    let targetX = 0;
+    let targetY = 0;
+    let currX = 0;
+    let currY = 0;
 
-      const sectionEl = sectionRef.current;
-      const pinEl = sectionEl?.querySelector(`.${styles.storyPinned}`);
-      if (!sectionEl || !pinEl) return;
+    const onMove = (e) => {
+      const rect = el.getBoundingClientRect();
+      // Only respond when the section is in the viewport.
+      if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      targetX = ((e.clientX - cx) / rect.width) * 8;   // up to ±8deg
+      targetY = ((e.clientY - cy) / rect.height) * -6; // up to ±6deg
+      if (raf == null) raf = requestAnimationFrame(tick);
+    };
 
-      const stages = stageRefs.current.filter(Boolean);
+    const tick = () => {
+      currX += (targetX - currX) * 0.08;
+      currY += (targetY - currY) * 0.08;
+      el.style.setProperty("--scene-rot-y", `${currX.toFixed(2)}deg`);
+      el.style.setProperty("--scene-rot-x", `${currY.toFixed(2)}deg`);
+      if (Math.abs(targetX - currX) > 0.05 || Math.abs(targetY - currY) > 0.05) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        raf = null;
+      }
+    };
 
-      gsap.set(stages, { opacity: 0, scale: 0.95, z: -120 });
-      gsap.set(stages[0], { opacity: 1, scale: 1, z: 0 });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionEl,
-          start: "top top",
-          end: () => `+=${stages.length * window.innerHeight}`,
-          pin: pinEl,
-          pinSpacing: true,
-          scrub: 0.6,
-          anticipatePin: 1,
-        },
-      });
-
-      stages.forEach((stage, i) => {
-        if (i === 0) return;
-        const prev = stages[i - 1];
-        tl.to(prev, { opacity: 0, scale: 1.05, z: 80, duration: 1, ease: "power2.in" }, "+=0.3");
-        tl.fromTo(
-          stage,
-          { opacity: 0, scale: 0.95, z: -120 },
-          { opacity: 1, scale: 1, z: 0, duration: 1, ease: "power2.out" },
-          "<",
-        );
-      });
-
-      cleanups.push(() => {
-        tl.scrollTrigger?.kill();
-        tl.kill();
-      });
-
-      // Refresh once more to account for image/font loads.
-      const refresh = setTimeout(() => ScrollTrigger.refresh(), 300);
-      cleanups.push(() => clearTimeout(refresh));
-    })();
-
+    window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
-      cancelled = true;
-      cleanups.forEach((fn) => fn());
+      window.removeEventListener("pointermove", onMove);
+      if (raf != null) cancelAnimationFrame(raf);
     };
   }, [reduced]);
 
   return (
-    <section ref={sectionRef} className={styles.story} aria-label="Why Humphries & Parks">
-      <div className={styles.storyPinned}>
-        <div className={styles.storyStageWrap}>
-          {STAGES.map((stage, i) => (
-            <article
-              key={stage.big}
-              ref={(el) => { stageRefs.current[i] = el; }}
-              className={styles.storyStage}
-            >
-              <span className={styles.storyEyebrow}>{stage.eyebrow}</span>
-              <span className={styles.storyBig} aria-hidden="true">{stage.big}</span>
-              <h3 className={styles.storyTitle}>{stage.title}</h3>
-              <p className={styles.storyBody}>{stage.body}</p>
-            </article>
-          ))}
+    <section id="promise" className={styles.diorama} aria-label="Why Humphries & Parks">
+      {/* Backdrop numerals — huge faded "1947" parallax layer */}
+      <div className={styles.dioramaBackdrop} data-parallax="-20" aria-hidden="true">
+        <span>1947</span>
+      </div>
+
+      {/* Section heading — sits at the top of the diorama */}
+      <header className={styles.dioramaHead} data-reveal>
+        <span className={styles.eyebrow}>The H&amp;P Promise</span>
+        <h2 className={styles.heading}>Why families across Kent keep coming back</h2>
+      </header>
+
+      {/* The 3D scene — perspective parent */}
+      <div ref={sceneRef} className={styles.dioramaScene}>
+        {/* Centerpiece: rotating chrome ring with 1947 inside */}
+        <div className={styles.dioramaCenter} aria-hidden="true">
+          <div className={styles.dioramaRing} />
+          <div className={styles.dioramaRingInner} />
+          <div className={styles.dioramaRingOuter} />
+          <span className={styles.dioramaCenterLabel}>Est.</span>
+          <span className={styles.dioramaCenterYear}>1947</span>
+          <span className={styles.dioramaCenterTagline}>Humphries &amp; Parks</span>
         </div>
 
-        <div className={styles.storyProgress} aria-hidden="true">
-          {STAGES.map((_, i) => (
-            <span key={i} className={styles.storyProgressDot} />
-          ))}
-        </div>
+        {/* Four corner pillars */}
+        {PILLARS.map((p) => (
+          <article
+            key={p.big}
+            className={`${styles.dioramaPillar} ${styles[`pillar_${p.pos}`]}`}
+            style={{ "--pillar-depth": `${p.depth}px` }}
+            data-reveal
+          >
+            <span className={styles.dioramaPillarBig} aria-hidden="true">{p.big}</span>
+            <span className={styles.dioramaPillarEyebrow}>{p.eyebrow}</span>
+            <h3 className={styles.dioramaPillarTitle}>{p.title}</h3>
+            <p className={styles.dioramaPillarBody}>{p.body}</p>
+          </article>
+        ))}
       </div>
     </section>
   );

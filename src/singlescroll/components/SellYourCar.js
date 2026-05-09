@@ -19,6 +19,7 @@ export default function SellYourCar() {
   return (
     <section id="sell" className={styles.section}>
       <SectionHeading
+        number="03"
         eyebrow={sellYourCar.eyebrow}
         title={sellYourCar.title}
         lead="We buy any car, any age, any mileage — with free home collection and instant payment."

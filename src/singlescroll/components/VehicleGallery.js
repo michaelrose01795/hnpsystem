@@ -24,6 +24,7 @@ export default function VehicleGallery({ filter, onFilterChange }) {
   return (
     <section id="cars" className={styles.section}>
       <SectionHeading
+        number="01"
         eyebrow="Our Cars"
         title="Find your next car at Humphries & Parks"
         lead="Every used car arrives with a 120-point inspection, a minimum 6-month MOT, and a free 6-month warranty. New Suzuki, KGM and Mitsubishi available with manufacturer offers."

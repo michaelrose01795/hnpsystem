@@ -12,6 +12,7 @@ export default function Motability() {
   return (
     <section id="motability" className={styles.section}>
       <SectionHeading
+        number="06"
         eyebrow={motability.eyebrow}
         title={motability.title}
         lead={motability.body[0]}

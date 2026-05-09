@@ -12,6 +12,7 @@ export default function ContactUs() {
   return (
     <section id="contact" className={`${styles.section} ${styles.sectionTinted}`}>
       <SectionHeading
+        number="11"
         eyebrow={contact.eyebrow}
         title={contact.title}
         lead="Pop in to the showroom, give us a ring, or drop us a message — we're here to help."

@@ -14,6 +14,7 @@ export default function ServiceAndParts() {
   return (
     <section id="service" className={`${styles.section} ${styles.sectionTinted}`}>
       <SectionHeading
+        number="04"
         eyebrow={serviceAndParts.eyebrow}
         title={serviceAndParts.title}
       />

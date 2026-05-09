@@ -8,8 +8,11 @@ export const navTabs = [
   { id: "offers", label: "Offers", scrollTo: "offers" },
   { id: "sell", label: "Sell Your Car", scrollTo: "sell" },
   { id: "service", label: "Service & Parts", scrollTo: "service" },
+  { id: "parts", label: "Parts", scrollTo: "parts" },
   { id: "motability", label: "Motability", scrollTo: "motability" },
-  { id: "about", label: "About Us", scrollTo: "about" },
+  { id: "about", label: "About", scrollTo: "about" },
+  { id: "team", label: "Team", scrollTo: "team" },
+  { id: "reviews", label: "Reviews", scrollTo: "reviews" },
   { id: "blog", label: "Blog", scrollTo: "blog" },
-  { id: "contact", label: "Contact Us", scrollTo: "contact" },
+  { id: "contact", label: "Contact", scrollTo: "contact" },
 ];

@@ -57,7 +57,7 @@ function AppWrapper({ Component, pageProps }) {
   const pathname = router?.pathname || "";
   const asPath = router?.asPath || "";
   const asPathWithoutQuery = asPath.split("?")[0] || "";
-  const notesHiddenRoutes = new Set(["/", "/login", "/presentation"]);
+  const notesHiddenRoutes = new Set(["/", "/login", "/presentation", "/website"]);
   const isCustomerRoute = pathname.startsWith("/customer");
   const hideNotesWidget =
     isCustomerRoute ||

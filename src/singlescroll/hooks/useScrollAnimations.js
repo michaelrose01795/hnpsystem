@@ -27,19 +27,22 @@ export default function useScrollAnimations(rootRef) {
 
       const scope = rootRef?.current || document;
 
-      // ---- Section reveal: fade up on first entry ---------------------
+      // ---- Section reveal: deliberate Razorpay-style fade + lift ------
+      // Slower duration, longer stagger, expo easing — the kind of cadence
+      // that makes a dark cinematic page feel intentional rather than
+      // bouncy.
       const reveals = scope.querySelectorAll("[data-reveal]");
       if (reveals.length) {
-        gsap.set(reveals, { opacity: 0, y: 32 });
+        gsap.set(reveals, { opacity: 0, y: 44 });
         const triggers = ScrollTrigger.batch(reveals, {
-          start: "top 88%",
+          start: "top 90%",
           onEnter: (els) =>
             gsap.to(els, {
               opacity: 1,
               y: 0,
-              duration: 0.95,
+              duration: 1.2,
               ease: "expo.out",
-              stagger: 0.09,
+              stagger: 0.12,
               overwrite: true,
             }),
           once: true,
