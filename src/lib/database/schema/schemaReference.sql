@@ -266,6 +266,18 @@ CREATE TABLE public.customer_activity_events (
   CONSTRAINT customer_activity_events_vehicle_id_fkey FOREIGN KEY (vehicle_id) REFERENCES public.vehicles(vehicle_id),
   CONSTRAINT customer_activity_events_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(user_id)
 );
+CREATE TABLE public.customer_auth (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  email text NOT NULL UNIQUE,
+  password_hash text NOT NULL,
+  password_algo text NOT NULL DEFAULT 'bcrypt'::text,
+  customer_id uuid NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  last_login_at timestamp with time zone,
+  CONSTRAINT customer_auth_pkey PRIMARY KEY (id),
+  CONSTRAINT customer_auth_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
+);
 CREATE TABLE public.customer_job_history (
   history_id uuid NOT NULL DEFAULT gen_random_uuid(),
   customer_id uuid NOT NULL,

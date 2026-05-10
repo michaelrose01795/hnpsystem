@@ -105,7 +105,7 @@ export const siteContent = {
   contact: {
     eyebrow: "Contact Us",
     title: "Come and say hello",
-    address: ["120 London Road", "West Malling", "Maidstone", "Kent", "ME19 5AN"],
+    address: ["Humphries & Parks", "120 London Road", "West Malling", "Maidstone", "Kent", "ME19 5AN"],
     phone: "01732 870711",
     phoneHref: "tel:01732870711",
     salesHours: [
@@ -119,7 +119,7 @@ export const siteContent = {
       { days: "Sunday", time: "Closed" },
     ],
     mapEmbed:
-      "https://www.google.com/maps?q=120+London+Road+West+Malling+Maidstone+Kent+ME19+5AN&output=embed",
+      "https://www.google.com/maps?q=Humphries+%26+Parks+West+Malling+ME19+5AN&output=embed",
     socials: [
       { label: "Facebook", href: "https://www.facebook.com/humphriesandparks" },
       { label: "Instagram", href: "https://www.instagram.com/humphriesandparks" },

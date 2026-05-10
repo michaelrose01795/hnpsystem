@@ -34,6 +34,7 @@ import ContactUs from "./components/ContactUs";
 import Footer from "./components/Footer";
 
 import useScrollAnimations from "./hooks/useScrollAnimations";
+import useWebsiteScope from "./hooks/useWebsiteScope";
 import { siteContent } from "./data/siteContent";
 import styles from "./styles/singlescroll.module.css";
 
@@ -68,6 +69,7 @@ export default function WebsitePage() {
     return () => setTemporaryOverride(null);
   }, [setTemporaryOverride]);
 
+  useWebsiteScope();
   useScrollAnimations(rootRef);
 
   return (

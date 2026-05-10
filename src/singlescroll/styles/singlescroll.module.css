@@ -2738,6 +2738,27 @@
   background: var(--card-bg);
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--hairline);
 }
+
+/* Contact split — make the two columns share the same height so the
+   embedded map matches the info panel exactly (50/50 visual weight).
+   Scoped via .sceneSplitContact so other split sections that depend
+   on the centred behaviour keep their existing layout. */
+.sceneSplitContact {
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+}
+.sceneSplitContact .sceneMapCard {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 100%;
+}
+@media (max-width: 880px) {
+  .sceneSplitContact .sceneMapCard {
+    aspect-ratio: 4 / 3;
+    height: auto;
+    min-height: 0;
+  }
+}
 .sceneMapCard iframe {
   width: 100%;
   height: 100%;
@@ -2840,4 +2861,1080 @@
   .scene { padding-left: 18px; padding-right: 18px; }
   .subScene { padding-left: 18px; padding-right: 18px; }
   .sceneStatRow { gap: 22px; }
+}
+
+/* ====================== ACCOUNT NAV BUTTON ======================
+   Login / Profile pill in the top-right of TopNav. Uses the same
+   liquid-glass language as the other nav pills; the logged-in
+   "Profile" variant promotes to the red gradient like the active
+   tab so signed-in users see a clear, branded marker. */
+.navAccountSlot {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.navAccountBtn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  min-height: 42px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 100%),
+    rgba(8, 8, 12, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 28px rgba(0, 0, 0, 0.35);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s ease,
+    filter 0.25s ease;
+}
+.navAccountBtn:hover {
+  transform: translateY(-1px);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%),
+    rgba(8, 8, 12, 0.3);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 14px 36px rgba(0, 0, 0, 0.45);
+}
+.navAccountBtnFilled {
+  color: var(--onAccentText);
+  background:
+    linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
+  border-color: transparent;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 12px 32px rgba(var(--accentMainRgb), 0.42);
+}
+.navAccountBtnFilled:hover {
+  filter: brightness(1.08);
+  background:
+    linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
+  border-color: transparent;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 16px 40px rgba(var(--accentMainRgb), 0.55);
+}
+.navAccountAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+@media (max-width: 767px) {
+  .navAccountBtn { padding: 8px 14px; font-size: 12px; min-height: 38px; }
+}
+
+/* ====================== AUTH PAGE (login + signup) ======================
+   /website/login renders inside the same dark cinematic frame as the rest
+   of the single-scroll site. The form sits in a centred glass card. */
+.authShell {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top, rgba(var(--accentMainRgb), 0.18), transparent 60%),
+    #07070b;
+  color: var(--txt-bright);
+  display: flex;
+  flex-direction: column;
+}
+.authMain {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+}
+.authCard {
+  width: 100%;
+  max-width: 460px;
+  padding: 36px 32px;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.015) 100%),
+    rgba(20, 20, 26, 0.88);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 30px 80px rgba(0, 0, 0, 0.55);
+}
+.authBackLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--txt-mute);
+  font-size: 13px;
+  text-decoration: none;
+  margin-bottom: 22px;
+  letter-spacing: 0.3px;
+}
+.authBackLink:hover { color: var(--txt-bright); }
+.authBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.authBrand img { height: 42px; width: auto; }
+.authBrandText { display: flex; flex-direction: column; line-height: 1.1; }
+.authBrandName { font-weight: 800; font-size: 16px; }
+.authBrandTagline { font-size: 11px; color: var(--txt-mute); letter-spacing: 0.6px; text-transform: uppercase; }
+.authTitle {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+.authSubtitle {
+  margin: 0 0 22px;
+  font-size: 14px;
+  color: var(--txt-soft);
+  line-height: 1.5;
+}
+.authTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.authTab {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--txt-mute);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.authTabActive {
+  color: var(--onAccentText);
+  background: linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 6px 16px rgba(var(--accentMainRgb), 0.35);
+}
+.authForm { display: flex; flex-direction: column; gap: 14px; }
+.authRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.authField { display: flex; flex-direction: column; gap: 6px; }
+.authLabel {
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+  font-weight: 700;
+}
+.authInput {
+  appearance: none;
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--txt-bright);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.authInput:focus {
+  outline: none;
+  border-color: var(--accentText);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.25);
+}
+.authError {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #ffd7d7;
+  background: rgba(220, 50, 50, 0.18);
+  border-radius: 10px;
+}
+.authSubmit {
+  appearance: none;
+  margin-top: 6px;
+  padding: 14px 18px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--onAccentText);
+  background: linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 12px 32px rgba(var(--accentMainRgb), 0.42);
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.authSubmit:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.authSubmit:disabled { opacity: 0.6; cursor: not-allowed; }
+.authFootnote {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--txt-mute);
+  text-align: center;
+}
+
+/* Dev impersonation card sits below the main auth card on /website/login.
+   Visually subordinate (dashed amber tag) so it's obvious it's a test
+   tool rather than something a real customer should use. */
+.authMain { flex-direction: column; gap: 18px; }
+.authDevCard {
+  margin-top: 4px;
+}
+.authDevTag {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #ffd089;
+  background: rgba(255, 165, 60, 0.12);
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+.authDevTitle {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* ====================== PROFILE PAGE ====================== */
+.profileShell {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top right, rgba(var(--accentMainRgb), 0.18), transparent 60%),
+    #07070b;
+  color: var(--txt-bright);
+}
+.profileMain {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.profileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.profileHeaderText { display: flex; flex-direction: column; gap: 4px; }
+.profileEyebrow {
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--accentText);
+  font-weight: 800;
+}
+.profileTitle {
+  margin: 0;
+  font-size: clamp(28px, 3.5vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.profileSubtitle {
+  margin: 0;
+  color: var(--txt-soft);
+  font-size: 14px;
+}
+.profileActions { display: flex; gap: 10px; }
+.profileGhostBtn,
+.profileLogoutBtn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.profileGhostBtn:hover,
+.profileLogoutBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.profileLogoutBtn {
+  color: #ffd7d7;
+  background: rgba(220, 50, 50, 0.14);
+  border-color: rgba(220, 50, 50, 0.4);
+}
+.profileLogoutBtn:hover {
+  background: rgba(220, 50, 50, 0.22);
+  border-color: rgba(220, 50, 50, 0.6);
+}
+.profileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 22px;
+}
+.profileCard {
+  padding: 24px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%),
+    rgba(20, 20, 26, 0.84);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 24px 56px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.profileCardWide { grid-column: 1 / -1; }
+.profileCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.profileCardTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+.profileCardCount {
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+  font-weight: 700;
+}
+.profileDetailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+.profileDetailField { display: flex; flex-direction: column; gap: 4px; }
+.profileDetailLabel {
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+  font-weight: 700;
+}
+.profileDetailValue {
+  font-size: 14px;
+  color: var(--txt-bright);
+  word-break: break-word;
+}
+.profileItemList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.profileItemRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 14px;
+}
+.profileItemTitle { font-size: 14px; font-weight: 700; }
+.profileItemMeta { font-size: 12px; color: var(--txt-mute); margin-top: 2px; }
+.profileBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--txt-soft);
+}
+.profileBadgePaid {
+  background: rgba(46, 167, 113, 0.18);
+  color: #b6f0d2;
+}
+.profileBadgeOpen {
+  background: rgba(var(--accentMainRgb), 0.22);
+  color: #ffd1d1;
+}
+.profileEmpty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--txt-mute);
+}
+.profileLoading {
+  text-align: center;
+  padding: 80px 0;
+  color: var(--txt-mute);
+  font-size: 14px;
+}
+
+/* In-page jump nav at the top of the profile so customers can hop
+   between sections without endless scrolling. */
+.profileJumpNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.profileJumpLink {
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--txt-soft);
+  background: transparent;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.profileJumpLink:hover {
+  color: var(--txt-bright);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Alert banners — used for MOT-due, service-due, account-balance
+   nudges. The colour treatment leans on background tint + accent
+   text rather than a coloured side-border (per the borders rule). */
+.profileBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.profileBannerWarn { background: rgba(var(--accentMainRgb), 0.16); }
+.profileBannerSoft { background: rgba(255, 200, 80, 0.14); }
+.profileBannerOk { background: rgba(46, 167, 113, 0.18); }
+.profileBannerText { display: flex; flex-direction: column; gap: 2px; }
+.profileBannerTitle { font-size: 14px; font-weight: 800; }
+.profileBannerSub { font-size: 12px; color: var(--txt-soft); }
+
+/* Live job status tracker — five dots with the active stage promoted. */
+.profileTracker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.profileTrackerStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+  text-align: center;
+}
+.profileTrackerDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.profileTrackerStepActive .profileTrackerDot {
+  background: var(--accentText);
+  transform: scale(1.3);
+  box-shadow: 0 0 0 4px rgba(var(--accentMainRgb), 0.25);
+}
+.profileTrackerStepDone .profileTrackerDot {
+  background: rgba(46, 167, 113, 0.85);
+}
+.profileTrackerStepActive,
+.profileTrackerStepDone { color: var(--txt-bright); }
+
+/* VHC traffic-light pip row */
+.profileVhcLights {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.profileVhcLight {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.profileVhcLightDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+.profileVhcLightRed .profileVhcLightDot { background: #e85a5a; }
+.profileVhcLightAmber .profileVhcLightDot { background: #f7b955; }
+.profileVhcLightGreen .profileVhcLightDot { background: #58c790; }
+
+/* Tiny inline mileage history bar list (no chart library) */
+.profileMileageList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.profileMileageRow {
+  display: grid;
+  grid-template-columns: 96px 1fr 80px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--txt-soft);
+}
+.profileMileageBar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.profileMileageBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(var(--accentMainRgb), 0.6) 0%, var(--accentText) 100%);
+}
+.profileMileageValue { color: var(--txt-bright); font-weight: 700; text-align: right; }
+
+/* Account balance hero number */
+.profileBalanceHero {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.profileBalanceFigure {
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.profileBalanceMeta { font-size: 12px; color: var(--txt-mute); }
+
+/* Saved card row */
+.profileCardChip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+}
+.profileCardBrand {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--txt-bright);
+}
+.profileCardLine { font-size: 12px; color: var(--txt-soft); }
+
+/* Compact message thread bubbles */
+.profileThread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.profileBubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.profileBubbleStaff {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--txt-bright);
+}
+.profileBubbleCustomer {
+  align-self: flex-end;
+  background: rgba(var(--accentMainRgb), 0.32);
+  color: #fff;
+}
+.profileBubbleMeta {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.profileComposer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-top: 10px;
+}
+.profileComposerInput {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
+  border: var(--input-ring);
+  border-radius: 12px;
+  padding: 10px 12px;
+  resize: vertical;
+  min-height: 44px;
+}
+.profileComposerInput:focus { outline: none; box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.25); }
+
+/* Activity timeline */
+.profileTimeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.profileTimelineRow {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+}
+.profileTimelineWhen {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: var(--txt-mute);
+  text-transform: uppercase;
+}
+.profileTimelineWhat {
+  font-size: 13px;
+  color: var(--txt-bright);
+}
+
+/* Settings list inside the Account & security card */
+.profileSettingsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.profileSettingsRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.profileSettingsRowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.profileSettingsTitle { font-size: 13px; font-weight: 700; }
+.profileSettingsHint { font-size: 12px; color: var(--txt-mute); }
+.profileToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--txt-soft);
+  padding: 4px 0;
+}
+.profileDanger { color: #ffd7d7; }
+.profileSuccess { margin: 0; font-size: 12px; color: #b6f0d2; }
+
+/* VHC photo / video gallery */
+.profileMediaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.profileMediaThumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.profileMediaThumb:hover { transform: scale(1.02); }
+.profileMediaThumb img,
+.profileMediaThumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.profileMediaCaption {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  right: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+.profileMediaTag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 999px;
+  color: #fff;
+  backdrop-filter: blur(4px);
+}
+
+/* Our-services card picker */
+.profileServiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.profileServiceTile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: var(--txt-bright);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.profileServiceTile:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+.profileServiceTileActive {
+  background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.25) 0%, rgba(var(--accentMainRgb), 0.12) 100%);
+}
+.profileServiceTileTitle {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+.profileServiceTileHint {
+  font-size: 11px;
+  color: var(--txt-mute);
+  line-height: 1.4;
+}
+
+/* Tag/chip row used for active-job inline badges */
+.profileTagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.profileTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--txt-soft);
+}
+.profileTagAccent {
+  background: rgba(var(--accentMainRgb), 0.22);
+  color: #ffd1d1;
+}
+.profileTagOk { background: rgba(46, 167, 113, 0.2); color: #b6f0d2; }
+
+/* Account statement transaction list — compact 3-col rows */
+.profileStmtRow {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  font-size: 12px;
+}
+.profileStmtAmountDebit { color: #ffd1d1; font-weight: 700; }
+.profileStmtAmountCredit { color: #b6f0d2; font-weight: 700; }
+.profileStmtMeta { color: var(--txt-mute); font-size: 11px; }
+
+/* ====================== CUSTOM SELECT + DATE PICKER ======================
+   Used on /website pages so the dropdown panel + calendar grid match
+   the dark-glass surface design. Native <select> options and date
+   pickers are rendered by the OS / browser and can't be themed beyond
+   `color-scheme: dark`, so these JS-based replacements give us full
+   visual control. */
+.wsRoot {
+  position: relative;
+  display: block;
+}
+.wsTrigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  min-height: 44px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.wsTrigger:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.wsRoot[data-open="true"] .wsTrigger {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.25);
+}
+.wsTriggerValue { color: var(--txt-bright); }
+.wsTriggerPlaceholder { color: rgba(255, 255, 255, 0.45); }
+.wsCaret {
+  width: 12px;
+  height: 8px;
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat center / contain;
+  opacity: 0.7;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.wsRoot[data-open="true"] .wsCaret { transform: rotate(180deg); }
+.wsCalIcon {
+  width: 14px;
+  height: 14px;
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='1.4'%3E%3Crect x='2.5' y='3' width='11' height='11' rx='1.5'/%3E%3Cpath d='M2.5 6h11M5 2v2M11 2v2'/%3E%3C/svg%3E") no-repeat center / contain;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.wsMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(28, 28, 38, 0.96) 0%, rgba(16, 16, 22, 0.98) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 56px rgba(0, 0, 0, 0.55);
+}
+.wsEmpty {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--txt-mute);
+}
+.wsOption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--txt-bright);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.wsOption:hover,
+.wsOptionActive {
+  background: rgba(255, 255, 255, 0.08);
+}
+.wsOptionSelected {
+  background: rgba(var(--accentMainRgb), 0.22);
+  color: #fff;
+}
+.wsOptionSelected:hover,
+.wsOptionSelected.wsOptionActive {
+  background: rgba(var(--accentMainRgb), 0.32);
+}
+.wsOptionLabel { font-weight: 600; }
+.wsOptionHint { font-size: 11px; color: var(--txt-mute); }
+
+/* Calendar panel */
+.wsCalPanel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: 304px;
+  padding: 14px;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(28, 28, 38, 0.96) 0%, rgba(16, 16, 22, 0.98) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 56px rgba(0, 0, 0, 0.55);
+}
+.wsCalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.wsCalTitle {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.wsCalNav {
+  appearance: none;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  line-height: 1;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.wsCalNav:hover { background: rgba(255, 255, 255, 0.12); }
+.wsCalWeekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+.wsCalWeekdays span {
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+}
+.wsCalGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.wsCalDay {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--txt-bright);
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.wsCalDay:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.wsCalDay:disabled {
+  color: rgba(255, 255, 255, 0.2);
+  cursor: not-allowed;
+  background: transparent;
+}
+.wsCalDayMuted { color: rgba(255, 255, 255, 0.28); }
+.wsCalDayToday {
+  box-shadow: inset 0 0 0 1px rgba(var(--accentMainRgb), 0.6);
+}
+.wsCalDaySelected,
+.wsCalDaySelected:hover {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
+  font-weight: 800;
+}
+.wsCalFooter {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+.wsCalFooter button {
+  flex: 1;
+  font-size: 11px;
+  padding: 8px 10px;
 }

@@ -35,7 +35,7 @@ export default function MeetTheTeam() {
           <button
             key={f.id}
             type="button"
-            className={`${styles.sceneChip} ${filter === f.id ? styles.sceneChipActive : ""}`}
+            className={`app-btn ${styles.sceneChip} ${filter === f.id ? styles.sceneChipActive : ""}`}
             onClick={() => setFilter(f.id)}
             aria-pressed={filter === f.id}
           >

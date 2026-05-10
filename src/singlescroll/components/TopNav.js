@@ -14,6 +14,7 @@
 //   the page reads as one continuous, linked scroll.
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { navTabs } from "../data/navTabs";
 import { siteContent } from "../data/siteContent";
 import useActiveSection from "../hooks/useActiveSection";
@@ -45,6 +46,35 @@ export default function TopNav({ onFilterChange }) {
     const match = navTabs.find((t) => t.scrollTo === active);
     return match?.id || null;
   }, [active, stickyId]);
+
+  // Customer auth status — drives the top-right Login/Profile pill.
+  const [authState, setAuthState] = useState({
+    loading: true,
+    customer: null,
+  });
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/website/auth/me", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setAuthState({
+          loading: false,
+          customer: data?.customer || null,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setAuthState({ loading: false, customer: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const customerFirstName =
+    (authState.customer?.firstname || "").trim() ||
+    (authState.customer?.name || "").trim().split(" ")[0] ||
+    "Account";
 
   // Scroll-progress bar driven by scroll position.
   const [progress, setProgress] = useState(0);
@@ -123,6 +153,27 @@ export default function TopNav({ onFilterChange }) {
             })}
           </ul>
         </nav>
+
+        <div className={styles.navAccountSlot}>
+          {authState.loading ? null : authState.customer ? (
+            <Link
+              href="/website/profile"
+              className={`app-btn ${styles.navAccountBtn} ${styles.navAccountBtnFilled}`}
+            >
+              <span className={styles.navAccountAvatar} aria-hidden="true">
+                {(customerFirstName[0] || "A").toUpperCase()}
+              </span>
+              <span>{customerFirstName}</span>
+            </Link>
+          ) : (
+            <Link
+              href="/website/login"
+              className={`app-btn ${styles.navAccountBtn}`}
+            >
+              <span>Login</span>
+            </Link>
+          )}
+        </div>
 
         <a className={styles.navCta} href={siteContent.contact.phoneHref}>
           <span>{siteContent.contact.phone}</span>

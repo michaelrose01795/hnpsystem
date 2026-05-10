@@ -1,25 +1,88 @@
-have it os the "
-New
-Used
-Offers
-Sell Your Car
-Service & Parts
-Motability
-About Us
-Blog
-Contact Us
-" buttons do not follow the global.css setting wihtin this page and have it so the buttons follows the same style as the "View Cars
-→
-Book a Service
-→
-Sell Your Car
-→
-Contact Us
-→" buttons. hvae it so the whole top section uses the width of the page with all the screens
+=========================================
+Expand the `/website/profile` customer portal into a full ownership hub using the existing database structure, APIs, jobs, VHC, invoice, vehicle, booking, messaging, and account systems already inside the H&P DMS. Keep the current design system, theme tokens, layouts, spacing, cards, sidebar, topbar, typography, and responsive behaviour fully consistent with the rest of the app.
 
+Add the following customer-facing sections and features across the portal:
 
+* Vehicle ownership dashboard with MOT due, service due, warranty expiry, recalls, tyre status, battery health, mileage tracking, upcoming work, and vehicle health score
+* Digital service history showing completed visits, mileage, invoices, advisories, VHC results, technician notes, photos, and videos
+* MOT history viewer using DVLA MOT API
+* Recall checker using VIN/manufacturer integrations where possible
+* Repair approval timeline with timestamps for diagnostics, approvals, parts ordered, repairs, QC, wash, and ready-for-collection
+* VHC enhancements including authorised totals, declined work revisit prompts, deep links to customer VHC pages, inspection media galleries, and technician video updates
+* Live progress tracker with richer statuses, ETA handling, collection-ready progress, mobile-service badges, courtesy car details, and notification hooks
+* Documents centre using Supabase storage buckets for PDFs, invoices, V5s, warranty docs, inspection sheets, uploaded customer documents, etc
+* Online invoice/payment section with balances, payment history, deposits, saved cards, finance docs, digital signatures, and account statements
+* Sales features including saved cars, watchlists, price alerts, reservations, part exchange tracking, order progress tracking, and delivery countdowns
+* Parts portal with VIN lookup, parts requests, accessory upsells, parts order tracking, and collection-ready statuses
+* SMART repair/bodyshop section with image uploads, estimate requests, repair timelines, and before/after galleries
+* Valet/detailing booking flows with package selection, subscriptions, and before/after media
+* Family/shared garage support with multiple vehicles and shared account access
+* Customer self-service tools including mileage self-update, add another vehicle requests, seasonal reminders, service plan management, loyalty/refer-a-friend, and intelligent advisory reminders based on previous visits
+* AI-style ownership assistant UI hooks for future messaging/help integrations
 
+Use existing tables wherever possible before creating new schema. Reuse current APIs, Supabase buckets, customer/job history, VHC data, invoice systems, and messaging infrastructure. Build this as production-ready, modular, scalable sections inside `/website/profile` with clear reusable components and organised folder structure.
 
+============================================================
+
+improve "Our services" section wihtin "/website/profile" page so all the text fixs within the section. have it so the text font within the "/website/profile" page follows the global.css setting. 
+
+have it os the buttons the text is centered height wise within the buttons all of them within all of the pages within the /website section. have it so the "/website/profile" page uses the full width of the screens and can be used on any device size screen as well. the buttons wihtn the "Mon
+Tue
+Wed
+Thu
+Fri
+Sat
+Sun
+27
+28
+29
+30
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+1
+2
+3
+4
+5
+6
+7
+Clear
+Today" section for example doesnt fit within the "Mon
+Tue
+Wed
+Thu
+Fri
+Sat
+Sun" columns fix this. 
 
 
 update the "# Role Page Access Draft" page with the edits

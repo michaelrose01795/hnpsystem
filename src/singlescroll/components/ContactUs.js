@@ -22,7 +22,10 @@ export default function ContactUs() {
       tone="scene"
       ariaLabel="Contact us"
     >
-      <div className={styles.sceneSplit} data-reveal>
+      <div
+        className={`${styles.sceneSplit} ${styles.sceneSplitContact}`}
+        data-reveal
+      >
         <article className={styles.scenePanel} style={{ padding: "32px" }}>
           <div className={styles.sceneInfoBlock}>
             <p className={styles.sceneInfoLabel}>Call us</p>

@@ -43,7 +43,7 @@ export default function VehicleGallery({ filter, onFilterChange }) {
           <button
             key={tab.id}
             type="button"
-            className={`${styles.sceneChip} ${
+            className={`app-btn ${styles.sceneChip} ${
               (filter || "all") === tab.id ? styles.sceneChipActive : ""
             }`}
             onClick={() => onFilterChange(tab.id)}

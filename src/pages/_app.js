@@ -4,6 +4,7 @@ import "@/utils/polyfills"; // ensure polyfills load globally
 import "@/utils/quietConsole"; // minimize console noise unless LOG_LEVEL is raised
 import "@/styles/theme.css"; // register CSS variables before globals
 import "../styles/globals.css"; // import global base styles
+import "@/styles/website.css"; // /website-only overrides (gated by html.website-scope)
 import { Inter } from "next/font/google";
 import React, { useEffect, useState } from "react"; // import React helpers
 
@@ -57,10 +58,16 @@ function AppWrapper({ Component, pageProps }) {
   const pathname = router?.pathname || "";
   const asPath = router?.asPath || "";
   const asPathWithoutQuery = asPath.split("?")[0] || "";
-  const notesHiddenRoutes = new Set(["/", "/login", "/presentation", "/website"]);
+  const notesHiddenRoutes = new Set(["/", "/login", "/presentation"]);
   const isCustomerRoute = pathname.startsWith("/customer");
+  const isWebsiteRoute =
+    pathname === "/website" ||
+    pathname.startsWith("/website/") ||
+    asPathWithoutQuery === "/website" ||
+    asPathWithoutQuery.startsWith("/website/");
   const hideNotesWidget =
     isCustomerRoute ||
+    isWebsiteRoute ||
     notesHiddenRoutes.has(pathname) ||
     notesHiddenRoutes.has(asPathWithoutQuery);
   const [isRouteLoading, setIsRouteLoading] = useState(false);

@@ -1,0 +1,260 @@
+/* file location: src/styles/website.css
+   Public-facing /website surface stylesheet.
+
+   Imported globally in _app.js, but every rule is scoped to
+   `html.website-scope` so it only applies on the /website routes
+   (toggled in the page-level useEffect of WebsitePage / login /
+   profile). The intent is that ANY raw <button>, <a>, <select> on the
+   /website pages reads as the same ghost-pill button family used by
+   "Back to site" on the customer profile — uppercase 12px label,
+   pill corners, glass background, soft white border.
+
+   Bespoke buttons (red Continue / Sign in CTAs, the nav rail pills,
+   the avatar profile pill, the auth tab pills) opt OUT of this
+   default by carrying the `app-btn` class — the override below uses
+   `:not(.app-btn)` so they keep their existing module styling. */
+
+html.website-scope a {
+  text-decoration: none;
+}
+html.website-scope a:hover,
+html.website-scope a:focus {
+  text-decoration: none;
+}
+
+/* Default ghost-pill look for any raw <button> or [role="button"]
+   on the /website pages. Mirrors `.profileGhostBtn` so the whole
+   surface reads as one button family. */
+html.website-scope button:not(.app-btn),
+html.website-scope [role="button"]:not(.app-btn),
+html.website-scope a.website-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: var(--ghostbutton-ring);
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html.website-scope button:not(.app-btn):hover,
+html.website-scope [role="button"]:not(.app-btn):hover,
+html.website-scope a.website-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border: var(--ghostbutton-ring);
+  color: #fff;
+  text-decoration: none;
+}
+html.website-scope button:not(.app-btn):active,
+html.website-scope [role="button"]:not(.app-btn):active,
+html.website-scope a.website-btn:active {
+  transform: translateY(1px);
+}
+html.website-scope button:not(.app-btn):disabled,
+html.website-scope [role="button"]:not(.app-btn):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+html.website-scope button:not(.app-btn):focus-visible,
+html.website-scope [role="button"]:not(.app-btn):focus-visible,
+html.website-scope a.website-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.35);
+}
+
+/* Raw <select> dropdowns get the same pill chrome with a custom
+   white caret so they sit alongside buttons on the same line. The
+   bespoke `.authInput` styling on the login/profile forms still
+   applies because that class lives in a CSS module (higher specificity
+   via the chained module-hash). */
+html.website-scope select:not(.app-btn) {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  min-height: 38px;
+  padding: 10px 36px 10px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.06);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 8px;
+  border: var(--input-ring);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+html.website-scope select:not(.app-btn):hover {
+  background-color: rgba(255, 255, 255, 0.10);
+  border: var(--input-ring);
+}
+html.website-scope select:not(.app-btn):focus {
+  outline: none;
+  border: var(--input-ring);
+  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.25);
+}
+html.website-scope select:not(.app-btn) option {
+  color: #111;
+}
+
+/* Text-like inputs and textareas — dark-glass field with a soft ring.
+   Forms inside CSS modules (e.g. `.authInput` on the login + profile
+   pages) keep their own look because the module class wins on
+   specificity; this is the fallback for raw inputs anywhere else on
+   /website. */
+html.website-scope input[type="text"]:not(.app-btn),
+html.website-scope input[type="email"]:not(.app-btn),
+html.website-scope input[type="password"]:not(.app-btn),
+html.website-scope input[type="tel"]:not(.app-btn),
+html.website-scope input[type="number"]:not(.app-btn),
+html.website-scope input[type="search"]:not(.app-btn),
+html.website-scope input[type="url"]:not(.app-btn),
+html.website-scope input[type="date"]:not(.app-btn),
+html.website-scope input[type="time"]:not(.app-btn),
+html.website-scope input[type="datetime-local"]:not(.app-btn),
+html.website-scope textarea:not(.app-btn) {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.04);
+  border: var(--input-ring);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+html.website-scope textarea:not(.app-btn) {
+  resize: vertical;
+  min-height: 88px;
+  line-height: 1.5;
+}
+html.website-scope input[type="text"]:not(.app-btn):focus,
+html.website-scope input[type="email"]:not(.app-btn):focus,
+html.website-scope input[type="password"]:not(.app-btn):focus,
+html.website-scope input[type="tel"]:not(.app-btn):focus,
+html.website-scope input[type="number"]:not(.app-btn):focus,
+html.website-scope input[type="search"]:not(.app-btn):focus,
+html.website-scope input[type="url"]:not(.app-btn):focus,
+html.website-scope input[type="date"]:not(.app-btn):focus,
+html.website-scope input[type="time"]:not(.app-btn):focus,
+html.website-scope input[type="datetime-local"]:not(.app-btn):focus,
+html.website-scope textarea:not(.app-btn):focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.25);
+}
+html.website-scope input::placeholder,
+html.website-scope textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Native date/time controls — recolour the indicator so it reads on
+   the dark glass and matches the brand accent on hover. */
+html.website-scope input[type="date"],
+html.website-scope input[type="time"],
+html.website-scope input[type="datetime-local"] {
+  color-scheme: dark;
+}
+html.website-scope input[type="date"]::-webkit-calendar-picker-indicator,
+html.website-scope input[type="time"]::-webkit-calendar-picker-indicator,
+html.website-scope input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.6);
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+html.website-scope input[type="date"]::-webkit-calendar-picker-indicator:hover,
+html.website-scope input[type="time"]::-webkit-calendar-picker-indicator:hover,
+html.website-scope input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  filter: invert(0.5) sepia(1) hue-rotate(330deg) saturate(8);
+}
+
+/* Checkboxes / radios — flat dark glass with a brand-red tick when
+   checked. Replaces the default browser chrome that otherwise looks
+   foreign on the cinematic /website surface. */
+html.website-scope input[type="checkbox"]:not(.app-btn),
+html.website-scope input[type="radio"]:not(.app-btn) {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: var(--checkbox-ring);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  flex-shrink: 0;
+}
+html.website-scope input[type="checkbox"]:not(.app-btn) {
+  border-radius: 5px;
+}
+html.website-scope input[type="radio"]:not(.app-btn) {
+  border-radius: 999px;
+}
+html.website-scope input[type="checkbox"]:not(.app-btn):checked,
+html.website-scope input[type="radio"]:not(.app-btn):checked {
+  background: linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
+  border: var(--checkbox-ring);
+}
+html.website-scope input[type="checkbox"]:not(.app-btn):checked {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7l3 3 5-6'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 14px 14px, auto;
+}
+html.website-scope input[type="radio"]:not(.app-btn):checked::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: #fff;
+}
+html.website-scope input[type="checkbox"]:not(.app-btn):focus-visible,
+html.website-scope input[type="radio"]:not(.app-btn):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.35);
+}
+
+/* File inputs — the file-picker button reads as one of our pills. */
+html.website-scope input[type="file"]:not(.app-btn) {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--txt-soft);
+}
+html.website-scope input[type="file"]::file-selector-button {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: var(--ghostbutton-ring);
+  border-radius: 999px;
+  padding: 8px 14px;
+  margin-right: 12px;
+  cursor: pointer;
+}
+html.website-scope input[type="file"]::file-selector-button:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
