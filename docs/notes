@@ -1,4 +1,21 @@
-have it so the buttons "New Used Offers Sell Your Car Service & Parts Parts Motability About Team Reviews Blog Contact 01732 870711" follow the same style as the "View Cars → Book a Service → Sell Your Car → Contact Us →" button sand make these buttons like the ios26 liquid glass style for buttons. 
+have it os the "
+New
+Used
+Offers
+Sell Your Car
+Service & Parts
+Motability
+About Us
+Blog
+Contact Us
+" buttons do not follow the global.css setting wihtin this page and have it so the buttons follows the same style as the "View Cars
+→
+Book a Service
+→
+Sell Your Car
+→
+Contact Us
+→" buttons. hvae it so the whole top section uses the width of the page with all the screens
 
 
 

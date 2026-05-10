@@ -48,6 +48,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { carModels } from "../models";
 import useReducedMotion from "../hooks/useReducedMotion";
 import useIs3DCapable from "../hooks/useIs3DCapable";
+import { getTimelineProgress } from "../state/timelineProgress";
 import styles from "../styles/singlescroll.module.css";
 
 if (typeof window !== "undefined") {
@@ -231,13 +232,83 @@ const SCENES = {
 // and the new/used filter the gallery is showing. The latter only
 // matters while the cars chapter is active; everywhere else the
 // section id alone picks the preset.
+//
+// The about preset is returned as a *fresh clone* tagged with
+// kind: "about" so the TimelineCarChoreographer can mutate per-car
+// targets each frame without scribbling on the shared SCENES.about
+// constant.
 function pickScene(sectionId, filter) {
   if (sectionId === "cars") {
     if (filter === "new") return SCENES.cars_new;
     if (filter === "used") return SCENES.cars_used;
     return SCENES.cars;
   }
+  if (sectionId === "about") return cloneScene(SCENES.about, "about");
   return SCENES[sectionId] || SCENES.top;
+}
+
+function cloneScene(s, kind) {
+  return {
+    kind,
+    cameraPos: [...s.cameraPos],
+    cameraLookAt: [...s.cameraLookAt],
+    cars: Object.fromEntries(
+      Object.entries(s.cars).map(([k, v]) => [
+        k,
+        { position: [...v.position], scale: v.scale, rotY: v.rotY },
+      ]),
+    ),
+  };
+}
+
+// Order the four cars take their hero turn in as the timeline scrolls.
+// Each car owns one quarter of the section's progress and runs through:
+// drive in from off-screen left → spin → drive out to right. Outside
+// its window the car recedes to a small background pose so only one
+// hero is on stage at a time.
+const TIMELINE_HERO_ORDER = ["swift", "vitara", "s-cross", "a-cross"];
+
+function applyTimelineChoreography(scene) {
+  if (!scene || scene.kind !== "about") return;
+  const p = getTimelineProgress();
+  const slugCount = TIMELINE_HERO_ORDER.length;
+  const win = 1 / slugCount;
+
+  for (let i = 0; i < slugCount; i++) {
+    const slug = TIMELINE_HERO_ORDER[i];
+    const car = scene.cars[slug];
+    const base = SCENES.about.cars[slug];
+    if (!car || !base) continue;
+
+    const local = (p - i * win) / win; // -∞ .. +∞; in window when 0..1
+
+    if (local >= 0 && local <= 1) {
+      // Hero drive: cross the stage L → R, hover slightly forward, do
+      // a full 360° showcase spin, scale up. Bell curve (1 - 4*(l-0.5)^2)
+      // peaks at 1 mid-window and is 0 at the edges, used for lift /
+      // forward-push so the car arcs over the centre.
+      const apex = 1 - 4 * (local - 0.5) * (local - 0.5);
+      car.position[0] = -3.6 + local * 7.2;
+      car.position[1] = -0.45 + apex * 0.55;
+      car.position[2] = 0.6 + apex * 0.7;
+      car.rotY = base.rotY + local * Math.PI * 2;
+      car.scale = 1.15 + apex * 0.25;
+    } else {
+      // Off-stage: tuck deep behind the scene as ambient depth.
+      car.position[0] = base.position[0] * 1.35;
+      car.position[1] = base.position[1] - 1.6;
+      car.position[2] = base.position[2] - 2.4;
+      car.rotY = base.rotY;
+      car.scale = 0.45;
+    }
+  }
+}
+
+function TimelineCarChoreographer({ sceneRef }) {
+  useFrame(() => {
+    applyTimelineChoreography(sceneRef.current);
+  });
+  return null;
 }
 
 // Preload every model on client module-load so they fetch in parallel.
@@ -591,6 +662,7 @@ export default function Website3DScene({ galleryFilter = "all" } = {}) {
         <fog attach="fog" args={["#06060a", 7, 18]} />
 
         <Suspense fallback={null}>
+          <TimelineCarChoreographer sceneRef={sceneRef} />
           <SceneController
             sceneRef={sceneRef}
             lowQuality={lowQuality || isMobile}
