@@ -60,7 +60,6 @@ export default function SellYourCar() {
           className={`${styles.btn} ${styles.btnPrimary}`}
         >
           <span>{sellYourCar.cta.label}</span>
-          <span className={styles.btnChevron} aria-hidden="true">→</span>
         </a>
       </div>
     </SceneShell>

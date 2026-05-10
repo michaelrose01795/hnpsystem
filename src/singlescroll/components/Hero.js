@@ -85,7 +85,6 @@ export default function Hero() {
               }`}
             >
               <span>{cta.label}</span>
-              <span className={styles.btnChevron} aria-hidden="true">→</span>
             </a>
           ))}
         </div>

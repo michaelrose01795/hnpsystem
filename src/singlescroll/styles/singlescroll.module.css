@@ -98,9 +98,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 10px 28px;
+  /* Full viewport width on every breakpoint — the top section spans
+     edge-to-edge so the liquid-glass rail breathes. */
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 10px 36px;
   min-height: var(--nav-height);
 }
 
@@ -157,80 +160,102 @@
 .navTabsList {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px;
+  gap: 10px;
+  padding: 0;
   list-style: none;
   margin: 0;
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%),
-    rgba(8, 8, 12, 0.45);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-    0 14px 38px rgba(0, 0, 0, 0.4);
+  /* No surrounding rail — each pill carries its own frosted glass
+     surface so the row reads like the standalone hero CTAs. */
+  background: transparent;
+  box-shadow: none;
 }
 
+/* Nav pill — mirrors the hero ghost CTA exactly (frosted capsule, top
+   highlight, hairline border, chevron that slides on hover) so every
+   button across the top section reads as one family. The active tab
+   swaps to the same red gradient as the hero primary CTA / phone CTA. */
 .navTab {
   appearance: none;
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  min-height: 36px;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  min-height: 44px;
   font-family: inherit;
   font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.6px;
+  font-size: 13px;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.78);
-  background: transparent;
-  border: 0;
+  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 100%),
+    rgba(8, 8, 12, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
   cursor: pointer;
+  text-decoration: none;
   white-space: nowrap;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 10px 28px rgba(0, 0, 0, 0.35);
   transition:
+    background 0.25s ease,
     color 0.25s ease,
+    border-color 0.25s ease,
     transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
-    box-shadow 0.25s ease;
-}
-.navTab::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 60%);
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  pointer-events: none;
+    box-shadow 0.25s ease,
+    filter 0.25s ease;
 }
 .navTab:hover {
-  color: #fff;
   transform: translateY(-1px);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%),
+    rgba(8, 8, 12, 0.3);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 14px 36px rgba(0, 0, 0, 0.45);
 }
-.navTab:hover::before { opacity: 1; }
 .navTab:active { transform: translateY(0); }
 .navTab:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4), 0 0 0 4px rgba(var(--accentMainRgb), 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 0 2px rgba(255, 255, 255, 0.4),
+    0 0 0 4px rgba(var(--accentMainRgb), 0.5);
 }
+
+.navTabChevron {
+  display: inline-flex;
+  align-items: center;
+  font-size: 15px;
+  line-height: 1;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.navTab:hover .navTabChevron { transform: translateX(4px); }
 
 .navTabActive,
 .navTabActive:hover {
   color: var(--onAccentText);
   background:
     linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
+  border-color: transparent;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 8px 22px rgba(var(--accentMainRgb), 0.45);
-  transform: translateY(0);
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 12px 32px rgba(var(--accentMainRgb), 0.42);
 }
-.navTabActive::before { opacity: 0; }
+.navTabActive:hover {
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+    0 16px 40px rgba(var(--accentMainRgb), 0.55);
+}
 
 /* Phone CTA — same liquid-glass primary as the hero "View Cars →"
    button: red gradient capsule with a top specular highlight, soft

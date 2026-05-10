@@ -108,10 +108,15 @@ export default function TopNav({ onFilterChange }) {
                     type="button"
                     role="tab"
                     aria-selected={isActive}
-                    className={`${styles.navTab} ${isActive ? styles.navTabActive : ""}`}
+                    /* `app-btn` opts out of the project-wide
+                       `button:not(.app-btn)` rule in globals.css so the
+                       nav pill keeps the same liquid-glass look as the
+                       hero CTAs instead of inheriting the dashboard
+                       button skin. */
+                    className={`app-btn ${styles.navTab} ${isActive ? styles.navTabActive : ""}`}
                     onClick={() => handleClick(tab.id)}
                   >
-                    {tab.label}
+                    <span>{tab.label}</span>
                   </button>
                 </li>
               );
@@ -121,7 +126,6 @@ export default function TopNav({ onFilterChange }) {
 
         <a className={styles.navCta} href={siteContent.contact.phoneHref}>
           <span>{siteContent.contact.phone}</span>
-          <span className={styles.navCtaChevron} aria-hidden="true">→</span>
         </a>
       </div>
 

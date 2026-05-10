@@ -36,7 +36,6 @@ export default function Motability() {
               className={`${styles.btn} ${styles.btnPrimary}`}
             >
               <span>{motability.cta.label}</span>
-              <span className={styles.btnChevron} aria-hidden="true">→</span>
             </a>
           </div>
 

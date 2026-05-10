@@ -65,7 +65,6 @@ export default function ServiceAndParts() {
               className={`${styles.btn} ${styles.btnPrimary}`}
             >
               <span>Book a service</span>
-              <span className={styles.btnChevron} aria-hidden="true">→</span>
             </a>
             <a
               href={contact.phoneHref}
@@ -98,7 +97,6 @@ export default function ServiceAndParts() {
           <p className={styles.scenePanelBody} style={{ maxWidth: "60ch" }}>{partsContent.body[1]}</p>
           <a href={partsContent.cta.href} className={`${styles.btn} ${styles.btnPrimary}`}>
             <span>{partsContent.cta.label}</span>
-            <span className={styles.btnChevron} aria-hidden="true">→</span>
           </a>
         </div>
       </div>
