@@ -1,9 +1,12 @@
 // file location: src/singlescroll/components/SellYourCar.js
-// 3-step "Sell Your Car" section + benefit list + CTA.
+// "Sell Your Car" chapter — three numbered scene panels (the diorama
+// pillar treatment) plus a benefit list and a primary CTA into the
+// contact form. Wrapped in the shared SceneShell so it shares the
+// master scene language with every other chapter.
 
-import LayerSurface from "@/components/ui/LayerSurface";
+import Card3D from "./Card3D";
 import { siteContent } from "../data/siteContent";
-import SectionHeading from "./SectionHeading";
+import SceneShell from "./SceneShell";
 import useSmoothScrollTo from "../hooks/useSmoothScrollTo";
 import styles from "../styles/singlescroll.module.css";
 
@@ -17,42 +20,49 @@ export default function SellYourCar() {
   };
 
   return (
-    <section id="sell" className={styles.section}>
-      <SectionHeading
-        number="03"
-        eyebrow={sellYourCar.eyebrow}
-        title={sellYourCar.title}
-        lead="We buy any car, any age, any mileage — with free home collection and instant payment."
-      />
-
-      <div className={styles.steps}>
+    <SceneShell
+      id="sell"
+      number="03"
+      eyebrow={sellYourCar.eyebrow}
+      title={sellYourCar.title}
+      lead="We buy any car — any age, any mileage, any make — with free home collection and instant payment."
+      backdrop="Sell"
+      tone="surface"
+      ariaLabel="Sell your car"
+    >
+      <div className={styles.sceneGridThree}>
         {sellYourCar.steps.map((step) => (
-          <LayerSurface key={step.n} className={styles.step} padding="0">
-            <span className={styles.stepNumber}>{step.n}</span>
-            <h3 className={styles.stepTitle}>{step.title}</h3>
-            <p className={styles.stepBody}>{step.body}</p>
-          </LayerSurface>
+          <div key={step.n} data-reveal>
+            <Card3D intensity={0.6}>
+              <article className={styles.scenePanel}>
+                <span className={styles.scenePanelMonogram}>{step.n}</span>
+                <h3 className={styles.scenePanelTitle}>{step.title}</h3>
+                <p className={styles.scenePanelBody}>{step.body}</p>
+              </article>
+            </Card3D>
+          </div>
         ))}
       </div>
 
-      <ul className={styles.benefitsList} data-reveal>
+      <ul className={styles.sceneFeatureList} data-reveal style={{ marginTop: 36 }}>
         {sellYourCar.benefits.map((b) => (
-          <li key={b} className={styles.benefit}>
-            <span className={styles.benefitDot} />
+          <li key={b} className={styles.sceneFeature}>
+            <span className={styles.sceneFeatureDot} aria-hidden="true" />
             {b}
           </li>
         ))}
       </ul>
 
-      <div data-reveal style={{ marginTop: 28 }}>
+      <div className={styles.sceneCtaRow} data-reveal style={{ marginTop: 32, justifyContent: "center" }}>
         <a
           href={sellYourCar.cta.href}
           onClick={handleCta}
           className={`${styles.btn} ${styles.btnPrimary}`}
         >
-          {sellYourCar.cta.label}
+          <span>{sellYourCar.cta.label}</span>
+          <span className={styles.btnChevron} aria-hidden="true">→</span>
         </a>
       </div>
-    </section>
+    </SceneShell>
   );
 }

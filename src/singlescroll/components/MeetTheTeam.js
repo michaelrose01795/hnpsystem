@@ -1,12 +1,13 @@
 // file location: src/singlescroll/components/MeetTheTeam.js
-// 21 team members across Management / Sales / Aftersales / Admin. Filterable
-// by department; each member card has a Card3D mouse-tilt.
+// Continuation of the About chapter — 21 team members across
+// Management / Sales / Aftersales / Admin. Filterable by department;
+// each card is wrapped in Card3D for the mouse-tilt 3D effect.
+// Rendered without a section id (the About Us nav anchors above).
 
 import { useMemo, useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
 import Card3D from "./Card3D";
 import { team, teamDepartments } from "../data/team";
-import SectionHeading from "./SectionHeading";
 import styles from "../styles/singlescroll.module.css";
 
 const FILTERS = [{ id: "all", label: "Everyone" }, ...teamDepartments];
@@ -20,20 +21,21 @@ export default function MeetTheTeam() {
   );
 
   return (
-    <section id="team" className={`${styles.section} ${styles.teamSection}`} aria-label="Meet the team">
-      <SectionHeading
-        number="08"
-        eyebrow="Meet the Team"
-        title="The 21 people who actually do the looking-after"
-        lead="The H&P family. Some of them have been here decades; some joined this year. They all answer to the same phone."
-      />
+    <section className={`${styles.section} ${styles.teamSection}`} aria-label="Meet the team">
+      <header className={styles.subSceneHead} data-reveal>
+        <span className={styles.subSceneEyebrow}>Meet the Team</span>
+        <h3 className={styles.subSceneTitle}>The 21 people who actually do the looking-after</h3>
+        <p className={styles.subSceneLead}>
+          The H&amp;P family. Some have been here decades; some joined this year. They all answer to the same phone.
+        </p>
+      </header>
 
-      <div className={styles.galleryFilters} data-reveal>
+      <div className={styles.sceneChips} data-reveal>
         {FILTERS.map((f) => (
           <button
             key={f.id}
             type="button"
-            className={`${styles.filterTab} ${filter === f.id ? styles.filterTabActive : ""}`}
+            className={`${styles.sceneChip} ${filter === f.id ? styles.sceneChipActive : ""}`}
             onClick={() => setFilter(f.id)}
             aria-pressed={filter === f.id}
           >
@@ -57,7 +59,7 @@ export default function MeetTheTeam() {
                   />
                 </div>
                 <div className={styles.teamMeta}>
-                  <h3 className={styles.teamName}>{member.name}</h3>
+                  <h4 className={styles.teamName}>{member.name}</h4>
                   <span className={styles.teamRole}>{member.role}</span>
                 </div>
               </LayerSurface>

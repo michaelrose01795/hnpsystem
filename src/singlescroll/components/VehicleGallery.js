@@ -1,12 +1,18 @@
 // file location: src/singlescroll/components/VehicleGallery.js
-// Vehicle gallery with internal New / Used / All filter tabs (these don't
-// scroll — they're pure state). Top-nav New/Used tabs lift the filter into
-// state via the `filter` / `onFilterChange` props from WebsitePage.
+// Vehicle gallery — the "Our Cars" chapter of the single-scroll site.
+//
+// Redesigned to share the diorama section language: centered numbered
+// head, big "DRIVE" ghost backdrop, premium scene chips for the
+// new/used/all filters, and the existing 3D-tilted vehicle cards
+// laid out in a generous responsive grid.
+//
+// Top-nav New / Used buttons drive the filter via the `filter` /
+// `onFilterChange` props lifted in WebsitePage.
 
 import { useMemo } from "react";
 import { vehicles } from "../data/vehicles";
 import VehicleCard from "./VehicleCard";
-import SectionHeading from "./SectionHeading";
+import SceneShell from "./SceneShell";
 import styles from "../styles/singlescroll.module.css";
 
 const TABS = [
@@ -22,24 +28,26 @@ export default function VehicleGallery({ filter, onFilterChange }) {
   }, [filter]);
 
   return (
-    <section id="cars" className={styles.section}>
-      <SectionHeading
-        number="01"
-        eyebrow="Our Cars"
-        title="Find your next car at Humphries & Parks"
-        lead="Every used car arrives with a 120-point inspection, a minimum 6-month MOT, and a free 6-month warranty. New Suzuki, KGM and Mitsubishi available with manufacturer offers."
-      />
-
-      <div className={styles.galleryFilters} data-reveal>
+    <SceneShell
+      id="cars"
+      number="01"
+      eyebrow="Our Cars"
+      title="Find your next car at Humphries & Parks"
+      lead="Every used car arrives with a 120-point inspection, a minimum 6-month MOT, and a free 6-month warranty. New Suzuki, KGM and Mitsubishi available with manufacturer offers."
+      backdrop="Drive"
+      tone="surface"
+      ariaLabel="Our cars"
+    >
+      <div className={styles.sceneChips} data-reveal>
         {TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
-            className={`${styles.filterTab} ${
-              filter === tab.id ? styles.filterTabActive : ""
+            className={`${styles.sceneChip} ${
+              (filter || "all") === tab.id ? styles.sceneChipActive : ""
             }`}
             onClick={() => onFilterChange(tab.id)}
-            aria-pressed={filter === tab.id}
+            aria-pressed={(filter || "all") === tab.id}
           >
             {tab.label}
           </button>
@@ -53,6 +61,6 @@ export default function VehicleGallery({ filter, onFilterChange }) {
           </div>
         ))}
       </div>
-    </section>
+    </SceneShell>
   );
 }

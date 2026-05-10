@@ -98,16 +98,24 @@ export default function Storyteller() {
   }, [reduced]);
 
   return (
-    <section id="promise" className={styles.diorama} aria-label="Why Humphries & Parks">
+    <section id="about" className={styles.diorama} aria-label="About Humphries & Parks">
       {/* Backdrop numerals — huge faded "1947" parallax layer */}
       <div className={styles.dioramaBackdrop} data-parallax="-20" aria-hidden="true">
         <span>1947</span>
       </div>
 
-      {/* Section heading — sits at the top of the diorama */}
+      {/* Section heading — sits at the top of the diorama. The About Us
+          nav scrolls here; this is the heart of who we are, not just a
+          promise badge. */}
       <header className={styles.dioramaHead} data-reveal>
-        <span className={styles.eyebrow}>The H&amp;P Promise</span>
+        <div className={styles.sceneHeadRow} style={{ justifyContent: "center" }}>
+          <span className={styles.sceneNumber}>06 /</span>
+          <span className={styles.eyebrow}>About Us</span>
+        </div>
         <h2 className={styles.heading}>Why families across Kent keep coming back</h2>
+        <p className={styles.lead} style={{ textAlign: "center" }}>
+          Same family, same showroom, same idea since 1947 — take care of the customer.
+        </p>
       </header>
 
       {/* The 3D scene — perspective parent */}

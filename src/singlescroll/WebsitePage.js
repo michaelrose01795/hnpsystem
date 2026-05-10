@@ -1,11 +1,15 @@
 // file location: src/singlescroll/WebsitePage.js
 // Top-level composition for the public single-scroll marketing site.
 //
-// The 3D canvas (SceneCanvas) is now mounted ONCE at the page root as a
-// fixed-position fullscreen layer. As the user scrolls, the camera moves
-// continuously — sections with semi-transparent backgrounds reveal the
-// canvas, sections with solid backgrounds cover it. This is what produces
-// the "the same 3D object is being dragged from section to section" feel.
+// The 3D layer is now handled by <Website3DScene> — a single fullscreen
+// canvas with four real Suzuki glTF models that the camera + cars
+// reposition per section via GSAP ScrollTrigger. Sections themselves
+// are rendered above it as translucent chapters that reveal the scene
+// behind them.
+//
+// Scroll behaviour: free-flowing. The earlier viewport-sized scroll-
+// snap has been removed so the 3D scene can transition between
+// presets continuously rather than jumping section-to-section.
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
@@ -14,7 +18,6 @@ import { useTheme } from "@/styles/themeProvider";
 
 import TopNav from "./components/TopNav";
 import Hero from "./components/Hero";
-import TrustBar from "./components/TrustBar";
 import BrandStrip from "./components/BrandStrip";
 import Marquee from "./components/Marquee";
 import Storyteller from "./components/Storyteller";
@@ -22,7 +25,6 @@ import VehicleGallery from "./components/VehicleGallery";
 import Offers from "./components/Offers";
 import SellYourCar from "./components/SellYourCar";
 import ServiceAndParts from "./components/ServiceAndParts";
-import PartsAndAccessories from "./components/PartsAndAccessories";
 import Motability from "./components/Motability";
 import TimelineHistory from "./components/TimelineHistory";
 import MeetTheTeam from "./components/MeetTheTeam";
@@ -31,95 +33,47 @@ import Blog from "./components/Blog";
 import ContactUs from "./components/ContactUs";
 import Footer from "./components/Footer";
 
-const TRUST_MARQUEE = [
-  "Family run since 1947",
-  "Three generations",
-  "120-point inspection",
-  "6-month warranty",
-  "Approved EV retailer",
-  "AutoTrader Award winners",
-  "Suzuki · KGM · Mitsubishi",
-  "01732 870711",
-];
-
-const STORY_MARQUEE = [
-  "Established 1947",
-  "Charles Humphries · Arthur Parks",
-  "Marcus Joy",
-  "Sam · Bruno · Soren Kingsland-Joy",
-  "West Malling, Kent",
-  "Three generations · One promise",
-];
-
 import useScrollAnimations from "./hooks/useScrollAnimations";
-import useScrollProgress from "./hooks/useScrollProgress";
-import useIs3DCapable from "./hooks/useIs3DCapable";
-import useReducedMotion from "./hooks/useReducedMotion";
 import { siteContent } from "./data/siteContent";
 import styles from "./styles/singlescroll.module.css";
 
-// Lazy-load the 3D canvas — Three.js + drei + postprocessing is a heavy
-// chunk and not all visitors will need it (no-WebGL / reduced-motion users
-// see the page without it).
-const SceneCanvas = dynamic(() => import("./three/SceneCanvas"), {
-  ssr: false,
-  loading: () => null,
-});
+const STORY_MARQUEE = [
+  "Established 1947",
+  "Three generations · One family",
+  "West Malling, Kent",
+  "Suzuki · KGM · Mitsubishi",
+  "Approved EV retailer",
+  "AutoTrader Award winners",
+  "120-point inspection · 6-month warranty",
+];
+
+// Lazy-load the 3D scene — Three.js + drei + four glTF models is a
+// heavy chunk and visitors on small / WebGL-less devices skip it.
+// The component itself returns null when WebGL is unavailable or the
+// viewport is mobile-sized, so the page works without the scene.
+const Website3DScene = dynamic(
+  () => import("./components/Website3DScene"),
+  { ssr: false, loading: () => null },
+);
 
 export default function WebsitePage() {
   const rootRef = useRef(null);
   const [galleryFilter, setGalleryFilter] = useState("all");
   const { setTemporaryOverride } = useTheme();
-  const { ref: scrollRef } = useScrollProgress();
-  const { capable, lowQuality } = useIs3DCapable();
-  const reduced = useReducedMotion();
 
-  // Razorpay Sprint-style: dark cinematic base with the brand red as accent.
-  // The override unwinds cleanly when the visitor leaves /website.
+  // Dark cinematic base with the brand red as accent — unwinds cleanly
+  // when the visitor leaves /website.
   useEffect(() => {
     setTemporaryOverride({ mode: "dark", accent: "red" });
     return () => setTemporaryOverride(null);
   }, [setTemporaryOverride]);
 
-  // Enable viewport-sized scroll-snap ONLY while /website is mounted.
-  // We inject the global rule via a <style> tag rather than putting it in
-  // the CSS module because Next.js's CSS-module pure-selector rule forbids
-  // ":global(html…)" — it has no local class to anchor to. Injecting at
-  // runtime gives us the same scoping (mount = on, unmount = off) without
-  // tripping the build error.
-  useEffect(() => {
-    if (typeof document === "undefined" || reduced) return;
-
-    const STYLE_ID = "hp-website-snap-style";
-    let styleEl = document.getElementById(STYLE_ID);
-    if (!styleEl) {
-      styleEl = document.createElement("style");
-      styleEl.id = STYLE_ID;
-      styleEl.textContent = `
-        html.hp-website-snap {
-          scroll-snap-type: y proximity;
-          scroll-padding-top: 64px;
-          scroll-behavior: smooth;
-        }
-      `;
-      document.head.appendChild(styleEl);
-    }
-    document.documentElement.classList.add("hp-website-snap");
-
-    return () => {
-      document.documentElement.classList.remove("hp-website-snap");
-      styleEl?.remove();
-    };
-  }, [reduced]);
-
   useScrollAnimations(rootRef);
-
-  const show3D = capable && !reduced;
 
   return (
     <>
       <Head>
-        <title>{siteContent.brand.name} — Family-run Suzuki, KGM & Mitsubishi dealer in Kent</title>
+        <title>{siteContent.brand.name} — Family-run Suzuki, KGM &amp; Mitsubishi dealer in Kent</title>
         <meta
           name="description"
           content="Humphries & Parks: family-run dealership in West Malling, Kent since 1947. New & used cars, Motability, servicing, MOTs, parts."
@@ -127,43 +81,39 @@ export default function WebsitePage() {
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
 
-      {/* Persistent 3D canvas — fixed-position behind everything else.
-          One mount, drives the whole page's immersive flow. */}
-      {show3D && <SceneCanvas scrollRef={scrollRef} lowQuality={lowQuality} />}
+      <Website3DScene galleryFilter={galleryFilter} />
 
       <div ref={rootRef} className={styles.page}>
         <TopNav onFilterChange={setGalleryFilter} />
 
         <main className={styles.pageMain}>
+          {/* Chapter 0 — opener. */}
           <Hero />
-          <TrustBar />
           <BrandStrip />
 
-          <Marquee items={TRUST_MARQUEE} speed={36} />
-
-          <Storyteller />
-
+          {/* Chapter 1–5 — the buying & owning story. */}
           <VehicleGallery
             filter={galleryFilter}
             onFilterChange={setGalleryFilter}
           />
-
           <Offers />
           <SellYourCar />
-
-          <Marquee items={TRUST_MARQUEE} speed={32} reverse />
-
           <ServiceAndParts />
-          <PartsAndAccessories />
           <Motability />
 
-          <TimelineHistory />
+          <Marquee items={STORY_MARQUEE} speed={42} />
 
-          <Marquee items={STORY_MARQUEE} speed={40} />
+          {/* Chapter 6 — About Us. The Storyteller diorama is the master
+              visual reference; Timeline / Reviews / Team continue under
+              the same anchor as one cohesive about chapter. */}
+          <div className={styles.aboutChapter}>
+            <Storyteller />
+            <TimelineHistory />
+            <ReviewsSection />
+            <MeetTheTeam />
+          </div>
 
-          <MeetTheTeam />
-          <ReviewsSection />
-
+          {/* Chapter 7–8 — read & contact. */}
           <Blog />
           <ContactUs />
         </main>

@@ -1,12 +1,26 @@
 // file location: src/singlescroll/components/Hero.js
-// Hero — text overlay that sits on top of the persistent 3D canvas. The
-// canvas itself is mounted globally in WebsitePage (not here), so this
-// component only owns the text layer and the scroll-fade behaviour.
+// Hero — text overlay that sits on top of the persistent 3D canvas.
+//
+// Redesign notes:
+//   - Same scroll-fade behaviour as before so the headline melts into
+//     the next chapter as you scroll.
+//   - Adds a huge ghost "1947" backdrop numeral matching the rest of
+//     the page's scene language (Storyteller diorama master pattern).
+//   - Inline trust mini-strip below the CTAs introduces the trust pillars
+//     without a separate slab section. The full TrustBar is rolled
+//     into the cars chapter that follows.
 
 import { useEffect, useRef, useState } from "react";
 import { siteContent } from "../data/siteContent";
 import useSmoothScrollTo from "../hooks/useSmoothScrollTo";
 import styles from "../styles/singlescroll.module.css";
+
+const HERO_STATS = [
+  { value: "75+", label: "Years family-run" },
+  { value: "5.0★", label: "97 reviews" },
+  { value: "120-pt", label: "Inspection" },
+  { value: "EV", label: "Approved" },
+];
 
 export default function Hero() {
   const scrollTo = useSmoothScrollTo();
@@ -14,7 +28,6 @@ export default function Hero() {
   const { hero } = siteContent;
   const [progress, setProgress] = useState(0);
 
-  // Hero-local scroll progress (for fading the text out as it scrolls away).
   useEffect(() => {
     if (typeof window === "undefined") return;
     const update = () => {
@@ -46,8 +59,11 @@ export default function Hero() {
 
   return (
     <section id="top" className={styles.hero} aria-label="Welcome">
-      {/* Subtle vignette overlay specific to the hero (text legibility) */}
       <div className={styles.heroOverlay} aria-hidden="true" />
+
+      <div className={styles.heroBackdrop} aria-hidden="true" data-parallax="-30">
+        <span>1947</span>
+      </div>
 
       <div
         ref={innerRef}
@@ -71,6 +87,15 @@ export default function Hero() {
               <span>{cta.label}</span>
               <span className={styles.btnChevron} aria-hidden="true">→</span>
             </a>
+          ))}
+        </div>
+
+        <div className={styles.heroStatRow} data-reveal>
+          {HERO_STATS.map((s) => (
+            <div key={s.label} className={styles.heroStat}>
+              <span className={styles.heroStatValue}>{s.value}</span>
+              <span className={styles.heroStatLabel}>{s.label}</span>
+            </div>
           ))}
         </div>
       </div>

@@ -1,13 +1,14 @@
 // file location: src/singlescroll/components/ReviewsSection.js
-// Customer testimonials — 10 cards in a 3D parallax wall, plus the
-// platform-rating strip. Acts as a "scene section" with subtle backdrop
-// glow so the persistent 3D canvas can punch through.
+// Customer testimonials — continuation of the About chapter.
+// 10 review cards in a 3D parallax wall, plus the platform-rating strip.
+// Acts as a "scene section" so the persistent 3D canvas can read
+// through. Rendered without a section id — the About Us nav anchors at
+// the Storyteller diorama; this continues the same chapter.
 
 import LayerSurface from "@/components/ui/LayerSurface";
 import Card3D from "./Card3D";
 import { reviews } from "../data/reviews";
 import { siteContent } from "../data/siteContent";
-import SectionHeading from "./SectionHeading";
 import styles from "../styles/singlescroll.module.css";
 
 const Stars = ({ count }) => (
@@ -20,13 +21,14 @@ const Stars = ({ count }) => (
 
 export default function ReviewsSection() {
   return (
-    <section id="reviews" className={`${styles.section} ${styles.reviewsSection}`} aria-label="Customer reviews">
-      <SectionHeading
-        number="09"
-        eyebrow="What customers say"
-        title="The reviews speak for us"
-        lead="Across AutoTrader, JudgeService, Google and Trustpilot — 4.7 average. Below, in customers' own words."
-      />
+    <section className={`${styles.section} ${styles.reviewsSection}`} aria-label="Customer reviews">
+      <header className={styles.subSceneHead} data-reveal>
+        <span className={styles.subSceneEyebrow}>What customers say</span>
+        <h3 className={styles.subSceneTitle}>The reviews speak for us</h3>
+        <p className={styles.subSceneLead}>
+          Across AutoTrader, JudgeService, Google and Trustpilot — 4.7 average. Below, in customers&rsquo; own words.
+        </p>
+      </header>
 
       <div className={styles.ratingsRow} data-reveal>
         {siteContent.ratings.map((r) => (

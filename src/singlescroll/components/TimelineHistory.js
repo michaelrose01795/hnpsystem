@@ -1,26 +1,26 @@
 // file location: src/singlescroll/components/TimelineHistory.js
-// Replaces the simple AboutUs section. Renders the H&P story as a scroll-
-// driven 3D timeline — vertical spine with milestone cards alternating
-// left/right, each with its own scroll-revealed depth. Designed to act as
-// a "scene section" — the persistent 3D canvas shows through the centre
-// (subtle dark gradient), giving the timeline a museum-installation feel.
+// Continuation of the About chapter — the H&P story told as a vertical
+// 3D timeline with milestone cards alternating across the spine. Acts
+// as a "scene section" so the persistent 3D canvas reads through.
+//
+// Renders without a section id — the About Us nav anchors at the
+// Storyteller diorama above; this continues the same chapter.
 
 import LayerSurface from "@/components/ui/LayerSurface";
 import Card3D from "./Card3D";
 import { timeline } from "../data/timeline";
-import SectionHeading from "./SectionHeading";
 import styles from "../styles/singlescroll.module.css";
 
 export default function TimelineHistory() {
   return (
-    <section id="about" className={`${styles.section} ${styles.timelineSection}`} aria-label="Our story">
-      <SectionHeading
-        number="07"
-        eyebrow="Our Story"
-        title="From a blacksmith's shop in 1947 to three generations later"
-        lead="Charles Humphries and Arthur Parks bought a village blacksmith's shop after the war. Three quarters of a century, four franchises, and three generations later — same family, same idea: take care of the customer."
-        align="center"
-      />
+    <section className={`${styles.section} ${styles.timelineSection}`} aria-label="Our story">
+      <header className={styles.subSceneHead} data-reveal>
+        <span className={styles.subSceneEyebrow}>Our Story</span>
+        <h3 className={styles.subSceneTitle}>From a blacksmith&rsquo;s shop in 1947 to three generations later</h3>
+        <p className={styles.subSceneLead}>
+          Charles Humphries and Arthur Parks bought a village blacksmith&rsquo;s shop after the war. Three quarters of a century, four franchises and three generations later — same family, same idea.
+        </p>
+      </header>
 
       <ol className={styles.timeline}>
         <span className={styles.timelineSpine} aria-hidden="true" />
@@ -35,7 +35,7 @@ export default function TimelineHistory() {
             <Card3D intensity={0.6} className={styles.timelineCardWrap}>
               <LayerSurface className={styles.timelineCard} padding="22px">
                 <span className={styles.timelineYear}>{entry.year}</span>
-                <h3 className={styles.timelineCardTitle}>{entry.title}</h3>
+                <h4 className={styles.timelineCardTitle}>{entry.title}</h4>
                 <p className={styles.timelineCardBody}>{entry.body}</p>
               </LayerSurface>
             </Card3D>

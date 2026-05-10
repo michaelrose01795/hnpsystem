@@ -129,7 +129,13 @@
       "PowerShell($path = 'c:\\\\hnpsystem\\\\src\\\\components\\\\Parts\\\\PartsDashboardGrid.js'; $bytes = [System.IO.File]::ReadAllBytes\\($path\\); $text = [System.Text.Encoding]::UTF8.GetString\\($bytes\\); $idx = $text.IndexOf\\([char]0x00E2 + [string][char]0x20AC\\); if \\($idx -lt 0\\) { Write-Output 'not found pattern1' }; $idx2 = $text.IndexOf\\(\"supplier\"\\); Write-Output \"idx2=$idx2\"; if \\($idx2 -gt 0\\) { for \\($i=$idx2; $i -lt $idx2+60; $i++\\) { Write-Output \\(\"{0}: U+{1:X4} {2}\" -f $i, [int]$text[$i], $text[$i]\\) } })",
       "PowerShell($path = 'c:\\\\hnpsystem\\\\src\\\\components\\\\Parts\\\\PartsDashboardGrid.js'; $text = [System.IO.File]::ReadAllText\\($path, [System.Text.Encoding]::UTF8\\); $emdash = [string][char]0x00E2 + [string][char]0x20AC + [string][char]0x201D; $bullet = [string][char]0x00E2 + [string][char]0x20AC + [string][char]0x00A2; $text = $text.Replace\\($emdash, [string][char]0x2014\\).Replace\\($bullet, [string][char]0x2022\\); $utf8 = New-Object System.Text.UTF8Encoding $false; [System.IO.File]::WriteAllText\\($path, $text, $utf8\\))",
       "WebFetch(domain:www.humphriesandparks.net)",
-      "WebFetch(domain:razorpay.com)"
+      "WebFetch(domain:razorpay.com)",
+      "Bash(cd c:\\\\\\\\hnpsystem)",
+      "Bash(node tools/scripts/enforce-uk-english.js)",
+      "Bash(head -c 600 public\\\\\\\\models\\\\\\\\suzuki-swift\\\\\\\\scene.gltf)",
+      "PowerShell(Rename-Item -Path \"C:\\\\hnpsystem\\\\public\\\\models\\\\suzuki-swift\" -NewName \"swift\" -Force)",
+      "PowerShell(Move-Item -Path \"C:\\\\hnpsystem\\\\public\\\\models\\\\suzuki-swift\" -Destination \"C:\\\\hnpsystem\\\\public\\\\models\\\\swift\" -Force)",
+      "PowerShell($ErrorActionPreference = \"Stop\")"
     ],
     "deny": [],
     "ask": [],
