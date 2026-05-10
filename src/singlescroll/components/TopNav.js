@@ -1,16 +1,19 @@
 // file location: src/singlescroll/components/TopNav.js
-// Sticky top navigation. Uses the canonical TabGroup component so the tabs
-// inherit the app's tab styling (and the red accent we force in WebsitePage).
+// Sticky top navigation for the public single-scroll site.
 //
-// - Tracks active section via IntersectionObserver (useActiveSection).
+// Renders the primary nav as a row of liquid-glass pill buttons that
+// share the same visual language as the hero "View Cars →" CTA — a
+// frosted capsule rail with the active tab promoted to the red
+// gradient pill, plus a matching primary phone CTA on desktop.
+//
+// - Tracks the active section via IntersectionObserver (useActiveSection).
 // - Smoothly scrolls on click via useSmoothScrollTo.
-// - "New" / "Used" tabs additionally lift a filter into the gallery (via
-//   onFilterChange — owned by WebsitePage).
-// - A thin scroll-progress bar sits along the bottom of the nav to give the
-//   page a continuous, single-scroll feel.
+// - "New" / "Used" tabs additionally lift a filter into the gallery
+//   (via onFilterChange — owned by WebsitePage).
+// - A thin scroll-progress bar sits along the bottom of the nav so
+//   the page reads as one continuous, linked scroll.
 
 import { useEffect, useMemo, useState } from "react";
-import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { navTabs } from "../data/navTabs";
 import { siteContent } from "../data/siteContent";
 import useActiveSection from "../hooks/useActiveSection";
@@ -31,23 +34,17 @@ export default function TopNav({ onFilterChange }) {
     return map;
   }, []);
 
-  // Map each tab's id back to whether the active section matches its scroll
-  // target — when New & Used both target #cars, both look "non-active" so we
-  // keep an internal sticky selection that overrides only for those two.
+  // New / Used both target #cars, so once the user has clicked one we
+  // keep the choice "sticky" until they navigate away.
   const [stickyId, setStickyId] = useState(null);
 
   const activeTabId = useMemo(() => {
-    if (active === "cars" && stickyId && (stickyId === "new" || stickyId === "used")) {
+    if (active === "cars" && (stickyId === "new" || stickyId === "used")) {
       return stickyId;
     }
     const match = navTabs.find((t) => t.scrollTo === active);
     return match?.id || null;
   }, [active, stickyId]);
-
-  const items = useMemo(
-    () => navTabs.map((t) => ({ value: t.id, label: t.label })),
-    [],
-  );
 
   // Scroll-progress bar driven by scroll position.
   const [progress, setProgress] = useState(0);
@@ -67,7 +64,7 @@ export default function TopNav({ onFilterChange }) {
     };
   }, []);
 
-  const handleChange = (id) => {
+  const handleClick = (id) => {
     const tab = tabsById.get(id);
     if (!tab) return;
     if (tab.filter && typeof onFilterChange === "function") {
@@ -83,7 +80,11 @@ export default function TopNav({ onFilterChange }) {
         <a
           href="#top"
           className={styles.navBrand}
-          onClick={(e) => { e.preventDefault(); setStickyId(null); scrollTo("top"); }}
+          onClick={(e) => {
+            e.preventDefault();
+            setStickyId(null);
+            scrollTo("top");
+          }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -97,18 +98,30 @@ export default function TopNav({ onFilterChange }) {
           </span>
         </a>
 
-        <div className={styles.navTabsWrap}>
-          <TabGroup
-            items={items}
-            value={activeTabId}
-            onChange={handleChange}
-            ariaLabel="Primary navigation"
-            layout="wrap"
-          />
-        </div>
+        <nav className={styles.navTabsWrap} aria-label="Primary">
+          <ul className={styles.navTabsList} role="tablist">
+            {navTabs.map((tab) => {
+              const isActive = activeTabId === tab.id;
+              return (
+                <li key={tab.id}>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={`${styles.navTab} ${isActive ? styles.navTabActive : ""}`}
+                    onClick={() => handleClick(tab.id)}
+                  >
+                    {tab.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
         <a className={styles.navCta} href={siteContent.contact.phoneHref}>
-          {siteContent.contact.phone}
+          <span>{siteContent.contact.phone}</span>
+          <span className={styles.navCtaChevron} aria-hidden="true">→</span>
         </a>
       </div>
 
