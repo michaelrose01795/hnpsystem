@@ -131,6 +131,8 @@ remove this from the /login page as users can go to /website and use dev login f
 
 - /website
 
+create global.css liek file for /website, keep global.css for staff seperate to custoemrs so we can tell with the file names as well like custglobal.css and staffglobal.css etc
+
 ====================================================
 DONE
 ====================================================
