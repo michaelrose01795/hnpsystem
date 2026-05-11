@@ -135,7 +135,8 @@
       "Bash(head -c 600 public\\\\\\\\models\\\\\\\\suzuki-swift\\\\\\\\scene.gltf)",
       "PowerShell(Rename-Item -Path \"C:\\\\hnpsystem\\\\public\\\\models\\\\suzuki-swift\" -NewName \"swift\" -Force)",
       "PowerShell(Move-Item -Path \"C:\\\\hnpsystem\\\\public\\\\models\\\\suzuki-swift\" -Destination \"C:\\\\hnpsystem\\\\public\\\\models\\\\swift\" -Force)",
-      "PowerShell($ErrorActionPreference = \"Stop\")"
+      "PowerShell($ErrorActionPreference = \"Stop\")",
+      "Bash(Get-ChildItem \"C:\\\\hnpsystem\\\\src\" -Force)"
     ],
     "deny": [],
     "ask": [],

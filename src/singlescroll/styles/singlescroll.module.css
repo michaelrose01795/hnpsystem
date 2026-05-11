@@ -3150,6 +3150,46 @@
     radial-gradient(ellipse at top right, rgba(var(--accentMainRgb), 0.18), transparent 60%),
     #07070b;
   color: var(--txt-bright);
+
+  /* The singlescroll text tokens (--txt-bright / --txt-soft / --txt-mute) are
+     only scoped to .page elsewhere in this stylesheet. The /website/profile
+     page lives under .profileShell instead, so without re-declaring them
+     here every component using these tokens would render with no colour at
+     all. Defining them locally keeps the profile page dark-skinned
+     regardless of the global DMS theme. */
+  --txt-bright: #ffffff;
+  --txt-soft: rgba(255, 255, 255, 0.78);
+  --txt-mute: rgba(255, 255, 255, 0.55);
+  --txt-faint: rgba(255, 255, 255, 0.32);
+
+  /* Inner scrollbars inside the profile page: dark track + red accent thumb
+     (matches the page-level scrollbar set up in globals.css for the html
+     element). Firefox uses scrollbar-color; Chromium/Safari use the
+     ::-webkit-scrollbar pseudos declared below. */
+  scrollbar-color: var(--scrollbar-thumb) rgba(0, 0, 0, 0.4);
+  scrollbar-width: thin;
+}
+.profileShell ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.4);
+}
+.profileShell ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+}
+.profileShell ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+.profileShell ::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+.profileShell ::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.4);
 }
 .profileMain {
   max-width: 1100px;
@@ -3353,6 +3393,89 @@
 .profileJumpLink:hover {
   color: var(--txt-bright);
   background: rgba(255, 255, 255, 0.06);
+}
+
+/* Two-column profile layout: sticky section nav on the left, scrollable
+   content column on the right. Below 960px the layout collapses to a
+   single column and the side nav reverts to a horizontal pill row at the
+   top (handled by .profileSideNavMobile). */
+.profileLayout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+.profileSideNav {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 16px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.profileSideNav::-webkit-scrollbar { width: 6px; }
+.profileSideNav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+.profileSideNavHeading {
+  margin: 4px 12px 6px;
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+  font-weight: 800;
+}
+.profileSideNavLink {
+  display: block;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--txt-soft);
+  background: transparent;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.profileSideNavLink:hover {
+  color: var(--txt-bright);
+  background: rgba(255, 255, 255, 0.06);
+}
+.profileContent {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+@media (max-width: 960px) {
+  .profileLayout {
+    grid-template-columns: 1fr;
+  }
+  .profileSideNav {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-radius: 999px;
+    padding: 12px;
+  }
+  .profileSideNavHeading { display: none; }
+  .profileSideNavLink {
+    padding: 8px 14px;
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    border-radius: 999px;
+  }
 }
 
 /* Alert banners — used for MOT-due, service-due, account-balance

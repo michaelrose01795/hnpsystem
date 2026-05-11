@@ -18,6 +18,22 @@ import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
 import WebsiteSelect from "@/singlescroll/components/WebsiteSelect";
 import WebsiteDatePicker from "@/singlescroll/components/WebsiteDatePicker";
 import styles from "@/singlescroll/styles/singlescroll.module.css";
+import OwnershipDashboardCard from "@/features/customerPortal/components/sections/OwnershipDashboardCard";
+import DigitalServiceHistoryCard from "@/features/customerPortal/components/sections/DigitalServiceHistoryCard";
+import MotHistoryCard from "@/features/customerPortal/components/sections/MotHistoryCard";
+import RecallCheckerCard from "@/features/customerPortal/components/sections/RecallCheckerCard";
+import RepairApprovalTimelineCard from "@/features/customerPortal/components/sections/RepairApprovalTimelineCard";
+import VhcEnhancementsCard from "@/features/customerPortal/components/sections/VhcEnhancementsCard";
+import LiveProgressTrackerCard from "@/features/customerPortal/components/sections/LiveProgressTrackerCard";
+import DocumentsCentreCard from "@/features/customerPortal/components/sections/DocumentsCentreCard";
+import InvoicesPaymentsExtrasCard from "@/features/customerPortal/components/sections/InvoicesPaymentsExtrasCard";
+import SalesShowroomCard from "@/features/customerPortal/components/sections/SalesShowroomCard";
+import PartsPortalExtrasCard from "@/features/customerPortal/components/sections/PartsPortalExtrasCard";
+import SmartRepairCard from "@/features/customerPortal/components/sections/SmartRepairCard";
+import ValetDetailingCard from "@/features/customerPortal/components/sections/ValetDetailingCard";
+import FamilyGarageCard from "@/features/customerPortal/components/sections/FamilyGarageCard";
+import SelfServiceToolsCard from "@/features/customerPortal/components/sections/SelfServiceToolsCard";
+import AiAssistantCard from "@/features/customerPortal/components/sections/AiAssistantCard";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -122,15 +138,30 @@ const humaniseActivity = (event) => {
 
 const SECTIONS = [
   { id: "summary", label: "Summary" },
+  { id: "ownership", label: "Ownership" },
+  { id: "tracker", label: "Tracker" },
   { id: "vehicles", label: "Vehicles" },
   { id: "jobs", label: "Jobs" },
+  { id: "history", label: "History" },
+  { id: "mot", label: "MOT" },
+  { id: "recalls", label: "Recalls" },
   { id: "inspections", label: "Inspections" },
+  { id: "vhc-extras", label: "VHC hub" },
   { id: "invoices", label: "Money" },
+  { id: "payments-extras", label: "Payments" },
+  { id: "documents", label: "Documents" },
   { id: "messages", label: "Messages" },
   { id: "book", label: "Book" },
   { id: "services", label: "Services" },
   { id: "sell", label: "Sell" },
   { id: "showroom", label: "Showroom" },
+  { id: "sales-hub", label: "Sales hub" },
+  { id: "parts-hub", label: "Parts" },
+  { id: "bodyshop", label: "Bodyshop" },
+  { id: "valet", label: "Valet" },
+  { id: "family", label: "Family" },
+  { id: "self-service", label: "Self serve" },
+  { id: "assistant", label: "Assistant" },
   { id: "activity", label: "Activity" },
   { id: "settings", label: "Settings" },
 ];
@@ -207,6 +238,15 @@ export default function CustomerProfilePage() {
   const [actionFlash, setActionFlash] = useState({});
 
   useEffect(() => {
+    // Force dark mode + red accent for the whole /website/profile experience.
+    // The setAttribute is applied immediately (no wait for the themeProvider
+    // effect cycle) so there is no flash of the user's previous theme on
+    // navigation. setTemporaryOverride then writes the red-accent CSS vars
+    // via the provider, and the cleanup restores the user's preference on
+    // navigation away.
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
     setTemporaryOverride({ mode: "dark", accent: "red" });
     return () => setTemporaryOverride(null);
   }, [setTemporaryOverride]);
@@ -415,6 +455,16 @@ export default function CustomerProfilePage() {
     <>
       <Head>
         <title>Your account — {siteContent.brand.name}</title>
+        {/* Force dark theme synchronously so customers never see a flash of
+            their previous theme on this page. The themeProvider effect then
+            layers the red accent CSS vars on top. */}
+        <script
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html:
+              "document.documentElement.setAttribute('data-theme','dark');",
+          }}
+        />
       </Head>
       <div className={styles.profileShell}>
         <main className={styles.profileMain}>
@@ -459,17 +509,20 @@ export default function CustomerProfilePage() {
                 </div>
               </header>
 
-              <nav className={styles.profileJumpNav} aria-label="Sections">
-                {SECTIONS.map((s) => (
-                  <a
-                    key={s.id}
-                    href={`#${s.id}`}
-                    className={styles.profileJumpLink}
-                  >
-                    {s.label}
-                  </a>
-                ))}
-              </nav>
+              <div className={styles.profileLayout}>
+                <aside className={styles.profileSideNav} aria-label="Sections">
+                  <span className={styles.profileSideNavHeading}>Jump to</span>
+                  {SECTIONS.map((s) => (
+                    <a
+                      key={s.id}
+                      href={`#${s.id}`}
+                      className={styles.profileSideNavLink}
+                    >
+                      {s.label}
+                    </a>
+                  ))}
+                </aside>
+                <div className={styles.profileContent}>
 
               {/* ───────── Summary banners ───────── */}
               <div id="summary" className={styles.profileGrid}>
@@ -1501,6 +1554,28 @@ export default function CustomerProfilePage() {
                 )}
               </section>
 
+              {/* ───────── Expanded ownership-hub sections ─────────
+                  Each component renders its own `profileCard` section using
+                  the same singlescroll classes as the rest of this page, so
+                  the new sections inherit /website typography, glass card
+                  treatment, and dark-mode-safe text colours automatically. */}
+              <OwnershipDashboardCard vehicles={vehicles} />
+              <LiveProgressTrackerCard jobs={jobs} />
+              <RepairApprovalTimelineCard />
+              <DigitalServiceHistoryCard jobs={jobs} />
+              <MotHistoryCard vehicles={vehicles} />
+              <RecallCheckerCard vehicles={vehicles} />
+              <VhcEnhancementsCard vhcSummaries={Object.values(vhcByJob || {})} />
+              <InvoicesPaymentsExtrasCard />
+              <DocumentsCentreCard />
+              <SalesShowroomCard />
+              <PartsPortalExtrasCard />
+              <SmartRepairCard />
+              <ValetDetailingCard />
+              <FamilyGarageCard vehicles={vehicles} />
+              <SelfServiceToolsCard />
+              <AiAssistantCard />
+
               {/* ───────── Settings / security ───────── */}
               <section
                 id="settings"
@@ -1562,6 +1637,8 @@ export default function CustomerProfilePage() {
                   />
                 </div>
               </section>
+                </div>
+              </div>
             </>
           )}
         </main>

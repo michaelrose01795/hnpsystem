@@ -652,6 +652,31 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   background-clip: padding-box;
 }
 
+/* Dark scrollbar gutter on every /website page. useWebsiteScope adds the
+   `website-scope` class to <html> when a /website page is mounted; this
+   rule paints the scrollbar TRACK black so it blends with the website's
+   permanent-dark skin (instead of the default white the browser draws
+   against the html background). The THUMB keeps the red accent from the
+   global scrollbar tokens. */
+html.website-scope,
+html.website-scope body {
+  scrollbar-color: var(--scrollbar-thumb) #07070b;
+}
+html.website-scope::-webkit-scrollbar,
+html.website-scope body::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: #07070b;
+}
+html.website-scope::-webkit-scrollbar-track,
+html.website-scope body::-webkit-scrollbar-track {
+  background: #07070b;
+}
+html.website-scope::-webkit-scrollbar-corner,
+html.website-scope body::-webkit-scrollbar-corner {
+  background: #07070b;
+}
+
 /* Specific styling for tabs container to hide scrollbar completely */
 .tabs-scroll-container::-webkit-scrollbar {
   display: none;
