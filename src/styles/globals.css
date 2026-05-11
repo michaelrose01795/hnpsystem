@@ -5964,7 +5964,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 #appointments-auto-data-table-2 tbody tr.appt-today-row:hover td {
   background: var(--success-surface-hover) !important;
-  color: var(--success-text) !important;
+  color: var(--text-1) !important;
   box-shadow: none !important;
 }
 
@@ -5981,7 +5981,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 #appointments-auto-data-table-2 tbody tr.appt-today-row.appt-selected-row:hover td {
   background: var(--success-surface-hover) !important;
-  color: var(--success-text) !important;
+  color: var(--text-1) !important;
   box-shadow: none !important;
 }
 

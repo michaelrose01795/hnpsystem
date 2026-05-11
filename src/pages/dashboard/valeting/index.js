@@ -19,9 +19,9 @@ const MetricCard = ({ label, value, helper, sectionKey, parentKey }) => (
     data-dev-text-preview={label}
     style={{ minWidth: 0 }}
   >
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
-    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
+    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-1)" }}>{helper}</p>}
   </LayerSurface>
 );
 
@@ -54,7 +54,7 @@ const TrendBlock = ({ data }) => {
           alignItems: "center",
           gap: "8px"
         }}>
-          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span>
+          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-1)" }}>{point.label}</span>
           <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
             <div
             style={{
@@ -64,7 +64,7 @@ const TrendBlock = ({ data }) => {
               borderRadius: 4
             }} />
           </div>
-          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
+          <strong style={{ color: "var(--text-accent)" }}>{point.count}</strong>
         </LayerSurface>
       )}
     </DevLayoutSection>);
@@ -91,7 +91,7 @@ const QueueBoard = ({ queue }) =>
     radius="var(--radius-sm)"
     padding="16px"
     data-dev-text-preview="No cars waiting"
-    style={{ color: "var(--info)" }}
+    style={{ color: "var(--text-1)" }}
   >
         No cars waiting.
       </LayerSurface> :
@@ -111,9 +111,9 @@ const QueueBoard = ({ queue }) =>
         padding: "0 8px 10px"
       }}>
 
-          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Vehicle</span>
-          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Status</span>
-          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--primary-selected)" }}>Queue</span>
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-accent)" }}>Vehicle</span>
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-accent)" }}>Status</span>
+          <span style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-accent)" }}>Queue</span>
         </DevLayoutSection>
         <DevLayoutSection
       sectionKey="dashboard-valeting-queue-rows"
@@ -149,17 +149,17 @@ const QueueBoard = ({ queue }) =>
           boxShadow: "0 1px 0 rgba(var(--primary-rgb), 0.04)" // subtle lift, non-surface concern
         }}>
               <div style={{ minWidth: 0 }}>
-                <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
-                <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--primary)" }}>{job.vehicle_reg || "Plate"}</p>
+                <strong style={{ color: "var(--text-accent)" }}>{job.job_number || "—"}</strong>
+                <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-1)" }}>{job.vehicle_reg || "Plate"}</p>
               </div>
-              <span style={{ color: "var(--info-dark)", fontSize: "0.9rem" }}>{job.status || "Checked in"}</span>
+              <span style={{ color: "var(--text-1)", fontSize: "0.9rem" }}>{job.status || "Checked in"}</span>
               <span
           style={{
             justifySelf: "start",
             padding: "6px 10px",
             borderRadius: "999px", // pill badge — non-surface decorative element
             background: "rgba(var(--primary-rgb), 0.1)", // pill badge — non-surface decorative element
-            color: "var(--primary-selected)",
+            color: "var(--text-accent)",
             fontSize: "0.82rem",
             fontWeight: 600
           }}>

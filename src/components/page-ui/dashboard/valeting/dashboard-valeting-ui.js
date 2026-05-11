@@ -37,14 +37,14 @@ export default function ValetingDashboardUi(props) {
           <h2 style={{
         margin: 0,
         fontSize: "1.2rem",
-        color: "var(--primary-selected)"
+        color: "var(--text-accent)"
       }}>Wash bay overview</h2>
           {loading ?
       <p style={{
-        color: "var(--info)"
+        color: "var(--text-1)"
       }}>Gathering metrics…</p> : error ?
       <p style={{
-        color: "var(--primary)"
+        color: "var(--text-1)"
       }}>{error}</p> : <DevLayoutSection
         sectionKey="dashboard-valeting-wash-metrics"
         parentKey="dashboard-valeting-wash-overview"
@@ -91,16 +91,16 @@ export default function ValetingDashboardUi(props) {
               <h2 style={{
             margin: 0,
             fontSize: "1.2rem",
-            color: "var(--primary-selected)"
+            color: "var(--text-accent)"
           }}>Queue trend</h2>
               <p style={{
             margin: "6px 0 0",
-            color: "var(--info)"
+            color: "var(--text-1)"
           }}>Wash starts last 7 days</p>
             </div>
             {loading ?
         <p style={{
-          color: "var(--info)"
+          color: "var(--text-1)"
         }}>Building trend view…</p> : <TrendBlock data={data.trends} />
         }
           </LayerTheme>
@@ -120,19 +120,19 @@ export default function ValetingDashboardUi(props) {
               <h2 style={{
             margin: 0,
             fontSize: "1.2rem",
-            color: "var(--primary-selected)"
+            color: "var(--text-accent)"
           }}>Queue board</h2>
               <p style={{
             margin: "6px 0 0",
-            color: "var(--info)"
+            color: "var(--text-1)"
           }}>Cars checked in and ready</p>
             </div>
             {loading ?
         <p style={{
-          color: "var(--info)"
+          color: "var(--text-1)"
         }}>Refreshing queue…</p> : error ?
         <p style={{
-          color: "var(--primary)"
+          color: "var(--text-1)"
         }}>{error}</p> : <QueueBoard queue={data.waitingQueue} />
         }
           </LayerTheme>
