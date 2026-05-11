@@ -2961,9 +2961,24 @@
   background:
     radial-gradient(ellipse at top, rgba(var(--accentMainRgb), 0.18), transparent 60%),
     #07070b;
+  /* Re-scope the singlescroll text tokens locally — they're only declared on
+     .page elsewhere, so without this every label/subtitle on /website/login
+     inherited the global DMS theme colour and clashed with the dark glass. */
+  --txt-bright: #ffffff;
+  --txt-soft: rgba(255, 255, 255, 0.78);
+  --txt-mute: rgba(255, 255, 255, 0.55);
+  --txt-faint: rgba(255, 255, 255, 0.32);
   color: var(--txt-bright);
   display: flex;
   flex-direction: column;
+}
+.authShell h1,
+.authShell h2,
+.authShell h3,
+.authShell p,
+.authShell label,
+.authShell strong {
+  color: inherit;
 }
 .authMain {
   flex: 1;

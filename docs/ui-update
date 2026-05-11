@@ -76,15 +76,6 @@ remove "Painting studio Bodyshop queue Track paint jobs waiting on the bay and p
 
 
 ====================================================
-PRESENTATION
-====================================================
-
-- /loginPresentation 
-
-- /presentation ( have claude add more pages with this section so i can mark off everything ive done so far.)
-
-
-====================================================
 CUSTOMER
 ====================================================
 
@@ -100,14 +91,7 @@ create global.css liek file for /website, keep global.css for staff seperate to 
 have it so if the device is a low proceesing phone/not much single, have it so the 3D models dont show and dont hide jsut doesnt load it at all.
 
 - /website/login
-fix "## Error Type
-Runtime TypeError
 
-## Error Message
-Cannot read properties of null (reading 'addEventListener')
-
-Next.js version: 16.2.6 (Webpack)
-" and make sure that the text within the /website/login page keeps the text so it doesnt clash with the dark background. 
 
 ====================================================
 DONE

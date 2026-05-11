@@ -136,7 +136,8 @@
       "PowerShell(Rename-Item -Path \"C:\\\\hnpsystem\\\\public\\\\models\\\\suzuki-swift\" -NewName \"swift\" -Force)",
       "PowerShell(Move-Item -Path \"C:\\\\hnpsystem\\\\public\\\\models\\\\suzuki-swift\" -Destination \"C:\\\\hnpsystem\\\\public\\\\models\\\\swift\" -Force)",
       "PowerShell($ErrorActionPreference = \"Stop\")",
-      "Bash(Get-ChildItem \"C:\\\\hnpsystem\\\\src\" -Force)"
+      "Bash(Get-ChildItem \"C:\\\\hnpsystem\\\\src\" -Force)",
+      "Bash(dir /b \"c:\\\\hnpsystem\\\\src\\\\components\\\\page-ui\")"
     ],
     "deny": [],
     "ask": [],
