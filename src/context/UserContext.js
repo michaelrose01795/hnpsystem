@@ -110,24 +110,33 @@ export function UserProvider({ children }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!isPresentationMode()) return;
-    const key = window.sessionStorage.getItem("presentation:activeRoleKey");
+    const pathRoleKey = window.location.pathname.match(/^\/presentation\/([^/]+)/)?.[1] || null;
+    const key = window.sessionStorage.getItem("presentation:activeRoleKey") || pathRoleKey;
     const role = getPresentationRoleByKey(key);
     if (!role) return;
+    window.sessionStorage.setItem("presentation:activeRoleKey", role.key);
+    const roleAliases = new Set([String(role.roleId || role.key).toUpperCase()]);
+    if (role.key === "mobile-technician") roleAliases.add("TECHS");
     const demoUser = {
       id: `demo-${role.key}`,
       username: role.demoName || "Demo User",
       email: `${role.key}@demo.hnp.example`,
-      roles: [String(role.roleId || role.key).toUpperCase()],
+      roles: Array.from(roleAliases),
       authUuid: null,
       isDevLogin: false,
       impersonatedRole: role.roleId || role.key,
     };
     setUser(demoUser);
+    setDbUserId(1);
     setLoading(false);
   }, [sessionStatus]);
 
   // Load dev user from localStorage
   useEffect(() => {
+    if (isPresentationMode()) {
+      return;
+    }
+
     if (authSyncBlocked) {
       return;
     }
@@ -172,6 +181,10 @@ export function UserProvider({ children }) {
 
   // Set user from NextAuth session (works for both Keycloak and Credentials providers)
   useEffect(() => {
+    if (isPresentationMode()) {
+      return;
+    }
+
     if (authSyncBlocked) {
       return;
     }
@@ -211,6 +224,12 @@ export function UserProvider({ children }) {
     const resolveDbUser = async () => {
       if (!user) {
         setDbUserId(null);
+        setCurrentJob(null);
+        return;
+      }
+
+      if (isPresentationMode()) {
+        setDbUserId(1);
         setCurrentJob(null);
         return;
       }

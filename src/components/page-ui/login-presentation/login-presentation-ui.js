@@ -2,6 +2,27 @@ import Link from "next/link";import LayerSurface from "@/components/ui/LayerSurf
 import BrandLogo from "@/components/BrandLogo";
 import { PRESENTATION_ROLES } from "@/config/presentationRoleAccess";
 
+// Convert a Next.js route template (e.g. "/accounts/edit/[accountId]") into
+// the human-readable slug segment used in the presentation deep-link form
+// /presentation/<role>/<pageSlug>/<slide>. Slashes become dashes, bracketed
+// dynamic params keep their identifier (without the brackets). The slug is
+// purely informational — the [slide].js page resolves the actual real route
+// from role.routes[slide] — but matching the doc's slugs keeps copy/paste
+// from the doc working.
+function routeToSlug(route) {
+  return String(route || "")
+    .replace(/^\//, "")
+    .replace(/\//g, "-")
+    .replace(/\[/g, "")
+    .replace(/\]/g, "")
+    || "home";
+}
+
+function firstSlideHref(role) {
+  const firstRoute = role.routes?.[0] || "/";
+  return `/presentation/${role.key}/${routeToSlug(firstRoute)}/0`;
+}
+
 export default function LoginPresentationPageUi() {
   return (
     <div className="login-page-wrapper">
@@ -42,17 +63,6 @@ export default function LoginPresentationPageUi() {
 
               Presentation Mode
             </h1>
-            <p
-              style={{
-                margin: "6px 0 0",
-                color: "var(--text-1)",
-                fontSize: "0.9rem"
-              }}>
-
-              Choose a role to walk through the system as that user. The
-              sidebar, top bar, and slide order will be scoped to the pages
-              that role is granted in the access draft.
-            </p>
           </div>
 
           <div
@@ -65,7 +75,7 @@ export default function LoginPresentationPageUi() {
             {PRESENTATION_ROLES.map((role) =>
             <Link
               key={role.key}
-              href={`/presentation?role=${role.key}`}
+              href={firstSlideHref(role)}
               className="app-btn app-btn--secondary"
               style={{
                 display: "flex",

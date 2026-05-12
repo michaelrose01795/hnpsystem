@@ -20,7 +20,7 @@ const PARAM_SOURCES = {
   deliveryId: { table: "parts_deliveries", column: "delivery_id" },
   goodsInNumber: { table: "parts_goods_in", column: "goods_in_number" },
   technicianSlug: { table: "users", column: "id" },
-  user: { table: "users", column: "id" },
+  user: { table: "users", column: "email" },
   linkCode: { table: "vhc_reports", column: "link_code" },
 };
 

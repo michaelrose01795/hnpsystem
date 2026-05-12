@@ -6,6 +6,10 @@ import {
   getPresentationRoleByKey,
   orderSlidesForRole,
 } from "@/config/presentationRoleAccess";
+import {
+  setOverlayHidden as publishOverlayHidden,
+  subscribeOverlayVisibility,
+} from "./runtime/overlayVisibility";
 
 const PresentationContext = createContext(null);
 const RETURN_TO_STORAGE_KEY = "presentation:returnTo";
@@ -22,6 +26,22 @@ function parseHash(hash) {
     if (k === "step") out.step = Number(v) || 0;
   }
   return out;
+}
+
+function routeToSlug(route) {
+  return String(route || "")
+    .replace(/^\//, "")
+    .replace(/\//g, "-")
+    .replace(/\[/g, "")
+    .replace(/\]/g, "")
+    || "home";
+}
+
+function getQuerySlide(querySlide) {
+  return Number.parseInt(
+    Array.isArray(querySlide) ? querySlide[0] : querySlide,
+    10
+  );
 }
 
 export function PresentationProvider({ children }) {
@@ -76,6 +96,37 @@ export function PresentationProvider({ children }) {
   const [slideIndex, setSlideIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [devOverlayOn, setDevOverlayOn] = useState(false);
+  // Whether the user has clicked "Hide" on the callout. When true, the overlay
+  // (scrim, ring and callout) renders nothing; a "Show overlay" button appears
+  // in the sidebar. We mirror the value to a module-scope pub/sub so the
+  // sidebar (mounted above PresentationProvider in the tree) can read + flip
+  // it without us hoisting the provider.
+  const [overlayHidden, setOverlayHiddenState] = useState(false);
+  const hideOverlay = useCallback(() => {
+    setOverlayHiddenState(true);
+    publishOverlayHidden(true);
+  }, []);
+  const showOverlay = useCallback(() => {
+    setOverlayHiddenState(false);
+    publishOverlayHidden(false);
+  }, []);
+  // Reset visibility when the active role changes (entering a new demo deck
+  // should start with the overlay visible again).
+  useEffect(() => {
+    setOverlayHiddenState(false);
+    publishOverlayHidden(false);
+  }, [activeRole?.key]);
+  // Subscribe to the pub/sub so external callers (e.g. the "Show overlay"
+  // button in the Sidebar, which sits above this provider in the React tree
+  // and can't reach into context) can flip the state and have the overlay
+  // react. Without this, the sidebar button would update the pub/sub flag
+  // but our local React state would stay stale.
+  useEffect(() => {
+    const unsubscribe = subscribeOverlayVisibility((next) => {
+      setOverlayHiddenState(next);
+    });
+    return unsubscribe;
+  }, []);
 
   // Sync from URL on mount. Two sources, in priority order:
   //   1. router.query.slide — the new path-based deep-link form
@@ -85,13 +136,11 @@ export function PresentationProvider({ children }) {
   // slides/steps because the runner writes its position back to the hash.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const pathSlide = Number.parseInt(
-      Array.isArray(router.query.slide) ? router.query.slide[0] : router.query.slide,
-      10
-    );
+    const pathSlide = getQuerySlide(router.query.slide);
     if (Number.isFinite(pathSlide) && pathSlide >= 0) {
       setSlideIndex(Math.min(pathSlide, Math.max(slides.length - 1, 0)));
-      setStepIndex(0);
+      const { step } = parseHash(window.location.hash);
+      setStepIndex(step || 0);
       return;
     }
     const { slide, step } = parseHash(window.location.hash);
@@ -102,9 +151,11 @@ export function PresentationProvider({ children }) {
 
   // Reset to slide 0 when the active role changes — different role, different deck.
   useEffect(() => {
+    const pathSlide = getQuerySlide(router.query.slide);
+    if (Number.isFinite(pathSlide) && pathSlide >= 0) return;
     setSlideIndex(0);
     setStepIndex(0);
-  }, [activeRole?.key]);
+  }, [activeRole?.key, router.query.slide]);
 
   // Persist to hash so refresh keeps position.
   useEffect(() => {
@@ -114,6 +165,22 @@ export function PresentationProvider({ children }) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search + hash);
     }
   }, [slideIndex, stepIndex]);
+
+  const replaceSlidePath = useCallback((targetSlideIndex, targetStepIndex = 0) => {
+    if (!router.isReady || !activeRole?.key) return;
+    const pathSlide = getQuerySlide(router.query.slide);
+    if (pathSlide === targetSlideIndex) return;
+
+    const route = activeRole.routes?.[targetSlideIndex];
+    if (!route) return;
+
+    const hash = `#slide=${targetSlideIndex}&step=${targetStepIndex}`;
+    router.replace(
+      `/presentation/${activeRole.key}/${routeToSlug(route)}/${targetSlideIndex}${hash}`,
+      undefined,
+      { shallow: false }
+    );
+  }, [activeRole?.key, activeRole?.routes, router, router.isReady, router.query.slide]);
 
   const currentSlide = slides[slideIndex] || null;
   const currentSteps = useMemo(() => currentSlide?.steps || [], [currentSlide]);
@@ -137,36 +204,42 @@ export function PresentationProvider({ children }) {
     if (stepIndex < stepsLen - 1) {
       setStepIndex((i) => i + 1);
     } else if (slideIndex < slides.length - 1) {
-      setSlideIndex((i) => i + 1);
+      const target = slideIndex + 1;
+      replaceSlidePath(target, 0);
+      setSlideIndex(target);
       setStepIndex(0);
     }
-  }, [stepIndex, currentSteps.length, slideIndex, slides.length]);
+  }, [stepIndex, currentSteps.length, slideIndex, slides.length, replaceSlidePath]);
 
   const prev = useCallback(() => {
     if (stepIndex > 0) {
       setStepIndex((i) => i - 1);
     } else if (slideIndex > 0) {
       const newSlideIdx = slideIndex - 1;
-      setSlideIndex(newSlideIdx);
       const prevSteps = slides[newSlideIdx]?.steps || [];
-      setStepIndex(Math.max(prevSteps.length - 1, 0));
+      const targetStep = Math.max(prevSteps.length - 1, 0);
+      replaceSlidePath(newSlideIdx, targetStep);
+      setSlideIndex(newSlideIdx);
+      setStepIndex(targetStep);
     }
-  }, [stepIndex, slideIndex, slides]);
+  }, [stepIndex, slideIndex, slides, replaceSlidePath]);
 
   const jumpSlide = useCallback((delta) => {
     if (slides.length === 0) return;
     const target = Math.min(Math.max(slideIndex + delta, 0), slides.length - 1);
+    replaceSlidePath(target, 0);
     setSlideIndex(target);
     setStepIndex(0);
-  }, [slideIndex, slides.length]);
+  }, [slideIndex, slides.length, replaceSlidePath]);
 
   const goToSlide = useCallback((id) => {
     const idx = slides.findIndex((s) => s.id === id);
     if (idx >= 0) {
+      replaceSlidePath(idx, 0);
       setSlideIndex(idx);
       setStepIndex(0);
     }
-  }, [slides]);
+  }, [slides, replaceSlidePath]);
 
   const exit = useCallback(() => {
     if (!canExit) return;
@@ -213,7 +286,10 @@ export function PresentationProvider({ children }) {
     toggleDevOverlay,
     userRoles,
     activeRole,
-  }), [slides, slideIndex, stepIndex, currentSlide, currentStep, currentSteps, next, prev, jumpSlide, goToSlide, exit, isPublicViewer, canExit, loading, devOverlayOn, toggleDevOverlay, userRoles, activeRole]);
+    overlayHidden,
+    hideOverlay,
+    showOverlay,
+  }), [slides, slideIndex, stepIndex, currentSlide, currentStep, currentSteps, next, prev, jumpSlide, goToSlide, exit, isPublicViewer, canExit, loading, devOverlayOn, toggleDevOverlay, userRoles, activeRole, overlayHidden, hideOverlay, showOverlay]);
 
   return <PresentationContext.Provider value={value}>{children}</PresentationContext.Provider>;
 }

@@ -1,4 +1,4 @@
-export const rows = [
+const rawRows = [
   { id: "demo-inv-001", invoice_number: "INV-0001", job_number: "DEMO-1042", customer_id: "demo-cust-001", customer_name: "Alex Morgan",    total: 482.40,  vat: 80.40,  status: "Open",    issued_at: "2026-04-22T16:00:00.000Z", due_at: "2026-05-22T00:00:00.000Z" },
   { id: "demo-inv-002", invoice_number: "INV-0002", job_number: "DEMO-1043", customer_id: "demo-cust-002", customer_name: "Priya Shah",     total: 314.75,  vat: 52.46,  status: "Open",    issued_at: "2026-04-21T17:30:00.000Z", due_at: "2026-05-21T00:00:00.000Z" },
   { id: "demo-inv-003", invoice_number: "INV-0003", job_number: "DEMO-1044", customer_id: "demo-cust-003", customer_name: "Tom Reynolds",   total: 211.90,  vat: 35.32,  status: "Paid",    issued_at: "2026-04-22T12:30:00.000Z", due_at: "2026-05-22T00:00:00.000Z" },
@@ -12,3 +12,23 @@ export const rows = [
   { id: "demo-inv-011", invoice_number: "INV-0011", job_number: "DEMO-1037", customer_id: "demo-cust-009", customer_name: "Owen Brooks",    total: 2400.00, vat: 400.00, status: "Open",    issued_at: "2026-04-15T10:00:00.000Z", due_at: "2026-05-15T00:00:00.000Z" },
   { id: "demo-inv-012", invoice_number: "INV-0012", job_number: "DEMO-1036", customer_id: "demo-cust-010", customer_name: "Rachel Hughes",  total: 54.50,   vat: 9.08,   status: "Paid",    issued_at: "2026-04-19T10:00:00.000Z", due_at: "2026-05-19T00:00:00.000Z" },
 ];
+
+export const rows = rawRows.map((row) => ({
+  archived: false,
+  is_active: true,
+  deleted_at: null,
+  org_id: null,
+  tenant_id: null,
+  invoice_id: row.invoice_number,
+  invoice_date: row.issued_at,
+  due_date: row.due_at,
+  created_at: row.issued_at,
+  updated_at: row.issued_at,
+  payment_status: row.status,
+  invoice_total: row.total,
+  grand_total: row.total,
+  account_id: row.customer_id,
+  account_number: row.customer_id,
+  order_number: row.job_number,
+  ...row,
+}));

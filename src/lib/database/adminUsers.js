@@ -1,17 +1,11 @@
 // ✅ Connected to Supabase (server-side)
 // ✅ Imports converted to use absolute alias "@/"
 // file location: src/lib/database/adminUsers.js
-import { createClient } from "@supabase/supabase-js";
-import { supabase } from "@/lib/database/supabaseClient";
+import { supabase, supabaseService } from "@/lib/database/supabaseClient";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const adminClient = supabaseService || supabase;
 
-const adminClient = serviceKey
-  ? createClient(supabaseUrl, serviceKey)
-  : supabase;
-
-const isServiceClient = Boolean(serviceKey);
+const isServiceClient = Boolean(supabaseService);
 
 const USERS_TABLE = "users";
 const ACTIVITY_TABLE = "activity_logs";

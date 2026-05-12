@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const LOCAL_URL_PATTERN = /https?:\/\/(?:localhost|127\.0\.0\.1|\[?::1\]?)(?::\d+)?(?:\/[^\s]*)?/i;
+const PRE_VERCEL_TASKKILL_PID = "25756";
 
 function isWsl() {
   if (process.platform !== "linux") return false;
@@ -30,12 +31,39 @@ function openExternalBrowser(url) {
   openProcess.unref();
 }
 
+function runPreVercelTaskkill() {
+  if (process.platform !== "win32") return Promise.resolve();
+
+  console.log(`[vercel:dev] Running taskkill /PID ${PRE_VERCEL_TASKKILL_PID} /F before Vercel dev...`);
+
+  return new Promise((resolve) => {
+    const taskkill = spawn("taskkill", ["/PID", PRE_VERCEL_TASKKILL_PID, "/F"], {
+      stdio: "inherit",
+    });
+
+    taskkill.on("error", (error) => {
+      console.warn(`[vercel:dev] Could not run taskkill before Vercel dev: ${error.message}`);
+      resolve();
+    });
+
+    taskkill.on("exit", (code) => {
+      if (code && code !== 0) {
+        console.warn(`[vercel:dev] taskkill exited with code ${code}; continuing to Vercel dev.`);
+      }
+
+      resolve();
+    });
+  });
+}
+
 async function main() {
   const ensureLocalNextCache = require("./use-local-next-cache.js");
 
   if (typeof ensureLocalNextCache === "function") {
     await ensureLocalNextCache();
   }
+
+  await runPreVercelTaskkill();
 
   const isWindows = process.platform === "win32";
   const localVercelBin = path.join(

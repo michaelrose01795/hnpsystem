@@ -1,4 +1,4 @@
-export const rows = [
+const rawRows = [
   { id: "demo-pi-001", part_number: "1K0-411-315-R",   description: "Anti-roll bar drop link",         on_hand:  6, reorder_level: 4, location: "Bin A-12", supplier: "Euro Car Parts",   cost: 14.20 },
   { id: "demo-pi-002", part_number: "DS7T-9F472-AA",   description: "Crankshaft position sensor",      on_hand:  0, reorder_level: 2, location: "Bin B-04", supplier: "Ford Direct",      cost: 48.75 },
   { id: "demo-pi-003", part_number: "11-42-7-953-129", description: "BMW oil filter",                  on_hand: 12, reorder_level: 5, location: "Bin C-22", supplier: "BMW Parts",        cost: 11.90 },
@@ -10,3 +10,24 @@ export const rows = [
   { id: "demo-pi-009", part_number: "HN-FUSE-15A-10",  description: "Mini blade fuse 15A (10pk)",      on_hand: 22, reorder_level: 10, location: "Bin E-15", supplier: "Honda Direct",    cost:  3.10 },
   { id: "demo-pi-010", part_number: "TY-WIPER-PR-22",  description: "Wiper blade pair 22\"+18\"",      on_hand:  9, reorder_level: 6, location: "Bin H-03", supplier: "Tyre Wholesale",   cost: 16.40 },
 ];
+
+export const rows = rawRows.map((row) => ({
+  archived: false,
+  is_active: true,
+  deleted_at: null,
+  org_id: null,
+  tenant_id: null,
+  name: row.description,
+  category: "General",
+  storage_location: row.location,
+  unit_cost: row.cost,
+  unit_price: Number((Number(row.cost || 0) * 1.35).toFixed(2)),
+  qty_in_stock: row.on_hand,
+  qty_reserved: 0,
+  qty_on_order: row.on_hand <= row.reorder_level ? 4 : 0,
+  service_default_zone: "service_rack_1",
+  notes: "",
+  created_at: "2026-04-01T09:00:00.000Z",
+  updated_at: "2026-04-22T09:00:00.000Z",
+  ...row,
+}));

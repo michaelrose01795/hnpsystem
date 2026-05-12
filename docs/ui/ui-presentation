@@ -1,8 +1,8 @@
-====================================================
+﻿====================================================
 PRESENTATION
 ====================================================
 
-/loginPresentation
+/loginPresentation ✓ mock data
 
 URL pattern: /presentation/<role-key>/<page-slug>/<slide-index>
 Source of truth: src/config/presentationRoleAccess.js
@@ -12,436 +12,436 @@ Source of truth: src/config/presentationRoleAccess.js
 Accounts Manager
 ====================================================
 
-/presentation/accounts-manager/dashboard-accounts/0
+/presentation/accounts-manager/dashboard-accounts/0 ✓ mock data
 
-/presentation/accounts-manager/accounts/1
+/presentation/accounts-manager/accounts/1 ✓ mock data
 
-/presentation/accounts-manager/accounts-create/2
+/presentation/accounts-manager/accounts-create/2 ✓ mock data
 
-/presentation/accounts-manager/accounts-edit-accountId/3
+/presentation/accounts-manager/accounts-edit-accountId/3 ✓ mock data
 
-/presentation/accounts-manager/accounts-view-accountId/4
+/presentation/accounts-manager/accounts-view-accountId/4 ✓ mock data
 
-/presentation/accounts-manager/accounts-transactions-accountId/5
+/presentation/accounts-manager/accounts-transactions-accountId/5 ✓ mock data
 
-/presentation/accounts-manager/accounts-invoices/6
+/presentation/accounts-manager/accounts-invoices/6 ✓ mock data
 
-/presentation/accounts-manager/accounts-invoices-invoiceId/7
+/presentation/accounts-manager/accounts-invoices-invoiceId/7 ✓ mock data
 
-/presentation/accounts-manager/accounts-payslips/8
+/presentation/accounts-manager/accounts-payslips/8 ✓ mock data
 
-/presentation/accounts-manager/accounts-reports/9
+/presentation/accounts-manager/accounts-reports/9 ✓ mock data
 
-/presentation/accounts-manager/accounts-settings/10
+/presentation/accounts-manager/accounts-settings/10 ✓ mock data
 
-/presentation/accounts-manager/company-accounts/11
+/presentation/accounts-manager/company-accounts/11 ✓ mock data
 
-/presentation/accounts-manager/company-accounts-accountNumber/12
+/presentation/accounts-manager/company-accounts-accountNumber/12 ✓ mock data
 
-/presentation/accounts-manager/messages/13
+/presentation/accounts-manager/messages/13 ✓ mock data
 
-/presentation/accounts-manager/newsfeed/14
+/presentation/accounts-manager/newsfeed/14 ✓ mock data
 
-/presentation/accounts-manager/profile/15
+/presentation/accounts-manager/profile/15 ✓ mock data
 
 
 ====================================================
 Admin Manager
 ====================================================
 
-/presentation/admin-manager/dashboard-admin/0
+/presentation/admin-manager/dashboard-admin/0 ✓ mock data
 
-/presentation/admin-manager/job-cards-waiting-nextjobs/1
+/presentation/admin-manager/job-cards-waiting-nextjobs/1 ✓ mock data
 
-/presentation/admin-manager/job-cards-view/2
+/presentation/admin-manager/job-cards-view/2 ✓ mock data
 
-/presentation/admin-manager/job-cards-jobNumber/3
+/presentation/admin-manager/job-cards-jobNumber/3 ✓ mock data
 
-/presentation/admin-manager/admin-users/4
+/presentation/admin-manager/admin-users/4 ✓ mock data
 
-/presentation/admin-manager/admin-profiles-user/5
+/presentation/admin-manager/admin-profiles-user/5 ✓ mock data
 
-/presentation/admin-manager/accounts-payslips/6
+/presentation/admin-manager/accounts-payslips/6 ✓ mock data
 
-/presentation/admin-manager/hr-manager/7
+/presentation/admin-manager/hr-manager/7 ✓ mock data
 
-/presentation/admin-manager/messages/8
+/presentation/admin-manager/messages/8 ✓ mock data
 
-/presentation/admin-manager/newsfeed/9
+/presentation/admin-manager/newsfeed/9 ✓ mock data
 
-/presentation/admin-manager/profile/10
+/presentation/admin-manager/profile/10 ✓ mock data
 
 
 ====================================================
 After Sales Director
 ====================================================
 
-/presentation/after-sales-director/dashboard/0
+/presentation/after-sales-director/dashboard/0 ✓ mock data
 
-/presentation/after-sales-director/job-cards-view/1
+/presentation/after-sales-director/job-cards-view/1 ✓ mock data
 
-/presentation/after-sales-director/job-cards-jobNumber/2
+/presentation/after-sales-director/job-cards-jobNumber/2 ✓ mock data
 
-/presentation/after-sales-director/job-cards-waiting-nextjobs/3
+/presentation/after-sales-director/job-cards-waiting-nextjobs/3 ✓ mock data
 
-/presentation/after-sales-director/parts-goods-in/4
+/presentation/after-sales-director/parts-goods-in/4 ✓ mock data
 
-/presentation/after-sales-director/messages/5
+/presentation/after-sales-director/messages/5 ✓ mock data
 
-/presentation/after-sales-director/newsfeed/6
+/presentation/after-sales-director/newsfeed/6 ✓ mock data
 
-/presentation/after-sales-director/profile/7
+/presentation/after-sales-director/profile/7 ✓ mock data
 
-/presentation/after-sales-director/tracking/8
+/presentation/after-sales-director/tracking/8 ✓ mock data
 
 
 ====================================================
 Customer
 ====================================================
 
-/presentation/customer/customer/0
+/presentation/customer/customer/0 ✓ mock data
 
-/presentation/customer/customer-messages/1
+/presentation/customer/customer-messages/1 ✓ mock data
 
-/presentation/customer/customer-parts/2
+/presentation/customer/customer-parts/2 ✓ mock data
 
-/presentation/customer/customer-payments/3
+/presentation/customer/customer-payments/3 ✓ mock data
 
-/presentation/customer/customer-vehicles/4
+/presentation/customer/customer-vehicles/4 ✓ mock data
 
-/presentation/customer/customer-vhc/5
+/presentation/customer/customer-vhc/5 ✓ mock data
 
-/presentation/customer/vhc-customer-preview-jobNumber/6
+/presentation/customer/vhc-customer-preview-jobNumber/6 ✓ mock data
 
-/presentation/customer/vhc-customer-view-jobNumber/7
+/presentation/customer/vhc-customer-view-jobNumber/7 ✓ mock data
 
-/presentation/customer/vhc-share-jobNumber-linkCode/8
+/presentation/customer/vhc-share-jobNumber-linkCode/8 ✓ mock data
 
 
 ====================================================
 General Manager
 ====================================================
 
-/presentation/general-manager/dashboard-managers/0
+/presentation/general-manager/dashboard-managers/0 ✓ mock data
 
-/presentation/general-manager/dashboard/1
+/presentation/general-manager/dashboard/1 ✓ mock data
 
-/presentation/general-manager/job-cards-view/2
+/presentation/general-manager/job-cards-view/2 ✓ mock data
 
-/presentation/general-manager/job-cards-jobNumber/3
+/presentation/general-manager/job-cards-jobNumber/3 ✓ mock data
 
-/presentation/general-manager/job-cards-waiting-nextjobs/4
+/presentation/general-manager/job-cards-waiting-nextjobs/4 ✓ mock data
 
-/presentation/general-manager/tracking/5
+/presentation/general-manager/tracking/5 ✓ mock data
 
-/presentation/general-manager/messages/6
+/presentation/general-manager/messages/6 ✓ mock data
 
-/presentation/general-manager/newsfeed/7
+/presentation/general-manager/newsfeed/7 ✓ mock data
 
-/presentation/general-manager/profile/8
+/presentation/general-manager/profile/8 ✓ mock data
 
 
 ====================================================
 HR Manager
 ====================================================
 
-/presentation/hr-manager/hr/0
+/presentation/hr-manager/hr/0 ✓ mock data
 
-/presentation/hr-manager/hr-manager/1
+/presentation/hr-manager/hr-manager/1 ✓ mock data
 
-/presentation/hr-manager/hr-attendance/2
+/presentation/hr-manager/hr-attendance/2 ✓ mock data
 
-/presentation/hr-manager/hr-disciplinary/3
+/presentation/hr-manager/hr-disciplinary/3 ✓ mock data
 
-/presentation/hr-manager/hr-employees/4
+/presentation/hr-manager/hr-employees/4 ✓ mock data
 
-/presentation/hr-manager/hr-leave/5
+/presentation/hr-manager/hr-leave/5 ✓ mock data
 
-/presentation/hr-manager/hr-payroll/6
+/presentation/hr-manager/hr-payroll/6 ✓ mock data
 
-/presentation/hr-manager/hr-performance/7
+/presentation/hr-manager/hr-performance/7 ✓ mock data
 
-/presentation/hr-manager/hr-recruitment/8
+/presentation/hr-manager/hr-recruitment/8 ✓ mock data
 
-/presentation/hr-manager/hr-reports/9
+/presentation/hr-manager/hr-reports/9 ✓ mock data
 
-/presentation/hr-manager/hr-settings/10
+/presentation/hr-manager/hr-settings/10 ✓ mock data
 
-/presentation/hr-manager/hr-training/11
+/presentation/hr-manager/hr-training/11 ✓ mock data
 
-/presentation/hr-manager/messages/12
+/presentation/hr-manager/messages/12 ✓ mock data
 
-/presentation/hr-manager/newsfeed/13
+/presentation/hr-manager/newsfeed/13 ✓ mock data
 
-/presentation/hr-manager/profile/14
+/presentation/hr-manager/profile/14 ✓ mock data
 
 
 ====================================================
 Mobile Technician
 ====================================================
 
-/presentation/mobile-technician/mobile-dashboard/0
+/presentation/mobile-technician/mobile-dashboard/0 ✓ mock data
 
-/presentation/mobile-technician/job-cards-myjobs/1
+/presentation/mobile-technician/job-cards-myjobs/1 ✓ mock data
 
-/presentation/mobile-technician/job-cards-myjobs-jobNumber/2
+/presentation/mobile-technician/job-cards-myjobs-jobNumber/2 ✓ mock data
 
-/presentation/mobile-technician/appointments/3
+/presentation/mobile-technician/appointments/3 ✓ mock data
 
-/presentation/mobile-technician/mobile-delivery-jobNumber/4
+/presentation/mobile-technician/mobile-delivery-jobNumber/4 ✓ mock data
 
-/presentation/mobile-technician/job-cards-create/5
+/presentation/mobile-technician/job-cards-create/5 ✓ mock data
 
-/presentation/mobile-technician/tech-consumables-request/6
+/presentation/mobile-technician/tech-consumables-request/6 ✓ mock data
 
-/presentation/mobile-technician/messages/7
+/presentation/mobile-technician/messages/7 ✓ mock data
 
-/presentation/mobile-technician/newsfeed/8
+/presentation/mobile-technician/newsfeed/8 ✓ mock data
 
-/presentation/mobile-technician/profile/9
+/presentation/mobile-technician/profile/9 ✓ mock data
 
 
 ====================================================
 MOT Tester
 ====================================================
 
-/presentation/mot-tester/dashboard-mot/0
+/presentation/mot-tester/dashboard-mot/0 ✓ mock data
 
-/presentation/mot-tester/job-cards-myjobs/1
+/presentation/mot-tester/job-cards-myjobs/1 ✓ mock data
 
-/presentation/mot-tester/job-cards-myjobs-jobNumber/2
+/presentation/mot-tester/job-cards-myjobs-jobNumber/2 ✓ mock data
 
-/presentation/mot-tester/job-cards-jobNumber/3
+/presentation/mot-tester/job-cards-jobNumber/3 ✓ mock data
 
-/presentation/mot-tester/tech-efficiency/4
+/presentation/mot-tester/tech-efficiency/4 ✓ mock data
 
-/presentation/mot-tester/vhc/5
+/presentation/mot-tester/vhc/5 ✓ mock data
 
-/presentation/mot-tester/messages/6
+/presentation/mot-tester/messages/6 ✓ mock data
 
-/presentation/mot-tester/newsfeed/7
+/presentation/mot-tester/newsfeed/7 ✓ mock data
 
-/presentation/mot-tester/profile/8
+/presentation/mot-tester/profile/8 ✓ mock data
 
 
 ====================================================
 Owner
 ====================================================
 
-/presentation/owner/dashboard-managers/0
+/presentation/owner/dashboard-managers/0 ✓ mock data
 
-/presentation/owner/hr-manager/1
+/presentation/owner/hr-manager/1 ✓ mock data
 
-/presentation/owner/admin-users/2
+/presentation/owner/admin-users/2 ✓ mock data
 
-/presentation/owner/admin-profiles-user/3
+/presentation/owner/admin-profiles-user/3 ✓ mock data
 
-/presentation/owner/accounts-payslips/4
+/presentation/owner/accounts-payslips/4 ✓ mock data
 
-/presentation/owner/messages/5
+/presentation/owner/messages/5 ✓ mock data
 
-/presentation/owner/newsfeed/6
+/presentation/owner/newsfeed/6 ✓ mock data
 
-/presentation/owner/profile/7
+/presentation/owner/profile/7 ✓ mock data
 
 
 ====================================================
 Painters
 ====================================================
 
-/presentation/painters/dashboard-painting/0
+/presentation/painters/dashboard-painting/0 ✓ mock data
 
-/presentation/painters/job-cards-myjobs/1
+/presentation/painters/job-cards-myjobs/1 ✓ mock data
 
-/presentation/painters/job-cards-myjobs-jobNumber/2
+/presentation/painters/job-cards-myjobs-jobNumber/2 ✓ mock data
 
-/presentation/painters/job-cards-jobNumber/3
+/presentation/painters/job-cards-jobNumber/3 ✓ mock data
 
-/presentation/painters/messages/4
+/presentation/painters/messages/4 ✓ mock data
 
-/presentation/painters/newsfeed/5
+/presentation/painters/newsfeed/5 ✓ mock data
 
-/presentation/painters/profile/6
+/presentation/painters/profile/6 ✓ mock data
 
 
 ====================================================
 Parts Manager
 ====================================================
 
-/presentation/parts-manager/dashboard-parts/0
+/presentation/parts-manager/dashboard-parts/0 ✓ mock data
 
-/presentation/parts-manager/parts/1
+/presentation/parts-manager/parts/1 ✓ mock data
 
-/presentation/parts-manager/parts-manager/2
+/presentation/parts-manager/parts-manager/2 ✓ mock data
 
-/presentation/parts-manager/job-cards-view/3
+/presentation/parts-manager/job-cards-view/3 ✓ mock data
 
-/presentation/parts-manager/job-cards-jobNumber/4
+/presentation/parts-manager/job-cards-jobNumber/4 ✓ mock data
 
-/presentation/parts-manager/stock-catalogue/5
+/presentation/parts-manager/stock-catalogue/5 ✓ mock data
 
-/presentation/parts-manager/parts-create-order/6
+/presentation/parts-manager/parts-create-order/6 ✓ mock data
 
-/presentation/parts-manager/parts-create-order-orderNumber/7
+/presentation/parts-manager/parts-create-order-orderNumber/7 ✓ mock data
 
-/presentation/parts-manager/parts-deliveries/8
+/presentation/parts-manager/parts-deliveries/8 ✓ mock data
 
-/presentation/parts-manager/parts-deliveries-deliveryId/9
+/presentation/parts-manager/parts-deliveries-deliveryId/9 ✓ mock data
 
-/presentation/parts-manager/parts-delivery-planner/10
+/presentation/parts-manager/parts-delivery-planner/10 ✓ mock data
 
-/presentation/parts-manager/parts-goods-in/11
+/presentation/parts-manager/parts-goods-in/11 ✓ mock data
 
-/presentation/parts-manager/parts-goods-in-goodsInNumber/12
+/presentation/parts-manager/parts-goods-in-goodsInNumber/12 ✓ mock data
 
-/presentation/parts-manager/messages/13
+/presentation/parts-manager/messages/13 ✓ mock data
 
-/presentation/parts-manager/newsfeed/14
+/presentation/parts-manager/newsfeed/14 ✓ mock data
 
-/presentation/parts-manager/profile/15
+/presentation/parts-manager/profile/15 ✓ mock data
 
 
 ====================================================
 Receptionist
 ====================================================
 
-/presentation/receptionist/dashboard/0
+/presentation/receptionist/dashboard/0 ✓ mock data
 
-/presentation/receptionist/appointments/1
+/presentation/receptionist/appointments/1 ✓ mock data
 
-/presentation/receptionist/customers/2
+/presentation/receptionist/customers/2 ✓ mock data
 
-/presentation/receptionist/customers-customerSlug/3
+/presentation/receptionist/customers-customerSlug/3 ✓ mock data
 
-/presentation/receptionist/job-cards-create/4
+/presentation/receptionist/job-cards-create/4 ✓ mock data
 
-/presentation/receptionist/job-cards-view/5
+/presentation/receptionist/job-cards-view/5 ✓ mock data
 
-/presentation/receptionist/job-cards-jobNumber/6
+/presentation/receptionist/job-cards-jobNumber/6 ✓ mock data
 
-/presentation/receptionist/messages/7
+/presentation/receptionist/messages/7 ✓ mock data
 
-/presentation/receptionist/newsfeed/8
+/presentation/receptionist/newsfeed/8 ✓ mock data
 
-/presentation/receptionist/profile/9
+/presentation/receptionist/profile/9 ✓ mock data
 
 
 ====================================================
 Sales Director
 ====================================================
 
-/presentation/sales-director/dashboard-managers/0
+/presentation/sales-director/dashboard-managers/0 ✓ mock data
 
-/presentation/sales-director/newsfeed/1
+/presentation/sales-director/newsfeed/1 ✓ mock data
 
-/presentation/sales-director/messages/2
+/presentation/sales-director/messages/2 ✓ mock data
 
-/presentation/sales-director/profile/3
+/presentation/sales-director/profile/3 ✓ mock data
 
 
 ====================================================
 Service Manager
 ====================================================
 
-/presentation/service-manager/dashboard-service/0
+/presentation/service-manager/dashboard-service/0 ✓ mock data
 
-/presentation/service-manager/dashboard/1
+/presentation/service-manager/dashboard/1 ✓ mock data
 
-/presentation/service-manager/customers/2
+/presentation/service-manager/customers/2 ✓ mock data
 
-/presentation/service-manager/customers-customerSlug/3
+/presentation/service-manager/customers-customerSlug/3 ✓ mock data
 
-/presentation/service-manager/job-cards-create/4
+/presentation/service-manager/job-cards-create/4 ✓ mock data
 
-/presentation/service-manager/job-cards-waiting-nextjobs/5
+/presentation/service-manager/job-cards-waiting-nextjobs/5 ✓ mock data
 
-/presentation/service-manager/job-cards-view/6
+/presentation/service-manager/job-cards-view/6 ✓ mock data
 
-/presentation/service-manager/job-cards-jobNumber/7
+/presentation/service-manager/job-cards-jobNumber/7 ✓ mock data
 
-/presentation/service-manager/parts-goods-in/8
+/presentation/service-manager/parts-goods-in/8 ✓ mock data
 
-/presentation/service-manager/appointments/9
+/presentation/service-manager/appointments/9 ✓ mock data
 
-/presentation/service-manager/messages/10
+/presentation/service-manager/messages/10 ✓ mock data
 
-/presentation/service-manager/newsfeed/11
+/presentation/service-manager/newsfeed/11 ✓ mock data
 
-/presentation/service-manager/profile/12
+/presentation/service-manager/profile/12 ✓ mock data
 
-/presentation/service-manager/tracking/13
+/presentation/service-manager/tracking/13 ✓ mock data
 
 
 ====================================================
 Techs
 ====================================================
 
-/presentation/techs/dashboard-workshop/0
+/presentation/techs/dashboard-workshop/0 ✓ mock data
 
-/presentation/techs/tech-dashboard/1
+/presentation/techs/tech-dashboard/1 ✓ mock data
 
-/presentation/techs/job-cards-myjobs/2
+/presentation/techs/job-cards-myjobs/2 ✓ mock data
 
-/presentation/techs/job-cards-myjobs-jobNumber/3
+/presentation/techs/job-cards-myjobs-jobNumber/3 ✓ mock data
 
-/presentation/techs/job-cards-jobNumber/4
+/presentation/techs/job-cards-jobNumber/4 ✓ mock data
 
-/presentation/techs/tech-consumables-request/5
+/presentation/techs/tech-consumables-request/5 ✓ mock data
 
-/presentation/techs/tech-efficiency/6
+/presentation/techs/tech-efficiency/6 ✓ mock data
 
-/presentation/techs/vhc/7
+/presentation/techs/vhc/7 ✓ mock data
 
-/presentation/techs/messages/8
+/presentation/techs/messages/8 ✓ mock data
 
-/presentation/techs/newsfeed/9
+/presentation/techs/newsfeed/9 ✓ mock data
 
-/presentation/techs/profile/10
+/presentation/techs/profile/10 ✓ mock data
 
-/presentation/techs/tracking/11
+/presentation/techs/tracking/11 ✓ mock data
 
 
 ====================================================
 Valet Service
 ====================================================
 
-/presentation/valet-service/dashboard-valeting/0
+/presentation/valet-service/dashboard-valeting/0 ✓ mock data
 
-/presentation/valet-service/valet/1
+/presentation/valet-service/valet/1 ✓ mock data
 
-/presentation/valet-service/job-cards-valet-jobnumber/2
+/presentation/valet-service/job-cards-valet-jobnumber/2 ✓ mock data
 
-/presentation/valet-service/messages/3
+/presentation/valet-service/messages/3 ✓ mock data
 
-/presentation/valet-service/newsfeed/4
+/presentation/valet-service/newsfeed/4 ✓ mock data
 
-/presentation/valet-service/profile/5
+/presentation/valet-service/profile/5 ✓ mock data
 
 
 ====================================================
 Workshop Manager
 ====================================================
 
-/presentation/workshop-manager/dashboard-workshop/0
+/presentation/workshop-manager/dashboard-workshop/0 ✓ mock data
 
-/presentation/workshop-manager/workshop-consumables-tracker/1
+/presentation/workshop-manager/workshop-consumables-tracker/1 ✓ mock data
 
-/presentation/workshop-manager/job-cards-waiting-nextjobs/2
+/presentation/workshop-manager/job-cards-waiting-nextjobs/2 ✓ mock data
 
-/presentation/workshop-manager/job-cards-view/3
+/presentation/workshop-manager/job-cards-view/3 ✓ mock data
 
-/presentation/workshop-manager/job-cards-jobNumber/4
+/presentation/workshop-manager/job-cards-jobNumber/4 ✓ mock data
 
-/presentation/workshop-manager/clocking/5
+/presentation/workshop-manager/clocking/5 ✓ mock data
 
-/presentation/workshop-manager/clocking-technicianSlug/6
+/presentation/workshop-manager/clocking-technicianSlug/6 ✓ mock data
 
-/presentation/workshop-manager/parts-goods-in/7
+/presentation/workshop-manager/parts-goods-in/7 ✓ mock data
 
-/presentation/workshop-manager/tracking/8
+/presentation/workshop-manager/tracking/8 ✓ mock data
 
-/presentation/workshop-manager/messages/9
+/presentation/workshop-manager/messages/9 ✓ mock data
 
-/presentation/workshop-manager/newsfeed/10
+/presentation/workshop-manager/newsfeed/10 ✓ mock data
 
-/presentation/workshop-manager/profile/11
+/presentation/workshop-manager/profile/11 ✓ mock data

@@ -48,7 +48,7 @@ export default function PartsDashboardUi(props) {
       // top-level card sits on the --theme background. Per CLAUDE.md §3.0,
       // any LayerTheme inside MUST flip back to LayerSurface (handled below).
       const ThemedSection = ({ title, subtitle, children }) => (
-        <LayerTheme as="section" className="app-section-card" gap="12px">
+        <LayerTheme as="section" gap="12px">
           <div>
             <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-accent)" }}>{title}</h2>
             {subtitle && <p style={{ margin: "6px 0 0", color: "var(--text-2)" }}>{subtitle}</p>}

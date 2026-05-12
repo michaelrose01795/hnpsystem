@@ -225,11 +225,9 @@ export default function PresentationCallout({ step }) {
     currentSteps,
     next,
     prev,
-    exit,
+    hideOverlay,
     currentSlide,
     userRoles,
-    canExit,
-    isPublicViewer,
   } = usePresentation();
 
   const slideCount = slides.length;
@@ -382,28 +380,14 @@ export default function PresentationCallout({ step }) {
         >
           Next
         </button>
-        {canExit ? (
-          <button
-            type="button"
-            className="app-btn app-btn--danger app-btn--sm"
-            onClick={exit}
-            title="Exit Presentation Mode"
-          >
-            Exit
-          </button>
-        ) : (
-          <span
-            className="app-badge app-badge--info"
-            title="This public demo stays inside Presentation Mode."
-            style={{
-              alignSelf: "center",
-              justifySelf: "end",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {isPublicViewer ? "Public demo" : "Locked"}
-          </span>
-        )}
+        <button
+          type="button"
+          className="app-btn app-btn--secondary app-btn--sm"
+          onClick={hideOverlay}
+          title="Hide the highlight ring and this popup. Use the 'Show overlay' button in the sidebar to bring it back."
+        >
+          Hide
+        </button>
       </div>
 
       <div

@@ -23,10 +23,13 @@ function loadPresentationUrls() {
   return raw
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .filter((line) => /^\/presentation\/[^\s/]+\/[^\s/]+\/\d+$/.test(line));
+    .map((line) => line.match(/^(\/presentation\/[^\s/]+\/[^\s/]+\/\d+)\b/)?.[1])
+    .filter(Boolean);
 }
 
 test.describe('Presentation deep-link smoke', () => {
+  test.describe.configure({ mode: 'serial' });
+
   const urls = loadPresentationUrls();
 
   // Bail out early if the doc isn't readable / has no URLs — keeps the failure

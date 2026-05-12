@@ -985,13 +985,13 @@ export default function ConsumablesTrackerPageUi(props) {
                         padding: "12px",
                         color: mutedTextColor
                       }}>
-                        {request.itemName}
+                        {request.itemName || request.item_name || "Consumable"}
                       </td>
                       <td style={{
                         padding: "12px",
                         color: mutedTextColor
                       }}>
-                        {request.quantity.toLocaleString()}
+                        {(Number(request.quantity) || 0).toLocaleString()}
                       </td>
                       <td style={{
                         padding: "12px",
@@ -1024,7 +1024,7 @@ export default function ConsumablesTrackerPageUi(props) {
                           ...(statusBadgeStyles[request.status === "ordered" ? "ordered" : request.status] || statusBadgeStyles.pending)
                         }}>
                           {request.status === "ordered" ? "✅" : request.status === "urgent" ? "⏰" : request.status === "rejected" ? "✖️" : "📦"}
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                          {(request.status || "pending").charAt(0).toUpperCase() + (request.status || "pending").slice(1)}
                         </span>
                       </td>
                       <td style={{

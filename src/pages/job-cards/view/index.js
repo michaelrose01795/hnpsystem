@@ -1315,7 +1315,7 @@ const JobListCard = ({ job, onNavigate, onMouseEnter, sectionKey, parentKey }) =
       onClick={onNavigate}
       style={{
         padding: "0.75rem 0.9rem",
-        borderRadius: "var(--section-card-radius)",
+        borderRadius: "var(--radius-sm)",
         overflow: "hidden",
         backgroundColor: rowBackground,
         color: "var(--text-2)",
@@ -1482,7 +1482,7 @@ const OrderListCard = ({ order, onNavigate, sectionKey, parentKey }) => {
       onClick={onNavigate}
       style={{
         padding: "0.75rem 0.9rem",
-        borderRadius: "var(--section-card-radius)",
+        borderRadius: "var(--radius-sm)",
         overflow: "hidden",
         backgroundColor: rowBackground,
         color: "var(--text-2)",

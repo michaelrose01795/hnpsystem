@@ -1,4 +1,4 @@
-export const rows = [
+const rawRows = [
   { id: "demo-acc-001", account_id: "ACC-1001", billing_name: "Alex Morgan",                  account_type: "Retail", status: "Active", balance:    0.00, credit_limit: 1500, created_at: "2024-09-14T09:12:00.000Z", updated_at: "2026-04-22T16:00:00.000Z" },
   { id: "demo-acc-002", account_id: "ACC-1002", billing_name: "Priya Shah",                   account_type: "Retail", status: "Active", balance:  314.75, credit_limit: 1500, created_at: "2024-11-02T14:30:00.000Z", updated_at: "2026-04-21T17:30:00.000Z" },
   { id: "demo-acc-003", account_id: "ACC-1003", billing_name: "Tom Reynolds",                 account_type: "Retail", status: "Active", balance:    0.00, credit_limit: 1500, created_at: "2025-02-20T11:05:00.000Z", updated_at: "2026-04-22T12:30:00.000Z" },
@@ -12,3 +12,22 @@ export const rows = [
   { id: "demo-acc-011", account_id: "ACC-1007", billing_name: "Mark Wilson",                   account_type: "Retail", status: "Active", balance: 1280.00, credit_limit: 2000, created_at: "2024-06-22T09:00:00.000Z", updated_at: "2026-04-22T17:00:00.000Z" },
   { id: "demo-acc-012", account_id: "ACC-1008", billing_name: "Iris Patel",                    account_type: "Retail", status: "Active", balance:    0.00, credit_limit: 1500, created_at: "2025-01-12T09:00:00.000Z", updated_at: "2026-04-22T14:30:00.000Z" },
 ];
+
+export const rows = rawRows.map((row) => ({
+  archived: false,
+  is_active: true,
+  deleted_at: null,
+  org_id: null,
+  tenant_id: null,
+  customer_id: null,
+  billing_email: "",
+  billing_phone: "",
+  billing_address_line1: "",
+  billing_address_line2: "",
+  billing_city: "",
+  billing_postcode: "",
+  billing_country: "United Kingdom",
+  credit_terms: 30,
+  notes: "",
+  ...row,
+}));

@@ -6,6 +6,18 @@
 
 import { getMockRows } from "../mockData";
 
+function withDefaultColumns(row) {
+  if (!row || typeof row !== "object" || Array.isArray(row)) return row;
+  return {
+    archived: false,
+    is_active: true,
+    deleted_at: null,
+    org_id: null,
+    tenant_id: null,
+    ...row,
+  };
+}
+
 function matchesFilter(row, { kind, column, value }) {
   if (kind === "eq") return row?.[column] == value;
   if (kind === "neq") return row?.[column] != value;
@@ -41,11 +53,34 @@ function matchesFilter(row, { kind, column, value }) {
   return true;
 }
 
+function matchesOrExpression(row, expression) {
+  if (typeof expression !== "string" || expression.trim().length === 0) return true;
+  const parts = [];
+  const wholeMatch = expression.trim().match(/^([a-zA-Z0-9_]+)\.in\.\((.*)\)$/);
+  if (wholeMatch) {
+    parts.push(expression.trim());
+  } else {
+    parts.push(...expression.split(","));
+  }
+  return parts.some((part) => {
+    const match = part.trim().match(/^([a-zA-Z0-9_]+)\.in\.\((.*)\)$/);
+    if (!match) return false;
+    const [, column, rawValues] = match;
+    const values = rawValues
+      .split(",")
+      .map((value) => value.trim().replace(/^"|"$/g, "").toLowerCase())
+      .filter(Boolean);
+    const cell = String(row?.[column] ?? "").toLowerCase();
+    return values.includes(cell);
+  });
+}
+
 export function routeSupabaseQuery(descriptor) {
   const {
     table,
     op = "select",
     filters = [],
+    orFilters = [],
     orderBy = [],
     limit = null,
     range = null,
@@ -57,6 +92,10 @@ export function routeSupabaseQuery(descriptor) {
     return { data: single || maybeSingle ? null : [], error: null, count: 0, status: 200, statusText: "OK" };
   }
 
+  if (typeof console !== "undefined" && typeof console.debug === "function") {
+    console.debug("[presentation] routeSupabaseQuery", { table, descriptor });
+  }
+
   // Writes are no-ops; return what was sent so optimistic handlers succeed.
   if (op === "insert" || op === "update" || op === "upsert" || op === "delete") {
     const payload = descriptor.payload;
@@ -65,8 +104,12 @@ export function routeSupabaseQuery(descriptor) {
     return { data, error: null, count: data.length, status: 200, statusText: "OK" };
   }
 
-  const rows = getMockRows(table) || [];
-  let result = rows.filter((row) => filters.every((f) => matchesFilter(row, f)));
+  const rows = (getMockRows(table) || []).map(withDefaultColumns);
+  let result = rows.filter(
+    (row) =>
+      filters.every((f) => matchesFilter(row, f)) &&
+      orFilters.every((expression) => matchesOrExpression(row, expression))
+  );
 
   for (const { column, ascending = true } of orderBy) {
     result = [...result].sort((a, b) => {
@@ -88,6 +131,7 @@ export function routeSupabaseQuery(descriptor) {
     result = result.slice(0, limit);
   }
 
+  if (descriptor.head) return { data: { count: total }, error: null, count: total, status: 200, statusText: "OK" };
   if (single) return { data: result[0] ?? null, error: null, count: total, status: 200, statusText: "OK" };
   if (maybeSingle) return { data: result[0] ?? null, error: null, count: total, status: 200, statusText: "OK" };
   return { data: result, error: null, count: total, status: 200, statusText: "OK" };

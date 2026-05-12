@@ -1,4 +1,4 @@
-export const rows = [
+const rawRows = [
   { id: "demo-veh-001", customer_id: "demo-cust-001", reg: "DE24 XYZ", make: "Volkswagen", model: "Golf",      year: 2022, vin: "WVWZZZ1KZDEMO0001", mot_expiry: "2026-08-14", colour: "Deep Black Pearl" },
   { id: "demo-veh-002", customer_id: "demo-cust-002", reg: "TA23 ABC", make: "Ford",       model: "Kuga",      year: 2023, vin: "WF0ZZZKUGADEMO002", mot_expiry: "2026-11-30", colour: "Magnetic Grey"  },
   { id: "demo-veh-003", customer_id: "demo-cust-003", reg: "TV22 HNP", make: "BMW",        model: "3 Series",  year: 2022, vin: "WBA3DEMOBMWDEMO03", mot_expiry: "2027-01-12", colour: "Alpine White"   },
@@ -12,3 +12,20 @@ export const rows = [
   { id: "demo-veh-011", customer_id: "demo-cust-010", reg: "HP24 MOT", make: "Vauxhall",   model: "Corsa",     year: 2024, vin: "W0L0ADEMOVXLCRS11",  mot_expiry: "2025-04-22", colour: "Mamba Green"    },
   { id: "demo-veh-012", customer_id: "demo-cust-011", reg: "WW24 ELC", make: "Volkswagen", model: "ID.4",      year: 2024, vin: "WVWZZZE2ZDEMOID12",  mot_expiry: "2027-05-30", colour: "Glacier White"  },
 ];
+
+export const rows = rawRows.map((row) => ({
+  archived: false,
+  is_active: true,
+  deleted_at: null,
+  org_id: null,
+  tenant_id: null,
+  vehicle_id: row.id,
+  registration: row.reg,
+  reg_number: row.reg,
+  make_model: [row.make, row.model].filter(Boolean).join(" "),
+  mot_due: row.mot_expiry,
+  tax_status: "Taxed",
+  created_at: "2026-04-01T09:00:00.000Z",
+  updated_at: "2026-04-22T09:00:00.000Z",
+  ...row,
+}));

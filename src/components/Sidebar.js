@@ -13,6 +13,11 @@ import BrandLogo from "@/components/BrandLogo";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { canShowDevPages, canShowDevSidebarItems } from "@/lib/dev-tools/config";
+import {
+  isOverlayHidden as readOverlayHidden,
+  setOverlayHidden as writeOverlayHidden,
+  subscribeOverlayVisibility,
+} from "@/features/presentation/runtime/overlayVisibility";
 
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const LOGOUT_BARRIER_MS = 8000;
@@ -74,6 +79,22 @@ export default function Sidebar({
   // signed-in user — pass null to skip the unread-messages query so the badge
   // doesn't surface the presenter's actual inbox count.
   const { unreadCount } = useMessagesBadge(inPresentationMode ? null : dbUserId);
+
+  // Mirror PresentationProvider's "Hide" state so we can show a "Show overlay"
+  // sidebar button when the user has dismissed the popup. The state lives in
+  // a module-scope pub/sub (src/features/presentation/runtime/overlayVisibility.js)
+  // because PresentationProvider mounts inside the page, below this sidebar.
+  const [overlayHidden, setOverlayHiddenLocal] = useState(false);
+  useEffect(() => {
+    setOverlayHiddenLocal(readOverlayHidden());
+    const unsubscribe = subscribeOverlayVisibility((value) => setOverlayHiddenLocal(value));
+    return unsubscribe;
+  }, []);
+  const inPresentationRoute = pathname.startsWith("/presentation");
+  const handleShowOverlay = useCallback(() => {
+    writeOverlayHidden(false);
+  }, []);
+
   const derivedRoles = user?.roles?.map((role) => role.toLowerCase()) || [];
   const userRoles =
     Array.isArray(visibleRoles) && visibleRoles.length > 0
@@ -541,6 +562,33 @@ export default function Sidebar({
                       />
                       <span>Presentation</span>
                     </button>
+                    {inPresentationRoute && overlayHidden && (
+                      <button
+                        type="button"
+                        className="app-btn app-btn--primary app-btn--nav"
+                        style={{
+                          width: "100%",
+                          marginTop: "8px",
+                          marginBottom: 0,
+                          textAlign: "left",
+                        }}
+                        onClick={handleShowOverlay}
+                        title="Bring the slide highlight ring and callout popup back"
+                      >
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            display: "inline-block",
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: "currentColor",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span>Show overlay</span>
+                      </button>
+                    )}
                   </Fragment>
                 );
               }

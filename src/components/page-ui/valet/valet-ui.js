@@ -201,7 +201,7 @@ export default function ValetDashboardUi(props) {
                 data-dev-section-key="valet-jobs-rows"
                 data-dev-section-type="table-rows"
                 data-dev-section-parent="valet-jobs-table">
-                {filteredJobs.map(job => <ValetJobRow key={job.id} job={job} checklist={valetState[job.id] || buildChecklist(job)} onToggle={handleToggle} isSaving={Boolean(savingMap[job.id])} etaSignals={etaSignalsByJobId[job.id] || null} now={etaNow} onOpenJob={selectedJob => {
+                {filteredJobs.map((job, index) => <ValetJobRow key={job.id || job.jobNumber || `valet-job-${index}`} job={job} checklist={valetState[job.id] || buildChecklist(job)} onToggle={handleToggle} isSaving={Boolean(savingMap[job.id])} etaSignals={etaSignalsByJobId[job.id] || null} now={etaNow} onOpenJob={selectedJob => {
           const selectedJobNumber = selectedJob?.jobNumber;
           if (!selectedJobNumber) return;
           void router.push(`/job-cards/valet/${encodeURIComponent(selectedJobNumber)}`);

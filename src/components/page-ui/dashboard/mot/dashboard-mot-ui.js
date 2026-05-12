@@ -12,7 +12,7 @@ export default function MotDashboardUi(props) {
   } = props; // receive page logic props.
 
   const MotSection = ({ title, subtitle, children }) => (
-    <LayerTheme as="section" className="app-section-card" gap="12px">
+    <LayerTheme as="section" gap="12px">
       <div>
         <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-accent)" }}>{title}</h2>
         {subtitle && <p style={{ margin: "6px 0 0", color: "var(--text-1)", opacity: 0.75 }}>{subtitle}</p>}

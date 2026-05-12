@@ -12,6 +12,7 @@ function buildBuilder({ table, op, payload }) {
     op: op || "select",
     payload,
     filters: [],
+    orFilters: [],
     orderBy: [],
     limit: null,
     range: null,
@@ -25,6 +26,7 @@ function buildBuilder({ table, op, payload }) {
   // Read setters
   builder.select = (_cols, opts) => {
     if (opts && typeof opts === "object" && "count" in opts) descriptor.wantCount = opts.count;
+    if (opts && typeof opts === "object" && opts.head === true) descriptor.head = true;
     return builder;
   };
 
@@ -42,7 +44,10 @@ function buildBuilder({ table, op, payload }) {
       return builder;
     };
   }
-  builder.or = passthrough;
+  builder.or = (expression) => {
+    descriptor.orFilters.push(expression);
+    return builder;
+  };
   builder.not = (column, opOrValue, value) => {
     descriptor.filters.push({ kind: "not", column, value: { op: opOrValue, value } });
     return builder;
