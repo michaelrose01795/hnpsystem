@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CreateAccountRouteShimUi from "@/components/page-ui/accounts/accounts-create-ui"; // Extracted presentation layer.
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 const CREATE_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
@@ -10,6 +11,7 @@ export default function CreateAccountRouteShim() {
   const router = useRouter();
 
   useEffect(() => {
+    if (isPresentationMode()) return;
     if (!router.isReady) return;
     router.replace({ pathname: "/accounts", query: { ...router.query, create: "1" } });
   }, [router, router.isReady, router.query]);

@@ -1,0 +1,14 @@
+export const rows = [
+  { id: "demo-veh-001", customer_id: "demo-cust-001", reg: "DE24 XYZ", make: "Volkswagen", model: "Golf",      year: 2022, vin: "WVWZZZ1KZDEMO0001", mot_expiry: "2026-08-14", colour: "Deep Black Pearl" },
+  { id: "demo-veh-002", customer_id: "demo-cust-002", reg: "TA23 ABC", make: "Ford",       model: "Kuga",      year: 2023, vin: "WF0ZZZKUGADEMO002", mot_expiry: "2026-11-30", colour: "Magnetic Grey"  },
+  { id: "demo-veh-003", customer_id: "demo-cust-003", reg: "TV22 HNP", make: "BMW",        model: "3 Series",  year: 2022, vin: "WBA3DEMOBMWDEMO03", mot_expiry: "2027-01-12", colour: "Alpine White"   },
+  { id: "demo-veh-004", customer_id: "demo-cust-004", reg: "WS24 GLS", make: "Audi",       model: "A3",        year: 2024, vin: "WAUZZZ8VAUDEMO004", mot_expiry: "2027-04-30", colour: "Tornado Grey"   },
+  { id: "demo-veh-005", customer_id: "demo-cust-005", reg: "LB23 RTV", make: "Mercedes",   model: "C-Class",   year: 2023, vin: "WDD2050DEMOMRC05",  mot_expiry: "2026-09-18", colour: "Obsidian Black" },
+  { id: "demo-veh-006", customer_id: "demo-cust-006", reg: "GA24 XPL", make: "Toyota",     model: "RAV4",      year: 2023, vin: "JTMRA31VDEMORAV6",  mot_expiry: "2026-12-22", colour: "Silver Sky"     },
+  { id: "demo-veh-007", customer_id: "demo-cust-007", reg: "PL22 NHS", make: "Nissan",     model: "Qashqai",   year: 2022, vin: "SJNFCAJ11DEMOQQ7",  mot_expiry: "2026-07-30", colour: "Magnetic Red"   },
+  { id: "demo-veh-008", customer_id: "demo-cust-008", reg: "EX23 CRS", make: "Honda",      model: "Civic",     year: 2023, vin: "JHMFK17DEMOCIV8",   mot_expiry: "2027-02-04", colour: "Premium Crystal Red" },
+  { id: "demo-veh-009", customer_id: "demo-cust-001", reg: "RV23 EVS", make: "Tesla",      model: "Model 3",   year: 2023, vin: "5YJ3E1EADEMOM3009",  mot_expiry: "2026-10-08", colour: "Pearl White"    },
+  { id: "demo-veh-010", customer_id: "demo-cust-009", reg: "BX24 LNP", make: "Land Rover", model: "Discovery", year: 2024, vin: "SALRADEMOLDDISC10",  mot_expiry: "2027-03-15", colour: "Fuji White"     },
+  { id: "demo-veh-011", customer_id: "demo-cust-010", reg: "HP24 MOT", make: "Vauxhall",   model: "Corsa",     year: 2024, vin: "W0L0ADEMOVXLCRS11",  mot_expiry: "2025-04-22", colour: "Mamba Green"    },
+  { id: "demo-veh-012", customer_id: "demo-cust-011", reg: "WW24 ELC", make: "Volkswagen", model: "ID.4",      year: 2024, vin: "WVWZZZE2ZDEMOID12",  mot_expiry: "2027-05-30", colour: "Glacier White"  },
+];

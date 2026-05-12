@@ -270,9 +270,11 @@ export default function CustomerPreviewPageUi(props) {
       margin: "0 auto",
       padding: "24px"
     }}>
-          {activeTab === "summary" && renderSummaryTab()}
-          {activeTab === "photos" && renderPhotosTab()}
-          {activeTab === "videos" && renderVideosTab()}
+          <div data-presentation="vhc-customer-messages">
+            {activeTab === "summary" && renderSummaryTab()}
+            {activeTab === "photos" && renderPhotosTab()}
+            {activeTab === "videos" && renderVideosTab()}
+          </div>
         </main>
 
         {/* Footer */}

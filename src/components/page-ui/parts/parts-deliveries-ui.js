@@ -43,7 +43,7 @@ export default function PartsDeliveriesPageUi(props) {
       return <>
       <div style={pageStyles.container}>
         <LayerTheme as="section" sectionKey="parts-deliveries-header" sectionType="content-card" data-dev-text-preview="Driver view header" style={pageStyles.headerCard}>
-          <LayerSurface data-dev-section="1" data-dev-section-key="parts-deliveries-controls" data-dev-section-type="toolbar" data-dev-section-parent="parts-deliveries-header" data-dev-text-preview="Day picker controls" style={pageStyles.controls}>
+          <LayerSurface data-presentation="deliveries-day-controls" data-dev-section="1" data-dev-section-key="parts-deliveries-controls" data-dev-section-type="toolbar" data-dev-section-parent="parts-deliveries-header" data-dev-text-preview="Day picker controls" style={pageStyles.controls}>
             <div>
               <div style={{
             fontSize: "0.9rem",
@@ -92,7 +92,7 @@ export default function PartsDeliveriesPageUi(props) {
           </LayerSurface>
         </LayerTheme>
 
-        <LayerTheme as="section" sectionKey="parts-deliveries-list" sectionType="content-card" data-dev-text-preview="Delivery list" style={pageStyles.listCard}>
+        <LayerTheme as="section" data-presentation="deliveries-list" sectionKey="parts-deliveries-list" sectionType="content-card" data-dev-text-preview="Delivery list" style={pageStyles.listCard}>
           <LayerSurface style={{
         display: "flex",
         flexDirection: "column",

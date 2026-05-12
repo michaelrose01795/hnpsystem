@@ -185,11 +185,11 @@ export default function ViewJobCardsUi(props) {
                 <TabGroup items={tabOptions} value={activeTab} onChange={setActiveTab} ariaLabel="Job card tabs" className="tab-api--wrap" />
               </div>
               <div className="job-cards-view-search-shell">
-                <SearchBar className="job-cards-view-searchbar" placeholder={searchPlaceholder} value={searchValues[activeTab]} onChange={event => handleSearchValueChange(activeTab, event.target.value)} onClear={() => handleSearchValueChange(activeTab, "")} style={{
+                <SearchBar data-presentation="job-cards-search" className="job-cards-view-searchbar" placeholder={searchPlaceholder} value={searchValues[activeTab]} onChange={event => handleSearchValueChange(activeTab, event.target.value)} onClear={() => handleSearchValueChange(activeTab, "")} style={{
                 width: "100%"
               }} />
                 {!isOrdersTab && <DevLayoutSection className="job-cards-view-filter-controls" sectionKey="job-cards-view-filter-controls" parentKey="job-cards-view-filter-shell" sectionType="toolbar">
-                    <DevLayoutSection className="job-cards-view-filter-slot" sectionKey="job-cards-view-filter-controls-division-slot" parentKey="job-cards-view-filter-controls" sectionType="filter-control">
+                    <DevLayoutSection data-presentation="job-cards-division-filter" className="job-cards-view-filter-slot" sectionKey="job-cards-view-filter-controls-division-slot" parentKey="job-cards-view-filter-controls" sectionType="filter-control">
                       <DevLayoutSection className="job-cards-view-filter-control" sectionKey="job-cards-view-division-filter" parentKey="job-cards-view-filter-controls-division-slot" sectionType="filter-control">
                         <DropdownField className="job-cards-filter" value={divisionFilter} options={[{
                       value: "All",
@@ -203,7 +203,7 @@ export default function ViewJobCardsUi(props) {
                     }]} size="sm" onValueChange={value => handleDivisionFilterChange(value)} />
                       </DevLayoutSection>
                     </DevLayoutSection>
-                    <DevLayoutSection className="job-cards-view-filter-slot" sectionKey="job-cards-view-filter-controls-status-slot" parentKey="job-cards-view-filter-controls" sectionType="filter-control">
+                    <DevLayoutSection data-presentation="job-cards-status-filter" className="job-cards-view-filter-slot" sectionKey="job-cards-view-filter-controls-status-slot" parentKey="job-cards-view-filter-controls" sectionType="filter-control">
                       <DevLayoutSection className="job-cards-view-filter-control" sectionKey="job-cards-view-status-filter" parentKey="job-cards-view-filter-controls-status-slot" sectionType="filter-control">
                         <DropdownField className="job-cards-filter" value={activeStatusFilter} options={statusTabs.map(status => ({
                       value: status,

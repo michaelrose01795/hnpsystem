@@ -45,6 +45,8 @@ import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverl
 import { SWRConfig } from "swr"; // global SWR cache and revalidation config
 import { swrConfig } from "@/lib/swr/config"; // HNP-tuned SWR defaults
 import Layout from "@/components/Layout"; // persistent app shell — mounted once via getLayout
+import { setPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
 
 // Default page layout: every page is wrapped by the persistent <Layout>. Pages that
 // need custom layout props (jobNumber, requiresLandscape, disableContentCardHover,
@@ -58,6 +60,12 @@ function AppWrapper({ Component, pageProps }) {
   const pathname = router?.pathname || "";
   const asPath = router?.asPath || "";
   const asPathWithoutQuery = asPath.split("?")[0] || "";
+  // Toggle the presentation-mode runtime flag synchronously on every render
+  // so that the very first DB call inside a /presentation/* route already
+  // sees the flag and routes through the mock data layer. The flag setter
+  // short-circuits when the value hasn't changed.
+  const isPresentationRoute = pathname.startsWith("/presentation");
+  if (typeof window !== "undefined") setPresentationMode(isPresentationRoute);
   const notesHiddenRoutes = new Set(["/", "/login", "/presentation"]);
   const isCustomerRoute = pathname.startsWith("/customer");
   const isWebsiteRoute =
@@ -71,6 +79,14 @@ function AppWrapper({ Component, pageProps }) {
     notesHiddenRoutes.has(pathname) ||
     notesHiddenRoutes.has(asPathWithoutQuery);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
+
+  // Install / restore the /api/* fetch interceptor based on whether we're on a
+  // /presentation/* route. Real routes always get the original window.fetch.
+  useEffect(() => {
+    if (isPresentationRoute) installFetchInterceptor();
+    else restoreFetchInterceptor();
+    return () => restoreFetchInterceptor();
+  }, [isPresentationRoute]);
 
   // Remove legacy reload/boot classes that can persist on iOS Safari and block manual reloads.
   useEffect(() => {

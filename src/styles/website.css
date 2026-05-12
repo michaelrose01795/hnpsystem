@@ -29,6 +29,7 @@ html.website-scope button:not(.app-btn),
 html.website-scope [role="button"]:not(.app-btn),
 html.website-scope a.website-btn {
   appearance: none;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -40,6 +41,8 @@ html.website-scope a.website-btn {
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  line-height: 1;
+  text-align: center;
   color: #fff;
   background: rgba(255, 255, 255, 0.06);
   border: var(--ghostbutton-ring);
@@ -52,6 +55,32 @@ html.website-scope a.website-btn {
     border-color 0.2s ease,
     color 0.2s ease,
     transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Calendar API buttons are grid controls, not pill CTAs. Keep them aligned
+   to their seven columns when a calendar is rendered inside /website. */
+html.website-scope button.calendar-api__day {
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 0;
+  line-height: 1;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+html.website-scope button.calendar-api__nav-button {
+  min-height: 32px;
+  padding: 0;
+  line-height: 1;
+}
+
+html.website-scope button.calendar-api__month-year,
+html.website-scope button.calendar-api__today-button,
+html.website-scope button.calendar-api__picker-cell {
+  line-height: 1;
+  text-align: center;
 }
 html.website-scope button:not(.app-btn):hover,
 html.website-scope [role="button"]:not(.app-btn):hover,

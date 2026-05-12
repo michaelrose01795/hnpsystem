@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 
 const DEV_ROLE_COOKIE = "hnp-dev-roles";
 const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -99,6 +101,30 @@ export function UserProvider({ children }) {
       setLogoutBarrierUntil(0);
     }
   }, [sessionStatus, logoutBarrierUntil]);
+
+  // Presentation mode: synthesise a user from the active demo role so the rest
+  // of the app (role-gated UI, sidebars, dashboards) renders without ever
+  // hitting NextAuth or the dev-login flow. The active role key is written to
+  // sessionStorage by PresentationProvider when the user picks a tile on
+  // /loginPresentation.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isPresentationMode()) return;
+    const key = window.sessionStorage.getItem("presentation:activeRoleKey");
+    const role = getPresentationRoleByKey(key);
+    if (!role) return;
+    const demoUser = {
+      id: `demo-${role.key}`,
+      username: role.demoName || "Demo User",
+      email: `${role.key}@demo.hnp.example`,
+      roles: [String(role.roleId || role.key).toUpperCase()],
+      authUuid: null,
+      isDevLogin: false,
+      impersonatedRole: role.roleId || role.key,
+    };
+    setUser(demoUser);
+    setLoading(false);
+  }, [sessionStatus]);
 
   // Load dev user from localStorage
   useEffect(() => {

@@ -5,6 +5,7 @@
 // always lands on the canonical customer-facing URL.
 import { useEffect } from "react";
 import { useRouter } from "next/router";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 export async function getServerSideProps({ params }) {
   const jobNumber = params?.jobNumber || "";
@@ -20,6 +21,7 @@ export async function getServerSideProps({ params }) {
 export default function LegacyShareRedirect() {
   const router = useRouter();
   useEffect(() => {
+    if (isPresentationMode()) return;
     if (!router.isReady) return;
     const { jobNumber, linkCode } = router.query;
     if (jobNumber && linkCode) {

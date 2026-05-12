@@ -62,7 +62,7 @@ export default function AppointmentsUi(props) {
         }}>
 
         {/* Top Bar */}
-        <LayerSurface as="div" id="appointments-auto-content-card-2" data-dev-section-key="appointments-auto-content-card-2" data-dev-section-type="content-card" style={{
+        <LayerSurface as="div" data-presentation="appointments-booking-toolbar" id="appointments-auto-content-card-2" data-dev-section-key="appointments-auto-content-card-2" data-dev-section-type="content-card" style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
             gap: "10px",
@@ -118,7 +118,7 @@ export default function AppointmentsUi(props) {
 
         {/* Calendar Table Container — mirrors the .app-table-shell-* visual design inline so this table can be edited freely without fighting global !important rules. data-app-table-shell="off" opts the table out of the GlobalTableShells auto-classifier. */}
         {/* Outer wrapper owns the card visuals (border, radius, surface fallback) and clips the rounded corners. The inner scroller is transparent and gutter-free so row backgrounds paint behind the scrollbar thumb instead of being cut off by a reserved gutter. */}
-        <div data-dev-section-key="appointments-auto-data-table-2-shell" data-dev-section-type="section-shell" style={{
+        <div data-presentation="appointments-capacity-table" data-dev-section-key="appointments-auto-data-table-2-shell" data-dev-section-type="section-shell" style={{
             flex: "1 1 auto",
             minHeight: 0,
             marginBottom: "12px",
@@ -422,7 +422,7 @@ export default function AppointmentsUi(props) {
           </div>
 
           {/* ✅ Enhanced Jobs Table — always shown (toggle removed) */}
-          <div style={{
+          <div data-presentation="appointments-day-jobs" style={{
               overflowX: "auto",
               borderRadius: "var(--radius-md)",
               background: "var(--theme)"

@@ -1,32 +1,14 @@
+// Legacy /presentation entry point. The current deep-link form is
+// /presentation/<role>/<pageSlug>/<slide> (see [role]/[pageSlug]/[slide].js).
+// A bare /presentation hit always returns the user to the role picker.
 import { useEffect } from "react";
-import { PresentationProvider } from "@/features/presentation/PresentationProvider";
-import PresentationRunner from "@/features/presentation/PresentationRunner";
-import PresentationPageUi from "@/components/page-ui/presentation/presentation-ui";
-import Layout from "@/components/Layout";
-import { useTheme } from "@/styles/themeProvider";
+import { useRouter } from "next/router";
 
-export default function PresentationPage() {
-  const { setTemporaryOverride } = useTheme();
-
-  // Force the presentation runner into the brand red accent so demos always
-  // look the same regardless of the presenting user's saved preference.
+export default function PresentationIndex() {
+  const router = useRouter();
   useEffect(() => {
-    setTemporaryOverride({ mode: "system", accent: "red" });
-    return () => {
-      setTemporaryOverride(null);
-    };
-  }, [setTemporaryOverride]);
-
-  return (
-    <PresentationPageUi
-      PresentationProvider={PresentationProvider}
-      PresentationRunner={PresentationRunner}
-    />
-  );
+    if (!router.isReady) return;
+    router.replace("/loginPresentation");
+  }, [router, router.isReady]);
+  return null;
 }
-
-PresentationPage.getLayout = (page) => (
-  <Layout presentationShell disableContentCardHover>
-    {page}
-  </Layout>
-);

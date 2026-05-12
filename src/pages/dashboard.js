@@ -15,6 +15,7 @@ import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // import role category definitions
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import DashboardUi from "@/components/page-ui/dashboard-ui"; // Extracted presentation layer.
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 const retailManagerRoles = (roleCategories?.Retail || [] // build a list of retail manager roles
 ).filter((roleName) => /manager|director/i.test(roleName)) // keep only manager or director titles
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const [isRedirecting, setIsRedirecting] = useState(false); // avoid rendering content while routing users
 
   useEffect(() => {
+    if (isPresentationMode()) return;
     if (loading) return;
     if (!user) {
       setIsRedirecting(true);
@@ -38,6 +40,7 @@ export default function Dashboard() {
   }, [loading, user, router]);
 
   useEffect(() => {
+    if (isPresentationMode()) return;
     if (!user) return; // stop if user data not ready
 
     const normalizedRoles = user.roles?.map((role) => role.toLowerCase()) || [];

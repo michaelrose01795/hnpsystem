@@ -260,7 +260,7 @@ export default function CreateJobCardPageUi(props) {
         }}>
               {jobSource}
             </span>
-            <button type="button" onClick={handleSaveJob} className="app-btn app-btn--primary">
+            <button type="button" data-presentation="create-submit" onClick={handleSaveJob} className="app-btn app-btn--primary">
               {jobTabs.length > 1 ? `Save ${jobTabs.length} Jobs` : "Save Job Card"}
             </button>
           </div>
@@ -502,7 +502,7 @@ export default function CreateJobCardPageUi(props) {
               }} onBlur={e => {
                 e.target.style.borderColor = "var(--surface)";
               }} />
-                  <button onClick={handleFetchVehicleData} disabled={isLoadingVehicle} style={{
+                  <button data-presentation="create-reg-lookup" onClick={handleFetchVehicleData} disabled={isLoadingVehicle} style={{
                 padding: "10px 20px",
                 backgroundColor: isLoadingVehicle ? "var(--surface)" : "var(--primary)",
                 color: "white",
@@ -922,7 +922,7 @@ export default function CreateJobCardPageUi(props) {
             }}>
                     New Customer
                   </button>
-                  <button onClick={() => setShowExistingCustomer(true)} style={{
+                  <button data-presentation="create-customer-lookup" onClick={() => setShowExistingCustomer(true)} style={{
               width: "100%",
               maxWidth: "320px",
               padding: "12px 16px",

@@ -241,7 +241,7 @@ export default function JobCardDetailPageUi(props) {
             alignItems: "center",
             gap: "12px",
             flexWrap: "wrap"
-          }}>
+          }} data-presentation="job-detail-status">
               <h1 style={{
               margin: 0,
               color: "var(--primary)",
@@ -614,7 +614,7 @@ export default function JobCardDetailPageUi(props) {
         padding: 0,
         margin: 0
       }}>
-          <div ref={tabsScrollRef} onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined} onMouseMove={tabsOverflowing ? handleTabsDragMove : undefined} onMouseUp={tabsOverflowing ? handleTabsDragEnd : undefined} onMouseLeave={tabsOverflowing ? handleTabsDragEnd : undefined}>
+          <div data-presentation="job-detail-tabs" ref={tabsScrollRef} onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined} onMouseMove={tabsOverflowing ? handleTabsDragMove : undefined} onMouseUp={tabsOverflowing ? handleTabsDragEnd : undefined} onMouseLeave={tabsOverflowing ? handleTabsDragEnd : undefined}>
           <LayerTheme
             className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`}
             radius="var(--radius-sm)"

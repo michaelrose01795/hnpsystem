@@ -93,7 +93,7 @@ export default function PartsJobCardPageUi(props) {
           flexDirection: "column",
           gap: "18px"
         }}>
-            <LayerTheme style={sectionCardStyle}>
+            <LayerTheme data-presentation="parts-customer-context" style={sectionCardStyle}>
               <div style={sectionHeaderStyle}>
                 <div>
                   <strong style={{
@@ -344,7 +344,7 @@ export default function PartsJobCardPageUi(props) {
               </label>
             </LayerTheme>
 
-            <LayerTheme style={sectionCardStyle}>
+            <LayerTheme data-presentation="parts-line-items" style={sectionCardStyle}>
               <div style={{
               display: "flex",
               justifyContent: "space-between",

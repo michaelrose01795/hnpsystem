@@ -31,7 +31,7 @@ export default function ArchivedJobsPageUi(props) {
     case "section1":
       return <>
       <LayerSurface sectionKey="job-cards-archive-page-shell" sectionType="page-shell" shell className="app-page-stack" gap="24px" padding={0}>
-        <DevLayoutSection as="form" sectionKey="job-cards-archive-search-toolbar" parentKey="job-cards-archive-page-shell" sectionType="toolbar" backgroundToken="transparent" onSubmit={event => {
+        <DevLayoutSection as="form" data-presentation="archive-filters" sectionKey="job-cards-archive-search-toolbar" parentKey="job-cards-archive-page-shell" sectionType="toolbar" backgroundToken="transparent" onSubmit={event => {
       event.preventDefault();
       runSearch(query);
     }} className="app-toolbar-row" style={{
@@ -117,7 +117,7 @@ export default function ArchivedJobsPageUi(props) {
       }}>{error}</p>
           </LayerTheme>}
 
-        <LayerTheme as="section" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell radius="var(--radius-sm)" style={{
+        <LayerTheme as="section" data-presentation="archive-results" sectionKey="job-cards-archive-results-panel" parentKey="job-cards-archive-page-shell" sectionType="section-shell" shell radius="var(--radius-sm)" style={{
         overflowX: "auto"
       }}>
           <DevLayoutSection as="table" sectionKey="job-cards-archive-results-table" parentKey="job-cards-archive-results-panel" sectionType="data-table" backgroundToken="accent-surface" style={{

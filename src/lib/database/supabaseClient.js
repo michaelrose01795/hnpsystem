@@ -1,9 +1,35 @@
 // file location: src/lib/database/supabaseClient.js
 import { createClient } from "@supabase/supabase-js";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { getPresentationStubClient } from "@/features/presentation/dataLayer/presentationStubClient";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Wraps a real Supabase client so that, when /presentation/* routes are
+// active, every property access (.from, .rpc, .auth, .storage, .channel)
+// routes to the in-memory presentation stub instead. Real (non-presentation)
+// routes are unaffected — the Proxy resolves to the real client on each call,
+// so there is no cross-contamination between mock and live data. This avoids
+// having to rewrite the 27 files under src/lib/database/* that already do
+// `const supabase = getDatabaseClient(); await supabase.from(...)...`.
+function wrapWithPresentationProxy(realClient) {
+  if (!realClient) return realClient;
+  return new Proxy(realClient, {
+    get(target, prop, receiver) {
+      if (isPresentationMode()) {
+        const stub = getPresentationStubClient();
+        const value = stub[prop];
+        if (typeof value === "function") return value.bind(stub);
+        return value;
+      }
+      const value = Reflect.get(target, prop, receiver);
+      if (typeof value === "function") return value.bind(target);
+      return value;
+    },
+  });
+}
 
 // CI / Playwright stub mode.
 //
@@ -132,9 +158,9 @@ if (!isStubEnv && typeof window === "undefined" && !supabaseServiceRole) {
   );
 }
 
-export const supabaseService = supabaseServiceRole;
+export const supabaseService = wrapWithPresentationProxy(supabaseServiceRole);
 
-export const supabaseClient = isStubEnv
+const rawSupabaseClient = isStubEnv
   ? stubClient
   : createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -144,6 +170,8 @@ export const supabaseClient = isStubEnv
       },
     });
 
-export const supabase = supabaseServiceRole || supabaseClient;
+export const supabaseClient = wrapWithPresentationProxy(rawSupabaseClient);
+
+export const supabase = wrapWithPresentationProxy(supabaseServiceRole || rawSupabaseClient);
 
 export default supabase;

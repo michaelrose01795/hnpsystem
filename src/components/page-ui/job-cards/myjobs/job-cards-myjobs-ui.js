@@ -81,7 +81,7 @@ export default function MyJobsPageUi(props) {
     minHeight: "100%"
   }}>
         {/* Search and Filter Bar */}
-        <LayerTheme sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="app-layout-page-card" backgroundToken="theme-filter-card" className="myjobs-filter-toolbar" style={{
+        <LayerTheme data-presentation="my-jobs-filters" sectionKey="myjobs-filter-toolbar" sectionType="filter-row" parentKey="app-layout-page-card" backgroundToken="theme-filter-card" className="myjobs-filter-toolbar" style={{
       display: "flex",
       flexDirection: "row",
       gap: "12px",
@@ -122,7 +122,7 @@ export default function MyJobsPageUi(props) {
         </LayerTheme>
 
         {/* Jobs List */}
-        <LayerTheme sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-results-card" style={{
+        <LayerTheme data-presentation="my-jobs-results" sectionKey="myjobs-results-shell" sectionType="content-card" parentKey="app-layout-page-card" backgroundToken="theme-results-card" style={{
       flex: 1,
       display: "flex",
       flexDirection: "column",

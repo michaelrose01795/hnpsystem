@@ -40,7 +40,9 @@ export default function VhcCustomerViewPageUi(props) {
       }}>Customer authorisation view</div>
         </div>
 
-        <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} viewMode="customer" />
+        <div data-presentation="vhc-summary-list">
+          <VhcDetailsPanel jobNumber={jobNumber} showNavigation={false} viewMode="customer" />
+        </div>
       </div>
     </>; // render extracted page section.
     default:

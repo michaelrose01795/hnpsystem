@@ -68,7 +68,7 @@ export default function CustomerDetailWorkspaceUi(props) {
           {customer && !error && !isLoading &&
           <>
               <LayerSurface as="section"
-
+            data-presentation="customer-hero"
             data-dev-section="1"
             data-dev-section-key="customer-profile-summary"
             data-dev-section-type="section-shell"
@@ -206,6 +206,7 @@ export default function CustomerDetailWorkspaceUi(props) {
               </LayerSurface>
 
               <div
+              data-presentation="customer-history"
               data-dev-section="1"
               data-dev-section-key="customer-profile-tabs"
               data-dev-section-type="tab-row"

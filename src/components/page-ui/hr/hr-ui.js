@@ -29,7 +29,7 @@ export default function HrDashboardUi(props) {
         </SectionCard>}
 
       {!isLoading && !error && <>
-          <section style={{
+          <section data-presentation="hr-metrics" style={{
       display: "grid",
       gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
       gap: "var(--layout-card-gap)"

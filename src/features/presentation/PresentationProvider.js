@@ -77,14 +77,28 @@ export function PresentationProvider({ children }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [devOverlayOn, setDevOverlayOn] = useState(false);
 
-  // Sync from hash on mount.
+  // Sync from URL on mount. Two sources, in priority order:
+  //   1. router.query.slide — the new path-based deep-link form
+  //      (/presentation/<role>/<pageSlug>/<slide>) populates this.
+  //   2. window.location.hash — the legacy ?role=...#slide=X&step=Y form.
+  // The hash also survives in the new URL once the user navigates between
+  // slides/steps because the runner writes its position back to the hash.
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const pathSlide = Number.parseInt(
+      Array.isArray(router.query.slide) ? router.query.slide[0] : router.query.slide,
+      10
+    );
+    if (Number.isFinite(pathSlide) && pathSlide >= 0) {
+      setSlideIndex(Math.min(pathSlide, Math.max(slides.length - 1, 0)));
+      setStepIndex(0);
+      return;
+    }
     const { slide, step } = parseHash(window.location.hash);
     if (slide) setSlideIndex(Math.min(slide, Math.max(slides.length - 1, 0)));
     if (step) setStepIndex(step);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router.query.slide]);
 
   // Reset to slide 0 when the active role changes — different role, different deck.
   useEffect(() => {

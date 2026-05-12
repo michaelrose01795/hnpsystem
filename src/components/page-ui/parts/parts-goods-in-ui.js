@@ -243,6 +243,7 @@ export default function GoodsInPageUi(props) {
 
         <LayerTheme
           as="section"
+          data-presentation="goods-in-invoice"
           sectionKey="goods-in-invoice-details"
           parentKey="app-layout-page-card"
           style={sectionCardStyle}
@@ -346,6 +347,7 @@ export default function GoodsInPageUi(props) {
 
         <LayerTheme
           as="section"
+          data-presentation="goods-in-add-part"
           sectionKey="goods-in-add-part"
           parentKey="app-layout-page-card"
           style={sectionCardStyle}

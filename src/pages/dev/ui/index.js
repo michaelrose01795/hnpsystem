@@ -1,42 +1,16 @@
+// Legacy dev preview index. Superseded by the role-driven deep-link form
+// /presentation/<role>/<pageSlug>/<slide>. Redirects to the role picker.
 import { useEffect } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
-import { canShowDevPages } from "@/lib/dev-tools/config";
-import { UiPreviewIndex } from "@/components/page-ui/dev/ui-preview-ui";
-import { getGroupedUiKeys } from "@/features/presentation/uiRegistry";
-import { useTheme } from "@/styles/themeProvider";
-import LayerSurface from "@/components/ui/LayerSurface";
-import LayerTheme from "@/components/ui/LayerTheme";
 
-// Dev-only index of every page-ui file available for standalone preview.
-// Each entry links to /dev/ui/[uiKey] which renders that page-ui with mock
-// data and no presentation overlay.
 export default function DevUiIndexPage() {
-  const { setTemporaryOverride } = useTheme();
-
+  const router = useRouter();
   useEffect(() => {
-    setTemporaryOverride({ mode: "system", accent: "red" });
-    return () => setTemporaryOverride(null);
-  }, [setTemporaryOverride]);
-
-  if (!canShowDevPages()) {
-    return (
-      <div className="app-page-shell">
-        <LayerSurface>
-          <LayerTheme>
-            <h1 style={{ marginTop: 0 }}>Dev pages disabled</h1>
-            <p>Set <code>devToolsConfig.showPages = true</code> to enable.</p>
-          </LayerTheme>
-        </LayerSurface>
-      </div>
-    );
-  }
-
-  const groups = getGroupedUiKeys();
-  return <UiPreviewIndex groups={groups} />;
+    if (!router.isReady) return;
+    router.replace("/loginPresentation");
+  }, [router, router.isReady]);
+  return null;
 }
 
-DevUiIndexPage.getLayout = (page) => (
-  <Layout presentationShell disableContentCardHover>
-    {page}
-  </Layout>
-);
+DevUiIndexPage.getLayout = (page) => <Layout>{page}</Layout>;

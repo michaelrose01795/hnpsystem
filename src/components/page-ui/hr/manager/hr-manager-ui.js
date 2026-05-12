@@ -58,7 +58,7 @@ export default function HRManagerDashboardUi(props) {
       }))} value={activeTab} onChange={value => setActiveTab(value)} />
         </TabRow>
 
-        <DevLayoutSection sectionKey={`hr-manager-tab-${activeTab}`} parentKey="hr-manager-content" sectionType="section-shell" className="hr-manager-tab-panel">
+        <DevLayoutSection data-presentation="hr-compliance" sectionKey={`hr-manager-tab-${activeTab}`} parentKey="hr-manager-content" sectionType="section-shell" className="hr-manager-tab-panel">
           <div className="hr-manager-tab-content">
             <ActiveTabComponent />
           </div>

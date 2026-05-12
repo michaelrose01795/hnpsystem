@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import EditAccountRouteShimUi from "@/components/page-ui/accounts/edit/accounts-edit-account-id-ui"; // Extracted presentation layer.
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 const EDIT_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER"];
 
@@ -11,6 +12,7 @@ export default function EditAccountRouteShim() {
   const accountId = typeof router.query.accountId === "string" ? router.query.accountId : "";
 
   useEffect(() => {
+    if (isPresentationMode()) return;
     if (!router.isReady || !accountId) return;
     const nextQuery = { ...router.query, edit: accountId };
     delete nextQuery.accountId;

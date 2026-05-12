@@ -3165,6 +3165,7 @@
     radial-gradient(ellipse at top right, rgba(var(--accentMainRgb), 0.18), transparent 60%),
     #07070b;
   color: var(--txt-bright);
+  font-family: var(--font-family);
 
   /* The singlescroll text tokens (--txt-bright / --txt-soft / --txt-mute) are
      only scoped to .page elsewhere in this stylesheet. The /website/profile
@@ -3207,9 +3208,10 @@
   background: rgba(0, 0, 0, 0.4);
 }
 .profileMain {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 48px 24px 96px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: clamp(24px, 4vw, 56px) clamp(16px, 3vw, 48px) 96px;
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -3246,13 +3248,17 @@
   appearance: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  min-height: 38px;
   padding: 10px 16px;
   font-family: inherit;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  line-height: 1;
+  text-align: center;
   color: #fff;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -3277,7 +3283,7 @@
 }
 .profileGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 22px;
 }
 .profileCard {
@@ -3292,6 +3298,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-width: 0;
 }
 .profileCardWide { grid-column: 1 / -1; }
 .profileCardHeader {
@@ -3416,9 +3423,10 @@
    top (handled by .profileSideNavMobile). */
 .profileLayout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: minmax(190px, 240px) minmax(0, 1fr);
   gap: 28px;
   align-items: start;
+  min-width: 0;
 }
 .profileSideNav {
   position: sticky;
@@ -3432,6 +3440,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
@@ -3729,6 +3739,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .profileSettingsTitle { font-size: 13px; font-weight: 700; }
 .profileSettingsHint { font-size: 12px; color: var(--txt-mute); }
@@ -3796,13 +3807,17 @@
 /* Our-services card picker */
 .profileServiceGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
   gap: 10px;
 }
-.profileServiceTile {
+.profileShell .profileServiceGrid button.profileServiceTile {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 6px;
+  min-width: 0;
+  min-height: 104px;
   padding: 14px;
   background: rgba(255, 255, 255, 0.04);
   border-radius: 14px;
@@ -3810,24 +3825,34 @@
   text-align: left;
   font-family: inherit;
   color: var(--txt-bright);
+  white-space: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.35;
   transition: background 0.2s ease, transform 0.2s ease;
 }
-.profileServiceTile:hover {
+.profileShell .profileServiceGrid button.profileServiceTile:hover {
   background: rgba(255, 255, 255, 0.08);
   transform: translateY(-1px);
 }
-.profileServiceTileActive {
+.profileShell .profileServiceGrid button.profileServiceTileActive {
   background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.25) 0%, rgba(var(--accentMainRgb), 0.12) 100%);
 }
 .profileServiceTileTitle {
+  display: block;
+  max-width: 100%;
   font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.2px;
+  overflow-wrap: anywhere;
 }
 .profileServiceTileHint {
+  display: block;
+  max-width: 100%;
   font-size: 11px;
   color: var(--txt-mute);
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 /* Tag/chip row used for active-job inline badges */
@@ -4002,10 +4027,15 @@
   font-weight: 800;
   letter-spacing: -0.01em;
 }
-.wsCalNav {
+.profileShell .wsCalPanel button.wsCalNav {
   appearance: none;
   width: 32px;
   height: 32px;
+  min-height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 18px;
   line-height: 1;
   color: #fff;
@@ -4014,7 +4044,7 @@
   cursor: pointer;
   transition: background 0.15s ease;
 }
-.wsCalNav:hover { background: rgba(255, 255, 255, 0.12); }
+.profileShell .wsCalPanel button.wsCalNav:hover { background: rgba(255, 255, 255, 0.12); }
 .wsCalWeekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -4033,24 +4063,32 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
 }
-.wsCalDay {
+.profileShell .wsCalGrid button.wsCalDay {
   appearance: none;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   height: 34px;
+  min-height: 34px;
+  padding: 0;
   font-family: inherit;
   font-size: 13px;
+  line-height: 1;
   color: var(--txt-bright);
   background: transparent;
   border-radius: 8px;
+  text-align: center;
+  white-space: nowrap;
+  text-transform: none;
+  letter-spacing: 0;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.wsCalDay:hover {
+.profileShell .wsCalGrid button.wsCalDay:hover {
   background: rgba(255, 255, 255, 0.08);
 }
-.wsCalDay:disabled {
+.profileShell .wsCalGrid button.wsCalDay:disabled {
   color: rgba(255, 255, 255, 0.2);
   cursor: not-allowed;
   background: transparent;
@@ -4071,8 +4109,79 @@
   gap: 8px;
   margin-top: 10px;
 }
-.wsCalFooter button {
+.profileShell .wsCalPanel .wsCalFooter button {
   flex: 1;
+  min-height: 34px;
   font-size: 11px;
   padding: 8px 10px;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.profileShell .wsCalPanel .wsCalFooter button,
+.profileShell .wsCalPanel button.wsCalNav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 720px) {
+  .authRow,
+  .profileComposer,
+  .profileStmtRow,
+  .profileMileageRow {
+    grid-template-columns: 1fr;
+  }
+
+  .profileActions,
+  .profileBanner {
+    align-items: stretch;
+  }
+
+  .profileActions,
+  .profileActions > * {
+    width: 100%;
+  }
+
+  .profileCard,
+  .profileBanner {
+    padding: 18px;
+  }
+
+  .profileItemRow,
+  .profileCardChip {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .profileMain {
+    padding-inline: 12px;
+  }
+
+  .profileSideNav {
+    border-radius: 18px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .profileLayout,
+  .profileContent {
+    overflow-x: clip;
+  }
+
+  .profileSideNavLink {
+    white-space: nowrap;
+  }
+
+  .profileServiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .wsCalPanel {
+    width: 100%;
+    max-width: 100%;
+  }
 }

@@ -3,6 +3,7 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AccountsSettingsRedirectPageUi from "@/components/page-ui/accounts/accounts-settings-ui"; // Extracted presentation layer.
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 const SETTINGS_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER"];
 
@@ -10,6 +11,7 @@ export default function AccountsSettingsRedirectPage() {
   const router = useRouter();
 
   useEffect(() => {
+    if (isPresentationMode()) return;
     if (!router.isReady) return;
     const nextQuery = { ...router.query, settings: "1" };
     router.replace({ pathname: "/accounts", query: nextQuery });

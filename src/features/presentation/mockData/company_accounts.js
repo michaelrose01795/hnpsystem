@@ -1,0 +1,8 @@
+export const rows = [
+  { id: "demo-co-001", account_number: "CO-2001", name: "Devon Couriers Ltd",                  contact: "Mark Wilson",  phone: "01392 555 100", email: "accounts@devoncouriers.invalid",  balance: 1248.50, status: "Active", created_at: "2023-08-04T09:00:00.000Z" },
+  { id: "demo-co-002", account_number: "CO-2002", name: "Westcountry Plant Hire",              contact: "Helen Carter", phone: "01392 555 200", email: "ap@westcountryph.invalid",        balance: 2840.00, status: "Frozen", created_at: "2022-11-19T09:00:00.000Z" },
+  { id: "demo-co-003", account_number: "CO-2003", name: "South West Property Maintenance",     contact: "James Holt",   phone: "01884 555 300", email: "office@swpm.invalid",            balance:    0.00, status: "Active", created_at: "2024-02-10T09:00:00.000Z" },
+  { id: "demo-co-004", account_number: "CO-2004", name: "Exe Valley Logistics",                contact: "Owen Brooks",  phone: "01392 555 400", email: "accounts@exevalley.invalid",     balance:  484.20, status: "Active", created_at: "2024-03-21T09:00:00.000Z" },
+  { id: "demo-co-005", account_number: "CO-2005", name: "Tamar Bus Co",                        contact: "Iris Patel",   phone: "01752 555 500", email: "ap@tamarbus.invalid",            balance:  152.00, status: "Active", created_at: "2024-04-15T09:00:00.000Z" },
+  { id: "demo-co-006", account_number: "CO-2006", name: "Dartmoor Forestry Ltd",               contact: "Lucy Ng",      phone: "01626 555 600", email: "office@dartmoorforestry.invalid",balance:   62.00, status: "Active", created_at: "2024-05-30T09:00:00.000Z" },
+];

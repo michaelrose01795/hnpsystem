@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
 import { useUser } from "@/context/UserContext";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
+    if (isPresentationMode()) { setChecked(true); return; }
     if (loading) return;
 
     if (user) {
@@ -46,7 +48,7 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   // page hasn't mounted yet; this ensures the skeleton stays until role checks
   // also resolve, without a flash of empty content between Layout's skeleton
   // and the real page render.
-  if (loading || status === "loading" || !checked) {
+  if (!isPresentationMode() && (loading || status === "loading" || !checked)) {
     return <PageSkeleton />;
   }
 

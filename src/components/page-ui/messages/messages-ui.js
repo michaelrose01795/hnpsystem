@@ -244,7 +244,7 @@ export default function MessagesPageUi(props) {
                   </div>}
               </DevLayoutSection>
 
-              <DevLayoutSection sectionKey="messages-thread-list" parentKey="messages-threads-card" sectionType="section-shell" shell backgroundToken="messages-thread-list" className="custom-scrollbar" style={{
+              <DevLayoutSection data-presentation="messages-thread-list" sectionKey="messages-thread-list" parentKey="messages-threads-card" sectionType="section-shell" shell backgroundToken="messages-thread-list" className="custom-scrollbar" style={{
             flex: 1,
             minHeight: 0,
             maxHeight: "none",
@@ -423,7 +423,7 @@ export default function MessagesPageUi(props) {
             </DevLayoutSection>
           </DevLayoutSection>
 
-          <DevLayoutSection sectionKey="messages-conversation-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-conversation-panel" style={{
+          <DevLayoutSection data-presentation="messages-conversation" sectionKey="messages-conversation-panel" parentKey="messages-main-layout" sectionType="section-shell" shell backgroundToken="messages-conversation-panel" style={{
         ...cardStyle,
         background: "var(--theme)",
         flex: 1,

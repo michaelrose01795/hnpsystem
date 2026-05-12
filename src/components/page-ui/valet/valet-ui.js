@@ -84,7 +84,7 @@ export default function ValetDashboardUi(props) {
       flexDirection: "column",
       gap: "12px"
     }}>
-          <DevLayoutSection sectionKey="valet-filter-row" parentKey="valet-controls-shell" sectionType="filter-row" style={{
+          <DevLayoutSection data-presentation="valet-filters" sectionKey="valet-filter-row" parentKey="valet-controls-shell" sectionType="filter-row" style={{
         display: "flex",
         gap: "12px",
         flexWrap: "wrap",
@@ -163,7 +163,7 @@ export default function ValetDashboardUi(props) {
       color: "var(--grey-accent)"
     }}>
             Loading valet jobs…
-          </DevLayoutSection> : filteredJobs.length === 0 ? <DevLayoutSection sectionKey="valet-jobs-empty" parentKey="app-layout-page-card" sectionType="content-card" style={{
+          </DevLayoutSection> : filteredJobs.length === 0 ? <DevLayoutSection data-presentation="valet-table" sectionKey="valet-jobs-empty" parentKey="app-layout-page-card" sectionType="content-card" style={{
       padding: "60px 0",
       textAlign: "center",
       color: "var(--grey-accent-light)",

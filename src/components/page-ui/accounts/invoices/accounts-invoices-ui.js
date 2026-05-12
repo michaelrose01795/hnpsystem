@@ -27,7 +27,7 @@ export default function InvoicesPageUi(props) {
         flexDirection: "column",
         gap: "20px"
       }}>
-            <DevLayoutSection as="div" sectionKey="accounts-invoices-header-actions" sectionType="toolbar" parentKey="accounts-invoices-page-shell" style={{
+            <DevLayoutSection as="div" data-presentation="invoices-actions" sectionKey="accounts-invoices-header-actions" sectionType="toolbar" parentKey="accounts-invoices-page-shell" style={{
           display: "flex",
           justifyContent: "flex-end",
           gap: "10px",
@@ -44,7 +44,7 @@ export default function InvoicesPageUi(props) {
                 Accounts
               </Button>
             </DevLayoutSection>
-            <DevLayoutSection sectionKey="accounts-invoices-table" sectionType="data-table" parentKey="accounts-invoices-page-shell">
+            <DevLayoutSection data-presentation="invoices-table" sectionKey="accounts-invoices-table" sectionType="data-table" parentKey="accounts-invoices-page-shell">
               <InvoiceTable invoices={invoices} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} loading={loading} accentSurface />
             </DevLayoutSection>
           </div>
