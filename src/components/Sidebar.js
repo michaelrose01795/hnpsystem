@@ -91,6 +91,32 @@ export default function Sidebar({
     return unsubscribe;
   }, []);
   const inPresentationRoute = pathname.startsWith("/presentation");
+  const inVisionRoute = pathname === "/vision" || pathname.startsWith("/vision/");
+  const ghostControlStyle = {
+    background: "transparent",
+    color: "var(--accentText)",
+    border: "var(--ghostbutton-ring)",
+  };
+  const successGhostControlStyle = {
+    background: "transparent",
+    color: "var(--success-text)",
+    border: "1px solid var(--success)",
+  };
+  const dangerGhostControlStyle = {
+    background: "transparent",
+    color: "var(--danger-text)",
+    border: "1px solid var(--danger)",
+  };
+  const successControlStyle = {
+    background: "var(--success-surface)",
+    color: "var(--success-text)",
+    border: "none",
+  };
+  const dangerControlStyle = {
+    background: "var(--danger-surface)",
+    color: "var(--danger-text)",
+    border: "none",
+  };
   const handleShowOverlay = useCallback(() => {
     writeOverlayHidden(false);
   }, []);
@@ -453,30 +479,27 @@ export default function Sidebar({
                   <Fragment key="clock-logout-row">
                     <div style={{ display: "flex", gap: "8px", width: "100%" }}>
                       <button
-                        className={
-                          isClockedIn
-                            ? "app-btn app-btn--danger"
-                            : "app-btn app-btn--primary"
-                        }
+                        className="app-btn"
                         type="button"
                         onClick={handleClockToggle}
                         disabled={clockLoading}
                         style={
                           isClockedIn
-                            ? { flex: 1, opacity: clockLoading ? 0.6 : 1 }
+                            ? { flex: 1, opacity: clockLoading ? 0.6 : 1, ...dangerControlStyle }
                             : {
                                 flex: 1,
                                 opacity: clockLoading ? 0.6 : 1,
+                                ...successControlStyle,
                               }
                         }
                       >
                         {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
                       </button>
                       <button
-                        className="app-btn app-btn--primary"
+                        className="app-btn"
                         type="button"
                         onClick={handleLogout}
-                        style={{ flex: 1 }}
+                        style={{ flex: 1, ...dangerGhostControlStyle }}
                       >
                         Logout
                       </button>
@@ -506,71 +529,61 @@ export default function Sidebar({
                             role="switch"
                             aria-checked={devOverlayEnabled}
                             aria-label="Toggle dev layout overlay"
-                            className={
-                              devOverlayEnabled
-                                ? "app-btn app-btn--primary"
-                                : "app-btn app-btn--danger"
-                            }
+                            className="app-btn"
                             onClick={toggleDevOverlay}
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, ...(devOverlayEnabled ? successGhostControlStyle : ghostControlStyle) }}
                           >
                             Overlay
                           </button>
                         )}
                       </div>
                     )}
-                    <button
-                      type="button"
-                      className={`app-btn app-btn--secondary app-btn--nav${
-                        pathname.startsWith("/presentation")
-                          ? " is-active"
-                          : ""
-                      }`}
+                    <div
                       style={{
-                        width: "100%",
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                        gap: "8px",
                         marginTop: "8px",
-                        marginBottom: 0,
-                        textAlign: "left",
-                      }}
-                      aria-current={
-                        pathname.startsWith("/presentation")
-                          ? "page"
-                          : undefined
-                      }
-                      onClick={() => {
-                        if (typeof window !== "undefined") {
-                          const current = router?.asPath || "/";
-                          if (!current.startsWith("/presentation")) {
-                            window.sessionStorage.setItem(PRESENTATION_RETURN_TO_STORAGE_KEY, current);
-                          }
-                        }
-                        router.push("/presentation");
-                        handleNavigationPress();
                       }}
                     >
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          // CSS triangle (caret arrow) — diagram primitive, not a surface border
-                          width: 0,
-                          height: 0,
-                          borderTop: "5px solid transparent",
-                          borderBottom: "5px solid transparent",
-                          borderLeft: "8px solid currentColor",
-                          flexShrink: 0,
+                      <button
+                        type="button"
+                        className="app-btn"
+                        style={inPresentationRoute ? successGhostControlStyle : ghostControlStyle}
+                        aria-current={inPresentationRoute ? "page" : undefined}
+                        onClick={() => {
+                          if (typeof window !== "undefined") {
+                            const current = router?.asPath || "/";
+                            if (!current.startsWith("/presentation")) {
+                              window.sessionStorage.setItem(PRESENTATION_RETURN_TO_STORAGE_KEY, current);
+                            }
+                          }
+                          router.push("/presentation");
+                          handleNavigationPress();
                         }}
-                      />
-                      <span>Presentation</span>
-                    </button>
+                      >
+                        Presentation
+                      </button>
+                      <Link
+                        className="app-btn"
+                        style={inVisionRoute ? successGhostControlStyle : ghostControlStyle}
+                        href="/vision"
+                        aria-current={inVisionRoute ? "page" : undefined}
+                        onClick={handleNavigationPress}
+                      >
+                        Vision
+                      </Link>
+                    </div>
                     {inPresentationRoute && overlayHidden && (
                       <button
                         type="button"
-                        className="app-btn app-btn--primary app-btn--nav"
+                        className="app-btn app-btn--nav"
                         style={{
                           width: "100%",
                           marginTop: "8px",
                           marginBottom: 0,
                           textAlign: "left",
+                          ...successGhostControlStyle,
                         }}
                         onClick={handleShowOverlay}
                         title="Bring the slide highlight ring and callout popup back"

@@ -93,6 +93,7 @@ export default function Layout({
   contentBackground = null,
   requiresLandscape = false,
   presentationShell = false,
+  publicRoute = false,
 }) {
   const { user, loading: userLoading, status, setStatus, currentJob, dbUserId } = useUser(); // get user context data
   const { usersByRole } = useRoster();
@@ -389,12 +390,13 @@ export default function Layout({
 
   useEffect(() => {
     if (presentationShell) return;
+    if (publicRoute) return;
     if (showLoginShellLoading) return;
     if (userLoading) return;
     if (user === null && !hideSidebar) {
       router.replace("/login");
     }
-  }, [user, userLoading, hideSidebar, router, presentationShell, showLoginShellLoading]);
+  }, [user, userLoading, hideSidebar, router, presentationShell, publicRoute, showLoginShellLoading]);
 
   useEffect(() => {
     if (activeJobId) fetchCurrentJobStatus(activeJobId);
@@ -496,7 +498,7 @@ export default function Layout({
   // in place of children. Only ONE skeleton is ever visible — no overlay, no
   // stacking, no fade. Pages handle their own data-loading skeletons inside
   // their own render once auth is resolved.
-  const isPreAuthLoading = !presentationShell && !hideSidebar && (userLoading || !user);
+  const isPreAuthLoading = !publicRoute && !presentationShell && !hideSidebar && (userLoading || !user);
 
   useEffect(() => {
     if (isTablet) {
