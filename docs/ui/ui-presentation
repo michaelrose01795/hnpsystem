@@ -3,7 +3,6 @@ PRESENTATION
 ====================================================
 
 /loginPresentation
-mock data
 
 URL pattern: /presentation/<role-key>/<page-slug>/<slide-index>
 Source of truth: docs/ui/ui-presentation
@@ -15,7 +14,6 @@ General
 ====================================================
 
 1. /presentation/general/messages/0
-mock data
 Route: /messages
 Shared page for all staff roles.
 Highlights:
@@ -24,7 +22,6 @@ Highlights:
 Section description: Shows how internal communication works across every role without repeating the page inside each role deck.
 
 2. /presentation/general/newsfeed/1
-mock data
 Route: /newsfeed
 Shared page for all staff roles.
 Highlights:
@@ -33,7 +30,6 @@ Highlights:
 Section description: Shows the shared staff newsfeed once inside the General deck instead of repeating it for every role.
 
 3. /presentation/general/profile/2
-mock data
 Route: /profile
 Profile work tab.
 Highlights:
@@ -43,7 +39,6 @@ Highlights:
 Section description: Shows the staff work profile as a self-service area for employment, HR, clocking, payslip, and staff record information.
 
 4. /presentation/general/profile-tab-personal/3
-mock data
 Route: /profile?tab=personal
 Profile personal tab.
 Highlights:
@@ -53,7 +48,6 @@ Highlights:
 Section description: Shows the personal profile area separately from work data, with private planning widgets and personal dashboard sections.
 
 5. /presentation/general/login/4
-mock data
 Route: /login
 Shared login page.
 Highlights:
@@ -68,55 +62,42 @@ Accounts Manager
 ====================================================
 
 1. /presentation/accounts-manager/dashboard-accounts/0
-mock data
 Route: /dashboard/accounts
 
 2. /presentation/accounts-manager/accounts/1
-mock data
 Route: /accounts
 
 3. /presentation/accounts-manager/accounts-create/2
-mock data
 Route: /accounts/create
 
 4. /presentation/accounts-manager/accounts-edit-accountId/3
-mock data
 Route: /accounts/edit/[accountId]
 
 5. /presentation/accounts-manager/accounts-view-accountId/4
-mock data
 Route: /accounts/view/[accountId]
 
 6. /presentation/accounts-manager/accounts-transactions-accountId/5
-mock data
 Route: /accounts/transactions/[accountId]
 
 7. /presentation/accounts-manager/accounts-invoices/6
-mock data
 Route: /accounts/invoices
 
 8. /presentation/accounts-manager/accounts-invoices-invoiceId/7
-mock data
 Route: /accounts/invoices/[invoiceId]
 
-9. /presentation/accounts-manager/accounts-payslips/8 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+9. /presentation/accounts-manager/accounts-payslips/8
 Route: /accounts/payslips
 
 10. /presentation/accounts-manager/accounts-reports/9
-mock data
 Route: /accounts/reports
 
 11. /presentation/accounts-manager/accounts-settings/10
-mock data
 Route: /accounts/settings
 
 12. /presentation/accounts-manager/company-accounts/11
-mock data
 Route: /company-accounts
 
 13. /presentation/accounts-manager/company-accounts-accountNumber/12
-mock data
 Route: /company-accounts/[accountNumber]
 
 
@@ -125,65 +106,13 @@ Admin Manager
 ====================================================
 
 1. /presentation/admin-manager/dashboard-admin/0
-mock data
 Route: /dashboard/admin
 
-2. /presentation/admin-manager/job-cards-waiting-nextjobs/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/waiting/nextjobs
-
-3. /presentation/admin-manager/job-cards-view/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/view
-
-4. /presentation/admin-manager/job-cards-jobNumber/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/[jobNumber]
-
-5. /presentation/admin-manager/admin-users/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+2. /presentation/admin-manager/admin-users/1
 Route: /admin/users
 
-6. /presentation/admin-manager/admin-profiles-user/5 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+3. /presentation/admin-manager/admin-profiles-user/2
 Route: /admin/profiles/[user]
-
-7. /presentation/admin-manager/accounts-payslips/6 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /accounts/payslips
-
-8. /presentation/admin-manager/hr-manager/7 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /hr/manager
-
-
-====================================================
-After Sales Director
-====================================================
-
-1. /presentation/after-sales-director/dashboard/0 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /dashboard
-
-2. /presentation/after-sales-director/job-cards-view/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/view
-
-3. /presentation/after-sales-director/job-cards-jobNumber/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/[jobNumber]
-
-4. /presentation/after-sales-director/job-cards-waiting-nextjobs/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/waiting/nextjobs
-
-5. /presentation/after-sales-director/parts-goods-in/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /parts/goods-in
-
-6. /presentation/after-sales-director/tracking/5 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /tracking
 
 
 ====================================================
@@ -191,69 +120,31 @@ Customer
 ====================================================
 
 1. /presentation/customer/customer/0
-mock data
 Route: /customer
 
 2. /presentation/customer/customer-messages/1
-mock data
 Route: /customer/messages
 
 3. /presentation/customer/customer-parts/2
-mock data
 Route: /customer/parts
 
 4. /presentation/customer/customer-payments/3
-mock data
 Route: /customer/payments
 
 5. /presentation/customer/customer-vehicles/4
-mock data
 Route: /customer/vehicles
 
 6. /presentation/customer/customer-vhc/5
-mock data
 Route: /customer/vhc
 
 7. /presentation/customer/vhc-customer-preview-jobNumber/6
-mock data
 Route: /vhc/customer-preview/[jobNumber]
 
 8. /presentation/customer/vhc-customer-view-jobNumber/7
-mock data
 Route: /vhc/customer-view/[jobNumber]
 
 9. /presentation/customer/vhc-share-jobNumber-linkCode/8
-mock data
 Route: /vhc/share/[jobNumber]/[linkCode]
-
-
-====================================================
-General Manager
-====================================================
-
-1. /presentation/general-manager/dashboard-managers/0 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /dashboard/managers
-
-2. /presentation/general-manager/dashboard/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /dashboard
-
-3. /presentation/general-manager/job-cards-view/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/view
-
-4. /presentation/general-manager/job-cards-jobNumber/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/[jobNumber]
-
-5. /presentation/general-manager/job-cards-waiting-nextjobs/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/waiting/nextjobs
-
-6. /presentation/general-manager/tracking/5 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /tracking
 
 
 ====================================================
@@ -261,51 +152,39 @@ HR Manager
 ====================================================
 
 1. /presentation/hr-manager/hr/0
-mock data
 Route: /hr
 
 2. /presentation/hr-manager/hr-manager/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
 Route: /hr/manager
 
 3. /presentation/hr-manager/hr-attendance/2
-mock data
 Route: /hr/attendance
 
 4. /presentation/hr-manager/hr-disciplinary/3
-mock data
 Route: /hr/disciplinary
 
 5. /presentation/hr-manager/hr-employees/4
-mock data
 Route: /hr/employees
 
 6. /presentation/hr-manager/hr-leave/5
-mock data
 Route: /hr/leave
 
 7. /presentation/hr-manager/hr-payroll/6
-mock data
 Route: /hr/payroll
 
 8. /presentation/hr-manager/hr-performance/7
-mock data
 Route: /hr/performance
 
 9. /presentation/hr-manager/hr-recruitment/8
-mock data
 Route: /hr/recruitment
 
 10. /presentation/hr-manager/hr-reports/9
-mock data
 Route: /hr/reports
 
 11. /presentation/hr-manager/hr-settings/10
-mock data
 Route: /hr/settings
 
 12. /presentation/hr-manager/hr-training/11
-mock data
 Route: /hr/training
 
 
@@ -314,32 +193,10 @@ Mobile Technician
 ====================================================
 
 1. /presentation/mobile-technician/mobile-dashboard/0
-mock data
 Route: /mobile/dashboard
 
-2. /presentation/mobile-technician/job-cards-myjobs/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/myjobs
-
-3. /presentation/mobile-technician/job-cards-myjobs-jobNumber/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/myjobs/[jobNumber]
-
-4. /presentation/mobile-technician/appointments/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /appointments
-
-5. /presentation/mobile-technician/mobile-delivery-jobNumber/4
-mock data
+2. /presentation/mobile-technician/mobile-delivery-jobNumber/1
 Route: /mobile/delivery/[jobNumber]
-
-6. /presentation/mobile-technician/job-cards-create/5 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/create
-
-7. /presentation/mobile-technician/tech-consumables-request/6 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /tech/consumables-request
 
 
 ====================================================
@@ -347,74 +204,18 @@ MOT Tester
 ====================================================
 
 1. /presentation/mot-tester/dashboard-mot/0
-mock data
 Route: /dashboard/mot
-
-2. /presentation/mot-tester/job-cards-myjobs/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/myjobs
-
-3. /presentation/mot-tester/job-cards-myjobs-jobNumber/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/myjobs/[jobNumber]
-
-4. /presentation/mot-tester/job-cards-jobNumber/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/[jobNumber]
-
-5. /presentation/mot-tester/tech-efficiency/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /tech/efficiency
-
-6. /presentation/mot-tester/vhc/5 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /vhc
 
 
 ====================================================
 Owner
 ====================================================
 
-1. /presentation/owner/dashboard-managers/0 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+1. /presentation/owner/dashboard-managers/0
 Route: /dashboard/managers
 
 2. /presentation/owner/hr-manager/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
 Route: /hr/manager
-
-3. /presentation/owner/admin-users/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /admin/users
-
-4. /presentation/owner/admin-profiles-user/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /admin/profiles/[user]
-
-5. /presentation/owner/accounts-payslips/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /accounts/payslips
-
-
-====================================================
-Painters
-====================================================
-
-1. /presentation/painters/dashboard-painting/0
-mock data
-Route: /dashboard/painting
-
-2. /presentation/painters/job-cards-myjobs/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/myjobs
-
-3. /presentation/painters/job-cards-myjobs-jobNumber/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/myjobs/[jobNumber]
-
-4. /presentation/painters/job-cards-jobNumber/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/[jobNumber]
 
 
 ====================================================
@@ -422,147 +223,40 @@ Parts Manager
 ====================================================
 
 1. /presentation/parts-manager/dashboard-parts/0
-mock data
 Route: /dashboard/parts
 
 2. /presentation/parts-manager/parts/1
-mock data
 Route: /parts
 
 3. /presentation/parts-manager/parts-manager/2
-mock data
 Route: /parts/manager
 
-4. /presentation/parts-manager/job-cards-view/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+4. /presentation/parts-manager/job-cards-view/3 !!!!!!!!!!!!!!!!!!!!!! (JUST SHOW THE ORDERS TAB FOR THIS PAGE AND WITHIN THIS ROLE)
 Route: /job-cards/view
 
-5. /presentation/parts-manager/job-cards-jobNumber/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/[jobNumber]
-
-6. /presentation/parts-manager/stock-catalogue/5
-mock data
+5. /presentation/parts-manager/stock-catalogue/4
 Route: /stock-catalogue
 
-7. /presentation/parts-manager/parts-create-order/6
-mock data
+6. /presentation/parts-manager/parts-create-order/5
 Route: /parts/create-order
 
-8. /presentation/parts-manager/parts-create-order-orderNumber/7
-mock data
+7. /presentation/parts-manager/parts-create-order-orderNumber/6
 Route: /parts/create-order/[orderNumber]
 
-9. /presentation/parts-manager/parts-deliveries/8
-mock data
+8. /presentation/parts-manager/parts-deliveries/7
 Route: /parts/deliveries
 
-10. /presentation/parts-manager/parts-deliveries-deliveryId/9
-mock data
+9. /presentation/parts-manager/parts-deliveries-deliveryId/8
 Route: /parts/deliveries/[deliveryId]
 
-11. /presentation/parts-manager/parts-delivery-planner/10
-mock data
+10. /presentation/parts-manager/parts-delivery-planner/9
 Route: /parts/delivery-planner
 
-12. /presentation/parts-manager/parts-goods-in/11 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+11. /presentation/parts-manager/parts-goods-in/10 !!!!!!!!!!!!!!!!!!!!!!
 Route: /parts/goods-in
 
-13. /presentation/parts-manager/parts-goods-in-goodsInNumber/12
-mock data
+12. /presentation/parts-manager/parts-goods-in-goodsInNumber/11
 Route: /parts/goods-in/[goodsInNumber]
-
-
-====================================================
-Receptionist
-====================================================
-
-1. /presentation/receptionist/dashboard/0 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /dashboard
-
-2. /presentation/receptionist/appointments/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /appointments
-
-3. /presentation/receptionist/customers/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /customers
-
-4. /presentation/receptionist/customers-customerSlug/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /customers/[customerSlug]
-
-5. /presentation/receptionist/job-cards-create/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/create
-
-6. /presentation/receptionist/job-cards-view/5 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/view
-
-7. /presentation/receptionist/job-cards-jobNumber/6 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/[jobNumber]
-
-
-====================================================
-Sales Director
-====================================================
-
-1. /presentation/sales-director/dashboard-managers/0 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /dashboard/managers
-
-
-====================================================
-Service Manager
-====================================================
-
-1. /presentation/service-manager/dashboard-service/0
-mock data
-Route: /dashboard/service
-
-2. /presentation/service-manager/dashboard/1 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /dashboard
-
-3. /presentation/service-manager/customers/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /customers
-
-4. /presentation/service-manager/customers-customerSlug/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /customers/[customerSlug]
-
-5. /presentation/service-manager/job-cards-create/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/create
-
-6. /presentation/service-manager/job-cards-waiting-nextjobs/5 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/waiting/nextjobs
-
-7. /presentation/service-manager/job-cards-view/6 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/view
-
-8. /presentation/service-manager/job-cards-jobNumber/7 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /job-cards/[jobNumber]
-
-9. /presentation/service-manager/parts-goods-in/8 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /parts/goods-in
-
-10. /presentation/service-manager/appointments/9 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /appointments
-
-11. /presentation/service-manager/tracking/10 !!!!!!!!!!!!!!!!!!!!!!
-mock data
-Route: /tracking
 
 
 ====================================================
@@ -570,39 +264,30 @@ Techs
 ====================================================
 
 1. /presentation/techs/dashboard-workshop/0 !!!!!!!!!!!!!!!!!!!!!!
-mock data
 Route: /dashboard/workshop
 
 2. /presentation/techs/tech-dashboard/1
-mock data
 Route: /tech/dashboard
 
-3. /presentation/techs/job-cards-myjobs/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+3. /presentation/techs/job-cards-myjobs/2
 Route: /job-cards/myjobs
 
-4. /presentation/techs/job-cards-myjobs-jobNumber/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+4. /presentation/techs/job-cards-myjobs-jobNumber/3
 Route: /job-cards/myjobs/[jobNumber]
 
 5. /presentation/techs/job-cards-jobNumber/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
 Route: /job-cards/[jobNumber]
 
-6. /presentation/techs/tech-consumables-request/5 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+6. /presentation/techs/tech-consumables-request/5
 Route: /tech/consumables-request
 
-7. /presentation/techs/tech-efficiency/6 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+7. /presentation/techs/tech-efficiency/6
 Route: /tech/efficiency
 
-8. /presentation/techs/vhc/7 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+8. /presentation/techs/vhc/7
 Route: /vhc
 
-9. /presentation/techs/tracking/8 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+9. /presentation/techs/tracking/8 !!!!!!!!!!!!!!!!!!!!!! (SHOW THE TECH VIEW)
 Route: /tracking
 
 
@@ -611,15 +296,12 @@ Valet Service
 ====================================================
 
 1. /presentation/valet-service/dashboard-valeting/0
-mock data
 Route: /dashboard/valeting
 
 2. /presentation/valet-service/valet/1
-mock data
 Route: /valet
 
 3. /presentation/valet-service/job-cards-valet-jobnumber/2
-mock data
 Route: /job-cards/valet/[jobnumber]
 
 
@@ -628,37 +310,28 @@ Workshop Manager
 ====================================================
 
 1. /presentation/workshop-manager/dashboard-workshop/0 !!!!!!!!!!!!!!!!!!!!!!
-mock data
 Route: /dashboard/workshop
 
 2. /presentation/workshop-manager/workshop-consumables-tracker/1
-mock data
 Route: /workshop/consumables-tracker
 
-3. /presentation/workshop-manager/job-cards-waiting-nextjobs/2 !!!!!!!!!!!!!!!!!!!!!!
-mock data
+3. /presentation/workshop-manager/job-cards-waiting-nextjobs/2
 Route: /job-cards/waiting/nextjobs
 
 4. /presentation/workshop-manager/job-cards-view/3 !!!!!!!!!!!!!!!!!!!!!!
-mock data
 Route: /job-cards/view
 
 5. /presentation/workshop-manager/job-cards-jobNumber/4 !!!!!!!!!!!!!!!!!!!!!!
-mock data
 Route: /job-cards/[jobNumber]
 
 6. /presentation/workshop-manager/clocking/5
-mock data
 Route: /clocking
 
 7. /presentation/workshop-manager/clocking-technicianSlug/6
-mock data
 Route: /clocking/[technicianSlug]
 
 8. /presentation/workshop-manager/parts-goods-in/7 !!!!!!!!!!!!!!!!!!!!!!
-mock data
 Route: /parts/goods-in
 
 9. /presentation/workshop-manager/tracking/8 !!!!!!!!!!!!!!!!!!!!!!
-mock data
 Route: /tracking

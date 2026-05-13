@@ -169,7 +169,7 @@ function parseSections(text) {
       continue;
     }
 
-    const routeMatch = line.match(/^(?:(\d+)\.\s*)?(\/presentation\/([^/]+)\/([^/\s]+)\/\d+)(?:\s+!+)?\s*$/);
+    const routeMatch = line.match(/^(?:(\d+)\.\s*)?(\/presentation\/([^/]+)\/([^/\s]+)\/\d+)(?:\s+!+)?\s*(\(.*\))?\s*$/);
     if (routeMatch && current) {
       finishEntry();
       currentEntry = {
@@ -177,6 +177,7 @@ function parseSections(text) {
         sourceIndex: index,
         roleKey: routeMatch[3],
         slug: routeMatch[4],
+        annotation: routeMatch[5] || null,
         route: null,
         details: [],
       };
@@ -238,7 +239,6 @@ function renderDoc(roles) {
   out.push("====================================================");
   out.push("");
   out.push("/loginPresentation");
-  out.push("mock data");
   out.push("");
   out.push("URL pattern: /presentation/<role-key>/<page-slug>/<slide-index>");
   out.push("Source of truth: docs/ui/ui-presentation");
@@ -255,8 +255,8 @@ function renderDoc(roles) {
       const route = entry.route;
       const presentationUrl = `/presentation/${role.key}/${routeToSlug(route)}/${index}`;
       const duplicate = routeCounts.get(route) > 1 ? ` ${DUPLICATE_MARKER}` : "";
-      out.push(`${index + 1}. ${presentationUrl}${duplicate}`);
-      out.push("mock data");
+      const annotation = entry.annotation ? ` ${entry.annotation}` : "";
+      out.push(`${index + 1}. ${presentationUrl}${duplicate}${annotation}`);
       out.push(`Route: ${route}`);
       const details = entry.details
         .join("\n")

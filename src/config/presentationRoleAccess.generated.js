@@ -43,27 +43,8 @@ export const PRESENTATION_ROLES = [
     "demoName": "Demo Admin Manager",
     "routes": [
       "/dashboard/admin",
-      "/job-cards/waiting/nextjobs",
-      "/job-cards/view",
-      "/job-cards/[jobNumber]",
       "/admin/users",
-      "/admin/profiles/[user]",
-      "/accounts/payslips",
-      "/hr/manager"
-    ]
-  },
-  {
-    "key": "after-sales-director",
-    "roleId": "after sales director",
-    "label": "After Sales Director",
-    "demoName": "Demo After Sales Director",
-    "routes": [
-      "/dashboard",
-      "/job-cards/view",
-      "/job-cards/[jobNumber]",
-      "/job-cards/waiting/nextjobs",
-      "/parts/goods-in",
-      "/tracking"
+      "/admin/profiles/[user]"
     ]
   },
   {
@@ -81,20 +62,6 @@ export const PRESENTATION_ROLES = [
       "/vhc/customer-preview/[jobNumber]",
       "/vhc/customer-view/[jobNumber]",
       "/vhc/share/[jobNumber]/[linkCode]"
-    ]
-  },
-  {
-    "key": "general-manager",
-    "roleId": "general manager",
-    "label": "General Manager",
-    "demoName": "Demo General Manager",
-    "routes": [
-      "/dashboard/managers",
-      "/dashboard",
-      "/job-cards/view",
-      "/job-cards/[jobNumber]",
-      "/job-cards/waiting/nextjobs",
-      "/tracking"
     ]
   },
   {
@@ -124,12 +91,7 @@ export const PRESENTATION_ROLES = [
     "demoName": "Demo Mobile Technician",
     "routes": [
       "/mobile/dashboard",
-      "/job-cards/myjobs",
-      "/job-cards/myjobs/[jobNumber]",
-      "/appointments",
-      "/mobile/delivery/[jobNumber]",
-      "/job-cards/create",
-      "/tech/consumables-request"
+      "/mobile/delivery/[jobNumber]"
     ]
   },
   {
@@ -138,12 +100,7 @@ export const PRESENTATION_ROLES = [
     "label": "MOT Tester",
     "demoName": "Demo MOT Tester",
     "routes": [
-      "/dashboard/mot",
-      "/job-cards/myjobs",
-      "/job-cards/myjobs/[jobNumber]",
-      "/job-cards/[jobNumber]",
-      "/tech/efficiency",
-      "/vhc"
+      "/dashboard/mot"
     ]
   },
   {
@@ -153,22 +110,7 @@ export const PRESENTATION_ROLES = [
     "demoName": "Demo Owner",
     "routes": [
       "/dashboard/managers",
-      "/hr/manager",
-      "/admin/users",
-      "/admin/profiles/[user]",
-      "/accounts/payslips"
-    ]
-  },
-  {
-    "key": "painters",
-    "roleId": "painters",
-    "label": "Painters",
-    "demoName": "Demo Painter",
-    "routes": [
-      "/dashboard/painting",
-      "/job-cards/myjobs",
-      "/job-cards/myjobs/[jobNumber]",
-      "/job-cards/[jobNumber]"
+      "/hr/manager"
     ]
   },
   {
@@ -181,7 +123,6 @@ export const PRESENTATION_ROLES = [
       "/parts",
       "/parts/manager",
       "/job-cards/view",
-      "/job-cards/[jobNumber]",
       "/stock-catalogue",
       "/parts/create-order",
       "/parts/create-order/[orderNumber]",
@@ -190,49 +131,6 @@ export const PRESENTATION_ROLES = [
       "/parts/delivery-planner",
       "/parts/goods-in",
       "/parts/goods-in/[goodsInNumber]"
-    ]
-  },
-  {
-    "key": "receptionist",
-    "roleId": "receptionist",
-    "label": "Receptionist",
-    "demoName": "Demo Receptionist",
-    "routes": [
-      "/dashboard",
-      "/appointments",
-      "/customers",
-      "/customers/[customerSlug]",
-      "/job-cards/create",
-      "/job-cards/view",
-      "/job-cards/[jobNumber]"
-    ]
-  },
-  {
-    "key": "sales-director",
-    "roleId": "sales director",
-    "label": "Sales Director",
-    "demoName": "Demo Sales Director",
-    "routes": [
-      "/dashboard/managers"
-    ]
-  },
-  {
-    "key": "service-manager",
-    "roleId": "service manager",
-    "label": "Service Manager",
-    "demoName": "Demo Service Manager",
-    "routes": [
-      "/dashboard/service",
-      "/dashboard",
-      "/customers",
-      "/customers/[customerSlug]",
-      "/job-cards/create",
-      "/job-cards/waiting/nextjobs",
-      "/job-cards/view",
-      "/job-cards/[jobNumber]",
-      "/parts/goods-in",
-      "/appointments",
-      "/tracking"
     ]
   },
   {
