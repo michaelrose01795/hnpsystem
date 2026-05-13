@@ -2,6 +2,7 @@
 import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { Button, LayerTheme, StatusMessage } from "@/components/ui"; // LayerTheme: canonical layer primitive (see CLAUDE.md §3.0)
 import { StatusTag } from "@/components/HR/MetricCard";
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
@@ -48,7 +49,8 @@ function LeaveContent() {
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <SectionCard title="Unable to load leave data" subtitle="Mock API returned an error.">
+        <SectionCard
+          sectionKey="hr-leave-card-1" parentKey="hr-manager-tab-leave" title="Unable to load leave data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
       </div>);
@@ -65,7 +67,12 @@ function LeaveContent() {
         <Button variant="primary">+ New Leave Request</Button>
       </header>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-leave-row-1"
+        parentKey="hr-manager-tab-leave"
+        sectionType="section-shell"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -73,6 +80,7 @@ function LeaveContent() {
         }}>
         
         <SectionCard
+          sectionKey="hr-leave-card-2" parentKey="hr-leave-row-1"
           title="Pending & Recent Leave Requests"
           subtitle="Review approval status and history"
           action={
@@ -130,7 +138,8 @@ function LeaveContent() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Team Availability" subtitle="Upcoming leave by date range">
+        <SectionCard
+          sectionKey="hr-leave-card-3" parentKey="hr-leave-row-1" title="Team Availability" subtitle="Upcoming leave by date range">
           {isLoading ?
           <ListRowsSkeleton rows={3} /> :
 
@@ -154,16 +163,22 @@ function LeaveContent() {
             </div>
           }
         </SectionCard>
-      </section>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-leave-row-2"
+        parentKey="hr-manager-tab-leave"
+        sectionType="section-shell"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: "var(--layout-card-gap)"
         }}>
         
-        <SectionCard title="Leave Balances" subtitle="Entitlement vs. taken time off">
+        <SectionCard
+          sectionKey="hr-leave-card-4" parentKey="hr-leave-row-2" title="Leave Balances" subtitle="Entitlement vs. taken time off">
           <div style={{ overflowX: "auto" }}>
             <table className="app-data-table">
               <thead>
@@ -195,6 +210,7 @@ function LeaveContent() {
         </SectionCard>
 
         <SectionCard
+          sectionKey="hr-leave-card-5" parentKey="hr-leave-row-2"
           title="Calendar Sync & Notifications"
           subtitle="Push approved leave to shared calendars and notify relevant managers">
           
@@ -226,7 +242,7 @@ function LeaveContent() {
             </Button>
           </div>
         </SectionCard>
-      </section>
+      </DevLayoutSection>
     </div>);
 
 }

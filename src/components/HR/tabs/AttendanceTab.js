@@ -3,6 +3,7 @@
 import React from "react";
 import { useHrAttendanceData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
 
@@ -28,7 +29,8 @@ export default function AttendanceTab() {
 
   if (error) {
     return (
-      <SectionCard title="Unable to load attendance" subtitle="An error occurred.">
+      <SectionCard
+        sectionKey="hr-attendance-card-1" parentKey="hr-manager-tab-attendance" title="Unable to load attendance" subtitle="An error occurred.">
         <span style={{ color: "var(--danger)" }}>{error.message}</span>
       </SectionCard>
     );
@@ -36,8 +38,15 @@ export default function AttendanceTab() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      <section style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "20px" }}>
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-attendance-row-1"
+        parentKey="hr-manager-tab-attendance"
+        sectionType="section-shell"
+        shell
+        style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "20px" }}>
         <SectionCard
+          sectionKey="hr-attendance-card-2" parentKey="hr-attendance-row-1"
           title="Daily Time Logs"
           subtitle="Sourced from the workshop clocking system"
           action={
@@ -79,7 +88,8 @@ export default function AttendanceTab() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Overtime Summary" subtitle="Recent overtime entries">
+        <SectionCard
+          sectionKey="hr-attendance-card-3" parentKey="hr-attendance-row-1" title="Overtime Summary" subtitle="Recent overtime entries">
           <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             {overtimeSummaries.map((entry) => (
               <div
@@ -100,9 +110,10 @@ export default function AttendanceTab() {
             ))}
           </div>
         </SectionCard>
-      </section>
+      </DevLayoutSection>
 
-      <SectionCard title="Absence Records" subtitle="Upcoming and recent absences">
+      <SectionCard
+        sectionKey="hr-attendance-card-4" parentKey="hr-manager-tab-attendance" title="Absence Records" subtitle="Upcoming and recent absences">
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ textAlign: "left", color: "var(--info)", fontSize: "0.8rem" }}>

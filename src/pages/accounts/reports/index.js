@@ -29,6 +29,14 @@ export default function AccountsReportsPage() {
   const [activePeriod, setActivePeriod] = useState("monthly");
   const [reportData, setReportData] = useState({ monthly: {}, quarterly: {}, yearly: {} });
   const [loading, setLoading] = useState(true);
+  // Toolbar-only filter UI state (presentational — the API currently aggregates by
+  // period only, so these widgets parameterise the report once the back end exposes
+  // month/quarter/year slicing).
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+  const [selectedQuarter, setSelectedQuarter] = useState(`Q${Math.floor(now.getMonth() / 3) + 1}`);
+  const [selectedYear, setSelectedYear] = useState(String(now.getFullYear()));
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     const loadReports = async () => {
@@ -57,7 +65,7 @@ export default function AccountsReportsPage() {
   const current = reportData[activePeriod] || {};
 
   // Each metric card is nested inside the metrics shell (LayerTheme) → so each card is a LayerSurface.
-  const metricCard = (key, label, value, accent = "var(--primary)") =>
+  const metricCard = (key, label, value, accent = "var(--text-accent)") =>
   <LayerSurface
     key={key}
     sectionKey={key}
@@ -83,7 +91,7 @@ export default function AccountsReportsPage() {
     exportToCsv("accounts-report.csv", rows, ["period", "newAccounts", "totalInvoiced", "overdueInvoices", "averageBalance"]);
   };
 
-  return <AccountsReportsPageUi view="section1" activePeriod={activePeriod} Button={Button} current={current} DevLayoutSection={DevLayoutSection} handleExport={handleExport} loading={loading} metricCard={metricCard} metricsGridStyle={metricsGridStyle} metricsShellStyle={metricsShellStyle} ProtectedRoute={ProtectedRoute} REPORT_PERIODS={REPORT_PERIODS} REPORT_ROLES={REPORT_ROLES} setActivePeriod={setActivePeriod} ToolbarRow={ToolbarRow} />;
+  return <AccountsReportsPageUi view="section1" activePeriod={activePeriod} Button={Button} current={current} DevLayoutSection={DevLayoutSection} handleExport={handleExport} loading={loading} metricCard={metricCard} metricsGridStyle={metricsGridStyle} metricsShellStyle={metricsShellStyle} ProtectedRoute={ProtectedRoute} REPORT_PERIODS={REPORT_PERIODS} REPORT_ROLES={REPORT_ROLES} searchText={searchText} selectedMonth={selectedMonth} selectedQuarter={selectedQuarter} selectedYear={selectedYear} setActivePeriod={setActivePeriod} setSearchText={setSearchText} setSelectedMonth={setSelectedMonth} setSelectedQuarter={setSelectedQuarter} setSelectedYear={setSelectedYear} ToolbarRow={ToolbarRow} />;
 
 
 

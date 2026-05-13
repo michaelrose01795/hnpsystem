@@ -681,20 +681,10 @@ export default function EmployeesTab() {
   );
 
   const directorySection = (
-    <DevLayoutSection
-      as="section"
-      ref={directorySectionRef}
-      sectionKey="hr-employees-workspace"
-      parentKey="hr-manager-tab-employees"
-      sectionType="content-card"
-      backgroundToken="theme"
-      shell
-      className="hr-employees-layout"
-      style={{ background: "var(--theme)", borderRadius: "var(--radius-md)", padding: "10px" }}
-    >
+    <div ref={directorySectionRef} className="hr-employees-layout">
       <DevLayoutSection
         sectionKey="hr-employees-directory"
-        parentKey="hr-employees-workspace"
+        parentKey="hr-manager-tab-employees"
         sectionType="section-shell"
         shell
         className="hr-employees-directory-shell"
@@ -849,7 +839,7 @@ export default function EmployeesTab() {
       <DevLayoutSection
         ref={detailPanelRef}
         sectionKey="hr-employees-detail-panel"
-        parentKey="hr-employees-workspace"
+        parentKey="hr-manager-tab-employees"
         sectionType="section-shell"
         shell
         disableFallback
@@ -861,7 +851,7 @@ export default function EmployeesTab() {
           onEdit={selectedEmployee ? handleStartEditEmployee : null}
         />
       </DevLayoutSection>
-    </DevLayoutSection>
+    </div>
   );
 
   const addFormSection = (
@@ -913,23 +903,7 @@ export default function EmployeesTab() {
     );
   }
 
-  return (
-    <>
-      <DevLayoutSection
-        sectionKey="hr-employees-header"
-        parentKey="hr-manager-tab-employees"
-        sectionType="toolbar"
-        className="hr-employees-topbar"
-      >
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        </div>
-      </DevLayoutSection>
-
-      {editFormSection ? editFormSection : isAddingEmployee ? addFormSection : (
-        directorySection
-      )}
-    </>
-  );
+  return editFormSection ? editFormSection : isAddingEmployee ? addFormSection : directorySection;
 }
 
 function EmployeeForm({

@@ -2,6 +2,7 @@
 import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { Button, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { StatusTag } from "@/components/HR/MetricCard";
@@ -29,7 +30,8 @@ function TrainingContent() {
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <SectionCard title="Unable to load training data" subtitle="Mock API returned an error.">
+        <SectionCard
+          sectionKey="hr-training-card-1" parentKey="hr-manager-tab-training" title="Unable to load training data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
       </div>);
@@ -50,7 +52,12 @@ function TrainingContent() {
         </p>
       </header>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-training-row-1"
+        parentKey="hr-manager-tab-training"
+        sectionType="section-shell"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -58,6 +65,7 @@ function TrainingContent() {
         }}>
         
         <SectionCard
+          sectionKey="hr-training-card-2" parentKey="hr-training-row-1"
           title="Upcoming Expiries"
           subtitle="Renew before certificates lapse"
           action={
@@ -101,6 +109,7 @@ function TrainingContent() {
         </SectionCard>
 
         <SectionCard
+          sectionKey="hr-training-card-3" parentKey="hr-training-row-1"
           title="Training Catalogue"
           subtitle="Courses available to assign">
           
@@ -108,9 +117,10 @@ function TrainingContent() {
             TODO: Fetch course catalogue from LMS/Supabase. Display course name, duration, mandatory flag, and an "Add course" action.
           </p>
         </SectionCard>
-      </section>
+      </DevLayoutSection>
 
-      <SectionCard title="Assign Training" subtitle="Send employees on mandatory or optional courses.">
+      <SectionCard
+        sectionKey="hr-training-card-4" parentKey="hr-manager-tab-training" title="Assign Training" subtitle="Send employees on mandatory or optional courses.">
         <form
           style={{
             display: "grid",
@@ -154,7 +164,8 @@ function TrainingContent() {
         </form>
       </SectionCard>
 
-      <SectionCard title="Training Compliance Snapshot" subtitle="High-level view of overall compliance rates.">
+      <SectionCard
+        sectionKey="hr-training-card-5" parentKey="hr-manager-tab-training" title="Training Compliance Snapshot" subtitle="High-level view of overall compliance rates.">
         <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
           TODO: Calculate compliance percentages per department from Supabase training records. Show percentage cards for each department with on-track/behind status.
         </p>

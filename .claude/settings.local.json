@@ -138,7 +138,10 @@
       "PowerShell($ErrorActionPreference = \"Stop\")",
       "Bash(Get-ChildItem \"C:\\\\hnpsystem\\\\src\" -Force)",
       "Bash(dir /b \"c:\\\\hnpsystem\\\\src\\\\components\\\\page-ui\")",
-      "Bash(awk -F'\"' '{print $2}')"
+      "Bash(awk -F'\"' '{print $2}')",
+      "Bash(powershell -Command \"\\(Get-Content src/components/HR/tabs/HRDashboardTab.js -Raw\\) -replace 'parentKey=\\\\\"hr-manager-dashboard-shell\\\\\"', 'parentKey=\\\\\"hr-manager-tab-dashboard\\\\\"' | Set-Content -NoNewline src/components/HR/tabs/HRDashboardTab.js\")",
+      "Bash(powershell -Command \"\\(Get-Content src/components/HR/tabs/HRDashboardTab.js -Raw\\) -replace 'parentKey=\\\\\"hr-manager-dashboard-row-absences-warnings\\\\\"', 'parentKey=\\\\\"hr-manager-tab-dashboard\\\\\"' | Set-Content -NoNewline src/components/HR/tabs/HRDashboardTab.js\")",
+      "Bash(node tmp_wrap.js)"
     ],
     "deny": [],
     "ask": [],

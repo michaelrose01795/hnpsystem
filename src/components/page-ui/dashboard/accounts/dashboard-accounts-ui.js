@@ -13,7 +13,7 @@ function ThemeSection({ sectionKey, title, subtitle, children }) {
       gap="12px"
     >
       <div>
-        <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--accentText)" }}>{title}</h2>
+        <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-accent)" }}>{title}</h2>
         {subtitle && <p style={{ margin: "6px 0 0", color: "var(--text-1)" }}>{subtitle}</p>}
       </div>
       {children}
@@ -45,9 +45,9 @@ export default function AccountsDashboardUi(props) {
       >
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-1" title="Invoice stats">
           {loading ? <p style={{
-        color: "var(--info)"
+        color: "var(--text-2)"
       }}>Loading financial KPIs…</p> : error ? <p style={{
-        color: "var(--primary)"
+        color: "var(--text-accent)"
       }}>{error}</p> : <div style={{
         display: "flex",
         flexWrap: "wrap",
@@ -61,9 +61,9 @@ export default function AccountsDashboardUi(props) {
 
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-2" title="Outstanding jobs" subtitle="Most recent completions without invoice">
           {loading ? <p style={{
-        color: "var(--info)"
+        color: "var(--text-2)"
       }}>Loading outstanding jobs…</p> : error ? <p style={{
-        color: "var(--primary)"
+        color: "var(--text-accent)"
       }}>{error}</p> : <JobList jobs={data.outstandingJobs} />}
         </ThemeSection>
 

@@ -1,6 +1,9 @@
 // file location: src/components/page-ui/accounts/reports/accounts-reports-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import { Dropdown } from "@/components/ui/dropdownAPI"; // canonical dropdown
+import { MonthPicker } from "@/components/ui/monthPickerAPI"; // canonical month picker
+import { SearchBar } from "@/components/ui/searchBarAPI"; // canonical search bar
 
 export default function AccountsReportsPageUi(props) {
   const {
@@ -17,8 +20,20 @@ export default function AccountsReportsPageUi(props) {
     metricCard,
     metricsGridStyle,
     metricsShellStyle,
+    searchText,
+    selectedMonth,
+    selectedQuarter,
+    selectedYear,
     setActivePeriod,
+    setSearchText,
+    setSelectedMonth,
+    setSelectedQuarter,
+    setSelectedYear,
   } = props; // receive page logic props.
+
+  const QUARTERS = ["Q1", "Q2", "Q3", "Q4"];
+  const currentYear = new Date().getFullYear();
+  const YEARS = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map(String);
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -27,30 +42,79 @@ export default function AccountsReportsPageUi(props) {
         <DevLayoutSection as="div" sectionKey="accounts-reports-page-shell" sectionType="page-shell" backgroundToken="page-card-bg" shell className="app-layout-page-shell" style={{
       gap: "20px"
     }}>
-          <LayerSurface as="section" sectionKey="accounts-reports-toolbar" sectionType="content-card" parentKey="accounts-reports-page-shell">
-            <ToolbarRow style={{
-          justifyContent: "space-between",
-          alignItems: "center"
-        }}>
-              <div className="app-toolbar-row" style={{
-            flex: "1 1 auto",
-            flexWrap: "nowrap",
-            justifyContent: "flex-start",
-            overflowX: "auto",
-            maxWidth: "calc(100% - 180px)"
-          }}>
-                {REPORT_PERIODS.map(period => {
-              const isActive = activePeriod === period.value;
-              return <Button key={period.value} onClick={() => setActivePeriod(period.value)} variant={isActive ? "primary" : "secondary"} size="sm" pill>
-                      {period.label}
-                    </Button>;
-            })}
+          <ToolbarRow style={{
+        justifyContent: "flex-start",
+        alignItems: "center",
+        gap: "12px",
+        flexWrap: "wrap"
+      }}>
+            {/* Period selector — canonical Dropdown */}
+            <div style={{ flex: "0 0 160px" }}>
+              <Dropdown
+                aria-label="Report period"
+                placeholder="Period"
+                value={activePeriod}
+                options={REPORT_PERIODS.map(period => ({ value: period.value, label: period.label }))}
+                onChange={(selected) => setActivePeriod(typeof selected === "object" ? selected?.value : selected)}
+              />
+            </div>
+
+            {/* Period-specific filter */}
+            {activePeriod === "monthly" && (
+              <div style={{ flex: "0 0 180px" }}>
+                <MonthPicker
+                  aria-label="Month"
+                  value={selectedMonth || ""}
+                  onChange={(event) => setSelectedMonth(event?.target?.value || "")}
+                />
               </div>
-              <Button variant="secondary" size="sm" onClick={handleExport}>
-                Export Summary
-              </Button>
-            </ToolbarRow>
-          </LayerSurface>
+            )}
+            {activePeriod === "quarterly" && (
+              <div className="app-layout-tab-row" role="group" aria-label="Quarter" style={{ flex: "0 0 auto" }}>
+                {QUARTERS.map(q => {
+                  const isActive = selectedQuarter === q;
+                  return <button
+                    key={q}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setSelectedQuarter(q)}
+                    className={`app-tab app-tab--segmented${isActive ? " is-active" : ""}`}>
+                    {q}
+                  </button>;
+                })}
+              </div>
+            )}
+            {activePeriod === "yearly" && (
+              <div className="app-layout-tab-row" role="group" aria-label="Year" style={{ flex: "0 0 auto" }}>
+                {YEARS.map(y => {
+                  const isActive = selectedYear === y;
+                  return <button
+                    key={y}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setSelectedYear(y)}
+                    className={`app-tab app-tab--segmented${isActive ? " is-active" : ""}`}>
+                    {y}
+                  </button>;
+                })}
+              </div>
+            )}
+
+            {/* Search — canonical SearchBar; shrinks so the rest of the row stays visible */}
+            <SearchBar
+              placeholder="Search…"
+              aria-label="Search reports"
+              value={searchText || ""}
+              onChange={(event) => setSearchText(event.target.value)}
+              onClear={() => setSearchText("")}
+              style={{ flex: "1 1 120px", minWidth: "100px" }}
+            />
+
+            {/* Export — push to far right */}
+            <Button variant="secondary" size="sm" onClick={handleExport} style={{ marginLeft: "auto" }}>
+              Export Summary
+            </Button>
+          </ToolbarRow>
 
           {loading && <p style={{
         color: "var(--text-1)",
@@ -69,7 +133,7 @@ export default function AccountsReportsPageUi(props) {
                   {metricCard("accounts-reports-auto-content-card-5", "Average Balance", new Intl.NumberFormat("en-GB", {
               style: "currency",
               currency: "GBP"
-            }).format(current.averageBalance || 0), "#0f766e")}
+            }).format(current.averageBalance || 0), "var(--success-text)")}
                 </div>
               </LayerTheme>
 
@@ -79,7 +143,7 @@ export default function AccountsReportsPageUi(props) {
                 <div style={{
             fontWeight: 700,
             fontSize: "var(--text-h3)",
-            color: "var(--accentText)"
+            color: "var(--text-accent)"
           }}>Highlights</div>
                 <ul style={{
             margin: 0,

@@ -2,6 +2,7 @@
 import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { Button, InputField, StatusMessage } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { StatusTag } from "@/components/HR/MetricCard";
@@ -50,7 +51,8 @@ function PerformanceContent() {
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <SectionCard title="Unable to load performance data" subtitle="Mock API returned an error.">
+        <SectionCard
+          sectionKey="hr-performance-card-1" parentKey="hr-manager-tab-performance" title="Unable to load performance data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
       </div>);
@@ -71,7 +73,12 @@ function PerformanceContent() {
         </p>
       </header>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-performance-row-1"
+        parentKey="hr-manager-tab-performance"
+        sectionType="section-shell"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -79,6 +86,7 @@ function PerformanceContent() {
         }}>
         
         <SectionCard
+          sectionKey="hr-performance-card-2" parentKey="hr-performance-row-1"
           title="Upcoming Reviews"
           subtitle="Schedule and prepare feedback before the review date">
           
@@ -111,6 +119,7 @@ function PerformanceContent() {
         </SectionCard>
 
         <SectionCard
+          sectionKey="hr-performance-card-3" parentKey="hr-performance-row-1"
           title="Development To-Do"
           subtitle="Actions to follow up after reviews"
           action={
@@ -139,9 +148,10 @@ function PerformanceContent() {
             </ul>
           }
         </SectionCard>
-      </section>
+      </DevLayoutSection>
 
       <SectionCard
+        sectionKey="hr-performance-card-4" parentKey="hr-manager-tab-performance"
         title="Recent Appraisals"
         subtitle="Summary of the last review and ratings"
         action={
@@ -190,6 +200,7 @@ function PerformanceContent() {
       </SectionCard>
 
       <SectionCard
+        sectionKey="hr-performance-card-5" parentKey="hr-manager-tab-performance"
         title="Create Performance Review"
         subtitle="Kick off a new review cycle or log a mid-year check-in.">
         

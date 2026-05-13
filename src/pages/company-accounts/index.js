@@ -225,88 +225,40 @@ export default function CompanyAccountsIndexPage() {
     if (!accounts.length) {
       return <p>{feedback || "No company accounts to display."}</p>;
     }
-    // Each clickable card uses the wrapper-button pattern: outer <button> hosts the click
-    // handler / accessibility, inner <LayerSurface> paints the nested surface.
     return (
       <LayerTheme sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        {accounts.map((account) =>
-          <button
-            key={account.account_number}
-            type="button"
-            className="company-accounts-row"
-            onClick={() => router.push(`/company-accounts/${account.account_number}`)}
-            style={{
-              border: "none",
-              background: "transparent",
-              padding: 0,
-              margin: 0,
-              textAlign: "left",
-              width: "100%",
-              cursor: "pointer"
-            }}>
-
-            <LayerSurface
-              className="company-accounts-row-surface"
-              sectionKey={`company-accounts-company-card-${String(account.account_number || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-              sectionType="content-card"
-              parentKey="company-accounts-company-list"
-              radius="var(--radius-md)"
-              padding="16px 18px"
-              gap="0"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                flexDirection: "row",
-                gap: "12px",
-                transition: "background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease"
-              }}>
-
-            <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "12px", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", flex: "1 1 260px", minWidth: 0 }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: "1.05rem", color: "var(--text-1)", whiteSpace: "nowrap" }}>
-                  {account.company_name || "Unnamed company"}
-                </p>
-                {account.trading_name && account.trading_name !== account.company_name &&
-                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
-                    {account.trading_name}
-                  </span>
-                }
-                {account.contact_name &&
-                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
-                    Contact · {account.contact_name}
-                  </span>
-                }
-                {account.contact_email &&
-                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
-                    {account.contact_email}
-                  </span>
-                }
-                {account.contact_phone &&
-                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
-                    {account.contact_phone}
-                  </span>
-                }
-                {account.billing_city &&
-                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
-                    {account.billing_city}
-                  </span>
-                }
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginLeft: "auto" }}>
-                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill company-accounts-account-pill">
-                  #{account.account_number}
-                </span>
-                {(account.linked_account_label || account.linked_account_id) &&
-                <span className="app-btn app-btn--secondary app-btn--xs app-btn--pill company-accounts-meta-pill">
-                    Ledger · {account.linked_account_label || account.linked_account_id}
-                  </span>
-                }
-              </div>
-            </div>
-            </LayerSurface>
-          </button>
-          )}
+        <div style={{ overflowX: "auto" }}>
+          <table className="app-data-table">
+            <thead>
+              <tr>
+                <th style={{ whiteSpace: "nowrap" }}>Account #</th>
+                <th>Company</th>
+                <th>Trading name</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th style={{ whiteSpace: "nowrap" }}>Phone</th>
+                <th>City</th>
+                <th>Ledger</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map((account) =>
+                <tr
+                  key={account.account_number}
+                  onClick={() => router.push(`/company-accounts/${account.account_number}`)}
+                  style={{ cursor: "pointer" }}>
+                  <td style={{ whiteSpace: "nowrap", fontWeight: 600 }}>#{account.account_number}</td>
+                  <td style={{ fontWeight: 600, color: "var(--text-1)" }}>{account.company_name || "Unnamed company"}</td>
+                  <td>{account.trading_name && account.trading_name !== account.company_name ? account.trading_name : "—"}</td>
+                  <td>{account.contact_name || "—"}</td>
+                  <td>{account.contact_email || "—"}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>{account.contact_phone || "—"}</td>
+                  <td>{account.billing_city || "—"}</td>
+                  <td>{account.linked_account_label || account.linked_account_id || "—"}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </LayerTheme>);
 

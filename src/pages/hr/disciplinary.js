@@ -1,6 +1,7 @@
 // file location: src/pages/hr/disciplinary.js
 import React from "react";
 import { SectionCard } from "@/components/Section";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { Button, InputField } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
@@ -15,7 +16,12 @@ function DisciplinaryContent() {
         </p>
       </header>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-disciplinary-row-1"
+        parentKey="hr-manager-tab-disciplinary"
+        sectionType="section-shell"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -23,6 +29,7 @@ function DisciplinaryContent() {
         }}>
         
         <SectionCard
+          sectionKey="hr-disciplinary-card-1" parentKey="hr-disciplinary-row-1"
           title="Active Warnings"
           subtitle="Warnings that still require follow-up or monitoring.">
           
@@ -32,6 +39,7 @@ function DisciplinaryContent() {
         </SectionCard>
 
         <SectionCard
+          sectionKey="hr-disciplinary-card-2" parentKey="hr-disciplinary-row-1"
           title="Incident Log"
           subtitle="Recent case entries and their current outcome.">
           
@@ -39,9 +47,10 @@ function DisciplinaryContent() {
             TODO: Fetch incident log from Supabase. Display incident type, job number, recorded by, outcome status, and export functionality.
           </p>
         </SectionCard>
-      </section>
+      </DevLayoutSection>
 
       <SectionCard
+        sectionKey="hr-disciplinary-card-3" parentKey="hr-manager-tab-disciplinary"
         title="New Incident / Warning"
         subtitle="Record the details, attach documentation, and assign a case owner.">
         

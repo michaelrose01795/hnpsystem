@@ -62,44 +62,25 @@ export default function HRDashboardTab() {
   }
 
   return (
-    <DevLayoutSection
-      as="div"
-      sectionKey="hr-manager-dashboard-shell"
-      parentKey="hr-manager-tab-dashboard"
-      sectionType="section-shell"
-      style={{ display: "flex", flexDirection: "column", gap: "10px" }}
-    >
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       {/* Metrics Overview */}
-      <LayerSurface
-        as="section"
-        sectionKey="hr-manager-dashboard-metrics"
-        parentKey="hr-manager-dashboard-shell"
-        sectionType="content-card"
-        backgroundToken="surface"
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
         {formattedMetrics.map((metric) => (
           <MetricCard
             key={metric.label}
             {...metric}
             accentColor="var(--info)"
             sectionKey={`hr-manager-dashboard-metric-${slug(metric.label)}`}
-            parentKey="hr-manager-dashboard-metrics"
+            parentKey="hr-manager-tab-dashboard"
           />
         ))}
-      </LayerSurface>
+      </div>
 
       {/* Department Performance & Training */}
-      <DevLayoutSection
-        as="section"
-        sectionKey="hr-manager-dashboard-row-performance-training"
-        parentKey="hr-manager-dashboard-shell"
-        sectionType="section-shell"
-        style={{ display: "grid", gap: "10px", gridTemplateColumns: "2fr 1.2fr" }}
-      >
+      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "2fr 1.2fr" }}>
         <SectionCard
           sectionKey="hr-manager-auto-content-card-1"
-          parentKey="hr-manager-dashboard-row-performance-training"
+          parentKey="hr-manager-tab-dashboard"
           sectionType="content-card"
           backgroundToken="surface"
           title="Department Performance Snapshot"
@@ -129,7 +110,7 @@ export default function HRDashboardTab() {
 
         <SectionCard
           sectionKey="hr-manager-auto-content-card-2"
-          parentKey="hr-manager-dashboard-row-performance-training"
+          parentKey="hr-manager-tab-dashboard"
           sectionType="content-card"
           backgroundToken="surface"
           title="Training Renewals"
@@ -171,19 +152,13 @@ export default function HRDashboardTab() {
             })}
           </div>
         </SectionCard>
-      </DevLayoutSection>
+      </div>
 
       {/* Absences & Warnings */}
-      <DevLayoutSection
-        as="section"
-        sectionKey="hr-manager-dashboard-row-absences-warnings"
-        parentKey="hr-manager-dashboard-shell"
-        sectionType="section-shell"
-        style={{ display: "grid", gap: "10px", gridTemplateColumns: "1.4fr 1fr" }}
-      >
+      <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "1.4fr 1fr" }}>
         <SectionCard
           sectionKey="hr-manager-auto-content-card-3"
-          parentKey="hr-manager-dashboard-row-absences-warnings"
+          parentKey="hr-manager-tab-dashboard"
           sectionType="content-card"
           backgroundToken="surface"
           title="Upcoming Holidays & Absences"
@@ -216,7 +191,7 @@ export default function HRDashboardTab() {
 
         <SectionCard
           sectionKey="hr-manager-auto-content-card-4"
-          parentKey="hr-manager-dashboard-row-absences-warnings"
+          parentKey="hr-manager-tab-dashboard"
           sectionType="content-card"
           backgroundToken="surface"
           title="Active Warnings"
@@ -250,7 +225,7 @@ export default function HRDashboardTab() {
             ))}
           </div>
         </SectionCard>
-      </DevLayoutSection>
-    </DevLayoutSection>
+      </div>
+    </div>
   );
 }

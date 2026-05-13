@@ -1,6 +1,7 @@
 // file location: src/pages/hr/recruitment.js
 import React from "react";
 import { SectionCard } from "@/components/Section";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import HrRecruitmentUi from "@/components/page-ui/hr/hr-recruitment-ui"; // Extracted presentation layer.
 
 function RecruitmentContent() {
@@ -12,7 +13,12 @@ function RecruitmentContent() {
         </p>
       </header>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-recruitment-row-1"
+        parentKey="hr-manager-tab-recruitment"
+        sectionType="section-shell"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -20,6 +26,7 @@ function RecruitmentContent() {
         }}>
         
         <SectionCard
+          sectionKey="hr-recruitment-card-1" parentKey="hr-recruitment-row-1"
           title="Open Roles"
           subtitle="Current postings and their pipeline status">
           
@@ -29,6 +36,7 @@ function RecruitmentContent() {
         </SectionCard>
 
         <SectionCard
+          sectionKey="hr-recruitment-card-2" parentKey="hr-recruitment-row-1"
           title="Recruitment Tasks"
           subtitle="Keep the hiring pipeline moving">
           
@@ -36,9 +44,10 @@ function RecruitmentContent() {
             TODO: Fetch recruitment tasks from Supabase. Display task descriptions linked to open roles with assign/complete actions.
           </p>
         </SectionCard>
-      </section>
+      </DevLayoutSection>
 
       <SectionCard
+        sectionKey="hr-recruitment-card-3" parentKey="hr-manager-tab-recruitment"
         title="Applicants Pipeline"
         subtitle="Track candidates across the recruitment workflow">
         
@@ -48,6 +57,7 @@ function RecruitmentContent() {
       </SectionCard>
 
       <SectionCard
+        sectionKey="hr-recruitment-card-4" parentKey="hr-manager-tab-recruitment"
         title="Onboarding Checklist"
         subtitle="Tasks to complete once a candidate accepts an offer.">
         

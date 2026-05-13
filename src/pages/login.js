@@ -201,6 +201,7 @@ export default function LoginPage() {
       const nextRoles = [];
       (roles || []).forEach((role) => {
         const key = String(role).toLowerCase();
+        if (key.includes("customer")) return;
         if (!seen.has(key)) {
           seen.set(key, role);
           nextRoles.push(role);
@@ -210,19 +211,6 @@ export default function LoginPage() {
         normalizedCategory[category] = nextRoles;
       }
     });
-
-    const missingRoles = [];
-    rosterRoles.forEach((role) => {
-      const key = String(role).toLowerCase();
-      if (!seen.has(key)) {
-        seen.set(key, role);
-        missingRoles.push(role);
-      }
-    });
-
-    if (missingRoles.length) {
-      normalizedCategory.Other = missingRoles.sort((a, b) => a.localeCompare(b));
-    }
 
     return normalizedCategory;
   }, [usersByRole, usersByRoleDetailed]);

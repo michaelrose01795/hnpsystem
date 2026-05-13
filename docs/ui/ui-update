@@ -27,7 +27,7 @@ Admin Manager
 - /admin/compliance (CHECK)
 have it so "/admin/compliance :: 1.2.2.1.1 (admin-compliance-auto-page-shell-1) — “Dashboard Subject Requests Breaches DPIAs ROPA Retention At…”" section uses "--theme" colour background 
 
-- /dashboard/admin
+- /dashboard/admin 
 remove ℹ️ from “Notices Latest alerts ℹ️ Job #00078 status updated to Relea…” cards 
 
 
@@ -37,44 +37,33 @@ Accounts Manager
 
 - /accounts (DONE
 
-- /company-accounts (TODO)
-improve the layout of the rows within the "/company-accounts :: 1.2.2.1.1.3 (company-accounts-company-list)" section have it os that section follows the lgobal style table settings and the columns are neatly organed and spaced etc. 
+- /company-accounts (DONE
 
 - /accounts/invoices (DONE
 
-- /accounts/invoices/dcb1951e-a789-4631-96b0-d1313f809b51 (TODO)
-wihtin "/accounts/invoices/dcb1951e-a789-4631-96b0-d1313f809b51 :: 1.2.2.1 (app-layout-page-card) — “Invoice INV-2026-00001 All Invoices Grand Total £930.60 Pay…”" section improve the dev overlay. 
+- /accounts/invoices/INV-2026-00001 (DONE
 
+- /accounts/reports (DONE
 
-- /accounts/reports (TODO)
-remove "/accounts/reports :: 1.2.2.1.1.1 (accounts-reports-toolbar) — “Monthly Quarterly Yearly Export Summary”" card and move the contents into the main page card. improve the button style so its more like a filter option etc. 
+- /accounts/payslips (DONE
 
-- /accounts/payslips (TODO)
-have it os that the table wihtin "/accounts/payslips :: 1.2.2.1.1.1 (payslips-table) — “1 payslip New payslip Paid date User Department Period Gros…”" is set monthly, have it so the month picker for the table is within "/accounts/payslips :: 1.2.2.1.1.1.1.1 (accounts-payslips-auto-toolbar-1) — “All users All departments All statuses Paid from Paid to Cl…”" section as well as the "New payslip" button. remove the payslip count as well. move the "/accounts/payslips :: 1.2.2.1.1.1.1.1 (accounts-payslips-auto-toolbar-1) — “All users All departments All statuses Paid from Paid to Cl…”" section into the mian page section and just have the "/accounts/payslips :: 1.2.2.1.1.1 (payslips-table) — “1 payslip New payslip Paid date User Department Period Gros…”" card wound the table. 
-
-- /dashboard/accounts (TODO)
-there is text colour within "/dashboard/accounts" page which is red, change this to use "--text-1 --text-2 --text-accent" colour text only. 
+- /dashboard/accounts (DONE
 
 ----------------------------------------------------
 Owner
 ----------------------------------------------------
 
-- /hr/manager (TODO)
-improve the dev overly wihtn "/hr/manager :: 1.2.2.1.1.1.2.1 (hr-manager-dashboard-metrics) — “👥 Total Employees 41 41 active / 0 inactive 🕒 Attendance …”" section. 
-
-(CHECK)
-Improve the dev overlay within "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-dashboard)" section so all cards and sections use the dev overlay. 
+- /hr/manager (CHECK)
+remove "/hr/manager :: 1.2.2.1.1.1.2.1 (hr-employees-workspace)" card and move the content into the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" card. have it os the the empty card at the top of the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" section is removed, dev overlay is setting it to a green line but i cant click it to easily tell u what card it is. do the same thing for each tab section to put the cards wihtin the cards into the mian section etc. 
 
 (TODO)
-remove "/hr/manager :: 1.2.2.1.1.1.2.1 (hr-employees-workspace)" card and move the content into the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" card. have it os the the empty card at the top of the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" section is removed, dev overlay is setting it to a green line but i cant click it to easily tell u what card it is. do the same thing for each tab section to put the cards wihtin the cards into the mian section etc. 
+have it so the rows within "/hr/manager :: 1.2.2.1.1.1.2.1.1.6 (hr-employees-directory-list)" section follows the global.css table design 
 
 ----------------------------------------------------
 Painters
 ----------------------------------------------------
 
-- /dashboard/painting (CHECK)
-remove "Painting studio Bodyshop queue Track paint jobs waiting on the bay and pull estimated finish times directly from job timestamps." text and section. have it so /dashboard/painting :: 1.2.2.1.1 (dashboard-painting-auto-content-card-1) — “Bodyshop jobs 0 Jobs requiring bodywork”/dashboard/painting :: 1.2.2.1.2 (dashboard-painting-auto-content-card-2) — “Paint queue Jobs still in progress No painting jobs in queu…”/dashboard/painting :: 1.2.2.1.3 (dashboard-painting-auto-content-card-3) — “Queue trend Recent workshop starts Tue 0 Wed 0 Thu 0 Fri 0 …” sections uses "--theme" colour backgrounds and the cards / sections within those sections uses "--surface" colour. 
-
+- /dashboard/painting (DOne
 
 ====================================================
 CUSTOMER

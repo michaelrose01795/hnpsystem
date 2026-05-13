@@ -50,74 +50,83 @@ export default function PayslipsAdminPageUi(uiProps) {
     <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
       <DevLayoutSection sectionKey="payslips-page-shell" sectionType="page-shell" shell>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          {/* Table */}
+          {/* Filter toolbar — lives in the main page section, above the table card */}
+          <DevLayoutSection sectionKey="payslips-filter-toolbar" sectionType="filter-row" parentKey="payslips-page-shell">
+            <ToolbarRow>
+              <SearchBar
+                name="search"
+                placeholder="Search reference, period or notes"
+                value={filters.search}
+                onChange={(event) => handleFilterChange("search", event.target.value)}
+                onClear={() => handleFilterChange("search", "")}
+                style={{ flex: "1 1 240px" }}
+              />
+              <DropdownField
+                name="userId"
+                value={filters.userId}
+                onChange={(event) => handleFilterChange("userId", event.target.value)}
+                options={userOptions}
+                style={{ flex: "0 0 220px" }}
+              />
+              <DropdownField
+                name="department"
+                value={filters.department}
+                onChange={(event) => handleFilterChange("department", event.target.value)}
+                options={departmentOptions}
+                style={{ flex: "0 0 200px" }}
+              />
+              <DropdownField
+                name="status"
+                value={filters.status}
+                onChange={(event) => handleFilterChange("status", event.target.value)}
+                options={STATUS_OPTIONS}
+                style={{ flex: "0 0 160px" }}
+              />
+              <input
+                type="month"
+                aria-label="Month"
+                value={(filters.paidFrom || "").slice(0, 7)}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  if (!value) {
+                    handleFilterChange("paidFrom", "");
+                    handleFilterChange("paidTo", "");
+                    return;
+                  }
+                  const [year, month] = value.split("-").map(Number);
+                  const first = `${value}-01`;
+                  const lastDay = new Date(year, month, 0).getDate();
+                  const last = `${value}-${String(lastDay).padStart(2, "0")}`;
+                  handleFilterChange("paidFrom", first);
+                  handleFilterChange("paidTo", last);
+                }}
+                style={{
+                  flex: "0 0 180px",
+                  height: "var(--control-height, 36px)",
+                  padding: "0 12px",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--input-ring)",
+                  background: "var(--surface)",
+                  color: "var(--text-1)",
+                  fontSize: "0.88rem",
+                }}
+              />
+              <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters}>
+                Clear filters
+              </Button>
+              <Button type="button" variant="primary" size="sm" onClick={() => setIsCreateOpen(true)}>
+                New payslip
+              </Button>
+            </ToolbarRow>
+          </DevLayoutSection>
+
+          {/* Table card — only wraps the table itself */}
           <LayerTheme
             sectionKey="payslips-table"
             sectionType="data-table"
             parentKey="payslips-page-shell"
             gap="12px"
           >
-            <DevLayoutSection sectionKey="payslips-filter-toolbar" sectionType="filter-row" parentKey="payslips-table">
-              <ToolbarRow>
-                <SearchBar
-                  name="search"
-                  placeholder="Search reference, period or notes"
-                  value={filters.search}
-                  onChange={(event) => handleFilterChange("search", event.target.value)}
-                  onClear={() => handleFilterChange("search", "")}
-                  style={{ flex: "1 1 240px" }}
-                />
-                <DropdownField
-                  name="userId"
-                  value={filters.userId}
-                  onChange={(event) => handleFilterChange("userId", event.target.value)}
-                  options={userOptions}
-                  style={{ flex: "0 0 220px" }}
-                />
-                <DropdownField
-                  name="department"
-                  value={filters.department}
-                  onChange={(event) => handleFilterChange("department", event.target.value)}
-                  options={departmentOptions}
-                  style={{ flex: "0 0 200px" }}
-                />
-                <DropdownField
-                  name="status"
-                  value={filters.status}
-                  onChange={(event) => handleFilterChange("status", event.target.value)}
-                  options={STATUS_OPTIONS}
-                  style={{ flex: "0 0 160px" }}
-                />
-                <div style={{ flex: "0 0 180px" }}>
-                  <CalendarField
-                    name="paidFrom"
-                    placeholder="Paid from"
-                    value={filters.paidFrom}
-                    onChange={(event) => handleFilterChange("paidFrom", event.target.value)}
-                  />
-                </div>
-                <div style={{ flex: "0 0 180px" }}>
-                  <CalendarField
-                    name="paidTo"
-                    placeholder="Paid to"
-                    value={filters.paidTo}
-                    onChange={(event) => handleFilterChange("paidTo", event.target.value)}
-                  />
-                </div>
-                <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters}>
-                  Clear filters
-                </Button>
-              </ToolbarRow>
-            </DevLayoutSection>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-              <div style={{ fontWeight: 700, color: "var(--text-1)" }}>
-                {loading ? "Loading payslips…" : `${payslips.length} payslip${payslips.length === 1 ? "" : "s"}`}
-              </div>
-              <Button type="button" variant="primary" size="sm" pill onClick={() => setIsCreateOpen(true)}>
-                New payslip
-              </Button>
-            </div>
-
             {error ? (
               <div
                 style={{

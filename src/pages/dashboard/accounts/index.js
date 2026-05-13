@@ -11,9 +11,9 @@ import AccountsDashboardUi from "@/components/page-ui/dashboard/accounts/dashboa
 // so per the strict alternation rule it renders as a LayerSurface.
 const MetricCard = ({ label, value, helper }) => (
   <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 180 }}>
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-2)" }}>{helper}</p>}
   </LayerSurface>
 );
 
@@ -23,7 +23,7 @@ const TrendBlock = ({ data }) => {
     <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
       {(data || []).map((point) =>
       <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span>
+          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-2)" }}>{point.label}</span>
           <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
             <div
             style={{
@@ -34,7 +34,7 @@ const TrendBlock = ({ data }) => {
             }} />
 
           </div>
-          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
+          <strong style={{ color: "var(--text-accent)" }}>{point.count}</strong>
         </div>
       )}
     </LayerSurface>);
@@ -45,7 +45,7 @@ const TrendBlock = ({ data }) => {
 const JobList = ({ jobs }) => (
   <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
     {jobs.length === 0 ?
-      <p style={{ margin: 0, color: "var(--info)" }}>No outstanding jobs right now.</p> :
+      <p style={{ margin: 0, color: "var(--text-2)" }}>No outstanding jobs right now.</p> :
       jobs.map((job) =>
         <div
           key={job.id}
@@ -53,13 +53,13 @@ const JobList = ({ jobs }) => (
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            color: "var(--info-dark)"
+            color: "var(--text-1)"
           }}>
           <div>
-            <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
-            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>Vehicle {job.vehicle_reg || "TBC"}</p>
+            <strong style={{ color: "var(--text-accent)" }}>{job.job_number || "—"}</strong>
+            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-2)" }}>Vehicle {job.vehicle_reg || "TBC"}</p>
           </div>
-          <span style={{ fontSize: "0.8rem", color: "var(--info)" }}>{job.status}</span>
+          <span style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{job.status}</span>
         </div>
       )
     }

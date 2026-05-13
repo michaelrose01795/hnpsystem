@@ -9,10 +9,10 @@ const DETAIL_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS M
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 
 const statusBadgeStyles = {
-  Paid: { background: "rgba(var(--success-rgb), 0.16)", color: "var(--success-text)" },
-  Draft: { background: "rgba(var(--primary-rgb), 0.14)", color: "var(--primary-selected)" },
-  Overdue: { background: "rgba(var(--warning-rgb), 0.18)", color: "var(--warning-text)" },
-  Cancelled: { background: "rgba(var(--danger-rgb), 0.16)", color: "var(--danger-dark)" }
+  Paid: { background: "var(--success-base)", color: "var(--text-2)" },
+  Draft: { background: "var(--primary-selected)", color: "var(--text-2)" },
+  Overdue: { background: "var(--warning-base)", color: "var(--text-2)" },
+  Cancelled: { background: "var(--danger-base)", color: "var(--text-2)" }
 };
 
 const getInvoiceAmountValue = (invoice) =>
@@ -66,14 +66,26 @@ export default function InvoiceDetailPage() {
   const [payments, setPayments] = useState([]);
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Only flipped true when the API explicitly responds 404 — never on transient
+  // states (router hydration, in-flight fetch, network error) so the skeleton
+  // stays visible until we have a definitive answer.
+  const [notFound, setNotFound] = useState(false);
   useEffect(() => {
     if (!invoiceId) return;
+    setNotFound(false);
     const controller = new AbortController();
     const loadInvoice = async () => {
       setLoading(true);
       try {
         const response = await fetch(`/api/invoices/${invoiceId}`, { signal: controller.signal });
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({}));
+        if (response.status === 404) {
+          setInvoice(null);
+          setPayments([]);
+          setJob(null);
+          setNotFound(true);
+          return;
+        }
         if (!response.ok) {
           throw new Error(payload?.message || "Failed to load invoice");
         }
@@ -90,13 +102,26 @@ export default function InvoiceDetailPage() {
     loadInvoice();
     return () => controller.abort();
   }, [invoiceId]);
+
+  // Canonicalize URL: if we loaded an invoice and the URL segment isn't the
+  // human-readable invoice_number, swap it in without a history entry.
+  useEffect(() => {
+    if (!invoice?.invoice_number) return;
+    const currentSegment = decodeURIComponent(String(invoiceId || "")).trim();
+    if (currentSegment && currentSegment !== invoice.invoice_number) {
+      router.replace(`/accounts/invoices/${encodeURIComponent(invoice.invoice_number)}`, undefined, {
+        shallow: true,
+      });
+    }
+  }, [invoice, invoiceId, router]);
+
   const infoRow = (label, value) =>
   <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "var(--separating-line)" }}>
       <span style={{ color: "var(--text-1)", fontWeight: 600 }}>{label}</span>
       <span style={{ fontWeight: 600, color: "var(--text-1)" }}>{value || "—"}</span>
     </div>;
 
-  return <InvoiceDetailPageUi view="section1" Button={Button} currencyFormatter={currencyFormatter} DETAIL_ROLES={DETAIL_ROLES} getAccountDisplayValue={getAccountDisplayValue} getCustomerDisplayValue={getCustomerDisplayValue} getDueDateDisplayValue={getDueDateDisplayValue} getInvoiceAmountValue={getInvoiceAmountValue} infoRow={infoRow} invoice={invoice} invoiceId={invoiceId} job={job} loading={loading} payments={payments} ProtectedRoute={ProtectedRoute} router={router} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} statusBadgeStyles={statusBadgeStyles} />;
+  return <InvoiceDetailPageUi view="section1" Button={Button} currencyFormatter={currencyFormatter} DETAIL_ROLES={DETAIL_ROLES} getAccountDisplayValue={getAccountDisplayValue} getCustomerDisplayValue={getCustomerDisplayValue} getDueDateDisplayValue={getDueDateDisplayValue} getInvoiceAmountValue={getInvoiceAmountValue} infoRow={infoRow} invoice={invoice} invoiceId={invoiceId} job={job} loading={loading} payments={payments} ProtectedRoute={ProtectedRoute} router={router} notFound={notFound} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} statusBadgeStyles={statusBadgeStyles} />;
 
 
 

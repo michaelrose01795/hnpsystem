@@ -2,6 +2,7 @@
 import React from "react";
 import { useHrOperationsData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { Button, LayerTheme, StatusMessage } from "@/components/ui"; // LayerTheme: canonical layer primitive (see CLAUDE.md §3.0)
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 
@@ -47,7 +48,8 @@ function PayrollContent() {
   if (error) {
     return (
       <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
-        <SectionCard title="Unable to load payroll data" subtitle="Mock API returned an error.">
+        <SectionCard
+          sectionKey="hr-payroll-card-1" parentKey="hr-manager-tab-payroll" title="Unable to load payroll data" subtitle="Mock API returned an error.">
           <StatusMessage tone="danger">{error.message}</StatusMessage>
         </SectionCard>
       </div>);
@@ -63,7 +65,12 @@ function PayrollContent() {
         </p>
       </header>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-payroll-row-1"
+        parentKey="hr-manager-tab-payroll"
+        sectionType="section-shell"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -71,6 +78,7 @@ function PayrollContent() {
         }}>
         
         <SectionCard
+          sectionKey="hr-payroll-card-2" parentKey="hr-payroll-row-1"
           title="Compensation Overview"
           subtitle="Current salary/hourly rate by employee"
           action={
@@ -114,14 +122,20 @@ function PayrollContent() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Pay Rise Requests" subtitle="Approval workflow: Employee → Manager → HR">
+        <SectionCard
+          sectionKey="hr-payroll-card-3" parentKey="hr-payroll-row-1" title="Pay Rise Requests" subtitle="Approval workflow: Employee → Manager → HR">
           <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
             TODO: Fetch pay rise requests from Supabase. Display employee name, current/requested rate, approver, status, and approve/reject actions.
           </p>
         </SectionCard>
-      </section>
+      </DevLayoutSection>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-payroll-row-2"
+        parentKey="hr-manager-tab-payroll"
+        sectionType="section-shell"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
@@ -129,6 +143,7 @@ function PayrollContent() {
         }}>
         
         <SectionCard
+          sectionKey="hr-payroll-card-4" parentKey="hr-payroll-row-2"
           title="Pay Rate History"
           subtitle="Audit trail of pay changes with effective dates"
           action={
@@ -168,6 +183,7 @@ function PayrollContent() {
         </SectionCard>
 
         <SectionCard
+          sectionKey="hr-payroll-card-5" parentKey="hr-payroll-row-2"
           title="Overtime & Bonus Tracking"
           subtitle="Hours and earnings rolled up per period"
           action={
@@ -214,7 +230,7 @@ function PayrollContent() {
             </div>
           }
         </SectionCard>
-      </section>
+      </DevLayoutSection>
     </div>);
 
 }

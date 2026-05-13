@@ -3,6 +3,7 @@ import React from "react";
 import { SectionCard } from "@/components/Section";
 import { Button, InputField, LayerTheme } from "@/components/ui"; // LayerTheme: canonical layer primitive (see CLAUDE.md §3.0)
 import { DropdownField } from "@/components/ui/dropdownAPI";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import HrSettingsPoliciesUi from "@/components/page-ui/hr/hr-settings-ui"; // Extracted presentation layer.
 
 function SettingsContent() {
@@ -14,14 +15,20 @@ function SettingsContent() {
         </p>
       </header>
 
-      <section
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-settings-policies-row"
+        parentKey="hr-manager-tab-settings"
+        sectionType="section-shell"
+        shell
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           gap: "var(--layout-card-gap)"
         }}>
-        
+
         <SectionCard
+          sectionKey="hr-settings-card-1" parentKey="hr-settings-policies-row"
           title="Company Policies"
           subtitle="Upload and manage policies available to employees.">
           
@@ -62,6 +69,7 @@ function SettingsContent() {
         </SectionCard>
 
         <SectionCard
+          sectionKey="hr-settings-card-2" parentKey="hr-settings-policies-row"
           title="Shift Patterns & Break Rules"
           subtitle="Configure default schedules used across departments.">
           
@@ -94,9 +102,10 @@ function SettingsContent() {
             </div>
           </div>
         </SectionCard>
-      </section>
+      </DevLayoutSection>
 
       <SectionCard
+        sectionKey="hr-settings-card-3" parentKey="hr-manager-tab-settings"
         title="Role-Based Access"
         subtitle="Control which roles can access HR functionality.">
         
@@ -106,6 +115,7 @@ function SettingsContent() {
       </SectionCard>
 
       <SectionCard
+        sectionKey="hr-settings-card-4" parentKey="hr-manager-tab-settings"
         title="Notification Settings"
         subtitle="Configure email alerts and reminders for HR events.">
         
