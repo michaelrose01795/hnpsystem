@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/roles";
 
 const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
+const isVercelHost = (value = "") => /\.vercel\.app$/i.test(String(value));
 const applyRuntimeNextAuthUrl = (req) => {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
   const proto =
@@ -19,6 +20,9 @@ const applyRuntimeNextAuthUrl = (req) => {
 
   const currentAuthUrl = process.env.NEXTAUTH_URL || "";
   const shouldUseRequestHost =
+    Boolean(process.env.VERCEL) ||
+    isVercelHost(host) ||
+    isVercelHost(currentAuthUrl) ||
     (isLocalhostUrl(host) && !isLocalhostUrl(currentAuthUrl)) ||
     (!isLocalhostUrl(host) && (!currentAuthUrl || isLocalhostUrl(currentAuthUrl)));
 
@@ -27,6 +31,53 @@ const applyRuntimeNextAuthUrl = (req) => {
   }
 };
 
+const PUBLIC_FILE = /\.(?:avif|bmp|css|gif|ico|jpg|jpeg|js|json|map|png|svg|txt|webmanifest|webp|woff|woff2)$/i;
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/favicon.ico",
+  "/login",
+  "/loginPresentation",
+  "/unauthorized",
+  "/website",
+  "/vision",
+  "/presentation",
+  "/slideshow",
+]);
+const PUBLIC_PREFIXES = [
+  "/_next",
+  "/api/auth",
+  "/api/cookies",
+  "/api/health",
+  "/api/website/auth",
+  "/images",
+  "/website",
+  "/vision",
+  "/presentation",
+  "/vhc/customer",
+  "/vhc/customer-preview",
+];
+const PROTECTED_PREFIXES = [
+  "/account",
+  "/accounts",
+  "/admin",
+  "/appointments",
+  "/clocking",
+  "/company-accounts",
+  "/customers",
+  "/dashboard",
+  "/dev",
+  "/hr",
+  "/job-cards",
+  "/messages",
+  "/mobile",
+  "/parts",
+  "/profile",
+  "/tech",
+  "/tracking",
+  "/valet",
+  "/vhc",
+  "/workshop",
+];
 const HR_ALLOWED_PATHS_FOR_MANAGERS = ["/hr/employees", "/hr/leave"];
 const RELAX_HR_ACCESS = process.env.NEXT_PUBLIC_RELAX_HR_ACCESS === "true";
 const isDevEnv = process.env.NODE_ENV !== "production";
@@ -34,6 +85,26 @@ const logProxyCheck = (message, details = {}) => {
   if (!isDevEnv) return;
   console.info(`[proxy] ${message}`, details);
 };
+
+const startsWithPath = (pathname, prefix) =>
+  pathname === prefix || pathname.startsWith(`${prefix}/`);
+
+const isPublicPath = (pathname) =>
+  PUBLIC_PATHS.has(pathname) ||
+  PUBLIC_FILE.test(pathname) ||
+  PUBLIC_PREFIXES.some((prefix) => startsWithPath(pathname, prefix));
+
+const isProtectedPath = (pathname) =>
+  PROTECTED_PREFIXES.some((prefix) => startsWithPath(pathname, prefix));
+
+const redirectToLogin = (req, pathname) => {
+  const loginUrl = new URL("/login", req.url);
+  if (pathname !== "/") {
+    loginUrl.searchParams.set("redirectedFrom", pathname);
+  }
+  return NextResponse.redirect(loginUrl);
+};
+
 export async function proxy(req) {
   applyRuntimeNextAuthUrl(req);
   const { pathname } = req.nextUrl;
@@ -47,12 +118,16 @@ export async function proxy(req) {
     return NextResponse.next();
   }
 
-  if (RELAX_HR_ACCESS && (isHrRoute || isAdminRoute)) {
-    logProxyCheck("Relaxed HR/Admin access", { pathname });
+  if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
 
-  if (!isHrRoute && !isAdminRoute) {
+  if (!isProtectedPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  if (RELAX_HR_ACCESS && (isHrRoute || isAdminRoute)) {
+    logProxyCheck("Relaxed HR/Admin access", { pathname });
     return NextResponse.next();
   }
 
@@ -63,9 +138,11 @@ export async function proxy(req) {
   });
 
   if (!token && !hasDevCookieAuth) {
-    const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("redirectedFrom", pathname);
-    return NextResponse.redirect(loginUrl);
+    return redirectToLogin(req, pathname);
+  }
+
+  if (!isHrRoute && !isAdminRoute) {
+    return NextResponse.next();
   }
 
   const roles = token?.roles?.length
@@ -113,5 +190,5 @@ export async function proxy(req) {
 }
 
 export const config = {
-  matcher: ["/hr/:path*", "/admin/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

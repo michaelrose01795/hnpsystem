@@ -6,7 +6,6 @@
 
 import React, { useEffect, useState } from "react";
 import Head from "next/head";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Section from "@/components/Section";
 import LayerSurface from "@/components/ui/LayerSurface";
@@ -253,11 +252,9 @@ export default function AccountSecurityPage() {
       <Head>
         <title>Security · HNP System</title>
       </Head>
-      <Layout>
-        <div className="app-page-shell">
-          <SecurityPanel />
-        </div>
-      </Layout>
+      <div className="app-page-shell">
+        <SecurityPanel />
+      </div>
     </ProtectedRoute>
   );
 }

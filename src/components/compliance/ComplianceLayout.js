@@ -6,7 +6,6 @@ import React from "react";import LayerSurface from "@/components/ui/LayerSurface
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { COMPLIANCE_ADMIN_ROLES } from "@/lib/compliance/roles";
 
@@ -29,8 +28,7 @@ export default function ComplianceLayout({ title, children }) {
       <Head>
         <title>{title ? `${title} · Compliance` : "Compliance"} · HNP System</title>
       </Head>
-      <Layout>
-        <div className="app-page-shell">
+      <div className="app-page-shell">
           <LayerSurface as="div" style={{ padding: "8px 8px 32px" }}>
             <div className="app-page-stack">
               <nav
@@ -69,7 +67,6 @@ export default function ComplianceLayout({ title, children }) {
             </div>
           </LayerSurface>
         </div>
-      </Layout>
     </ProtectedRoute>);
 
 }

@@ -24,6 +24,7 @@ const LOGIN_SHELL_LOADING_EVENT = "hnp:login-shell-loading";
 const LOGIN_SHELL_LOADING_STORAGE_KEY = "hnp-login-shell-loading";
 const DEFAULT_STAFF_POST_LOGIN_ROUTE = "/newsfeed";
 const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/customer";
+const STAFF_DEV_LOGIN_HIDDEN_CATEGORIES = new Set(["customers"]);
 const hasActiveLogoutBarrier = () => {
   if (typeof window === "undefined") return false;
   const raw = window.sessionStorage.getItem(LOGOUT_BARRIER_STORAGE_KEY);
@@ -193,6 +194,10 @@ export default function LoginPage() {
     const normalizedCategory = {};
 
     Object.entries(categories).forEach(([category, roles]) => {
+      if (STAFF_DEV_LOGIN_HIDDEN_CATEGORIES.has(normalizeLoginLookup(category))) {
+        return;
+      }
+
       const nextRoles = [];
       (roles || []).forEach((role) => {
         const key = String(role).toLowerCase();

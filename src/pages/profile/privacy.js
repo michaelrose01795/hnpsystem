@@ -6,7 +6,6 @@
 import React, { useEffect, useState } from "react";import LayerSurface from "@/components/ui/LayerSurface";
 import Head from "next/head";
 import Link from "next/link";
-import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
@@ -355,6 +354,7 @@ export function PrivacyPanel() {
             Get a JSON file containing the data we hold against your account
             (profile, consents, subject requests, recent sign-in events).
           </p>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a
             href="/api/privacy/export"
             style={{
@@ -405,11 +405,9 @@ export default function PrivacyHubPage() {
       <Head>
         <title>Privacy · HNP System</title>
       </Head>
-      <Layout>
-        <div className="app-page-shell">
-          <PrivacyPanel />
-        </div>
-      </Layout>
+      <div className="app-page-shell">
+        <PrivacyPanel />
+      </div>
     </ProtectedRoute>);
 
 }

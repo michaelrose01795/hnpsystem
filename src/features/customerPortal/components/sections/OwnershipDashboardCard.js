@@ -1,25 +1,47 @@
 // file location: src/features/customerPortal/components/sections/OwnershipDashboardCard.js
-// Per-vehicle ownership snapshot for /website/profile: MOT due, service due,
-// warranty, recalls, tyre status, battery, mileage, plus a health score and
-// upcoming recommended work. Mileage / MOT / service prefer live data
-// returned by /api/website/profile; the rest is mock until each integration
-// is wired (recall API, tyre status, battery telemetry).
+// Per-vehicle ownership snapshot for /website/profile using live vehicle data.
+// Third-party health integrations are noted as pending instead of showing
+// example values.
 import React from "react";
 import SectionShell from "./SectionShell";
-import { Stack, Grid, Tile, Field, FieldGrid, SubHeader, Badge } from "./_websiteParts";
+import { Stack, Tile, Field, FieldGrid, SubHeader, Badge, Empty } from "./_websiteParts";
 
-const MOCK = {
-  warrantyExpiry: "31 Dec 2027",
-  recalls: 0,
-  tyreStatus: "All 4 within tolerance",
-  batteryHealth: "Healthy · 12.6V",
-  upcomingWork: "Brake fluid flush recommended at next service",
-  healthScore: 86,
+const formatDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const vehicleTitle = (vehicle) =>
+  vehicle.make_model ||
+  vehicle.makeModel ||
+  [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||
+  "Vehicle";
+
+const vehicleReg = (vehicle) =>
+  vehicle.reg_number || vehicle.reg || vehicle.registration || "Registration TBC";
+
+const getHealthScore = (vehicle) => {
+  let score = 100;
+  const motDue = vehicle.mot_due || vehicle.motDue;
+  if (motDue) {
+    const days = Math.ceil((new Date(motDue).getTime() - Date.now()) / 86400000);
+    if (Number.isFinite(days) && days < 0) score -= 35;
+    else if (Number.isFinite(days) && days <= 30) score -= 20;
+    else if (Number.isFinite(days) && days <= 60) score -= 10;
+  }
+  if (!vehicle.mileage) score -= 5;
+  if (!vehicle.service_history && !vehicle.service_plan_type) score -= 8;
+  return Math.max(0, Math.min(100, score));
 };
 
 function ScoreRing({ score = 0 }) {
-  const tone =
-    score >= 80 ? "#58c790" : score >= 60 ? "#f7b955" : "#e85a5a";
+  const tone = score >= 80 ? "#58c790" : score >= 60 ? "#f7b955" : "#e85a5a";
   return (
     <div
       style={{
@@ -57,47 +79,50 @@ function ScoreRing({ score = 0 }) {
 }
 
 export default function OwnershipDashboardCard({ vehicles = [] }) {
-  const list = vehicles.length ? vehicles : [{ reg: "DEMO123", makeModel: "Example Vehicle" }];
   return (
     <SectionShell
       id="ownership"
       eyebrow="Ownership hub"
       title="Vehicle health overview"
-      count={`${list.length} vehicle${list.length === 1 ? "" : "s"}`}
+      count={`${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"}`}
       todo={{
-        label: "Recall API, tyre status & battery telemetry not linked yet",
+        label: "Recall API, tyre status and battery telemetry not linked yet",
         detail:
-          "MOT / service / mileage use live data when available. Recall, tyre and battery values shown below are mock until those integrations are wired.",
+          "MOT, warranty, service plan and mileage are live. Recall, tyre and battery connections still require third-party APIs.",
       }}
     >
       <Stack gap={12}>
-        {list.map((v) => (
-          <Tile key={v.id || v.reg} padding={16}>
+        {vehicles.length === 0 ? <Empty>No vehicles are linked to this account yet.</Empty> : null}
+        {vehicles.map((vehicle) => (
+          <Tile key={vehicle.vehicle_id || vehicle.id || vehicleReg(vehicle)} padding={16}>
             <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-              <ScoreRing score={MOCK.healthScore} />
+              <ScoreRing score={getHealthScore(vehicle)} />
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <span style={{ fontSize: 15, fontWeight: 800, color: "var(--txt-bright)" }}>
-                  {v.makeModel || "Vehicle"}
+                  {vehicleTitle(vehicle)}
                 </span>
-                <Badge>{v.reg}</Badge>
+                <Badge>{vehicleReg(vehicle)}</Badge>
               </div>
             </div>
             <FieldGrid>
-              <Field label="MOT due" value={v.motDue} />
-              <Field label="Service due" value={v.nextService} />
-              <Field label="Warranty" value={v.warrantyExpiry || MOCK.warrantyExpiry} />
+              <Field label="MOT due" value={formatDate(vehicle.mot_due || vehicle.motDue)} />
               <Field
-                label="Recalls"
-                value={MOCK.recalls === 0 ? "None outstanding" : `${MOCK.recalls} open`}
+                label="Warranty"
+                value={[vehicle.warranty_type, formatDate(vehicle.warranty_expiry)].filter(Boolean).join(" - ")}
               />
-              <Field label="Tyre status" value={MOCK.tyreStatus} />
-              <Field label="Battery" value={MOCK.batteryHealth} />
-              <Field label="Mileage" value={v.mileage ? `${v.mileage} miles` : "—"} />
+              <Field
+                label="Service plan"
+                value={[vehicle.service_plan_supplier, vehicle.service_plan_type, formatDate(vehicle.service_plan_expiry)]
+                  .filter(Boolean)
+                  .join(" - ")}
+              />
+              <Field label="Fuel / gearbox" value={[vehicle.fuel_type, vehicle.transmission].filter(Boolean).join(" - ")} />
+              <Field label="Mileage" value={vehicle.mileage ? `${vehicle.mileage} miles` : null} />
             </FieldGrid>
             <div>
-              <SubHeader>Upcoming recommended work</SubHeader>
+              <SubHeader>Service notes</SubHeader>
               <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--txt-bright)" }}>
-                {MOCK.upcomingWork}
+                {vehicle.service_history || "No service-history note has been stored for this vehicle yet."}
               </p>
             </div>
           </Tile>

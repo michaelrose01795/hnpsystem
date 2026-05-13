@@ -348,17 +348,26 @@ export default function CustomerProfilePage() {
   };
 
   const customer = data?.customer;
-  const vehicles = data?.vehicles || [];
-  const jobs = data?.jobs || [];
-  const invoices = data?.invoices || [];
-  const appointments = data?.appointments || [];
-  const accounts = data?.accounts || [];
-  const paymentMethods = data?.paymentMethods || [];
-  const bookingRequests = data?.bookingRequests || [];
-  const jobHistory = data?.jobHistory || [];
-  const vhcByJob = data?.vhcByJob || {};
-  const timeline = data?.timeline || [];
-  const messages = data?.messages || [];
+  const vehicles = useMemo(() => data?.vehicles || [], [data?.vehicles]);
+  const jobs = useMemo(() => data?.jobs || [], [data?.jobs]);
+  const invoices = useMemo(() => data?.invoices || [], [data?.invoices]);
+  const appointments = useMemo(() => data?.appointments || [], [data?.appointments]);
+  const accounts = useMemo(() => data?.accounts || [], [data?.accounts]);
+  const paymentMethods = useMemo(() => data?.paymentMethods || [], [data?.paymentMethods]);
+  const bookingRequests = useMemo(() => data?.bookingRequests || [], [data?.bookingRequests]);
+  const jobHistory = useMemo(() => data?.jobHistory || [], [data?.jobHistory]);
+  const vhcByJob = useMemo(() => data?.vhcByJob || {}, [data?.vhcByJob]);
+  const vhcDeclinations = useMemo(() => data?.vhcDeclinations || [], [data?.vhcDeclinations]);
+  const vhcMedia = useMemo(() => data?.vhcMedia || [], [data?.vhcMedia]);
+  const transactions = useMemo(() => data?.transactions || [], [data?.transactions]);
+  const jobStatusHistory = useMemo(() => data?.jobStatusHistory || [], [data?.jobStatusHistory]);
+  const invoicePayments = useMemo(() => data?.invoicePayments || [], [data?.invoicePayments]);
+  const paymentPlans = useMemo(() => data?.paymentPlans || [], [data?.paymentPlans]);
+  const partsJobItems = useMemo(() => data?.partsJobItems || [], [data?.partsJobItems]);
+  const partsRequests = useMemo(() => data?.partsRequests || [], [data?.partsRequests]);
+  const partsOrderCards = useMemo(() => data?.partsOrderCards || [], [data?.partsOrderCards]);
+  const timeline = useMemo(() => data?.timeline || [], [data?.timeline]);
+  const messages = useMemo(() => data?.messages || [], [data?.messages]);
 
   const fullName = useMemo(() => {
     if (!customer) return "";
@@ -454,12 +463,11 @@ export default function CustomerProfilePage() {
   return (
     <>
       <Head>
-        <title>Your account — {siteContent.brand.name}</title>
+        <title>{`Your account - ${siteContent.brand.name}`}</title>
         {/* Force dark theme synchronously so customers never see a flash of
             their previous theme on this page. The themeProvider effect then
             layers the red accent CSS vars on top. */}
         <script
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
             __html:
               "document.documentElement.setAttribute('data-theme','dark');",
@@ -1560,20 +1568,20 @@ export default function CustomerProfilePage() {
                   the new sections inherit /website typography, glass card
                   treatment, and dark-mode-safe text colours automatically. */}
               <OwnershipDashboardCard vehicles={vehicles} />
-              <LiveProgressTrackerCard jobs={jobs} />
-              <RepairApprovalTimelineCard />
-              <DigitalServiceHistoryCard jobs={jobs} />
+              <LiveProgressTrackerCard jobs={jobs} customer={customer} />
+              <RepairApprovalTimelineCard jobs={jobs} jobStatusHistory={jobStatusHistory} />
+              <DigitalServiceHistoryCard jobs={jobs} jobHistory={jobHistory} invoices={invoices} vhcByJob={vhcByJob} />
               <MotHistoryCard vehicles={vehicles} />
               <RecallCheckerCard vehicles={vehicles} />
-              <VhcEnhancementsCard vhcSummaries={Object.values(vhcByJob || {})} />
-              <InvoicesPaymentsExtrasCard />
-              <DocumentsCentreCard />
+              <VhcEnhancementsCard jobs={jobs} vhcByJob={vhcByJob} vhcDeclinations={vhcDeclinations} vhcMedia={vhcMedia} />
+              <InvoicesPaymentsExtrasCard invoicePayments={invoicePayments} paymentPlans={paymentPlans} transactions={transactions} />
+              <DocumentsCentreCard invoices={invoices} vhcMedia={vhcMedia} />
               <SalesShowroomCard />
-              <PartsPortalExtrasCard />
-              <SmartRepairCard />
-              <ValetDetailingCard />
-              <FamilyGarageCard vehicles={vehicles} />
-              <SelfServiceToolsCard />
+              <PartsPortalExtrasCard partsJobItems={partsJobItems} partsRequests={partsRequests} partsOrderCards={partsOrderCards} />
+              <SmartRepairCard bookingRequests={bookingRequests} />
+              <ValetDetailingCard bookingRequests={bookingRequests} />
+              <FamilyGarageCard customer={customer} vehicles={vehicles} />
+              <SelfServiceToolsCard vehicles={vehicles} vhcDeclinations={vhcDeclinations} />
               <AiAssistantCard />
 
               {/* ───────── Settings / security ───────── */}

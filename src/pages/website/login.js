@@ -43,6 +43,7 @@ export default function CustomerLoginPage() {
   const [devCustomers, setDevCustomers] = useState([]);
   const [devCustomerId, setDevCustomerId] = useState("");
   const [devLoading, setDevLoading] = useState(false);
+  const pageTitle = `Sign in - ${siteContent.brand.name}`;
 
   useEffect(() => {
     setTemporaryOverride({ mode: "dark", accent: "red" });
@@ -219,7 +220,7 @@ export default function CustomerLoginPage() {
   return (
     <>
       <Head>
-        <title>Sign in — {siteContent.brand.name}</title>
+        <title>{pageTitle}</title>
       </Head>
       <div className={styles.authShell}>
         <main className={styles.authMain}>

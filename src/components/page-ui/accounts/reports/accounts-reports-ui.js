@@ -1,10 +1,10 @@
 // file location: src/components/page-ui/accounts/reports/accounts-reports-ui.js
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
 export default function AccountsReportsPageUi(props) {
   const {
     Button,
-    Card,
     DevLayoutSection,
     ProtectedRoute,
     REPORT_PERIODS,
@@ -58,7 +58,7 @@ export default function AccountsReportsPageUi(props) {
       }}>Loading reports…</p>}
 
           {!loading && <>
-              <LayerSurface as="section" sectionKey="accounts-reports-metrics-shell" sectionType="content-card" parentKey="accounts-reports-page-shell" style={metricsShellStyle}>
+              <LayerTheme as="section" sectionKey="accounts-reports-metrics-shell" sectionType="content-card" parentKey="accounts-reports-page-shell" style={metricsShellStyle}>
                 <div style={metricsGridStyle}>
                   {metricCard("accounts-reports-auto-content-card-2", "New Accounts", current.newAccounts ?? 0)}
                   {metricCard("accounts-reports-auto-content-card-3", "Total Invoiced", new Intl.NumberFormat("en-GB", {
@@ -71,11 +71,16 @@ export default function AccountsReportsPageUi(props) {
               currency: "GBP"
             }).format(current.averageBalance || 0), "#0f766e")}
                 </div>
-              </LayerSurface>
+              </LayerTheme>
 
-              <Card title="Highlights" sectionKey="accounts-reports-highlights-card" parentKey="accounts-reports-page-shell" style={{
+              <LayerTheme as="section" sectionKey="accounts-reports-highlights-card" sectionType="content-card" parentKey="accounts-reports-page-shell" style={{
           gap: "12px"
         }}>
+                <div style={{
+            fontWeight: 700,
+            fontSize: "var(--text-h3)",
+            color: "var(--accentText)"
+          }}>Highlights</div>
                 <ul style={{
             margin: 0,
             paddingLeft: "20px",
@@ -92,7 +97,7 @@ export default function AccountsReportsPageUi(props) {
                 currency: "GBP"
               }).format(current.averageBalance || 0)} for the selected period.</li>
                 </ul>
-              </Card>
+              </LayerTheme>
             </>}
         </DevLayoutSection>
       </>

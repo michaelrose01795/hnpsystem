@@ -686,9 +686,11 @@ export default function EmployeesTab() {
       ref={directorySectionRef}
       sectionKey="hr-employees-workspace"
       parentKey="hr-manager-tab-employees"
-      sectionType="section-shell"
+      sectionType="content-card"
+      backgroundToken="theme"
       shell
       className="hr-employees-layout"
+      style={{ background: "var(--theme)", borderRadius: "var(--radius-md)", padding: "10px" }}
     >
       <DevLayoutSection
         sectionKey="hr-employees-directory"

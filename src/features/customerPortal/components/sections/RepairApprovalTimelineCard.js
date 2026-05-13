@@ -1,84 +1,96 @@
 // file location: src/features/customerPortal/components/sections/RepairApprovalTimelineCard.js
-// Linear repair lifecycle for the active job: diagnostics → approval → parts
-// → repairs → QC → wash → ready. Per-stage timestamps aren't yet exposed via
-// the portal API, so mock until job_status_history is surfaced.
+// Live repair lifecycle from job_status_history and core job timestamps.
 import React from "react";
 import SectionShell from "./SectionShell";
-import { Tile, Tracker } from "./_websiteParts";
+import { Tile, Tracker, Empty } from "./_websiteParts";
 
 const STAGES = [
-  { key: "diagnostics", label: "Diagnostics" },
-  { key: "approval", label: "Approval" },
-  { key: "parts", label: "Parts" },
-  { key: "repairs", label: "Repairs" },
-  { key: "qc", label: "QC" },
+  { key: "booked", label: "Booked" },
+  { key: "checked_in", label: "Checked in" },
+  { key: "workshop", label: "Workshop" },
+  { key: "vhc", label: "VHC" },
   { key: "wash", label: "Wash" },
   { key: "ready", label: "Ready" },
 ];
 
-const MOCK_EVENTS = {
-  jobNumber: "JOB-22481",
-  vehicle: "BMW 3 Series · DEMO123",
-  events: {
-    diagnostics: { at: "Mon 09:42", note: "Workshop confirmed worn pads + advisory tyres." },
-    approval: { at: "Mon 11:18", note: "You approved £612 (pads + 2 rear tyres)." },
-    parts: { at: "Mon 11:55", note: "Parts ordered from main supplier." },
-    repairs: { at: "Tue 08:30", note: "Technician started work." },
-    qc: { at: "Tue 14:12", note: "QC checks complete." },
-    wash: { at: "Tue 15:01", note: "Vehicle washed & vacuumed." },
-    ready: null,
-  },
+const formatDateTime = (value) => {
+  if (!value) return "Pending";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Pending";
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
-export default function RepairApprovalTimelineCard() {
-  const job = MOCK_EVENTS;
-  const reached = STAGES.findIndex((s) => !job.events?.[s.key]);
-  const activeIndex = reached === -1 ? STAGES.length - 1 : reached;
+const isOpenJob = (job) => {
+  const status = String(job.status || job.completion_status || "").toLowerCase();
+  return !["delivered", "closed", "completed", "collected"].some((token) => status.includes(token)) && !job.completed_at;
+};
+
+export default function RepairApprovalTimelineCard({ jobs = [], jobStatusHistory = [] }) {
+  const job = jobs.find(isOpenJob) || jobs[0];
+  const history = job ? jobStatusHistory.filter((row) => row.job_id === job.id) : [];
+  const events = {
+    booked: job?.created_at,
+    checked_in: job?.checked_in_at,
+    workshop: job?.workshop_started_at,
+    vhc: job?.vhc_completed_at,
+    wash: job?.wash_started_at || job?.wash_completed_by,
+    ready: job?.completed_at,
+  };
+  const activeIndex = Math.max(
+    0,
+    STAGES.reduce((last, stage, index) => (events[stage.key] ? index : last), 0),
+  );
+
   return (
-    <SectionShell
-      id="tracker-timeline"
-      eyebrow="Live repair"
-      title="Repair approval timeline"
-      todo={{
-        label: "Per-stage timestamps not exposed via portal API yet",
-        detail: "job_status_history is captured server-side; once the bundle exposes per-stage timestamps, real data replaces the mock.",
-      }}
-    >
-      <Tile padding={16}>
-        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-          <span style={{ fontSize: 15, fontWeight: 800, color: "var(--txt-bright)" }}>{job.jobNumber}</span>
-          <span style={{ fontSize: 12, color: "var(--txt-soft)" }}>{job.vehicle}</span>
-        </div>
-        <Tracker stages={STAGES} activeIndex={activeIndex} />
-        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
-          {STAGES.map((s) => {
-            const e = job.events?.[s.key];
-            return (
-              <li
-                key={s.key}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  padding: "8px 10px",
-                  background: "rgba(255,255,255,0.03)",
-                  borderRadius: 10,
-                }}
-              >
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--txt-bright)" }}>{s.label}</span>
-                  {e?.note ? (
-                    <span style={{ fontSize: 12, color: "var(--txt-soft)" }}>{e.note}</span>
-                  ) : null}
-                </div>
-                <span style={{ fontSize: 11, color: "var(--txt-mute)", whiteSpace: "nowrap" }}>
-                  {e?.at || "Pending"}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      </Tile>
+    <SectionShell id="tracker-timeline" eyebrow="Live repair" title="Repair approval timeline">
+      {!job ? (
+        <Empty>No job timeline is available for this account yet.</Empty>
+      ) : (
+        <Tile padding={16}>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "var(--txt-bright)" }}>{job.job_number}</span>
+            <span style={{ fontSize: 12, color: "var(--txt-soft)" }}>
+              {[job.vehicle_make_model, job.vehicle_reg].filter(Boolean).join(" - ")}
+            </span>
+          </div>
+          <Tracker stages={STAGES} activeIndex={activeIndex} />
+          <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            {STAGES.map((stage) => {
+              const matchingHistory = history.find((row) =>
+                String(row.to_status || "").toLowerCase().includes(stage.key.replace("_", " ")),
+              );
+              return (
+                <li
+                  key={stage.key}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "8px 10px",
+                    background: "rgba(255,255,255,0.03)",
+                    borderRadius: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--txt-bright)" }}>{stage.label}</span>
+                    {matchingHistory?.reason ? (
+                      <span style={{ fontSize: 12, color: "var(--txt-soft)" }}>{matchingHistory.reason}</span>
+                    ) : null}
+                  </div>
+                  <span style={{ fontSize: 11, color: "var(--txt-mute)", whiteSpace: "nowrap" }}>
+                    {formatDateTime(events[stage.key] || matchingHistory?.changed_at)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </Tile>
+      )}
     </SectionShell>
   );
 }

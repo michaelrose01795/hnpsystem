@@ -1,76 +1,100 @@
 // file location: src/features/customerPortal/components/sections/InvoicesPaymentsExtrasCard.js
-// Extras layered on top of the existing Invoices / Payment methods cards:
-// payment history, finance documents, signature ledger, account statement.
+// Payment history and plans from customer-scoped invoice/account tables.
 import React from "react";
 import SectionShell from "./SectionShell";
-import { Grid, Tile, SubHeader, ItemList, ItemRow, Badge, GhostBtn } from "./_websiteParts";
+import { Grid, Tile, SubHeader, ItemList, ItemRow, Badge, GhostBtn, Empty } from "./_websiteParts";
 
-const MOCK_PAYMENTS = [
-  { id: "p1", date: "15 Mar 2026", method: "Klarna", reference: "INV-10421", amount: 612.4, status: "Paid" },
-  { id: "p2", date: "07 Aug 2025", method: "Card · ****4242", reference: "INV-9712", amount: 184.6, status: "Paid" },
-  { id: "p3", date: "22 Jan 2025", method: "Bumper · 4 months", reference: "INV-9123", amount: 1245.0, status: "Plan complete" },
-];
+const formatCurrency = (value) => {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "£0.00";
+  return number.toLocaleString("en-GB", { style: "currency", currency: "GBP" });
+};
 
-const MOCK_FINANCE = [
-  { id: "f1", title: "PCP agreement (Vehicle DEMO123)", expires: "06 Aug 2027" },
-  { id: "f2", title: "Service plan T&Cs", expires: "—" },
-];
+const formatDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
-const MOCK_SIGS = [
-  { id: "s1", document: "Job authorisation · JOB-22481", signedAt: "Mon 11:18" },
-  { id: "s2", document: "Courtesy car insurance acknowledgement", signedAt: "Mon 11:20" },
-];
-
-export default function InvoicesPaymentsExtrasCard() {
+export default function InvoicesPaymentsExtrasCard({
+  invoicePayments = [],
+  paymentPlans = [],
+  transactions = [],
+}) {
   return (
     <SectionShell
       id="payments-extras"
       eyebrow="Account"
       title="Payments, finance & signatures"
       todo={{
-        label: "Payment history feed, finance store and signature ledger not wired yet",
-        detail: "invoice_payments / payment_plans tables exist; what's missing is a customer-scoped read endpoint plus the signature capture flow.",
+        label: "Signature ledger not wired yet",
+        detail: "Payment history, payment plans and account transactions are live where records exist. Digital signature capture still needs a customer-facing workflow.",
       }}
     >
       <Tile padding={14}>
         <SubHeader>Payment history</SubHeader>
-        <ItemList>
-          {MOCK_PAYMENTS.map((p) => (
-            <ItemRow
-              key={p.id}
-              title={`£${p.amount.toFixed(2)} · ${p.method}`}
-              meta={`${p.date} · ${p.reference}`}
-              right={<Badge tone="ok">{p.status}</Badge>}
-            />
-          ))}
-        </ItemList>
+        {invoicePayments.length === 0 ? (
+          <Empty>No invoice payments have been recorded for this account yet.</Empty>
+        ) : (
+          <ItemList>
+            {invoicePayments.map((payment) => (
+              <ItemRow
+                key={payment.payment_id}
+                title={`${formatCurrency(payment.amount)} - ${payment.payment_method || "Payment"}`}
+                meta={`${formatDate(payment.payment_date)} - ${payment.reference || "No reference"}`}
+                right={<Badge tone="ok">Paid</Badge>}
+              />
+            ))}
+          </ItemList>
+        )}
       </Tile>
 
       <Grid min={260}>
         <Tile padding={14}>
-          <SubHeader>Finance documents</SubHeader>
-          <ItemList>
-            {MOCK_FINANCE.map((d) => (
-              <ItemRow key={d.id} title={d.title} meta={`Expires ${d.expires}`} />
-            ))}
-          </ItemList>
+          <SubHeader>Payment plans</SubHeader>
+          {paymentPlans.length === 0 ? (
+            <Empty>No active payment plans are linked to this account.</Empty>
+          ) : (
+            <ItemList>
+              {paymentPlans.map((plan) => (
+                <ItemRow
+                  key={plan.plan_id}
+                  title={plan.name || plan.description || "Payment plan"}
+                  meta={`${formatCurrency(plan.balance_due)} balance - next ${formatDate(plan.next_payment_date)}`}
+                  right={<Badge tone={String(plan.status).toLowerCase() === "active" ? "ok" : "neutral"}>{plan.status}</Badge>}
+                />
+              ))}
+            </ItemList>
+          )}
         </Tile>
 
         <Tile padding={14}>
           <SubHeader>Digital signatures</SubHeader>
-          <ItemList>
-            {MOCK_SIGS.map((s) => (
-              <ItemRow key={s.id} title={s.document} meta={`Signed ${s.signedAt}`} />
-            ))}
-          </ItemList>
+          <Empty>Digital signature records will appear once the signature ledger is connected.</Empty>
         </Tile>
 
         <Tile padding={14}>
           <SubHeader>Account statement</SubHeader>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--txt-soft)" }}>
-            Download a full statement of your account with H&P.
-          </p>
-          <GhostBtn style={{ alignSelf: "flex-start" }}>Download statement</GhostBtn>
+          {transactions.length === 0 ? (
+            <Empty>No account transactions are linked to this account.</Empty>
+          ) : (
+            <ItemList>
+              {transactions.slice(0, 5).map((transaction) => (
+                <ItemRow
+                  key={transaction.transaction_id}
+                  title={transaction.description || transaction.type}
+                  meta={`${formatDate(transaction.transaction_date)} - ${transaction.job_number || "Account"}`}
+                  right={<Badge>{formatCurrency(transaction.amount)}</Badge>}
+                />
+              ))}
+            </ItemList>
+          )}
+          <GhostBtn href="#messages" style={{ alignSelf: "flex-start" }}>Request full statement</GhostBtn>
         </Tile>
       </Grid>
     </SectionShell>

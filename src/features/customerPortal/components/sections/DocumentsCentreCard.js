@@ -1,41 +1,63 @@
 // file location: src/features/customerPortal/components/sections/DocumentsCentreCard.js
-// Customer documents: PDFs (invoices, V5s, warranty, inspection sheets) and
-// customer-uploaded docs. Storage buckets exist; the per-customer index +
-// upload endpoint are TBC, so mock listing for now.
+// Customer documents assembled from live invoices and VHC media. A dedicated
+// customer documents upload/index API is still required.
 import React from "react";
 import SectionShell from "./SectionShell";
-import { Tile, SubHeader, ItemList, ItemRow, Badge, GhostBtn } from "./_websiteParts";
+import { Tile, SubHeader, ItemList, ItemRow, GhostBtn, Empty } from "./_websiteParts";
 
-const MOCK_DOCS = [
-  { id: "d1", name: "Invoice INV-10421.pdf", type: "Invoice", size: "128 KB", uploaded: "14 Mar 2026", by: "H&P" },
-  { id: "d2", name: "V5C copy.pdf", type: "Registration", size: "256 KB", uploaded: "02 Jan 2025", by: "You" },
-  { id: "d3", name: "Warranty schedule.pdf", type: "Warranty", size: "512 KB", uploaded: "11 Jul 2024", by: "H&P" },
-  { id: "d4", name: "Inspection sheet · JOB-22481.pdf", type: "Inspection", size: "440 KB", uploaded: "15 Mar 2026", by: "H&P" },
-];
+const formatDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
-export default function DocumentsCentreCard() {
+export default function DocumentsCentreCard({ invoices = [], vhcMedia = [] }) {
+  const docs = [
+    ...invoices.map((invoice) => ({
+      id: `invoice-${invoice.invoice_id || invoice.id}`,
+      name: invoice.invoice_number || invoice.invoice_id || "Invoice",
+      meta: `Invoice - ${formatDate(invoice.created_at)} - ${invoice.payment_status || "Draft"}`,
+      href: invoice.invoice_id ? `/accounts/invoices/${invoice.invoice_id}` : null,
+    })),
+    ...vhcMedia.map((item) => ({
+      id: `media-${item.id}`,
+      name: item.context_label || `${item.media_type || "VHC"} media`,
+      meta: `Inspection media - ${formatDate(item.created_at)}`,
+      href: item.public_url,
+    })),
+  ];
+
   return (
     <SectionShell
       id="documents"
       eyebrow="Files"
       title="Documents centre"
-      action={<GhostBtn>Upload a document</GhostBtn>}
+      action={<GhostBtn href="#messages">Request upload</GhostBtn>}
       todo={{
         label: "Customer documents API + upload endpoint not wired yet",
-        detail: "Supabase storage buckets exist; what's missing is the per-customer documents index endpoint and the upload route.",
+        detail: "Invoices and VHC media are live. Customer-uploaded documents still need a customer-scoped index and upload route.",
       }}
     >
       <Tile padding={14}>
-        <ItemList>
-          {MOCK_DOCS.map((d) => (
-            <ItemRow
-              key={d.id}
-              title={d.name}
-              meta={`${d.type} · ${d.size} · ${d.uploaded} · uploaded by ${d.by}`}
-              right={<GhostBtn>Download</GhostBtn>}
-            />
-          ))}
-        </ItemList>
+        {docs.length === 0 ? (
+          <Empty>No invoice or VHC media documents are linked to this account yet.</Empty>
+        ) : (
+          <ItemList>
+            {docs.map((doc) => (
+              <ItemRow
+                key={doc.id}
+                title={doc.name}
+                meta={doc.meta}
+                right={doc.href ? <GhostBtn href={doc.href}>Open</GhostBtn> : null}
+              />
+            ))}
+          </ItemList>
+        )}
       </Tile>
 
       <Tile padding={16}>
@@ -50,7 +72,7 @@ export default function DocumentsCentreCard() {
             fontSize: 13,
           }}
         >
-          Drag &amp; drop documents here, or use the upload button above.
+          Customer uploads will appear here once the upload endpoint is connected.
         </div>
       </Tile>
     </SectionShell>

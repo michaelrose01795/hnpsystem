@@ -9,11 +9,17 @@ export function MetricCard({
   primary,
   secondary,
   trend,
-  accentColor = "var(--info-dark)"
+  accentColor = "var(--info-dark)",
+  sectionKey,
+  parentKey,
+  sectionType = "stat-card"
 }) {
   return (
     <LayerSurface as="div"
-
+    sectionKey={sectionKey}
+    parentKey={parentKey}
+    sectionType={sectionType}
+    backgroundToken="surface"
     style={{
       gap: "14px",
       minWidth: "200px",

@@ -183,6 +183,94 @@ const supportingPitchSections = [
   },
 ];
 
+const realWorldWorkflowIssues = [
+  {
+    title: "Paper job cards do not show live operational status",
+    intro:
+      "Staff pick up a job card and still need to ask multiple people or check other systems to understand the actual state of the vehicle.",
+    items: [
+      "Is the vehicle warranty?",
+      "Have parts been ordered?",
+      "Are the parts physically here yet?",
+      "Has the customer authorised the work?",
+      "Is the technician already working on it?",
+      "Is the vehicle waiting for parts?",
+      "Is there an internal note from another department?",
+      "Is the work already completed but not updated?",
+    ],
+  },
+  {
+    title: "Information is fragmented across departments",
+    intro: "Important information is spread across paper, systems, handovers, and departmental memory.",
+    items: [
+      "paper job cards",
+      "Navigator",
+      "parts department",
+      "spreadsheets",
+      "verbal communication",
+      "technician memory",
+      "booking notes",
+      "VHC systems",
+      "emails/messages",
+    ],
+    outro:
+      "This causes delays, duplicated work, and constant interruptions between departments.",
+  },
+  {
+    title: "Staff waste time chasing information",
+    intro: "Simple tasks often require extra checking before the work itself can move forward.",
+    items: [
+      "walking around the workshop",
+      "asking technicians",
+      "asking parts department",
+      "checking multiple systems",
+      "opening spreadsheets",
+      "searching messages/emails",
+    ],
+    outro: "The issue is not staff capability, it is fragmented information.",
+  },
+  {
+    title: "No single source of truth",
+    intro: "A job should instantly show the status and context needed to make the next decision.",
+    items: [
+      "warranty status",
+      "parts ordered status",
+      "parts arrival status",
+      "technician assignment",
+      "VHC status",
+      "customer authorisation",
+      "progress stage",
+      "courtesy vehicle details",
+      "internal communication",
+      "outstanding actions",
+    ],
+    outro:
+      "Currently this information exists in multiple places instead of one connected workflow.",
+  },
+  {
+    title: "Operational delays compound throughout the day",
+    intro: "Even small delays repeated across departments create wasted time across the business daily.",
+    items: [
+      "advisors",
+      "technicians",
+      "parts department",
+      "managers",
+      "reception",
+    ],
+  },
+];
+
+const dmsGoalBenefits = [
+  "reduce duplicated work",
+  "reduce department interruptions",
+  "improve communication",
+  "reduce paperwork dependency",
+  "centralise workflow visibility",
+  "improve customer update accuracy",
+  "reduce wasted labour time",
+  "simplify operational processes",
+];
+
 export default function UserDiagnosticDevPageUi(props) {
   const {
     DevLayoutSection,
@@ -491,6 +579,124 @@ export default function UserDiagnosticDevPageUi(props) {
             </ul>
           </section>)}
         </div>
+        <section style={{
+          marginTop: "22px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px"
+        }}>
+          <div>
+            <h2 style={{
+              margin: 0,
+              fontSize: "clamp(17px, 1.8vw, 22px)",
+              lineHeight: 1.2,
+              color: "var(--text-1)"
+            }}>
+              Real World Problems
+            </h2>
+            <h3 style={{
+              margin: "8px 0 0",
+              fontSize: "13px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              color: "var(--text-1)"
+            }}>
+              Current Workflow Issues
+            </h3>
+          </div>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
+            gap: "14px",
+            alignItems: "stretch"
+          }}>
+            {realWorldWorkflowIssues.map(issue => <section key={issue.title} style={{
+              border: "none",
+              borderRadius: "var(--radius-xs)",
+              background: "var(--secondary)",
+              padding: "16px",
+              minWidth: 0,
+              boxShadow: "0 10px 26px rgba(15, 23, 42, 0.08)"
+            }}>
+              <h4 style={{
+                margin: "0 0 9px",
+                fontSize: "14px",
+                lineHeight: 1.25,
+                color: "var(--text-1)"
+              }}>
+                {issue.title}
+              </h4>
+              <p style={{
+                margin: "0 0 10px",
+                color: "var(--text-1)",
+                fontSize: "13px",
+                lineHeight: 1.38
+              }}>
+                {issue.intro}
+              </p>
+              <ul style={{
+                margin: 0,
+                paddingLeft: "17px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "7px",
+                color: "var(--text-1)",
+                fontSize: "13px",
+                lineHeight: 1.38
+              }}>
+                {issue.items.map(item => <li key={item}>{item}</li>)}
+              </ul>
+              {issue.outro && <p style={{
+                margin: "10px 0 0",
+                color: "var(--text-1)",
+                fontSize: "13px",
+                lineHeight: 1.38
+              }}>
+                {issue.outro}
+              </p>}
+            </section>)}
+          </div>
+          <section style={{
+            border: "none",
+            borderRadius: "var(--radius-xs)",
+            background: "var(--primary)",
+            color: "var(--text-2)",
+            padding: "18px",
+            minWidth: 0,
+            boxShadow: "0 10px 26px rgba(15, 23, 42, 0.08)"
+          }}>
+            <h3 style={{
+              margin: "0 0 10px",
+              fontSize: "15px",
+              lineHeight: 1.25,
+              color: "var(--text-2)"
+            }}>
+              DMS Goal
+            </h3>
+            <p style={{
+              margin: "0 0 12px",
+              fontSize: "15px",
+              fontWeight: 700,
+              lineHeight: 1.38,
+              color: "var(--text-2)"
+            }}>
+              "The job card should become the single source of truth for the entire vehicle workflow."
+            </p>
+            <ul style={{
+              margin: 0,
+              paddingLeft: "17px",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))",
+              gap: "7px 18px",
+              color: "var(--text-2)",
+              fontSize: "13px",
+              lineHeight: 1.38
+            }}>
+              {dmsGoalBenefits.map(benefit => <li key={benefit}>{benefit}</li>)}
+            </ul>
+          </section>
+        </section>
         <div style={{
           display: "flex",
           justifyContent: "center",

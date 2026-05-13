@@ -207,7 +207,7 @@ export default function CompanyAccountsIndexPage() {
       // rows inside the same section-card container) so the first visible frame
       // already matches the final structure.
       return (
-        <LayerSurface sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
+        <LayerTheme sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
           <div
             style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             role="status"
@@ -219,16 +219,16 @@ export default function CompanyAccountsIndexPage() {
             <SkeletonBlock key={i} width="100%" height="54px" borderRadius="var(--radius-md,12px)" />
             )}
           </div>
-        </LayerSurface>);
+        </LayerTheme>);
 
     }
     if (!accounts.length) {
       return <p>{feedback || "No company accounts to display."}</p>;
     }
     // Each clickable card uses the wrapper-button pattern: outer <button> hosts the click
-    // handler / accessibility, inner <LayerTheme> paints the surface.
+    // handler / accessibility, inner <LayerSurface> paints the nested surface.
     return (
-      <LayerSurface sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
+      <LayerTheme sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {accounts.map((account) =>
           <button
@@ -246,7 +246,7 @@ export default function CompanyAccountsIndexPage() {
               cursor: "pointer"
             }}>
 
-            <LayerTheme
+            <LayerSurface
               className="company-accounts-row-surface"
               sectionKey={`company-accounts-company-card-${String(account.account_number || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
               sectionType="content-card"
@@ -304,11 +304,11 @@ export default function CompanyAccountsIndexPage() {
                 }
               </div>
             </div>
-            </LayerTheme>
+            </LayerSurface>
           </button>
           )}
         </div>
-      </LayerSurface>);
+      </LayerTheme>);
 
   };
 

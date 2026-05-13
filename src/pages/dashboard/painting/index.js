@@ -3,76 +3,130 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+import PaintingDashboardUi from "@/components/page-ui/dashboard/painting/dashboard-painting-ui";
+import { LayerSurface, LayerTheme } from "@/components/ui";
 import { getPaintingDashboardData } from "@/lib/database/dashboard/painting";
-import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
-import { LayerSurface, LayerTheme } from "@/components/ui"; // canonical layer primitives (see CLAUDE.md §3.0)
-import PaintingDashboardUi from "@/components/page-ui/dashboard/painting/dashboard-painting-ui"; // Extracted presentation layer.
 
-// MetricCard — single stat tile. Lives inside a Section (LayerSurface),
-// so per the strict alternation rule it renders as a LayerTheme.
-const MetricCard = ({ label, value, helper }) => (
-  <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 180 }}>
-    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
-    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
-    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </LayerTheme>
+// Metric cards live inside themed dashboard sections, so they render on --surface.
+const MetricCard = ({ label, value, helper, sectionKey, parentKey }) => (
+  <LayerSurface
+    sectionKey={sectionKey}
+    parentKey={parentKey}
+    sectionType="stat-card"
+    backgroundToken="surface"
+    radius="var(--radius-sm)"
+    data-dev-text-preview={label}
+    style={{ minWidth: 0 }}
+  >
+    <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--text-accent)" }}>{label}</p>
+    <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600, color: "var(--text-1)" }}>{value}</p>
+    {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-1)" }}>{helper}</p>}
+  </LayerSurface>
 );
 
-
-const TrendBlock = ({ data }) => {
+const TrendBlock = ({ data, parentKey }) => {
   const max = Math.max(1, ...(data || []).map((point) => point.count));
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {(data || []).map((point) =>
-      <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span>
-          <div style={{ flex: 1, height: 8, background: "var(--surface)", borderRadius: 4 }}>
+    <DevLayoutSection
+      sectionKey="dashboard-painting-trend-list"
+      parentKey={parentKey}
+      sectionType="section-shell"
+      backgroundToken="transparent"
+      data-dev-text-preview="Painting workshop starts trend list"
+      style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+    >
+      {(data || []).map((point, index) => (
+        <LayerSurface
+          key={point.label}
+          sectionKey={`dashboard-painting-trend-${index + 1}`}
+          parentKey="dashboard-painting-trend-list"
+          sectionType="stat-card"
+          backgroundToken="surface"
+          data-dev-text-preview={`${point.label} ${point.count}`}
+          radius="var(--radius-sm)"
+          padding="8px 12px"
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
+          <span style={{ width: 35, fontSize: "0.85rem", color: "var(--text-1)" }}>{point.label}</span>
+          <div style={{ flex: 1, height: 8, background: "var(--theme)", borderRadius: 4 }}>
             <div
-            style={{
-              width: `${Math.round(point.count / max * 100)}%`,
-              height: "100%",
-              background: "var(--danger)",
-              borderRadius: 4
-            }} />
-
+              style={{
+                width: `${Math.round((point.count / max) * 100)}%`,
+                height: "100%",
+                background: "var(--danger)",
+                borderRadius: 4,
+              }}
+            />
           </div>
-          <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
-        </div>
-      )}
-    </div>);
-
+          <strong style={{ color: "var(--text-accent)" }}>{point.count}</strong>
+        </LayerSurface>
+      ))}
+    </DevLayoutSection>
+  );
 };
 
-// QueueList — list block inside a Section (LayerSurface), renders as LayerTheme.
-const QueueList = ({ queue }) => (
-  <LayerTheme radius="var(--radius-sm)" padding="12px" gap="10px">
-    {queue.length === 0 ?
-      <p style={{ margin: 0, color: "var(--info)" }}>No painting jobs in queue.</p> :
-      queue.map((job) =>
-        <div
+// Queue rows live inside the themed paint queue section, so they render on --surface.
+const QueueList = ({ queue, parentKey }) => (
+  <DevLayoutSection
+    sectionKey="dashboard-painting-queue-list"
+    parentKey={parentKey}
+    sectionType="section-shell"
+    backgroundToken="transparent"
+    data-dev-text-preview="Painting jobs queue list"
+    style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+  >
+    {queue.length === 0 ? (
+      <LayerSurface
+        sectionKey="dashboard-painting-queue-empty"
+        parentKey="dashboard-painting-queue-list"
+        sectionType="content-card"
+        backgroundToken="surface"
+        radius="var(--radius-sm)"
+        padding="16px"
+        data-dev-text-preview="No painting jobs in queue"
+        style={{ color: "var(--text-1)" }}
+      >
+        No painting jobs in queue.
+      </LayerSurface>
+    ) : (
+      queue.map((job) => (
+        <LayerSurface
           key={job.id}
+          sectionKey={`dashboard-painting-queue-row-${job.id}`}
+          parentKey="dashboard-painting-queue-list"
+          sectionType="content-card"
+          backgroundToken="surface"
+          data-dev-text-preview={`${job.job_number || "Job"} ${job.vehicle_reg || "Plate"} ${job.status || "In progress"}`}
+          radius="var(--radius-sm)"
+          padding="14px 16px"
           style={{
-            display: "flex",
+            flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            color: "var(--info-dark)"
-          }}>
+            color: "var(--text-1)",
+          }}
+        >
           <div>
-            <strong style={{ color: "var(--primary-selected)" }}>{job.job_number || "—"}</strong>
-            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{job.vehicle_reg || "Plate"}</p>
+            <strong style={{ color: "var(--text-accent)" }}>{job.job_number || "..."}</strong>
+            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--text-1)" }}>{job.vehicle_reg || "Plate"}</p>
           </div>
-          <span style={{ color: "var(--info)" }}>{job.status || "In progress"}</span>
-        </div>
-      )
-    }
-  </LayerTheme>
+          <span style={{ color: "var(--text-1)" }}>{job.status || "In progress"}</span>
+        </LayerSurface>
+      ))
+    )}
+  </DevLayoutSection>
 );
-
 
 const defaultData = {
   bodyshopCount: 0,
   queue: [],
-  trends: []
+  trends: [],
 };
 
 export default function PaintingDashboard() {
@@ -98,5 +152,16 @@ export default function PaintingDashboard() {
     loadData();
   }, []);
 
-  return <PaintingDashboardUi view="section1" data={data} error={error} LayerSurface={LayerSurface} loading={loading} MetricCard={MetricCard} QueueList={QueueList} Section={Section} TrendBlock={TrendBlock} />;
+  return (
+    <PaintingDashboardUi
+      view="section1"
+      data={data}
+      error={error}
+      LayerTheme={LayerTheme}
+      loading={loading}
+      MetricCard={MetricCard}
+      QueueList={QueueList}
+      TrendBlock={TrendBlock}
+    />
+  );
 }

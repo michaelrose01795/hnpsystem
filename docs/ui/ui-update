@@ -11,11 +11,9 @@ RETAIL
 Valet Service
 ----------------------------------------------------
 
-- /valet (CHECK)
-remove the "/valet :: 1.2.2.1.1 (valet-shell)" card and move the content into "/valet :: 1.2.2.1 (app-layout-page-card)" section
+- /valet (DONE
 
-- /dashboard/valeting (CHECK)
-the /dashboard/valeting page is using red text, change it so this text uses either "--text-1, --text-2, --text-accent" text. also make sure the today row within the appointment table when hover is used the correct text colour is being used as atm its hard to see, also use the "--text-1, --text-2, --text-accent" text.
+- /dashboard/valeting (DONE
 
 
 ====================================================
@@ -26,52 +24,55 @@ SALES
 Admin Manager
 ----------------------------------------------------
 
-- /admin/compliance
-inside "admin/compliance" page make sure the sidebar and the topbar are not visible within the actaul main card section, atm the card section is showing the full window. make sure no other pages are like this.
+- /admin/compliance (CHECK)
+have it so "/admin/compliance :: 1.2.2.1.1 (admin-compliance-auto-page-shell-1) — “Dashboard Subject Requests Breaches DPIAs ROPA Retention At…”" section uses "--theme" colour background 
 
 - /dashboard/admin
-remove "Admin pulse System health Track jobs, appointments, requests, and notices in one place." text and section. have it so /dashboard/admin :: 1.2.2.1.1 (dashboard-admin-auto-content-card-1) — “System statistics Jobs, appointments, and parts throughput …”/dashboard/admin :: 1.2.2.1.2 (dashboard-admin-auto-content-card-2) — “New users Last 7 days New users 0 Registered in last 7 days”/dashboard/admin :: 1.2.1.1.3 (dashboard-admin-auto-content-card-3) — “Upcoming holidays Next 7 days No holidays for the coming we…”/dashboard/admin :: 1.2.1.1.4 (dashboard-admin-auto-content-card-4) — “Notices Latest alerts ℹ️ Job #00078 status updated to Relea…” cards use "--theme" colour background, and then the cards within those cards use "--surface" colour
+remove ℹ️ from “Notices Latest alerts ℹ️ Job #00078 status updated to Relea…” cards 
 
 
 ----------------------------------------------------
 Accounts Manager
 ----------------------------------------------------
 
-- /accounts
-have it so /accounts :: 1.2.2.1.1.2 (accounts-linked-finance), /accounts :: 1.2.1.1.1.2 (accounts-filter-panel)/accounts :: 1.2.1.1.1.3.1 (accounts-ledger-table-card) — “Customer Accounts 17 records Export New Account Account ID …” cards use "--theme" colour background and then the cards within those cards use "--surface" colour background. 
+- /accounts (DONE
 
-- /company-accounts
-remove "Company Accounts Central directory of partner businesses linked to accounts." section and text withn /company-accounts page. have it os the tab group within "/company-accounts :: 1.2.1.1.1.2.1 (company-accounts-auto-tab-row-1) — “Company accounts Ledgers”" section is on the same row as "/company-accounts :: 1.2.1.1.1.3 (company-accounts-company-toolbar)" and have the tabs to the left and the other content to the right on the same row. have it so "/company-accounts :: 1.2.1.1.1.3 (company-accounts-company-list)" section background uses "--theme" colour background. 
+- /company-accounts (TODO)
+improve the layout of the rows within the "/company-accounts :: 1.2.2.1.1.3 (company-accounts-company-list)" section have it os that section follows the lgobal style table settings and the columns are neatly organed and spaced etc. 
 
-- /accounts/invoices
+- /accounts/invoices (DONE
+
+- /accounts/invoices/dcb1951e-a789-4631-96b0-d1313f809b51 (TODO)
+wihtin "/accounts/invoices/dcb1951e-a789-4631-96b0-d1313f809b51 :: 1.2.2.1 (app-layout-page-card) — “Invoice INV-2026-00001 All Invoices Grand Total £930.60 Pay…”" section improve the dev overlay. 
 
 
-- /accounts/reports
-have it so /accounts/reports :: 1.2.2.1.1.2 (accounts-reports-metrics-shell) /accounts/reports :: 1.2.2.1.1.3 (accounts-reports-highlights-card) — “Highlights 0 new accounts opened during this period. £0.00 …” section cards use "--theme" colour background. and the cards within "/accounts/reports :: 1.2.2.1.1.2 (accounts-reports-metrics-shell)" section use "--surface". 
+- /accounts/reports (TODO)
+remove "/accounts/reports :: 1.2.2.1.1.1 (accounts-reports-toolbar) — “Monthly Quarterly Yearly Export Summary”" card and move the contents into the main page card. improve the button style so its more like a filter option etc. 
 
-- /accounts/payslips
-remove "/accounts/payslips :: 1.2.2.1.1.1 (accounts-payslips-auto-toolbar-1) — “Accounts Payslips”" section and text. have it so "/accounts/payslips :: 1.2.2.1.1.3 (payslips-table) — “1 payslip New payslip Paid date User Department Period Gros…”" section uses "--theme" colour background. remove "/accounts/payslips :: 1.2.2.1.1.2 (payslips-filter-panel)" card and move the conent into the mian section. 
+- /accounts/payslips (TODO)
+have it os that the table wihtin "/accounts/payslips :: 1.2.2.1.1.1 (payslips-table) — “1 payslip New payslip Paid date User Department Period Gros…”" is set monthly, have it so the month picker for the table is within "/accounts/payslips :: 1.2.2.1.1.1.1.1 (accounts-payslips-auto-toolbar-1) — “All users All departments All statuses Paid from Paid to Cl…”" section as well as the "New payslip" button. remove the payslip count as well. move the "/accounts/payslips :: 1.2.2.1.1.1.1.1 (accounts-payslips-auto-toolbar-1) — “All users All departments All statuses Paid from Paid to Cl…”" section into the mian page section and just have the "/accounts/payslips :: 1.2.2.1.1.1 (payslips-table) — “1 payslip New payslip Paid date User Department Period Gros…”" card wound the table. 
 
-- /dashboard/accounts
-have it so /dashboard/accounts :: 1.2.2.1.1 (dashboard-accounts-auto-content-card-1) — “Invoice stats Invoices raised 0 Status set to Invoiced Invo…”, /dashboard/accounts :: 1.2.2.1.2 (dashboard-accounts-auto-content-card-2) — “Outstanding jobs Most recent completions without invoice No…”/dashboard/accounts :: 1.2.2.1.3 (dashboard-accounts-auto-content-card-3) — “Completion trend Jobs completed in the last 7 days Tue 0 We…” secations use "--theme" colour background. and the cards/sections within that use "--surface" colour. 
-
+- /dashboard/accounts (TODO)
+there is text colour within "/dashboard/accounts" page which is red, change this to use "--text-1 --text-2 --text-accent" colour text only. 
 
 ----------------------------------------------------
 Owner
 ----------------------------------------------------
 
-- /hr/manager
-have it so the "/hr/manager :: 1.2.2.1.1.1.1 (hr-manager-tabs) — “Dashboard Employees Attendance Payroll Leave Performance Tr…”" buttons within this has the text within on one row, if excides the section add a hidden horizontal scroll. 
+- /hr/manager (TODO)
+improve the dev overly wihtn "/hr/manager :: 1.2.2.1.1.1.2.1 (hr-manager-dashboard-metrics) — “👥 Total Employees 41 41 active / 0 inactive 🕒 Attendance …”" section. 
 
-have it so the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-dashboard) — “👥 Total Employees 41 41 active / 0 inactive 🕒 Attendance …”" card is "--theme" colour background and have it so "👥 Total Employees 41 41 active / 0 inactive 🕒 Attendance Rate 10% 📈 Performance Score 4 / 5 🎓 Training Compliance 0%" seciton uses dev overlay and card section. have it so the card background colour uses "--surface" colour background. have it so the gap between "/hr/manager :: 1.2.1.1.1.1.1.1 (hr-manager-auto-content-card-1) — “Department Performance Snapshot Productivity, quality, and …”" , "/hr/manager :: 1.2.1.1.1.1.1.3 (hr-manager-auto-content-card-2) — “Training Renewals Upcoming expiries across mandatory certif…”" and "/hr/manager :: 1.2.1.1.1.1.1.4 (hr-manager-auto-content-card-3) — “Upcoming Holidays & Absences Next 14 days across the busine…”" , "/hr/manager :: 1.2.1.1.1.1.1.6 (hr-manager-auto-content-card-4) — “Active Warnings Summary of open disciplinary notices”" is 10px. 
+(CHECK)
+Improve the dev overlay within "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-dashboard)" section so all cards and sections use the dev overlay. 
 
-have it so "/hr/manager :: 1.2.2.1.1.1.2.1 (hr-employees-workspace)" is also "--theme" colour backgroun and the same with /hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-attendance) — “Daily Time Logs Sourced from the workshop clocking system E…”, /hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-payroll) — “Track compensation, pay rise approvals, overtime payments, …”/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-leave) — “Approve leave requests, calculate balances, and track speci…”/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-performance) — “Track reviews, ratings, development plans, and upcoming app…”/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-training) — “Monitor mandatory training, certificate uploads, and renewa…”/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-disciplinary) — “Log warnings, track follow-ups, and maintain audit trails f…”/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-recruitment) — “Manage job listings, applicant pipelines, interview schedul…”/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-reports) — “Generate HR analytics, download data sets, and schedule aut…”/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-settings) — “Upload policy documents, configure shift patterns, and mana…” to all also to use "--theme" colour background. 
+(TODO)
+remove "/hr/manager :: 1.2.2.1.1.1.2.1 (hr-employees-workspace)" card and move the content into the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" card. have it os the the empty card at the top of the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" section is removed, dev overlay is setting it to a green line but i cant click it to easily tell u what card it is. do the same thing for each tab section to put the cards wihtin the cards into the mian section etc. 
 
 ----------------------------------------------------
 Painters
 ----------------------------------------------------
 
-- /dashboard/painting
+- /dashboard/painting (CHECK)
 remove "Painting studio Bodyshop queue Track paint jobs waiting on the bay and pull estimated finish times directly from job timestamps." text and section. have it so /dashboard/painting :: 1.2.2.1.1 (dashboard-painting-auto-content-card-1) — “Bodyshop jobs 0 Jobs requiring bodywork”/dashboard/painting :: 1.2.2.1.2 (dashboard-painting-auto-content-card-2) — “Paint queue Jobs still in progress No painting jobs in queu…”/dashboard/painting :: 1.2.2.1.3 (dashboard-painting-auto-content-card-3) — “Queue trend Recent workshop starts Tue 0 Wed 0 Thu 0 Fri 0 …” sections uses "--theme" colour backgrounds and the cards / sections within those sections uses "--surface" colour. 
 
 
@@ -79,13 +80,13 @@ remove "Painting studio Bodyshop queue Track paint jobs waiting on the bay and p
 CUSTOMER
 ====================================================
 
-- /customer
+- /customer (CHECK)
 remove the customer select dropdown from the /login page as to test the use can go to /website and use dev login from there etc to find the link and see the customer details for texting etc.
 
-- /website/profile
+- /website/profile (CHECK)
 remove the mock data from all of the sections and link it to actual data within the database. if sections require third party api links, hvae it so just has a short front end todo in small print so saying connection to api still required etc.
 
-- /website
+- /website (TODO)
 create global.css liek file for /website, keep global.css for staff seperate to custoemrs so we can tell with the file names as well like custglobal.css and staffglobal.css etc so theres a seperation of two differnt styles to be used etc.
 
 have it so if the device is a low proceesing phone/not much single, have it so the 3D models dont show and dont hide jsut doesnt load it at all.

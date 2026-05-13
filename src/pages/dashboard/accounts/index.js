@@ -4,24 +4,23 @@
 
 import React, { useEffect, useState } from "react";
 import { getAccountsDashboardData } from "@/lib/database/dashboard/accounts";
-import Section from "@/components/Section"; // shared titled section card — consolidated from duplicate local definitions
-import { LayerTheme } from "@/components/ui"; // canonical tinted layer primitive (depth 2 inside Section)
+import { LayerSurface } from "@/components/ui"; // canonical surface layer primitive (nested inside dashboard theme sections)
 import AccountsDashboardUi from "@/components/page-ui/dashboard/accounts/dashboard-accounts-ui"; // Extracted presentation layer.
 
-// MetricCard — single stat tile. Lives inside a Section (LayerSurface),
-// so per the strict alternation rule it renders as a LayerTheme.
+// MetricCard — single stat tile. Lives inside a dashboard LayerTheme section,
+// so per the strict alternation rule it renders as a LayerSurface.
 const MetricCard = ({ label, value, helper }) => (
-  <LayerTheme radius="var(--radius-sm)" style={{ minWidth: 180 }}>
+  <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 180 }}>
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
-  </LayerTheme>
+  </LayerSurface>
 );
 
 const TrendBlock = ({ data }) => {
   const max = Math.max(1, ...(data || []).map((item) => item.count));
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+    <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
       {(data || []).map((point) =>
       <div key={point.label} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{ width: 35, fontSize: "0.85rem", color: "var(--info)" }}>{point.label}</span>
@@ -38,13 +37,13 @@ const TrendBlock = ({ data }) => {
           <strong style={{ color: "var(--primary-selected)" }}>{point.count}</strong>
         </div>
       )}
-    </div>);
+    </LayerSurface>);
 
 };
 
-// JobList — list block inside a Section (LayerSurface), so it renders as LayerTheme.
+// JobList — list block inside a dashboard LayerTheme section, so it renders as LayerSurface.
 const JobList = ({ jobs }) => (
-  <LayerTheme radius="var(--radius-sm)" padding="12px" gap="10px">
+  <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
     {jobs.length === 0 ?
       <p style={{ margin: 0, color: "var(--info)" }}>No outstanding jobs right now.</p> :
       jobs.map((job) =>
@@ -64,7 +63,7 @@ const JobList = ({ jobs }) => (
         </div>
       )
     }
-  </LayerTheme>
+  </LayerSurface>
 );
 
 
@@ -98,5 +97,5 @@ export default function AccountsDashboard() {
     loadData();
   }, []);
 
-  return <AccountsDashboardUi view="section1" data={data} error={error} JobList={JobList} loading={loading} MetricCard={MetricCard} Section={Section} TrendBlock={TrendBlock} />;
+  return <AccountsDashboardUi view="section1" data={data} error={error} JobList={JobList} loading={loading} MetricCard={MetricCard} TrendBlock={TrendBlock} />;
 }

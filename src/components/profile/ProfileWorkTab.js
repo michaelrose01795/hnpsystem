@@ -5,7 +5,6 @@ import { usePolling } from "@/hooks/usePolling"; // visibility-gated polling
 import useIsMobile from "@/hooks/useIsMobile"; // viewport detection for phone layout
 import { useRouter } from "next/router"; // Next.js router for query params
 import { useSession } from "next-auth/react"; // NextAuth session for authentication
-import Layout from "@/components/Layout"; // shared layout wrapper
 import { useUser } from "@/context/UserContext"; // shared authenticated user context
 import { useHrOperationsData } from "@/hooks/useHrData"; // Supabase-backed HR aggregation hook (admin only)
 import { StatusTag } from "@/components/HR/MetricCard"; // HR UI components
@@ -1447,7 +1446,6 @@ const RecurringOvertimeRulesPanel = React.forwardRef(function RecurringOvertimeR
 
 export function ProfileWorkTab({
   forcedUserName = null,
-  embeddedOverride = null,
   adminPreviewOverride = null,
   onHeaderActionsChange = null,
 } = {}) {
@@ -1474,8 +1472,6 @@ export function ProfileWorkTab({
 
   const previewUserParam =
     forcedUserName || (typeof router.query.user === "string" ? router.query.user : null); // preview override
-  const isEmbeddedQuery = router.query.embedded === "1"; // check embed flag
-  const isEmbedded = embeddedOverride ?? isEmbeddedQuery; // final embed state
   const isAdminPreviewQuery = router.query.adminPreview === "1"; // admin preview flag
   const isAdminPreview = adminPreviewOverride ?? isAdminPreviewQuery; // final admin preview state
 
@@ -1887,7 +1883,7 @@ export function ProfileWorkTab({
         You need to be signed in to view your profile.
       </div>
     );
-    return isEmbedded ? fallback : <Layout>{fallback}</Layout>;
+    return fallback;
   }
 
   const profileSectionShellStyle = {
@@ -2731,11 +2727,7 @@ export function ProfileWorkTab({
     />
   );
 
-  return isEmbedded ? (
-    <>{content}{confirmDialogEl}{manualOvertimeModalEl}</>
-  ) : (
-    <Layout>{content}{confirmDialogEl}{manualOvertimeModalEl}</Layout>
-  );
+  return <>{content}{confirmDialogEl}{manualOvertimeModalEl}</>;
 }
 
 export default function ProfileWorkTabWrapper(props) {

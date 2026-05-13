@@ -10,7 +10,7 @@ import {
   formatStatusLabel,
   getStatusTone,
 } from "@/features/payslips/payslipUtils";
-import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 export default function PayslipsAdminPageUi(uiProps) {
   const {
@@ -50,34 +50,14 @@ export default function PayslipsAdminPageUi(uiProps) {
     <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
       <DevLayoutSection sectionKey="payslips-page-shell" sectionType="page-shell" shell>
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <ToolbarRow>
-            <div style={{ display: "grid", gap: "4px" }}>
-              <span
-                style={{
-                  fontSize: "0.7rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "var(--text-1)",
-                }}
-              >
-                Accounts
-              </span>
-              <h1 style={{ margin: 0, fontSize: "1.4rem", fontWeight: 700, color: "var(--accentText, var(--accent))" }}>
-                Payslips
-              </h1>
-            </div>
-          </ToolbarRow>
-
-          {/* Filters */}
-          <LayerSurface
-            as="section"
-            sectionKey="payslips-filter-panel"
-            sectionType="content-card"
+          {/* Table */}
+          <LayerTheme
+            sectionKey="payslips-table"
+            sectionType="data-table"
             parentKey="payslips-page-shell"
-            gap="16px"
+            gap="12px"
           >
-            <DevLayoutSection sectionKey="payslips-filter-toolbar" sectionType="filter-row" parentKey="payslips-filter-panel">
+            <DevLayoutSection sectionKey="payslips-filter-toolbar" sectionType="filter-row" parentKey="payslips-table">
               <ToolbarRow>
                 <SearchBar
                   name="search"
@@ -129,15 +109,6 @@ export default function PayslipsAdminPageUi(uiProps) {
                 </Button>
               </ToolbarRow>
             </DevLayoutSection>
-          </LayerSurface>
-
-          {/* Table */}
-          <LayerSurface
-            sectionKey="payslips-table"
-            sectionType="data-table"
-            parentKey="payslips-page-shell"
-            gap="12px"
-          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
               <div style={{ fontWeight: 700, color: "var(--text-1)" }}>
                 {loading ? "Loading payslips…" : `${payslips.length} payslip${payslips.length === 1 ? "" : "s"}`}
@@ -247,7 +218,7 @@ export default function PayslipsAdminPageUi(uiProps) {
                 </tbody>
               </table>
             </div>
-          </LayerSurface>
+          </LayerTheme>
         </div>
       </DevLayoutSection>
 

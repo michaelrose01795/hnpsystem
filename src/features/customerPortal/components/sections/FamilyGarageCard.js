@@ -1,44 +1,51 @@
 // file location: src/features/customerPortal/components/sections/FamilyGarageCard.js
-// Family / shared garage: multiple vehicles under one household with shared
-// account access invitations. No shared-account schema exists yet.
+// Family / shared garage shell. Current customer and vehicles are live; shared
+// access needs a household schema.
 import React from "react";
 import SectionShell from "./SectionShell";
-import { Tile, SubHeader, ItemList, ItemRow, Badge, GhostBtn } from "./_websiteParts";
+import { Tile, SubHeader, ItemList, ItemRow, Badge, GhostBtn, Empty } from "./_websiteParts";
 
-const MOCK_MEMBERS = [
-  { id: "m1", name: "David Rose", email: "david@example.com", role: "Owner", vehicles: 2 },
-  { id: "m2", name: "Sarah Rose", email: "sarah@example.com", role: "Driver", vehicles: 1 },
-  { id: "m3", name: "James Rose", email: "james@example.com", role: "Pending invite", vehicles: 0 },
-];
+export default function FamilyGarageCard({ customer, vehicles = [] }) {
+  const customerName =
+    [customer?.firstname, customer?.lastname].filter(Boolean).join(" ") ||
+    customer?.name ||
+    customer?.email ||
+    "Account holder";
 
-export default function FamilyGarageCard({ vehicles = [] }) {
   return (
     <SectionShell
       id="family"
       eyebrow="Household"
       title="Family & shared garage"
-      action={<GhostBtn>Invite a family member</GhostBtn>}
+      action={<GhostBtn href="#messages">Request shared access</GhostBtn>}
       todo={{ label: "Shared accounts / household schema not built yet" }}
     >
       <Tile padding={14}>
         <SubHeader>Members</SubHeader>
         <ItemList>
-          {MOCK_MEMBERS.map((m) => (
-            <ItemRow
-              key={m.id}
-              title={m.name}
-              meta={`${m.email} · ${m.vehicles} vehicle${m.vehicles === 1 ? "" : "s"}`}
-              right={<Badge tone={m.role === "Owner" ? "ok" : "neutral"}>{m.role}</Badge>}
-            />
-          ))}
+          <ItemRow
+            title={customerName}
+            meta={`${customer?.email || "No email stored"} - ${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"}`}
+            right={<Badge tone="ok">Owner</Badge>}
+          />
         </ItemList>
       </Tile>
 
       <Tile padding={14}>
         <SubHeader>Shared vehicles</SubHeader>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--txt-bright)" }}>
-          {vehicles.length || 2} vehicle{(vehicles.length || 2) === 1 ? "" : "s"} visible to your household.
-        </p>
+        {vehicles.length === 0 ? (
+          <Empty>No vehicles are linked to this account yet.</Empty>
+        ) : (
+          <ItemList>
+            {vehicles.map((vehicle) => (
+              <ItemRow
+                key={vehicle.vehicle_id || vehicle.reg_number}
+                title={vehicle.reg_number || vehicle.registration || "Vehicle"}
+                meta={vehicle.make_model || [vehicle.make, vehicle.model].filter(Boolean).join(" ") || "Vehicle details TBC"}
+              />
+            ))}
+          </ItemList>
+        )}
       </Tile>
     </SectionShell>
   );

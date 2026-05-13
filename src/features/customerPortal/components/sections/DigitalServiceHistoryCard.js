@@ -1,32 +1,67 @@
 // file location: src/features/customerPortal/components/sections/DigitalServiceHistoryCard.js
-// Completed visits, with mileage, invoice, advisory counts and tech notes.
-// Uses completed jobs from the portal API where present; mocks otherwise.
+// Completed visits, mileage snapshots, invoices and VHC counts from the live
+// customer portal bundle.
 import React from "react";
 import SectionShell from "./SectionShell";
-import { ItemList, ItemRow, Badge, GhostBtn } from "./_websiteParts";
+import { ItemList, ItemRow, Badge, GhostBtn, Empty } from "./_websiteParts";
 
-const MOCK = [
-  { id: "h1", date: "14 Mar 2026", mileage: "42,180", type: "Annual service + MOT", invoice: "INV-10421", red: 0, amber: 2, note: "Brake pads ~40%. Rear tyres advised within 12 months." },
-  { id: "h2", date: "06 Aug 2025", mileage: "36,210", type: "Interim service", invoice: "INV-9712", red: 0, amber: 1, note: "Wipers replaced. Air-con regas recommended next visit." },
-  { id: "h3", date: "21 Jan 2025", mileage: "30,402", type: "Cambelt + waterpump", invoice: "INV-9123", red: 0, amber: 0, note: "Full timing kit replaced. Coolant flushed." },
-];
+const formatDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
-export default function DigitalServiceHistoryCard({ jobs = [] }) {
-  const completed = (jobs || []).filter((j) =>
-    ["delivered", "closed", "completed"].includes(String(j.status || "").toLowerCase())
+const isCompleted = (job) => {
+  const status = String(job.status || job.completion_status || "").toLowerCase();
+  return ["delivered", "closed", "completed", "collected", "invoiced"].some((token) =>
+    status.includes(token),
+  ) || Boolean(job.completed_at);
+};
+
+export default function DigitalServiceHistoryCard({
+  jobs = [],
+  jobHistory = [],
+  invoices = [],
+  vhcByJob = {},
+}) {
+  const invoiceByJobNumber = new Map(
+    invoices.map((invoice) => [String(invoice.job_number || ""), invoice]),
   );
-  const history = completed.length
-    ? completed.map((j) => ({
-        id: j.id,
-        date: j.createdAt || "—",
-        mileage: j.mileage || "—",
-        type: j.concern || "Workshop visit",
-        invoice: j.invoiceNumber || "—",
-        red: j.redItems || 0,
-        amber: j.amberItems || 0,
-        note: j.techNotes || "Notes will appear once technician write-up is shared.",
-      }))
-    : MOCK;
+
+  const history = jobHistory.length
+    ? jobHistory.map((row) => {
+        const invoice = invoiceByJobNumber.get(String(row.job_number || ""));
+        const vhc = vhcByJob?.[row.job_id] || {};
+        return {
+          id: row.history_id || row.job_id || row.job_number,
+          date: row.recorded_at,
+          mileage: row.mileage_at_service,
+          type: row.status_snapshot || row.vehicle_make_model || "Workshop visit",
+          invoice: invoice?.invoice_number || invoice?.invoice_id || "-",
+          red: vhc.red || 0,
+          amber: vhc.amber || 0,
+          note: row.vehicle_reg ? `${row.vehicle_reg} - ${row.vehicle_make_model || "vehicle"}` : null,
+        };
+      })
+    : jobs.filter(isCompleted).map((job) => {
+        const invoice = invoiceByJobNumber.get(String(job.job_number || ""));
+        const vhc = vhcByJob?.[job.id] || {};
+        return {
+          id: job.id || job.job_number,
+          date: job.completed_at || job.updated_at || job.created_at,
+          mileage: null,
+          type: job.description || job.type || "Workshop visit",
+          invoice: invoice?.invoice_number || invoice?.invoice_id || "-",
+          red: vhc.red || 0,
+          amber: vhc.amber || 0,
+          note: job.vehicle_reg ? `${job.vehicle_reg} - ${job.vehicle_make_model || "vehicle"}` : null,
+        };
+      });
 
   return (
     <SectionShell
@@ -34,27 +69,32 @@ export default function DigitalServiceHistoryCard({ jobs = [] }) {
       eyebrow="Service log"
       title="Digital service history"
       count={`${history.length} visit${history.length === 1 ? "" : "s"}`}
-      todo={completed.length ? null : { label: "Live completed-jobs feed not connected to this card yet" }}
       action={<GhostBtn href="#messages">Request PDF</GhostBtn>}
     >
-      <ItemList>
-        {history.map((v) => (
-          <ItemRow
-            key={v.id}
-            title={v.type}
-            meta={`${v.date} · ${v.mileage} miles · ${v.invoice}`}
-            right={
-              <div style={{ display: "flex", gap: 6 }}>
-                {v.red > 0 ? <Badge tone="open">{v.red} red</Badge> : null}
-                {v.amber > 0 ? <Badge>{v.amber} amber</Badge> : null}
-                {v.red === 0 && v.amber === 0 ? <Badge tone="ok">All green</Badge> : null}
-              </div>
-            }
-          >
-            <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--txt-soft)" }}>{v.note}</p>
-          </ItemRow>
-        ))}
-      </ItemList>
+      {history.length === 0 ? (
+        <Empty>No completed service history has been recorded for this account yet.</Empty>
+      ) : (
+        <ItemList>
+          {history.map((visit) => (
+            <ItemRow
+              key={visit.id}
+              title={visit.type}
+              meta={`${formatDate(visit.date)} - ${visit.mileage ? `${visit.mileage} miles` : "mileage not recorded"} - ${visit.invoice}`}
+              right={
+                <div style={{ display: "flex", gap: 6 }}>
+                  {visit.red > 0 ? <Badge tone="open">{visit.red} red</Badge> : null}
+                  {visit.amber > 0 ? <Badge>{visit.amber} amber</Badge> : null}
+                  {visit.red === 0 && visit.amber === 0 ? <Badge tone="ok">No red/amber</Badge> : null}
+                </div>
+              }
+            >
+              {visit.note ? (
+                <p style={{ margin: "6px 0 0", fontSize: 12, color: "var(--txt-soft)" }}>{visit.note}</p>
+              ) : null}
+            </ItemRow>
+          ))}
+        </ItemList>
+      )}
     </SectionShell>
   );
 }

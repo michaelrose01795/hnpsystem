@@ -1,5 +1,5 @@
 // file location: src/features/customerPortal/components/sections/PortalTodoNote.js
-// Small-print "API not linked yet" note shown above mock content. Colors are
+// Small-print "API not linked yet" note shown above unavailable live sections. Colors are
 // fixed for the permanent-dark /website skin (light text on dark glass) so
 // they read correctly regardless of the user's theme.
 import React from "react";
@@ -19,7 +19,7 @@ export default function PortalTodoNote({ label = "API not linked yet", detail })
         TODO · {label}.
       </span>{" "}
       {detail ||
-        "The card below shows mock data so the layout is finalised; values switch to live once the integration is wired."}
+        "Connection to the required API or database table is still required."}
     </p>
   );
 }

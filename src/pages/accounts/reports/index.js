@@ -2,10 +2,9 @@
 import React, { useEffect, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
-import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
+import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import { REPORT_PERIODS } from "@/config/accounts";
 import { exportToCsv } from "@/utils/exportUtils";
 import AccountsReportsPageUi from "@/components/page-ui/accounts/reports/accounts-reports-ui"; // Extracted presentation layer.
@@ -57,9 +56,9 @@ export default function AccountsReportsPage() {
 
   const current = reportData[activePeriod] || {};
 
-  // Each metric card is nested inside the metrics shell (LayerSurface) → so each card is a LayerTheme.
+  // Each metric card is nested inside the metrics shell (LayerTheme) → so each card is a LayerSurface.
   const metricCard = (key, label, value, accent = "var(--primary)") =>
-  <LayerTheme
+  <LayerSurface
     key={key}
     sectionKey={key}
     sectionType="stat-card"
@@ -69,7 +68,7 @@ export default function AccountsReportsPage() {
 
       <p style={{ margin: 0, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: "0.8rem" }}>{label}</p>
       <strong style={{ display: "block", marginTop: "10px", fontSize: "1.8rem", color: accent }}>{value}</strong>
-    </LayerTheme>;
+    </LayerSurface>;
 
 
   const handleExport = () => {
@@ -84,7 +83,7 @@ export default function AccountsReportsPage() {
     exportToCsv("accounts-report.csv", rows, ["period", "newAccounts", "totalInvoiced", "overdueInvoices", "averageBalance"]);
   };
 
-  return <AccountsReportsPageUi view="section1" activePeriod={activePeriod} Button={Button} Card={Card} current={current} DevLayoutSection={DevLayoutSection} handleExport={handleExport} loading={loading} metricCard={metricCard} metricsGridStyle={metricsGridStyle} metricsShellStyle={metricsShellStyle} ProtectedRoute={ProtectedRoute} REPORT_PERIODS={REPORT_PERIODS} REPORT_ROLES={REPORT_ROLES} setActivePeriod={setActivePeriod} ToolbarRow={ToolbarRow} />;
+  return <AccountsReportsPageUi view="section1" activePeriod={activePeriod} Button={Button} current={current} DevLayoutSection={DevLayoutSection} handleExport={handleExport} loading={loading} metricCard={metricCard} metricsGridStyle={metricsGridStyle} metricsShellStyle={metricsShellStyle} ProtectedRoute={ProtectedRoute} REPORT_PERIODS={REPORT_PERIODS} REPORT_ROLES={REPORT_ROLES} setActivePeriod={setActivePeriod} ToolbarRow={ToolbarRow} />;
 
 
 

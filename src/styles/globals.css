@@ -3937,28 +3937,42 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .hr-manager-tabs-row {
-  justify-content: stretch;
-  padding: 0 2px 6px;
-  overflow: visible;
+  justify-content: flex-start;
+  padding: 0 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   flex-wrap: nowrap;
-  align-items: stretch;
+  align-items: center;
   gap: 6px;
 }
 
+.hr-manager-tabs-row::-webkit-scrollbar {
+  display: none;
+}
+
 .hr-manager-tabs-row.is-overflowing {
-  justify-content: stretch;
-  padding-bottom: 6px;
+  justify-content: flex-start;
+  padding-bottom: 0;
   cursor: default;
 }
 
+.hr-manager-tabs-row .tab-api {
+  flex: 0 0 max-content;
+  flex-wrap: nowrap;
+  width: max-content;
+  max-width: none;
+}
+
 .hr-manager-tabs-row .tab-api__item {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 auto;
+  min-width: max-content;
   padding: 10px 8px;
   font-size: 0.78rem;
-  line-height: 1.15;
-  white-space: normal;
-  word-break: break-word;
+  line-height: 1;
+  white-space: nowrap;
+  word-break: normal;
 }
 
 .hr-manager-tab-panel {

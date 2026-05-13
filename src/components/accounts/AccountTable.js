@@ -1,8 +1,8 @@
 // file location: src/components/accounts/AccountTable.js // file path header
 import React from "react"; // import React to define component
-import LayerSurface from "@/components/ui/LayerSurface";import PropTypes from "prop-types";
+import LayerTheme from "@/components/ui/LayerTheme";
+import PropTypes from "prop-types";
 import Button from "@/components/ui/Button";
-import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 
 const columnDefinitions = [
 { key: "account_id", label: "Account ID" },
@@ -50,7 +50,6 @@ export default function AccountTable({
   accounts,
   loading,
   pagination,
-  onPageChange,
   onSortChange,
   sortState,
   onSelectAccount,
@@ -78,7 +77,7 @@ export default function AccountTable({
   };
 
   return (
-    <LayerSurface as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <LayerTheme as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-1)" }}>Customer Accounts</h2>
@@ -214,7 +213,7 @@ export default function AccountTable({
           </tbody>
         </table>
       </div>
-    </LayerSurface>);
+    </LayerTheme>);
 
 }
 AccountTable.propTypes = {

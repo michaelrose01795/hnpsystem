@@ -222,9 +222,9 @@ export default function AccountsListPage() {
 
 
   // The DevLayoutSection page-shell in accounts-ui.js does not paint a surface,
-  // so this filter panel is the outermost surface card → LayerSurface. Inner cards alternate to LayerTheme.
+  // so these requested accounts cards use LayerTheme. Inner cards alternate to LayerSurface.
   const renderFilters = () =>
-  <LayerSurface as="section" sectionKey="accounts-filter-panel" sectionType="content-card" parentKey="accounts-page-shell" gap="16px">
+  <LayerTheme as="section" sectionKey="accounts-filter-panel" sectionType="content-card" parentKey="accounts-page-shell" gap="16px">
       <DevLayoutSection sectionKey="accounts-filter-toolbar" sectionType="filter-row" parentKey="accounts-filter-panel">
       <ToolbarRow>
       <SearchBar
@@ -267,15 +267,15 @@ export default function AccountsListPage() {
       </Button>
       </ToolbarRow>
       </DevLayoutSection>
-    </LayerSurface>;
+    </LayerTheme>;
 
 
   const renderLinkedFinance = () =>
-  <LayerSurface as="section" sectionKey="accounts-linked-finance" sectionType="content-card" parentKey="accounts-page-shell" widthMode="full" gap="18px">
+  <LayerTheme as="section" sectionKey="accounts-linked-finance" sectionType="content-card" parentKey="accounts-page-shell" widthMode="full" gap="18px">
       <DevLayoutSection sectionKey="accounts-linked-finance-jump-links" sectionType="toolbar" parentKey="accounts-linked-finance">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "14px" }}>
         {financeLinks.map((link) =>
-        <LayerTheme
+        <LayerSurface
           key={link.title}
           as="article"
           sectionKey={`accounts-linked-finance-${link.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
@@ -299,13 +299,13 @@ export default function AccountsListPage() {
             <Button type="button" variant="secondary" size="sm" onClick={link.onClick}>
               {link.actionLabel}
             </Button>
-          </LayerTheme>
+          </LayerSurface>
         )}
       </div>
       </DevLayoutSection>
       <DevLayoutSection sectionKey="accounts-linked-finance-reference-grid" sectionType="content-card" parentKey="accounts-linked-finance">
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "16px" }}>
-        <LayerTheme as="article" sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
+        <LayerSurface as="article" sectionKey="accounts-linked-finance-invoice-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Invoice References</h3>
             <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/accounts/invoices")}>
@@ -344,8 +344,8 @@ export default function AccountsListPage() {
               </div>
             </div>
           )}
-        </LayerTheme>
-        <LayerTheme as="article" sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
+        </LayerSurface>
+        <LayerSurface as="article" sectionKey="accounts-linked-finance-goodsin-refs" sectionType="content-card" parentKey="accounts-linked-finance-reference-grid" radius="var(--radius-sm)" padding="16px" gap="12px">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "1rem" }}>Recent Goods In References</h3>
             <Button type="button" variant="ghost" size="xs" onClick={() => router.push("/parts/goods-in")}>
@@ -377,10 +377,10 @@ export default function AccountsListPage() {
               </div>
             </div>
           )}
-        </LayerTheme>
+        </LayerSurface>
       </div>
       </DevLayoutSection>
-    </LayerSurface>;
+    </LayerTheme>;
 
 
   const handlePageChange = (nextPage) => {

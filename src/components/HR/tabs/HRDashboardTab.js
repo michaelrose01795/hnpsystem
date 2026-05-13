@@ -7,6 +7,14 @@ import { useHrDashboardData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
 import { MetricCard, StatusTag } from "@/components/HR/MetricCard"; // metric display and status badge components
 import HrTabLoadingSkeleton from "@/components/HR/HrTabLoadingSkeleton";
+import LayerSurface from "@/components/ui/LayerSurface";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
+
+const slug = (label) =>
+  label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 
 export default function HRDashboardTab() {
   const { data, isLoading, error } = useHrDashboardData();
@@ -54,19 +62,46 @@ export default function HRDashboardTab() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+    <DevLayoutSection
+      as="div"
+      sectionKey="hr-manager-dashboard-shell"
+      parentKey="hr-manager-tab-dashboard"
+      sectionType="section-shell"
+      style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+    >
       {/* Metrics Overview */}
-      <section
-        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "18px" }}
+      <LayerSurface
+        as="section"
+        sectionKey="hr-manager-dashboard-metrics"
+        parentKey="hr-manager-dashboard-shell"
+        sectionType="content-card"
+        backgroundToken="surface"
+        style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}
       >
         {formattedMetrics.map((metric) => (
-          <MetricCard key={metric.label} {...metric} accentColor="var(--info)" />
+          <MetricCard
+            key={metric.label}
+            {...metric}
+            accentColor="var(--info)"
+            sectionKey={`hr-manager-dashboard-metric-${slug(metric.label)}`}
+            parentKey="hr-manager-dashboard-metrics"
+          />
         ))}
-      </section>
+      </LayerSurface>
 
       {/* Department Performance & Training */}
-      <section style={{ display: "grid", gap: "18px", gridTemplateColumns: "2fr 1.2fr" }}>
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-manager-dashboard-row-performance-training"
+        parentKey="hr-manager-dashboard-shell"
+        sectionType="section-shell"
+        style={{ display: "grid", gap: "10px", gridTemplateColumns: "2fr 1.2fr" }}
+      >
         <SectionCard
+          sectionKey="hr-manager-auto-content-card-1"
+          parentKey="hr-manager-dashboard-row-performance-training"
+          sectionType="content-card"
+          backgroundToken="surface"
           title="Department Performance Snapshot"
           subtitle="Productivity, quality, and teamwork scoring (rolling 30 days)"
         >
@@ -93,6 +128,10 @@ export default function HRDashboardTab() {
         </SectionCard>
 
         <SectionCard
+          sectionKey="hr-manager-auto-content-card-2"
+          parentKey="hr-manager-dashboard-row-performance-training"
+          sectionType="content-card"
+          backgroundToken="surface"
           title="Training Renewals"
           subtitle="Upcoming expiries across mandatory certifications"
         >
@@ -132,11 +171,21 @@ export default function HRDashboardTab() {
             })}
           </div>
         </SectionCard>
-      </section>
+      </DevLayoutSection>
 
       {/* Absences & Warnings */}
-      <section style={{ display: "grid", gap: "18px", gridTemplateColumns: "1.4fr 1fr" }}>
+      <DevLayoutSection
+        as="section"
+        sectionKey="hr-manager-dashboard-row-absences-warnings"
+        parentKey="hr-manager-dashboard-shell"
+        sectionType="section-shell"
+        style={{ display: "grid", gap: "10px", gridTemplateColumns: "1.4fr 1fr" }}
+      >
         <SectionCard
+          sectionKey="hr-manager-auto-content-card-3"
+          parentKey="hr-manager-dashboard-row-absences-warnings"
+          sectionType="content-card"
+          backgroundToken="surface"
           title="Upcoming Holidays & Absences"
           subtitle="Next 14 days across the business"
         >
@@ -166,6 +215,10 @@ export default function HRDashboardTab() {
         </SectionCard>
 
         <SectionCard
+          sectionKey="hr-manager-auto-content-card-4"
+          parentKey="hr-manager-dashboard-row-absences-warnings"
+          sectionType="content-card"
+          backgroundToken="surface"
           title="Active Warnings"
           subtitle="Summary of open disciplinary notices"
         >
@@ -197,7 +250,7 @@ export default function HRDashboardTab() {
             ))}
           </div>
         </SectionCard>
-      </section>
-    </div>
+      </DevLayoutSection>
+    </DevLayoutSection>
   );
 }

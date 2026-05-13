@@ -27,6 +27,7 @@ import {
 import { writeAuditLog } from "@/lib/audit/auditLog";
 
 const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
+const isVercelHost = (value = "") => /\.vercel\.app$/i.test(String(value));
 
 const applyRuntimeNextAuthUrl = (req) => {
   const host = req?.headers?.["x-forwarded-host"] || req?.headers?.host || "";
@@ -38,6 +39,9 @@ const applyRuntimeNextAuthUrl = (req) => {
 
   const currentAuthUrl = process.env.NEXTAUTH_URL || "";
   const shouldUseRequestHost =
+    Boolean(process.env.VERCEL) ||
+    isVercelHost(host) ||
+    isVercelHost(currentAuthUrl) ||
     (isLocalhostUrl(host) && !isLocalhostUrl(currentAuthUrl)) ||
     (!isLocalhostUrl(host) && (!currentAuthUrl || isLocalhostUrl(currentAuthUrl)));
 
