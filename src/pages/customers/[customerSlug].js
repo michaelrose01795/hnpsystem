@@ -32,6 +32,7 @@ import {
 "@/lib/api/messages";
 import { createJobNote } from "@/lib/database/notes";
 import CustomerDetailWorkspaceUi from "@/components/page-ui/customers/customers-customer-slug-ui"; // Extracted presentation layer.
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 const TAB_DEFINITIONS = [
 { id: "insights", label: "Insights" },
@@ -1326,10 +1327,17 @@ const getSlugParam = (rawSlug) => {
   return rawSlug;
 };
 
+const getTabParam = (rawTab) => {
+  if (!rawTab) return "";
+  if (Array.isArray(rawTab)) return rawTab[0] || "";
+  return rawTab;
+};
+
 export default function CustomerDetailWorkspace() {
   const router = useRouter();
   const { dbUserId } = useUser();
   const slugFromRoute = getSlugParam(router.query.customerSlug);
+  const tabFromRoute = getTabParam(router.query.tab);
   const [customer, setCustomer] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [jobs, setJobs] = useState([]);
@@ -1338,6 +1346,12 @@ export default function CustomerDetailWorkspace() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingPreference, setSavingPreference] = useState("");
+
+  useEffect(() => {
+    if (!tabFromRoute) return;
+    if (!TAB_DEFINITIONS.some((tab) => tab.id === tabFromRoute)) return;
+    setActiveTab(tabFromRoute);
+  }, [tabFromRoute]);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -1387,6 +1401,7 @@ export default function CustomerDetailWorkspace() {
   }, [router.isReady, slugFromRoute]);
 
   useEffect(() => {
+    if (isPresentationMode()) return;
     if (!router.isReady || !customer) return;
     const preferredSlug = createCustomerDisplaySlug(customer.firstname, customer.lastname);
     if (!preferredSlug) return;

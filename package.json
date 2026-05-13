@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "node tools/scripts/use-local-next-cache.js",
+    "presentation:sync": "node tools/scripts/sync-presentation-ui.js",
+    "predev": "npm run presentation:sync && node tools/scripts/use-local-next-cache.js",
+    "prebuild": "npm run presentation:sync",
     "dev": "next dev --webpack",
     "vercel:dev": "node tools/scripts/vercel-dev.js",
     "lint": "eslint .",

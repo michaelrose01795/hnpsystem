@@ -11,12 +11,12 @@ import {
   getStatusTone,
 } from "@/features/payslips/payslipUtils";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 
 export default function PayslipsAdminPageUi(uiProps) {
   const {
     ALLOWED_ROLES,
     Button,
-    CalendarField,
     DevLayoutSection,
     DropdownField,
     PayslipDetailPopup,
@@ -45,6 +45,22 @@ export default function PayslipsAdminPageUi(uiProps) {
   } = uiProps;
 
   if (uiProps.view !== "section1") return null;
+
+  const paidMonthValue = (filters.paidFrom || "").slice(0, 7);
+  const handlePaidMonthChange = (value) => {
+    if (!value) {
+      handleFilterChange("paidFrom", "");
+      handleFilterChange("paidTo", "");
+      return;
+    }
+
+    const [year, month] = value.split("-").map(Number);
+    const first = `${value}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const last = `${value}-${String(lastDay).padStart(2, "0")}`;
+    handleFilterChange("paidFrom", first);
+    handleFilterChange("paidTo", last);
+  };
 
   return (
     <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
@@ -82,35 +98,13 @@ export default function PayslipsAdminPageUi(uiProps) {
                 options={STATUS_OPTIONS}
                 style={{ flex: "0 0 160px" }}
               />
-              <input
-                type="month"
-                aria-label="Month"
-                value={(filters.paidFrom || "").slice(0, 7)}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  if (!value) {
-                    handleFilterChange("paidFrom", "");
-                    handleFilterChange("paidTo", "");
-                    return;
-                  }
-                  const [year, month] = value.split("-").map(Number);
-                  const first = `${value}-01`;
-                  const lastDay = new Date(year, month, 0).getDate();
-                  const last = `${value}-${String(lastDay).padStart(2, "0")}`;
-                  handleFilterChange("paidFrom", first);
-                  handleFilterChange("paidTo", last);
-                }}
-                style={{
-                  flex: "0 0 180px",
-                  height: "var(--control-height, 36px)",
-                  padding: "0 12px",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--input-ring)",
-                  background: "var(--surface)",
-                  color: "var(--text-1)",
-                  fontSize: "0.88rem",
-                }}
-              />
+              <div style={{ flex: "0 0 260px", minWidth: "220px" }}>
+                <MonthPickerField
+                  aria-label="Paid month"
+                  value={paidMonthValue}
+                  onValueChange={handlePaidMonthChange}
+                />
+              </div>
               <Button type="button" variant="secondary" size="sm" onClick={handleResetFilters}>
                 Clear filters
               </Button>
@@ -142,17 +136,27 @@ export default function PayslipsAdminPageUi(uiProps) {
             ) : null}
 
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "0.88rem" }}>
+              <table className="app-data-table" style={{ minWidth: "1180px", fontSize: "0.88rem" }}>
+                <colgroup>
+                  <col style={{ width: "130px" }} />
+                  <col style={{ width: "270px" }} />
+                  <col style={{ width: "160px" }} />
+                  <col style={{ width: "180px" }} />
+                  <col style={{ width: "120px" }} />
+                  <col style={{ width: "120px" }} />
+                  <col style={{ width: "130px" }} />
+                  <col style={{ width: "210px" }} />
+                </colgroup>
                 <thead>
                   <tr style={{ textAlign: "left", color: "var(--text-1)", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    <th style={{ padding: "8px 12px" }}>Paid date</th>
-                    <th style={{ padding: "8px 12px" }}>User</th>
-                    <th style={{ padding: "8px 12px" }}>Department</th>
-                    <th style={{ padding: "8px 12px" }}>Period</th>
-                    <th style={{ padding: "8px 12px", textAlign: "right" }}>Gross</th>
-                    <th style={{ padding: "8px 12px", textAlign: "right" }}>Net</th>
-                    <th style={{ padding: "8px 12px" }}>Status</th>
-                    <th style={{ padding: "8px 12px", textAlign: "right" }}>Actions</th>
+                    <th style={{ padding: "10px 18px" }}>Paid date</th>
+                    <th style={{ padding: "10px 18px" }}>User</th>
+                    <th style={{ padding: "10px 18px" }}>Department</th>
+                    <th style={{ padding: "10px 18px" }}>Period</th>
+                    <th style={{ padding: "10px 18px", textAlign: "right" }}>Gross</th>
+                    <th style={{ padding: "10px 18px", textAlign: "right" }}>Net</th>
+                    <th style={{ padding: "10px 18px" }}>Status</th>
+                    <th style={{ padding: "10px 18px", textAlign: "right" }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -167,10 +171,10 @@ export default function PayslipsAdminPageUi(uiProps) {
                     const tone = getStatusTone(slip.status);
                     return (
                       <tr key={slip.id} style={{ background: "var(--surface)" }}>
-                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)" }}>
+                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)" }}>
                           <strong style={{ color: "var(--text-1)" }}>{formatDate(slip.paidDate)}</strong>
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)" }}>
+                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)" }}>
                           <div style={{ display: "grid", gap: "2px" }}>
                             <span style={{ color: "var(--text-1)", fontWeight: 600 }}>
                               {slip.user?.name || `User ${slip.userId}`}
@@ -180,19 +184,19 @@ export default function PayslipsAdminPageUi(uiProps) {
                             ) : null}
                           </div>
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", color: "var(--text-1)" }}>
+                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", color: "var(--text-1)" }}>
                           {slip.user?.department || "—"}
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", color: "var(--text-1)" }}>
+                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", color: "var(--text-1)" }}>
                           {formatPeriodLabel(slip)}
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", textAlign: "right", fontWeight: 600 }}>
+                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", textAlign: "right", fontWeight: 600 }}>
                           {formatCurrency(slip.grossPay)}
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", textAlign: "right", fontWeight: 700, color: "var(--accentText, var(--accent))" }}>
+                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", textAlign: "right", fontWeight: 700, color: "var(--accentText, var(--accent))" }}>
                           {formatCurrency(slip.netPay)}
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)" }}>
+                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)" }}>
                           <span
                             style={{
                               padding: "2px 8px",
@@ -208,15 +212,15 @@ export default function PayslipsAdminPageUi(uiProps) {
                             {formatStatusLabel(slip.status)}
                           </span>
                         </td>
-                        <td style={{ padding: "10px 12px", borderTop: "var(--separating-line)", textAlign: "right" }}>
-                          <div style={{ display: "inline-flex", gap: "6px" }}>
-                            <Button type="button" variant="ghost" size="xs" onClick={() => setActivePayslip(slip)}>
+                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", textAlign: "right" }}>
+                          <div style={{ display: "inline-flex", gap: "8px" }}>
+                            <Button type="button" variant="primary" size="xs" className="app-table-action-btn" onClick={() => setActivePayslip(slip)}>
                               View
                             </Button>
-                            <Button type="button" variant="secondary" size="xs" onClick={() => setEditingPayslip(slip)}>
+                            <Button type="button" variant="primary" size="xs" className="app-table-action-btn" onClick={() => setEditingPayslip(slip)}>
                               Edit
                             </Button>
-                            <Button type="button" variant="ghost" size="xs" onClick={() => handleDelete(slip)}>
+                            <Button type="button" variant="primary" size="xs" className="app-table-action-btn" onClick={() => handleDelete(slip)}>
                               Delete
                             </Button>
                           </div>

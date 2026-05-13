@@ -12,6 +12,7 @@ import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { roleCategories } from "@/config/users"; // Dev users config
 import { useTheme } from "@/styles/themeProvider";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { buildRosterPayload, EMPTY_ROSTER_PAYLOAD } from "@/lib/users/rosterPayload";
 import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
@@ -144,7 +145,7 @@ const LoginCard = ({
 
 
 export default function LoginPage() {
-  const allowDevUserSelection = canShowDevLogin();
+  const allowDevUserSelection = !isPresentationMode() && canShowDevLogin();
   const { data: session, status: sessionStatus } = useSession();
   // Safe destructuring from context
   const userContext = useUser();

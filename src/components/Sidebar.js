@@ -22,6 +22,8 @@ import {
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
 const LOGOUT_BARRIER_MS = 8000;
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
+const PRESENTATION_LOGOUT_DESTINATION = "/loginPresentation";
+const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
 const PRESENTATION_RETURN_TO_STORAGE_KEY = "presentation:returnTo";
 
 const hiddenHrRoutes = new Set([
@@ -200,10 +202,12 @@ export default function Sidebar({
     // tear down.
     if (inPresentationMode) {
       if (typeof window !== "undefined") {
-        window.location.replace("/loginPresentation");
+        window.sessionStorage.removeItem(PRESENTATION_ROLE_STORAGE_KEY);
+        window.sessionStorage.removeItem(PRESENTATION_RETURN_TO_STORAGE_KEY);
+        window.location.replace(PRESENTATION_LOGOUT_DESTINATION);
         return;
       }
-      router.replace("/loginPresentation");
+      router.replace(PRESENTATION_LOGOUT_DESTINATION);
       return;
     }
     if (typeof window !== "undefined") {
@@ -499,6 +503,7 @@ export default function Sidebar({
                         className="app-btn"
                         type="button"
                         onClick={handleLogout}
+                        data-presentation-allow-interaction="true"
                         style={{ flex: 1, ...dangerGhostControlStyle }}
                       >
                         Logout

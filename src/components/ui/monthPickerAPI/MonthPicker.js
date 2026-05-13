@@ -63,6 +63,7 @@ export default function MonthPicker({
   const generatedId = useId();
   const controlId = id || generatedId;
   const isControlled = value !== undefined;
+  const isEmptyControlledValue = isControlled && (value === "" || value === null);
   const initialValue = parseMonthValue(defaultValue) || parseMonthValue(value) || {
     year: new Date().getFullYear(),
     month: new Date().getMonth(),
@@ -74,8 +75,8 @@ export default function MonthPicker({
   const selectedYearRef = useRef(null);
 
   const selected = parseMonthValue(isControlled ? value : null) || internalValue;
-  const selectedValue = formatMonthValue(selected);
-  const displayValue = `${MONTH_NAMES[selected.month]} ${selected.year}`;
+  const selectedValue = isEmptyControlledValue ? "" : formatMonthValue(selected);
+  const displayValue = isEmptyControlledValue ? "Select month" : `${MONTH_NAMES[selected.month]} ${selected.year}`;
   const minMonth = parseMonthValue(min);
   const maxMonth = parseMonthValue(max);
   const isMonthDisabled = (month) =>
@@ -163,6 +164,7 @@ export default function MonthPicker({
     isOpen && "is-open",
     disabled && "is-disabled",
     selectedValue && "has-value",
+    isEmptyControlledValue && "is-empty",
     className,
   ]
     .filter(Boolean)

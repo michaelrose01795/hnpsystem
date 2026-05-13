@@ -10,12 +10,17 @@ import { PRESENTATION_ROLES } from "@/config/presentationRoleAccess";
 // from role.routes[slide] — but matching the doc's slugs keeps copy/paste
 // from the doc working.
 function routeToSlug(route) {
-  return String(route || "")
+  const [path, query = ""] = String(route || "").split("?");
+  const base = path
     .replace(/^\//, "")
     .replace(/\//g, "-")
     .replace(/\[/g, "")
     .replace(/\]/g, "")
     || "home";
+  const querySuffix = query
+    ? `-${query.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+    : "";
+  return `${base}${querySuffix}`;
 }
 
 function firstSlideHref(role) {

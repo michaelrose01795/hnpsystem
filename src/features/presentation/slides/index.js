@@ -100,7 +100,7 @@ import { clockingSlide } from "./definitions/clocking";
 import { clockingTechnicianSlide } from "./definitions/clockingTechnician";
 import { trackingSlide } from "./definitions/tracking";
 import { newsfeedSlide } from "./definitions/newsfeed";
-import { profileSlide } from "./definitions/profile";
+import { profilePersonalSlide, profileSlide } from "./definitions/profile";
 import { workshopConsumablesTrackerSlide } from "./definitions/workshopConsumablesTracker";
 import { loginSlide } from "./definitions/login";
 import { unauthorizedSlide } from "./definitions/unauthorized";
@@ -196,6 +196,7 @@ export const ALL_SLIDES = [
   trackingSlide,
   newsfeedSlide,
   profileSlide,
+  profilePersonalSlide,
   workshopConsumablesTrackerSlide,
   loginSlide,
   unauthorizedSlide,

@@ -9,7 +9,7 @@ export const loginSlide = {
       kind: "main",
       position: "center",
       title: "Single sign-in",
-      body: "Staff and customers use the same login screen — role-aware redirection takes each user to the right home page.",
+      body: "Staff and customers use the same login screen. In presentation mode the dev login selector is hidden so the audience only sees the real sign-in experience.",
     },
   ],
 };
