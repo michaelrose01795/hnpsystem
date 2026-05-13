@@ -70,7 +70,7 @@
     "@playwright/test": "^1.58.2",
     "@types/node": "24.10.0",
     "baseline-browser-mapping": "^2.9.17",
-    "eslint": "^9.38.0",
+    "eslint": "^10.3.0",
     "eslint-config-next": "^16.1.6",
     "playwright": "^1.58.2",
     "typescript": "5.9.3",
