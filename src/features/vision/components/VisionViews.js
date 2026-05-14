@@ -21,7 +21,7 @@ import {
   futurePlatformDescriptions,
   visionDepartments,
   visionLayers,
-} from "../_data/visionMockData";
+} from "../data/visionMockData";
 
 const styles = {
   sectionGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "var(--layout-card-gap)" },

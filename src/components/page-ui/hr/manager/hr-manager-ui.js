@@ -9,7 +9,6 @@ export default function HRManagerDashboardUi(props) {
     PageShell,
     StatusMessage,
     TabGroup,
-    TabRow,
     activeTab,
     setActiveTab,
   } = props; // receive page logic props.
@@ -51,12 +50,16 @@ export default function HRManagerDashboardUi(props) {
     case "section4":
       return <PageShell sectionKey="hr-manager-shell" className="hr-manager-shell">
       <ContentWidth sectionKey="hr-manager-content" parentKey="hr-manager-shell" widthMode="full">
-        <TabRow sectionKey="hr-manager-tabs" parentKey="hr-manager-content" className="tab-scroll-row is-overflowing hr-manager-tabs-row">
-          <TabGroup ariaLabel="HR sections" items={HR_TABS.map(tab => ({
+        <TabGroup
+          ariaLabel="HR sections"
+          className="tab-scroll-row is-overflowing hr-manager-tabs-row"
+          items={HR_TABS.map(tab => ({
         value: tab.id,
         label: tab.label
-      }))} value={activeTab} onChange={value => setActiveTab(value)} />
-        </TabRow>
+      }))}
+          value={activeTab}
+          onChange={value => setActiveTab(value)}
+        />
 
         <DevLayoutSection
           data-presentation="hr-compliance"

@@ -5,11 +5,16 @@
 import dayjs from "dayjs";
 import React, { useEffect, useState } from "react";
 import { getAdminDashboardData } from "@/lib/database/dashboard/admin";
-import { LayerSurface, LayerTheme } from "@/components/ui";
+import { ContentWidth, LayerSurface, LayerTheme, PageShell } from "@/components/ui";
 import AdminDashboardUi from "@/components/page-ui/dashboard/admin/dashboard-admin-ui";
 
-const MetricCard = ({ label, value, helper }) => (
-  <LayerSurface radius="var(--radius-sm)" style={{ minWidth: 160 }}>
+const MetricCard = ({ label, parentKey, sectionKey, value, helper }) => (
+  <LayerSurface
+    sectionKey={sectionKey}
+    parentKey={parentKey}
+    radius="var(--radius-sm)"
+    style={{ minWidth: 0, height: "100%" }}
+  >
     <p style={{ margin: 0, fontSize: "0.75rem", textTransform: "uppercase", color: "var(--primary-selected)" }}>{label}</p>
     <p style={{ margin: "8px 0 0", fontSize: "1.9rem", fontWeight: 600 }}>{value}</p>
     {helper && <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--info)" }}>{helper}</p>}
@@ -41,6 +46,9 @@ const HolidayList = ({ holidays }) => (
   </LayerSurface>
 );
 
+const formatNoticeMessage = (message = "") =>
+  String(message).replace(/^\s*(?:\u2139\uFE0F?|\u24D8|i)\s*/i, "").trim();
+
 const NoticeList = ({ notices }) => (
   <LayerSurface radius="var(--radius-sm)" padding="12px" gap="10px">
     {notices.length === 0 ? (
@@ -48,7 +56,7 @@ const NoticeList = ({ notices }) => (
     ) : (
       notices.map((notice) => (
         <div key={notice.notification_id} style={{ color: "var(--info-dark)" }}>
-          <p style={{ margin: 0 }}>{notice.message}</p>
+          <p style={{ margin: 0 }}>{formatNoticeMessage(notice.message)}</p>
           <p style={{ margin: "4px 0 0", fontSize: "0.8rem", color: "var(--info)" }}>
             {notice.target_role ? `For ${notice.target_role}` : "General"}
           </p>
@@ -93,6 +101,7 @@ export default function AdminDashboard() {
   return (
     <AdminDashboardUi
       view="section1"
+      ContentWidth={ContentWidth}
       data={data}
       error={error}
       HolidayList={HolidayList}
@@ -100,6 +109,7 @@ export default function AdminDashboard() {
       loading={loading}
       MetricCard={MetricCard}
       NoticeList={NoticeList}
+      PageShell={PageShell}
     />
   );
 }

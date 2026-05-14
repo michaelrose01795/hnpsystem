@@ -5,7 +5,7 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import LayerTheme from "@/components/ui/LayerTheme";
-import { visionNav } from "../_data/visionMockData";
+import { visionNav } from "../data/visionMockData";
 
 const styles = {
   shell: { maxWidth: "var(--page-max-width)", margin: "0 auto", width: "100%" },

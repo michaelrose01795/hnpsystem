@@ -1,5 +1,5 @@
-/* file location: src/styles/website.css
-   Public-facing /website surface stylesheet.
+/* file location: src/styles/custglobal.css
+   Customer-facing /website global stylesheet.
 
    Imported globally in _app.js, but every rule is scoped to
    `html.website-scope` so it only applies on the /website routes

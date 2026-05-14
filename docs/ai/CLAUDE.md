@@ -24,7 +24,7 @@ Deprecated marker tokens:
 Those deprecated tokens are intentionally bright so they are easy to spot and replace. If a page shows bright purple or bright red accents unexpectedly, move that area onto the semantic accent or status tokens.
 
 Use the shared global control and layout APIs before adding custom styles:
-- Layout shells and cards from `src/styles/globals.css`
+- Layout shells and cards from `src/styles/staffglobal.css`
 - `.app-btn` button variants
 - `.app-input`
 - `.dropdown-api`

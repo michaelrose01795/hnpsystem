@@ -10,7 +10,7 @@
  * Component:  src/components/ui/Button.js
  * Showcase:   /dev/user-diagnostic#button
  *
- * History: migrated in full from src/styles/globals.css during the
+ * History: migrated in full from src/styles/staffglobal.css during the
  * 2026-04 UI audit. There is no longer a second block — all .app-btn*
  * rules live here. Add new button variants below.
  */

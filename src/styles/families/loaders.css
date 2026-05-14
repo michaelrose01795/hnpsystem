@@ -7,7 +7,7 @@
  * Showcase:  /dev/user-diagnostic#loader
  *
  * NOTE (2026-04 audit pass): the .skeleton-block base + @keyframes live in
- * src/styles/globals.css today. They stay there for this setup pass — the
+ * src/styles/staffglobal.css today. They stay there for this setup pass — the
  * keyframe rule is load-bearing and moving it requires checking every
  * consumer.  Skeleton variants used by LoadingSkeleton.js are declared
  * inline (CSS-in-JS) in that file; when they migrate they land here.

@@ -5,7 +5,7 @@
 // (borderless, --surface fill, --radius-md corners). Public API is unchanged.
 //
 // `app-section-card` className is preserved on the rendered element so the
-// (large) body of legacy scoped CSS in globals.css continues to apply.
+// (large) body of legacy scoped CSS in staffglobal.css continues to apply.
 import React from "react";
 import LayerSurface from "./LayerSurface";
 

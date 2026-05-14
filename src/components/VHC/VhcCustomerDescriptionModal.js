@@ -3,7 +3,7 @@
 // overriding the technician's issue description with a customer-friendly
 // version. Saving an empty value clears the override and reverts to the tech
 // description. Backdrop / aria-modal markup matches the popup-backdrop pattern
-// already wired up in src/styles/globals.css.
+// already wired up in src/styles/staffglobal.css.
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";

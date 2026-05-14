@@ -17,7 +17,7 @@ import { PageShell, ContentWidth, SectionShell } from "@/components/ui";
 import ConsumablesTrackerPageUi from "@/components/page-ui/workshop/workshop-consumables-tracker-ui"; // Extracted presentation layer.
 
 // Page layout follows the canonical page shell and layer surface structure.
-// hierarchy from globals.css (via @/components/ui), so no local layout shells.
+// hierarchy from staffglobal.css (via @/components/ui), so no local layout shells.
 
 // Cards use the active theme surface unless a nested card explicitly opts into
 // --surface.

@@ -8,7 +8,7 @@
  * Showcase:  /dev/user-diagnostic#toolbar
  *
  * NOTE (2026-04 audit pass): the .app-layout-toolbar-row container rule
- * lives in src/styles/globals.css (~463). New variant modifiers are defined
+ * lives in src/styles/staffglobal.css (~463). New variant modifiers are defined
  * below so future consumers get density without rolling their own margin/
  * padding overrides.
  */

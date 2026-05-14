@@ -21,7 +21,7 @@ export const fieldLabelStyle = {
 };
 
 // Inputs and selects now inherit the global control styling defined in
-// globals.css (input / select / .dropdown-api__control rules). These exports
+// staffglobal.css (input / select / .dropdown-api__control rules). These exports
 // remain so existing spread patterns (`{ ...inputStyle, width: "8ch" }`) keep
 // working — they contribute no inline style of their own.
 export const inputStyle = { width: "100%" };

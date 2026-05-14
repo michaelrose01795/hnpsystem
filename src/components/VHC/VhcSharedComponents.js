@@ -18,7 +18,7 @@ export const EmptyStateMessage = ({ message }) => (
 );
 
 // Severity badge component (used 10+ times). Renders a global .app-badge with
-// the matching tone modifier so shape/colour come from globals.css.
+// the matching tone modifier so shape/colour come from staffglobal.css.
 const SEVERITY_TONE_CLASS = {
   red: "app-badge--danger",
   amber: "app-badge--warning",

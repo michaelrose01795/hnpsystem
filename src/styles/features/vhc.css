@@ -2,10 +2,10 @@
  *
  * VHC (Vehicle Health Check) feature styles.
  *
- * Migrated out of globals.css during the 2026 UI audit pass so feature-level
- * styles live alongside other feature folders and globals.css stays focused
+ * Migrated out of staffglobal.css during the 2026 UI audit pass so feature-level
+ * styles live alongside other feature folders and staffglobal.css stays focused
  * on base layout + shared families. Classes here are still loaded by
- * globals.css via @import so selector specificity and cascade order match
+ * staffglobal.css via @import so selector specificity and cascade order match
  * what the app had before the move.
  *
  * Everything in this file should be prefixed with .vhc- and must not leak

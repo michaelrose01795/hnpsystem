@@ -7,7 +7,7 @@
  * Showcase:  /dev/user-diagnostic#tabs
  *
  * NOTE (2026-04 audit pass): the existing .app-layout-tab-row container
- * rule still lives in src/styles/globals.css (~453). Individual tab items
+ * rule still lives in src/styles/staffglobal.css (~453). Individual tab items
  * are rendered ad-hoc across feature folders (HrTabsBar, layout nav, etc).
  * The variants below give every consumer a shared starting point; existing
  * ad-hoc tab renderers should migrate to these classes as they are touched.

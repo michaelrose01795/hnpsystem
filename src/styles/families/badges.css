@@ -7,7 +7,7 @@
  * Showcase:  /dev/user-diagnostic#badge
  *
  * NOTE (2026-04 audit pass): the existing .app-badge and every .app-badge--*
- * variant rule lives in src/styles/globals.css (~1412-1501). They stay there
+ * variant rule lives in src/styles/staffglobal.css (~1412-1501). They stay there
  * for this setup pass — the next cleanup pass will migrate them here
  * verbatim. Do not define new badge variants elsewhere.
  */

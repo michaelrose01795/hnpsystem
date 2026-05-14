@@ -1,4 +1,6 @@
-/* file location: src/styles/globals.css */
+/* file location: src/styles/staffglobal.css
+   Staff/admin global stylesheet. Customer-facing /website globals live in
+   src/styles/custglobal.css and are gated by html.website-scope. */
 
 /* ========================================================= */
 /* === Design system imports                              === */
@@ -2684,11 +2686,11 @@ textarea:disabled {
 
 /* The `button.` prefix is deliberate — the base reset
    `button:not(.app-btn) { background: var(--accent-strong) }` at the top of
-   globals.css has higher specificity than a bare .dropdown-api__option
+   staffglobal.css has higher specificity than a bare .dropdown-api__option
    selector. Prefixing keeps specificity in parity so these rules win. */
 /* The `button.` prefix is deliberate — the base reset
    `button:not(.app-btn) { background: var(--accent-strong) }` at the top of
-   globals.css has higher specificity than a bare .dropdown-api__option
+   staffglobal.css has higher specificity than a bare .dropdown-api__option
    selector. Prefixing keeps specificity in parity so these rules win. */
 button.dropdown-api__option {
   /* Inset from the menu edges via the menu's own padding (8px) and the
@@ -4187,17 +4189,17 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 .hr-employees-table th:nth-child(1),
 .hr-employees-table td:nth-child(1) {
-  width: 48%;
+  width: 64%;
 }
 
 .hr-employees-table th:nth-child(2),
 .hr-employees-table td:nth-child(2) {
-  width: 22%;
+  width: 18%;
 }
 
 .hr-employees-table th:nth-child(3),
 .hr-employees-table td:nth-child(3) {
-  width: 30%;
+  width: 18%;
 }
 
 .hr-employees-list.app-table-shell-wrap,
@@ -4232,6 +4234,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  width: 100%;
 }
 
 .hr-employees-table .hr-employees-row-avatar {

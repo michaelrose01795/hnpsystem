@@ -3179,7 +3179,7 @@
   --txt-faint: rgba(255, 255, 255, 0.32);
 
   /* Inner scrollbars inside the profile page: dark track + red accent thumb
-     (matches the page-level scrollbar set up in globals.css for the html
+     (matches the page-level scrollbar set up in staffglobal.css for the html
      element). Firefox uses scrollbar-color; Chromium/Safari use the
      ::-webkit-scrollbar pseudos declared below. */
   scrollbar-color: var(--scrollbar-thumb) rgba(0, 0, 0, 0.4);

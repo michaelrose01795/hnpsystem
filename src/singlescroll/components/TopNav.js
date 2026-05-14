@@ -139,7 +139,7 @@ export default function TopNav({ onFilterChange }) {
                     role="tab"
                     aria-selected={isActive}
                     /* `app-btn` opts out of the project-wide
-                       `button:not(.app-btn)` rule in globals.css so the
+                       `button:not(.app-btn)` rule in staffglobal.css so the
                        nav pill keeps the same liquid-glass look as the
                        hero CTAs instead of inheriting the dashboard
                        button skin. */

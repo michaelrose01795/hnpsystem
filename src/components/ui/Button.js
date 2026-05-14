@@ -8,7 +8,7 @@
 // Inline `style` overrides for visual properties (background, padding,
 // borderRadius, font*, color, border*, boxShadow, height) are stripped
 // so consumers cannot drift from the design system. Use a variant or size
-// prop instead — or extend the global system in globals.css/theme.css.
+// prop instead — or extend the global system in staffglobal.css/theme.css.
 import React from "react";
 
 const DISALLOWED_STYLE_KEYS = new Set([

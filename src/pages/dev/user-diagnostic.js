@@ -12,7 +12,7 @@
 //    1. If you change how a component looks here in the showcase, you MUST
 //       propagate that change to the corresponding token / class in:
 //         - src/styles/theme.css        (colour & layout tokens)
-//         - src/styles/globals.css      (.app-page-card, .app-section-card,
+//         - src/styles/staffglobal.css      (.app-page-card, .app-section-card,
 //                                        .app-page-stack, etc.)
 //         - src/styles/families/*.css   (cards, buttons, inputs, …)
 //       so the rest of the repo follows the showcase, not the other way
@@ -693,7 +693,7 @@ const USAGE_REGISTRY = {
   { label: ".releasePromptBox", file: "src/features/invoices/styles/invoice.module.css" }],
 
   "global-cards": [
-  { label: ".app-page-shell / .app-page-card / .app-page-stack / .app-section-card", file: "src/styles/globals.css" },
+  { label: ".app-page-shell / .app-page-card / .app-page-stack / .app-section-card", file: "src/styles/staffglobal.css" },
   { label: "Section component", file: "src/components/Section.js" },
   { label: "Card / SectionCard component", file: "src/components/ui/Card.js" },
   { label: "--page-card-bg / --section-card-bg tokens", file: "src/styles/theme.css" }],
@@ -714,11 +714,11 @@ const USAGE_REGISTRY = {
   { label: "VHC item cell", file: "src/components/VHC/VhcSharedComponents.js" }],
 
   "domain-class-families": [
-  { label: ".vhc-* — globals.css", file: "src/styles/globals.css" },
-  { label: ".hr-employees-* — globals.css", file: "src/styles/globals.css" },
-  { label: ".myjobs-* — globals.css", file: "src/styles/globals.css" },
-  { label: ".login-* — globals.css", file: "src/styles/globals.css" },
-  { label: ".customer-portal-* — globals.css", file: "src/styles/globals.css" }],
+  { label: ".vhc-* — staffglobal.css", file: "src/styles/staffglobal.css" },
+  { label: ".hr-employees-* — staffglobal.css", file: "src/styles/staffglobal.css" },
+  { label: ".myjobs-* — staffglobal.css", file: "src/styles/staffglobal.css" },
+  { label: ".login-* — staffglobal.css", file: "src/styles/staffglobal.css" },
+  { label: ".customer-portal-* — staffglobal.css", file: "src/styles/staffglobal.css" }],
 
   "colour-tokens": [
   { label: "Source: theme.css", file: "src/styles/theme.css" },
@@ -755,16 +755,16 @@ const USAGE_REGISTRY = {
 
   "interaction-states-buttons": [
   { label: "Button primitive (hover/active via CSS)", file: "src/components/ui/Button.js" },
-  { label: ".app-btn hover / :disabled rules", file: "src/styles/globals.css" },
+  { label: ".app-btn hover / :disabled rules", file: "src/styles/staffglobal.css" },
   { label: "Proposed Global Standard — document in theme.css", file: "src/styles/theme.css" }],
 
   "interaction-states-inputs": [
   { label: "InputField primitive", file: "src/components/ui/InputField.js" },
-  { label: ".app-input :focus rules", file: "src/styles/globals.css" },
-  { label: "Proposed: add .app-input--error / --success modifiers", file: "src/styles/globals.css" }],
+  { label: ".app-input :focus rules", file: "src/styles/staffglobal.css" },
+  { label: "Proposed: add .app-input--error / --success modifiers", file: "src/styles/staffglobal.css" }],
 
   "checkboxes-states": [
-  { label: "Native checkbox styling", file: "src/styles/globals.css" },
+  { label: "Native checkbox styling", file: "src/styles/staffglobal.css" },
   { label: "Tech consumables request", file: "src/pages/tech/consumables-request.js" },
   { label: "Widget settings modal", file: "src/components/profile/personal/WidgetSettingsModal.js" },
   { label: "Stock check popup", file: "src/components/Consumables/StockCheckPopup.js" },
@@ -772,8 +772,8 @@ const USAGE_REGISTRY = {
 
   "focus-ring": [
   { label: "Token: --control-ring", file: "src/styles/theme.css" },
-  { label: "Applied in .app-input, .dropdown-api, .searchbar-api", file: "src/styles/globals.css" },
-  { label: "Proposed: enforce :focus-visible across every interactive element", file: "src/styles/globals.css" }],
+  { label: "Applied in .app-input, .dropdown-api, .searchbar-api", file: "src/styles/staffglobal.css" },
+  { label: "Proposed: enforce :focus-visible across every interactive element", file: "src/styles/staffglobal.css" }],
 
   "form-validation": [
   { label: "Account form", file: "src/components/accounts/AccountForm.js" },
@@ -3291,7 +3291,7 @@ function GlobalUiShowcase() {
       {isSectionVisible("global-cards") &&
       <ShowcaseSection title="Global Cards / Sections" itemKey="global-cards" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ fontSize: "11px", color: "var(--text-1)", marginBottom: "10px", lineHeight: 1.5 }}>
-          Canonical card hierarchy from globals.css. Every page should nest these in order: <strong>.app-page-shell</strong> → <strong>.app-page-card</strong> → <strong>.app-page-stack</strong> → <strong>.app-section-card</strong>. Use <strong>Section</strong> for titled cards and <strong>Card / SectionCard</strong> for bare wrappers. Do not flatten or invent new wrappers.
+          Canonical card hierarchy from staffglobal.css. Every page should nest these in order: <strong>.app-page-shell</strong> → <strong>.app-page-card</strong> → <strong>.app-page-stack</strong> → <strong>.app-section-card</strong>. Use <strong>Section</strong> for titled cards and <strong>Card / SectionCard</strong> for bare wrappers. Do not flatten or invent new wrappers.
         </div>
         <div className="app-page-shell" style={{ padding: "8px" }}>
           <div style={{ fontSize: "10px", color: "var(--text-1)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>.app-page-shell</div>

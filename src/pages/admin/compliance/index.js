@@ -2,9 +2,9 @@
 // Compliance dashboard: counts of open items + list of nearest deadlines.
 
 import React, { useEffect, useState } from "react";
-import Section from "@/components/Section";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
-import LayerTheme from "@/components/ui/LayerTheme";
+import Section from "@/components/compliance/ComplianceSection";
+import LayerSurface from "@/components/ui/LayerSurface";
 
 const fmt = (iso) => {
   if (!iso) return "—";
@@ -58,7 +58,7 @@ export default function ComplianceDashboardPage() {
   const draftDpias = dpias.filter((d) => d.status === "draft" || d.status === "in_review");
 
   const card = (label, count, hint) => (
-    <LayerTheme
+    <LayerSurface
       radius="var(--radius-sm, 8px)"
       padding="16px"
       style={{
@@ -71,7 +71,7 @@ export default function ComplianceDashboardPage() {
       {hint && (
         <div style={{ fontSize: "0.78rem", color: "var(--text-1)", marginTop: 6 }}>{hint}</div>
       )}
-    </LayerTheme>
+    </LayerSurface>
   );
 
   return (

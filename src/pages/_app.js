@@ -3,8 +3,8 @@
 import "@/utils/polyfills"; // ensure polyfills load globally
 import "@/utils/quietConsole"; // minimize console noise unless LOG_LEVEL is raised
 import "@/styles/theme.css"; // register CSS variables before globals
-import "../styles/globals.css"; // import global base styles
-import "@/styles/website.css"; // /website-only overrides (gated by html.website-scope)
+import "@/styles/staffglobal.css"; // staff/admin app global base styles
+import "@/styles/custglobal.css"; // /website customer overrides (gated by html.website-scope)
 import { Inter } from "next/font/google";
 import React, { useEffect, useState } from "react"; // import React helpers
 

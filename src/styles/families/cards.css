@@ -11,7 +11,7 @@
  * NOTE (2026-04 audit pass): every card/surface class (.app-page-card,
  * .app-section-card, .app-layout-section-shell, .app-layout-card,
  * .app-layout-surface-subtle, .app-layout-surface-accent,
- * .app-layout-stat-card) lives in src/styles/globals.css (~158-279).
+ * .app-layout-stat-card) lives in src/styles/staffglobal.css (~158-279).
  * They stay there for this setup pass — the .app-page-shell hierarchy is
  * load-bearing and will migrate in a dedicated pass.
  */

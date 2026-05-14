@@ -1,6 +1,6 @@
 // file location: src/singlescroll/hooks/useWebsiteScope.js
 // Adds `website-scope` to <html> while a /website page is mounted so the
-// website-only stylesheet (src/styles/website.css) takes effect, and
+// customer stylesheet (src/styles/custglobal.css) takes effect, and
 // cleanly removes it on unmount so the dashboard pages aren't affected.
 
 import { useEffect } from "react";

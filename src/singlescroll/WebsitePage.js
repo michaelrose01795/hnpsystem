@@ -34,6 +34,8 @@ import ContactUs from "./components/ContactUs";
 import Footer from "./components/Footer";
 
 import useScrollAnimations from "./hooks/useScrollAnimations";
+import useIs3DCapable from "./hooks/useIs3DCapable";
+import useReducedMotion from "./hooks/useReducedMotion";
 import useWebsiteScope from "./hooks/useWebsiteScope";
 import { siteContent } from "./data/siteContent";
 import styles from "./styles/singlescroll.module.css";
@@ -48,10 +50,9 @@ const STORY_MARQUEE = [
   "120-point inspection · 6-month warranty",
 ];
 
-// Lazy-load the 3D scene — Three.js + drei + four glTF models is a
-// heavy chunk and visitors on small / WebGL-less devices skip it.
-// The component itself returns null when WebGL is unavailable or the
-// viewport is mobile-sized, so the page works without the scene.
+// Lazy-load the 3D scene only after the parent page has confirmed the
+// device/network can afford it. Weak phones and poor connections never fetch
+// this Three.js chunk or the glTF model files.
 const Website3DScene = dynamic(
   () => import("./components/Website3DScene"),
   { ssr: false, loading: () => null },
@@ -61,6 +62,8 @@ export default function WebsitePage() {
   const rootRef = useRef(null);
   const [galleryFilter, setGalleryFilter] = useState("all");
   const { setTemporaryOverride } = useTheme();
+  const reducedMotion = useReducedMotion();
+  const { ready: checked3D, capable: canLoad3D, lowQuality } = useIs3DCapable();
 
   // Dark cinematic base with the brand red as accent — unwinds cleanly
   // when the visitor leaves /website.
@@ -83,7 +86,13 @@ export default function WebsitePage() {
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
 
-      <Website3DScene galleryFilter={galleryFilter} />
+      {checked3D && canLoad3D && !reducedMotion && (
+        <Website3DScene
+          galleryFilter={galleryFilter}
+          lowQuality={lowQuality}
+          reduced={reducedMotion}
+        />
+      )}
 
       <div ref={rootRef} className={styles.page}>
         <TopNav onFilterChange={setGalleryFilter} />

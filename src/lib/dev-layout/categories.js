@@ -6,7 +6,7 @@
 //   - DevOverlayControlPanel        → rendered toggle list
 //   - DevLayoutOverlay              → fallback detection + per-category
 //                                     visibility thresholds and colours
-//   - globals.css                   → category-gated outline rules
+//   - staffglobal.css                   → category-gated outline rules
 //   - src/styles/families/*.css     → trace-mode outline colours
 //   - src/components/ui/variants.js → classification family IDs
 //

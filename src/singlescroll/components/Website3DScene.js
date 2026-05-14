@@ -20,9 +20,9 @@
 //   - The #cars chapter listens to the New / Used filter the top-nav
 //     tabs lift into the gallery and switches the scene preset so the
 //     cars on screen match the cars the user is browsing.
-//   - On mobile, the canvas still renders but ScrollTrigger and the
-//     bob/parallax animations are disabled — the scene shows a calm
-//     static hero shot so the page stays usable and inexpensive.
+//   - Low-power phones / poor connections are gated by WebsitePage before
+//     this module is dynamically imported, so the 3D code and glTF files are
+//     never requested on devices that should skip them.
 //   - Per-car ErrorBoundary so a single missing/broken glTF doesn't
 //     kill the rest of the scene.
 
@@ -47,7 +47,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { carModels } from "../models";
 import useReducedMotion from "../hooks/useReducedMotion";
-import useIs3DCapable from "../hooks/useIs3DCapable";
 import { getTimelineProgress } from "../state/timelineProgress";
 import styles from "../styles/singlescroll.module.css";
 
@@ -551,9 +550,9 @@ function SceneController({ sceneRef, lowQuality, reduced, motion, mouseRef }) {
 // PUBLIC COMPONENT
 // ---------------------------------------------------------------------
 
-export default function Website3DScene({ galleryFilter = "all" } = {}) {
-  const reduced = useReducedMotion();
-  const { capable, lowQuality } = useIs3DCapable();
+export default function Website3DScene({ galleryFilter = "all", lowQuality = false, reduced: reducedProp } = {}) {
+  const detectedReduced = useReducedMotion();
+  const reduced = reducedProp ?? detectedReduced;
   const [isMobile, setIsMobile] = useState(false);
 
   // Refs the canvas reads every frame. We update sceneRef from
@@ -615,7 +614,7 @@ export default function Website3DScene({ galleryFilter = "all" } = {}) {
   // viewport centre. Triggers update sceneRef directly so the canvas
   // doesn't re-render on every scroll change.
   useEffect(() => {
-    if (!capable || isMobile) return;
+    if (isMobile) return;
 
     const triggers = SECTION_IDS.map((id) =>
       ScrollTrigger.create({
@@ -636,12 +635,7 @@ export default function Website3DScene({ galleryFilter = "all" } = {}) {
     requestAnimationFrame(() => ScrollTrigger.refresh());
 
     return () => triggers.forEach((t) => t.kill());
-  }, [capable, isMobile]);
-
-  // Bail entirely only when WebGL itself is unavailable. Reduced
-  // motion and mobile both still get the canvas — they just see a
-  // static / simplified version.
-  if (!capable) return null;
+  }, [isMobile]);
 
   // motion = full bobs, drift, parallax. Mobile + reduced motion both
   // suppress those so the scene stays calm.

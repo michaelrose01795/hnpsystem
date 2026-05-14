@@ -77,7 +77,7 @@ const labelStyle = {
 };
 
 // Surface (background, border, radius, padding, height) is intentionally left
-// to the global input rules in src/styles/globals.css so this page matches the
+// to the global input rules in src/styles/staffglobal.css so this page matches the
 // rest of the app. Only typography props are kept here.
 const inputStyle = {
   fontSize: "0.95rem",

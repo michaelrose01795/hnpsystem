@@ -13,7 +13,7 @@ import {
   SystemMapView,
   WorkflowCoordinationView,
 } from "./VisionViews";
-import { featureGroups, visionNav } from "../_data/visionMockData";
+import { featureGroups, visionNav } from "../data/visionMockData";
 
 const pageDescriptions = {
   "system-map": "A layered mock system map showing the future dealership as a connected operating system.",

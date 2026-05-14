@@ -7,7 +7,7 @@
  * Showcase:  /dev/user-diagnostic#input
  *
  * NOTE (2026-04 audit pass): the base .app-input rule lives in
- * src/styles/globals.css (~1299-1320). It stays there for this setup pass.
+ * src/styles/staffglobal.css (~1299-1320). It stays there for this setup pass.
  * NEW variant modifier classes are defined below so pages can consume them
  * immediately — they wrap the existing .app-input foundation.
  */

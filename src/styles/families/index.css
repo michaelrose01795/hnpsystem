@@ -1,7 +1,7 @@
 /* file location: src/styles/families/index.css
  *
  * Single entry point for every UI family stylesheet. Pulled in by
- * src/styles/globals.css so family files participate in the same cascade.
+ * src/styles/staffglobal.css so family files participate in the same cascade.
  *
  * Order matters (very slightly) because some trace-mode rules re-use class
  * names that other families register. Keep structural/base styles before

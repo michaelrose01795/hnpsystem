@@ -1,9 +1,9 @@
 // file location: src/pages/admin/compliance/breaches.js
 
 import React, { useEffect, useState } from "react";
-import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
+import Section from "@/components/compliance/ComplianceSection";
 
 const SEVERITIES = ["low", "medium", "high", "critical"];
 const STATUSES = ["open", "contained", "reported", "closed"];

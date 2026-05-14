@@ -77,7 +77,7 @@ remove the mock data from all of the sections and link it to actual data within 
 
 - /website (TODO)
 create global.css liek file for /website, keep global.css for staff seperate to custoemrs so we can tell with the file names as well like custglobal.css and staffglobal.css etc so theres a seperation of two differnt styles to be used etc.
-
+Done: split staff and customer global styles into staffglobal.css and custglobal.css, updated all imports/references, and made /website skip loading the 3D scene completely on low-power phones, poor connections, or reduced-motion devices.
 have it so if the device is a low proceesing phone/not much single, have it so the 3D models dont show and dont hide jsut doesnt load it at all.
 
 - /website/login

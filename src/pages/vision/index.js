@@ -3,8 +3,8 @@
 
 import React from "react";
 import Layout from "@/components/Layout";
-import VisionLayout from "./_components/VisionLayout";
-import { VisionHome } from "./_components/VisionViews";
+import VisionLayout from "@/features/vision/components/VisionLayout";
+import { VisionHome } from "@/features/vision/components/VisionViews";
 
 function VisionIndexPage() {
   return (

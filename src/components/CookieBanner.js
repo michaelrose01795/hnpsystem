@@ -202,7 +202,7 @@ export default function CookieBanner() {
       overflowY: "auto",
       WebkitOverflowScrolling: "touch",
       // Surface, padding, radius and (no) border all flow from the
-      // Shared layer token system declared in globals.css.
+      // Shared layer token system declared in staffglobal.css.
       color: "var(--text-1)",
       fontFamily: "var(--font-family, system-ui, sans-serif)"
     }),

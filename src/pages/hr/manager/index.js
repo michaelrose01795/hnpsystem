@@ -21,7 +21,6 @@ import ReportsTab from "@/components/HR/tabs/ReportsTab";
 import SettingsTab from "@/components/HR/tabs/SettingsTab";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { ContentWidth, PageShell } from "@/components/ui/layout-system";
-import TabRow from "@/components/ui/layout-system/TabRow";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import { StatusMessage } from "@/components/ui";
 import HRManagerDashboardUi from "@/components/page-ui/hr/manager/hr-manager-ui"; // Extracted presentation layer.
@@ -92,7 +91,7 @@ export default function HRManagerDashboard() {
 
   const ActiveTabComponent = HR_TABS.find((tab) => tab.id === activeTab)?.component || HRDashboardTab;
 
-  return <HRManagerDashboardUi view="section4" activeTab={activeTab} ActiveTabComponent={ActiveTabComponent} ContentWidth={ContentWidth} DevLayoutSection={DevLayoutSection} HR_TABS={HR_TABS} PageShell={PageShell} setActiveTab={setActiveTab} TabGroup={TabGroup} TabRow={TabRow} />;
+  return <HRManagerDashboardUi view="section4" activeTab={activeTab} ActiveTabComponent={ActiveTabComponent} ContentWidth={ContentWidth} DevLayoutSection={DevLayoutSection} HR_TABS={HR_TABS} PageShell={PageShell} setActiveTab={setActiveTab} TabGroup={TabGroup} />;
 
 
 

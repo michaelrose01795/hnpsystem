@@ -1,9 +1,9 @@
 // file location: src/pages/admin/compliance/dpias.js
 
 import React, { useEffect, useState } from "react";
-import Section from "@/components/Section";
 import Button from "@/components/ui/Button";
 import ComplianceLayout from "@/components/compliance/ComplianceLayout";
+import Section from "@/components/compliance/ComplianceSection";
 
 const STATUSES = ["draft", "in_review", "approved", "rejected"];
 const RISK_LEVELS = ["low", "medium", "high"];
