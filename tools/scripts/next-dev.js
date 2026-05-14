@@ -48,9 +48,11 @@ async function main() {
   const port = process.env.PORT || "3000";
   const shouldOpenBrowser = process.env.HNP_SKIP_NEXT_DEV_OPEN !== "1";
   let openedBrowser = false;
-  const child = spawn(process.execPath, [nextBin, "dev", "--port", port, "--webpack"], {
-    stdio: ["inherit", "pipe", "pipe"],
-  });
+  const child = spawn(
+    process.execPath,
+    ["--no-deprecation", nextBin, "dev", "--port", port, "--webpack"],
+    { stdio: ["inherit", "pipe", "pipe"] }
+  );
 
   const forwardOutput = (stream, writer) => {
     stream.on("data", (chunk) => {

@@ -533,7 +533,7 @@ function SceneController({ sceneRef, lowQuality, reduced, motion, mouseRef }) {
         position={[0, 0.4, 0]}
       />
 
-      {!lowQuality && <Environment preset="studio" />}
+      {!lowQuality && <Environment files="/hdri/studio_small_03_1k.hdr" />}
 
       <ContactShadows
         position={[0, -1.4, 0]}

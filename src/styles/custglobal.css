@@ -22,14 +22,103 @@ html.website-scope a:focus {
   text-decoration: none;
 }
 
+/* ─── /website theme insulation ───────────────────────────────────────────
+   The staff app's themeProvider (src/styles/themeProvider.js) writes
+   data-theme + an entire set of CSS variables (--accentMainRgb,
+   --accentText, --surface, --txt-bright, …) onto <html> as INLINE
+   styles every time someone toggles light/dark or changes accent on
+   /profile. Without an explicit override those inline values cascade
+   into /website and /website/dev too — flipping the customer surface
+   to white in light mode, or repainting the red wash if the staff
+   accent is changed to blue/green.
+
+   Re-assert the customer-facing values here under `html.website-scope`
+   with !important. `!important` in a stylesheet beats a plain inline
+   style, so the staff theme can flip freely without bleeding across.
+   Customer pages always render dark, always with brand red. */
 html.website-scope {
+  color-scheme: dark !important;
+
+  /* Customer pages reuse the staff app font stack defined in theme.css:345
+     (var(--font-inter) → SF Pro → system fallbacks). The next/font import
+     in _app.js loads the webfont once for the whole app, so /website
+     picks it up by reading the same --font-family token. Re-asserted on
+     <html> with !important so it can't be overridden by a stray inline
+     style from the staff themeProvider. */
+  font-family: var(--font-family) !important;
   --font-family-base: var(--font-family);
+
+  /* Brand red, fixed regardless of staff accent palette. */
+  --accentMainRgb: 185, 28, 28 !important;
+  --accentMain: #b91c1c !important;
+  --accentText: #b91c1c !important;
+  --primary: #b91c1c !important;
+  --primary-hover: #981717 !important;
+  --primary-pressed: #7e1313 !important;
+  --onAccentText: #ffffff !important;
+
+  /* Dark surface tokens. The /website pages do not respect staff
+     light mode under any circumstance. */
+  --surface: #07070b !important;
+  --surfaceMain: #07070b !important;
+  --surfaceText: #ffffff !important;
+
+  /* Customer text scale (mirrors .profileShell). */
+  --txt-bright: #ffffff !important;
+  --txt-soft: rgba(255, 255, 255, 0.78) !important;
+  --txt-mute: rgba(255, 255, 255, 0.55) !important;
+  --txt-faint: rgba(255, 255, 255, 0.32) !important;
+
+  /* Ring tokens used by raw inputs / buttons in custglobal.css. */
+  --ghostbutton-ring: 1px solid rgba(255, 255, 255, 0.18) !important;
+  --input-ring: 1px solid rgba(255, 255, 255, 0.16) !important;
+  --checkbox-ring: 2px solid rgba(255, 255, 255, 0.32) !important;
+  --focus-ring: 0 0 0 3px rgba(185, 28, 28, 0.35) !important;
+
+  /* ── /website control system ──────────────────────────────────────
+     Every interactive control on /website (raw <button>, .app-btn,
+     <select>, text/email/password/etc. inputs, date/time inputs, the
+     file-picker button, .website-banner) shares one height, one
+     corner radius and one inter-field gap so they line up on the
+     same row regardless of which element you reach for. Adjust here,
+     never at the call-site. */
+  --website-control-height: 44px !important;
+  --website-control-radius: 14px !important;
+  --website-field-gap: 10px !important;
+
+  /* Dark scrollbar with a brand-red thumb on /website. */
+  --scrollbar-thumb: #b91c1c !important;
+  --scrollbar-thumb-hover: #d22424 !important;
 }
 
 html.website-scope body {
   font-family: var(--font-family);
   max-width: 100vw;
   overflow-x: clip;
+
+  /* Customer surface — mirrors the .profileShell background in
+     src/singlescroll/styles/singlescroll.module.css. Two red glows
+     anchored to top-right + bottom-left, plus two soft cool-grey
+     glows in the opposite corners (top-left + bottom-right) so the
+     dark corners aren't pure #07070b — they lift to a faint grey
+     wash. Literal values used here (rather than var(--accentMainRgb))
+     so even if the insulation block above is bypassed somehow, the
+     wash never goes blue/green. The cool-corner colour is the staff
+     dark-mode --surface (#16161a, theme.css:428) so the customer
+     surface lifts to the same near-black grey the staff app uses.
+     !important defeats the inline background-color the staff
+     themeProvider sets on <html>/<body>. */
+  background:
+    radial-gradient(ellipse at top right, rgba(185, 28, 28, 0.18), transparent 60%),
+    radial-gradient(ellipse at bottom left, rgba(185, 28, 28, 0.18), transparent 60%),
+    radial-gradient(ellipse at top left, rgba(22, 22, 26, 0.55), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(22, 22, 26, 0.55), transparent 60%),
+    #07070b !important;
+  background-attachment: fixed !important;
+}
+
+html.website-scope {
+  background: #07070b !important;
 }
 
 html.website-scope #__next {
@@ -87,77 +176,60 @@ html.website-scope body::-webkit-scrollbar-corner {
   background: #07070b;
 }
 
-/* Default ghost-pill look for any raw <button> or [role="button"]
-   on the /website pages. Mirrors `.profileGhostBtn` so the whole
-   surface reads as one button family. */
+/* ── Primary action — every raw <button> / [role="button"] on /website
+   reads as an iOS-26 "liquid glass" pill: clear (white-glass) tint,
+   heavy backdrop blur, subtle inner highlight along the top edge,
+   and a soft neutral outer shadow. The disabled state inherits the
+   same clear capsule, dimmed by opacity. The .app-btn opt-out below
+   adds a slight brand-red wash ("Secondary action"). */
 html.website-scope button:not(.app-btn),
-html.website-scope [role="button"]:not(.app-btn),
-html.website-scope a.website-btn {
+html.website-scope [role="button"]:not(.app-btn) {
   appearance: none;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 38px;
-  padding: 10px 16px;
+  min-height: var(--website-control-height);
+  padding: 0 18px;
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
   line-height: 1;
   text-align: center;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
-  border: var(--ghostbutton-ring);
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: none;
+  /* Full-pill capsule for action buttons. Inputs, select, date/time and
+     the file picker keep --website-control-radius (14px) so the
+     rectangular fields stay visually distinct from the pill CTAs. */
   border-radius: 999px;
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.28);
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease,
     transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-
-/* Calendar API buttons are grid controls, not pill CTAs. Keep them aligned
-   to their seven columns when a calendar is rendered inside /website. */
-html.website-scope button.calendar-api__day {
-  width: 100%;
-  aspect-ratio: 1;
-  min-height: 0;
-  padding: 0;
-  line-height: 1;
-  white-space: nowrap;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-html.website-scope button.calendar-api__nav-button {
-  min-height: 32px;
-  padding: 0;
-  line-height: 1;
-}
-
-html.website-scope button.calendar-api__month-year,
-html.website-scope button.calendar-api__today-button,
-html.website-scope button.calendar-api__picker-cell {
-  line-height: 1;
-  text-align: center;
-}
 html.website-scope button:not(.app-btn):hover,
-html.website-scope [role="button"]:not(.app-btn):hover,
-html.website-scope a.website-btn:hover {
-  background: rgba(255, 255, 255, 0.10);
-  border: var(--ghostbutton-ring);
+html.website-scope [role="button"]:not(.app-btn):hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.10) 100%);
   color: #fff;
   text-decoration: none;
 }
 html.website-scope button:not(.app-btn):active,
-html.website-scope [role="button"]:not(.app-btn):active,
-html.website-scope a.website-btn:active {
+html.website-scope [role="button"]:not(.app-btn):active {
   transform: translateY(1px);
 }
 html.website-scope button:not(.app-btn):disabled,
@@ -166,56 +238,403 @@ html.website-scope [role="button"]:not(.app-btn):disabled {
   cursor: not-allowed;
 }
 html.website-scope button:not(.app-btn):focus-visible,
-html.website-scope [role="button"]:not(.app-btn):focus-visible,
-html.website-scope a.website-btn:focus-visible {
+html.website-scope [role="button"]:not(.app-btn):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.28),
+    0 0 0 3px rgba(255, 255, 255, 0.32);
 }
 
-/* Raw <select> dropdowns get the same pill chrome with a custom
-   white caret so they sit alongside buttons on the same line. The
-   bespoke `.authInput` styling on the login/profile forms still
-   applies because that class lives in a CSS module (higher specificity
-   via the chained module-hash). */
+/* ── Secondary action — same liquid-glass chrome as Primary, but
+   tinted with the brand red wash. Opt in by adding `app-btn`. */
+html.website-scope button.app-btn,
+html.website-scope [role="button"].app-btn,
+html.website-scope a.app-btn {
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--website-control-height);
+  padding: 0 18px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  text-align: center;
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(var(--accentMainRgb), 0.22) 0%, rgba(var(--accentMainRgb), 0.10) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: none;
+  /* Match Primary action — full-pill capsule. */
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.28);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html.website-scope button.app-btn:hover,
+html.website-scope [role="button"].app-btn:hover,
+html.website-scope a.app-btn:hover {
+  background:
+    linear-gradient(180deg, rgba(var(--accentMainRgb), 0.32) 0%, rgba(var(--accentMainRgb), 0.18) 100%);
+  color: #fff;
+  text-decoration: none;
+}
+html.website-scope button.app-btn:active,
+html.website-scope [role="button"].app-btn:active,
+html.website-scope a.app-btn:active {
+  transform: translateY(1px);
+}
+html.website-scope button.app-btn:disabled,
+html.website-scope [role="button"].app-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+html.website-scope button.app-btn:focus-visible,
+html.website-scope [role="button"].app-btn:focus-visible,
+html.website-scope a.app-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.28),
+    0 0 0 3px rgba(255, 255, 255, 0.32);
+}
+
+/* ── Calendar grid buttons are sized by their cell, not the global
+   control system — opt them out of the 44px floor and the pill chrome. */
+html.website-scope button.calendar-api__day,
+html.website-scope button.website-calendar__day {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  border-radius: 8px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html.website-scope button.calendar-api__day {
+  width: 100%;
+  aspect-ratio: 1;
+  white-space: nowrap;
+}
+html.website-scope button.calendar-api__nav-button,
+html.website-scope button.website-calendar__nav,
+html.website-scope .website-calendar__footer button {
+  min-height: 32px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  border-radius: 999px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+html.website-scope button.calendar-api__month-year,
+html.website-scope button.calendar-api__today-button,
+html.website-scope button.calendar-api__picker-cell {
+  min-height: 0;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Customer form rhythm. Keep the field spacing controlled globally so
+   new /website forms inherit the same 10px gaps without per-page fixes. */
+html.website-scope form,
+html.website-scope fieldset {
+  gap: var(--website-field-gap);
+}
+
+html.website-scope label,
+html.website-scope [class*="authForm"],
+html.website-scope [class*="signupForm"],
+html.website-scope [class*="authRow"],
+html.website-scope [class*="authField"],
+html.website-scope [class*="profileDetailField"] {
+  gap: var(--website-field-gap) !important;
+}
+
+/* Raw <select> trigger reuses the Primary action liquid-glass capsule
+   (clear white-glass tint, heavy backdrop blur, top-edge highlight,
+   soft neutral outer shadow). The native option list is browser-native
+   and only minimally stylable — we paint the visible options with the
+   dark-glass colour palette so the open list reads as a continuation
+   of the trigger. */
 html.website-scope select:not(.app-btn) {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  min-height: 38px;
-  padding: 10px 36px 10px 16px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--website-control-height);
+  padding: 0 42px 0 18px;
   font-family: inherit;
   font-size: 13px;
-  color: #fff;
-  background-color: rgba(255, 255, 255, 0.06);
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  color: #ffffff;
+  background-color: transparent;
+  background-image:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%);
   background-repeat: no-repeat;
-  background-position: right 14px center;
-  background-size: 12px 8px;
-  border: var(--input-ring);
-  border-radius: 999px;
+  background-position: right 16px center, center;
+  background-size: 12px 8px, auto;
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: none;
+  border-radius: var(--website-control-radius);
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.28);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 html.website-scope select:not(.app-btn):hover {
-  background-color: rgba(255, 255, 255, 0.10);
-  border: var(--input-ring);
+  background-image:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.10) 100%);
 }
-html.website-scope select:not(.app-btn):focus {
+html.website-scope select:not(.app-btn):focus-visible {
   outline: none;
-  border: var(--input-ring);
-  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.28),
+    0 0 0 3px rgba(255, 255, 255, 0.32);
+}
+html.website-scope select:not(.app-btn):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 html.website-scope select:not(.app-btn) option {
-  color: #111;
+  color: #ffffff;
+  background: #101016;
+  font-weight: 600;
+}
+html.website-scope select:not(.app-btn) option:checked,
+html.website-scope select:not(.app-btn) option:hover {
+  background: rgba(var(--accentMainRgb), 0.28);
+  color: #ffffff;
 }
 
-/* Text-like inputs and textareas — dark-glass field with a soft ring.
-   Forms inside CSS modules (e.g. `.authInput` on the login + profile
-   pages) keep their own look because the module class wins on
-   specificity; this is the fallback for raw inputs anywhere else on
-   /website. */
+/* Custom-rendered list for /website selects. The hidden native select keeps
+   form value semantics; these classes own the visible trigger and menu. */
+html.website-scope .website-native-select {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+html.website-scope .website-native-select__field {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+html.website-scope .website-native-select__trigger {
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+}
+
+html.website-scope .website-native-select__value,
+html.website-scope .website-native-select__placeholder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Parent button rule sets line-height: 1, which clips descenders ("g",
+     "y", "p") inside the overflow:hidden box. Give the value its own
+     taller line-box so descenders have room — flex centering on the
+     trigger keeps the row at 44px regardless. */
+  line-height: 1.4;
+  padding-block: 1px;
+}
+
+html.website-scope .website-native-select__placeholder {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+html.website-scope .website-native-select__caret {
+  width: 12px;
+  height: 8px;
+  flex-shrink: 0;
+  opacity: 0.8;
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat center / contain;
+  transition: transform 0.2s ease;
+}
+
+html.website-scope .website-native-select[data-open="true"] .website-native-select__caret {
+  transform: rotate(180deg);
+}
+
+html.website-scope .website-native-select__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(28, 28, 38, 0.96) 0%, rgba(16, 16, 22, 0.98) 100%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 56px rgba(0, 0, 0, 0.55);
+}
+
+html.website-scope .website-native-select__empty {
+  display: flex;
+  align-items: center;
+  min-height: var(--website-control-height);
+  padding: 0 14px;
+  font-size: 13px;
+  color: var(--txt-mute, rgba(255, 255, 255, 0.55));
+}
+
+/* Each option row matches the Primary action button height so the open
+   list reads as a stack of capsules — selecting a value visually swaps
+   the trigger for one of the rows. */
+html.website-scope .website-native-select__option {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--website-control-height);
+  padding: 0 14px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--txt-bright, #fff);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+html.website-scope .website-native-select__option:hover,
+html.website-scope .website-native-select__option--active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.website-scope .website-native-select__option--selected {
+  background: rgba(var(--accentMainRgb), 0.22);
+  color: #fff;
+}
+
+html.website-scope .website-native-select__option--selected:hover,
+html.website-scope .website-native-select__option--selected.website-native-select__option--active {
+  background: rgba(var(--accentMainRgb), 0.32);
+}
+
+html.website-scope .website-native-select__option-label {
+  font-weight: 600;
+}
+
+html.website-scope .website-native-select__option-hint {
+  font-size: 11px;
+  color: var(--txt-mute, rgba(255, 255, 255, 0.55));
+}
+
+/* Custom-rendered date/time pickers for /website. The hidden native input
+   keeps browser form semantics; the visible trigger uses the same Primary
+   action chrome and opens a .website-calendar-style surface. */
+html.website-scope .website-native-datetime {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+html.website-scope .website-native-datetime__field {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+html.website-scope .website-native-datetime__trigger {
+  width: 100%;
+  justify-content: space-between;
+  text-align: left;
+}
+
+html.website-scope .website-native-datetime__value,
+html.website-scope .website-native-datetime__placeholder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html.website-scope .website-native-datetime__placeholder {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+html.website-scope .website-native-datetime__icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.8;
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='1.4'%3E%3Crect x='2.5' y='3' width='11' height='11' rx='1.5'/%3E%3Cpath d='M2.5 6h11M5 2v2M11 2v2'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+html.website-scope .website-native-datetime[data-type="time"] .website-native-datetime__icon {
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='1.4'%3E%3Ccircle cx='8' cy='8' r='5.5'/%3E%3Cpath d='M8 4.5V8l2.5 1.5'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+/* ── Text-like inputs and textareas — share the Primary action
+   liquid-glass capsule so a "name" field, a "date" field, and a
+   button line up at the same 44px height with the same clear
+   white-glass tint and outer shadow. CSS module classes (e.g.
+   `.authInput` on login / profile) still win on specificity and
+   keep their bespoke look.
+
+   `type="email"` is intentionally omitted: the customer surface
+   collapses email entry into the standard text input so there's
+   one capsule style and one backend path. New /website forms
+   should use <input type="text"> for email-shaped values. */
 html.website-scope input[type="text"]:not(.app-btn),
-html.website-scope input[type="email"]:not(.app-btn),
 html.website-scope input[type="password"]:not(.app-btn),
 html.website-scope input[type="tel"]:not(.app-btn),
 html.website-scope input[type="number"]:not(.app-btn),
@@ -223,98 +642,103 @@ html.website-scope input[type="search"]:not(.app-btn),
 html.website-scope input[type="url"]:not(.app-btn),
 html.website-scope input[type="date"]:not(.app-btn),
 html.website-scope input[type="time"]:not(.app-btn),
-html.website-scope input[type="datetime-local"]:not(.app-btn),
 html.website-scope textarea:not(.app-btn) {
   appearance: none;
   -webkit-appearance: none;
+  box-sizing: border-box;
   width: 100%;
+  min-height: var(--website-control-height);
+  padding: 0 18px;
   font-family: inherit;
-  font-size: 14px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.04);
-  border: var(--input-ring);
-  border-radius: 12px;
-  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: none;
+  border-radius: var(--website-control-radius);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.28);
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
+/* Textarea grows by line as the user types — no manual resize handle,
+   no fixed minimum row count. Single line by default; `field-sizing:
+   content` lets the box auto-grow when the text wraps to a new line. */
 html.website-scope textarea:not(.app-btn) {
-  resize: vertical;
-  min-height: 88px;
-  line-height: 1.5;
+  resize: none;
+  field-sizing: content;
+  padding: 12px 18px;
+  line-height: 1.45;
 }
-html.website-scope input[type="text"]:not(.app-btn):focus,
-html.website-scope input[type="email"]:not(.app-btn):focus,
-html.website-scope input[type="password"]:not(.app-btn):focus,
-html.website-scope input[type="tel"]:not(.app-btn):focus,
-html.website-scope input[type="number"]:not(.app-btn):focus,
-html.website-scope input[type="search"]:not(.app-btn):focus,
-html.website-scope input[type="url"]:not(.app-btn):focus,
-html.website-scope input[type="date"]:not(.app-btn):focus,
-html.website-scope input[type="time"]:not(.app-btn):focus,
-html.website-scope input[type="datetime-local"]:not(.app-btn):focus,
-html.website-scope textarea:not(.app-btn):focus {
+html.website-scope input[type="text"]:not(.app-btn):focus-visible,
+html.website-scope input[type="password"]:not(.app-btn):focus-visible,
+html.website-scope input[type="tel"]:not(.app-btn):focus-visible,
+html.website-scope input[type="number"]:not(.app-btn):focus-visible,
+html.website-scope input[type="search"]:not(.app-btn):focus-visible,
+html.website-scope input[type="url"]:not(.app-btn):focus-visible,
+html.website-scope input[type="date"]:not(.app-btn):focus-visible,
+html.website-scope input[type="time"]:not(.app-btn):focus-visible,
+html.website-scope textarea:not(.app-btn):focus-visible {
   outline: none;
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.25);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.20) 0%, rgba(255, 255, 255, 0.09) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.28),
+    0 0 0 3px rgba(255, 255, 255, 0.32);
 }
 html.website-scope input::placeholder,
 html.website-scope textarea::placeholder {
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.55);
 }
 
-/* Native date/time controls — recolour the indicator so it reads on
-   the dark glass and matches the brand accent on hover. */
+/* Native date/time pickers — let the browser's calendar/time popup
+   render in dark mode, recolour the picker indicator so it reads on
+   the clear capsule, and on hover swap it to the brand red so it
+   matches the calendar surface that opens below. */
 html.website-scope input[type="date"],
-html.website-scope input[type="time"],
-html.website-scope input[type="datetime-local"] {
+html.website-scope input[type="time"] {
   color-scheme: dark;
 }
 html.website-scope input[type="date"]::-webkit-calendar-picker-indicator,
-html.website-scope input[type="time"]::-webkit-calendar-picker-indicator,
-html.website-scope input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) opacity(0.6);
+html.website-scope input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.85);
   cursor: pointer;
   transition: filter 0.15s ease;
 }
 html.website-scope input[type="date"]::-webkit-calendar-picker-indicator:hover,
-html.website-scope input[type="time"]::-webkit-calendar-picker-indicator:hover,
-html.website-scope input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+html.website-scope input[type="time"]::-webkit-calendar-picker-indicator:hover {
   filter: invert(0.5) sepia(1) hue-rotate(330deg) saturate(8);
 }
 
-/* Checkboxes / radios — flat dark glass with a brand-red tick when
-   checked. Replaces the default browser chrome that otherwise looks
-   foreign on the cinematic /website surface. */
-html.website-scope input[type="checkbox"]:not(.app-btn),
+/* Radios only — the customer surface intentionally has no checkboxes;
+   binary on/off choices are presented as a two-option radio group so
+   the selected state is unambiguous on the dark-glass background. */
 html.website-scope input[type="radio"]:not(.app-btn) {
   appearance: none;
   -webkit-appearance: none;
   width: 18px;
   height: 18px;
   border: var(--checkbox-ring);
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
   position: relative;
   transition: background 0.15s ease, box-shadow 0.15s ease;
   flex-shrink: 0;
 }
-html.website-scope input[type="checkbox"]:not(.app-btn) {
-  border-radius: 5px;
-}
-html.website-scope input[type="radio"]:not(.app-btn) {
-  border-radius: 999px;
-}
-html.website-scope input[type="checkbox"]:not(.app-btn):checked,
 html.website-scope input[type="radio"]:not(.app-btn):checked {
   background: linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
   border: var(--checkbox-ring);
-}
-html.website-scope input[type="checkbox"]:not(.app-btn):checked {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7l3 3 5-6'/%3E%3C/svg%3E"),
-    linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 14px 14px, auto;
 }
 html.website-scope input[type="radio"]:not(.app-btn):checked::after {
   content: "";
@@ -323,125 +747,57 @@ html.website-scope input[type="radio"]:not(.app-btn):checked::after {
   border-radius: 999px;
   background: #fff;
 }
-html.website-scope input[type="checkbox"]:not(.app-btn):focus-visible,
 html.website-scope input[type="radio"]:not(.app-btn):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.35);
 }
 
-/* File inputs — the file-picker button reads as one of our pills. */
+/* File input — the picker button reuses the Primary action capsule so
+   "Choose file" lines up with the sibling buttons / inputs. */
 html.website-scope input[type="file"]:not(.app-btn) {
   font-family: inherit;
   font-size: 13px;
   color: var(--txt-soft);
+  min-height: var(--website-control-height);
+  display: inline-flex;
+  align-items: center;
 }
 html.website-scope input[type="file"]::file-selector-button {
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
-  border: var(--ghostbutton-ring);
-  border-radius: 999px;
-  padding: 8px 14px;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--website-control-height);
+  padding: 0 18px;
   margin-right: 12px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: none;
+  border-radius: var(--website-control-radius);
   cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(0, 0, 0, 0.28);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 html.website-scope input[type="file"]::file-selector-button:hover {
-  background: rgba(255, 255, 255, 0.10);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.10) 100%);
+}
+html.website-scope input[type="file"]::file-selector-button:active {
+  transform: translateY(1px);
 }
 
-/* Custom customer controls used by /website/profile and any other /website
-   forms. Stable global class names are added by WebsiteSelect and
-   WebsiteDatePicker so dropdowns/calendars keep the same dark-glass style
-   wherever the components are reused. */
-html.website-scope .website-select,
-html.website-scope .website-date-picker {
-  position: relative;
-  display: block;
-  width: 100%;
-}
-
-html.website-scope .website-select__trigger,
-html.website-scope .website-date-picker__trigger {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 44px;
-  padding: 12px 16px;
-  font-family: inherit;
-  font-size: 14px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.04);
-  border: var(--input-ring);
-  border-radius: 12px;
-  cursor: pointer;
-  text-align: left;
-  text-transform: none;
-  letter-spacing: 0;
-  white-space: normal;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
-}
-
-html.website-scope .website-select__trigger:hover,
-html.website-scope .website-date-picker__trigger:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border: var(--input-ring);
-}
-
-html.website-scope .website-select[data-open="true"] .website-select__trigger,
-html.website-scope .website-date-picker[data-open="true"] .website-date-picker__trigger {
-  background: rgba(255, 255, 255, 0.08);
-  border: var(--input-ring);
-  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.25);
-}
-
-html.website-scope .website-select__value,
-html.website-scope .website-date-picker__value {
-  min-width: 0;
-  color: var(--txt-bright, #fff);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-html.website-scope .website-select__placeholder,
-html.website-scope .website-date-picker__placeholder {
-  min-width: 0;
-  color: rgba(255, 255, 255, 0.45);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-html.website-scope .website-select__caret,
-html.website-scope .website-date-picker__icon {
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-
-html.website-scope .website-select__caret {
-  width: 12px;
-  height: 8px;
-  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat center / contain;
-  transition: transform 0.2s ease;
-}
-
-html.website-scope .website-select[data-open="true"] .website-select__caret {
-  transform: rotate(180deg);
-}
-
-html.website-scope .website-date-picker__icon {
-  width: 14px;
-  height: 14px;
-  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='1.4'%3E%3Crect x='2.5' y='3' width='11' height='11' rx='1.5'/%3E%3Cpath d='M2.5 6h11M5 2v2M11 2v2'/%3E%3C/svg%3E") no-repeat center / contain;
-}
-
-html.website-scope .website-select__menu,
 html.website-scope .website-calendar {
   position: absolute;
   top: calc(100% + 6px);
@@ -449,63 +805,12 @@ html.website-scope .website-calendar {
   z-index: 50;
   max-width: min(100vw - 24px, 100%);
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(28, 28, 38, 0.96) 0%, rgba(16, 16, 22, 0.98) 100%);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: linear-gradient(180deg, rgba(28, 28, 38, 0.78) 0%, rgba(16, 16, 22, 0.86) 100%);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 24px 56px rgba(0, 0, 0, 0.55);
-}
-
-html.website-scope .website-select__menu {
-  right: 0;
-  max-height: 280px;
-  overflow-y: auto;
-  margin: 0;
-  padding: 6px;
-  list-style: none;
-}
-
-html.website-scope .website-select__empty {
-  padding: 12px 14px;
-  font-size: 13px;
-  color: var(--txt-mute, rgba(255, 255, 255, 0.55));
-}
-
-html.website-scope .website-select__option {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px;
-  font-size: 13px;
-  color: var(--txt-bright, #fff);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-html.website-scope .website-select__option:hover,
-html.website-scope .website-select__option--active {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-html.website-scope .website-select__option--selected {
-  background: rgba(var(--accentMainRgb), 0.22);
-  color: #fff;
-}
-
-html.website-scope .website-select__option--selected:hover,
-html.website-scope .website-select__option--selected.website-select__option--active {
-  background: rgba(var(--accentMainRgb), 0.32);
-}
-
-html.website-scope .website-select__option-label {
-  font-weight: 600;
-}
-
-html.website-scope .website-select__option-hint {
-  font-size: 11px;
-  color: var(--txt-mute, rgba(255, 255, 255, 0.55));
 }
 
 html.website-scope .website-calendar {
@@ -644,4 +949,514 @@ html.website-scope .website-calendar__footer button {
   font-size: 11px;
   line-height: 1;
   white-space: nowrap;
+}
+
+html.website-scope .website-time-picker {
+  width: 304px;
+}
+
+html.website-scope .website-time-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+html.website-scope button.website-time-picker__option {
+  appearance: none;
+  min-height: 34px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--txt-bright, #fff);
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+html.website-scope button.website-time-picker__option:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+html.website-scope button.website-time-picker__option--selected,
+html.website-scope button.website-time-picker__option--selected:hover {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
+}
+
+/* ── Banner / alert ──────────────────────────────────────────────
+   Reuses the Secondary action liquid-glass pill (red tint, same
+   blur and inner highlights) so an inline notice on /website reads
+   as a sibling of the secondary buttons. Height matches the
+   control system so a banner sitting next to a button or input
+   lines up on the same row. */
+html.website-scope .website-banner {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--website-control-height);
+  padding: 0 18px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  text-align: center;
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(var(--accentMainRgb), 0.22) 0%, rgba(var(--accentMainRgb), 0.10) 100%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: none;
+  border-radius: var(--website-control-radius);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 22px rgba(var(--accentMainRgb), 0.18);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ── /website/dev showcase defaults ──────────────────────────────
+   The dev page uses these same global primitives rather than carrying
+   local presentation styles. They are intentionally scoped to the
+   website-dev-* classes so real customer pages only inherit the shared
+   control, card, calendar, banner, scrollbar and typography defaults. */
+html.website-scope .website-dev-shell {
+  min-height: 100vh;
+  padding: 32px clamp(16px, 4vw, 48px) 96px;
+  background: transparent;
+  color: #fff;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+/* Page title and any section flagged --wide always take the full row. */
+html.website-scope .website-dev-page-title,
+html.website-scope .website-dev-section--wide {
+  grid-column: 1 / -1;
+}
+
+/* Below ~960px the two-column grid is too cramped — collapse to a single
+   column so every showcase section gets the full content width back. */
+@media (max-width: 960px) {
+  html.website-scope .website-dev-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+html.website-scope .website-dev-page-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+html.website-scope .website-dev-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px clamp(16px, 3vw, 28px);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+  align-self: stretch;
+}
+
+html.website-scope .website-dev-section__header,
+html.website-scope .website-dev-section__body,
+html.website-scope .website-dev-swatch__meta,
+html.website-scope .website-dev-text-scale,
+html.website-scope .website-dev-ref-list,
+html.website-scope .website-dev-locked {
+  display: flex;
+  flex-direction: column;
+}
+
+html.website-scope .website-dev-section__header {
+  gap: 4px;
+}
+
+html.website-scope .website-dev-section__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+html.website-scope .website-dev-section__body {
+  gap: 18px;
+}
+
+html.website-scope .website-dev-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+html.website-scope .website-dev-row__label,
+html.website-scope .website-dev-form-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+html.website-scope .website-dev-row__label {
+  font-size: 12px;
+  padding-top: 10px;
+}
+
+html.website-scope .website-dev-row__body {
+  min-width: 0;
+}
+
+html.website-scope .website-dev-cluster,
+html.website-scope .website-dev-swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+html.website-scope .website-dev-cluster {
+  gap: 10px;
+}
+
+html.website-scope .website-dev-swatch-row {
+  gap: 14px;
+}
+
+html.website-scope .website-dev-swatch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 200px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+}
+
+html.website-scope .website-dev-swatch__chip {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+html.website-scope .website-dev-swatch__chip--big {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+}
+
+html.website-scope .website-dev-swatch__meta {
+  gap: 2px;
+  min-width: 0;
+}
+
+html.website-scope .website-dev-swatch__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+html.website-scope .website-dev-swatch__note,
+html.website-scope .website-dev-code,
+html.website-scope .website-dev-code-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html.website-scope .website-dev-swatch__note {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+html.website-scope .website-dev-wash-preview {
+  position: relative;
+  height: 160px;
+  padding: 14px;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse at top right, rgba(185, 28, 28, 0.45), transparent 60%),
+    radial-gradient(ellipse at bottom left, rgba(185, 28, 28, 0.45), transparent 60%),
+    radial-gradient(ellipse at top left, rgba(22, 22, 26, 0.70), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(22, 22, 26, 0.70), transparent 60%),
+    #07070b;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+html.website-scope .website-dev-wash-caption {
+  max-width: 520px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+
+html.website-scope .website-dev-text-scale {
+  gap: 6px;
+  font-size: 14px;
+}
+
+html.website-scope .website-dev-text-bright { color: #fff; }
+html.website-scope .website-dev-text-soft { color: rgba(255, 255, 255, 0.78); }
+html.website-scope .website-dev-text-mute { color: rgba(255, 255, 255, 0.55); }
+html.website-scope .website-dev-text-faint { color: rgba(255, 255, 255, 0.32); }
+
+html.website-scope .website-dev-heading-one {
+  margin: 0;
+}
+
+html.website-scope .website-dev-heading-two {
+  margin: 8px 0 0;
+}
+
+html.website-scope .website-dev-meta {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+html.website-scope .website-dev-copy {
+  margin: 0;
+}
+
+html.website-scope .website-dev-token-table-wrap {
+  overflow-x: auto;
+  margin: 0 -8px;
+}
+
+html.website-scope .website-dev-token-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+html.website-scope .website-dev-token-th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+html.website-scope .website-dev-token-cell {
+  padding: 10px 12px;
+}
+
+html.website-scope .website-dev-token-cell--chip {
+  width: 36px;
+}
+
+html.website-scope .website-dev-token-cell--name {
+  white-space: nowrap;
+}
+
+html.website-scope .website-dev-token-cell--value {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+html.website-scope .website-dev-token-cell--purpose {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+html.website-scope .website-dev-token-chip {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+html.website-scope .website-dev-token-chip--missing {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 3px, transparent 3px, transparent 6px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+html.website-scope .website-dev-code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 12px;
+}
+
+html.website-scope .website-dev-code-mono {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+}
+
+html.website-scope .website-dev-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+html.website-scope .website-dev-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html.website-scope .website-dev-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--website-field-gap);
+}
+
+html.website-scope .website-dev-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--website-field-gap);
+  min-width: 0;
+}
+
+html.website-scope .website-dev-control-width {
+  max-width: 320px;
+}
+
+html.website-scope .website-dev-wide-control {
+  max-width: 560px;
+}
+
+html.website-scope .website-dev-calendar-preview {
+  position: relative;
+  width: 320px;
+  height: 360px;
+}
+
+html.website-scope .website-dev-calendar-static {
+  position: static;
+}
+
+html.website-scope .website-dev-flat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+  padding: 22px clamp(16px, 3vw, 28px);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+}
+
+html.website-scope .website-dev-card-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+html.website-scope .website-dev-card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+html.website-scope .website-dev-card-lead {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.55;
+}
+
+html.website-scope .website-dev-scroll-host {
+  max-width: 560px;
+  height: 180px;
+  overflow-y: auto;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+html.website-scope .website-dev-banner-strong {
+  color: #fff;
+}
+
+html.website-scope .website-dev-banner-copy {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+html.website-scope .website-dev-scroll-row {
+  margin: 0;
+}
+
+html.website-scope .website-dev-ref-list {
+  margin: 0;
+  padding-left: 20px;
+  gap: 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+html.website-scope .website-dev-ref-note {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.5;
+}
+
+html.website-scope .website-dev-locked {
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  color: rgba(255, 255, 255, 0.7);
+  background: #07070b;
+}
+
+html.website-scope .website-dev-locked__title {
+  margin: 0;
+  font-size: 20px;
+  color: #fff;
+}
+
+html.website-scope .website-dev-locked__body {
+  margin: 0;
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  html.website-scope .website-dev-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  html.website-scope .website-dev-row__label {
+    padding-top: 0;
+  }
 }

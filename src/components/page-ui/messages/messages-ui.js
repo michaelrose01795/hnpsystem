@@ -17,6 +17,7 @@ export default function MessagesPageUi(props) {
     SearchBar,
     StatusMessage,
     ThreadRowsSkeleton,
+    activeBookingsView,
     activeSystemView,
     activeThread,
     activeThreadId,
@@ -25,6 +26,7 @@ export default function MessagesPageUi(props) {
     canEditGroup,
     canInitiateChat,
     canSend,
+    canSeeCustomerRequests,
     cardStyle,
     closeGroupEditModal,
     closeNewChatModal,
@@ -69,6 +71,7 @@ export default function MessagesPageUi(props) {
     handleStartChat,
     handleThreadCheckboxChange,
     handleTogglePinnedThread,
+    hasBookingsUnread,
     hasSystemUnread,
     isGroupChat,
     isGroupLeader,
@@ -85,6 +88,7 @@ export default function MessagesPageUi(props) {
     messages,
     mobilePanelView,
     newChatModalOpen,
+    openBookingsThread,
     openGroupEditModal,
     openSystemNotificationsThread,
     openThread,
@@ -298,7 +302,37 @@ export default function MessagesPageUi(props) {
                   }} />}
                     </span>
                   </button>
-                  {pinnedThreads.map(thread => <button key={`pin-${thread.id}`} type="button" className={`app-btn app-btn--${activeThreadId === thread.id && !activeSystemView ? "primary" : "secondary"} app-btn--pill app-hover-tooltip`} data-tooltip={thread.title} onClick={() => openThread(thread.id, thread)} onDoubleClick={() => handleTogglePinnedThread(thread.id)} aria-label={thread.title} style={{
+                  {canSeeCustomerRequests && <button type="button" className={`app-btn app-btn--${activeBookingsView ? "primary" : "secondary"} app-btn--pill`} onClick={openBookingsThread} style={{
+                width: "100%",
+                height: "44px",
+                minWidth: 0,
+                justifyContent: "center",
+                overflow: "hidden"
+              }}>
+                    <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "var(--space-1)",
+                  minWidth: 0
+                }}>
+                      <span style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap"
+                  }}>
+                        Bookings
+                      </span>
+                      {hasBookingsUnread && <span aria-label="Unread booking messages" style={{
+                    width: "var(--space-sm)",
+                    height: "var(--space-sm)",
+                    borderRadius: "var(--radius-full)",
+                    backgroundColor: "currentColor",
+                    display: "inline-block",
+                    flex: "0 0 auto"
+                  }} />}
+                    </span>
+                  </button>}
+                  {pinnedThreads.map(thread => <button key={`pin-${thread.id}`} type="button" className={`app-btn app-btn--${activeThreadId === thread.id && !activeSystemView && !activeBookingsView ? "primary" : "secondary"} app-btn--pill app-hover-tooltip`} data-tooltip={thread.title} onClick={() => openThread(thread.id, thread)} onDoubleClick={() => handleTogglePinnedThread(thread.id)} aria-label={thread.title} style={{
                 width: "100%",
                 height: "44px",
                 minWidth: 0,
@@ -323,7 +357,7 @@ export default function MessagesPageUi(props) {
                   marginLeft: "var(--space-1)"
                 }} />}
                     </button>)}
-                  {Array.from({ length: Math.max(0, pinnedThreads.length === 0 ? 1 : 2 - pinnedThreads.length) }).map((_, index) => <span key={`pin-empty-${index}`} aria-hidden="true" />)}
+                  {Array.from({ length: Math.max(0, pinnedThreads.length === 0 ? canSeeCustomerRequests ? 0 : 1 : (canSeeCustomerRequests ? 1 : 2) - pinnedThreads.length) }).map((_, index) => <span key={`pin-empty-${index}`} aria-hidden="true" />)}
                 </DevLayoutSection>
                 {loadingThreads && <ThreadRowsSkeleton count={5} />}
                 {!loadingThreads && <>
@@ -442,7 +476,7 @@ export default function MessagesPageUi(props) {
                   ← Back
                 </Button>
               </div>}
-            {activeSystemView ? <>
+            {activeSystemView || activeBookingsView ? <>
                 <DevLayoutSection sectionKey="messages-system-header" parentKey="messages-conversation-panel" sectionType="section-header-row" style={{
             display: "flex",
             justifyContent: "space-between",
@@ -453,12 +487,18 @@ export default function MessagesPageUi(props) {
                     <h3 style={{
                 margin: 0,
                 color: systemTitleColor
-              }}>System notifications</h3>
+              }}>{activeBookingsView ? "Bookings" : "System notifications"}</h3>
                     <p style={{
                 margin: "4px 0 0",
                 color: palette.textMuted
               }}>
-                      {systemLoading ? <InlineLoading width={140} label="Loading updates" /> : `Read-only alerts feed. Latest ${systemTimestampLabel}.`}
+                      {systemLoading ? (
+                        <InlineLoading width={140} label={activeBookingsView ? "Loading bookings" : "Loading updates"} />
+                      ) : activeBookingsView ? (
+                        `Customer service requests. Latest ${systemTimestampLabel}.`
+                      ) : (
+                        `Read-only alerts feed. Latest ${systemTimestampLabel}.`
+                      )}
                     </p>
                   </div>
                   <span style={{
@@ -487,7 +527,7 @@ export default function MessagesPageUi(props) {
                   {!systemLoading && !systemError && orderedSystemNotifications.length === 0 && <p style={{
               color: palette.textMuted,
               margin: 0
-            }}>No system notifications yet.</p>}
+            }}>{activeBookingsView ? "No booking messages yet." : "No system notifications yet."}</p>}
                   {!systemLoading && !systemError && orderedSystemNotifications.length > 0 && <div style={{
               display: "flex",
               flexDirection: "column",
@@ -520,85 +560,113 @@ export default function MessagesPageUi(props) {
                             </div>}
                           <article data-dev-section="1" data-dev-section-key={`messages-system-note-${note.notification_id}`} data-dev-section-type="content-card" data-dev-section-parent="messages-system-feed" data-dev-background-token="messages-system-note" style={{
                   borderRadius: "var(--radius-md)",
-                  padding: "10px 12px",
+                  padding: "12px 14px",
                   backgroundColor: "var(--surface)",
                   boxShadow: "none",
                   minHeight: "44px",
                   display: "flex",
-                  flexDirection: note.kind === "customer_request" ? "column" : "row",
-                  alignItems: note.kind === "customer_request" ? "stretch" : "center",
+                  flexDirection: note.kind === "customer_request" ? "row" : "row",
+                  alignItems: "center",
                   justifyContent: "space-between",
-                  gap: "10px"
+                  gap: "16px",
+                  width: "100%"
                 }}>
                             {note.kind === "customer_request" ? (
                               <>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                                <div style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "minmax(160px, 1.2fr) minmax(120px, 0.8fr) minmax(0, 2fr) minmax(120px, auto)",
+                                  alignItems: "center",
+                                  gap: "16px",
+                                  flex: 1,
+                                  minWidth: 0
+                                }}>
                                   <div style={{ minWidth: 0 }}>
                                     <p style={{
                                       margin: 0,
                                       color: palette.textPrimary,
                                       fontSize: "var(--text-body-sm)",
-                                      fontWeight: 650,
-                                      lineHeight: 1.35,
+                                      fontWeight: 700,
+                                      lineHeight: 1.3,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap"
                                     }}>
-                                      {note.type_label} \u00B7 {note.customer_name}
+                                      {note.customer_name}
                                     </p>
+                                    <p style={{
+                                      margin: "2px 0 0",
+                                      fontSize: "var(--text-caption)",
+                                      color: palette.textMuted,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap"
+                                    }}>
+                                      {note.type_label}
+                                    </p>
+                                  </div>
+                                  <div style={{ minWidth: 0 }}>
                                     {note.vehicle_label ? (
                                       <p style={{
-                                        margin: "2px 0 0",
-                                        fontSize: "var(--text-caption)",
-                                        color: palette.textMuted,
-                                      }}>
-                                        {note.vehicle_label}
-                                      </p>
-                                    ) : null}
-                                    {note.description ? (
-                                      <p style={{
-                                        margin: "4px 0 0",
+                                        margin: 0,
                                         fontSize: "var(--text-body-sm)",
                                         color: palette.textPrimary,
-                                        lineHeight: 1.4,
+                                        fontWeight: 600,
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap"
                                       }}>
-                                        {note.description}
-                                      </p>
-                                    ) : null}
-                                    {note.preferred_date ? (
-                                      <p style={{
-                                        margin: "4px 0 0",
-                                        fontSize: "var(--text-caption)",
-                                        color: palette.textMuted,
-                                      }}>
-                                        Preferred: {note.preferred_date}
+                                        {note.vehicle_label}
                                       </p>
                                     ) : null}
                                   </div>
                                   <p style={{
                                     margin: 0,
-                                    fontSize: "var(--text-caption)",
-                                    color: palette.textMuted,
-                                    flex: "0 0 auto",
-                                    whiteSpace: "nowrap",
+                                    fontSize: "var(--text-body-sm)",
+                                    color: palette.textPrimary,
+                                    lineHeight: 1.4,
+                                    minWidth: 0,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: "vertical"
                                   }}>
-                                    {formatNotificationTimestamp(note.created_at)}
+                                    {note.description || ""}
                                   </p>
+                                  <div style={{ minWidth: 0, textAlign: "right" }}>
+                                    {note.preferred_date ? (
+                                      <p style={{
+                                        margin: 0,
+                                        fontSize: "var(--text-caption)",
+                                        color: palette.textPrimary,
+                                        fontWeight: 600,
+                                        whiteSpace: "nowrap"
+                                      }}>
+                                        Preferred: {note.preferred_date}
+                                      </p>
+                                    ) : null}
+                                    <p style={{
+                                      margin: note.preferred_date ? "2px 0 0" : 0,
+                                      fontSize: "var(--text-caption)",
+                                      color: palette.textMuted,
+                                      whiteSpace: "nowrap"
+                                    }}>
+                                      {formatNotificationTimestamp(note.created_at)}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                                  <button
-                                    type="button"
-                                    className="app-btn"
-                                    onClick={() =>
-                                      typeof handleCreateJobFromRequest === "function" &&
-                                      handleCreateJobFromRequest(note)
-                                    }
-                                    style={{
-                                      padding: "6px 14px",
-                                      fontSize: "var(--text-body-sm)",
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    Create job
-                                  </button>
-                                </div>
+                                <button
+                                  type="button"
+                                  className="app-btn app-btn--primary app-btn--sm app-btn--pill"
+                                  style={{ flex: "0 0 auto", whiteSpace: "nowrap" }}
+                                  onClick={() =>
+                                    typeof handleCreateJobFromRequest === "function" &&
+                                    handleCreateJobFromRequest(note)
+                                  }
+                                >
+                                  Create job
+                                </button>
                               </>
                             ) : (
                               <>

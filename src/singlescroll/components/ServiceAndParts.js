@@ -44,7 +44,7 @@ export default function ServiceAndParts() {
             <p key={i}>{p}</p>
           ))}
 
-          <article className={styles.scenePanel} style={{ padding: "20px 22px" }}>
+          <article className="website-card">
             <span className={styles.scenePanelEyebrow}>Service hours</span>
             <table className={styles.hoursTable}>
               <tbody>
@@ -62,13 +62,13 @@ export default function ServiceAndParts() {
             <a
               href="#contact"
               onClick={(e) => { e.preventDefault(); scrollTo("contact"); }}
-              className={`${styles.btn} ${styles.btnPrimary}`}
+              className="app-btn"
             >
               <span>Book a service</span>
             </a>
             <a
               href={contact.phoneHref}
-              className={`${styles.btn} ${styles.btnGhost}`}
+              className="app-btn"
             >
               <span>Call {contact.phone}</span>
             </a>
@@ -95,7 +95,7 @@ export default function ServiceAndParts() {
 
         <div className={styles.sceneCtaRow} style={{ marginTop: 24, justifyContent: "space-between" }}>
           <p className={styles.scenePanelBody} style={{ maxWidth: "60ch" }}>{partsContent.body[1]}</p>
-          <a href={partsContent.cta.href} className={`${styles.btn} ${styles.btnPrimary}`}>
+          <a href={partsContent.cta.href} className="app-btn">
             <span>{partsContent.cta.label}</span>
           </a>
         </div>

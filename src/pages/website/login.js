@@ -16,7 +16,7 @@ import { useTheme } from "@/styles/themeProvider";
 import { siteContent } from "@/singlescroll/data/siteContent";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
 import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
-import WebsiteSelect from "@/singlescroll/components/WebsiteSelect";
+import WebsiteNativeSelect from "@/singlescroll/components/WebsiteNativeSelect";
 import styles from "@/singlescroll/styles/singlescroll.module.css";
 
 const STEP_EMAIL = "email";
@@ -43,6 +43,7 @@ export default function CustomerLoginPage() {
   const [addressLookupLoading, setAddressLookupLoading] = useState(false);
   const [addressLookupMessage, setAddressLookupMessage] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [addressSuggestionId, setAddressSuggestionId] = useState("");
   const [matchedName, setMatchedName] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -108,6 +109,7 @@ export default function CustomerLoginPage() {
     setAddressManual(false);
     setAddressLookupMessage("");
     setAddressSuggestions([]);
+    setAddressSuggestionId("");
     setError("");
   };
 
@@ -122,6 +124,7 @@ export default function CustomerLoginPage() {
     const postcode = signupExtras.postcode.trim();
     setAddressLookupMessage("");
     setAddressSuggestions([]);
+    setAddressSuggestionId("");
     if (!postcode) {
       setAddressLookupMessage("Enter a postcode first.");
       return;
@@ -143,6 +146,7 @@ export default function CustomerLoginPage() {
       );
       if (suggestions.length === 1) {
         const match = suggestions[0];
+        setAddressSuggestionId(String(match.id));
         setSignupExtras((current) => ({
           ...current,
           postcode: match.postcode || current.postcode,
@@ -157,9 +161,10 @@ export default function CustomerLoginPage() {
     }
   };
 
-  const handleAddressSuggestion = (e) => {
-    const suggestion = addressSuggestions.find((item) => String(item.id) === e.target.value);
+  const handleAddressSuggestion = (suggestionId) => {
+    const suggestion = addressSuggestions.find((item) => String(item.id) === String(suggestionId));
     if (!suggestion) return;
+    setAddressSuggestionId(String(suggestionId));
     setSignupExtras((current) => ({
       ...current,
       postcode: suggestion.postcode || current.postcode,
@@ -538,20 +543,15 @@ export default function CustomerLoginPage() {
                     {addressSuggestions.length > 0 ? (
                       <div className={styles.authField}>
                         <label className={styles.authLabel}>Select address</label>
-                        <select
-                          className={styles.authInput}
-                          defaultValue=""
+                        <WebsiteNativeSelect
+                          value={addressSuggestionId}
                           onChange={handleAddressSuggestion}
-                        >
-                          <option value="" disabled>
-                            Choose address
-                          </option>
-                          {addressSuggestions.map((suggestion) => (
-                            <option key={suggestion.id} value={suggestion.id}>
-                              {suggestion.label}
-                            </option>
-                          ))}
-                        </select>
+                          placeholder="Choose address"
+                          options={addressSuggestions.map((suggestion) => ({
+                            value: suggestion.id,
+                            label: suggestion.label,
+                          }))}
+                        />
                       </div>
                     ) : null}
                     <div className={styles.authField}>
@@ -629,21 +629,20 @@ export default function CustomerLoginPage() {
               <form className={styles.authForm} onSubmit={handleDevLogin}>
                 <div className={styles.authField}>
                   <label className={styles.authLabel}>Customer</label>
-                  <WebsiteSelect
+                  <WebsiteNativeSelect
                     value={devCustomerId}
                     onChange={setDevCustomerId}
-                    placeholder={
-                      devLoading ? "Loading customers…" : "Select a customer…"
-                    }
                     required
+                    placeholder={devLoading ? "Loading customers..." : "Select a customer..."}
                     options={devCustomers.map((c) => {
                       const name =
                         [c.firstname, c.lastname].filter(Boolean).join(" ") ||
                         c.email ||
                         c.id;
+                      const label = c.email ? `${name} - ${c.email}` : name;
                       return {
                         value: c.id,
-                        label: name,
+                        label,
                         hint: c.email || undefined,
                       };
                     })}

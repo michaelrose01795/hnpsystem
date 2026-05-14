@@ -7,6 +7,16 @@
 // pay invoice, request statement / PDF / data export / deletion,
 // send a message) are written to public.customer_activity_events via
 // /api/website/actions so existing staff workflows can pick them up.
+//
+// Styling: this page renders inside html.website-scope (applied by
+// useWebsiteScope) so every raw <button>, <input>, <textarea>, <select>
+// inherits the liquid-glass control system defined in custglobal.css.
+// All card / row / badge / tracker / bubble chrome is done with inline
+// styles that reuse the custglobal CSS variables (--txt-bright,
+// --txt-soft, --txt-mute, --accentText, --accentMainRgb,
+// --website-control-height, --website-field-gap) so the page stays
+// consistent with the rest of /website without carrying its own
+// stylesheet.
 
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
@@ -15,9 +25,8 @@ import { useRouter } from "next/router";
 import { useTheme } from "@/styles/themeProvider";
 import { siteContent } from "@/singlescroll/data/siteContent";
 import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
-import WebsiteSelect from "@/singlescroll/components/WebsiteSelect";
-import WebsiteDatePicker from "@/singlescroll/components/WebsiteDatePicker";
-import styles from "@/singlescroll/styles/singlescroll.module.css";
+import WebsiteNativeSelect from "@/singlescroll/components/WebsiteNativeSelect";
+import WebsiteNativeDateTimeInput from "@/singlescroll/components/WebsiteNativeDateTimeInput";
 import OwnershipDashboardCard from "@/features/customerPortal/components/sections/OwnershipDashboardCard";
 import DigitalServiceHistoryCard from "@/features/customerPortal/components/sections/DigitalServiceHistoryCard";
 import MotHistoryCard from "@/features/customerPortal/components/sections/MotHistoryCard";
@@ -73,50 +82,25 @@ const daysUntil = (value) => {
   return diff;
 };
 
-// Build the live-status tracker stages for a specific job. The VHC
-// step is only included when the job has vhc_required = true so jobs
-// that skip the inspection don't show a phantom step that will never
-// tick over. Wash is derived from wash_started_at (in progress) and
-// either wash_completed_by being set or completed_at falling after
-// wash_started_at (done).
 const getTrackerStages = (job) => {
   const stages = [
     { key: "booked", label: "Booked", reached: !!job.created_at },
-    {
-      key: "checked_in",
-      label: "Checked in",
-      reached: !!job.checked_in_at,
-    },
-    {
-      key: "in_workshop",
-      label: "In workshop",
-      reached: !!job.workshop_started_at,
-    },
+    { key: "checked_in", label: "Checked in", reached: !!job.checked_in_at },
+    { key: "in_workshop", label: "In workshop", reached: !!job.workshop_started_at },
   ];
   if (job.vhc_required) {
-    stages.push({
-      key: "vhc",
-      label: "VHC done",
-      reached: !!job.vhc_completed_at,
-    });
+    stages.push({ key: "vhc", label: "VHC done", reached: !!job.vhc_completed_at });
   }
   const washDone =
     !!job.wash_completed_by ||
     (job.completed_at &&
       job.wash_started_at &&
-      new Date(job.completed_at).getTime() >=
-        new Date(job.wash_started_at).getTime());
-  stages.push({
-    key: "wash",
-    label: "Wash done",
-    reached: washDone,
-  });
+      new Date(job.completed_at).getTime() >= new Date(job.wash_started_at).getTime());
+  stages.push({ key: "wash", label: "Wash done", reached: washDone });
   const status = (job.status || "").toLowerCase();
   const ready =
     !!job.completed_at ||
-    ["ready", "completed", "collected", "invoiced"].some((s) =>
-      status.includes(s),
-    );
+    ["ready", "completed", "collected", "invoiced"].some((s) => status.includes(s));
   stages.push({ key: "ready", label: "Ready", reached: ready });
   return stages;
 };
@@ -167,55 +151,398 @@ const SECTIONS = [
 ];
 
 const SERVICE_TYPES = [
-  {
-    id: "body_repair",
-    title: "Body work",
-    hint: "Dents, scratches, panel repair, paint.",
-    action: "request_body_repair",
-  },
-  {
-    id: "smart_repair",
-    title: "SMART repair",
-    hint: "Small / medium area repair — fast turnaround.",
-    action: "request_smart_repair",
-  },
-  {
-    id: "valet",
-    title: "Valet",
-    hint: "Mini, full or deep-clean valet packages.",
-    action: "request_valet",
-  },
-  {
-    id: "parts",
-    title: "Parts",
-    hint: "Genuine parts & accessories enquiry.",
-    action: "request_parts_enquiry",
-  },
-  {
-    id: "warranty",
-    title: "Warranty claim",
-    hint: "Open a claim against your manufacturer warranty.",
-    action: "request_warranty_claim",
-  },
-  {
-    id: "motability",
-    title: "Motability",
-    hint: "Motability scheme advice & applications.",
-    action: "request_motability",
-  },
-  {
-    id: "finance",
-    title: "Finance quote",
-    hint: "PCP, HP or lease quote on a vehicle.",
-    action: "request_finance_quote",
-  },
-  {
-    id: "test_drive",
-    title: "Test drive",
-    hint: "Book a test drive in a specific model.",
-    action: "request_test_drive",
-  },
+  { id: "body_repair", title: "Body work", hint: "Dents, scratches, panel repair, paint.", action: "request_body_repair" },
+  { id: "smart_repair", title: "SMART repair", hint: "Small / medium area repair — fast turnaround.", action: "request_smart_repair" },
+  { id: "valet", title: "Valet", hint: "Mini, full or deep-clean valet packages.", action: "request_valet" },
+  { id: "parts", title: "Parts", hint: "Genuine parts & accessories enquiry.", action: "request_parts_enquiry" },
+  { id: "warranty", title: "Warranty claim", hint: "Open a claim against your manufacturer warranty.", action: "request_warranty_claim" },
+  { id: "motability", title: "Motability", hint: "Motability scheme advice & applications.", action: "request_motability" },
+  { id: "finance", title: "Finance quote", hint: "PCP, HP or lease quote on a vehicle.", action: "request_finance_quote" },
+  { id: "test_drive", title: "Test drive", hint: "Book a test drive in a specific model.", action: "request_test_drive" },
 ];
+
+// ── Inline style primitives ──────────────────────────────────────
+// Cards reuse the 3% white wash / 18px radius treatment used across
+// /website/dev so they sit naturally on the dark gradient body
+// painted by custglobal.css.
+const cardStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 14,
+  padding: "clamp(16px, 3vw, 24px)",
+  background: "rgba(255, 255, 255, 0.03)",
+  borderRadius: 18,
+};
+const cardWideStyle = { ...cardStyle, gridColumn: "1 / -1" };
+const cardHeaderStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap",
+};
+const cardTitleStyle = { margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: 0.2, color: "#fff" };
+const cardCountStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "4px 10px",
+  borderRadius: 999,
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: 0.5,
+  background: "rgba(255, 255, 255, 0.08)",
+  color: "var(--txt-soft)",
+};
+const badgeStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "4px 10px",
+  borderRadius: 999,
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: 0.5,
+  textTransform: "uppercase",
+  background: "rgba(255, 255, 255, 0.06)",
+  color: "var(--txt-soft)",
+  whiteSpace: "nowrap",
+};
+const badgePaidStyle = { ...badgeStyle, background: "rgba(34, 197, 94, 0.18)", color: "#86efac" };
+const badgeOpenStyle = { ...badgeStyle, background: "rgba(var(--accentMainRgb), 0.22)", color: "#fca5a5" };
+const emptyStyle = { margin: 0, fontSize: 13, color: "var(--txt-mute)" };
+const successStyle = { margin: 0, fontSize: 12, color: "#86efac" };
+const errorStyle = { margin: 0, fontSize: 12, color: "#fca5a5" };
+const itemListStyle = { listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 };
+const itemRowStyle = {
+  display: "grid",
+  gridTemplateColumns: "1fr auto",
+  alignItems: "center",
+  gap: 12,
+  padding: "12px 14px",
+  borderRadius: 12,
+  background: "rgba(255, 255, 255, 0.04)",
+};
+const itemTitleStyle = { fontSize: 14, fontWeight: 600, color: "#fff" };
+const itemMetaStyle = { fontSize: 12, color: "var(--txt-mute)", marginTop: 2 };
+const formStyle = { display: "flex", flexDirection: "column", gap: "var(--website-field-gap)" };
+const formRowStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--website-field-gap)" };
+const fieldStyle = { display: "flex", flexDirection: "column", gap: "var(--website-field-gap)", minWidth: 0 };
+const fieldLabelStyle = { fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "var(--txt-mute)" };
+const settingsRowStyle = { display: "flex", flexDirection: "column", gap: 12, paddingTop: 14, marginTop: 6 };
+const settingsRowHeaderStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  flexWrap: "wrap",
+};
+const settingsTitleStyle = { fontSize: 14, fontWeight: 600, color: "#fff" };
+const settingsHintStyle = { fontSize: 12, color: "var(--txt-mute)", margin: 0 };
+const tagBaseStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "4px 10px",
+  borderRadius: 999,
+  fontSize: 11,
+  fontWeight: 600,
+  background: "rgba(255, 255, 255, 0.06)",
+  color: "var(--txt-soft)",
+};
+const tagAccentStyle = { ...tagBaseStyle, background: "rgba(var(--accentMainRgb), 0.22)", color: "#fca5a5" };
+const tagOkStyle = { ...tagBaseStyle, background: "rgba(34, 197, 94, 0.18)", color: "#86efac" };
+const balanceHeroStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  padding: "16px 18px",
+  borderRadius: 14,
+  background: "rgba(255, 255, 255, 0.04)",
+};
+const balanceFigureStyle = { fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: -0.5 };
+const balanceMetaStyle = { fontSize: 12, color: "var(--txt-mute)" };
+const detailGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 };
+const detailFieldStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  padding: "12px 14px",
+  borderRadius: 12,
+  background: "rgba(255, 255, 255, 0.04)",
+};
+const detailLabelStyle = { fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "var(--txt-mute)" };
+const detailValueStyle = { fontSize: 14, color: "#fff" };
+const bubbleBase = { maxWidth: "80%", padding: "10px 14px", borderRadius: 14, fontSize: 13, lineHeight: 1.45, display: "flex", flexDirection: "column", gap: 4 };
+const bubbleCustomerStyle = {
+  ...bubbleBase,
+  alignSelf: "flex-end",
+  background: "linear-gradient(180deg, rgba(var(--accentMainRgb), 0.32) 0%, rgba(var(--accentMainRgb), 0.18) 100%)",
+  color: "#fff",
+};
+const bubbleStaffStyle = {
+  ...bubbleBase,
+  alignSelf: "flex-start",
+  background: "rgba(255, 255, 255, 0.06)",
+  color: "var(--txt-bright)",
+};
+const bubbleMetaStyle = { fontSize: 10, opacity: 0.75 };
+const mediaGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 };
+const mediaThumbStyle = {
+  position: "relative",
+  display: "block",
+  aspectRatio: "4 / 3",
+  borderRadius: 12,
+  overflow: "hidden",
+  background: "rgba(255, 255, 255, 0.04)",
+};
+const mediaTagStyle = {
+  position: "absolute",
+  top: 8,
+  left: 8,
+  padding: "2px 8px",
+  borderRadius: 999,
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: 0.5,
+  textTransform: "uppercase",
+  background: "rgba(0, 0, 0, 0.55)",
+  color: "#fff",
+};
+const mediaCaptionStyle = {
+  position: "absolute",
+  left: 8,
+  right: 8,
+  bottom: 8,
+  fontSize: 11,
+  color: "#fff",
+  textShadow: "0 1px 4px rgba(0, 0, 0, 0.8)",
+};
+const timelineStyle = { display: "flex", flexDirection: "column", gap: 8 };
+const timelineRowStyle = {
+  display: "grid",
+  gridTemplateColumns: "auto 1fr",
+  alignItems: "baseline",
+  gap: 14,
+  padding: "10px 12px",
+  borderRadius: 10,
+  background: "rgba(255, 255, 255, 0.03)",
+};
+const timelineWhenStyle = { fontSize: 11, color: "var(--txt-mute)", whiteSpace: "nowrap" };
+const timelineWhatStyle = { fontSize: 13, color: "var(--txt-bright)" };
+const stmtRowStyle = {
+  display: "grid",
+  gridTemplateColumns: "auto 1fr auto",
+  alignItems: "baseline",
+  gap: 14,
+  padding: "8px 10px",
+  borderRadius: 8,
+  fontSize: 13,
+};
+const stmtMetaStyle = { fontSize: 11, color: "var(--txt-mute)" };
+const cardChipStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  padding: "12px 14px",
+  borderRadius: 12,
+  background: "rgba(255, 255, 255, 0.04)",
+};
+const cardBrandStyle = { fontSize: 13, fontWeight: 700, color: "#fff" };
+const cardLineStyle = { fontSize: 12, color: "var(--txt-soft)" };
+const mileageListStyle = { display: "flex", flexDirection: "column", gap: 8 };
+const mileageRowStyle = {
+  display: "grid",
+  gridTemplateColumns: "auto 1fr auto",
+  alignItems: "center",
+  gap: 12,
+  fontSize: 12,
+  color: "var(--txt-soft)",
+};
+const mileageBarStyle = {
+  flex: 1,
+  height: 6,
+  borderRadius: 999,
+  background: "rgba(255, 255, 255, 0.08)",
+  overflow: "hidden",
+};
+const mileageBarFillStyle = (pct) => ({
+  display: "block",
+  height: "100%",
+  width: `${pct}%`,
+  background: "linear-gradient(90deg, rgba(255,90,90,0.9), var(--accentText))",
+});
+const mileageValueStyle = { fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap" };
+const vhcLightStyle = (tone) => ({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "4px 10px",
+  borderRadius: 999,
+  fontSize: 11,
+  fontWeight: 600,
+  background:
+    tone === "red"
+      ? "rgba(239, 68, 68, 0.18)"
+      : tone === "amber"
+      ? "rgba(245, 158, 11, 0.18)"
+      : "rgba(34, 197, 94, 0.18)",
+  color:
+    tone === "red" ? "#fca5a5" : tone === "amber" ? "#fcd34d" : "#86efac",
+});
+const vhcDotStyle = (tone) => ({
+  width: 8,
+  height: 8,
+  borderRadius: 999,
+  background:
+    tone === "red" ? "#ef4444" : tone === "amber" ? "#f59e0b" : "#22c55e",
+});
+
+const headerStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 18,
+  flexWrap: "wrap",
+  marginBottom: 24,
+};
+const headerEyebrowStyle = {
+  fontSize: 11,
+  letterSpacing: 1.5,
+  textTransform: "uppercase",
+  color: "var(--accentText)",
+  fontWeight: 700,
+};
+const headerTitleStyle = { margin: "6px 0 4px", fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 800, color: "#fff" };
+const headerSubtitleStyle = { margin: 0, fontSize: 14, color: "var(--txt-soft)", maxWidth: 520 };
+const headerActionsStyle = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" };
+const layoutStyle = {
+  display: "grid",
+  gridTemplateColumns: "minmax(180px, 220px) minmax(0, 1fr)",
+  gap: 24,
+  alignItems: "start",
+};
+const sideNavStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+  position: "sticky",
+  top: 16,
+  padding: 12,
+  background: "rgba(255, 255, 255, 0.03)",
+  borderRadius: 14,
+};
+const sideNavHeadingStyle = {
+  fontSize: 10,
+  letterSpacing: 1,
+  textTransform: "uppercase",
+  color: "var(--txt-mute)",
+  padding: "4px 10px 8px",
+};
+const sideNavLinkStyle = {
+  display: "block",
+  padding: "8px 12px",
+  borderRadius: 8,
+  fontSize: 13,
+  color: "var(--txt-soft)",
+  textDecoration: "none",
+};
+const contentStackStyle = { display: "flex", flexDirection: "column", gap: 18, minWidth: 0 };
+const gridSplitStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 18,
+};
+const trackerStepStyle = (state) => ({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 6,
+  fontSize: 11,
+  color:
+    state === "done"
+      ? "#fff"
+      : state === "active"
+      ? "var(--accentText)"
+      : "var(--txt-faint)",
+  textAlign: "center",
+});
+const trackerDotStyle = (state) => ({
+  width: 12,
+  height: 12,
+  borderRadius: 999,
+  background:
+    state === "done"
+      ? "linear-gradient(180deg, rgba(255, 90, 90, 0.98), var(--accentText))"
+      : state === "active"
+      ? "var(--accentText)"
+      : "rgba(255, 255, 255, 0.18)",
+});
+const serviceGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  gap: 10,
+};
+const serviceTileStyle = (active) => ({
+  // Inline styles override the global pill chrome from custglobal.css
+  // (button:not(.app-btn)) — service tiles need multi-line content,
+  // left alignment and a square corner, not a 44px capsule.
+  appearance: "none",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  justifyContent: "flex-start",
+  gap: 4,
+  minHeight: 0,
+  padding: "14px 16px",
+  textAlign: "left",
+  whiteSpace: "normal",
+  letterSpacing: 0,
+  textTransform: "none",
+  borderRadius: 14,
+  border: "none",
+  cursor: "pointer",
+  color: "#fff",
+  background: active
+    ? "linear-gradient(180deg, rgba(var(--accentMainRgb), 0.32) 0%, rgba(var(--accentMainRgb), 0.18) 100%)"
+    : "rgba(255, 255, 255, 0.04)",
+  WebkitBackdropFilter: "none",
+  backdropFilter: "none",
+  boxShadow: active
+    ? "inset 0 0 0 1px rgba(var(--accentMainRgb), 0.5)"
+    : "inset 0 0 0 1px rgba(255, 255, 255, 0.06)",
+  transition: "background 0.2s ease",
+});
+const serviceTileTitleStyle = { fontSize: 13, fontWeight: 700, color: "#fff" };
+const serviceTileHintStyle = { fontSize: 11, color: "var(--txt-mute)", lineHeight: 1.4 };
+const toggleRowStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: "10px 14px",
+  borderRadius: 12,
+  background: "rgba(255, 255, 255, 0.04)",
+  cursor: "pointer",
+};
+const toggleSwitchStyle = (checked) => ({
+  position: "relative",
+  width: 40,
+  height: 22,
+  borderRadius: 999,
+  background: checked
+    ? "linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%)"
+    : "rgba(255, 255, 255, 0.14)",
+  flexShrink: 0,
+  transition: "background 0.2s ease",
+});
+const toggleKnobStyle = (checked) => ({
+  position: "absolute",
+  top: 2,
+  left: checked ? 20 : 2,
+  width: 18,
+  height: 18,
+  borderRadius: 999,
+  background: "#fff",
+  transition: "left 0.2s ease",
+});
 
 export default function CustomerProfilePage() {
   const router = useRouter();
@@ -399,7 +726,6 @@ export default function CustomerProfilePage() {
     [outstandingInvoices],
   );
 
-  // MOT countdown — pick the nearest MOT among the customer's vehicles.
   const motSoonest = useMemo(() => {
     let best = null;
     for (const v of vehicles) {
@@ -410,8 +736,6 @@ export default function CustomerProfilePage() {
     return best;
   }, [vehicles]);
 
-  // Service due — from the most recent customer_job_history entry per
-  // vehicle. We treat 12 months since last service as "due".
   const serviceDue = useMemo(() => {
     const lastByVehicle = new Map();
     for (const h of jobHistory) {
@@ -433,7 +757,6 @@ export default function CustomerProfilePage() {
     return null;
   }, [jobHistory, vehicles]);
 
-  // Active job for the live tracker — the most recent non-completed.
   const activeJob = useMemo(() => {
     return (
       jobs.find((j) => {
@@ -443,7 +766,6 @@ export default function CustomerProfilePage() {
     );
   }, [jobs]);
 
-  // Mileage history per vehicle for the small bar list.
   const mileageRows = useMemo(() => {
     const max = Math.max(
       1,
@@ -464,1202 +786,1065 @@ export default function CustomerProfilePage() {
     <>
       <Head>
         <title>{`Your account - ${siteContent.brand.name}`}</title>
-        {/* Force dark theme synchronously so customers never see a flash of
-            their previous theme on this page. The themeProvider effect then
-            layers the red accent CSS vars on top. */}
         <script
           dangerouslySetInnerHTML={{
-            __html:
-              "document.documentElement.setAttribute('data-theme','dark');",
+            __html: "document.documentElement.setAttribute('data-theme','dark');",
           }}
         />
       </Head>
-      <div className={styles.profileShell}>
-        <main className={styles.profileMain}>
+      <div
+        style={{
+          minHeight: "100vh",
+          padding: "clamp(16px, 3vw, 32px) clamp(16px, 4vw, 48px) 96px",
+          color: "#fff",
+        }}
+      >
+        <main style={{ maxWidth: 1280, margin: "0 auto" }}>
           {status === "loading" ? (
-            <p className={styles.profileLoading}>Loading your account…</p>
+            <p style={{ fontSize: 14, color: "var(--txt-soft)" }}>
+              Loading your account…
+            </p>
           ) : status === "error" || !customer ? (
-            <p className={styles.profileLoading}>
+            <p style={{ fontSize: 14, color: "var(--txt-soft)" }}>
               Could not load your account.{" "}
-              <Link
-                href="/website/login"
-                style={{ color: "var(--accentText)" }}
-              >
+              <Link href="/website/login" style={{ color: "var(--accentText)" }}>
                 Sign in again
               </Link>
               .
             </p>
           ) : (
             <>
-              <header className={styles.profileHeader}>
-                <div className={styles.profileHeaderText}>
-                  <span className={styles.profileEyebrow}>Customer portal</span>
-                  <h1 className={styles.profileTitle}>Hello, {fullName}</h1>
-                  <p className={styles.profileSubtitle}>
+              <header style={headerStyle}>
+                <div>
+                  <span style={headerEyebrowStyle}>Customer portal</span>
+                  <h1 style={headerTitleStyle}>Hello, {fullName}</h1>
+                  <p style={headerSubtitleStyle}>
                     Your vehicles, jobs, invoices, messages and account
                     settings — all in one place.
                   </p>
                 </div>
-                <div className={styles.profileActions}>
-                  <Link
-                    href="/website"
-                    className={`app-btn ${styles.profileGhostBtn}`}
-                  >
-                    Back to site
-                  </Link>
-                  <button
-                    type="button"
-                    className={`app-btn ${styles.profileLogoutBtn}`}
-                    onClick={handleLogout}
-                  >
+                <div style={headerActionsStyle}>
+                  <Link href="/website">Back to site</Link>
+                  <button type="button" className="app-btn" onClick={handleLogout}>
                     Log out
                   </button>
                 </div>
               </header>
 
-              <div className={styles.profileLayout}>
-                <aside className={styles.profileSideNav} aria-label="Sections">
-                  <span className={styles.profileSideNavHeading}>Jump to</span>
+              <div style={layoutStyle}>
+                <aside style={sideNavStyle} aria-label="Sections">
+                  <span style={sideNavHeadingStyle}>Jump to</span>
                   {SECTIONS.map((s) => (
-                    <a
-                      key={s.id}
-                      href={`#${s.id}`}
-                      className={styles.profileSideNavLink}
-                    >
+                    <a key={s.id} href={`#${s.id}`} style={sideNavLinkStyle}>
                       {s.label}
                     </a>
                   ))}
                 </aside>
-                <div className={styles.profileContent}>
 
-              {/* ───────── Summary banners ───────── */}
-              <div id="summary" className={styles.profileGrid}>
-                {motSoonest ? (
-                  <section
-                    className={`${styles.profileBanner} ${
-                      motSoonest.days < 0
-                        ? styles.profileBannerWarn
-                        : motSoonest.days <= 30
-                        ? styles.profileBannerWarn
-                        : motSoonest.days <= 60
-                        ? styles.profileBannerSoft
-                        : ""
-                    } ${styles.profileCardWide}`}
-                  >
-                    <div className={styles.profileBannerText}>
-                      <span className={styles.profileBannerTitle}>
-                        {motSoonest.days < 0
-                          ? `MOT overdue on ${motSoonest.vehicle.reg_number}`
-                          : `MOT due in ${motSoonest.days} day${motSoonest.days === 1 ? "" : "s"} — ${motSoonest.vehicle.reg_number}`}
-                      </span>
-                      <span className={styles.profileBannerSub}>
-                        Expires {formatDate(motSoonest.vehicle.mot_due)}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        callAction(
-                          "book_service",
-                          {
-                            description: `MOT booking request for ${motSoonest.vehicle.reg_number}`,
-                            vehicle_id: motSoonest.vehicle.vehicle_id,
-                          },
-                          "mot",
-                          "MOT request sent — we'll confirm by email.",
-                        )
-                      }
-                    >
-                      Book MOT
-                    </button>
-                    {actionFlash.mot ? (
-                      <p className={styles.profileSuccess}>{actionFlash.mot}</p>
-                    ) : null}
-                  </section>
-                ) : null}
-
-                {serviceDue ? (
-                  <section
-                    className={`${styles.profileBanner} ${styles.profileBannerSoft} ${styles.profileCardWide}`}
-                  >
-                    <div className={styles.profileBannerText}>
-                      <span className={styles.profileBannerTitle}>
-                        Service due — {serviceDue.vehicle.reg_number}
-                      </span>
-                      <span className={styles.profileBannerSub}>
-                        Last service {serviceDue.months} months ago.
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        callAction(
-                          "book_service",
-                          {
-                            description: `Service booking request for ${serviceDue.vehicle.reg_number}`,
-                            vehicle_id: serviceDue.vehicle.vehicle_id,
-                          },
-                          "svc",
-                          "Service request sent — we'll be in touch.",
-                        )
-                      }
-                    >
-                      Book service
-                    </button>
-                    {actionFlash.svc ? (
-                      <p className={styles.profileSuccess}>{actionFlash.svc}</p>
-                    ) : null}
-                  </section>
-                ) : null}
-
-                {/* Live job tracker */}
-                {activeJob ? (
-                  <section
-                    className={`${styles.profileCard} ${styles.profileCardWide}`}
-                  >
-                    <div className={styles.profileCardHeader}>
-                      <h2 className={styles.profileCardTitle}>
-                        Live status — {activeJob.job_number || `Job #${activeJob.id}`}
-                      </h2>
-                      <span className={styles.profileBadge}>
-                        {activeJob.status || "—"}
-                      </span>
-                    </div>
-                    <p className={styles.profileItemMeta}>
-                      {[activeJob.vehicle_reg, activeJob.vehicle_make_model]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <ActiveJobTags
-                      job={activeJob}
-                      bookingRequest={bookingRequests.find(
-                        (r) => r.job_id === activeJob.id,
-                      )}
-                      vhcSent={
-                        (data.vhcSendHistory || []).find(
-                          (s) => s.job_id === activeJob.id,
-                        ) || null
-                      }
-                    />
-                    {(() => {
-                      const stages = getTrackerStages(activeJob);
-                      const active = getActiveStageIndex(stages);
-                      return (
-                        <div
-                          className={styles.profileTracker}
-                          style={{
-                            gridTemplateColumns: `repeat(${stages.length}, 1fr)`,
-                          }}
-                        >
-                          {stages.map((stage, idx) => {
-                            const className =
-                              idx < active
-                                ? styles.profileTrackerStepDone
-                                : idx === active && stage.reached
-                                ? styles.profileTrackerStepActive
-                                : "";
-                            return (
-                              <div
-                                key={stage.key}
-                                className={`${styles.profileTrackerStep} ${className}`}
-                              >
-                                <span className={styles.profileTrackerDot} />
-                                <span>{stage.label}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </section>
-                ) : null}
-              </div>
-
-              {/* ───────── Personal details ───────── */}
-              <section
-                className={`${styles.profileCard} ${styles.profileCardWide}`}
-              >
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>Personal details</h2>
-                  {!editing ? (
-                    <button
-                      type="button"
-                      className={`app-btn ${styles.profileGhostBtn}`}
-                      onClick={() => setEditing(true)}
-                    >
-                      Edit
-                    </button>
-                  ) : null}
-                </div>
-
-                {editing ? (
-                  <form
-                    className={styles.authForm}
-                    onSubmit={handleSaveProfile}
-                  >
-                    {saveError ? (
-                      <p className={styles.authError}>{saveError}</p>
-                    ) : null}
-                    <div className={styles.authRow}>
-                      <FieldInput
-                        label="First name"
-                        value={editForm.firstname}
-                        onChange={(v) =>
-                          setEditForm({ ...editForm, firstname: v })
-                        }
-                      />
-                      <FieldInput
-                        label="Last name"
-                        value={editForm.lastname}
-                        onChange={(v) =>
-                          setEditForm({ ...editForm, lastname: v })
-                        }
-                      />
-                    </div>
-                    <div className={styles.authRow}>
-                      <FieldInput
-                        label="Mobile"
-                        value={editForm.mobile}
-                        onChange={(v) => setEditForm({ ...editForm, mobile: v })}
-                      />
-                      <FieldInput
-                        label="Telephone"
-                        value={editForm.telephone}
-                        onChange={(v) =>
-                          setEditForm({ ...editForm, telephone: v })
-                        }
-                      />
-                    </div>
-                    <FieldInput
-                      label="Address"
-                      value={editForm.address}
-                      onChange={(v) => setEditForm({ ...editForm, address: v })}
-                    />
-                    <div className={styles.authRow}>
-                      <FieldInput
-                        label="Postcode"
-                        value={editForm.postcode}
-                        onChange={(v) =>
-                          setEditForm({ ...editForm, postcode: v })
-                        }
-                      />
-                      <div className={styles.authField}>
-                        <label className={styles.authLabel}>
-                          Contact preference
-                        </label>
-                        <WebsiteSelect
-                          value={editForm.contact_preference}
-                          onChange={(v) =>
-                            setEditForm({ ...editForm, contact_preference: v })
-                          }
-                          options={[
-                            { value: "email", label: "Email" },
-                            { value: "phone", label: "Phone" },
-                            { value: "sms", label: "SMS" },
-                            { value: "post", label: "Post" },
-                          ]}
-                        />
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <button
-                        type="submit"
-                        className={`app-btn ${styles.authSubmit}`}
-                        disabled={saving}
-                        style={{ flex: 1 }}
-                      >
-                        {saving ? "Saving…" : "Save changes"}
-                      </button>
-                      <button
-                        type="button"
-                        className={`app-btn ${styles.profileGhostBtn}`}
-                        onClick={() => {
-                          setEditing(false);
-                          setSaveError("");
+                <div style={contentStackStyle}>
+                  {/* ───────── Summary banners ───────── */}
+                  <div id="summary" style={gridSplitStyle}>
+                    {motSoonest ? (
+                      <section
+                        className="website-banner"
+                        style={{
+                          gridColumn: "1 / -1",
+                          flexDirection: "column",
+                          alignItems: "stretch",
+                          minHeight: 0,
+                          padding: 16,
+                          gap: 12,
                         }}
                       >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className={styles.profileDetailGrid}>
-                    <DetailField label="Name" value={fullName} />
-                    <DetailField label="Email" value={customer.email} />
-                    <DetailField label="Mobile" value={customer.mobile} />
-                    <DetailField label="Telephone" value={customer.telephone} />
-                    <DetailField label="Address" value={customer.address} />
-                    <DetailField label="Postcode" value={customer.postcode} />
-                    <DetailField
-                      label="Preferred contact"
-                      value={customer.contact_preference}
-                    />
-                  </div>
-                )}
-              </section>
-
-              {/* ───────── Vehicles ───────── */}
-              <section id="vehicles" className={styles.profileCard}>
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>Your vehicles</h2>
-                  <span className={styles.profileCardCount}>
-                    {vehicles.length}
-                  </span>
-                </div>
-                {vehicles.length === 0 ? (
-                  <p className={styles.profileEmpty}>
-                    No vehicles linked to your account yet. Get in touch and
-                    we'll add them.
-                  </p>
-                ) : (
-                  <ul className={styles.profileItemList}>
-                    {vehicles.map((v) => {
-                      const motDays = daysUntil(v.mot_due);
-                      const warrantyDays = daysUntil(v.warranty_expiry);
-                      return (
-                        <li
-                          key={v.vehicle_id}
-                          className={styles.profileItemRow}
-                          style={{ gridTemplateColumns: "1fr" }}
-                        >
-                          <div>
-                            <div className={styles.profileItemTitle}>
-                              {v.reg_number || "—"} ·{" "}
-                              {[v.make, v.model].filter(Boolean).join(" ") ||
-                                "Vehicle"}
-                            </div>
-                            <div className={styles.profileItemMeta}>
-                              {[
-                                v.year && `${v.year}`,
-                                v.colour,
-                                v.fuel_type,
-                                v.transmission,
-                                v.mileage && `${v.mileage} mi`,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </div>
-                            <div
-                              className={styles.profileItemMeta}
-                              style={{ marginTop: 6 }}
-                            >
-                              {v.mot_due
-                                ? `MOT ${motDays != null && motDays < 0 ? `overdue (${formatDate(v.mot_due)})` : `due ${formatDate(v.mot_due)}`}`
-                                : "MOT date on file: —"}
-                              {v.warranty_expiry
-                                ? ` · Warranty ${warrantyDays != null && warrantyDays < 0 ? "expired" : `until ${formatDate(v.warranty_expiry)}`}`
-                                : ""}
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </section>
-
-              {/* Add vehicle + update mileage */}
-              <section className={styles.profileCard}>
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>
-                    Update your vehicles
-                  </h2>
-                </div>
-                <UpdateMileageRow
-                  vehicles={vehicles}
-                  onSaved={() => {
-                    flash("mileage", "Mileage updated.");
-                    refresh();
-                  }}
-                  flash={actionFlash.mileage}
-                />
-                <AddVehicleRow
-                  onSubmit={async (payload) => {
-                    try {
-                      const res = await fetch(
-                        "/api/website/actions/add-vehicle",
-                        {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          credentials: "same-origin",
-                          body: JSON.stringify(payload),
-                        },
-                      );
-                      const out = await res.json();
-                      if (!res.ok || !out.success) {
-                        throw new Error(out.message || "Could not add vehicle.");
-                      }
-                      flash("addveh", "Vehicle added.");
-                      refresh();
-                      return { success: true };
-                    } catch (err) {
-                      flash("addveh", err.message);
-                      return { success: false, message: err.message };
-                    }
-                  }}
-                  flash={actionFlash.addveh}
-                />
-              </section>
-
-              {/* Mileage history */}
-              {mileageRows.length > 0 ? (
-                <section className={styles.profileCard}>
-                  <div className={styles.profileCardHeader}>
-                    <h2 className={styles.profileCardTitle}>Mileage history</h2>
-                  </div>
-                  <div className={styles.profileMileageList}>
-                    {mileageRows.map((row) => (
-                      <div
-                        key={row.history_id}
-                        className={styles.profileMileageRow}
-                      >
-                        <span>{formatDate(row.recorded_at)}</span>
-                        <span className={styles.profileMileageBar}>
-                          <span
-                            className={styles.profileMileageBarFill}
-                            style={{ width: `${row.pct}%` }}
-                          />
-                        </span>
-                        <span className={styles.profileMileageValue}>
-                          {Number(row.mileage_at_service).toLocaleString()} mi
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              {/* ───────── Jobs + VHC ───────── */}
-              <section id="jobs" className={styles.profileCard}>
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>
-                    Jobs & service history
-                  </h2>
-                  <span className={styles.profileCardCount}>{jobs.length}</span>
-                </div>
-                {jobs.length === 0 ? (
-                  <p className={styles.profileEmpty}>
-                    No jobs on file yet.
-                  </p>
-                ) : (
-                  <ul className={styles.profileItemList}>
-                    {jobs.slice(0, 20).map((j) => {
-                      const vhc = vhcByJob[j.id];
-                      return (
-                        <li key={j.id} className={styles.profileItemRow}>
-                          <div>
-                            <div className={styles.profileItemTitle}>
-                              {j.job_number || `Job #${j.id}`} ·{" "}
-                              {j.type || "Service"}
-                            </div>
-                            <div className={styles.profileItemMeta}>
-                              {[
-                                j.vehicle_reg,
-                                j.vehicle_make_model,
-                                formatDate(j.created_at),
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </div>
-                            {vhc ? (
-                              <div
-                                className={styles.profileVhcLights}
-                                style={{ marginTop: 6 }}
-                              >
-                                {vhc.red ? (
-                                  <span
-                                    className={`${styles.profileVhcLight} ${styles.profileVhcLightRed}`}
-                                  >
-                                    <span className={styles.profileVhcLightDot} />
-                                    {vhc.red}
-                                  </span>
-                                ) : null}
-                                {vhc.amber ? (
-                                  <span
-                                    className={`${styles.profileVhcLight} ${styles.profileVhcLightAmber}`}
-                                  >
-                                    <span className={styles.profileVhcLightDot} />
-                                    {vhc.amber}
-                                  </span>
-                                ) : null}
-                                {vhc.green ? (
-                                  <span
-                                    className={`${styles.profileVhcLight} ${styles.profileVhcLightGreen}`}
-                                  >
-                                    <span className={styles.profileVhcLightDot} />
-                                    {vhc.green}
-                                  </span>
-                                ) : null}
-                              </div>
-                            ) : null}
-                          </div>
-                          <span className={styles.profileBadge}>
-                            {j.status || "—"}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700 }}>
+                            {motSoonest.days < 0
+                              ? `MOT overdue on ${motSoonest.vehicle.reg_number}`
+                              : `MOT due in ${motSoonest.days} day${motSoonest.days === 1 ? "" : "s"} — ${motSoonest.vehicle.reg_number}`}
                           </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </section>
+                          <span style={{ fontSize: 12, color: "var(--txt-soft)" }}>
+                            Expires {formatDate(motSoonest.vehicle.mot_due)}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            callAction(
+                              "book_service",
+                              {
+                                description: `MOT booking request for ${motSoonest.vehicle.reg_number}`,
+                                vehicle_id: motSoonest.vehicle.vehicle_id,
+                              },
+                              "mot",
+                              "MOT request sent — we'll confirm by email.",
+                            )
+                          }
+                        >
+                          Book MOT
+                        </button>
+                        {actionFlash.mot ? (
+                          <p style={successStyle}>{actionFlash.mot}</p>
+                        ) : null}
+                      </section>
+                    ) : null}
 
-              {appointments.length > 0 ? (
-                <section className={styles.profileCard}>
-                  <div className={styles.profileCardHeader}>
-                    <h2 className={styles.profileCardTitle}>Appointments</h2>
-                    <span className={styles.profileCardCount}>
-                      {appointments.length}
-                    </span>
-                  </div>
-                  <ul className={styles.profileItemList}>
-                    {appointments.map((a) => (
-                      <li
-                        key={a.appointment_id}
-                        className={styles.profileItemRow}
+                    {serviceDue ? (
+                      <section
+                        className="website-banner"
+                        style={{
+                          gridColumn: "1 / -1",
+                          flexDirection: "column",
+                          alignItems: "stretch",
+                          minHeight: 0,
+                          padding: 16,
+                          gap: 12,
+                        }}
                       >
-                        <div>
-                          <div className={styles.profileItemTitle}>
-                            {formatDateTime(a.scheduled_time)}
-                          </div>
-                          <div className={styles.profileItemMeta}>
-                            {a.job_id ? `Job #${a.job_id} · ` : ""}
-                            {a.status || "Booked"}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700 }}>
+                            Service due — {serviceDue.vehicle.reg_number}
+                          </span>
+                          <span style={{ fontSize: 12, color: "var(--txt-soft)" }}>
+                            Last service {serviceDue.months} months ago.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            callAction(
+                              "book_service",
+                              {
+                                description: `Service booking request for ${serviceDue.vehicle.reg_number}`,
+                                vehicle_id: serviceDue.vehicle.vehicle_id,
+                              },
+                              "svc",
+                              "Service request sent — we'll be in touch.",
+                            )
+                          }
+                        >
+                          Book service
+                        </button>
+                        {actionFlash.svc ? (
+                          <p style={successStyle}>{actionFlash.svc}</p>
+                        ) : null}
+                      </section>
+                    ) : null}
+
+                    {/* Live job tracker */}
+                    {activeJob ? (
+                      <section style={cardWideStyle}>
+                        <div style={cardHeaderStyle}>
+                          <h2 style={cardTitleStyle}>
+                            Live status — {activeJob.job_number || `Job #${activeJob.id}`}
+                          </h2>
+                          <span style={badgeStyle}>{activeJob.status || "—"}</span>
+                        </div>
+                        <p style={{ ...itemMetaStyle, margin: 0 }}>
+                          {[activeJob.vehicle_reg, activeJob.vehicle_make_model]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                        <ActiveJobTags
+                          job={activeJob}
+                          bookingRequest={bookingRequests.find(
+                            (r) => r.job_id === activeJob.id,
+                          )}
+                          vhcSent={
+                            (data.vhcSendHistory || []).find(
+                              (s) => s.job_id === activeJob.id,
+                            ) || null
+                          }
+                        />
+                        {(() => {
+                          const stages = getTrackerStages(activeJob);
+                          const active = getActiveStageIndex(stages);
+                          return (
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: `repeat(${stages.length}, 1fr)`,
+                                gap: 12,
+                                marginTop: 6,
+                              }}
+                            >
+                              {stages.map((stage, idx) => {
+                                const state =
+                                  idx < active
+                                    ? "done"
+                                    : idx === active && stage.reached
+                                    ? "active"
+                                    : "todo";
+                                return (
+                                  <div key={stage.key} style={trackerStepStyle(state)}>
+                                    <span style={trackerDotStyle(state)} />
+                                    <span>{stage.label}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </section>
+                    ) : null}
+                  </div>
+
+                  {/* ───────── Personal details ───────── */}
+                  <section style={cardWideStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Personal details</h2>
+                      {!editing ? (
+                        <button type="button" onClick={() => setEditing(true)}>
+                          Edit
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {editing ? (
+                      <form style={formStyle} onSubmit={handleSaveProfile}>
+                        {saveError ? <p style={errorStyle}>{saveError}</p> : null}
+                        <div style={formRowStyle}>
+                          <FieldInput
+                            label="First name"
+                            value={editForm.firstname}
+                            onChange={(v) => setEditForm({ ...editForm, firstname: v })}
+                          />
+                          <FieldInput
+                            label="Last name"
+                            value={editForm.lastname}
+                            onChange={(v) => setEditForm({ ...editForm, lastname: v })}
+                          />
+                        </div>
+                        <div style={formRowStyle}>
+                          <FieldInput
+                            label="Mobile"
+                            value={editForm.mobile}
+                            onChange={(v) => setEditForm({ ...editForm, mobile: v })}
+                          />
+                          <FieldInput
+                            label="Telephone"
+                            value={editForm.telephone}
+                            onChange={(v) => setEditForm({ ...editForm, telephone: v })}
+                          />
+                        </div>
+                        <FieldInput
+                          label="Address"
+                          value={editForm.address}
+                          onChange={(v) => setEditForm({ ...editForm, address: v })}
+                        />
+                        <div style={formRowStyle}>
+                          <FieldInput
+                            label="Postcode"
+                            value={editForm.postcode}
+                            onChange={(v) => setEditForm({ ...editForm, postcode: v })}
+                          />
+                          <div style={fieldStyle}>
+                            <label style={fieldLabelStyle}>Contact preference</label>
+                            <WebsiteNativeSelect
+                              value={editForm.contact_preference}
+                              onChange={(value) =>
+                                setEditForm({ ...editForm, contact_preference: value })
+                              }
+                              options={[
+                                { value: "email", label: "Email" },
+                                { value: "phone", label: "Phone" },
+                                { value: "sms", label: "SMS" },
+                                { value: "post", label: "Post" },
+                              ]}
+                            />
                           </div>
                         </div>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
+                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          <button
+                            type="submit"
+                            className="app-btn"
+                            disabled={saving}
+                            style={{ flex: 1, minWidth: 160 }}
+                          >
+                            {saving ? "Saving…" : "Save changes"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditing(false);
+                              setSaveError("");
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div style={detailGridStyle}>
+                        <DetailField label="Name" value={fullName} />
+                        <DetailField label="Email" value={customer.email} />
+                        <DetailField label="Mobile" value={customer.mobile} />
+                        <DetailField label="Telephone" value={customer.telephone} />
+                        <DetailField label="Address" value={customer.address} />
+                        <DetailField label="Postcode" value={customer.postcode} />
+                        <DetailField
+                          label="Preferred contact"
+                          value={customer.contact_preference}
+                        />
+                      </div>
+                    )}
+                  </section>
 
-              {/* ───────── Inspections (VHC media + items you declined) ───────── */}
-              {(data.vhcMedia?.length || 0) > 0 ||
-              (data.vhcDeclinations?.length || 0) > 0 ? (
-                <section id="inspections" className={styles.profileCard}>
-                  <div className={styles.profileCardHeader}>
-                    <h2 className={styles.profileCardTitle}>
-                      Inspection photos & video
-                    </h2>
-                    <span className={styles.profileCardCount}>
-                      {data.vhcMedia?.length || 0}
-                    </span>
-                  </div>
-                  {(data.vhcMedia?.length || 0) === 0 ? (
-                    <p className={styles.profileEmpty}>
-                      No media yet — uploaded inspection photos will appear here.
-                    </p>
-                  ) : (
-                    <div className={styles.profileMediaGrid}>
-                      {(data.vhcMedia || []).slice(0, 16).map((m) => (
-                        <a
-                          key={m.id}
-                          href={m.public_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.profileMediaThumb}
-                        >
-                          {m.media_type === "video" ? (
-                            <video src={m.public_url} muted preload="metadata" />
-                          ) : (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={m.public_url} alt={m.context_label || ""} />
-                          )}
-                          <span className={styles.profileMediaTag}>
-                            {m.media_type === "video" ? "Video" : "Photo"}
-                          </span>
-                          {m.context_label ? (
-                            <span className={styles.profileMediaCaption}>
-                              {m.context_label}
-                            </span>
-                          ) : null}
-                        </a>
-                      ))}
+                  {/* ───────── Vehicles ───────── */}
+                  <section id="vehicles" style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Your vehicles</h2>
+                      <span style={cardCountStyle}>{vehicles.length}</span>
                     </div>
-                  )}
-
-                  {(data.vhcDeclinations?.length || 0) > 0 ? (
-                    <div style={{ marginTop: 14 }}>
-                      <p className={styles.profileSettingsHint}>
-                        Items you previously declined — want to revisit?
+                    {vehicles.length === 0 ? (
+                      <p style={emptyStyle}>
+                        No vehicles linked to your account yet. Get in touch and we'll
+                        add them.
                       </p>
-                      <ul className={styles.profileItemList}>
-                        {(data.vhcDeclinations || [])
-                          .slice(0, 8)
-                          .map((d, idx) => (
+                    ) : (
+                      <ul style={itemListStyle}>
+                        {vehicles.map((v) => {
+                          const motDays = daysUntil(v.mot_due);
+                          const warrantyDays = daysUntil(v.warranty_expiry);
+                          return (
                             <li
-                              key={`${d.job_id}-${idx}`}
-                              className={styles.profileItemRow}
+                              key={v.vehicle_id}
+                              style={{ ...itemRowStyle, gridTemplateColumns: "1fr" }}
                             >
                               <div>
-                                <div className={styles.profileItemTitle}>
-                                  {d.issue_title || d.section || "Item"}
+                                <div style={itemTitleStyle}>
+                                  {v.reg_number || "—"} ·{" "}
+                                  {[v.make, v.model].filter(Boolean).join(" ") ||
+                                    "Vehicle"}
                                 </div>
-                                {d.issue_description ? (
-                                  <div className={styles.profileItemMeta}>
-                                    {d.issue_description}
+                                <div style={itemMetaStyle}>
+                                  {[
+                                    v.year && `${v.year}`,
+                                    v.colour,
+                                    v.fuel_type,
+                                    v.transmission,
+                                    v.mileage && `${v.mileage} mi`,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </div>
+                                <div style={{ ...itemMetaStyle, marginTop: 6 }}>
+                                  {v.mot_due
+                                    ? `MOT ${motDays != null && motDays < 0 ? `overdue (${formatDate(v.mot_due)})` : `due ${formatDate(v.mot_due)}`}`
+                                    : "MOT date on file: —"}
+                                  {v.warranty_expiry
+                                    ? ` · Warranty ${warrantyDays != null && warrantyDays < 0 ? "expired" : `until ${formatDate(v.warranty_expiry)}`}`
+                                    : ""}
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </section>
+
+                  {/* Add vehicle + update mileage */}
+                  <section style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Update your vehicles</h2>
+                    </div>
+                    <UpdateMileageRow
+                      vehicles={vehicles}
+                      onSaved={() => {
+                        flash("mileage", "Mileage updated.");
+                        refresh();
+                      }}
+                      flash={actionFlash.mileage}
+                    />
+                    <AddVehicleRow
+                      onSubmit={async (payload) => {
+                        try {
+                          const res = await fetch("/api/website/actions/add-vehicle", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            credentials: "same-origin",
+                            body: JSON.stringify(payload),
+                          });
+                          const out = await res.json();
+                          if (!res.ok || !out.success) {
+                            throw new Error(out.message || "Could not add vehicle.");
+                          }
+                          flash("addveh", "Vehicle added.");
+                          refresh();
+                          return { success: true };
+                        } catch (err) {
+                          flash("addveh", err.message);
+                          return { success: false, message: err.message };
+                        }
+                      }}
+                      flash={actionFlash.addveh}
+                    />
+                  </section>
+
+                  {/* Mileage history */}
+                  {mileageRows.length > 0 ? (
+                    <section style={cardStyle}>
+                      <div style={cardHeaderStyle}>
+                        <h2 style={cardTitleStyle}>Mileage history</h2>
+                      </div>
+                      <div style={mileageListStyle}>
+                        {mileageRows.map((row) => (
+                          <div key={row.history_id} style={mileageRowStyle}>
+                            <span>{formatDate(row.recorded_at)}</span>
+                            <span style={mileageBarStyle}>
+                              <span style={mileageBarFillStyle(row.pct)} />
+                            </span>
+                            <span style={mileageValueStyle}>
+                              {Number(row.mileage_at_service).toLocaleString()} mi
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {/* ───────── Jobs + VHC ───────── */}
+                  <section id="jobs" style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Jobs &amp; service history</h2>
+                      <span style={cardCountStyle}>{jobs.length}</span>
+                    </div>
+                    {jobs.length === 0 ? (
+                      <p style={emptyStyle}>No jobs on file yet.</p>
+                    ) : (
+                      <ul style={itemListStyle}>
+                        {jobs.slice(0, 20).map((j) => {
+                          const vhc = vhcByJob[j.id];
+                          return (
+                            <li key={j.id} style={itemRowStyle}>
+                              <div>
+                                <div style={itemTitleStyle}>
+                                  {j.job_number || `Job #${j.id}`} · {j.type || "Service"}
+                                </div>
+                                <div style={itemMetaStyle}>
+                                  {[j.vehicle_reg, j.vehicle_make_model, formatDate(j.created_at)]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </div>
+                                {vhc ? (
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      flexWrap: "wrap",
+                                      gap: 6,
+                                      marginTop: 6,
+                                    }}
+                                  >
+                                    {vhc.red ? (
+                                      <span style={vhcLightStyle("red")}>
+                                        <span style={vhcDotStyle("red")} />
+                                        {vhc.red}
+                                      </span>
+                                    ) : null}
+                                    {vhc.amber ? (
+                                      <span style={vhcLightStyle("amber")}>
+                                        <span style={vhcDotStyle("amber")} />
+                                        {vhc.amber}
+                                      </span>
+                                    ) : null}
+                                    {vhc.green ? (
+                                      <span style={vhcLightStyle("green")}>
+                                        <span style={vhcDotStyle("green")} />
+                                        {vhc.green}
+                                      </span>
+                                    ) : null}
                                   </div>
                                 ) : null}
                               </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  callAction(
-                                    "authorise_vhc_item",
-                                    {
-                                      job_id: d.job_id,
-                                      issue_title: d.issue_title,
-                                      issue_description: d.issue_description,
-                                    },
-                                    `reauth-${d.job_id}-${idx}`,
-                                    "Sent — we'll be in touch to schedule.",
-                                  )
-                                }
-                              >
-                                Authorise now
-                              </button>
+                              <span style={badgeStyle}>{j.status || "—"}</span>
                             </li>
-                          ))}
+                          );
+                        })}
                       </ul>
-                    </div>
-                  ) : null}
-                </section>
-              ) : null}
+                    )}
+                  </section>
 
-              {/* ───────── Money / Account / Invoices ───────── */}
-              <div id="invoices" className={styles.profileGrid}>
-                {accounts.length > 0
-                  ? accounts.map((a) => (
-                      <section key={a.account_id} className={styles.profileCard}>
-                        <div className={styles.profileCardHeader}>
-                          <h2 className={styles.profileCardTitle}>
-                            {a.account_type || "Account"} #{a.account_id}
-                          </h2>
-                          <span className={styles.profileBadge}>
-                            {a.status || "Active"}
-                          </span>
-                        </div>
-                        <div className={styles.profileBalanceHero}>
-                          <span className={styles.profileBalanceFigure}>
-                            {formatCurrency(a.balance)}
-                          </span>
-                          <span className={styles.profileBalanceMeta}>
-                            Credit limit {formatCurrency(a.credit_limit)} ·{" "}
-                            {a.credit_terms ?? 30}-day terms
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              callAction(
-                                "request_statement",
-                                { account_id: a.account_id },
-                                `stmt-${a.account_id}`,
-                                "Statement requested.",
-                              )
-                            }
-                          >
-                            Request statement
-                          </button>
-                        </div>
-                        {actionFlash[`stmt-${a.account_id}`] ? (
-                          <p className={styles.profileSuccess}>
-                            {actionFlash[`stmt-${a.account_id}`]}
-                          </p>
-                        ) : null}
-                      </section>
-                    ))
-                  : null}
-
-                <section className={styles.profileCard}>
-                  <div className={styles.profileCardHeader}>
-                    <h2 className={styles.profileCardTitle}>Invoices</h2>
-                    <span className={styles.profileCardCount}>
-                      {invoices.length}
-                    </span>
-                  </div>
-                  <div className={styles.profileBalanceHero}>
-                    <span className={styles.profileBalanceFigure}>
-                      {formatCurrency(outstandingTotal)}
-                    </span>
-                    <span className={styles.profileBalanceMeta}>
-                      Outstanding across {outstandingInvoices.length} invoice
-                      {outstandingInvoices.length === 1 ? "" : "s"}
-                    </span>
-                  </div>
-                  {invoices.length === 0 ? (
-                    <p className={styles.profileEmpty}>
-                      You don't have any invoices on your account yet.
-                    </p>
-                  ) : (
-                    <ul className={styles.profileItemList}>
-                      {invoices.slice(0, 12).map((i) => {
-                        const total = i.grand_total ?? i.total;
-                        const isPaid =
-                          i.paid === true ||
-                          (i.payment_status || "").toLowerCase() === "paid";
-                        return (
-                          <li
-                            key={i.invoice_id}
-                            className={styles.profileItemRow}
-                          >
+                  {appointments.length > 0 ? (
+                    <section style={cardStyle}>
+                      <div style={cardHeaderStyle}>
+                        <h2 style={cardTitleStyle}>Appointments</h2>
+                        <span style={cardCountStyle}>{appointments.length}</span>
+                      </div>
+                      <ul style={itemListStyle}>
+                        {appointments.map((a) => (
+                          <li key={a.appointment_id} style={itemRowStyle}>
                             <div>
-                              <div className={styles.profileItemTitle}>
-                                {i.invoice_number ||
-                                  `Invoice ${i.invoice_id?.slice?.(0, 8) || ""}`}
-                                {i.job_number ? ` · ${i.job_number}` : ""}
+                              <div style={itemTitleStyle}>
+                                {formatDateTime(a.scheduled_time)}
                               </div>
-                              <div className={styles.profileItemMeta}>
-                                {formatDate(i.created_at)} ·{" "}
-                                {formatCurrency(total)}
-                                {i.due_date
-                                  ? ` · Due ${formatDate(i.due_date)}`
-                                  : ""}
+                              <div style={itemMetaStyle}>
+                                {a.job_id ? `Job #${a.job_id} · ` : ""}
+                                {a.status || "Booked"}
                               </div>
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: 6,
-                                alignItems: "center",
-                              }}
-                            >
-                              <span
-                                className={`${styles.profileBadge} ${
-                                  isPaid
-                                    ? styles.profileBadgePaid
-                                    : styles.profileBadgeOpen
-                                }`}
-                              >
-                                {isPaid ? "Paid" : i.payment_status || "Open"}
-                              </span>
-                              {!isPaid ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    callAction(
-                                      "request_payment_link",
-                                      { invoice_id: i.invoice_id },
-                                      `pay-${i.invoice_id}`,
-                                      "Payment link requested.",
-                                    )
-                                  }
-                                >
-                                  Pay
-                                </button>
-                              ) : null}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  callAction(
-                                    "request_invoice_pdf",
-                                    { invoice_id: i.invoice_id },
-                                    `pdf-${i.invoice_id}`,
-                                    "PDF requested — we'll email it.",
-                                  )
-                                }
-                              >
-                                PDF
-                              </button>
                             </div>
                           </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </section>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
 
-                <section className={styles.profileCard}>
-                  <div className={styles.profileCardHeader}>
-                    <h2 className={styles.profileCardTitle}>
-                      Saved payment methods
-                    </h2>
-                    <span className={styles.profileCardCount}>
-                      {paymentMethods.length}
-                    </span>
-                  </div>
-                  {paymentMethods.length === 0 ? (
-                    <p className={styles.profileEmpty}>
-                      No saved cards on file.
-                    </p>
-                  ) : (
-                    <ul className={styles.profileItemList}>
-                      {paymentMethods.map((p) => (
-                        <li key={p.method_id} className={styles.profileCardChip}>
-                          <div>
-                            <span className={styles.profileCardBrand}>
-                              {p.card_brand || "Card"}{" "}
-                              {p.is_default ? "· Default" : ""}
-                            </span>
-                            <div className={styles.profileCardLine}>
-                              •••• {p.last4 || "----"} · expires{" "}
-                              {String(p.expiry_month || "").padStart(2, "0")}/
-                              {String(p.expiry_year || "").slice(-2)}
-                            </div>
-                            {p.nickname ? (
-                              <div className={styles.profileCardLine}>
-                                {p.nickname}
-                              </div>
-                            ) : null}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-              </div>
-
-              {/* Account statement (transactions) */}
-              {(data.transactions?.length || 0) > 0 ? (
-                <section className={styles.profileCard}>
-                  <div className={styles.profileCardHeader}>
-                    <h2 className={styles.profileCardTitle}>
-                      Account statement
-                    </h2>
-                    <span className={styles.profileCardCount}>
-                      {data.transactions.length}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 6,
-                      maxHeight: 360,
-                      overflowY: "auto",
-                    }}
-                  >
-                    {data.transactions.slice(0, 40).map((t) => {
-                      const isCredit =
-                        (t.type || "").toLowerCase() === "credit" ||
-                        Number(t.amount) < 0;
-                      return (
-                        <div
-                          key={t.transaction_id}
-                          className={styles.profileStmtRow}
-                        >
-                          <span className={styles.profileStmtMeta}>
-                            {formatDate(t.transaction_date)}
-                          </span>
-                          <span>
-                            <div>{t.description || t.type}</div>
-                            {t.job_number ? (
-                              <div className={styles.profileStmtMeta}>
-                                {t.job_number}
-                                {t.payment_method ? ` · ${t.payment_method}` : ""}
-                              </div>
-                            ) : null}
-                          </span>
-                          <span
-                            className={
-                              isCredit
-                                ? styles.profileStmtAmountCredit
-                                : styles.profileStmtAmountDebit
-                            }
-                          >
-                            {isCredit ? "−" : ""}
-                            {formatCurrency(Math.abs(Number(t.amount)))}
-                          </span>
+                  {/* ───────── Inspections (VHC media + items you declined) ───────── */}
+                  {(data.vhcMedia?.length || 0) > 0 ||
+                  (data.vhcDeclinations?.length || 0) > 0 ? (
+                    <section id="inspections" style={cardStyle}>
+                      <div style={cardHeaderStyle}>
+                        <h2 style={cardTitleStyle}>Inspection photos &amp; video</h2>
+                        <span style={cardCountStyle}>{data.vhcMedia?.length || 0}</span>
+                      </div>
+                      {(data.vhcMedia?.length || 0) === 0 ? (
+                        <p style={emptyStyle}>
+                          No media yet — uploaded inspection photos will appear here.
+                        </p>
+                      ) : (
+                        <div style={mediaGridStyle}>
+                          {(data.vhcMedia || []).slice(0, 16).map((m) => (
+                            <a
+                              key={m.id}
+                              href={m.public_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={mediaThumbStyle}
+                            >
+                              {m.media_type === "video" ? (
+                                <video
+                                  src={m.public_url}
+                                  muted
+                                  preload="metadata"
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                />
+                              ) : (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={m.public_url}
+                                  alt={m.context_label || ""}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                />
+                              )}
+                              <span style={mediaTagStyle}>
+                                {m.media_type === "video" ? "Video" : "Photo"}
+                              </span>
+                              {m.context_label ? (
+                                <span style={mediaCaptionStyle}>{m.context_label}</span>
+                              ) : null}
+                            </a>
+                          ))}
                         </div>
-                      );
-                    })}
-                  </div>
-                </section>
-              ) : null}
+                      )}
 
-              {/* ───────── Messages ───────── */}
-              <section
-                id="messages"
-                className={`${styles.profileCard} ${styles.profileCardWide}`}
-              >
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>Messages</h2>
-                  <span className={styles.profileCardCount}>
-                    {messages.length}
-                  </span>
-                </div>
-                <div className={styles.profileThread}>
-                  {messages.length === 0 ? (
-                    <p className={styles.profileEmpty}>
-                      No messages yet — drop us a note below and we'll get
-                      back to you.
-                    </p>
-                  ) : (
-                    messages.map((m) => {
-                      const isCustomer = m.activity_type === "message_customer";
-                      const body =
-                        m.activity_payload?.body ||
-                        m.activity_payload?.summary ||
-                        "(empty)";
-                      return (
-                        <div
-                          key={m.event_id}
-                          className={`${styles.profileBubble} ${
-                            isCustomer
-                              ? styles.profileBubbleCustomer
-                              : styles.profileBubbleStaff
-                          }`}
-                        >
-                          {body}
-                          <span className={styles.profileBubbleMeta}>
-                            {isCustomer ? "You" : "Humphries & Parks"} ·{" "}
-                            {formatDateTime(m.occurred_at)}
-                          </span>
+                      {(data.vhcDeclinations?.length || 0) > 0 ? (
+                        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <p style={settingsHintStyle}>
+                            Items you previously declined — want to revisit?
+                          </p>
+                          <ul style={itemListStyle}>
+                            {(data.vhcDeclinations || [])
+                              .slice(0, 8)
+                              .map((d, idx) => (
+                                <li key={`${d.job_id}-${idx}`} style={itemRowStyle}>
+                                  <div>
+                                    <div style={itemTitleStyle}>
+                                      {d.issue_title || d.section || "Item"}
+                                    </div>
+                                    {d.issue_description ? (
+                                      <div style={itemMetaStyle}>{d.issue_description}</div>
+                                    ) : null}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      callAction(
+                                        "authorise_vhc_item",
+                                        {
+                                          job_id: d.job_id,
+                                          issue_title: d.issue_title,
+                                          issue_description: d.issue_description,
+                                        },
+                                        `reauth-${d.job_id}-${idx}`,
+                                        "Sent — we'll be in touch to schedule.",
+                                      )
+                                    }
+                                  >
+                                    Authorise now
+                                  </button>
+                                </li>
+                              ))}
+                          </ul>
                         </div>
-                      );
-                    })
-                  )}
-                </div>
-                <MessageComposer
-                  onSend={(body) =>
-                    callAction(
-                      "send_message",
-                      { body },
-                      "msg",
-                      "Message sent.",
-                    )
-                  }
-                  flash={actionFlash.msg}
-                />
-              </section>
+                      ) : null}
+                    </section>
+                  ) : null}
 
-              {/* ───────── Book a service ───────── */}
-              <section id="book" className={styles.profileCard}>
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>Book a service</h2>
-                </div>
-                <BookServiceForm
-                  vehicles={vehicles}
-                  onSubmit={(payload) =>
-                    callAction(
-                      "book_service",
-                      payload,
-                      "book",
-                      "Booking request sent — we'll confirm soon.",
-                    )
-                  }
-                  flash={actionFlash.book}
-                />
-                {bookingRequests.length > 0 ? (
-                  <div style={{ marginTop: 14 }}>
-                    <p className={styles.profileSettingsHint}>
-                      Recent requests
-                    </p>
-                    <ul className={styles.profileItemList}>
-                      {bookingRequests.slice(0, 5).map((r) => (
-                        <li
-                          key={r.request_id}
-                          className={styles.profileItemRow}
-                        >
-                          <div>
-                            <div className={styles.profileItemTitle}>
-                              {r.description || "Booking request"}
+                  {/* ───────── Money / Account / Invoices ───────── */}
+                  <div id="invoices" style={gridSplitStyle}>
+                    {accounts.length > 0
+                      ? accounts.map((a) => (
+                          <section key={a.account_id} style={cardStyle}>
+                            <div style={cardHeaderStyle}>
+                              <h2 style={cardTitleStyle}>
+                                {a.account_type || "Account"} #{a.account_id}
+                              </h2>
+                              <span style={badgeStyle}>{a.status || "Active"}</span>
                             </div>
-                            <div className={styles.profileItemMeta}>
-                              {formatDate(r.submitted_at)}
-                              {r.estimated_completion
-                                ? ` · ETA ${formatDate(r.estimated_completion)}`
-                                : ""}
+                            <div style={balanceHeroStyle}>
+                              <span style={balanceFigureStyle}>
+                                {formatCurrency(a.balance)}
+                              </span>
+                              <span style={balanceMetaStyle}>
+                                Credit limit {formatCurrency(a.credit_limit)} ·{" "}
+                                {a.credit_terms ?? 30}-day terms
+                              </span>
                             </div>
-                          </div>
-                          <span className={styles.profileBadge}>
-                            {r.status || "Pending"}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </section>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  callAction(
+                                    "request_statement",
+                                    { account_id: a.account_id },
+                                    `stmt-${a.account_id}`,
+                                    "Statement requested.",
+                                  )
+                                }
+                              >
+                                Request statement
+                              </button>
+                            </div>
+                            {actionFlash[`stmt-${a.account_id}`] ? (
+                              <p style={successStyle}>
+                                {actionFlash[`stmt-${a.account_id}`]}
+                              </p>
+                            ) : null}
+                          </section>
+                        ))
+                      : null}
 
-              {/* ───────── Our services (body / SMART / valet / parts etc) ───────── */}
-              <section
-                id="services"
-                className={`${styles.profileCard} ${styles.profileCardWide}`}
-              >
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>Our services</h2>
-                </div>
-                <p className={styles.profileSettingsHint}>
-                  Anything we do — pick what you need and we'll come back to
-                  you with a quote or callback.
-                </p>
-                <ServiceQuoteRow
-                  vehicles={vehicles}
-                  onSubmit={(action, payload, label) =>
-                    callAction(action, payload, "svcq", `${label} request sent.`)
-                  }
-                  flash={actionFlash.svcq}
-                />
-              </section>
-
-              {/* ───────── Sell your car ───────── */}
-              <section id="sell" className={styles.profileCard}>
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>Sell your car</h2>
-                </div>
-                <p className={styles.profileSettingsHint}>
-                  Any age, any mileage, any make or model. Free valuation,
-                  no obligation.
-                </p>
-                <SellCarForm
-                  onSubmit={(payload) =>
-                    callAction(
-                      "request_valuation",
-                      payload,
-                      "sell",
-                      "Valuation request sent.",
-                    )
-                  }
-                  flash={actionFlash.sell}
-                />
-              </section>
-
-              {/* ───────── Showroom / callback ───────── */}
-              <section id="showroom" className={styles.profileCard}>
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>Showroom</h2>
-                </div>
-                <p className={styles.profileSettingsHint}>
-                  See something you like? Tell us which car and we'll arrange
-                  a callback or test drive.
-                </p>
-                <ShowroomCallbackForm
-                  onSubmit={(payload) =>
-                    callAction(
-                      "request_vehicle_callback",
-                      payload,
-                      "show",
-                      "Callback request sent.",
-                    )
-                  }
-                  flash={actionFlash.show}
-                />
-                <div style={{ marginTop: 12 }}>
-                  <Link
-                    href="/website#cars"
-                    className={`app-btn ${styles.profileGhostBtn}`}
-                  >
-                    Browse all cars
-                  </Link>
-                </div>
-              </section>
-
-              {/* ───────── Activity timeline ───────── */}
-              <section id="activity" className={styles.profileCard}>
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>Activity</h2>
-                  <span className={styles.profileCardCount}>
-                    {timeline.length}
-                  </span>
-                </div>
-                {timeline.length === 0 ? (
-                  <p className={styles.profileEmpty}>
-                    Once you've booked in or had work done, your activity will
-                    appear here.
-                  </p>
-                ) : (
-                  <div className={styles.profileTimeline}>
-                    {timeline.slice(0, 30).map((event) => (
-                      <div
-                        key={event.event_id}
-                        className={styles.profileTimelineRow}
-                      >
-                        <span className={styles.profileTimelineWhen}>
-                          {formatDate(event.occurred_at)}
+                    <section style={cardStyle}>
+                      <div style={cardHeaderStyle}>
+                        <h2 style={cardTitleStyle}>Invoices</h2>
+                        <span style={cardCountStyle}>{invoices.length}</span>
+                      </div>
+                      <div style={balanceHeroStyle}>
+                        <span style={balanceFigureStyle}>
+                          {formatCurrency(outstandingTotal)}
                         </span>
-                        <span className={styles.profileTimelineWhat}>
-                          {humaniseActivity(event)}
+                        <span style={balanceMetaStyle}>
+                          Outstanding across {outstandingInvoices.length} invoice
+                          {outstandingInvoices.length === 1 ? "" : "s"}
                         </span>
                       </div>
-                    ))}
+                      {invoices.length === 0 ? (
+                        <p style={emptyStyle}>
+                          You don't have any invoices on your account yet.
+                        </p>
+                      ) : (
+                        <ul style={itemListStyle}>
+                          {invoices.slice(0, 12).map((i) => {
+                            const total = i.grand_total ?? i.total;
+                            const isPaid =
+                              i.paid === true ||
+                              (i.payment_status || "").toLowerCase() === "paid";
+                            return (
+                              <li key={i.invoice_id} style={itemRowStyle}>
+                                <div>
+                                  <div style={itemTitleStyle}>
+                                    {i.invoice_number ||
+                                      `Invoice ${i.invoice_id?.slice?.(0, 8) || ""}`}
+                                    {i.job_number ? ` · ${i.job_number}` : ""}
+                                  </div>
+                                  <div style={itemMetaStyle}>
+                                    {formatDate(i.created_at)} · {formatCurrency(total)}
+                                    {i.due_date ? ` · Due ${formatDate(i.due_date)}` : ""}
+                                  </div>
+                                </div>
+                                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                  <span style={isPaid ? badgePaidStyle : badgeOpenStyle}>
+                                    {isPaid ? "Paid" : i.payment_status || "Open"}
+                                  </span>
+                                  {!isPaid ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        callAction(
+                                          "request_payment_link",
+                                          { invoice_id: i.invoice_id },
+                                          `pay-${i.invoice_id}`,
+                                          "Payment link requested.",
+                                        )
+                                      }
+                                    >
+                                      Pay
+                                    </button>
+                                  ) : null}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      callAction(
+                                        "request_invoice_pdf",
+                                        { invoice_id: i.invoice_id },
+                                        `pdf-${i.invoice_id}`,
+                                        "PDF requested — we'll email it.",
+                                      )
+                                    }
+                                  >
+                                    PDF
+                                  </button>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </section>
+
+                    <section style={cardStyle}>
+                      <div style={cardHeaderStyle}>
+                        <h2 style={cardTitleStyle}>Saved payment methods</h2>
+                        <span style={cardCountStyle}>{paymentMethods.length}</span>
+                      </div>
+                      {paymentMethods.length === 0 ? (
+                        <p style={emptyStyle}>No saved cards on file.</p>
+                      ) : (
+                        <ul style={itemListStyle}>
+                          {paymentMethods.map((p) => (
+                            <li key={p.method_id} style={cardChipStyle}>
+                              <span style={cardBrandStyle}>
+                                {p.card_brand || "Card"} {p.is_default ? "· Default" : ""}
+                              </span>
+                              <span style={cardLineStyle}>
+                                •••• {p.last4 || "----"} · expires{" "}
+                                {String(p.expiry_month || "").padStart(2, "0")}/
+                                {String(p.expiry_year || "").slice(-2)}
+                              </span>
+                              {p.nickname ? (
+                                <span style={cardLineStyle}>{p.nickname}</span>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
                   </div>
-                )}
-              </section>
 
-              {/* ───────── Expanded ownership-hub sections ─────────
-                  Each component renders its own `profileCard` section using
-                  the same singlescroll classes as the rest of this page, so
-                  the new sections inherit /website typography, glass card
-                  treatment, and dark-mode-safe text colours automatically. */}
-              <OwnershipDashboardCard vehicles={vehicles} />
-              <LiveProgressTrackerCard jobs={jobs} customer={customer} />
-              <RepairApprovalTimelineCard jobs={jobs} jobStatusHistory={jobStatusHistory} />
-              <DigitalServiceHistoryCard jobs={jobs} jobHistory={jobHistory} invoices={invoices} vhcByJob={vhcByJob} />
-              <MotHistoryCard vehicles={vehicles} />
-              <RecallCheckerCard vehicles={vehicles} />
-              <VhcEnhancementsCard jobs={jobs} vhcByJob={vhcByJob} vhcDeclinations={vhcDeclinations} vhcMedia={vhcMedia} />
-              <InvoicesPaymentsExtrasCard invoicePayments={invoicePayments} paymentPlans={paymentPlans} transactions={transactions} />
-              <DocumentsCentreCard invoices={invoices} vhcMedia={vhcMedia} />
-              <SalesShowroomCard />
-              <PartsPortalExtrasCard partsJobItems={partsJobItems} partsRequests={partsRequests} partsOrderCards={partsOrderCards} />
-              <SmartRepairCard bookingRequests={bookingRequests} />
-              <ValetDetailingCard bookingRequests={bookingRequests} />
-              <FamilyGarageCard customer={customer} vehicles={vehicles} />
-              <SelfServiceToolsCard vehicles={vehicles} vhcDeclinations={vhcDeclinations} />
-              <AiAssistantCard />
+                  {/* Account statement (transactions) */}
+                  {(data.transactions?.length || 0) > 0 ? (
+                    <section style={cardStyle}>
+                      <div style={cardHeaderStyle}>
+                        <h2 style={cardTitleStyle}>Account statement</h2>
+                        <span style={cardCountStyle}>{data.transactions.length}</span>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6,
+                          maxHeight: 360,
+                          overflowY: "auto",
+                        }}
+                      >
+                        {data.transactions.slice(0, 40).map((t) => {
+                          const isCredit =
+                            (t.type || "").toLowerCase() === "credit" ||
+                            Number(t.amount) < 0;
+                          return (
+                            <div
+                              key={t.transaction_id}
+                              style={{ ...stmtRowStyle, background: "rgba(255, 255, 255, 0.03)" }}
+                            >
+                              <span style={stmtMetaStyle}>
+                                {formatDate(t.transaction_date)}
+                              </span>
+                              <span>
+                                <div>{t.description || t.type}</div>
+                                {t.job_number ? (
+                                  <div style={stmtMetaStyle}>
+                                    {t.job_number}
+                                    {t.payment_method ? ` · ${t.payment_method}` : ""}
+                                  </div>
+                                ) : null}
+                              </span>
+                              <span
+                                style={{
+                                  fontWeight: 700,
+                                  color: isCredit ? "#86efac" : "#fca5a5",
+                                }}
+                              >
+                                {isCredit ? "−" : ""}
+                                {formatCurrency(Math.abs(Number(t.amount)))}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
 
-              {/* ───────── Settings / security ───────── */}
-              <section
-                id="settings"
-                className={`${styles.profileCard} ${styles.profileCardWide}`}
-              >
-                <div className={styles.profileCardHeader}>
-                  <h2 className={styles.profileCardTitle}>
-                    Account & security
-                  </h2>
-                </div>
-                <div className={styles.profileSettingsList}>
-                  <ChangePasswordRow
-                    onSuccess={() => flash("pw", "Password updated.")}
-                    flash={actionFlash.pw}
-                  />
-                  <ChangeEmailRow
-                    currentEmail={customer.email}
-                    onSuccess={() => {
-                      flash("email", "Email updated.");
-                      refresh();
-                    }}
-                    flash={actionFlash.email}
-                  />
-                  <NotificationPrefsRow
-                    initial={customer}
-                    onSuccess={() => flash("prefs", "Preferences saved.")}
-                    flash={actionFlash.prefs}
-                  />
-                  <ReferralRow
-                    onSubmit={(payload) =>
-                      callAction(
-                        "refer_friend",
-                        payload,
-                        "ref",
-                        "Thanks — we'll be in touch with your friend.",
-                      )
-                    }
-                    flash={actionFlash.ref}
-                  />
-                  <DataActionsRow
-                    onExport={() =>
-                      callAction(
-                        "request_data_export",
-                        {},
-                        "exp",
-                        "Data export requested — we'll email it.",
-                      )
-                    }
-                    onDelete={() =>
-                      callAction(
-                        "request_account_deletion",
-                        {},
-                        "del",
-                        "Deletion request submitted.",
-                      )
-                    }
-                    flashExp={actionFlash.exp}
-                    flashDel={actionFlash.del}
-                  />
-                </div>
-              </section>
+                  {/* ───────── Messages ───────── */}
+                  <section id="messages" style={cardWideStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Messages</h2>
+                      <span style={cardCountStyle}>{messages.length}</span>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                        maxHeight: 400,
+                        overflowY: "auto",
+                        padding: 4,
+                      }}
+                    >
+                      {messages.length === 0 ? (
+                        <p style={emptyStyle}>
+                          No messages yet — drop us a note below and we'll get back to you.
+                        </p>
+                      ) : (
+                        messages.map((m) => {
+                          const isCustomer = m.activity_type === "message_customer";
+                          const body =
+                            m.activity_payload?.body ||
+                            m.activity_payload?.summary ||
+                            "(empty)";
+                          return (
+                            <div
+                              key={m.event_id}
+                              style={isCustomer ? bubbleCustomerStyle : bubbleStaffStyle}
+                            >
+                              {body}
+                              <span style={bubbleMetaStyle}>
+                                {isCustomer ? "You" : "Humphries & Parks"} ·{" "}
+                                {formatDateTime(m.occurred_at)}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    <MessageComposer
+                      onSend={(body) =>
+                        callAction("send_message", { body }, "msg", "Message sent.")
+                      }
+                      flash={actionFlash.msg}
+                    />
+                  </section>
+
+                  {/* ───────── Book a service ───────── */}
+                  <section id="book" style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Book a service</h2>
+                    </div>
+                    <BookServiceForm
+                      vehicles={vehicles}
+                      onSubmit={(payload) =>
+                        callAction(
+                          "book_service",
+                          payload,
+                          "book",
+                          "Booking request sent — we'll confirm soon.",
+                        )
+                      }
+                      flash={actionFlash.book}
+                    />
+                    {bookingRequests.length > 0 ? (
+                      <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                        <p style={settingsHintStyle}>Recent requests</p>
+                        <ul style={itemListStyle}>
+                          {bookingRequests.slice(0, 5).map((r) => (
+                            <li key={r.request_id} style={itemRowStyle}>
+                              <div>
+                                <div style={itemTitleStyle}>
+                                  {r.description || "Booking request"}
+                                </div>
+                                <div style={itemMetaStyle}>
+                                  {formatDate(r.submitted_at)}
+                                  {r.estimated_completion
+                                    ? ` · ETA ${formatDate(r.estimated_completion)}`
+                                    : ""}
+                                </div>
+                              </div>
+                              <span style={badgeStyle}>{r.status || "Pending"}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </section>
+
+                  {/* ───────── Our services ───────── */}
+                  <section id="services" style={cardWideStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Our services</h2>
+                    </div>
+                    <p style={settingsHintStyle}>
+                      Anything we do — pick what you need and we'll come back to you
+                      with a quote or callback.
+                    </p>
+                    <ServiceQuoteRow
+                      vehicles={vehicles}
+                      onSubmit={(action, payload, label) =>
+                        callAction(action, payload, "svcq", `${label} request sent.`)
+                      }
+                      flash={actionFlash.svcq}
+                    />
+                  </section>
+
+                  {/* ───────── Sell your car ───────── */}
+                  <section id="sell" style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Sell your car</h2>
+                    </div>
+                    <p style={settingsHintStyle}>
+                      Any age, any mileage, any make or model. Free valuation, no
+                      obligation.
+                    </p>
+                    <SellCarForm
+                      onSubmit={(payload) =>
+                        callAction(
+                          "request_valuation",
+                          payload,
+                          "sell",
+                          "Valuation request sent.",
+                        )
+                      }
+                      flash={actionFlash.sell}
+                    />
+                  </section>
+
+                  {/* ───────── Showroom / callback ───────── */}
+                  <section id="showroom" style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Showroom</h2>
+                    </div>
+                    <p style={settingsHintStyle}>
+                      See something you like? Tell us which car and we'll arrange a
+                      callback or test drive.
+                    </p>
+                    <ShowroomCallbackForm
+                      onSubmit={(payload) =>
+                        callAction(
+                          "request_vehicle_callback",
+                          payload,
+                          "show",
+                          "Callback request sent.",
+                        )
+                      }
+                      flash={actionFlash.show}
+                    />
+                    <div style={{ marginTop: 12 }}>
+                      <Link href="/website#cars">Browse all cars</Link>
+                    </div>
+                  </section>
+
+                  {/* ───────── Activity timeline ───────── */}
+                  <section id="activity" style={cardStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Activity</h2>
+                      <span style={cardCountStyle}>{timeline.length}</span>
+                    </div>
+                    {timeline.length === 0 ? (
+                      <p style={emptyStyle}>
+                        Once you've booked in or had work done, your activity will
+                        appear here.
+                      </p>
+                    ) : (
+                      <div style={timelineStyle}>
+                        {timeline.slice(0, 30).map((event) => (
+                          <div key={event.event_id} style={timelineRowStyle}>
+                            <span style={timelineWhenStyle}>
+                              {formatDate(event.occurred_at)}
+                            </span>
+                            <span style={timelineWhatStyle}>
+                              {humaniseActivity(event)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  {/* ───────── Expanded ownership-hub sections ─────────
+                      Each card renders its own card surface using whatever
+                      classes the component decides — they're left alone here
+                      so the rest of /website/profile follows custglobal.css
+                      without touching shared portal cards. */}
+                  <OwnershipDashboardCard vehicles={vehicles} />
+                  <LiveProgressTrackerCard jobs={jobs} customer={customer} />
+                  <RepairApprovalTimelineCard jobs={jobs} jobStatusHistory={jobStatusHistory} />
+                  <DigitalServiceHistoryCard jobs={jobs} jobHistory={jobHistory} invoices={invoices} vhcByJob={vhcByJob} />
+                  <MotHistoryCard vehicles={vehicles} />
+                  <RecallCheckerCard vehicles={vehicles} />
+                  <VhcEnhancementsCard jobs={jobs} vhcByJob={vhcByJob} vhcDeclinations={vhcDeclinations} vhcMedia={vhcMedia} />
+                  <InvoicesPaymentsExtrasCard invoicePayments={invoicePayments} paymentPlans={paymentPlans} transactions={transactions} />
+                  <DocumentsCentreCard invoices={invoices} vhcMedia={vhcMedia} />
+                  <SalesShowroomCard />
+                  <PartsPortalExtrasCard partsJobItems={partsJobItems} partsRequests={partsRequests} partsOrderCards={partsOrderCards} />
+                  <SmartRepairCard bookingRequests={bookingRequests} />
+                  <ValetDetailingCard bookingRequests={bookingRequests} />
+                  <FamilyGarageCard customer={customer} vehicles={vehicles} />
+                  <SelfServiceToolsCard vehicles={vehicles} vhcDeclinations={vhcDeclinations} />
+                  <AiAssistantCard />
+
+                  {/* ───────── Settings / security ───────── */}
+                  <section id="settings" style={cardWideStyle}>
+                    <div style={cardHeaderStyle}>
+                      <h2 style={cardTitleStyle}>Account &amp; security</h2>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <ChangePasswordRow
+                        onSuccess={() => flash("pw", "Password updated.")}
+                        flash={actionFlash.pw}
+                      />
+                      <ChangeEmailRow
+                        currentEmail={customer.email}
+                        onSuccess={() => {
+                          flash("email", "Email updated.");
+                          refresh();
+                        }}
+                        flash={actionFlash.email}
+                      />
+                      <NotificationPrefsRow
+                        initial={customer}
+                        onSuccess={() => flash("prefs", "Preferences saved.")}
+                        flash={actionFlash.prefs}
+                      />
+                      <ReferralRow
+                        onSubmit={(payload) =>
+                          callAction(
+                            "refer_friend",
+                            payload,
+                            "ref",
+                            "Thanks — we'll be in touch with your friend.",
+                          )
+                        }
+                        flash={actionFlash.ref}
+                      />
+                      <DataActionsRow
+                        onExport={() =>
+                          callAction(
+                            "request_data_export",
+                            {},
+                            "exp",
+                            "Data export requested — we'll email it.",
+                          )
+                        }
+                        onDelete={() =>
+                          callAction(
+                            "request_account_deletion",
+                            {},
+                            "del",
+                            "Deletion request submitted.",
+                          )
+                        }
+                        flashExp={actionFlash.exp}
+                        flashDel={actionFlash.del}
+                      />
+                    </div>
+                  </section>
                 </div>
               </div>
             </>
@@ -1672,20 +1857,22 @@ export default function CustomerProfilePage() {
 
 function DetailField({ label, value }) {
   return (
-    <div className={styles.profileDetailField}>
-      <span className={styles.profileDetailLabel}>{label}</span>
-      <span className={styles.profileDetailValue}>{value || "—"}</span>
+    <div style={detailFieldStyle}>
+      <span style={detailLabelStyle}>{label}</span>
+      <span style={detailValueStyle}>{value || "—"}</span>
     </div>
   );
 }
 
 function FieldInput({ label, value, onChange, type = "text" }) {
+  // type="email" is intentionally collapsed to "text" per custglobal.css —
+  // the customer surface uses one capsule style for all text-shaped input.
+  const inputType = type === "email" ? "text" : type;
   return (
-    <div className={styles.authField}>
-      <label className={styles.authLabel}>{label}</label>
+    <div style={fieldStyle}>
+      <label style={fieldLabelStyle}>{label}</label>
       <input
-        type={type}
-        className={styles.authInput}
+        type={inputType}
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -1698,16 +1885,16 @@ function MessageComposer({ onSend, flash }) {
   const [sending, setSending] = useState(false);
   return (
     <>
-      <div className={styles.profileComposer}>
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
         <textarea
-          className={styles.profileComposerInput}
           placeholder="Type a message…"
           value={body}
           onChange={(e) => setBody(e.target.value)}
+          style={{ flex: 1 }}
         />
         <button
           type="button"
-          className={`app-btn ${styles.authSubmit}`}
+          className="app-btn"
           disabled={sending || !body.trim()}
           onClick={async () => {
             setSending(true);
@@ -1719,7 +1906,7 @@ function MessageComposer({ onSend, flash }) {
           Send
         </button>
       </div>
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </>
   );
 }
@@ -1731,7 +1918,7 @@ function BookServiceForm({ vehicles, onSubmit, flash }) {
   const [submitting, setSubmitting] = useState(false);
   return (
     <form
-      className={styles.authForm}
+      style={formStyle}
       onSubmit={async (e) => {
         e.preventDefault();
         if (!description.trim()) return;
@@ -1746,33 +1933,32 @@ function BookServiceForm({ vehicles, onSubmit, flash }) {
         setSubmitting(false);
       }}
     >
-      <div className={styles.authRow}>
-        <div className={styles.authField}>
-          <label className={styles.authLabel}>Vehicle</label>
-          <WebsiteSelect
+      <div style={formRowStyle}>
+        <div style={fieldStyle}>
+          <label style={fieldLabelStyle}>Vehicle</label>
+          <WebsiteNativeSelect
             value={vehicleId}
             onChange={setVehicleId}
-            placeholder="Select…"
+            placeholder="Select..."
             options={vehicles.map((v) => ({
               value: String(v.vehicle_id),
               label: `${v.reg_number || "—"} · ${[v.make, v.model].filter(Boolean).join(" ")}`,
             }))}
           />
         </div>
-        <div className={styles.authField}>
-          <label className={styles.authLabel}>Preferred date</label>
-          <WebsiteDatePicker
+        <div style={fieldStyle}>
+          <label style={fieldLabelStyle}>Preferred date</label>
+          <WebsiteNativeDateTimeInput
+            type="date"
             value={preferredDate}
             onChange={setPreferredDate}
             placeholder="Pick a date"
           />
         </div>
       </div>
-      <div className={styles.authField}>
-        <label className={styles.authLabel}>What do you need?</label>
+      <div style={fieldStyle}>
+        <label style={fieldLabelStyle}>What do you need?</label>
         <textarea
-          className={styles.authInput}
-          rows={3}
           placeholder="e.g. annual service + brake check"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -1780,12 +1966,12 @@ function BookServiceForm({ vehicles, onSubmit, flash }) {
       </div>
       <button
         type="submit"
-        className={`app-btn ${styles.authSubmit}`}
+        className="app-btn"
         disabled={submitting || !description.trim()}
       >
         {submitting ? "Sending…" : "Request booking"}
       </button>
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </form>
   );
 }
@@ -1797,13 +1983,13 @@ function ChangePasswordRow({ onSuccess, flash }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   return (
-    <div className={styles.profileSettingsRow}>
-      <div className={styles.profileSettingsRowHeader}>
+    <div style={settingsRowStyle}>
+      <div style={settingsRowHeaderStyle}>
         <div>
-          <div className={styles.profileSettingsTitle}>Password</div>
-          <div className={styles.profileSettingsHint}>
+          <div style={settingsTitleStyle}>Password</div>
+          <p style={settingsHintStyle}>
             Change the password you use to sign in here.
-          </div>
+          </p>
         </div>
         <button type="button" onClick={() => setOpen((o) => !o)}>
           {open ? "Cancel" : "Change"}
@@ -1811,7 +1997,7 @@ function ChangePasswordRow({ onSuccess, flash }) {
       </div>
       {open ? (
         <form
-          className={styles.authForm}
+          style={formStyle}
           onSubmit={async (e) => {
             e.preventDefault();
             setError("");
@@ -1841,7 +2027,7 @@ function ChangePasswordRow({ onSuccess, flash }) {
             }
           }}
         >
-          {error ? <p className={styles.authError}>{error}</p> : null}
+          {error ? <p style={errorStyle}>{error}</p> : null}
           <FieldInput
             label="Current password"
             type="password"
@@ -1854,16 +2040,12 @@ function ChangePasswordRow({ onSuccess, flash }) {
             value={next}
             onChange={setNext}
           />
-          <button
-            type="submit"
-            className={`app-btn ${styles.authSubmit}`}
-            disabled={saving}
-          >
+          <button type="submit" className="app-btn" disabled={saving}>
             {saving ? "Saving…" : "Update password"}
           </button>
         </form>
       ) : null}
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </div>
   );
 }
@@ -1875,13 +2057,11 @@ function ChangeEmailRow({ currentEmail, onSuccess, flash }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   return (
-    <div className={styles.profileSettingsRow}>
-      <div className={styles.profileSettingsRowHeader}>
+    <div style={settingsRowStyle}>
+      <div style={settingsRowHeaderStyle}>
         <div>
-          <div className={styles.profileSettingsTitle}>Email</div>
-          <div className={styles.profileSettingsHint}>
-            {currentEmail || "—"}
-          </div>
+          <div style={settingsTitleStyle}>Email</div>
+          <p style={settingsHintStyle}>{currentEmail || "—"}</p>
         </div>
         <button type="button" onClick={() => setOpen((o) => !o)}>
           {open ? "Cancel" : "Change"}
@@ -1889,7 +2069,7 @@ function ChangeEmailRow({ currentEmail, onSuccess, flash }) {
       </div>
       {open ? (
         <form
-          className={styles.authForm}
+          style={formStyle}
           onSubmit={async (e) => {
             e.preventDefault();
             setError("");
@@ -1919,29 +2099,20 @@ function ChangeEmailRow({ currentEmail, onSuccess, flash }) {
             }
           }}
         >
-          {error ? <p className={styles.authError}>{error}</p> : null}
-          <FieldInput
-            label="New email"
-            type="email"
-            value={next}
-            onChange={setNext}
-          />
+          {error ? <p style={errorStyle}>{error}</p> : null}
+          <FieldInput label="New email" value={next} onChange={setNext} />
           <FieldInput
             label="Current password"
             type="password"
             value={pw}
             onChange={setPw}
           />
-          <button
-            type="submit"
-            className={`app-btn ${styles.authSubmit}`}
-            disabled={saving}
-          >
+          <button type="submit" className="app-btn" disabled={saving}>
             {saving ? "Saving…" : "Update email"}
           </button>
         </form>
       ) : null}
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </div>
   );
 }
@@ -1954,18 +2125,16 @@ function NotificationPrefsRow({ initial, onSuccess, flash }) {
   const [motReminders, setMotReminders] = useState(true);
   const [saving, setSaving] = useState(false);
   return (
-    <div className={styles.profileSettingsRow}>
-      <div className={styles.profileSettingsRowHeader}>
+    <div style={settingsRowStyle}>
+      <div style={settingsRowHeaderStyle}>
         <div>
-          <div className={styles.profileSettingsTitle}>Notifications</div>
-          <div className={styles.profileSettingsHint}>
-            How and when we contact you.
-          </div>
+          <div style={settingsTitleStyle}>Notifications</div>
+          <p style={settingsHintStyle}>How and when we contact you.</p>
         </div>
       </div>
-      <div className={styles.authField}>
-        <label className={styles.authLabel}>Preferred channel</label>
-        <WebsiteSelect
+      <div style={fieldStyle}>
+        <label style={fieldLabelStyle}>Preferred channel</label>
+        <WebsiteNativeSelect
           value={channel}
           onChange={setChannel}
           options={[
@@ -1991,14 +2160,10 @@ function NotificationPrefsRow({ initial, onSuccess, flash }) {
         checked={marketingEmail}
         onChange={setMarketingEmail}
       />
-      <Toggle
-        label="Marketing SMS"
-        checked={marketingSms}
-        onChange={setMarketingSms}
-      />
+      <Toggle label="Marketing SMS" checked={marketingSms} onChange={setMarketingSms} />
       <button
         type="button"
-        className={`app-btn ${styles.authSubmit}`}
+        className="app-btn"
         disabled={saving}
         onClick={async () => {
           setSaving(true);
@@ -2026,34 +2191,48 @@ function NotificationPrefsRow({ initial, onSuccess, flash }) {
       >
         {saving ? "Saving…" : "Save preferences"}
       </button>
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </div>
   );
 }
 
 function Toggle({ label, checked, onChange }) {
+  // Custom switch — custglobal.css explicitly avoids checkbox styling on
+  // /website, so we render a role=switch element with onClick / onKeyDown
+  // instead of a native <input type="checkbox">.
+  const toggle = () => onChange(!checked);
   return (
-    <label className={styles.profileToggleRow}>
-      <span>{label}</span>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-    </label>
+    <div
+      style={toggleRowStyle}
+      role="switch"
+      aria-checked={checked}
+      tabIndex={0}
+      onClick={toggle}
+      onKeyDown={(e) => {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          toggle();
+        }
+      }}
+    >
+      <span style={{ fontSize: 13 }}>{label}</span>
+      <span style={toggleSwitchStyle(checked)}>
+        <span style={toggleKnobStyle(checked)} />
+      </span>
+    </div>
   );
 }
 
 function DataActionsRow({ onExport, onDelete, flashExp, flashDel }) {
   return (
-    <div className={styles.profileSettingsRow}>
-      <div className={styles.profileSettingsRowHeader}>
+    <div style={settingsRowStyle}>
+      <div style={settingsRowHeaderStyle}>
         <div>
-          <div className={styles.profileSettingsTitle}>Your data</div>
-          <div className={styles.profileSettingsHint}>
+          <div style={settingsTitleStyle}>Your data</div>
+          <p style={settingsHintStyle}>
             Request a copy of everything we hold, or ask us to remove your
             account.
-          </div>
+          </p>
         </div>
       </div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -2062,7 +2241,7 @@ function DataActionsRow({ onExport, onDelete, flashExp, flashDel }) {
         </button>
         <button
           type="button"
-          className={styles.profileDanger}
+          className="app-btn"
           onClick={() => {
             if (
               window.confirm(
@@ -2076,8 +2255,8 @@ function DataActionsRow({ onExport, onDelete, flashExp, flashDel }) {
           Request account deletion
         </button>
       </div>
-      {flashExp ? <p className={styles.profileSuccess}>{flashExp}</p> : null}
-      {flashDel ? <p className={styles.profileSuccess}>{flashDel}</p> : null}
+      {flashExp ? <p style={successStyle}>{flashExp}</p> : null}
+      {flashDel ? <p style={successStyle}>{flashDel}</p> : null}
     </div>
   );
 }
@@ -2129,17 +2308,17 @@ function ActiveJobTags({ job, bookingRequest, vhcSent }) {
   }
   if (tags.length === 0) return null;
   return (
-    <div className={styles.profileTagRow}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
       {tags.map((t) => (
         <span
           key={t.key}
-          className={`${styles.profileTag} ${
+          style={
             t.tone === "accent"
-              ? styles.profileTagAccent
+              ? tagAccentStyle
               : t.tone === "ok"
-              ? styles.profileTagOk
-              : ""
-          }`}
+              ? tagOkStyle
+              : tagBaseStyle
+          }
         >
           {t.label}
         </span>
@@ -2154,35 +2333,34 @@ function UpdateMileageRow({ vehicles, onSaved, flash }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   return (
-    <div className={styles.profileSettingsRow}>
-      <div className={styles.profileSettingsRowHeader}>
+    <div style={settingsRowStyle}>
+      <div style={settingsRowHeaderStyle}>
         <div>
-          <div className={styles.profileSettingsTitle}>Update mileage</div>
-          <div className={styles.profileSettingsHint}>
+          <div style={settingsTitleStyle}>Update mileage</div>
+          <p style={settingsHintStyle}>
             Help us flag the next service at the right time.
-          </div>
+          </p>
         </div>
       </div>
-      {error ? <p className={styles.authError}>{error}</p> : null}
-      <div className={styles.authRow}>
-        <div className={styles.authField}>
-          <label className={styles.authLabel}>Vehicle</label>
-          <WebsiteSelect
+      {error ? <p style={errorStyle}>{error}</p> : null}
+      <div style={formRowStyle}>
+        <div style={fieldStyle}>
+          <label style={fieldLabelStyle}>Vehicle</label>
+          <WebsiteNativeSelect
             value={vehicleId}
             onChange={setVehicleId}
-            placeholder="Select…"
+            placeholder="Select..."
             options={vehicles.map((v) => ({
               value: String(v.vehicle_id),
               label: `${v.reg_number || "—"} · ${[v.make, v.model].filter(Boolean).join(" ")}`,
             }))}
           />
         </div>
-        <div className={styles.authField}>
-          <label className={styles.authLabel}>Current mileage</label>
+        <div style={fieldStyle}>
+          <label style={fieldLabelStyle}>Current mileage</label>
           <input
             type="number"
             inputMode="numeric"
-            className={styles.authInput}
             value={mileage}
             onChange={(e) => setMileage(e.target.value)}
             placeholder="e.g. 48250"
@@ -2191,24 +2369,21 @@ function UpdateMileageRow({ vehicles, onSaved, flash }) {
       </div>
       <button
         type="button"
-        className={`app-btn ${styles.authSubmit}`}
+        className="app-btn"
         disabled={saving || !vehicleId || !mileage}
         onClick={async () => {
           setError("");
           setSaving(true);
           try {
-            const res = await fetch(
-              "/api/website/actions/update-mileage",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "same-origin",
-                body: JSON.stringify({
-                  vehicle_id: Number(vehicleId),
-                  mileage: Number(mileage),
-                }),
-              },
-            );
+            const res = await fetch("/api/website/actions/update-mileage", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "same-origin",
+              body: JSON.stringify({
+                vehicle_id: Number(vehicleId),
+                mileage: Number(mileage),
+              }),
+            });
             const data = await res.json();
             if (!res.ok || !data.success) {
               throw new Error(data.message || "Could not update mileage.");
@@ -2224,7 +2399,7 @@ function UpdateMileageRow({ vehicles, onSaved, flash }) {
       >
         {saving ? "Saving…" : "Save mileage"}
       </button>
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </div>
   );
 }
@@ -2285,22 +2460,21 @@ function AddVehicleRow({ onSubmit, flash }) {
   };
 
   return (
-    <div className={styles.profileSettingsRow}>
-      <div className={styles.profileSettingsRowHeader}>
+    <div style={settingsRowStyle}>
+      <div style={settingsRowHeaderStyle}>
         <div>
-          <div className={styles.profileSettingsTitle}>Add a vehicle</div>
-          <div className={styles.profileSettingsHint}>
+          <div style={settingsTitleStyle}>Add a vehicle</div>
+          <p style={settingsHintStyle}>
             We'll add this to your account straight away.
-          </div>
+          </p>
         </div>
       </div>
-      <div className={styles.authRow}>
-        <div className={styles.authField}>
-          <label className={styles.authLabel}>Registration</label>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+      <div style={formRowStyle}>
+        <div style={fieldStyle}>
+          <label style={fieldLabelStyle}>Registration</label>
+          <div style={{ display: "flex", gap: 10 }}>
             <input
               type="text"
-              className={styles.authInput}
               value={reg}
               onChange={(e) => setReg(e.target.value)}
               placeholder="e.g. AB12 CDE"
@@ -2308,22 +2482,11 @@ function AddVehicleRow({ onSubmit, flash }) {
             />
             <button
               type="button"
-              data-presentation="profile-reg-lookup"
+              className="app-btn"
               onClick={handleFetchVehicleData}
               disabled={isLoadingVehicle || !reg.trim()}
-              style={{
-                padding: "10px 20px",
-                backgroundColor: isLoadingVehicle ? "var(--surface)" : "var(--primary)",
-                color: "white",
-                border: "none",
-                borderRadius: "var(--radius-xs)",
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: isLoadingVehicle ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-              }}
             >
-              {isLoadingVehicle ? "Loading..." : "Search"}
+              {isLoadingVehicle ? "Loading…" : "Search"}
             </button>
           </div>
         </div>
@@ -2333,12 +2496,8 @@ function AddVehicleRow({ onSubmit, flash }) {
           onChange={setMakeModel}
         />
       </div>
-      {lookupError ? (
-        <p className={styles.authError} style={{ marginTop: 8 }}>
-          {lookupError}
-        </p>
-      ) : null}
-      <div className={styles.authRow}>
+      {lookupError ? <p style={errorStyle}>{lookupError}</p> : null}
+      <div style={formRowStyle}>
         <FieldInput
           label="Mileage (optional)"
           value={mileage}
@@ -2349,7 +2508,7 @@ function AddVehicleRow({ onSubmit, flash }) {
       </div>
       <button
         type="button"
-        className={`app-btn ${styles.authSubmit}`}
+        className="app-btn"
         disabled={submitting || !reg.trim()}
         onClick={async () => {
           setSubmitting(true);
@@ -2368,7 +2527,7 @@ function AddVehicleRow({ onSubmit, flash }) {
       >
         {submitting ? "Adding…" : "Add"}
       </button>
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </div>
   );
 }
@@ -2381,24 +2540,21 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
   const [submitting, setSubmitting] = useState(false);
   return (
     <>
-      <div className={styles.profileServiceGrid}>
+      <div style={serviceGridStyle}>
         {SERVICE_TYPES.map((t) => (
           <button
             key={t.id}
             type="button"
-            className={`${styles.profileServiceTile} ${
-              picked.id === t.id ? styles.profileServiceTileActive : ""
-            }`}
+            style={serviceTileStyle(picked.id === t.id)}
             onClick={() => setPicked(t)}
           >
-            <span className={styles.profileServiceTileTitle}>{t.title}</span>
-            <span className={styles.profileServiceTileHint}>{t.hint}</span>
+            <span style={serviceTileTitleStyle}>{t.title}</span>
+            <span style={serviceTileHintStyle}>{t.hint}</span>
           </button>
         ))}
       </div>
       <form
-        className={styles.authForm}
-        style={{ marginTop: 14 }}
+        style={{ ...formStyle, marginTop: 14 }}
         onSubmit={async (e) => {
           e.preventDefault();
           if (!details.trim()) return;
@@ -2418,10 +2574,10 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
           setSubmitting(false);
         }}
       >
-        <div className={styles.authRow}>
-          <div className={styles.authField}>
-            <label className={styles.authLabel}>Vehicle (optional)</label>
-            <WebsiteSelect
+        <div style={formRowStyle}>
+          <div style={fieldStyle}>
+            <label style={fieldLabelStyle}>Vehicle (optional)</label>
+            <WebsiteNativeSelect
               value={vehicleId}
               onChange={setVehicleId}
               placeholder="Not specific to a vehicle"
@@ -2431,19 +2587,18 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
               }))}
             />
           </div>
-          <div className={styles.authField}>
-            <label className={styles.authLabel}>Preferred date</label>
-            <WebsiteDatePicker
+          <div style={fieldStyle}>
+            <label style={fieldLabelStyle}>Preferred date</label>
+            <WebsiteNativeDateTimeInput
+              type="date"
               value={preferredDate}
               onChange={setPreferredDate}
             />
           </div>
         </div>
-        <div className={styles.authField}>
-          <label className={styles.authLabel}>Tell us a bit more</label>
+        <div style={fieldStyle}>
+          <label style={fieldLabelStyle}>Tell us a bit more</label>
           <textarea
-            className={styles.authInput}
-            rows={3}
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             placeholder={`e.g. ${picked.hint.toLowerCase()}`}
@@ -2451,12 +2606,12 @@ function ServiceQuoteRow({ vehicles, onSubmit, flash }) {
         </div>
         <button
           type="submit"
-          className={`app-btn ${styles.authSubmit}`}
+          className="app-btn"
           disabled={submitting || !details.trim()}
         >
           {submitting ? "Sending…" : `Request ${picked.title.toLowerCase()}`}
         </button>
-        {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+        {flash ? <p style={successStyle}>{flash}</p> : null}
       </form>
     </>
   );
@@ -2471,7 +2626,7 @@ function SellCarForm({ onSubmit, flash }) {
   const [submitting, setSubmitting] = useState(false);
   return (
     <form
-      className={styles.authForm}
+      style={formStyle}
       onSubmit={async (e) => {
         e.preventDefault();
         if (!reg.trim()) return;
@@ -2490,7 +2645,7 @@ function SellCarForm({ onSubmit, flash }) {
         setSubmitting(false);
       }}
     >
-      <div className={styles.authRow}>
+      <div style={formRowStyle}>
         <FieldInput label="Registration" value={reg} onChange={setReg} />
         <FieldInput
           label="Make & model"
@@ -2498,16 +2653,16 @@ function SellCarForm({ onSubmit, flash }) {
           onChange={setMakeModel}
         />
       </div>
-      <div className={styles.authRow}>
+      <div style={formRowStyle}>
         <FieldInput
           label="Mileage"
           value={mileage}
           onChange={setMileage}
           type="number"
         />
-        <div className={styles.authField}>
-          <label className={styles.authLabel}>Condition</label>
-          <WebsiteSelect
+        <div style={fieldStyle}>
+          <label style={fieldLabelStyle}>Condition</label>
+          <WebsiteNativeSelect
             value={condition}
             onChange={setCondition}
             options={[
@@ -2519,11 +2674,9 @@ function SellCarForm({ onSubmit, flash }) {
           />
         </div>
       </div>
-      <div className={styles.authField}>
-        <label className={styles.authLabel}>Notes (optional)</label>
+      <div style={fieldStyle}>
+        <label style={fieldLabelStyle}>Notes (optional)</label>
         <textarea
-          className={styles.authInput}
-          rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Service history, modifications, anything else we should know."
@@ -2531,12 +2684,12 @@ function SellCarForm({ onSubmit, flash }) {
       </div>
       <button
         type="submit"
-        className={`app-btn ${styles.authSubmit}`}
+        className="app-btn"
         disabled={submitting || !reg.trim()}
       >
         {submitting ? "Sending…" : "Get free valuation"}
       </button>
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </form>
   );
 }
@@ -2548,7 +2701,7 @@ function ShowroomCallbackForm({ onSubmit, flash }) {
   const [submitting, setSubmitting] = useState(false);
   return (
     <form
-      className={styles.authForm}
+      style={formStyle}
       onSubmit={async (e) => {
         e.preventDefault();
         if (!interest.trim()) return;
@@ -2564,15 +2717,12 @@ function ShowroomCallbackForm({ onSubmit, flash }) {
         setSubmitting(false);
       }}
     >
-      <FieldInput
-        label="Which vehicle?"
-        value={interest}
-        onChange={setInterest}
-      />
-      <div className={styles.authRow}>
-        <div className={styles.authField}>
-          <label className={styles.authLabel}>Preferred callback</label>
-          <WebsiteDatePicker
+      <FieldInput label="Which vehicle?" value={interest} onChange={setInterest} />
+      <div style={formRowStyle}>
+        <div style={fieldStyle}>
+          <label style={fieldLabelStyle}>Preferred callback</label>
+          <WebsiteNativeDateTimeInput
+            type="date"
             value={callbackDate}
             onChange={setCallbackDate}
           />
@@ -2581,12 +2731,12 @@ function ShowroomCallbackForm({ onSubmit, flash }) {
       </div>
       <button
         type="submit"
-        className={`app-btn ${styles.authSubmit}`}
+        className="app-btn"
         disabled={submitting || !interest.trim()}
       >
         {submitting ? "Sending…" : "Request callback"}
       </button>
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </form>
   );
 }
@@ -2597,28 +2747,23 @@ function ReferralRow({ onSubmit, flash }) {
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   return (
-    <div className={styles.profileSettingsRow}>
-      <div className={styles.profileSettingsRowHeader}>
+    <div style={settingsRowStyle}>
+      <div style={settingsRowHeaderStyle}>
         <div>
-          <div className={styles.profileSettingsTitle}>Refer a friend</div>
-          <div className={styles.profileSettingsHint}>
+          <div style={settingsTitleStyle}>Refer a friend</div>
+          <p style={settingsHintStyle}>
             Send us a friend who needs us — we'll take it from there.
-          </div>
+          </p>
         </div>
       </div>
-      <div className={styles.authRow}>
+      <div style={formRowStyle}>
         <FieldInput label="Their name" value={name} onChange={setName} />
-        <FieldInput
-          label="Their email"
-          value={email}
-          onChange={setEmail}
-          type="email"
-        />
+        <FieldInput label="Their email" value={email} onChange={setEmail} />
       </div>
       <FieldInput label="Their phone (optional)" value={phone} onChange={setPhone} />
       <button
         type="button"
-        className={`app-btn ${styles.authSubmit}`}
+        className="app-btn"
         disabled={submitting || !name.trim() || !email.trim()}
         onClick={async () => {
           setSubmitting(true);
@@ -2635,7 +2780,7 @@ function ReferralRow({ onSubmit, flash }) {
       >
         {submitting ? "Sending…" : "Send referral"}
       </button>
-      {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
+      {flash ? <p style={successStyle}>{flash}</p> : null}
     </div>
   );
 }

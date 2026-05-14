@@ -6,7 +6,7 @@
 
 import { supabaseService, supabase } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
+import { CUSTOMER_BOOKING_REQUEST_ROLES } from "@/lib/auth/serviceActionRoles";
 
 const db = () => supabaseService || supabase;
 
@@ -100,6 +100,30 @@ async function handler(req, res) {
     return res.status(500).json({ success: false, message: "Could not mark request processed." });
   }
 
+  const replyCustomerId = customerId || event.customer_id || null;
+  if (replyCustomerId) {
+    const bookedIn = Boolean(preferredDate && appointmentId);
+    const { error: replyErr } = await client.from("customer_activity_events").insert({
+      customer_id: replyCustomerId,
+      activity_type: "message_staff",
+      activity_source: "bookings",
+      activity_payload: {
+        body: bookedIn
+          ? `Your service booking has been created and booked in for ${preferredDate}.`
+          : "Your service booking has been created. We'll confirm the appointment details shortly.",
+        summary: bookedIn
+          ? `Booking confirmed for ${preferredDate}`
+          : "Booking request confirmed",
+        job_id: jobId,
+        appointment_id: appointmentId,
+      },
+      job_id: jobId,
+    });
+    if (replyErr) {
+      console.error("/process customer reply insert:", replyErr.message);
+    }
+  }
+
   return res.status(200).json({
     success: true,
     event_id: eventId,
@@ -107,4 +131,4 @@ async function handler(req, res) {
   });
 }
 
-export default withRoleGuard(handler, { allow: SERVICE_ACTION_ROLES });
+export default withRoleGuard(handler, { allow: CUSTOMER_BOOKING_REQUEST_ROLES });

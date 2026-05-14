@@ -31,17 +31,20 @@ export default function MeetTheTeam() {
       </header>
 
       <div className={styles.sceneChips} data-reveal>
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            className={`app-btn ${styles.sceneChip} ${filter === f.id ? styles.sceneChipActive : ""}`}
-            onClick={() => setFilter(f.id)}
-            aria-pressed={filter === f.id}
-          >
-            {f.label}
-          </button>
-        ))}
+        {FILTERS.map((f) => {
+          const isActive = filter === f.id;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              className={isActive ? "app-btn" : ""}
+              onClick={() => setFilter(f.id)}
+              aria-pressed={isActive}
+            >
+              {f.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className={styles.teamGrid}>

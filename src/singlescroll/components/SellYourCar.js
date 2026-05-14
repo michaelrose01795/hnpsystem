@@ -34,7 +34,7 @@ export default function SellYourCar() {
         {sellYourCar.steps.map((step) => (
           <div key={step.n} data-reveal>
             <Card3D intensity={0.6}>
-              <article className={styles.scenePanel}>
+              <article className="website-card">
                 <span className={styles.scenePanelMonogram}>{step.n}</span>
                 <h3 className={styles.scenePanelTitle}>{step.title}</h3>
                 <p className={styles.scenePanelBody}>{step.body}</p>
@@ -57,7 +57,7 @@ export default function SellYourCar() {
         <a
           href={sellYourCar.cta.href}
           onClick={handleCta}
-          className={`${styles.btn} ${styles.btnPrimary}`}
+          className="app-btn"
         >
           <span>{sellYourCar.cta.label}</span>
         </a>

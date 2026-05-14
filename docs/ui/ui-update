@@ -64,13 +64,18 @@ Painters
 CUSTOMER
 ====================================================
 
-- /customer (DONE
+- /website/profile (CHECK)
+check global.css style
 
-- /website/profile (DONE
+- /website (CHECK)
+check global.css style
 
-- /website (DONE
+- /website/dev (CHECK)
+check global.css style
 
-- /website/login (DONE
+- /website/login (TODO)
+check global.css style
+
 
 
 ====================================================

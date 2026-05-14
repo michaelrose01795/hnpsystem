@@ -39,19 +39,23 @@ export default function VehicleGallery({ filter, onFilterChange }) {
       ariaLabel="Our cars"
     >
       <div className={styles.sceneChips} data-reveal>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            className={`app-btn ${styles.sceneChip} ${
-              (filter || "all") === tab.id ? styles.sceneChipActive : ""
-            }`}
-            onClick={() => onFilterChange(tab.id)}
-            aria-pressed={(filter || "all") === tab.id}
-          >
-            {tab.label}
-          </button>
-        ))}
+        {TABS.map((tab) => {
+          // Active filter uses the Secondary action (red) for prominence;
+          // inactive filters use Primary action (clear glass) so a row of
+          // chips reads as one selected + the rest as alternatives.
+          const isActive = (filter || "all") === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              className={isActive ? "app-btn" : ""}
+              onClick={() => onFilterChange(tab.id)}
+              aria-pressed={isActive}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className={styles.galleryGrid}>

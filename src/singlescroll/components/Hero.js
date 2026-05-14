@@ -80,9 +80,7 @@ export default function Hero() {
               key={cta.label}
               href={cta.href}
               onClick={handleCta(cta.href)}
-              className={`${styles.btn} ${
-                cta.variant === "primary" ? styles.btnPrimary : styles.btnGhost
-              }`}
+              className="app-btn"
             >
               <span>{cta.label}</span>
             </a>

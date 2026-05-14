@@ -26,7 +26,7 @@ export default function ContactUs() {
         className={`${styles.sceneSplit} ${styles.sceneSplitContact}`}
         data-reveal
       >
-        <article className={styles.scenePanel} style={{ padding: "32px" }}>
+        <article className="website-card">
           <div className={styles.sceneInfoBlock}>
             <p className={styles.sceneInfoLabel}>Call us</p>
             <a href={contact.phoneHref} className={styles.sceneInfoPhone}>

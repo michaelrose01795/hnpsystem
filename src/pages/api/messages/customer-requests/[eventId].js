@@ -4,7 +4,7 @@
 
 import { supabaseService, supabase } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
+import { CUSTOMER_BOOKING_REQUEST_ROLES } from "@/lib/auth/serviceActionRoles";
 
 const db = () => supabaseService || supabase;
 
@@ -71,4 +71,4 @@ async function handler(req, res) {
   });
 }
 
-export default withRoleGuard(handler, { allow: SERVICE_ACTION_ROLES });
+export default withRoleGuard(handler, { allow: CUSTOMER_BOOKING_REQUEST_ROLES });

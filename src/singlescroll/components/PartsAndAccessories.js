@@ -33,7 +33,7 @@ export default function PartsAndAccessories() {
 
       <div className={styles.partsFooter} data-reveal>
         <p className={styles.partsFootnote}>{partsContent.body[1]}</p>
-        <a href={partsContent.cta.href} className={`${styles.btn} ${styles.btnPrimary}`}>
+        <a href={partsContent.cta.href} className="app-btn">
           {partsContent.cta.label}
         </a>
       </div>

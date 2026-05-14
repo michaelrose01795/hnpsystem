@@ -171,7 +171,7 @@ export default function TopNav({ onFilterChange }) {
           )}
         </div>
 
-        <a className={styles.navCta} href={siteContent.contact.phoneHref}>
+        <a className="app-btn" href={siteContent.contact.phoneHref}>
           <span>{siteContent.contact.phone}</span>
         </a>
       </div>

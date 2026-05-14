@@ -33,7 +33,7 @@ export default function Motability() {
           <div className={styles.sceneCtaRow}>
             <a
               href={motability.cta.href}
-              className={`${styles.btn} ${styles.btnPrimary}`}
+              className="app-btn"
             >
               <span>{motability.cta.label}</span>
             </a>
@@ -58,7 +58,7 @@ export default function Motability() {
           {motability.rangeBrands.map((brand) => (
             <div key={brand.brand} data-reveal>
               <Card3D intensity={0.6}>
-                <article className={styles.scenePanel}>
+                <article className="website-card">
                   <span className={styles.scenePanelEyebrow}>{brand.brand}</span>
                   <h3 className={styles.scenePanelTitle}>Available models</h3>
                   <ul className={styles.motabilityModelList}>

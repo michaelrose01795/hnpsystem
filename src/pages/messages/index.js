@@ -11,7 +11,7 @@ import React, {
 "react";
 import { useRouter } from "next/router"; // Next.js router for reading query params
 import { useUser } from "@/context/UserContext";
-import { hasServiceActionAccess } from "@/lib/auth/serviceActionRoles";
+import { hasCustomerBookingRequestAccess } from "@/lib/auth/serviceActionRoles";
 import { supabase } from "@/lib/database/supabaseClient";
 import { appShellTheme } from "@/styles/appTheme";
 import useMessagesApi from "@/hooks/api/useMessagesApi";
@@ -1003,18 +1003,23 @@ function MessagesPage() {
   const [directorySearch, setDirectorySearch] = useState("");
   const [directoryLoading, setDirectoryLoading] = useState(false);
   const [systemNotifications, setSystemNotifications] = useState([]);
-  // Only users who see "Create Job Card" in the topbar should see the
-  // customer-portal request inbox cards (and be allowed to act on them).
-  const canSeeCustomerRequests = hasServiceActionAccess(user?.roles);
+  const [bookingNotifications, setBookingNotifications] = useState([]);
+  // Customer portal booking requests are handled by the Service role only.
+  const canSeeCustomerRequests = hasCustomerBookingRequestAccess(user?.roles);
   const handleCreateJobFromRequest = (note) => {
     if (!note?.event_id || !canSeeCustomerRequests) return;
     router.push(`/job-cards/create?fromEvent=${encodeURIComponent(note.event_id)}`);
   };
   const [systemLoading, setSystemLoading] = useState(false);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
   const [systemError, setSystemError] = useState("");
+  const [bookingsError, setBookingsError] = useState("");
   const [activeSystemView, setActiveSystemView] = useState(false);
+  const [activeBookingsView, setActiveBookingsView] = useState(false);
   const [lastSystemViewedAt, setLastSystemViewedAt] = useState(null);
+  const [lastBookingsViewedAt, setLastBookingsViewedAt] = useState(null);
   const [systemUnreadCutoff, setSystemUnreadCutoff] = useState(null);
+  const [bookingsUnreadCutoff, setBookingsUnreadCutoff] = useState(null);
   const [activeThreadUnreadCutoff, setActiveThreadUnreadCutoff] = useState(false);
   const [dismissedUnreadMarkers, setDismissedUnreadMarkers] = useState({});
   const [threadUnreadMarkerEl, setThreadUnreadMarkerEl] = useState(null);
@@ -1075,6 +1080,7 @@ function MessagesPage() {
     setMobilePanelView("threads");
     setActiveThreadId(null); // deselect thread to show list
     setActiveSystemView(false); // exit system view too
+    setActiveBookingsView(false);
     setMessages([]); // clear messages panel
     if (mobileHistoryPushedRef.current && !calledFromPopState) {
       mobileHistoryPushedRef.current = false; // reset flag before popping
@@ -1094,13 +1100,13 @@ function MessagesPage() {
   useEffect(() => {
     if (!isMobileView) return; // only on mobile
     const onPopState = () => {
-      if (mobileHistoryPushedRef.current || activeThreadId || activeSystemView) {
+      if (mobileHistoryPushedRef.current || activeThreadId || activeSystemView || activeBookingsView) {
         handleMobileBack(true); // pass true so we don't call history.back again
       }
     };
     window.addEventListener("popstate", onPopState); // listen for back button
     return () => window.removeEventListener("popstate", onPopState); // cleanup
-  }, [activeSystemView, activeThreadId, isMobileView, handleMobileBack]);
+  }, [activeBookingsView, activeSystemView, activeThreadId, isMobileView, handleMobileBack]);
 
   const scrollerRef = useRef(null);
   const unreadMarkerTimersRef = useRef(new Map());
@@ -1196,6 +1202,13 @@ function MessagesPage() {
     ),
     [systemNotifications]
   );
+  const orderedBookingNotifications = useMemo(
+    () =>
+    [...(bookingNotifications || [])].sort(
+      (a, b) => new Date(a?.created_at || 0).getTime() - new Date(b?.created_at || 0).getTime()
+    ),
+    [bookingNotifications]
+  );
   const latestSystemNotification =
   orderedSystemNotifications?.[orderedSystemNotifications.length - 1];
   const latestSystemTimestamp = latestSystemNotification?.created_at || null;
@@ -1203,10 +1216,26 @@ function MessagesPage() {
   const lastSystemTime = lastSystemViewedAt ? new Date(lastSystemViewedAt).getTime() : 0;
   const hasSystemUnread =
   Boolean(systemNotifications.length) && latestSystemTime > lastSystemTime;
-  const systemTimestampLabel = latestSystemTimestamp ?
-  formatNotificationTimestamp(latestSystemTimestamp) :
+  const latestBookingNotification =
+  orderedBookingNotifications?.[orderedBookingNotifications.length - 1];
+  const latestBookingTimestamp = latestBookingNotification?.created_at || null;
+  const latestBookingTime = latestBookingTimestamp ? new Date(latestBookingTimestamp).getTime() : 0;
+  const lastBookingsTime = lastBookingsViewedAt ? new Date(lastBookingsViewedAt).getTime() : 0;
+  const hasBookingsUnread =
+  Boolean(bookingNotifications.length) && latestBookingTime > lastBookingsTime;
+  const activePseudoNotifications = activeBookingsView ?
+  orderedBookingNotifications :
+  orderedSystemNotifications;
+  const activePseudoUnreadCutoff = activeBookingsView ?
+  bookingsUnreadCutoff :
+  systemUnreadCutoff;
+  const activePseudoTimestamp = activeBookingsView ?
+  latestBookingTimestamp :
+  latestSystemTimestamp;
+  const systemTimestampLabel = activePseudoTimestamp ?
+  formatNotificationTimestamp(activePseudoTimestamp) :
   "No updates yet";
-  const isSystemThreadActive = activeSystemView;
+  const isSystemThreadActive = activeSystemView || activeBookingsView;
   const activeThreadUnreadMarkerIndex = useMemo(() => {
     if (!messages.length) return -1;
     if (activeThreadUnreadCutoff === false) return -1;
@@ -1218,31 +1247,31 @@ function MessagesPage() {
     );
   }, [messages, activeThreadUnreadCutoff]);
   const systemUnreadMarkerIndex = useMemo(() => {
-    if (!orderedSystemNotifications.length) return -1;
-    if (!systemUnreadCutoff) return 0;
-    const cutoffTime = new Date(systemUnreadCutoff).getTime();
+    if (!activePseudoNotifications.length) return -1;
+    if (!activePseudoUnreadCutoff) return 0;
+    const cutoffTime = new Date(activePseudoUnreadCutoff).getTime();
     if (Number.isNaN(cutoffTime)) return -1;
-    return orderedSystemNotifications.findIndex(
+    return activePseudoNotifications.findIndex(
       (note) => new Date(note?.created_at || 0).getTime() > cutoffTime
     );
-  }, [orderedSystemNotifications, systemUnreadCutoff]);
+  }, [activePseudoNotifications, activePseudoUnreadCutoff]);
   const activeThreadUnreadMarkerKey = useMemo(() => {
     if (!activeThread || activeThreadUnreadMarkerIndex < 0) return null;
     const cutoff = activeThreadUnreadCutoff === null ? "none" : String(activeThreadUnreadCutoff);
     return `thread:${activeThread.id}:${cutoff}`;
   }, [activeThread, activeThreadUnreadCutoff, activeThreadUnreadMarkerIndex]);
   const systemUnreadMarkerKey = useMemo(() => {
-    if (!activeSystemView || systemUnreadMarkerIndex < 0) return null;
-    const cutoff = systemUnreadCutoff === null ? "none" : String(systemUnreadCutoff);
-    return `system:${cutoff}`;
-  }, [activeSystemView, systemUnreadCutoff, systemUnreadMarkerIndex]);
+    if (!isSystemThreadActive || systemUnreadMarkerIndex < 0) return null;
+    const cutoff = activePseudoUnreadCutoff === null ? "none" : String(activePseudoUnreadCutoff);
+    return `${activeBookingsView ? "bookings" : "system"}:${cutoff}`;
+  }, [activeBookingsView, activePseudoUnreadCutoff, isSystemThreadActive, systemUnreadMarkerIndex]);
   const showThreadUnreadMarker = Boolean(
     activeThreadUnreadMarkerKey && !dismissedUnreadMarkers[activeThreadUnreadMarkerKey]
   );
   const showSystemUnreadMarker = Boolean(
     systemUnreadMarkerKey && !dismissedUnreadMarkers[systemUnreadMarkerKey]
   );
-  const currentUnreadMarkerKey = activeSystemView ?
+  const currentUnreadMarkerKey = isSystemThreadActive ?
   showSystemUnreadMarker ? systemUnreadMarkerKey : null :
   showThreadUnreadMarker ? activeThreadUnreadMarkerKey : null;
 
@@ -1388,6 +1417,7 @@ function MessagesPage() {
         referenceThread?.hasUnread ? currentMember?.lastReadAt || null : false
       );
       setActiveSystemView(false);
+      setActiveBookingsView(false);
       setActiveThreadId(threadId);
       setLoadingMessages(true);
       setConversationError("");
@@ -1419,12 +1449,28 @@ function MessagesPage() {
     }
     setSystemUnreadCutoff(lastSystemViewedAt || null);
     setActiveSystemView(true);
+    setActiveBookingsView(false);
     setActiveThreadId(null);
     setMessages([]);
     setLoadingMessages(false);
     setConversationError("");
     setLastSystemViewedAt(new Date().toISOString());
   }, [ensureMobileConversationHistory, isMobileView, lastSystemViewedAt]);
+
+  const openBookingsThread = useCallback(() => {
+    ensureMobileConversationHistory();
+    if (isMobileView) {
+      setMobilePanelView("conversation");
+    }
+    setBookingsUnreadCutoff(lastBookingsViewedAt || null);
+    setActiveBookingsView(true);
+    setActiveSystemView(false);
+    setActiveThreadId(null);
+    setMessages([]);
+    setLoadingMessages(false);
+    setConversationError("");
+    setLastBookingsViewedAt(new Date().toISOString());
+  }, [ensureMobileConversationHistory, isMobileView, lastBookingsViewedAt]);
 
   const submitLeaveDecision = useCallback(
     async (message, decision, reason = "") => {
@@ -1875,45 +1921,19 @@ function MessagesPage() {
       setSystemLoading(true);
       setSystemError("");
       try {
-        // Fetch existing system notifications and pending customer-portal
-        // requests in parallel so the feed shows both as system messages.
-        const [notesResult, requestsResult] = await Promise.all([
-          supabase.
-          from("notifications").
-          select("notification_id, message, created_at, target_role").
-          or("target_role.ilike.%customer%,target_role.is.null").
-          order("created_at", { ascending: false }).
-          limit(5),
-          canSeeCustomerRequests
-            ? fetch("/api/messages/customer-requests", { credentials: "same-origin" }).
-              then((res) => (res.ok ? res.json() : { items: [] })).
-              catch(() => ({ items: [] }))
-            : Promise.resolve({ items: [] }),
-        ]);
+        const notesResult = await supabase.
+        from("notifications").
+        select("notification_id, message, created_at, target_role").
+        or("target_role.ilike.%customer%,target_role.is.null").
+        order("created_at", { ascending: false }).
+        limit(5);
         if (notesResult.error) throw notesResult.error;
         const baseNotes = (notesResult.data || []).map((row) => ({
           ...row,
           kind: "notification",
         }));
-        const requestNotes = (requestsResult?.items || []).map((req) => ({
-          notification_id: `event-${req.event_id}`,
-          kind: "customer_request",
-          event_id: req.event_id,
-          activity_type: req.activity_type,
-          type_label: req.type_label,
-          customer_name: req.customer_name,
-          vehicle_label: req.vehicle_label,
-          vehicle_reg: req.vehicle_reg,
-          description: req.description,
-          preferred_date: req.preferred_date,
-          message: `${req.type_label} · ${req.customer_name}${
-            req.vehicle_label ? ` · ${req.vehicle_label}` : ""
-          }`,
-          created_at: req.occurred_at,
-          target_role: "customer",
-        }));
         if (!cancelled) {
-          setSystemNotifications([...requestNotes, ...baseNotes]);
+          setSystemNotifications(baseNotes);
         }
       } catch (fetchError) {
         if (!cancelled) {
@@ -1939,9 +1959,73 @@ function MessagesPage() {
         const targetRole = (entry.target_role || "").toLowerCase();
         if (targetRole && !targetRole.includes("customer")) return;
         setSystemNotifications((prev) => {
-          const next = [entry, ...prev];
+          const next = [{ ...entry, kind: "notification" }, ...prev];
           return next.slice(0, 5);
         });
+      }
+    ).
+    subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadBookingNotifications = async () => {
+      setBookingsLoading(true);
+      setBookingsError("");
+      try {
+        const requestsResult = canSeeCustomerRequests
+          ? await fetch("/api/messages/customer-requests", { credentials: "same-origin" })
+            .then((res) => (res.ok ? res.json() : { items: [] }))
+            .catch(() => ({ items: [] }))
+          : { items: [] };
+        const requestNotes = (requestsResult?.items || []).map((req) => ({
+          notification_id: `event-${req.event_id}`,
+          kind: "customer_request",
+          event_id: req.event_id,
+          activity_type: req.activity_type,
+          type_label: req.type_label,
+          customer_name: req.customer_name,
+          vehicle_label: req.vehicle_label,
+          vehicle_reg: req.vehicle_reg,
+          description: req.description,
+          preferred_date: req.preferred_date,
+          message: `${req.type_label} ${req.customer_name}${
+            req.vehicle_label ? ` · ${req.vehicle_label}` : ""
+          }`,
+          created_at: req.occurred_at,
+          target_role: "customer",
+        }));
+        if (!cancelled) {
+          setBookingNotifications(requestNotes);
+        }
+      } catch (fetchError) {
+        if (!cancelled) {
+          setBookingsError(fetchError?.message || "Unable to load bookings.");
+          setBookingNotifications([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setBookingsLoading(false);
+        }
+      }
+    };
+
+    loadBookingNotifications();
+    const channel = supabase.
+    channel("admin-booking-requests").
+    on(
+      "postgres_changes",
+      { schema: "public", table: "customer_activity_events", event: "INSERT" },
+      (payload) => {
+        const entry = payload?.new;
+        if (!entry) return;
+        if (entry.activity_type !== "booking_request") return;
+        loadBookingNotifications();
       }
     ).
     subscribe();
@@ -2019,13 +2103,13 @@ function MessagesPage() {
     if (isMobileView) {
       return;
     }
-    if (activeSystemView) {
+    if (isSystemThreadActive) {
       return;
     }
     if (!activeThreadId) {
       openThread(visibleThreads[0].id, visibleThreads[0]);
     }
-  }, [visibleThreads, activeThreadId, activeSystemView, isMobileView, openThread]);
+  }, [visibleThreads, activeThreadId, isSystemThreadActive, isMobileView, openThread]);
 
   useEffect(() => {
     if (scrollerRef.current) {
@@ -2040,7 +2124,7 @@ function MessagesPage() {
       scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight;
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [activeThreadId, activeSystemView, isMobileView, messages.length, mobilePanelView]);
+  }, [activeThreadId, isSystemThreadActive, isMobileView, messages.length, mobilePanelView]);
 
   useEffect(() => {
     const previousKey = activeUnreadMarkerKeyRef.current;
@@ -2374,6 +2458,9 @@ function MessagesPage() {
   selectedRecipients.length === 1 :
   selectedRecipients.length > 0;
 
+  const activePseudoLoading = activeBookingsView ? bookingsLoading : systemLoading;
+  const activePseudoError = activeBookingsView ? bookingsError : systemError;
+
   if (!user) {
     return <MessagesPageUi view="section1" />;
 
@@ -2382,7 +2469,7 @@ function MessagesPage() {
 
   }
 
-  return <MessagesPageUi view="section2" activeSystemView={activeSystemView} activeThread={activeThread} activeThreadId={activeThreadId} activeThreadUnreadMarkerIndex={activeThreadUnreadMarkerIndex} availableCommands={availableCommands} Button={Button} canEditGroup={canEditGroup} canInitiateChat={canInitiateChat} canSend={canSend} cardStyle={cardStyle} Chip={Chip} closeGroupEditModal={closeGroupEditModal} closeNewChatModal={closeNewChatModal} ColleagueRowsSkeleton={ColleagueRowsSkeleton} commandHelpOpen={commandHelpOpen} commandSuggestions={commandSuggestions} composeError={composeError} composeMode={composeMode} ComposeToggleButton={ComposeToggleButton} conversationError={conversationError} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} directory={directory} directoryLoading={directoryLoading} directorySearch={directorySearch} filteredThreads={unpinnedFilteredThreads} formatNotificationTimestamp={formatNotificationTimestamp} groupEditBusy={groupEditBusy} groupEditError={groupEditError} groupEditModalOpen={groupEditModalOpen} groupEditTitle={groupEditTitle} groupLeaderCount={groupLeaderCount} groupManageBusy={groupManageBusy} groupManageError={groupManageError} groupMembersModalOpen={groupMembersModalOpen} groupName={groupName} groupSearchLoading={groupSearchLoading} groupSearchResults={groupSearchResults} groupSearchTerm={groupSearchTerm} handleAddMemberToGroup={handleAddMemberToGroup} handleApproveLeaveRequest={handleApproveLeaveRequest} handleCloseSelectionMode={handleCloseSelectionMode} handleConfirmDeclineLeaveRequest={handleConfirmDeclineLeaveRequest} handleDeleteSelectedThreads={handleDeleteSelectedThreads} handleDirectoryUser={handleDirectoryUser} handleInsertCommandFromHelp={handleInsertCommandFromHelp} handleMessageDraftChange={handleMessageDraftChange} handleMobileBack={handleMobileBack} handleOpenDeclineLeaveRequest={handleOpenDeclineLeaveRequest} handleOpenNewChatModal={handleOpenNewChatModal} handleRemoveMemberFromGroup={handleRemoveMemberFromGroup} handleSaveGroupDetails={handleSaveGroupDetails} handleSelectCommand={handleSelectCommand} handleSendMessage={handleSendMessage} handleStartChat={handleStartChat} handleThreadCheckboxChange={handleThreadCheckboxChange} handleTogglePinnedThread={handleTogglePinnedThread} hasSystemUnread={hasSystemUnread} InlineLoading={InlineLoading} InputField={InputField} isGroupChat={isGroupChat} isGroupLeader={isGroupLeader} isMobileView={isMobileView} isRecipientSelected={isRecipientSelected} leaveDecisionBusy={leaveDecisionBusy} leaveDecisionError={leaveDecisionError} leaveDeclineModal={leaveDeclineModal} leaveDeclineReason={leaveDeclineReason} loadingMessages={loadingMessages} loadingThreads={loadingThreads} MessageBubble={MessageBubble} MessageBubblesSkeleton={MessageBubblesSkeleton} messageDraft={messageDraft} messageReactions={messageReactions} messages={messages} mobilePanelView={mobilePanelView} ModalPortal={ModalPortal} newChatModalOpen={newChatModalOpen} openGroupEditModal={openGroupEditModal} openSystemNotificationsThread={openSystemNotificationsThread} openThread={openThread} orderedSystemNotifications={orderedSystemNotifications} handleCreateJobFromRequest={handleCreateJobFromRequest} palette={palette} pinnedThreads={pinnedThreads} radii={radii} replyTo={replyTo} scrollerRef={scrollerRef} SearchBar={SearchBar} SectionTitle={SectionTitle} selectedRecipients={selectedRecipients} selectedThreadIds={selectedThreadIds} sending={sending} setCommandHelpOpen={setCommandHelpOpen} setComposeError={setComposeError} setComposeMode={setComposeMode} setDirectorySearch={setDirectorySearch} setGroupEditTitle={setGroupEditTitle} setGroupMembersModalOpen={setGroupMembersModalOpen} setGroupName={setGroupName} setGroupSearchTerm={setGroupSearchTerm} setLeaveDecisionError={setLeaveDecisionError} setLeaveDeclineModal={setLeaveDeclineModal} setLeaveDeclineReason={setLeaveDeclineReason} setMessageReactions={setMessageReactions} setReplyTo={setReplyTo} setSelectedRecipients={setSelectedRecipients} setSelectedThreadIds={setSelectedThreadIds} setSystemUnreadMarkerEl={setSystemUnreadMarkerEl} setThreadSearchTerm={setThreadSearchTerm} setThreadSelectionMode={setThreadSelectionMode} setThreadUnreadMarkerEl={setThreadUnreadMarkerEl} shadows={shadows} showCommandSuggestions={showCommandSuggestions} showSystemUnreadMarker={showSystemUnreadMarker} showThreadUnreadMarker={showThreadUnreadMarker} StatusMessage={StatusMessage} systemError={systemError} systemLoading={systemLoading} systemTimestampLabel={systemTimestampLabel} systemTitleColor={systemTitleColor} systemUnreadMarkerIndex={systemUnreadMarkerIndex} threadDeleteBusy={threadDeleteBusy} threadDeleteError={threadDeleteError} ThreadRowsSkeleton={ThreadRowsSkeleton} threadSearchTerm={threadSearchTerm} threadSelectionMode={threadSelectionMode} unreadBackgroundColor={unreadBackgroundColor} user={user} userNameColor={userNameColor} visibleThreads={visibleThreads} />;
+  return <MessagesPageUi view="section2" activeBookingsView={activeBookingsView} activeSystemView={activeSystemView} activeThread={activeThread} activeThreadId={activeThreadId} activeThreadUnreadMarkerIndex={activeThreadUnreadMarkerIndex} availableCommands={availableCommands} Button={Button} canEditGroup={canEditGroup} canInitiateChat={canInitiateChat} canSeeCustomerRequests={canSeeCustomerRequests} canSend={canSend} cardStyle={cardStyle} Chip={Chip} closeGroupEditModal={closeGroupEditModal} closeNewChatModal={closeNewChatModal} ColleagueRowsSkeleton={ColleagueRowsSkeleton} commandHelpOpen={commandHelpOpen} commandSuggestions={commandSuggestions} composeError={composeError} composeMode={composeMode} ComposeToggleButton={ComposeToggleButton} conversationError={conversationError} dbUserId={dbUserId} DevLayoutSection={DevLayoutSection} directory={directory} directoryLoading={directoryLoading} directorySearch={directorySearch} filteredThreads={unpinnedFilteredThreads} formatNotificationTimestamp={formatNotificationTimestamp} groupEditBusy={groupEditBusy} groupEditError={groupEditError} groupEditModalOpen={groupEditModalOpen} groupEditTitle={groupEditTitle} groupLeaderCount={groupLeaderCount} groupManageBusy={groupManageBusy} groupManageError={groupManageError} groupMembersModalOpen={groupMembersModalOpen} groupName={groupName} groupSearchLoading={groupSearchLoading} groupSearchResults={groupSearchResults} groupSearchTerm={groupSearchTerm} handleAddMemberToGroup={handleAddMemberToGroup} handleApproveLeaveRequest={handleApproveLeaveRequest} handleCloseSelectionMode={handleCloseSelectionMode} handleConfirmDeclineLeaveRequest={handleConfirmDeclineLeaveRequest} handleDeleteSelectedThreads={handleDeleteSelectedThreads} handleDirectoryUser={handleDirectoryUser} handleInsertCommandFromHelp={handleInsertCommandFromHelp} handleMessageDraftChange={handleMessageDraftChange} handleMobileBack={handleMobileBack} handleOpenDeclineLeaveRequest={handleOpenDeclineLeaveRequest} handleOpenNewChatModal={handleOpenNewChatModal} handleRemoveMemberFromGroup={handleRemoveMemberFromGroup} handleSaveGroupDetails={handleSaveGroupDetails} handleSelectCommand={handleSelectCommand} handleSendMessage={handleSendMessage} handleStartChat={handleStartChat} handleThreadCheckboxChange={handleThreadCheckboxChange} handleTogglePinnedThread={handleTogglePinnedThread} hasBookingsUnread={hasBookingsUnread} hasSystemUnread={hasSystemUnread} InlineLoading={InlineLoading} InputField={InputField} isGroupChat={isGroupChat} isGroupLeader={isGroupLeader} isMobileView={isMobileView} isRecipientSelected={isRecipientSelected} leaveDecisionBusy={leaveDecisionBusy} leaveDecisionError={leaveDecisionError} leaveDeclineModal={leaveDeclineModal} leaveDeclineReason={leaveDeclineReason} loadingMessages={loadingMessages} loadingThreads={loadingThreads} MessageBubble={MessageBubble} MessageBubblesSkeleton={MessageBubblesSkeleton} messageDraft={messageDraft} messageReactions={messageReactions} messages={messages} mobilePanelView={mobilePanelView} ModalPortal={ModalPortal} newChatModalOpen={newChatModalOpen} openBookingsThread={openBookingsThread} openGroupEditModal={openGroupEditModal} openSystemNotificationsThread={openSystemNotificationsThread} openThread={openThread} orderedSystemNotifications={activePseudoNotifications} handleCreateJobFromRequest={handleCreateJobFromRequest} palette={palette} pinnedThreads={pinnedThreads} radii={radii} replyTo={replyTo} scrollerRef={scrollerRef} SearchBar={SearchBar} SectionTitle={SectionTitle} selectedRecipients={selectedRecipients} selectedThreadIds={selectedThreadIds} sending={sending} setCommandHelpOpen={setCommandHelpOpen} setComposeError={setComposeError} setComposeMode={setComposeMode} setDirectorySearch={setDirectorySearch} setGroupEditTitle={setGroupEditTitle} setGroupMembersModalOpen={setGroupMembersModalOpen} setGroupName={setGroupName} setGroupSearchTerm={setGroupSearchTerm} setLeaveDecisionError={setLeaveDecisionError} setLeaveDeclineModal={setLeaveDeclineModal} setLeaveDeclineReason={setLeaveDeclineReason} setMessageReactions={setMessageReactions} setReplyTo={setReplyTo} setSelectedRecipients={setSelectedRecipients} setSelectedThreadIds={setSelectedThreadIds} setSystemUnreadMarkerEl={setSystemUnreadMarkerEl} setThreadSearchTerm={setThreadSearchTerm} setThreadSelectionMode={setThreadSelectionMode} setThreadUnreadMarkerEl={setThreadUnreadMarkerEl} shadows={shadows} showCommandSuggestions={showCommandSuggestions} showSystemUnreadMarker={showSystemUnreadMarker} showThreadUnreadMarker={showThreadUnreadMarker} StatusMessage={StatusMessage} systemError={activePseudoError} systemLoading={activePseudoLoading} systemTimestampLabel={systemTimestampLabel} systemTitleColor={systemTitleColor} systemUnreadMarkerIndex={systemUnreadMarkerIndex} threadDeleteBusy={threadDeleteBusy} threadDeleteError={threadDeleteError} ThreadRowsSkeleton={ThreadRowsSkeleton} threadSearchTerm={threadSearchTerm} threadSelectionMode={threadSelectionMode} unreadBackgroundColor={unreadBackgroundColor} user={user} userNameColor={userNameColor} visibleThreads={visibleThreads} />;
 
 
 

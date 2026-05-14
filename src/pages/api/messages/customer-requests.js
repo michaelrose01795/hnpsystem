@@ -1,7 +1,7 @@
 // file location: src/pages/api/messages/customer-requests.js
 // Returns the queue of customer-portal request events that staff still
 // need to action (book service, valet, parts enquiry, etc.). Used by
-// the /messages system-notification feed so each request renders as an
+// the /messages Bookings pinned feed so each request renders as an
 // inbox card with a 'Create job' button.
 //
 // Source: public.customer_activity_events, filtered to actionable
@@ -11,7 +11,7 @@
 
 import { supabaseService, supabase } from "@/lib/database/supabaseClient";
 import { withRoleGuard } from "@/lib/auth/roleGuard";
-import { SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
+import { CUSTOMER_BOOKING_REQUEST_ROLES } from "@/lib/auth/serviceActionRoles";
 
 const db = () => supabaseService || supabase;
 
@@ -144,4 +144,4 @@ async function handler(req, res) {
   return res.status(200).json({ success: true, items });
 }
 
-export default withRoleGuard(handler, { allow: SERVICE_ACTION_ROLES });
+export default withRoleGuard(handler, { allow: CUSTOMER_BOOKING_REQUEST_ROLES });
