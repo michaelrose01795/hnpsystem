@@ -125,6 +125,16 @@ async function handler(req, res, session) {
         created_at: createdAt,
       });
       if (insertError) throw insertError;
+    } else {
+      const { error: resetViewedError } = await supabaseService
+        .from("job_share_links")
+        .update({ viewed_at: null })
+        .eq("job_number", canonicalJobNumber)
+        .eq("link_code", linkCode);
+
+      if (resetViewedError) {
+        console.warn("[send-vhc] Failed to reset viewed status for reused share link:", resetViewedError.message);
+      }
     }
 
     // The share link goes to the customer's phone/email, so it must always

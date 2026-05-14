@@ -81,6 +81,17 @@ async function publicGetHandler(req, res) {
         return res.status(410).json({ success: false, error: "Link has expired" });
       }
 
+      if (!shareLink.viewed_at) {
+        const { error: viewedError } = await dbClient
+          .from("job_share_links")
+          .update({ viewed_at: new Date().toISOString() })
+          .eq("id", shareLink.id);
+
+        if (viewedError) {
+          console.warn("Failed to mark VHC share link as viewed:", viewedError.message);
+        }
+      }
+
       // Fetch the job row first (simpler queries are more reliable)
       const { data: jobRow, error: jobRowError } = await dbClient
         .from("jobs")

@@ -105,12 +105,39 @@ export default function TechJobDetailPageUi(props) {
     vehicle,
     vhcAssistantState,
     vhcChecks,
+    vhcCustomerStatus,
     vhcData,
     vhcSummaryItems,
     vhcTabAmberReady,
     visibleTabs,
     writeUpTechComplete,
   } = props; // receive page logic props.
+
+  const vhcCustomerStatusMeta = (() => {
+    const status = String(vhcCustomerStatus?.status || "pending").toLowerCase();
+    if (status === "viewed") {
+      return {
+        label: "Viewed",
+        detail: vhcCustomerStatus?.viewedAt ? `Viewed ${formatDateTime(vhcCustomerStatus.viewedAt)}` : "Customer opened the VHC link",
+        background: "var(--success-surface)",
+        color: "var(--success-dark)",
+      };
+    }
+    if (status === "sent") {
+      return {
+        label: "Sent",
+        detail: vhcCustomerStatus?.sentAt ? `Sent ${formatDateTime(vhcCustomerStatus.sentAt)}` : "VHC sent to customer",
+        background: "var(--theme)",
+        color: "var(--accent-purple)",
+      };
+    }
+    return {
+      label: "Pending",
+      detail: vhcCustomerStatus?.readyAt ? "Ready to send" : "Not sent to customer",
+      background: "var(--warning-surface)",
+      color: "var(--warning)",
+    };
+  })();
 
   const overviewCustomerRequests = (() => {
     const structuredRows = Array.isArray(jobCard?.jobRequests) && jobCard.jobRequests.length > 0 ?
@@ -297,6 +324,33 @@ export default function TechJobDetailPageUi(props) {
   const overviewRequestFullWidthValueStyle = {
     width: "100%"
   };
+  const renderVhcSummaryItem = (item, idx, toneColor) => (
+    <div key={idx} className="vhc-summary-item">
+      <div className="vhc-summary-item__section" style={{
+        color: toneColor
+      }}>
+        {item.section}
+      </div>
+      <div className="vhc-summary-item__text" style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        flexWrap: "wrap"
+      }}>
+        <span>{item.text}</span>
+        {item.unmatchedTyre ? <span className="app-btn app-btn--xs app-btn--danger" style={{
+          minHeight: "22px",
+          height: "22px",
+          padding: "0 8px",
+          fontSize: "11px",
+          lineHeight: 1,
+          cursor: "default"
+        }}>
+            Unmatched
+          </span> : null}
+      </div>
+    </div>
+  );
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -1001,6 +1055,23 @@ export default function TechJobDetailPageUi(props) {
               alignItems: "center",
               gap: "10px"
             }}>
+                    <span
+                      title={vhcCustomerStatusMeta.detail}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "6px 10px",
+                        borderRadius: "var(--control-radius)",
+                        backgroundColor: vhcCustomerStatusMeta.background,
+                        color: vhcCustomerStatusMeta.color,
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        textTransform: "uppercase"
+                      }}
+                    >
+                      Customer VHC: {vhcCustomerStatusMeta.label}
+                    </span>
                     <CustomerVideoButton jobNumber={jobNumber} userId={dbUserId || user?.id} vhcContextLabel={activeSection || "vhc-summary"} vhcData={vhcData} onUploadComplete={() => {
                 fetchJobData();
               }} />
@@ -1022,6 +1093,41 @@ export default function TechJobDetailPageUi(props) {
                 alignItems: "center",
                 gap: "12px"
               }}>
+                      <div
+                        title={vhcCustomerStatusMeta.detail}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-end",
+                          gap: "4px",
+                          minWidth: "112px"
+                        }}
+                      >
+                        <span style={{
+                          fontSize: "10px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          color: "var(--text-2)",
+                          fontWeight: 700
+                        }}>
+                          Customer VHC
+                        </span>
+                        <span style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "5px 10px",
+                          borderRadius: "var(--control-radius)",
+                          backgroundColor: vhcCustomerStatusMeta.background,
+                          color: vhcCustomerStatusMeta.color,
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          textTransform: "uppercase",
+                          minHeight: "24px"
+                        }}>
+                          {vhcCustomerStatusMeta.label}
+                        </span>
+                      </div>
                       {saveStatus === "saving" && <span style={{
                   fontSize: "13px",
                   color: "var(--text-1)"
@@ -1209,14 +1315,7 @@ export default function TechJobDetailPageUi(props) {
                             Critical Issues ({vhcSummaryItems.red.length})
                           </strong>
                         </div>
-                        {vhcSummaryItems.red.map((item, idx) => <div key={idx} className="vhc-summary-item">
-                            <div className="vhc-summary-item__section" style={{
-                      color: "var(--danger)"
-                    }}>
-                              {item.section}
-                            </div>
-                            <div className="vhc-summary-item__text">{item.text}</div>
-                          </div>)}
+                        {vhcSummaryItems.red.map((item, idx) => renderVhcSummaryItem(item, idx, "var(--danger)"))}
                       </div>}
 
                     {/* Amber Items */}
@@ -1230,14 +1329,7 @@ export default function TechJobDetailPageUi(props) {
                             Advisory Items ({vhcSummaryItems.amber.length})
                           </strong>
                         </div>
-                        {vhcSummaryItems.amber.map((item, idx) => <div key={idx} className="vhc-summary-item">
-                            <div className="vhc-summary-item__section" style={{
-                      color: "var(--warning)"
-                    }}>
-                              {item.section}
-                            </div>
-                            <div className="vhc-summary-item__text">{item.text}</div>
-                          </div>)}
+                        {vhcSummaryItems.amber.map((item, idx) => renderVhcSummaryItem(item, idx, "var(--warning)"))}
                       </div>}
 
                     {/* Green Items (Toggle) */}
@@ -1259,14 +1351,7 @@ export default function TechJobDetailPageUi(props) {
                             {showGreenItems ? "Hide" : "Show"}
                           </span>
                         </div>
-                        {showGreenItems && vhcSummaryItems.green.map((item, idx) => <div key={idx} className="vhc-summary-item">
-                            <div className="vhc-summary-item__section" style={{
-                      color: "var(--success)"
-                    }}>
-                              {item.section}
-                            </div>
-                            <div className="vhc-summary-item__text">{item.text}</div>
-                          </div>)}
+                        {showGreenItems && vhcSummaryItems.green.map((item, idx) => renderVhcSummaryItem(item, idx, "var(--success)"))}
                       </div>}
 
                     {vhcSummaryItems.red.length === 0 && vhcSummaryItems.amber.length === 0 && vhcSummaryItems.green.length === 0 && <p style={{

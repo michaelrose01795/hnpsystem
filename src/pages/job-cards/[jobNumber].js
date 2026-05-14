@@ -8910,6 +8910,13 @@ function VHCTab({
   const [previewOpened, setPreviewOpened] = useState(false);
   const [sendingVhc, setSendingVhc] = useState(false);
   const [sendVhcMessage, setSendVhcMessage] = useState("");
+  const [vhcCustomerStatus, setVhcCustomerStatus] = useState({
+    status: "pending",
+    label: "Pending",
+    sentAt: null,
+    viewedAt: null,
+    readyAt: null,
+  });
 
   // Enable actions only when all Summary tab tickboxes are complete.
   const [allCheckboxesComplete, setAllCheckboxesComplete] = useState(false);
@@ -8945,6 +8952,63 @@ function VHCTab({
     if (typeof window === "undefined") return "";
     return `${window.location.origin}/vhc/customer-preview/${jobNumber}`;
   }, [jobNumber]);
+
+  const loadVhcCustomerStatus = useCallback(async () => {
+    if (!jobNumber) return;
+    try {
+      const response = await fetch(
+        `/api/job-cards/${encodeURIComponent(jobNumber)}/vhc-customer-status`
+      );
+      const payload = await response.json();
+      if (response.ok && payload?.success) {
+        setVhcCustomerStatus({
+          status: payload.status || "pending",
+          label: payload.label || "Pending",
+          sentAt: payload.sentAt || null,
+          viewedAt: payload.viewedAt || null,
+          readyAt: payload.readyAt || null,
+        });
+      }
+    } catch (statusError) {
+      console.error("Failed to load VHC customer status:", statusError);
+    }
+  }, [jobNumber]);
+
+  useEffect(() => {
+    loadVhcCustomerStatus();
+    const interval = setInterval(loadVhcCustomerStatus, 15000);
+    return () => clearInterval(interval);
+  }, [loadVhcCustomerStatus]);
+
+  const vhcCustomerStatusMeta = useMemo(() => {
+    const status = String(vhcCustomerStatus?.status || "pending").toLowerCase();
+    if (status === "viewed") {
+      return {
+        label: "Viewed",
+        detail: vhcCustomerStatus?.viewedAt
+          ? `Viewed ${new Date(vhcCustomerStatus.viewedAt).toLocaleString("en-GB", { hour12: false })}`
+          : "Customer opened the VHC link",
+        background: "var(--success-surface)",
+        color: "var(--success-dark)",
+      };
+    }
+    if (status === "sent") {
+      return {
+        label: "Sent",
+        detail: vhcCustomerStatus?.sentAt
+          ? `Sent ${new Date(vhcCustomerStatus.sentAt).toLocaleString("en-GB", { hour12: false })}`
+          : "VHC sent to customer",
+        background: "var(--theme)",
+        color: "var(--accent-purple)",
+      };
+    }
+    return {
+      label: "Pending",
+      detail: vhcCustomerStatus?.readyAt ? "Ready to send" : "Not sent to customer",
+      background: "var(--warning-surface)",
+      color: "var(--warning)",
+    };
+  }, [vhcCustomerStatus]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !jobNumber) return;
@@ -9023,6 +9087,7 @@ function VHCTab({
       }
 
       setSendVhcMessage("VHC sent");
+      await loadVhcCustomerStatus();
       if (typeof onJobDataRefresh === "function") {
         onJobDataRefresh();
       }
@@ -9036,6 +9101,21 @@ function VHCTab({
 
   const customActions =
   <>
+      <span
+      title={vhcCustomerStatusMeta.detail}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        padding: "6px 10px",
+        borderRadius: "var(--control-radius)",
+        backgroundColor: vhcCustomerStatusMeta.background,
+        color: vhcCustomerStatusMeta.color,
+        fontSize: "12px",
+        fontWeight: 700,
+        textTransform: "uppercase"
+      }}>
+        Customer VHC: {vhcCustomerStatusMeta.label}
+      </span>
       <button
       type="button"
       className="app-btn app-btn--primary app-btn--sm"

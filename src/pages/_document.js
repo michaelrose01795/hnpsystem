@@ -332,8 +332,11 @@ class MyDocument extends Document {
             html, body {
               min-height: 100%;
               min-height: 100dvh;
+              width: 100%;
+              max-width: 100vw;
               margin: 0;
               background: ${bootTheme.background};
+              overflow-x: clip;
               overscroll-behavior-y: none;
             }
             html[data-theme-requested="system"], html[data-theme-requested="system"] body {

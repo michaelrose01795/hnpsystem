@@ -20,6 +20,7 @@ const JobCardModal = dynamic(() => import("@/components/JobCards/JobCardModal"),
 const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSidebar"), { ssr: false });
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
 import Sidebar from "@/components/Sidebar";
+import { SERVICE_ACTION_ROLE_SET as SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
 import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import TopbarAlerts from "@/components/TopbarAlerts";
 import { appShellTheme } from "@/styles/appTheme";
@@ -37,17 +38,6 @@ import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
-
-const SERVICE_ACTION_ROLES = new Set([
-  "service",
-  "service department",
-  "service dept",
-  "service manager",
-  "workshop manager",
-  "after sales manager",
-  "after sales director",
-  "aftersales manager",
-]);
 
 const PARTS_NAV_ROLES = new Set(["parts", "parts manager"]);
 
@@ -1096,18 +1086,36 @@ export default function Layout({
 
               {(isTech || canUseServiceActions || hasPartsAccess) && (
                 <div
+                  className="app-topbar-action-scroll"
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
-                    gap: "12px",
-                    whiteSpace: "nowrap",
+                    justifyContent: isVerticalPhone ? "flex-start" : "center",
+                    gap: isMobile ? "8px" : "12px",
+                    whiteSpace: isVerticalPhone ? "nowrap" : isTablet ? "normal" : "nowrap",
+                    flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
+                    width: isTablet ? "100%" : undefined,
+                    minWidth: 0,
+                    maxWidth: "100%",
                     zIndex: 2,
                     justifySelf: "center",
+                    overflowX: isVerticalPhone ? "auto" : "hidden",
+                    overflowY: "hidden",
                   }}
                 >
                   {isTech && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div
+                      className="app-topbar-action-group"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: isVerticalPhone ? "flex-start" : "center",
+                        gap: isMobile ? "8px" : "12px",
+                        flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
+                        width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
+                        minWidth: 0,
+                      }}
+                    >
                       <DropdownField
                         className="app-topbar-dropdown app-topbar-dropdown--status"
                         value={presentationShell ? "Waiting for Job" : status}
@@ -1151,12 +1159,15 @@ export default function Layout({
 
                   {canUseServiceActions && (
                     <div
+                      className="app-topbar-action-group"
                       style={{
                         display: "flex",
-                        flexWrap: "nowrap",
-                        gap: "12px",
-                        justifyContent: "center",
+                        flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
+                        gap: isMobile ? "8px" : "12px",
+                        justifyContent: isVerticalPhone ? "flex-start" : "center",
                         alignItems: "center",
+                        width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
+                        minWidth: 0,
                       }}
                     >
                       {SERVICE_ACTION_LINKS.map((action) => {
@@ -1178,13 +1189,16 @@ export default function Layout({
 
                   {hasPartsAccess && (
                     <div
+                      className="app-topbar-action-group"
                       style={{
                         display: "flex",
-                        flexWrap: "nowrap",
-                        gap: "12px",
-                        justifyContent: "center",
+                        flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
+                        gap: isMobile ? "8px" : "12px",
+                        justifyContent: isVerticalPhone ? "flex-start" : "center",
                         alignItems: "center",
                         textAlign: "center",
+                        width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
+                        minWidth: 0,
                       }}
                     >
                       {PARTS_ACTION_LINKS.map((action) => {

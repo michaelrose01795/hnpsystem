@@ -785,6 +785,7 @@ CREATE TABLE public.job_share_links (
   job_number text NOT NULL,
   link_code text NOT NULL UNIQUE,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  viewed_at timestamp with time zone,
   CONSTRAINT job_share_links_pkey PRIMARY KEY (id),
   CONSTRAINT job_share_links_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
 );

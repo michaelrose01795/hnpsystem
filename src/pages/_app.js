@@ -47,6 +47,8 @@ import { swrConfig } from "@/lib/swr/config"; // HNP-tuned SWR defaults
 import Layout from "@/components/Layout"; // persistent app shell — mounted once via getLayout
 import { setPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
+import { useUser } from "@/context/UserContext";
+import { canAccessPath } from "@/lib/auth/pageAccess";
 
 // Default page layout: every page is wrapped by the persistent <Layout>. Pages that
 // need custom layout props (jobNumber, requiresLandscape, disableContentCardHover,
@@ -213,12 +215,32 @@ function AppWrapper({ Component, pageProps }) {
       <RouteProgressBar isRouteLoading={isRouteLoading} />
       <GlobalDraftPersistence />
       <GlobalTableShells />
+      <PageAccessGuard pathname={pathname} />
       {getLayout(pageElement)}
       {!hideNotesWidget && <GlobalNotesWidget />}
       <CookieBanner />
       <DevLayoutOverlayRoot />
     </>
   ); // render the requested page inside its (persistent) layout shell
+}
+
+// Redirects unauthorised users back to /dashboard whenever the route
+// changes (or on first paint). Pages reachable via the user's filtered
+// sidebar/topbar are allowed; everything else is rejected. See
+// src/lib/auth/pageAccess.js for the rule.
+function PageAccessGuard({ pathname }) {
+  const router = useRouter();
+  const { user, loading } = useUser();
+  useEffect(() => {
+    if (loading) return; // wait for user context to resolve
+    if (!user) return; // unauthenticated → existing auth guards handle redirect
+    // Skip the guard while the user is still being hydrated or on routes
+    // that always exit through their own auth flow.
+    if (canAccessPath(pathname, user?.roles)) return;
+    if (router.pathname === "/dashboard") return;
+    router.replace("/dashboard");
+  }, [pathname, user, loading, router]);
+  return null;
 }
 
 // Top-edge progress bar — drives off the same isRouteLoading flag as the global loader

@@ -89,6 +89,7 @@ export default function MessagesPageUi(props) {
     openSystemNotificationsThread,
     openThread,
     orderedSystemNotifications,
+    handleCreateJobFromRequest,
     palette,
     pinnedThreads = [],
     radii,
@@ -524,29 +525,104 @@ export default function MessagesPageUi(props) {
                   boxShadow: "none",
                   minHeight: "44px",
                   display: "flex",
-                  alignItems: "center",
+                  flexDirection: note.kind === "customer_request" ? "column" : "row",
+                  alignItems: note.kind === "customer_request" ? "stretch" : "center",
                   justifyContent: "space-between",
-                  gap: "12px"
+                  gap: "10px"
                 }}>
-                            <p style={{
-                    margin: 0,
-                    color: palette.textPrimary,
-                    fontSize: "var(--text-body-sm)",
-                    fontWeight: 650,
-                    lineHeight: 1.35,
-                    minWidth: 0
-                  }}>
-                              {String(note.message || "System update").replace(/^[\s\p{Extended_Pictographic}\uFE0F]+/u, "").trim() || "System update"}
-                            </p>
-                            <p style={{
-                    margin: 0,
-                    fontSize: "var(--text-caption)",
-                    color: palette.textMuted,
-                    flex: "0 0 auto",
-                    whiteSpace: "nowrap"
-                  }}>
-                              {formatNotificationTimestamp(note.created_at)}
-                            </p>
+                            {note.kind === "customer_request" ? (
+                              <>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                                  <div style={{ minWidth: 0 }}>
+                                    <p style={{
+                                      margin: 0,
+                                      color: palette.textPrimary,
+                                      fontSize: "var(--text-body-sm)",
+                                      fontWeight: 650,
+                                      lineHeight: 1.35,
+                                    }}>
+                                      {note.type_label} \u00B7 {note.customer_name}
+                                    </p>
+                                    {note.vehicle_label ? (
+                                      <p style={{
+                                        margin: "2px 0 0",
+                                        fontSize: "var(--text-caption)",
+                                        color: palette.textMuted,
+                                      }}>
+                                        {note.vehicle_label}
+                                      </p>
+                                    ) : null}
+                                    {note.description ? (
+                                      <p style={{
+                                        margin: "4px 0 0",
+                                        fontSize: "var(--text-body-sm)",
+                                        color: palette.textPrimary,
+                                        lineHeight: 1.4,
+                                      }}>
+                                        {note.description}
+                                      </p>
+                                    ) : null}
+                                    {note.preferred_date ? (
+                                      <p style={{
+                                        margin: "4px 0 0",
+                                        fontSize: "var(--text-caption)",
+                                        color: palette.textMuted,
+                                      }}>
+                                        Preferred: {note.preferred_date}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                  <p style={{
+                                    margin: 0,
+                                    fontSize: "var(--text-caption)",
+                                    color: palette.textMuted,
+                                    flex: "0 0 auto",
+                                    whiteSpace: "nowrap",
+                                  }}>
+                                    {formatNotificationTimestamp(note.created_at)}
+                                  </p>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                                  <button
+                                    type="button"
+                                    className="app-btn"
+                                    onClick={() =>
+                                      typeof handleCreateJobFromRequest === "function" &&
+                                      handleCreateJobFromRequest(note)
+                                    }
+                                    style={{
+                                      padding: "6px 14px",
+                                      fontSize: "var(--text-body-sm)",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    Create job
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <p style={{
+                                  margin: 0,
+                                  color: palette.textPrimary,
+                                  fontSize: "var(--text-body-sm)",
+                                  fontWeight: 650,
+                                  lineHeight: 1.35,
+                                  minWidth: 0,
+                                }}>
+                                  {String(note.message || "System update").replace(/^[\s\p{Extended_Pictographic}\uFE0F]+/u, "").trim() || "System update"}
+                                </p>
+                                <p style={{
+                                  margin: 0,
+                                  fontSize: "var(--text-caption)",
+                                  color: palette.textMuted,
+                                  flex: "0 0 auto",
+                                  whiteSpace: "nowrap",
+                                }}>
+                                  {formatNotificationTimestamp(note.created_at)}
+                                </p>
+                              </>
+                            )}
                           </article>
                         </React.Fragment>)}
                     </div>}

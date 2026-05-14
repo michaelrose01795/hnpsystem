@@ -9,7 +9,7 @@ export const EmptyStateMessage = ({ message }) => (
       border: "none",
       borderRadius: "var(--radius-sm)",
       background: "var(--theme)",
-      color: "var(--info)",
+      color: "var(--text-1)",
       fontSize: "13px",
     }}
   >
@@ -65,7 +65,7 @@ export const VhcItemCell = ({ vhcItem, locationLabel, showOnlyPartIndex = false,
             fontSize: "11px",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
-            color: "var(--info)",
+            color: "var(--text-1)",
           }}
         >
           {vhcItem?.categoryLabel || vhcItem?.category?.label || ""}
@@ -74,7 +74,7 @@ export const VhcItemCell = ({ vhcItem, locationLabel, showOnlyPartIndex = false,
           style={{
             fontWeight: 700,
             fontSize: "14px",
-            color: "var(--primary)",
+            color: "var(--text-accent)",
             marginTop: "2px",
           }}
         >
@@ -84,7 +84,7 @@ export const VhcItemCell = ({ vhcItem, locationLabel, showOnlyPartIndex = false,
           <div
             style={{
               fontSize: "12px",
-              color: "var(--info-dark)",
+              color: "var(--text-1)",
               marginTop: "4px",
             }}
           >
@@ -95,7 +95,7 @@ export const VhcItemCell = ({ vhcItem, locationLabel, showOnlyPartIndex = false,
           <div
             style={{
               fontSize: "11px",
-              color: "var(--info)",
+              color: "var(--text-1)",
               marginTop: "4px",
             }}
           >
@@ -143,7 +143,7 @@ export const FinancialTotalsGrid = ({ totals }) => {
     { label: "Red Work", value: totals.red, color: "var(--danger)" },
     { label: "Amber Work", value: totals.amber, color: "var(--warning)" },
     { label: "Authorised", value: totals.authorized, color: "var(--success)" },
-    { label: "Declined", value: totals.declined, color: "var(--info)" },
+    { label: "Declined", value: totals.declined, color: "var(--text-1)" },
   ];
 
   return (
@@ -167,7 +167,7 @@ export const FinancialTotalsGrid = ({ totals }) => {
           <div
             style={{
               fontSize: "12px",
-              color: "var(--info)",
+              color: "var(--text-1)",
               marginBottom: "4px",
             }}
           >
@@ -207,7 +207,7 @@ export const StockStatusBadge = ({ stockStatus }) => {
       default:
         return {
           background: "var(--theme)",
-          color: "var(--info)",
+          color: "var(--text-1)",
           label: "—",
         };
     }
@@ -238,16 +238,16 @@ export const PartRowCells = ({ part, showActions = false, onAction }) => {
 
   return (
     <>
-      <td style={{ padding: "12px 16px", color: "var(--primary)", fontWeight: 600 }}>
+      <td style={{ padding: "12px 16px", color: "var(--text-accent)", fontWeight: 600 }}>
         {partData.name || "—"}
       </td>
-      <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+      <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>
         {partData.part_number || "—"}
       </td>
-      <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--info-dark)" }}>
+      <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--text-1)" }}>
         {part.quantity_requested || 1}
       </td>
-      <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--info-dark)", fontWeight: 600 }}>
+      <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--text-1)", fontWeight: 600 }}>
         £{Number(price).toFixed(2)}
       </td>
     </>

@@ -128,6 +128,14 @@ export default function CreateJobCardPage() {
   const [isLoadingVehicle, setIsLoadingVehicle] = useState(false); // loading state for DVLA API call
   const [error, setError] = useState(""); // error message for vehicle fetch
 
+  // Customer-portal request hand-off — when a staff user clicks
+  // "Create job" on a request card in /messages, we land here with
+  // ?fromEvent=<id>. We hydrate the form from that event and remember
+  // the event id + preferred date so the save handler can mark it
+  // processed and create the matching appointment.
+  const [fromEventId, setFromEventId] = useState(null);
+  const [fromEventPreferredDate, setFromEventPreferredDate] = useState(null);
+
   // ✅ Notification states
   const [customerNotification, setCustomerNotification] = useState(null); // { type: 'success' | 'error', message: '' }
   const [vehicleNotification, setVehicleNotification] = useState(null); // { type: 'success' | 'error', message: '' }
@@ -497,6 +505,90 @@ export default function CreateJobCardPage() {
 
     fetchPrimeJob();
   }, [router.query?.primeJob]);
+
+  // ✅ Prefill from a customer-portal request event (?fromEvent=<id>)
+  useEffect(() => {
+    const eventIdRaw = Array.isArray(router.query?.fromEvent)
+      ? router.query.fromEvent[0]
+      : router.query?.fromEvent;
+    const eventId = typeof eventIdRaw === "string" ? eventIdRaw.trim() : "";
+    if (!eventId) return;
+
+    let cancelled = false;
+    const hydrateFromEvent = async () => {
+      try {
+        const res = await fetch(
+          `/api/messages/customer-requests/${eventId}`,
+          { credentials: "same-origin" },
+        );
+        if (!res.ok) {
+          console.warn("Failed to load request event", eventId, res.status);
+          return;
+        }
+        const json = await res.json();
+        if (cancelled || !json?.success) return;
+
+        setFromEventId(eventId);
+        const payload = json.payload || {};
+        if (payload.preferred_date) {
+          setFromEventPreferredDate(payload.preferred_date);
+        }
+
+        // Prefill customer via the existing handler so any related
+        // lookups (vehicles, etc.) stay consistent.
+        if (json.customer?.id) {
+          await handleCustomerSelect({ id: json.customer.id });
+        }
+
+        // Prefill vehicle. If the event already has a vehicle row,
+        // hydrate from it; otherwise drop the reg into state so the
+        // existing auto-fetch effect runs the DB/DVLA lookup.
+        if (json.vehicle?.reg_number) {
+          setVehicle((prev) => ({
+            ...prev,
+            reg: json.vehicle.reg_number,
+            makeModel:
+              json.vehicle.make_model ||
+              [json.vehicle.make, json.vehicle.model].filter(Boolean).join(" "),
+            colour: json.vehicle.colour || prev.colour,
+            chassis: json.vehicle.vin || prev.chassis,
+            engine: json.vehicle.engine || prev.engine,
+            mileage:
+              json.vehicle.mileage !== null && json.vehicle.mileage !== undefined
+                ? String(json.vehicle.mileage)
+                : prev.mileage,
+          }));
+        } else if (payload.reg) {
+          setVehicle((prev) => ({ ...prev, reg: String(payload.reg).toUpperCase() }));
+        }
+
+        // Prefill request description into the first request row.
+        const description = payload.description || payload.body || payload.notes;
+        if (description) {
+          setRequests((prev) => {
+            const next = [...(prev || [])];
+            if (next.length === 0) {
+              next.push({ text: description, time: "", paymentType: "Customer", presetId: null });
+            } else {
+              next[0] = { ...next[0], text: description };
+            }
+            return next;
+          });
+        }
+      } catch (err) {
+        console.error("fromEvent prefill failed:", err);
+      }
+    };
+
+    hydrateFromEvent();
+    return () => {
+      cancelled = true;
+    };
+    // handleCustomerSelect / setRequests are stable in this component
+    // (defined at render scope), so depending on the query param only is
+    // sufficient and mirrors the primeJob effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.query?.fromEvent]);
 
   // function to determine background color based on waiting status and job source
   const getBackgroundColor = (status, source) => {
@@ -1364,6 +1456,37 @@ export default function CreateJobCardPage() {
       // Refresh jobs cache
       if (typeof fetchJobs === "function") {
         fetchJobs().catch((err) => console.error("❌ Error refreshing jobs:", err));
+      }
+
+      // If we were created from a customer-portal request, mark the
+      // event processed and create the matching appointment so it
+      // shows on /appointments alongside the job.
+      if (fromEventId) {
+        try {
+          const primaryJobId =
+            primaryJob?.id ||
+            primaryJob?.jobId ||
+            primaryJob?.job_id ||
+            createdJobs[0]?.job?.id ||
+            createdJobs[0]?.job?.jobId ||
+            createdJobs[0]?.job?.job_id;
+          if (primaryJobId) {
+            await fetch("/api/messages/customer-requests/process", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "same-origin",
+              body: JSON.stringify({
+                event_id: fromEventId,
+                job_id: primaryJobId,
+                customer_id: customer?.id || null,
+                preferred_date: fromEventPreferredDate,
+                description: requests?.[0]?.text || null,
+              }),
+            });
+          }
+        } catch (processErr) {
+          console.error("Failed to process customer request:", processErr);
+        }
       }
 
       // Update UI and redirect

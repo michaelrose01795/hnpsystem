@@ -874,14 +874,29 @@ export default function CustomerProfilePage() {
                   flash={actionFlash.mileage}
                 />
                 <AddVehicleRow
-                  onSubmit={(payload) =>
-                    callAction(
-                      "add_vehicle_request",
-                      payload,
-                      "addveh",
-                      "Vehicle add request sent.",
-                    )
-                  }
+                  onSubmit={async (payload) => {
+                    try {
+                      const res = await fetch(
+                        "/api/website/actions/add-vehicle",
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          credentials: "same-origin",
+                          body: JSON.stringify(payload),
+                        },
+                      );
+                      const out = await res.json();
+                      if (!res.ok || !out.success) {
+                        throw new Error(out.message || "Could not add vehicle.");
+                      }
+                      flash("addveh", "Vehicle added.");
+                      refresh();
+                      return { success: true };
+                    } catch (err) {
+                      flash("addveh", err.message);
+                      return { success: false, message: err.message };
+                    }
+                  }}
                   flash={actionFlash.addveh}
                 />
               </section>
@@ -2220,24 +2235,109 @@ function AddVehicleRow({ onSubmit, flash }) {
   const [mileage, setMileage] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isLoadingVehicle, setIsLoadingVehicle] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+
+  const handleFetchVehicleData = async () => {
+    if (!reg.trim()) {
+      setLookupError("Please enter a registration number");
+      return;
+    }
+    setIsLoadingVehicle(true);
+    setLookupError("");
+    try {
+      const regUpper = reg.trim().toUpperCase();
+      const response = await fetch("/api/vehicles/dvla", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration: regUpper }),
+      });
+      const responseText = await response.text();
+      if (!response.ok) {
+        let parsed;
+        try { parsed = JSON.parse(responseText); } catch { parsed = null; }
+        throw new Error(
+          parsed?.message || parsed?.error || responseText ||
+          `DVLA lookup failed with status ${response.status}`,
+        );
+      }
+      let data = {};
+      if (responseText) {
+        try { data = JSON.parse(responseText); }
+        catch { throw new Error("DVLA API returned malformed data"); }
+      }
+      if (!data || Object.keys(data).length === 0) {
+        throw new Error("No vehicle data found for that registration from DVLA");
+      }
+      const normalizedReg = (
+        data.registrationNumber || data.registration || regUpper || ""
+      ).toString().toUpperCase();
+      const detectedMake = data.make || data.vehicleMake || "";
+      const detectedModel = data.model || data.vehicleModel || "";
+      const combined = `${detectedMake} ${detectedModel}`.trim();
+      setReg(normalizedReg);
+      setMakeModel(combined || detectedMake || "");
+    } catch (err) {
+      setLookupError(err.message || "Could not look up vehicle");
+    } finally {
+      setIsLoadingVehicle(false);
+    }
+  };
+
   return (
     <div className={styles.profileSettingsRow}>
       <div className={styles.profileSettingsRowHeader}>
         <div>
           <div className={styles.profileSettingsTitle}>Add a vehicle</div>
           <div className={styles.profileSettingsHint}>
-            We'll add this to your account and check our records.
+            We'll add this to your account straight away.
           </div>
         </div>
       </div>
       <div className={styles.authRow}>
-        <FieldInput label="Registration" value={reg} onChange={setReg} />
+        <div className={styles.authField}>
+          <label className={styles.authLabel}>Registration</label>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <input
+              type="text"
+              className={styles.authInput}
+              value={reg}
+              onChange={(e) => setReg(e.target.value)}
+              placeholder="e.g. AB12 CDE"
+              style={{ flex: 1, textTransform: "uppercase" }}
+            />
+            <button
+              type="button"
+              data-presentation="profile-reg-lookup"
+              onClick={handleFetchVehicleData}
+              disabled={isLoadingVehicle || !reg.trim()}
+              style={{
+                padding: "10px 20px",
+                backgroundColor: isLoadingVehicle ? "var(--surface)" : "var(--primary)",
+                color: "white",
+                border: "none",
+                borderRadius: "var(--radius-xs)",
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: isLoadingVehicle ? "not-allowed" : "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              {isLoadingVehicle ? "Loading..." : "Search"}
+            </button>
+          </div>
+        </div>
         <FieldInput
           label="Make & model"
           value={makeModel}
           onChange={setMakeModel}
         />
       </div>
+      {lookupError ? (
+        <p className={styles.authError} style={{ marginTop: 8 }}>
+          {lookupError}
+        </p>
+      ) : null}
       <div className={styles.authRow}>
         <FieldInput
           label="Mileage (optional)"
@@ -2266,7 +2366,7 @@ function AddVehicleRow({ onSubmit, flash }) {
           setSubmitting(false);
         }}
       >
-        {submitting ? "Sending…" : "Request to add"}
+        {submitting ? "Adding…" : "Add"}
       </button>
       {flash ? <p className={styles.profileSuccess}>{flash}</p> : null}
     </div>

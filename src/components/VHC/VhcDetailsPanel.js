@@ -61,6 +61,26 @@ const STATUS_BADGES = {
 };
 
 const PART_META_PREFIX = "VHC_META:";
+const JOB_ADDED_PART_STATUSES = new Set(["booked", "fitted"]);
+
+const normalisePartStatus = (value = "") =>
+  value.toString().toLowerCase();
+
+const normalisePartNumber = (value = "") =>
+  String(value || "").trim().toLowerCase();
+
+const getPartNumber = (part = {}) =>
+  part?.part?.part_number ||
+  part?.part?.partNumber ||
+  part?.part_number ||
+  part?.partNumber ||
+  part?.part_number_snapshot ||
+  "";
+
+const isPartAddedToJob = (part = {}) => {
+  if (part?.added_to_job === true || part?.addedToJob === true) return true;
+  return JOB_ADDED_PART_STATUSES.has(normalisePartStatus(part.status));
+};
 
 const createDefaultNewPartForm = () => ({
   partNumber: "",
@@ -1078,7 +1098,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
         }}
       >
         <div style={{ flex: 1, minWidth: "220px" }}>
-          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--primary)" }}>
+          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--text-accent)" }}>
             {config.label}
           </h3>
         </div>
@@ -1190,11 +1210,11 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                   }}
                 >
                   <div style={{ minWidth: "220px" }}>
-                    <strong style={{ color: "var(--primary)", fontSize: "15px" }}>
+                    <strong style={{ color: "var(--text-accent)", fontSize: "15px" }}>
                       {item.heading || item.label || `Item ${idx + 1}`}
                     </strong>
                     {item.notes ? (
-                      <p style={{ margin: "6px 0 0", color: "var(--info)", fontSize: "13px" }}>{item.notes}</p>
+                      <p style={{ margin: "6px 0 0", color: "var(--text-1)", fontSize: "13px" }}>{item.notes}</p>
                     ) : null}
                   </div>
                   {item.status ? (
@@ -1264,7 +1284,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                             </span>
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                               {row.rows.map((line, lineIdx) => (
-                                <span key={`${config.key}-${idx}-row-group-${rowIdx}-line-${lineIdx}`} style={{ fontSize: "13px", color: "var(--info-dark)", fontWeight: 600, lineHeight: 1.45 }}>
+                                <span key={`${config.key}-${idx}-row-group-${rowIdx}-line-${lineIdx}`} style={{ fontSize: "13px", color: "var(--text-1)", fontWeight: 600, lineHeight: 1.45 }}>
                                   {line}
                                 </span>
                               ))}
@@ -1309,7 +1329,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                               {kv.key}
                             </span>
                           ) : null}
-                          <span style={{ fontSize: "13px", color: "var(--info-dark)", fontWeight: 600, lineHeight: 1.45 }}>
+                          <span style={{ fontSize: "13px", color: "var(--text-1)", fontWeight: 600, lineHeight: 1.45 }}>
                             {kv.value || row}
                           </span>
                         </div>
@@ -1336,7 +1356,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
                           gap: "8px",
                           alignItems: "flex-start",
                           fontSize: "13px",
-                          color: "var(--info-dark)",
+                          color: "var(--text-1)",
                           background: SEVERITY_THEME[normaliseColour(concern.status)]?.background || "var(--surface)",
                           borderRadius: "var(--input-radius)",
                           padding: "8px 10px",
@@ -1369,7 +1389,7 @@ const HealthSectionCard = ({ config, section, rawData, onOpen }) => {
             borderRadius: "var(--radius-sm)",
             padding: "16px",
             background: "var(--theme)",
-            color: "var(--info)",
+            color: "var(--text-1)",
             fontSize: "13px",
           }}
         >
@@ -2073,8 +2093,6 @@ export default function VhcDetailsPanel({
         : [],
     [job]
   );
-  const normalisePartStatus = (value = "") =>
-    value.toString().toLowerCase();
   const partsIdentified = useMemo(
     () =>
       jobParts.filter((part) => {
@@ -2272,17 +2290,44 @@ export default function VhcDetailsPanel({
   const bookedPartNumbers = useMemo(() => {
     const numbers = new Set();
     jobParts.forEach((part) => {
-      const partNumber =
-        part.part?.part_number || part.part?.partNumber || part.part_number || part.partNumber;
+      const partNumber = getPartNumber(part);
       if (!partNumber) return;
-      const status = normalisePartStatus(part.status);
-      const stockStatus = normalisePartStatus(part.stock_status || part.stockStatus);
-      if (status === "stock" || stockStatus === "in_stock") {
-        numbers.add(partNumber.toLowerCase());
+      if (isPartAddedToJob(part)) {
+        numbers.add(normalisePartNumber(partNumber));
       }
     });
     return numbers;
-  }, [jobParts, normalisePartStatus]);
+  }, [jobParts]);
+
+  const requiredPartNumbersByVhcItem = useMemo(() => {
+    const map = new Map();
+    jobParts.forEach((part) => {
+      if (normalisePartStatus(part?.status) === "removed") return;
+      const rawVhcId = part?.vhc_item_id ?? part?.vhcItemId ?? null;
+      if (rawVhcId === null || rawVhcId === undefined || String(rawVhcId).trim() === "") return;
+      const canonicalId = String(resolveCanonicalVhcId(rawVhcId));
+      if (!canonicalId) return;
+      const partNumber = normalisePartNumber(getPartNumber(part));
+      if (!partNumber) return;
+      if (!map.has(canonicalId)) map.set(canonicalId, new Set());
+      map.get(canonicalId).add(partNumber);
+    });
+    return map;
+  }, [jobParts, resolveCanonicalVhcId]);
+
+  const getCompletionPartBlockReason = useCallback(
+    (itemId) => {
+      const canonicalId = String(resolveCanonicalVhcId(itemId) || "");
+      const requiredNumbers = requiredPartNumbersByVhcItem.get(canonicalId);
+      if (!requiredNumbers || requiredNumbers.size === 0) return "";
+      const missingNumbers = Array.from(requiredNumbers).filter(
+        (partNumber) => !bookedPartNumbers.has(partNumber)
+      );
+      if (missingNumbers.length === 0) return "";
+      return `Add matching part number ${missingNumbers.join(", ")} to the Job section before completing this row.`;
+    },
+    [bookedPartNumbers, requiredPartNumbersByVhcItem, resolveCanonicalVhcId]
+  );
 
   const summaryItems = useMemo(() => {
     const items = [];
@@ -3997,6 +4042,23 @@ export default function VhcDetailsPanel({
       const items = severityLists[severity] || [];
       const itemsMap = new Map(items.map(item => [item.id, item]));
 
+      if (completeFlag) {
+        const blockedItems = selectedIds
+          .map((itemId) => ({
+            itemId,
+            item: itemsMap.get(itemId),
+            reason: getCompletionPartBlockReason(itemId),
+          }))
+          .filter((entry) => entry.reason);
+
+        if (blockedItems.length > 0) {
+          const firstBlocked = blockedItems[0];
+          const label = firstBlocked.item?.label || firstBlocked.item?.sectionName || `row ${firstBlocked.itemId}`;
+          alert(`${label} cannot be completed yet. ${firstBlocked.reason}`);
+          return;
+        }
+      }
+
       // Update local state immediately for all selected items
       setItemEntries((prev) => {
         const next = { ...prev };
@@ -4116,7 +4178,7 @@ export default function VhcDetailsPanel({
       // Clear selection
       setSeveritySelections((prev) => ({ ...prev, [severity]: [] }));
     },
-    [severitySelections, severityLists, resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData, createVhcCheckForDisplayId, resolveOriginalSeverityDisplay]
+    [severitySelections, severityLists, getCompletionPartBlockReason, resolveCanonicalVhcId, resolveLabourHoursValue, resolveLabourCompleteValue, authUserId, dbUserId, refreshJobData, createVhcCheckForDisplayId, resolveOriginalSeverityDisplay]
   );
 
   const handleMoveItem = useCallback(
@@ -4357,6 +4419,7 @@ export default function VhcDetailsPanel({
       const rowStatus = resolveVhcRowStatusView(item, effectiveEntry, resolvedPartsCost, resolvedLabourHours);
       return rowStatus.dotStateKey === "awaiting";
     };
+    // Completion blockers must not affect row selection: selected rows still need Reset/Uncomplete actions.
     const selectableIds = new Set(itemsRaw.filter((item) => isRowSelectionEligible(item)).map((item) => item.id));
     const selectedIds = (severitySelections[severity] || []).filter((itemId) => selectableIds.has(itemId));
     const selectedSet = new Set(selectedIds);
@@ -4366,6 +4429,10 @@ export default function VhcDetailsPanel({
       return Boolean(entry?.completed || vhcApprovalLookup.get(String(resolveCanonicalVhcId(item.id)))?.complete);
     }).length;
     const selectedAllCompleted = selectedItems.length > 0 && selectedCompletedCount === selectedItems.length;
+    const selectedCompletionBlockedReason =
+      severity === "authorized" && !selectedAllCompleted
+        ? selectedItems.map((item) => getCompletionPartBlockReason(item.id)).find(Boolean) || ""
+        : "";
     const buttonBaseStyle = {
       padding: "8px 14px",
       borderRadius: "var(--input-radius)",
@@ -4383,7 +4450,7 @@ export default function VhcDetailsPanel({
               ...buttonBaseStyle,
               border: "1px solid var(--ghostbutton-ring)",
               backgroundColor: selectedSet.size === 0 ? "var(--theme)" : "var(--surface)",
-              color: "var(--primary)",
+              color: "var(--text-accent)",
               cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
             }}
           >
@@ -4400,7 +4467,7 @@ export default function VhcDetailsPanel({
                   ...buttonBaseStyle,
                   border: "1px solid var(--ghostbutton-ring)",
                   backgroundColor: selectedSet.size === 0 ? "var(--theme)" : "var(--surface)",
-                  color: "var(--primary)",
+                  color: "var(--text-accent)",
                   cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
                 }}
               >
@@ -4411,13 +4478,14 @@ export default function VhcDetailsPanel({
               <button
                 type="button"
                 onClick={() => handleBulkStatus(severity, selectedAllCompleted ? "uncomplete" : "completed")}
-                disabled={selectedSet.size === 0}
+                disabled={selectedSet.size === 0 || Boolean(selectedCompletionBlockedReason)}
+                title={selectedCompletionBlockedReason}
                 style={{
                   ...buttonBaseStyle,
                   border: "none",
-                  backgroundColor: selectedSet.size === 0 ? "var(--complete-surface)" : "var(--complete)",
-                  color: selectedSet.size === 0 ? "var(--complete)" : "white",
-                  cursor: selectedSet.size === 0 ? "not-allowed" : "pointer",
+                  backgroundColor: selectedSet.size === 0 || selectedCompletionBlockedReason ? "var(--complete-surface)" : "var(--complete)",
+                  color: selectedSet.size === 0 || selectedCompletionBlockedReason ? "var(--complete)" : "white",
+                  cursor: selectedSet.size === 0 || selectedCompletionBlockedReason ? "not-allowed" : "pointer",
                 }}
               >
                 {selectedAllCompleted ? "Uncomplete" : "Complete"}
@@ -4566,7 +4634,7 @@ export default function VhcDetailsPanel({
                   background: "var(--theme)",
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
-                  color: "var(--info)",
+                  color: "var(--text-1)",
                   fontSize: "11px",
                 }}
               >
@@ -4776,11 +4844,11 @@ export default function VhcDetailsPanel({
                       transition: "background 0.2s ease",
                     }}
                   >
-                    <td style={{ padding: "12px 8px", color: "var(--primary)", wordWrap: "break-word", overflow: "hidden" }}>
-                      <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                    <td style={{ padding: "12px 8px", color: "var(--text-accent)", wordWrap: "break-word", overflow: "hidden" }}>
+                      <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-1)" }}>
                         {item.categoryLabel || "Recorded Section"}
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--primary)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                      <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--text-accent)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                         {canEditDescriptionFromTitle ? (
                           <button
                             type="button"
@@ -4791,7 +4859,7 @@ export default function VhcDetailsPanel({
                               border: "none",
                               padding: 0,
                               margin: 0,
-                              color: "var(--primary)",
+                              color: "var(--text-accent)",
                               font: "inherit",
                               fontWeight: 700,
                               cursor: "pointer",
@@ -4819,18 +4887,18 @@ export default function VhcDetailsPanel({
                             padding: 0,
                             textAlign: "left",
                             cursor: "pointer",
-                            color: "var(--info-dark)",
+                            color: "var(--text-1)",
                             font: "inherit",
                             width: "100%",
                           }}
                         >
                           {detailRows.map((row, rowIdx) => (
-                            <div key={`${statusKey}-detail-row-${rowIdx}`} style={{ fontWeight: 600, color: "var(--info-dark)" }}>
+                            <div key={`${statusKey}-detail-row-${rowIdx}`} style={{ fontWeight: 600, color: "var(--text-1)" }}>
                               - {row}
                             </div>
                           ))}
                           {isCustomerOverride ? (
-                            <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--primary, var(--primary))", fontWeight: 700 }}>
+                            <div style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-accent)", fontWeight: 700 }}>
                               Customer description ✎
                             </div>
                           ) : null}
@@ -4843,7 +4911,7 @@ export default function VhcDetailsPanel({
                           style={{
                             marginTop: "6px",
                             fontWeight: 600,
-                            color: "var(--info-dark)",
+                            color: "var(--text-1)",
                             background: "transparent",
                             border: "none",
                             padding: 0,
@@ -4855,7 +4923,7 @@ export default function VhcDetailsPanel({
                         >
                           {`- ${detailContent}`}
                           {isCustomerOverride ? (
-                            <span style={{ marginLeft: 6, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--primary, var(--primary))", fontWeight: 700 }}>
+                            <span style={{ marginLeft: 6, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-accent)", fontWeight: 700 }}>
                               ✎ customer
                             </span>
                           ) : null}
@@ -4868,7 +4936,7 @@ export default function VhcDetailsPanel({
                           style={{
                             marginTop: "6px",
                             fontWeight: 500,
-                            color: "var(--info-dark)",
+                            color: "var(--text-1)",
                             background: "transparent",
                             border: "none",
                             padding: 0,
@@ -4880,7 +4948,7 @@ export default function VhcDetailsPanel({
                         >
                           - {detailContent}
                           {isCustomerOverride ? (
-                            <span style={{ marginLeft: 6, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--primary, var(--primary))", fontWeight: 700 }}>
+                            <span style={{ marginLeft: 6, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-accent)", fontWeight: 700 }}>
                               ✎ customer
                             </span>
                           ) : null}
@@ -4893,7 +4961,7 @@ export default function VhcDetailsPanel({
                           style={{
                             marginTop: "6px",
                             fontStyle: "italic",
-                            color: "var(--info)",
+                            color: "var(--text-1)",
                             background: "transparent",
                             border: "1px dashed var(--ghostbutton-ring)",
                             borderRadius: "var(--radius-xs)",
@@ -4908,10 +4976,10 @@ export default function VhcDetailsPanel({
                         </button>
                       )}
                       {item.measurement ? (
-                        <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{item.measurement}</div>
+                        <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>{item.measurement}</div>
                       ) : null}
                       {locationLabel ? (
-                        <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>Location: {locationLabel}</div>
+                        <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>Location: {locationLabel}</div>
                       ) : null}
                       {/* Wear indicator for tyres and brake pads */}
                       {(() => {
@@ -5002,11 +5070,11 @@ export default function VhcDetailsPanel({
                                   gap: "8px",
                                   alignItems: "center",
                                   fontSize: "12px",
-                                  color: "var(--info-dark)",
+                                  color: "var(--text-1)",
                                 }}
                               >
                                 {!entry.hideLabel ? (
-                                  <span style={{ fontWeight: 600, color: "var(--primary)" }}>{entry.label}</span>
+                                  <span style={{ fontWeight: 600, color: "var(--text-accent)" }}>{entry.label}</span>
                                 ) : null}
                                 {entry.measurement ? <span>{entry.measurement}</span> : null}
                                 {entryStatusLabel && badgeStyles ? (
@@ -5025,11 +5093,11 @@ export default function VhcDetailsPanel({
                                     {entryStatusLabel}
                                   </span>
                                 ) : null}
-                                {entry.note ? <span style={{ color: "var(--info)" }}>{entry.note}</span> : null}
+                                {entry.note ? <span style={{ color: "var(--text-1)" }}>{entry.note}</span> : null}
                                 {Array.isArray(entry.spec) && entry.spec.length > 0 ? (
                                   <div style={{ display: "flex", flexDirection: "column", gap: "2px", width: "100%" }}>
                                     {entry.spec.map((line) => (
-                                      <span key={`${entry.id || entry.label}-spec-${line}`} style={{ color: "var(--info)", fontSize: "11px" }}>
+                                      <span key={`${entry.id || entry.label}-spec-${line}`} style={{ color: "var(--text-1)", fontSize: "11px" }}>
                                         {line}
                                       </span>
                                     ))}
@@ -5043,7 +5111,7 @@ export default function VhcDetailsPanel({
                     </td>
                     <td style={{ padding: "12px 8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--primary)" }}>
+                        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-accent)" }}>
                           {partsDisplayValue ? `£${partsDisplayValue}` : "—"}
                         </div>
                       </div>
@@ -5143,7 +5211,7 @@ export default function VhcDetailsPanel({
                         {showSavedBadge ? (
                           <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: 600 }}>Saved</span>
                         ) : null}
-                        <span style={{ fontSize: "12px", color: "var(--info)", whiteSpace: "nowrap" }}>£{labourCost.toFixed(2)}</span>
+                        <span style={{ fontSize: "12px", color: "var(--text-1)", whiteSpace: "nowrap" }}>£{labourCost.toFixed(2)}</span>
                         {labourSuggestionOpen ? (
                           <div
                             style={{
@@ -5162,9 +5230,9 @@ export default function VhcDetailsPanel({
                             }}
                           >
                             {labourSuggestionsLoading ? (
-                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--info)" }}>Loading suggestions…</div>
+                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--text-1)" }}>Loading suggestions…</div>
                             ) : labourSuggestions.length === 0 ? (
-                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--info)" }}>Suggested labour time</div>
+                              <div style={{ padding: "10px 12px", fontSize: "12px", color: "var(--text-1)" }}>Suggested labour time</div>
                             ) : (
                               labourSuggestions.map((suggestion) => (
                                 <button
@@ -5395,7 +5463,7 @@ export default function VhcDetailsPanel({
                               zIndex: 5,
                             }}
                           >
-                            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--primary)" }}>
+                            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-accent)" }}>
                               {statusState.label}
                             </div>
                           </div>
@@ -5517,17 +5585,17 @@ export default function VhcDetailsPanel({
       >
         <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
           <div style={{ minWidth: "240px" }}>
-            <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+            <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-1)" }}>
               {categoryLabel}
             </div>
-            <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--primary)", marginTop: "4px" }}>
+            <div style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-accent)", marginTop: "4px" }}>
               {detailLabel}
             </div>
             {detailContent ? (
-              <div style={{ fontSize: "13px", color: "var(--info-dark)", marginTop: "4px" }}>{detailContent}</div>
+              <div style={{ fontSize: "13px", color: "var(--text-1)", marginTop: "4px" }}>{detailContent}</div>
             ) : null}
             {measurement ? (
-              <div style={{ fontSize: "12px", color: "var(--info)", marginTop: "4px" }}>{measurement}</div>
+              <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>{measurement}</div>
             ) : null}
             {wearPercent !== null && (
               <div style={{ marginTop: "8px", display: "flex", alignItems: "center", gap: "8px" }}>
@@ -5553,7 +5621,7 @@ export default function VhcDetailsPanel({
                 }}>
                   {wearPercent}% Worn
                 </span>
-                <span style={{ fontSize: "11px", color: "var(--info)" }}>
+                <span style={{ fontSize: "11px", color: "var(--text-1)" }}>
                   ({wearLabel})
                 </span>
               </div>
@@ -5689,7 +5757,7 @@ export default function VhcDetailsPanel({
           style={{
             padding: "14px 16px",
             fontWeight: 700,
-            color: theme.text || "var(--primary)",
+            color: theme.text || "var(--text-accent)",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             fontSize: "12px",
@@ -5714,7 +5782,7 @@ export default function VhcDetailsPanel({
           </div>
         </div>
         {displayItems.length === 0 ? (
-          <div style={{ padding: "16px", fontSize: "13px", color: "var(--info)" }}>
+          <div style={{ padding: "16px", fontSize: "13px", color: "var(--text-1)" }}>
             No items recorded.
           </div>
         ) : (
@@ -7289,28 +7357,28 @@ export default function VhcDetailsPanel({
                   >
                     <td style={{ padding: "10px 12px", wordBreak: "break-word" }}>
                       <div>
-                        <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)" }}>
+                        <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-1)" }}>
                           {vhcCategory}
                         </div>
-                        <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--primary)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                        <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--text-accent)", marginTop: "2px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
                           <span>{vhcLabel}</span>
                         </div>
                         {isServiceIndicatorRow && vhcRows.length > 0 ? (
                           <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
                             {vhcRows.map((row, rowIdx) => (
-                              <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+                              <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)" }}>
                                 - {row}
                               </div>
                             ))}
                           </div>
                         ) : null}
                         {vhcDetailText && (
-                          <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
+                          <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>
                             {vhcDetailText}
                           </div>
                         )}
                         {locationLabel && (
-                          <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
+                          <div style={{ fontSize: "11px", color: "var(--text-1)", marginTop: "4px" }}>
                             Location: {locationLabel}
                           </div>
                         )}
@@ -7320,18 +7388,18 @@ export default function VhcDetailsPanel({
                       {hasParts ? (
                         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                           {linkedParts.map((part) => (
-                            <div key={part.id} style={{ fontSize: "12px", color: "var(--info-dark)" }}>
-                              <div style={{ fontWeight: 600, color: "var(--primary)" }}>
+                            <div key={part.id} style={{ fontSize: "12px", color: "var(--text-1)" }}>
+                              <div style={{ fontWeight: 600, color: "var(--text-accent)" }}>
                                 {part.part?.name || "Part"}
                               </div>
-                              <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                              <div style={{ fontSize: "11px", color: "var(--text-1)" }}>
                                 {part.part?.part_number || "—"} × {part.quantity_requested || 1}
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div style={{ fontSize: "12px", color: "var(--info)", fontStyle: "italic" }}>
+                        <div style={{ fontSize: "12px", color: "var(--text-1)", fontStyle: "italic" }}>
                           No parts added yet
                         </div>
                       )}
@@ -7374,7 +7442,7 @@ export default function VhcDetailsPanel({
                           W
                         </span>
                       ) : (
-                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>—</span>
                       )}
                     </td>
                     <td style={{ padding: "10px 12px", textAlign: "center" }}>
@@ -7457,7 +7525,7 @@ export default function VhcDetailsPanel({
                               borderRadius: "var(--radius-sm)",
                               background: "var(--theme)",
                               textAlign: "center",
-                              color: "var(--info)",
+                              color: "var(--text-1)",
                               fontSize: "13px",
                             }}>
                               No parts added yet.
@@ -7467,7 +7535,7 @@ export default function VhcDetailsPanel({
                               <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
                                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                                   <thead>
-                                    <tr style={{ background: "var(--theme)", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "10px" }}>
+                                    <tr style={{ background: "var(--theme)", color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "10px" }}>
                                       <th style={{ textAlign: "left", padding: "10px 12px" }}>Part</th>
                                       <th style={{ textAlign: "left", padding: "10px 12px" }}>Description</th>
                                       <th style={{ textAlign: "right", padding: "10px 12px" }}>Cost</th>
@@ -7491,16 +7559,16 @@ export default function VhcDetailsPanel({
 
                                       return (
                                         <tr key={`${partKey}-summary`} style={{ borderBottom: "1px solid var(--separating-line)" }}>
-                                          <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--primary)" }}>
+                                          <td style={{ padding: "10px 12px", fontWeight: 600, color: "var(--text-accent)" }}>
                                             {partName}
                                           </td>
-                                          <td style={{ padding: "10px 12px", color: "var(--info-dark)" }}>
+                                          <td style={{ padding: "10px 12px", color: "var(--text-1)" }}>
                                             {partDescription}
                                           </td>
-                                          <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "var(--primary)" }}>
+                                          <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: "var(--text-accent)" }}>
                                             £{Number(costToCustomer || 0).toFixed(2)}
                                           </td>
-                                          <td style={{ padding: "10px 12px", color: "var(--info-dark)" }}>
+                                          <td style={{ padding: "10px 12px", color: "var(--text-1)" }}>
                                             {location}
                                           </td>
                                           <td style={{ padding: "10px 12px", textAlign: "center" }}>
@@ -7593,7 +7661,7 @@ export default function VhcDetailsPanel({
                   background: "var(--theme)",
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
-                  color: "var(--info)",
+                  color: "var(--text-1)",
                   fontSize: "11px",
                 }}
               >
@@ -7684,29 +7752,29 @@ export default function VhcDetailsPanel({
                           {isServiceIndicatorRow && vhcRows.length > 0 ? (
                             <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
                               {vhcRows.map((row, rowIdx) => (
-                                <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+                                <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)" }}>
                                   - {row}
                                 </div>
                               ))}
                             </div>
                           ) : null}
                           {vhcDetailText && (
-                            <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
+                            <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>
                               {vhcDetailText}
                             </div>
                           )}
                           {locationLabel && (
-                            <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
+                            <div style={{ fontSize: "11px", color: "var(--text-1)", marginTop: "4px" }}>
                               Location: {locationLabel}
                             </div>
                           )}
                         </div>
                       </td>
                       <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
-                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>No parts linked</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>No parts linked</span>
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "right" }}>
-                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>£0.00</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>£0.00</span>
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
                         {isWarranty ? (
@@ -7727,7 +7795,7 @@ export default function VhcDetailsPanel({
                             W
                           </span>
                         ) : (
-                          <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                          <span style={{ color: "var(--text-1)", fontSize: "12px" }}>—</span>
                         )}
                       </td>
                       <td style={{ padding: "12px 16px", textAlign: "center" }}>
@@ -7739,7 +7807,7 @@ export default function VhcDetailsPanel({
                             borderRadius: "var(--radius-xs)",
                             border: "none",
                             background: "var(--surface)",
-                            color: "var(--info)",
+                            color: "var(--text-1)",
                             fontWeight: 600,
                             cursor: "not-allowed",
                             fontSize: "12px",
@@ -7799,19 +7867,19 @@ export default function VhcDetailsPanel({
                           {isServiceIndicatorRow && vhcRows.length > 0 ? (
                             <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
                               {vhcRows.map((row, rowIdx) => (
-                                <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+                                <div key={`${vhcId}-service-indicator-row-${rowIdx}`} style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)" }}>
                                   - {row}
                                 </div>
                               ))}
                             </div>
                           ) : null}
                           {vhcDetailText && (
-                            <div style={{ fontSize: "12px", color: "var(--info-dark)", marginTop: "4px" }}>
+                            <div style={{ fontSize: "12px", color: "var(--text-1)", marginTop: "4px" }}>
                               {vhcDetailText}
                             </div>
                           )}
                         {locationLabel && (
-                          <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
+                          <div style={{ fontSize: "11px", color: "var(--text-1)", marginTop: "4px" }}>
                             Location: {locationLabel}
                           </div>
                         )}
@@ -7821,11 +7889,11 @@ export default function VhcDetailsPanel({
                     <td style={{ padding: "12px 16px", whiteSpace: "normal", wordBreak: "break-word" }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                         {partLines.map(({ part, partQty }) => (
-                          <div key={part.id} style={{ fontSize: "12px", color: "var(--info-dark)" }}>
+                          <div key={part.id} style={{ fontSize: "12px", color: "var(--text-1)" }}>
                             <div style={{ fontWeight: 600, color: "var(--success)" }}>
                               {part.part?.name || "Unknown Part"}
                             </div>
-                            <div style={{ fontSize: "11px", color: "var(--info)" }}>
+                            <div style={{ fontSize: "11px", color: "var(--text-1)" }}>
                               {part.part?.part_number || "No part number"} • Qty: {partQty}
                             </div>
                           </div>
@@ -7858,7 +7926,7 @@ export default function VhcDetailsPanel({
                           W
                         </span>
                       ) : (
-                        <span style={{ color: "var(--info-light)", fontSize: "12px" }}>—</span>
+                        <span style={{ color: "var(--text-1)", fontSize: "12px" }}>—</span>
                       )}
                     </td>
 
@@ -7959,7 +8027,7 @@ export default function VhcDetailsPanel({
                   background: "var(--theme)",
                   textTransform: "uppercase",
                   letterSpacing: "0.04em",
-                  color: "var(--info)",
+                  color: "var(--text-1)",
                   fontSize: "11px",
                 }}
               >
@@ -8001,16 +8069,16 @@ export default function VhcDetailsPanel({
                       background: "var(--surface)",
                     }}
                   >
-                    <td style={{ padding: "12px 16px", color: "var(--primary)", fontWeight: 600 }}>
+                    <td style={{ padding: "12px 16px", color: "var(--text-accent)", fontWeight: 600 }}>
                       {part.name || "—"}
                     </td>
-                    <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                    <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>
                       {part.part_number || "—"}
                     </td>
-                    <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--info-dark)" }}>
+                    <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--text-1)" }}>
                       {partItem.quantity_requested || 1}
                     </td>
-                    <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--info-dark)", fontWeight: 600 }}>
+                    <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--text-1)", fontWeight: 600 }}>
                       £{Number(price).toFixed(2)}
                     </td>
                     {isAuthorisedSection && (
@@ -8045,10 +8113,10 @@ export default function VhcDetailsPanel({
                               : "—"}
                           </span>
                         </td>
-                        <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>
                           {partItem.storage_location || "—"}
                         </td>
-                        <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "12px 16px", textAlign: "center", color: "var(--text-1)" }}>
                           {formatLabourHoursDisplay(partItem.labour_hours)}
                         </td>
                         <td style={{ padding: "12px 16px" }}>
@@ -8083,13 +8151,13 @@ export default function VhcDetailsPanel({
                     )}
                     {isOnOrderSection && (
                       <>
-                        <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>
                           {partItem.eta_date || "—"}
                         </td>
-                        <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>
                           {partItem.eta_time || "—"}
                         </td>
-                        <td style={{ padding: "12px 16px", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "12px 16px", color: "var(--text-1)" }}>
                           {partItem.supplier_reference || "—"}
                         </td>
                         <td style={{ padding: "12px 16px", textAlign: "center" }}>
@@ -8178,7 +8246,6 @@ export default function VhcDetailsPanel({
     handleAddToJobClick,
     readOnly,
     handlePartArrived,
-    normalisePartStatus,
   ]);
 
   // Render file gallery (photos/videos)
@@ -8226,7 +8293,7 @@ export default function VhcDetailsPanel({
             )}
             <div style={{ padding: "12px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "8px" }}>
-                <div style={{ fontSize: "12px", color: "var(--primary)", fontWeight: 600, flex: 1 }}>
+                <div style={{ fontSize: "12px", color: "var(--text-accent)", fontWeight: 600, flex: 1 }}>
                   {file.file_name}
                 </div>
                 {file.visible_to_customer !== undefined && (
@@ -8241,7 +8308,7 @@ export default function VhcDetailsPanel({
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: "11px", color: "var(--info)", marginTop: "4px" }}>
+              <div style={{ fontSize: "11px", color: "var(--text-1)", marginTop: "4px" }}>
                 {formatDateTime(file.uploaded_at)}
               </div>
             </div>
@@ -8328,23 +8395,23 @@ export default function VhcDetailsPanel({
       }}
     >
       <div>
-        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Job</div>
+        <div style={{ fontSize: "12px", color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Job</div>
         <div style={{ fontSize: "20px", fontWeight: 700 }}>{job?.job_number || "—"}</div>
       </div>
       <div>
-        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Reg</div>
+        <div style={{ fontSize: "12px", color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Reg</div>
         <div style={{ fontSize: "20px", fontWeight: 700 }}>{getVehicleRegistration(job?.vehicle) || job?.vehicle_reg || "—"}</div>
       </div>
       <div>
-        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Customer</div>
+        <div style={{ fontSize: "12px", color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Customer</div>
         <div style={{ fontSize: "15px", fontWeight: 600 }}>{customerName}</div>
       </div>
       <div>
-        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Mileage</div>
+        <div style={{ fontSize: "12px", color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Mileage</div>
         <div style={{ fontSize: "15px", fontWeight: 600 }}>{pickMileageValue(job?.vehicle?.mileage, job?.mileage, job?.milage) ? `${pickMileageValue(job?.vehicle?.mileage, job?.mileage, job?.milage)} mi` : "—"}</div>
       </div>
       <div>
-        <div style={{ fontSize: "12px", color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Submitted</div>
+        <div style={{ fontSize: "12px", color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.16em" }}>Submitted</div>
         <div style={{ fontSize: "15px", fontWeight: 600 }}>{formatDateTime(workflow?.vhc_sent_at || workflow?.last_sent_at || job?.created_at)}</div>
       </div>
       <div style={{ justifySelf: "end" }}>
@@ -8532,7 +8599,7 @@ export default function VhcDetailsPanel({
                             <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                               <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
                               {selectedSet.size > 0 && (
-                                <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--info-dark)" }}>
+                                <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-1)" }}>
                                   Selected: £{selectedTotal.toFixed(2)}
                                 </span>
                               )}
@@ -8547,7 +8614,7 @@ export default function VhcDetailsPanel({
                                 </span>
                               )}
                               {meta.description ? (
-                                <p style={{ margin: 0, color: "var(--info)", flexBasis: "100%" }}>{meta.description}</p>
+                                <p style={{ margin: 0, color: "var(--text-1)", flexBasis: "100%" }}>{meta.description}</p>
                               ) : null}
                             </div>
                             {renderSectionBulkActions(severity, items)}
@@ -8722,25 +8789,25 @@ export default function VhcDetailsPanel({
                                   fontWeight: 600,
                                   textTransform: "uppercase",
                                   letterSpacing: "0.08em",
-                                  color: "var(--info)",
+                                  color: "var(--text-1)",
                                 }}
                               >
                                 {item.category?.label || item.sectionName}
                               </span>
-                              <div style={{ fontWeight: 700, color: "var(--primary)", fontSize: "14px" }}>
+                              <div style={{ fontWeight: 700, color: "var(--text-accent)", fontSize: "14px" }}>
                                 {item.label}
                               </div>
                               {item.notes ? (
-                                <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>{item.notes}</div>
+                                <div style={{ fontSize: "12px", color: "var(--text-1)" }}>{item.notes}</div>
                               ) : null}
                               {item.measurement ? (
-                                <div style={{ fontSize: "12px", color: "var(--info)" }}>{item.measurement}</div>
+                                <div style={{ fontSize: "12px", color: "var(--text-1)" }}>{item.measurement}</div>
                               ) : null}
                               {locationLabel ? (
-                                <div style={{ fontSize: "12px", color: "var(--info)" }}>Location: {locationLabel}</div>
+                                <div style={{ fontSize: "12px", color: "var(--text-1)" }}>Location: {locationLabel}</div>
                               ) : null}
                               {item.spec?.length > 0 ? (
-                                <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "12px", color: "var(--info)" }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "12px", color: "var(--text-1)" }}>
                                   {item.spec.map((line) => (
                                     <span key={`${item.id}-spec-${line}`}>{line}</span>
                                   ))}
@@ -8777,7 +8844,7 @@ export default function VhcDetailsPanel({
                             borderRadius: "var(--radius-md)",
                             padding: "20px",
                             background: "var(--theme)",
-                            color: "var(--primary)",
+                            color: "var(--text-accent)",
                             fontSize: "13px",
                             textAlign: "center",
                           }}
@@ -8893,7 +8960,7 @@ export default function VhcDetailsPanel({
                           <div style={{ display: "flex", alignItems: "baseline", gap: "12px", flexWrap: "wrap" }}>
                             <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 700, color: meta.accent }}>{meta.title}</h2>
                             {selectedSet.size > 0 && (
-                              <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--info-dark)" }}>
+                              <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-1)" }}>
                                 Selected: £{selectedTotal.toFixed(2)}
                               </span>
                             )}
@@ -8908,7 +8975,7 @@ export default function VhcDetailsPanel({
                               </span>
                             )}
                             {meta.description ? (
-                              <p style={{ margin: 0, color: "var(--info)", flexBasis: "100%" }}>{meta.description}</p>
+                              <p style={{ margin: 0, color: "var(--text-1)", flexBasis: "100%" }}>{meta.description}</p>
                             ) : null}
                           </div>
                           {renderSectionBulkActions(severity, items)}
@@ -9067,25 +9134,25 @@ export default function VhcDetailsPanel({
                                 fontWeight: 600,
                                 textTransform: "uppercase",
                                 letterSpacing: "0.08em",
-                                color: "var(--info)",
+                                color: "var(--text-1)",
                               }}
                             >
                               {item.category?.label || item.sectionName}
                             </span>
-                            <div style={{ fontWeight: 700, color: "var(--primary)", fontSize: "14px" }}>
+                            <div style={{ fontWeight: 700, color: "var(--text-accent)", fontSize: "14px" }}>
                               {item.label}
                             </div>
                             {item.notes ? (
-                              <div style={{ fontSize: "12px", color: "var(--info-dark)" }}>{item.notes}</div>
+                              <div style={{ fontSize: "12px", color: "var(--text-1)" }}>{item.notes}</div>
                             ) : null}
                             {item.measurement ? (
-                              <div style={{ fontSize: "12px", color: "var(--info)" }}>{item.measurement}</div>
+                              <div style={{ fontSize: "12px", color: "var(--text-1)" }}>{item.measurement}</div>
                             ) : null}
                             {locationLabel ? (
-                              <div style={{ fontSize: "12px", color: "var(--info)" }}>Location: {locationLabel}</div>
+                              <div style={{ fontSize: "12px", color: "var(--text-1)" }}>Location: {locationLabel}</div>
                             ) : null}
                             {item.spec?.length > 0 ? (
-                              <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "12px", color: "var(--info)" }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "2px", fontSize: "12px", color: "var(--text-1)" }}>
                                 {item.spec.map((line) => (
                                   <span key={`${item.id}-spec-${line}`}>{line}</span>
                                 ))}
@@ -9115,7 +9182,7 @@ export default function VhcDetailsPanel({
                             borderRadius: "var(--radius-md)",
                             padding: "20px",
                             background: "var(--theme)",
-                            color: "var(--primary)",
+                            color: "var(--text-accent)",
                             fontSize: "13px",
                             textAlign: "center",
                           }}
@@ -9265,7 +9332,7 @@ export default function VhcDetailsPanel({
         hideCloseButton
         footer={
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-            <span style={{ fontSize: "12px", color: "var(--info)" }}>{addPartsMessage}</span>
+            <span style={{ fontSize: "12px", color: "var(--text-1)" }}>{addPartsMessage}</span>
             <div style={{ display: "flex", gap: "10px" }}>
               <button
                 type="button"
@@ -9274,7 +9341,7 @@ export default function VhcDetailsPanel({
                   padding: "10px 16px",
                   borderRadius: "var(--radius-xs)",
                   background: "var(--surface)",
-                  color: "var(--info-dark)",
+                  color: "var(--text-1)",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}
@@ -9302,7 +9369,7 @@ export default function VhcDetailsPanel({
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
           <div>
-            <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--info)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-1)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
               Search parts catalogue
             </label>
             <div style={{ display: "flex", gap: "10px", marginTop: "6px", flexWrap: "wrap" }}>
@@ -9336,7 +9403,7 @@ export default function VhcDetailsPanel({
                   borderRadius: "var(--radius-xs)",
                   border: "1px solid var(--ghostbutton-ring)",
                   background: "var(--surface)",
-                  color: "var(--primary)",
+                  color: "var(--text-accent)",
                   fontWeight: 600,
                   cursor: "pointer",
                   whiteSpace: "nowrap",
@@ -9351,7 +9418,7 @@ export default function VhcDetailsPanel({
                   padding: "10px 12px",
                   borderRadius: "var(--radius-xs)",
                   background: "var(--surface)",
-                  color: "var(--info-dark)",
+                  color: "var(--text-1)",
                   fontWeight: 700,
                   cursor: "pointer",
                 }}
@@ -9362,7 +9429,7 @@ export default function VhcDetailsPanel({
             </div>
             {partsSearchSuggestions.length > 0 && (
               <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--primary)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-accent)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                   Search suggestions
                 </span>
                 {partsSearchSuggestions.map((suggestion) => (
@@ -9383,7 +9450,7 @@ export default function VhcDetailsPanel({
                       borderRadius: "var(--radius-pill)",
                       padding: "6px 10px",
                       background: "var(--surface)",
-                      color: "var(--info-dark)",
+                      color: "var(--text-1)",
                       fontSize: "12px",
                       fontWeight: 600,
                       cursor: "pointer",
@@ -9395,7 +9462,7 @@ export default function VhcDetailsPanel({
               </div>
             )}
             {partsSearchSuggestionsLoading && (
-              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--info)" }}>
+              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--text-1)" }}>
                 Loading suggestions…
               </div>
             )}
@@ -9405,7 +9472,7 @@ export default function VhcDetailsPanel({
               </div>
             )}
             {addPartsLoading && (
-              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--info)" }}>
+              <div style={{ marginTop: "8px", fontSize: "12px", color: "var(--text-1)" }}>
                 Searching…
               </div>
             )}
@@ -9437,7 +9504,7 @@ export default function VhcDetailsPanel({
               )}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Part number</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Part number</label>
                   <input
                     type="text"
                     value={newPartForm.partNumber}
@@ -9454,7 +9521,7 @@ export default function VhcDetailsPanel({
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Quantity</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Quantity</label>
                   <input
                     type="number"
                     min="0"
@@ -9474,7 +9541,7 @@ export default function VhcDetailsPanel({
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Bin location</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Bin location</label>
                   <input
                     type="text"
                     value={newPartForm.binLocation}
@@ -9491,7 +9558,7 @@ export default function VhcDetailsPanel({
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Discount code</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Discount code</label>
                   <input
                     type="text"
                     value={newPartForm.discountCode}
@@ -9507,7 +9574,7 @@ export default function VhcDetailsPanel({
                   />
                 </div>
                 <div style={{ gridColumn: "1 / -1" }}>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Description</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Description</label>
                   <textarea
                     value={newPartForm.description}
                     onChange={(event) => handleNewPartFieldChange("description", event.target.value)}
@@ -9524,7 +9591,7 @@ export default function VhcDetailsPanel({
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Retail price</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Retail price</label>
                   <input
                     type="number"
                     min="0"
@@ -9543,7 +9610,7 @@ export default function VhcDetailsPanel({
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--info)", marginBottom: "6px" }}>Cost price</label>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--text-1)", marginBottom: "6px" }}>Cost price</label>
                   <input
                     type="number"
                     min="0"
@@ -9570,7 +9637,7 @@ export default function VhcDetailsPanel({
                     padding: "10px 16px",
                     borderRadius: "var(--radius-xs)",
                     background: "var(--surface)",
-                    color: "var(--info-dark)",
+                    color: "var(--text-1)",
                     fontWeight: 600,
                     cursor: "pointer",
                   }}
@@ -9598,18 +9665,18 @@ export default function VhcDetailsPanel({
           )}
 
           <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-            <div style={{ padding: "10px 12px", background: "var(--theme)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+            <div style={{ padding: "10px 12px", background: "var(--theme)", fontSize: "12px", fontWeight: 600, color: "var(--text-1)" }}>
               Search results
             </div>
             {addPartsResults.length === 0 ? (
-              <div style={{ padding: "14px 12px", fontSize: "12px", color: "var(--info)" }}>
+              <div style={{ padding: "14px 12px", fontSize: "12px", color: "var(--text-1)" }}>
                 {addPartsLoading ? "Loading results…" : "No parts to show yet."}
               </div>
             ) : (
               <div style={{ maxHeight: "200px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                   <thead>
-                    <tr style={{ background: "var(--surface)", color: "var(--info)" }}>
+                    <tr style={{ background: "var(--surface)", color: "var(--text-1)" }}>
                       <th style={{ textAlign: "left", padding: "8px 12px" }}>Part</th>
                       <th style={{ textAlign: "left", padding: "8px 12px" }}>Number</th>
                       <th style={{ textAlign: "left", padding: "8px 12px" }}>Location</th>
@@ -9632,16 +9699,16 @@ export default function VhcDetailsPanel({
                           event.currentTarget.style.background = "transparent";
                         }}
                       >
-                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--primary)" }}>
+                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--text-accent)" }}>
                           {part.name || "Part"}
                         </td>
-                        <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
                           {part.part_number || "—"}
                         </td>
-                        <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
                           {part.storage_location || "—"}
                         </td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--info)" }}>
+                        <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text-1)" }}>
                           {part.qty_in_stock ?? 0}
                         </td>
                       </tr>
@@ -9653,18 +9720,18 @@ export default function VhcDetailsPanel({
           </div>
 
           <div style={{ border: "none", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-            <div style={{ padding: "10px 12px", background: "var(--theme)", fontSize: "12px", fontWeight: 600, color: "var(--info-dark)" }}>
+            <div style={{ padding: "10px 12px", background: "var(--theme)", fontSize: "12px", fontWeight: 600, color: "var(--text-1)" }}>
               Selected parts
             </div>
             {existingPartsForModal.length > 0 && (
               <div style={{ padding: "12px" }}>
-                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--info)", marginBottom: "8px" }}>
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-1)", marginBottom: "8px" }}>
                   Already added to this VHC item
                 </div>
                 <div style={{ border: "none", borderRadius: "var(--input-radius)", overflow: "hidden" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                     <thead>
-                      <tr style={{ background: "var(--surface)", color: "var(--info)" }}>
+                      <tr style={{ background: "var(--surface)", color: "var(--text-1)" }}>
                         <th style={{ textAlign: "left", padding: "8px 12px" }}>Part</th>
                         <th style={{ textAlign: "left", padding: "8px 12px" }}>Description</th>
                         <th style={{ textAlign: "right", padding: "8px 12px" }}>Cost</th>
@@ -9681,16 +9748,16 @@ export default function VhcDetailsPanel({
                         const details = partDetails[partKey] || {};
                         return (
                           <tr key={`existing-${part.id}`} style={{ borderBottom: "1px solid var(--separating-line)" }}>
-                            <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--primary)" }}>
+                            <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--text-accent)" }}>
                               {part.part?.name || "Part"}
                             </td>
-                            <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                            <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
                               {part.part?.description || "—"}
                             </td>
-                            <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--info-dark)" }}>
+                            <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text-1)" }}>
                               £{Number(part.unit_price || part.part?.unit_price || 0).toFixed(2)}
                             </td>
-                            <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                            <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
                               {part.storage_location || part.part?.storage_location || "—"}
                             </td>
                             <td style={{ padding: "8px 12px", textAlign: "center" }}>
@@ -9740,14 +9807,14 @@ export default function VhcDetailsPanel({
               </div>
             )}
             {selectedParts.length === 0 ? (
-              <div style={{ padding: "14px 12px", fontSize: "12px", color: "var(--info)" }}>
+              <div style={{ padding: "14px 12px", fontSize: "12px", color: "var(--text-1)" }}>
                 No parts selected yet.
               </div>
             ) : (
               <div style={{ maxHeight: "240px", overflowY: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                   <thead>
-                    <tr style={{ background: "var(--surface)", color: "var(--info)" }}>
+                    <tr style={{ background: "var(--surface)", color: "var(--text-1)" }}>
                       <th style={{ textAlign: "left", padding: "8px 12px" }}>Part</th>
                       <th style={{ textAlign: "left", padding: "8px 12px" }}>Description</th>
                       <th style={{ textAlign: "right", padding: "8px 12px" }}>Cost</th>
@@ -9761,16 +9828,16 @@ export default function VhcDetailsPanel({
                   <tbody>
                     {selectedParts.map((entry) => (
                       <tr key={entry.part?.id} style={{ borderBottom: "1px solid var(--separating-line)" }}>
-                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--primary)" }}>
+                        <td style={{ padding: "8px 12px", fontWeight: 600, color: "var(--text-accent)" }}>
                           {entry.part?.name || "Part"}
                         </td>
-                        <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
                           {entry.part?.description || "—"}
                         </td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "8px 12px", textAlign: "right", color: "var(--text-1)" }}>
                           £{Number(entry.part?.unit_price || 0).toFixed(2)}
                         </td>
-                        <td style={{ padding: "8px 12px", color: "var(--info-dark)" }}>
+                        <td style={{ padding: "8px 12px", color: "var(--text-1)" }}>
                           {entry.part?.storage_location || "—"}
                         </td>
                         <td style={{ padding: "8px 12px", textAlign: "center" }}>
@@ -9839,7 +9906,7 @@ export default function VhcDetailsPanel({
                   fontWeight: "bold",
                   textTransform: "uppercase",
                   letterSpacing: "0.05em",
-                  color: "var(--primary)",
+                  color: "var(--text-accent)",
                 }}
               >
                 Labour Cost
@@ -9936,23 +10003,23 @@ export default function VhcDetailsPanel({
                         gap: "8px",
                       }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--text-1)" }}>
                         <span>Labour Total (Net)</span>
                         <strong>£{labourTotalNet.toFixed(2)}</strong>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--text-1)" }}>
                         <span>Default Price (Inc VAT)</span>
                         <strong>£{LABOUR_RATE_GROSS_DEFAULT_GBP.toFixed(2)}</strong>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--text-1)" }}>
                         <span>Labour Rate (Net / Hour)</span>
                         <strong>£{net.toFixed(2)}</strong>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--info-dark)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", color: "var(--text-1)" }}>
                         <span>VAT (20%)</span>
                         <strong>£{vat.toFixed(2)}</strong>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "15px", color: "var(--primary)", fontWeight: 700 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "15px", color: "var(--text-accent)", fontWeight: 700 }}>
                         <span>Total inc VAT</span>
                         <span>£{gross.toFixed(2)}</span>
                       </div>
@@ -9969,7 +10036,7 @@ export default function VhcDetailsPanel({
                       borderRadius: "var(--input-radius)",
                       border: "none",
                       background: "var(--surface)",
-                      color: "var(--info-dark)",
+                      color: "var(--text-1)",
                       fontWeight: 600,
                       cursor: "pointer",
                     }}
@@ -10055,7 +10122,7 @@ export default function VhcDetailsPanel({
         }
 
         .labour-hours-input::placeholder {
-          color: var(--grey-accent);
+          color: var(--text-1);
           opacity: 1;
         }
       `}</style>

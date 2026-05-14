@@ -304,6 +304,75 @@ const normalizeVhcStatus = (value) => {
   return "na";
 };
 
+const VHC_TYRE_WHEELS = ["NSF", "OSF", "NSR", "OSR"];
+
+const normalizeTyreMake = (value) =>
+String(value || "")
+  .trim()
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, " ")
+  .replace(/\s+/g, " ");
+
+const getTyreTreadStatus = (tread = {}) => {
+  const measurements = ["outer", "middle", "inner"]
+    .map((section) => tread?.[section])
+    .filter((value) => value !== null && value !== undefined && String(value).trim() !== "")
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+
+  if (measurements.length === 0) return "na";
+
+  const minTread = Math.min(...measurements);
+  if (minTread < 1.6) return "red";
+  if (minTread < 3) return "amber";
+  return "green";
+};
+
+const formatTyreTreadText = (wheel, tyre = {}) => {
+  const tread = tyre?.tread || {};
+  const parts = [
+    ["Outer", tread.outer],
+    ["Middle", tread.middle],
+    ["Inner", tread.inner],
+  ]
+    .filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "")
+    .map(([label, value]) => `${label}: ${value}mm`);
+
+  return `${wheel} Tyre Tread Depth${parts.length ? ` - ${parts.join(", ")}` : ""}`;
+};
+
+const getUnmatchedTyreWheels = (wheelsTyres = {}) => {
+  const tyresWithMake = VHC_TYRE_WHEELS
+    .map((wheel) => ({
+      wheel,
+      make: normalizeTyreMake(wheelsTyres?.[wheel]?.manufacturer),
+    }))
+    .filter((tyre) => tyre.make);
+
+  const uniqueMakes = new Set(tyresWithMake.map((tyre) => tyre.make));
+  if (uniqueMakes.size <= 1) return new Set();
+
+  const counts = tyresWithMake.reduce((acc, tyre) => {
+    acc[tyre.make] = (acc[tyre.make] || 0) + 1;
+    return acc;
+  }, {});
+  const maxCount = Math.max(...Object.values(counts));
+  const majorityMakes = Object.entries(counts)
+    .filter(([, count]) => count === maxCount)
+    .map(([make]) => make);
+
+  if (majorityMakes.length !== 1) {
+    return new Set(tyresWithMake.map((tyre) => tyre.wheel));
+  }
+
+  const majorityMake = majorityMakes[0];
+  return new Set(
+    tyresWithMake
+      .filter((tyre) => tyre.make !== majorityMake)
+      .map((tyre) => tyre.wheel)
+  );
+};
+
 const getVhcActionButtonStyle = ({ active = false, disabled = false } = {}) => ({
   minHeight: "unset",
   padding: "6px 12px",
@@ -486,6 +555,13 @@ export default function TechJobDetailPage() {
   const [showGreenItems, setShowGreenItems] = useState(false);
   const [vhcCompleteOverride, setVhcCompleteOverride] = useState(false);
   const [vhcStartedLogged, setVhcStartedLogged] = useState(false);
+  const [vhcCustomerStatus, setVhcCustomerStatus] = useState({
+    status: "pending",
+    label: "Pending",
+    sentAt: null,
+    viewedAt: null,
+    readyAt: null,
+  });
 
   const jobCardId = jobData?.jobCard?.id ?? null;
   const jobCardStatus = jobData?.jobCard?.status || "";
@@ -690,6 +766,37 @@ export default function TechJobDetailPage() {
       console.error("Failed to load status snapshot:", snapshotError);
     }
   }, []);
+
+  const loadVhcCustomerStatus = useCallback(async () => {
+    if (!jobNumber) {
+      setVhcCustomerStatus({
+        status: "pending",
+        label: "Pending",
+        sentAt: null,
+        viewedAt: null,
+        readyAt: null,
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/job-cards/${encodeURIComponent(jobNumber)}/vhc-customer-status`
+      );
+      const payload = await response.json();
+      if (response.ok && payload?.success) {
+        setVhcCustomerStatus({
+          status: payload.status || "pending",
+          label: payload.label || "Pending",
+          sentAt: payload.sentAt || null,
+          viewedAt: payload.viewedAt || null,
+          readyAt: payload.readyAt || null,
+        });
+      }
+    } catch (statusError) {
+      console.error("Failed to load VHC customer status:", statusError);
+    }
+  }, [jobNumber]);
 
   // FIXED: Define all useCallback hooks FIRST before any useEffect that uses them
 
@@ -896,6 +1003,7 @@ export default function TechJobDetailPage() {
       await loadPartsRequests(jobCardIdForFetch);
       await loadAuthorizedParts(jobCardIdForFetch);
       await loadNotes(jobCardIdForFetch);
+      await loadVhcCustomerStatus();
       return job;
     } catch (fetchError) {
       console.error("Error fetching job:", fetchError);
@@ -912,12 +1020,20 @@ export default function TechJobDetailPage() {
   loadAuthorizedParts,
   loadNotes,
   loadStatusSnapshot,
+  loadVhcCustomerStatus,
   fetchClockedHoursTotal]
   );
 
   useEffect(() => {
     fetchJobData();
   }, [fetchJobData]);
+
+  useEffect(() => {
+    if (activeTab !== "vhc") return undefined;
+    void loadVhcCustomerStatus();
+    const interval = setInterval(loadVhcCustomerStatus, 15000);
+    return () => clearInterval(interval);
+  }, [activeTab, loadVhcCustomerStatus]);
 
   useEffect(() => {
     if (!jobCardId) {
@@ -1311,9 +1427,19 @@ export default function TechJobDetailPage() {
 
     // 1. WHEELS & TYRES - Extract from wheelsTyres structure
     if (vhcData.wheelsTyres && typeof vhcData.wheelsTyres === "object") {
-      const wheels = ["NSF", "OSF", "NSR", "OSR"];
-      wheels.forEach((wheel) => {
+      const unmatchedTyreWheels = getUnmatchedTyreWheels(vhcData.wheelsTyres);
+      VHC_TYRE_WHEELS.forEach((wheel) => {
         const wheelData = vhcData.wheelsTyres[wheel];
+        const isUnmatchedTyre = unmatchedTyreWheels.has(wheel);
+        const treadStatus = getTyreTreadStatus(wheelData?.tread);
+        if (treadStatus !== "na") {
+          items.push({
+            section: `Wheels & Tyres - ${wheel}`,
+            status: treadStatus,
+            text: formatTyreTreadText(wheel, wheelData),
+            unmatchedTyre: isUnmatchedTyre
+          });
+        }
         if (wheelData && Array.isArray(wheelData.concerns)) {
           wheelData.concerns.forEach((concern) => {
             const status = normalizeVhcStatus(concern.status);
@@ -1321,7 +1447,8 @@ export default function TechJobDetailPage() {
             items.push({
               section: `Wheels & Tyres - ${wheel}`,
               status,
-              text: concern.text || concern.description || concern.issue || "No description"
+              text: concern.text || concern.description || concern.issue || "No description",
+              unmatchedTyre: isUnmatchedTyre
             });
           });
         }
@@ -2731,7 +2858,7 @@ export default function TechJobDetailPage() {
 
   }
 
-  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} authorisedVhcItems={authorisedVhcItems} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} ModalPortal={ModalPortal} newNote={newNote} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} WriteUpForm={WriteUpForm} writeUpTechComplete={writeUpTechComplete} />;
+  return <TechJobDetailPageUi view="section5" activeSection={activeSection} activeTab={activeTab} authorisedVhcItems={authorisedVhcItems} authorizedVhcRows={authorizedVhcRows} authorizedVhcRowsLoading={authorizedVhcRowsLoading} BrakesHubsDetailsModal={BrakesHubsDetailsModal} Button={Button} canClockIntoMotHandoff={canClockIntoMotHandoff} canCompleteJob={canCompleteJob} canCompleteVhc={canCompleteVhc} canManageDocuments={canManageDocuments} clockInLoading={clockInLoading} clockOutLoading={clockOutLoading} completeJobFeedback={completeJobFeedback} completeJobLockedTitle={completeJobLockedTitle} customer={customer} CustomerVideoButton={CustomerVideoButton} dbUserId={dbUserId} detectedJobTypes={detectedJobTypes} DevLayoutSection={DevLayoutSection} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} ExternalDetailsModal={ExternalDetailsModal} fetchJobData={fetchJobData} formatDateTime={formatDateTime} formatPrePickLabel={formatPrePickLabel} getBadgeState={getBadgeState} getOptionalCount={getOptionalCount} getPartsStatusStyle={getPartsStatusStyle} handleAddNote={handleAddNote} handleCompleteJob={handleCompleteJob} handleCompleteVhcClick={handleCompleteVhcClick} handleDeleteDocument={handleDeleteDocument} handleJobClockIn={handleJobClockIn} handleJobClockOut={handleJobClockOut} handlePartsRequestSubmit={handlePartsRequestSubmit} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleSectionComplete={handleSectionComplete} handleSectionDismiss={handleSectionDismiss} InternalElectricsDetailsModal={InternalElectricsDetailsModal} isHeaderCompleteStatus={isHeaderCompleteStatus} isReopenMode={isReopenMode} isVhcCompleted={isVhcCompleted} jobCard={jobCard} jobClocking={jobClocking} jobData={jobData} jobDocuments={jobDocuments} jobNumber={jobNumber} jobStatusBadgeStyle={jobStatusBadgeStyle} ModalPortal={ModalPortal} newNote={newNote} notes={notes} notesLoading={notesLoading} notesSubmitting={notesSubmitting} openSection={openSection} partRequestDescription={partRequestDescription} partRequestQuantity={partRequestQuantity} partRequestVhcItemId={partRequestVhcItemId} partsFeedback={partsFeedback} partsRequests={partsRequests} partsRequestsLoading={partsRequestsLoading} partsSubmitting={partsSubmitting} prePickByVhcId={prePickByVhcId} quickStats={quickStats} saveError={saveError} saveStatus={saveStatus} sectionStatus={sectionStatus} ServiceIndicatorDetailsModal={ServiceIndicatorDetailsModal} setActiveTab={setActiveTab} setJobData={setJobData} setLiveWriteUpTasks={setLiveWriteUpTasks} setNewNote={setNewNote} setPartRequestDescription={setPartRequestDescription} setPartRequestQuantity={setPartRequestQuantity} setPartRequestVhcItemId={setPartRequestVhcItemId} setPartsFeedback={setPartsFeedback} setShowAddNote={setShowAddNote} setShowDocumentsPopup={setShowDocumentsPopup} setShowGreenItems={setShowGreenItems} setShowJobTypesPopup={setShowJobTypesPopup} setShowVhcSummary={setShowVhcSummary} showAddNote={showAddNote} showDocumentsPopup={showDocumentsPopup} showGreenItems={showGreenItems} showJobTypesPopup={showJobTypesPopup} showVhcReopenButton={showVhcReopenButton} showVhcSummary={showVhcSummary} techStatusDisplay={techStatusDisplay} UndersideDetailsModal={UndersideDetailsModal} user={user} vehicle={vehicle} VhcAssistantPanel={VhcAssistantPanel} vhcAssistantState={vhcAssistantState} VhcCameraButton={VhcCameraButton} vhcChecks={vhcChecks} vhcCustomerStatus={vhcCustomerStatus} vhcData={vhcData} vhcSummaryItems={vhcSummaryItems} vhcTabAmberReady={vhcTabAmberReady} visibleTabs={visibleTabs} WheelsTyresDetailsModal={WheelsTyresDetailsModal} WriteUpForm={WriteUpForm} writeUpTechComplete={writeUpTechComplete} />;
 
 
 

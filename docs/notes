@@ -1,8 +1,8 @@
 DO it so customer books job thorugh, see if it updates the stuff section. 
 
+have it os the appoinment page is updated within the /website/profile page
 
-Presentation!!!!!!!!!
-/create card doesnt use the create ui for Presentation 
+i dont see the customer status within the "/job-cards/00076 :: 1.2.1.1.1.2 (jobcard-summary-shell)" section 
 
 CHECK
 Have it so within the presnentaion when overview or Business Value popup is highlighting a section, have it so it scrolls the page and makes sure the highlighted section can is within the view of the screen.

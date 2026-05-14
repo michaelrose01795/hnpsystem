@@ -10,6 +10,71 @@ import { calculateVhcFinancialTotals } from "@/lib/vhc/calculateVhcTotals";
 import { normalizeDecision, normalizeSeverity, isSeverityColor, DECISION, buildDecisionUpdatePayload } from "@/lib/vhc/vhcItemState";
 import { logJobActivity } from "@/lib/database/jobActivity";
 
+const JOB_ADDED_PART_STATUSES = new Set(["booked", "fitted"]);
+
+const normalisePartNumber = (value = "") =>
+  String(value || "").trim().toLowerCase();
+
+const normalisePartStatus = (value = "") =>
+  String(value || "").trim().toLowerCase();
+
+const getPartNumber = (row = {}) =>
+  row?.part?.part_number ||
+  row?.part?.partNumber ||
+  row?.part_number_snapshot ||
+  row?.partNumber ||
+  row?.part_number ||
+  "";
+
+const isPartAddedToJob = (row = {}) => {
+  if (row?.added_to_job === true || row?.addedToJob === true) return true;
+  return JOB_ADDED_PART_STATUSES.has(normalisePartStatus(row.status));
+};
+
+const assertRequiredPartsAddedToJob = async (checkRow) => {
+  if (!checkRow?.job_id || !checkRow?.vhc_id) return { ok: true };
+
+  const { data: partRows, error } = await supabase
+    .from("parts_job_items")
+    .select("id, status, added_to_job, part_number_snapshot, part:parts_catalog(part_number)")
+    .eq("job_id", checkRow.job_id)
+    .eq("vhc_item_id", checkRow.vhc_id);
+
+  if (error) {
+    return {
+      ok: false,
+      status: 500,
+      message: "Failed to check linked job parts before completing VHC row",
+      error: error.message,
+    };
+  }
+
+  const requiredPartNumbers = new Set();
+  const addedPartNumbers = new Set();
+
+  (partRows || []).forEach((row) => {
+    if (normalisePartStatus(row?.status) === "removed") return;
+    const partNumber = normalisePartNumber(getPartNumber(row));
+    if (!partNumber) return;
+    requiredPartNumbers.add(partNumber);
+    if (isPartAddedToJob(row)) {
+      addedPartNumbers.add(partNumber);
+    }
+  });
+
+  const missingPartNumbers = Array.from(requiredPartNumbers).filter(
+    (partNumber) => !addedPartNumbers.has(partNumber)
+  );
+
+  if (missingPartNumbers.length === 0) return { ok: true };
+
+  return {
+    ok: false,
+    status: 409,
+    message: `Add matching part number ${missingPartNumbers.join(", ")} to the Job section before completing this VHC row.`,
+  };
+};
+
 async function handler(req, res, session) {
   if (req.method !== "PATCH" && req.method !== "POST") {
     return res.status(405).json({ success: false, message: "Method not allowed" });
@@ -47,7 +112,7 @@ async function handler(req, res, session) {
 
     const { data: existingCheck, error: existingCheckError } = await supabase
       .from("vhc_checks")
-      .select("vhc_id, severity, display_status")
+      .select("vhc_id, job_id, severity, display_status")
       .eq("vhc_id", vhcItemId)
       .maybeSingle();
 
@@ -57,6 +122,20 @@ async function handler(req, res, session) {
         message: "Failed to load VHC item before update",
         error: existingCheckError.message,
       });
+    }
+
+    const requestedCompletion =
+      complete === true ||
+      normaliseApproval(approvalStatus) === "completed";
+    if (requestedCompletion) {
+      const partsCheck = await assertRequiredPartsAddedToJob(existingCheck);
+      if (!partsCheck.ok) {
+        return res.status(partsCheck.status || 409).json({
+          success: false,
+          message: partsCheck.message,
+          error: partsCheck.error,
+        });
+      }
     }
 
     // Build update object with only provided fields
