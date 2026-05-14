@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link";
 import { useHrEmployeesData } from "@/hooks/useHrData";
 import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
-import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
 import EmployeeProfilePanel from "@/components/HR/EmployeeProfilePanel";
 import { roleCategories } from "@/config/users";
 import { CalendarField } from "@/components/ui/calendarAPI"; // Date input component
@@ -750,48 +749,60 @@ export default function EmployeesTab() {
             parentKey="hr-employees-directory-card"
             sectionType="data-table"
             backgroundToken="accent-surface"
-            className="hr-employees-list"
+            className="hr-employees-list app-table-shell-scroll"
           >
-            {filteredEmployees.length === 0 && (
-              <div
-                style={{
-                  padding: "16px",
-                  borderRadius: "var(--radius-sm)",
-                  textAlign: "center",
-                  color: "var(--text-1)",
-                  background: "var(--surface)",
-                }}
+            <table className="hr-employees-table app-data-table">
+              <thead
+                data-dev-section="1"
+                data-dev-section-key="hr-employees-directory-table-headings"
+                data-dev-section-type="table-headings"
+                data-dev-section-parent="hr-employees-directory-list"
               >
-                No employees match the current filters.
-              </div>
-            )}
-            {filteredEmployees.map((employee) => {
-              const isSelected = employee.id === selectedEmployeeId;
-              return (
-                <DevLayoutSection
-                  as="div"
-                  key={employee.id}
-                  sectionKey={`hr-employee-row-${employee.userId || employee.id}`}
-                  parentKey="hr-employees-directory-list"
-                  sectionType="table-row"
-                  backgroundToken="accent-surface"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setSelectedEmployeeId(employee.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setSelectedEmployeeId(employee.id);
-                    }
-                  }}
-                aria-pressed={isSelected}
-                className={`hr-employees-row${isSelected ? " is-selected" : ""}`}
+                <tr>
+                  <th>Name</th>
+                  <th>Department</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody
+                data-dev-section="1"
+                data-dev-section-key="hr-employees-directory-table-rows"
+                data-dev-section-type="table-rows"
+                data-dev-section-parent="hr-employees-directory-list"
               >
-                  <div className="hr-employees-row-avatar">
-                    {getInitials(employee.name)}
-                  </div>
-
-                  <div className="hr-employees-row-body">
+                {filteredEmployees.length === 0 && (
+                  <tr>
+                    <td className="hr-employees-empty-row" colSpan={3}>
+                      No employees match the current filters.
+                    </td>
+                  </tr>
+                )}
+                {filteredEmployees.map((employee) => {
+                  const isSelected = employee.id === selectedEmployeeId;
+                  return (
+                    <DevLayoutSection
+                      as="tr"
+                      key={employee.id}
+                      sectionKey={`hr-employee-row-${employee.userId || employee.id}`}
+                      parentKey="hr-employees-directory-table-rows"
+                      sectionType="table-row"
+                      backgroundToken="accent-surface"
+                      tabIndex={0}
+                      onClick={() => setSelectedEmployeeId(employee.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedEmployeeId(employee.id);
+                        }
+                      }}
+                      aria-selected={isSelected}
+                      className={`hr-employees-table-row${isSelected ? " is-selected" : ""}`}
+                    >
+                  <td className="hr-employees-person-cell">
+                    <span className="hr-employees-row-avatar">
+                      {getInitials(employee.name)}
+                    </span>
+                    <div className="hr-employees-row-body">
                     <div className="hr-employees-row-header">
                       <span className="hr-employees-row-name">
                         {employee.name}
@@ -808,30 +819,16 @@ export default function EmployeesTab() {
                       {employee.phone ? <span>{employee.phone}</span> : null}
                       {employee.contractedHours ? <span>{employee.contractedHours} hrs / week</span> : null}
                     </div>
-                    <div className="hr-employees-row-badges">
-                      {employee.status && (
-                        <span className="app-badge app-badge--control app-badge--accent-soft">
-                          {employee.status}
-                        </span>
-                      )}
-                      {employee.employmentType && (
-                        <span className="app-badge app-badge--control app-badge--neutral">
-                          {employee.employmentType}
-                        </span>
-                      )}
                     </div>
-                  </div>
+                  </td>
 
-                  <div className="hr-employees-row-end">
-                    <StatusTag
-                      label={employee.status}
-                      tone={employee.status === "Active" ? "success" : "danger"}
-                    />
-                    <span className="hr-employees-row-chevron">{">"}</span>
-                  </div>
-                </DevLayoutSection>
-              );
-            })}
+                  <td>{employee.department || "Department"}</td>
+                  <td>{employee.jobTitle || employee.role || "Role"}</td>
+                    </DevLayoutSection>
+                  );
+                })}
+              </tbody>
+            </table>
           </DevLayoutSection>
         </SectionCard>
       </DevLayoutSection>

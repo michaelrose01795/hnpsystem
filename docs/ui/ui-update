@@ -56,7 +56,7 @@ Owner
 - /hr/manager (CHECK)
 remove "/hr/manager :: 1.2.2.1.1.1.2.1 (hr-employees-workspace)" card and move the content into the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" card. have it os the the empty card at the top of the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" section is removed, dev overlay is setting it to a green line but i cant click it to easily tell u what card it is. do the same thing for each tab section to put the cards wihtin the cards into the mian section etc. 
 
-(TODO)
+(CHECK)
 have it so the rows within "/hr/manager :: 1.2.2.1.1.1.2.1.1.6 (hr-employees-directory-list)" section follows the global.css table design 
 
 ----------------------------------------------------

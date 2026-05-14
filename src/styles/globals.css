@@ -4068,6 +4068,8 @@ a.tab-api__item:focus-visible:not(.is-active) {
 .hr-employees-directory-card {
   gap: 16px;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   background: var(--theme);
   border: none;
 }
@@ -4152,10 +4154,119 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 .hr-employees-list {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.hr-employees-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.hr-employees-table.app-table-shell {
+  min-width: 0;
+}
+
+.hr-employees-table th,
+.hr-employees-table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hr-employees-table th:nth-child(1),
+.hr-employees-table td:nth-child(1) {
+  width: 48%;
+}
+
+.hr-employees-table th:nth-child(2),
+.hr-employees-table td:nth-child(2) {
+  width: 22%;
+}
+
+.hr-employees-table th:nth-child(3),
+.hr-employees-table td:nth-child(3) {
+  width: 30%;
+}
+
+.hr-employees-list.app-table-shell-wrap,
+.hr-employees-list.app-table-shell-scroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.hr-employees-table-row {
+  cursor: pointer;
+  outline: none;
+}
+
+.hr-employees-table-row:hover td,
+.hr-employees-table-row:focus-visible td {
+  background: var(--theme-hover, rgba(var(--accent-base-rgb), 0.08)) !important;
+}
+
+.hr-employees-table-row.is-selected td {
+  background: rgba(var(--accent-base-rgb), 0.12) !important;
+}
+
+.hr-employees-empty-row {
+  text-align: center;
+  color: var(--text-1);
+}
+
+.hr-employees-person-cell {
   display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hr-employees-table .hr-employees-row-avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  font-size: 0.72rem;
+}
+
+.hr-employees-table .hr-employees-row-body {
+  gap: 2px;
+}
+
+.hr-employees-table .hr-employees-row-header {
   flex-direction: column;
-  gap: 12px;
-  padding-right: 4px;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+}
+
+.hr-employees-table .hr-employees-row-name {
+  font-size: 0.9rem;
+}
+
+.hr-employees-table .hr-employees-row-email {
+  font-size: 0.76rem;
+}
+
+.hr-employees-table .hr-employees-row-role,
+.hr-employees-table .hr-employees-row-meta {
+  display: none;
+}
+
+.hr-employees-table .hr-employees-row-end {
+  align-items: flex-start;
+  gap: 0;
+}
+
+.hr-employees-table .hr-employees-row-chevron {
+  display: none;
 }
 
 .hr-employees-row {
