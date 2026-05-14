@@ -17,7 +17,7 @@ import PresentationOverlay from "@/features/presentation/PresentationOverlay";
 import PresentationDevOverlay from "@/features/presentation/PresentationDevOverlay";
 import useKeyboardNav from "@/features/presentation/useKeyboardNav";
 import { resolvePresentationRoute } from "@/features/presentation/runtime/routeResolver";
-import { loadRealPage, hasRealPage } from "@/features/presentation/runtime/realPageLoader";
+import { loadRealPage, hasRealPage, preloadRealPages } from "@/features/presentation/runtime/realPageLoader";
 import RouterParamsOverride from "@/features/presentation/runtime/RouterParamsOverride";
 import { setPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import LayerSurface from "@/components/ui/LayerSurface";
@@ -43,6 +43,11 @@ function PresentationContent() {
       window.sessionStorage.setItem("presentation:activeRoleKey", resolved.role.key);
     }
   }, [resolved?.role?.key]);
+
+  useEffect(() => {
+    if (!resolved?.role?.routes?.length) return;
+    preloadRealPages(resolved.role.routes);
+  }, [resolved?.role?.routes]);
 
   const resolvedTemplate = resolved?.template || null;
   useEffect(() => {

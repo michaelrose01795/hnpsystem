@@ -745,25 +745,32 @@ export default function Layout({
   }
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const allowPresentationChromeInteraction = (event) =>
+    Boolean(event.target?.closest?.("[data-presentation-allow-interaction='true']"));
   const lockChromeInteraction = presentationShell
     ? {
         onClickCapture: (event) => {
+          if (allowPresentationChromeInteraction(event)) return;
           event.preventDefault();
           event.stopPropagation();
         },
         onSubmitCapture: (event) => {
+          if (allowPresentationChromeInteraction(event)) return;
           event.preventDefault();
           event.stopPropagation();
         },
         onInputCapture: (event) => {
+          if (allowPresentationChromeInteraction(event)) return;
           event.preventDefault();
           event.stopPropagation();
         },
         onChangeCapture: (event) => {
+          if (allowPresentationChromeInteraction(event)) return;
           event.preventDefault();
           event.stopPropagation();
         },
         onKeyDownCapture: (event) => {
+          if (allowPresentationChromeInteraction(event)) return;
           event.preventDefault();
           event.stopPropagation();
         },
@@ -898,7 +905,7 @@ export default function Layout({
             >
               <button
                 type="button"
-                onClick={presentationShell ? undefined : () => setIsSidebarOpen(true)}
+                onClick={() => setIsSidebarOpen(true)}
                 className={`app-btn ${isSidebarOpen ? "app-btn--primary" : "app-btn--secondary"}`}
                 style={{ flex: 1 }}
               >
@@ -1316,7 +1323,7 @@ export default function Layout({
       {showNavToggleButton && (
         <button
           type="button"
-          onClick={presentationShell ? undefined : toggleSidebar}
+          onClick={toggleSidebar}
           style={{
             position: "fixed",
             top: "50%",

@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
 import { supabase } from "@/lib/database/supabaseClient";
 import { runQuery } from "@/lib/database/dashboard/utils";
+import { getMockRows } from "@/features/presentation/mockData";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 const formatUserName = (user) => {
   if (!user) return "Unknown user";
@@ -9,7 +11,71 @@ const formatUserName = (user) => {
   return name || user.email || "Unknown user";
 };
 
+const buildPresentationAdminDashboardData = () => {
+  const today = dayjs();
+  const jobs = getMockRows("jobs");
+  const appointments = getMockRows("appointments");
+  const partsOrders = getMockRows("parts_orders");
+
+  const appointmentsToday = appointments.filter((row) =>
+    row?.scheduled_time && dayjs(row.scheduled_time).isSame(today, "day")
+  ).length;
+  const openPartsRequests = partsOrders.filter((row) =>
+    ["pending", "confirmed", "ordered"].includes(String(row?.status || "").toLowerCase())
+  ).length;
+
+  const holidayNames = [
+    "Amelia Brooks",
+    "Daniel Carter",
+    "Sophie Patel",
+    "Ryan Hughes",
+    "Leah Morgan",
+    "Oliver James",
+  ];
+
+  const holidays = holidayNames.map((userName, index) => {
+    const start = today.add(index + 1, "day");
+    const end = start.add(index % 3 === 0 ? 2 : index % 2, "day");
+    return {
+      absence_id: `demo-admin-holiday-${index + 1}`,
+      user_id: `demo-admin-user-${index + 1}`,
+      userName,
+      type: "Holiday",
+      start_date: start.toISOString(),
+      end_date: end.toISOString(),
+    };
+  });
+
+  const noticeMessages = [
+    "Three leave requests are awaiting admin approval before tomorrow's rota is finalised.",
+    "Workshop capacity has been increased for afternoon service bookings.",
+    "Parts desk stocktake is scheduled for 16:30 with bay handover support.",
+    "Two new user accounts need role checks before access is confirmed.",
+    "Accounts team has posted the daily cash-up and supplier invoice summary.",
+  ];
+
+  const notices = noticeMessages.map((message, index) => ({
+    notification_id: `demo-admin-notice-${index + 1}`,
+    message,
+    target_role: index % 2 === 0 ? "Admin Manager" : "All Managers",
+    created_at: today.subtract(index * 2 + 1, "hour").toISOString(),
+  }));
+
+  return {
+    totalJobs: jobs.length || 18,
+    appointmentsToday: appointmentsToday || 6,
+    partsRequests: openPartsRequests || 5,
+    newUsers: 6,
+    holidays,
+    notices,
+  };
+};
+
 export const getAdminDashboardData = async () => {
+  if (isPresentationMode()) {
+    return buildPresentationAdminDashboardData();
+  }
+
   const todayStart = dayjs().startOf("day").toISOString();
   const todayEnd = dayjs().endOf("day").toISOString();
   const weekStart = dayjs().subtract(7, "day").toISOString();

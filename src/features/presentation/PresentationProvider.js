@@ -29,12 +29,17 @@ function parseHash(hash) {
 }
 
 function routeToSlug(route) {
-  return String(route || "")
+  const [path, query = ""] = String(route || "").split("?");
+  const base = path
     .replace(/^\//, "")
     .replace(/\//g, "-")
     .replace(/\[/g, "")
     .replace(/\]/g, "")
     || "home";
+  const querySuffix = query
+    ? `-${query.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+    : "";
+  return `${base}${querySuffix}`;
 }
 
 function getQuerySlide(querySlide) {

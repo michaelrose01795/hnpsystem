@@ -141,7 +141,8 @@
       "Bash(awk -F'\"' '{print $2}')",
       "Bash(powershell -Command \"\\(Get-Content src/components/HR/tabs/HRDashboardTab.js -Raw\\) -replace 'parentKey=\\\\\"hr-manager-dashboard-shell\\\\\"', 'parentKey=\\\\\"hr-manager-tab-dashboard\\\\\"' | Set-Content -NoNewline src/components/HR/tabs/HRDashboardTab.js\")",
       "Bash(powershell -Command \"\\(Get-Content src/components/HR/tabs/HRDashboardTab.js -Raw\\) -replace 'parentKey=\\\\\"hr-manager-dashboard-row-absences-warnings\\\\\"', 'parentKey=\\\\\"hr-manager-tab-dashboard\\\\\"' | Set-Content -NoNewline src/components/HR/tabs/HRDashboardTab.js\")",
-      "Bash(node tmp_wrap.js)"
+      "Bash(node tmp_wrap.js)",
+      "PowerShell($path = 'c:\\\\hnpsystem\\\\docs\\\\ui\\\\ui-presentation'; $lines = Get-Content $path; $filtered = $lines | Where-Object { $_ -ne 'mock data' }; Set-Content -Path $path -Value $filtered -Encoding utf8)"
     ],
     "deny": [],
     "ask": [],

@@ -10,7 +10,6 @@ import Button from "@/components/ui/Button";
 import ToolbarRow from "@/components/ui/ToolbarRow";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
-import { CalendarField } from "@/components/ui/calendarAPI";
 import PayslipUpsertModal from "@/features/payslips/PayslipUpsertModal";
 import PayslipDetailPopup from "@/features/payslips/PayslipDetailPopup";
 import PayslipsAdminPageUi from "@/components/page-ui/accounts/payslips/payslips-ui";
@@ -147,7 +146,6 @@ export default function PayslipsAdminPage() {
       view="section1"
       ALLOWED_ROLES={ALLOWED_ROLES}
       Button={Button}
-      CalendarField={CalendarField}
       DevLayoutSection={DevLayoutSection}
       DropdownField={DropdownField}
       PayslipDetailPopup={PayslipDetailPopup}

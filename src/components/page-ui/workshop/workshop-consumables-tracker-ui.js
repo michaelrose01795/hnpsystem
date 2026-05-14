@@ -401,10 +401,10 @@ export default function ConsumablesTrackerPageUi(props) {
                   </form>}
               </div>
             </div>}
-            <LayerTheme as="div" sectionKey="workshop-consumables-budget-card" parentKey="workshop-consumables-tracker-content" style={{
+            <LayerTheme as="div" sectionKey="workshop-consumables-budget-card" parentKey="workshop-consumables-tracker-content" data-presentation="workshop-consumables-budget" style={{
               ...cardStyle
             }}>
-              <div data-presentation="workshop-consumables-budget" style={{
+              <div style={{
                 display: "flex",
                 flexWrap: "wrap",
                 alignItems: "center",
@@ -486,8 +486,8 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
             </LayerTheme>
 
-            <LayerTheme as="div" sectionKey="workshop-consumables-logs-card" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle }}>
-              <div data-presentation="workshop-consumables-logs" style={{
+            <LayerTheme as="div" sectionKey="workshop-consumables-logs-card" parentKey="workshop-consumables-tracker-content" data-presentation="workshop-consumables-logs" style={{ ...cardStyle }}>
+              <div style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -677,8 +677,8 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
             </LayerTheme>
 
-              <LayerTheme as="div" sectionKey="workshop-consumables-totals-card" parentKey="workshop-consumables-tracker-content" style={{ ...cardStyle }}>
-                <div data-presentation="workshop-consumables-totals" data-dev-section-key="workshop-consumables-totals-grid" data-dev-section-type="section-shell" data-dev-section-parent="workshop-consumables-totals-card" data-dev-background-token="transparent" style={{
+              <LayerTheme as="div" sectionKey="workshop-consumables-totals-card" parentKey="workshop-consumables-tracker-content" data-presentation="workshop-consumables-totals" style={{ ...cardStyle }}>
+                <div data-dev-section-key="workshop-consumables-totals-grid" data-dev-section-type="section-shell" data-dev-section-parent="workshop-consumables-totals-card" data-dev-background-token="transparent" style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                 gap: "10px"
@@ -734,10 +734,10 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
               </LayerTheme>
 
-            <LayerTheme as="div" sectionKey="workshop-consumables-scheduled-card" parentKey="workshop-consumables-tracker-content" style={{
+            <LayerTheme as="div" sectionKey="workshop-consumables-scheduled-card" parentKey="workshop-consumables-tracker-content" data-presentation="workshop-consumables-scheduled" style={{
               ...cardStyle
             }}>
-              <div data-presentation="workshop-consumables-scheduled" style={{
+              <div style={{
                 display: "flex",
                 flexWrap: "wrap",
                 justifyContent: "space-between",
@@ -906,10 +906,10 @@ export default function ConsumablesTrackerPageUi(props) {
               </div>
             </LayerTheme>
 
-          <LayerTheme as="div" sectionKey="workshop-consumables-requests-card" parentKey="workshop-consumables-tracker-content" style={{
+          <LayerTheme as="div" sectionKey="workshop-consumables-requests-card" parentKey="workshop-consumables-tracker-content" data-presentation="workshop-consumables-requests" style={{
               ...cardStyle
             }}>
-            <div data-presentation="workshop-consumables-requests" style={{
+            <div style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",

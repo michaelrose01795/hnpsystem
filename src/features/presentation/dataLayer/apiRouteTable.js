@@ -253,6 +253,145 @@ const accountInvoiceList = () => (rows, q) => {
   return { success: true, invoices: page.data, data: page.data, pagination: page.pagination };
 };
 
+const formatCompanyAccountRows = (rows = []) =>
+  rows.map((row, index) => {
+    const companyName = row.company_name || row.name || row.trading_name || `Demo Company ${index + 1}`;
+    const accountNumber = row.account_number || row.id || `CO-${String(2000 + index + 1).padStart(4, "0")}`;
+    const linkedAccountId = row.linked_account_id || `ACC-${String(2000 + index + 1).padStart(4, "0")}`;
+    return {
+      archived: false,
+      is_active: row.is_active !== false,
+      company_name: companyName,
+      trading_name: row.trading_name || companyName,
+      contact_name: row.contact_name || row.contact || "Demo Accounts Contact",
+      contact_email: row.contact_email || row.email || `accounts-${index + 1}@demo-company.invalid`,
+      contact_phone: row.contact_phone || row.phone || "01392 555 000",
+      billing_address_line1: row.billing_address_line1 || `${index + 1} Demo Trading Estate`,
+      billing_address_line2: row.billing_address_line2 || "Marsh Barton",
+      billing_city: row.billing_city || row.city || "Exeter",
+      billing_postcode: row.billing_postcode || row.postcode || `EX${index + 1} 1AA`,
+      billing_country: row.billing_country || "United Kingdom",
+      linked_account_id: linkedAccountId,
+      linked_account_label: row.linked_account_label || `${linkedAccountId} - ${companyName}`,
+      notes: row.notes || "Presentation demo company account with linked ledger activity.",
+      status: row.status || "Active",
+      balance: toNumber(row.balance),
+      created_at: row.created_at || new Date().toISOString(),
+      updated_at: row.updated_at || row.created_at || new Date().toISOString(),
+      ...row,
+      account_number: accountNumber,
+    };
+  });
+
+const companyAccountsList = () => (rows, q) => {
+  const search = String(q.get("search") || "").trim().toLowerCase();
+  const formattedRows = formatCompanyAccountRows(rows);
+  const filteredRows = search
+    ? formattedRows.filter((row) =>
+        [
+          row.account_number,
+          row.company_name,
+          row.trading_name,
+          row.contact_name,
+          row.contact_email,
+          row.contact_phone,
+          row.billing_city,
+          row.linked_account_label,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(search))
+      )
+    : formattedRows;
+  const page = paginate(filteredRows, q);
+  return { success: true, data: page.data, pagination: page.pagination };
+};
+
+const buildCompanyAccountHistory = (account) => {
+  if (!account) return { jobs: [], invoices: [] };
+  const jobs = (getMockRows("jobs") || []).slice(0, 4).map((job) => ({
+    id: job.id || job.job_number,
+    job_number: job.job_number,
+    job_source: job.job_source || "Service booking",
+    status: job.status || "Booked",
+    customer: job.customer || job.customer_name || account.company_name,
+    vehicle_reg: job.vehicle_reg || job.reg || "DE24 XYZ",
+    vehicle_make_model: job.vehicle_make_model || [job.make, job.model].filter(Boolean).join(" ") || "Demo fleet vehicle",
+    created_at: job.created_at || job.updated_at || new Date().toISOString(),
+    completed_at: job.completed_at || null,
+    account_number: account.account_number,
+  }));
+  const invoices = (getMockRows("invoices") || []).slice(0, 5).map((invoice) => ({
+    id: invoice.id || invoice.invoice_id || invoice.invoice_number,
+    invoice_number: invoice.invoice_number || invoice.invoice_id,
+    job_number: invoice.job_number || invoice.order_number || null,
+    order_number: invoice.order_number || invoice.job_number || null,
+    payment_status: invoice.payment_status || invoice.status || "Open",
+    invoice_total: toNumber(invoice.invoice_total ?? invoice.grand_total ?? invoice.total),
+    invoice_date: invoice.invoice_date || invoice.issued_at || invoice.created_at || new Date().toISOString(),
+    due_date: invoice.due_date || invoice.due_at || invoice.created_at || new Date().toISOString(),
+    created_at: invoice.created_at || invoice.invoice_date || invoice.issued_at || new Date().toISOString(),
+    invoice_to: account.company_name,
+    account_number: account.account_number,
+  }));
+  return { jobs, invoices };
+};
+
+const companyAccountSingle = () => (rows, _q, parsed) => {
+  const requestedAccountNumber = decodeURIComponent(parsed?.pathname?.split("/").filter(Boolean).pop() || "");
+  const formattedRows = formatCompanyAccountRows(rows);
+  const account =
+    formattedRows.find((row) => row.account_number === requestedAccountNumber || row.id === requestedAccountNumber) ||
+    formattedRows[0] ||
+    null;
+  return { success: true, data: account, history: buildCompanyAccountHistory(account) };
+};
+
+const buildAccountsReportMetrics = (accounts = [], invoices = [], days = 30) => {
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() - days);
+  const inRange = (value) => {
+    if (!value) return false;
+    const parsed = new Date(value);
+    return !Number.isNaN(parsed.getTime()) && parsed >= start;
+  };
+  const accountRows = accounts.filter((account) => inRange(account.created_at));
+  const invoiceRows = invoices.filter((invoice) =>
+    inRange(invoice.created_at || invoice.invoice_date || invoice.issued_at)
+  );
+  const totalInvoiced = invoiceRows.reduce(
+    (sum, invoice) => sum + toNumber(invoice.grand_total ?? invoice.invoice_total ?? invoice.total),
+    0
+  );
+  const overdueInvoices = invoiceRows.filter((invoice) => {
+    const due = invoice.due_date || invoice.due_at;
+    if (!due) return false;
+    if (String(invoice.payment_status || invoice.status || "").toLowerCase() === "paid") return false;
+    return new Date(due).getTime() < now.getTime();
+  }).length;
+  const balanceRows = accountRows.length > 0 ? accountRows : accounts;
+  const averageBalance =
+    balanceRows.length === 0
+      ? 0
+      : balanceRows.reduce((sum, account) => sum + toNumber(account.balance), 0) / balanceRows.length;
+
+  return {
+    newAccounts: accountRows.length || Math.min(accounts.length, Math.max(2, Math.round(accounts.length / (days >= 365 ? 1 : days >= 90 ? 2 : 4)))),
+    totalInvoiced,
+    overdueInvoices,
+    averageBalance,
+  };
+};
+
+const accountsReportResponse = (accounts = []) => {
+  const invoices = getMockRows("invoices") || [];
+  return {
+    monthly: buildAccountsReportMetrics(accounts, invoices, 30),
+    quarterly: buildAccountsReportMetrics(accounts, invoices, 90),
+    yearly: buildAccountsReportMetrics(accounts, invoices, 365),
+  };
+};
+
 const buildInvoiceDetailPayload = (invoice = {}, parsed = null) => {
   const pathParts = parsed?.pathname?.split("/").filter(Boolean) || [];
   const requestedId = decodeURIComponent(pathParts[pathParts.length - 1] || "");
@@ -267,6 +406,42 @@ const buildInvoiceDetailPayload = (invoice = {}, parsed = null) => {
   const total = toNumber(invoice.invoice_total ?? invoice.grand_total ?? invoice.total) || 240;
   const vat = toNumber(invoice.vat) || Number((total / 6).toFixed(2));
   const net = Number((total - vat).toFixed(2));
+  const paymentStatus = invoice.payment_status || invoice.status || "Open";
+  const paymentStatusKey = String(paymentStatus).toLowerCase();
+  const paidAmount =
+    paymentStatusKey === "paid"
+      ? total
+      : paymentStatusKey === "open"
+        ? Number((total * 0.35).toFixed(2))
+        : 0;
+  const payments =
+    paidAmount > 0
+      ? [
+          {
+            payment_id: `PAY-${invoice.invoice_number || invoice.invoice_id || "DEMO"}-1`,
+            invoice_id: invoice.invoice_id || invoice.invoice_number || "demo-invoice",
+            invoice_number: invoice.invoice_number || invoice.invoice_id || "demo-invoice",
+            amount: paidAmount,
+            method: paymentStatusKey === "paid" ? "Card" : "Deposit",
+            payment_method: paymentStatusKey === "paid" ? "Card" : "Deposit",
+            payment_date: invoice.paid_at || invoice.updated_at || invoice.invoice_date || invoice.issued_at || new Date().toISOString(),
+            reference: paymentStatusKey === "paid" ? "Stripe demo" : "Customer deposit",
+            created_at: invoice.updated_at || invoice.invoice_date || invoice.issued_at || new Date().toISOString(),
+          },
+        ]
+      : [
+          {
+            payment_id: `PAY-${invoice.invoice_number || invoice.invoice_id || "DEMO"}-deposit`,
+            invoice_id: invoice.invoice_id || invoice.invoice_number || "demo-invoice",
+            invoice_number: invoice.invoice_number || invoice.invoice_id || "demo-invoice",
+            amount: Number(Math.min(125, total * 0.2).toFixed(2)),
+            method: "Bank transfer",
+            payment_method: "Bank transfer",
+            payment_date: invoice.updated_at || invoice.invoice_date || invoice.issued_at || new Date().toISOString(),
+            reference: "Demo allocation",
+            created_at: invoice.updated_at || invoice.invoice_date || invoice.issued_at || new Date().toISOString(),
+          },
+        ];
   const invoiceBlock = {
     id: invoice.id || invoice.invoice_id || "demo-invoice",
     invoice_number: invoice.invoice_number || `PROFORMA-${jobNumber || orderNumber || "DEMO"}`,
@@ -275,8 +450,8 @@ const buildInvoiceDetailPayload = (invoice = {}, parsed = null) => {
     job_number: jobNumber,
     order_number: orderNumber,
     page_count: 1,
-    payment_status: invoice.payment_status || invoice.status || "Open",
-    paid: String(invoice.payment_status || invoice.status || "").toLowerCase() === "paid",
+    payment_status: paymentStatus,
+    paid: paymentStatusKey === "paid",
     invoice_to: {
       name: customerName,
       lines: [customer.address || "Humphries & Parks demo customer"],
@@ -343,7 +518,7 @@ const buildInvoiceDetailPayload = (invoice = {}, parsed = null) => {
       sort_code: "00-00-00",
       account_number: "00000000",
     },
-    payments: [],
+    payments,
     meta: {
       isProforma: false,
       source: "invoice",
@@ -357,7 +532,11 @@ const buildInvoiceDetailPayload = (invoice = {}, parsed = null) => {
 const invoiceDetailByPath = () => (rows, _q, parsed) => {
   const requestedId = decodeURIComponent(parsed?.pathname?.split("/").filter(Boolean).pop() || "");
   const field = parsed?.pathname?.includes("/by-order/") ? "order_number" : "job_number";
-  const invoice = rows.find((row) => row[field] === requestedId) || rows[0] || {};
+  const invoice =
+    rows.find((row) => row.invoice_number === requestedId || row.invoice_id === requestedId || row.id === requestedId) ||
+    rows.find((row) => row[field] === requestedId) ||
+    rows[0] ||
+    {};
   return { success: true, data: buildInvoiceDetailPayload(invoice, parsed) };
 };
 
@@ -516,8 +695,26 @@ const buildConsumableLogsResponse = (rows = []) => {
 
 export const API_ROUTE_TABLE = [
   // Accounts / invoices / company-accounts
-  { pattern: /^\/api\/accounts\/?$/, table: "accounts", transform: (rows, q) => ({ success: true, ...paginate(rows, q), summary: { openCount: rows.length, frozenCount: 0, totalBalance: 0, creditExposure: 0, overdueInvoices: 0 } }) },
-  { pattern: /^\/api\/accounts\/settings\/?$/, table: "accounts", transform: () => ({ success: true, data: { defaults: {}, integrations: {} } }) },
+  { pattern: /^\/api\/accounts\/?$/, table: "accounts", transform: (rows, q) => (
+    q.get("view") === "reports"
+      ? accountsReportResponse(rows)
+      : { success: true, ...paginate(rows, q), summary: { openCount: rows.length, frozenCount: 0, totalBalance: 0, creditExposure: 0, overdueInvoices: 0 } }
+  ) },
+  {
+    pattern: /^\/api\/accounts\/settings\/?$/,
+    table: "accounts",
+    transform: () => ({
+      success: true,
+      data: {
+        requireManagerApproval: true,
+        allowManagersToFreeze: true,
+        showSalesAccountsInInvoices: true,
+        enableOverdueNotifications: true,
+        defaultInvoiceExportFormat: "xlsx",
+        defaultPageSize: 25,
+      },
+    }),
+  },
   { pattern: /^\/api\/accounts\/[^/]+\/transactions\/?$/, table: "invoices", transform: accountTransactionsList() },
   { pattern: /^\/api\/accounts\/[^/]+\/?$/, table: "accounts", transform: accountSingle() },
   { pattern: /^\/api\/account\/recent-activity\/?$/, table: "activity_logs", transform: passthroughList() },
@@ -531,8 +728,8 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/invoices\/?$/, table: "invoices", transform: accountInvoiceList() },
   { pattern: /^\/api\/invoices\/[^/]+\/?$/, table: "invoices", transform: passthroughSingle() },
   { pattern: /^\/api\/company-accounts\/next-number\/?$/, table: "company_accounts", transform: () => ({ success: true, data: { next: "CO-2099" } }) },
-  { pattern: /^\/api\/company-accounts\/?$/, table: "company_accounts", transform: passthroughList() },
-  { pattern: /^\/api\/company-accounts\/[^/]+\/?$/, table: "company_accounts", transform: passthroughSingle() },
+  { pattern: /^\/api\/company-accounts\/?$/, table: "company_accounts", transform: companyAccountsList() },
+  { pattern: /^\/api\/company-accounts\/[^/]+\/?$/, table: "company_accounts", transform: companyAccountSingle() },
 
   // Payslips
   { pattern: /^\/api\/payslips\/?/, table: "payslips", transform: passthroughList() },
@@ -668,7 +865,28 @@ export const API_ROUTE_TABLE = [
   // Admin / compliance / settings / welcome-quote / dev-showcase
   { pattern: /^\/api\/admin\/users\/?$/, table: "users", transform: passthroughList() },
   { pattern: /^\/api\/admin\/compliance\//, table: "activity_logs", transform: passthroughList() },
-  { pattern: /^\/api\/settings\/company-profile\/?$/, table: "users", transform: () => ({ success: true, data: { name: "Humphries & Parks (Demo)", phone: "01392 555 000" } }) },
+  {
+    pattern: /^\/api\/settings\/company-profile\/?$/,
+    table: "users",
+    transform: () => ({
+      success: true,
+      data: {
+        company_name: "Humphries & Parks (Demo)",
+        address_line1: "Matford Park Road",
+        address_line2: "Marsh Barton",
+        city: "Exeter",
+        postcode: "EX2 8FD",
+        phone_service: "01392 555 010",
+        phone_parts: "01392 555 020",
+        website: "https://demo.humphriesandparks.example",
+        bank_name: "Demo Bank",
+        sort_code: "20-00-00",
+        account_number: "12345678",
+        account_name: "Humphries & Parks Demo Ltd",
+        payment_reference_hint: "Use invoice number or account number as the payment reference.",
+      },
+    }),
+  },
   { pattern: /^\/api\/welcome-quote\/?$/, table: "users", transform: () => ({ success: true, data: { quote: "Welcome to the demo. Every figure shown here is mock data." } }) },
   { pattern: /^\/api\/dev\/showcase-notes\/?$/, table: "notes", transform: passthroughList() },
 

@@ -89,6 +89,12 @@ const ROUTE_TO_MODULE = {
   "/valet": () => import("@/pages/valet/index"),
 
   // Customers
+  "/customer": () => import("@/pages/customers/[customerSlug]"),
+  "/customer/messages": () => import("@/pages/customers/[customerSlug]"),
+  "/customer/parts": () => import("@/pages/customers/[customerSlug]"),
+  "/customer/payments": () => import("@/pages/customers/[customerSlug]"),
+  "/customer/vehicles": () => import("@/pages/customers/[customerSlug]"),
+  "/customer/vhc": () => import("@/pages/customers/[customerSlug]"),
   "/customers": () => import("@/pages/customers/index"),
   "/customers/[customerSlug]": () => import("@/pages/customers/[customerSlug]"),
 
@@ -102,17 +108,34 @@ const ROUTE_TO_MODULE = {
   "/messages": () => import("@/pages/messages/index"),
   "/newsfeed": () => import("@/pages/newsfeed"),
   "/profile": () => import("@/pages/profile/index"),
+  "/login": () => import("@/pages/login"),
 };
 
+function normalizeTemplate(template) {
+  return String(template || "").split("?")[0].split("#")[0];
+}
+
 export function hasRealPage(template) {
-  return Object.prototype.hasOwnProperty.call(ROUTE_TO_MODULE, template);
+  return Object.prototype.hasOwnProperty.call(ROUTE_TO_MODULE, normalizeTemplate(template));
 }
 
 export async function loadRealPage(template) {
-  const factory = ROUTE_TO_MODULE[template];
+  const factory = ROUTE_TO_MODULE[normalizeTemplate(template)];
   if (!factory) return null;
   const mod = await factory();
   return { Page: mod.default, getLayout: mod.default?.getLayout || mod.getLayout || null };
+}
+
+export function preloadRealPages(templates = []) {
+  const uniqueTemplates = Array.from(new Set(templates.filter(Boolean).map(normalizeTemplate)));
+  return Promise.allSettled(
+    uniqueTemplates.map(async (template) => {
+      const factory = ROUTE_TO_MODULE[template];
+      if (!factory) return null;
+      await factory();
+      return template;
+    })
+  );
 }
 
 export function listSupportedRoutes() {

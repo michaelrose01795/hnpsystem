@@ -3173,6 +3173,11 @@ button.monthpicker-api__month-year {
   text-overflow: ellipsis;
 }
 
+.monthpicker-api.is-empty button.monthpicker-api__month-year {
+  color: var(--dropdown-trigger-color);
+  opacity: 0.72;
+}
+
 button.monthpicker-api__nav-button:hover,
 button.monthpicker-api__nav-button:focus-visible,
 button.monthpicker-api__month-year:hover,
