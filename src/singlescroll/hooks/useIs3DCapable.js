@@ -9,11 +9,10 @@
 
 import { useEffect, useState } from "react";
 
-const MOBILE_BP = 768;
-const TINY_PHONE_BP = 420;
-const LOW_MEMORY_GB = 4;
-const LOW_CORE_COUNT = 4;
-const SLOW_DOWNLINK_MBPS = 1.5;
+const DESKTOP_3D_BP = 1180;
+const HIGH_MEMORY_GB = 8;
+const HIGH_CORE_COUNT = 8;
+const FAST_DOWNLINK_MBPS = 5;
 
 const INITIAL_STATE = { ready: false, capable: false, lowQuality: false };
 
@@ -31,22 +30,24 @@ function detect() {
     webgl = false;
   }
 
-  const isMobile = window.innerWidth < MOBILE_BP;
-  const isTinyPhone = window.innerWidth <= TINY_PHONE_BP;
-  const lowMem = navigator.deviceMemory && navigator.deviceMemory <= LOW_MEMORY_GB;
-  const lowCores = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= LOW_CORE_COUNT;
+  const memory = navigator.deviceMemory;
+  const cores = navigator.hardwareConcurrency;
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   const constrainedNetwork = Boolean(
     connection?.saveData ||
-    ["slow-2g", "2g"].includes(connection?.effectiveType) ||
-    (connection?.downlink && connection.downlink < SLOW_DOWNLINK_MBPS),
+    ["slow-2g", "2g", "3g"].includes(connection?.effectiveType) ||
+    (connection?.downlink && connection.downlink < FAST_DOWNLINK_MBPS),
   );
-  const lowProcessingPhone = isMobile && (isTinyPhone || lowMem || lowCores);
+  const finePointer = window.matchMedia?.("(pointer: fine)")?.matches !== false;
+  const desktopViewport = window.innerWidth >= DESKTOP_3D_BP;
+  const highMemory = !memory || memory >= HIGH_MEMORY_GB;
+  const highCoreCount = !cores || cores >= HIGH_CORE_COUNT;
+  const highSpecDevice = desktopViewport && finePointer && highMemory && highCoreCount;
 
   return {
     ready: true,
-    capable: Boolean(webgl && !lowProcessingPhone && !constrainedNetwork),
-    lowQuality: Boolean(isMobile || lowMem || lowCores),
+    capable: Boolean(webgl && highSpecDevice && !constrainedNetwork),
+    lowQuality: false,
   };
 }
 

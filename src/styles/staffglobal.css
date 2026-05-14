@@ -22,12 +22,12 @@
 /* ========================================================= */
 /* === VHC Total Column — hide number input spinners === */
 /* ========================================================= */
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
+html.staff-scope input[type="number"]::-webkit-outer-spin-button,
+html.staff-scope input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-input[type="number"] {
+html.staff-scope input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
@@ -35,35 +35,62 @@ input[type="number"] {
 /* ========================================================= */
 /* === Reset & Base Styles === */
 /* ========================================================= */
-:root {
+html.staff-scope {
   --hover-surface-z: 80;
 }
 
-* {
+html.staff-scope * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-*,
-*::before,
-*::after {
+html.staff-scope body,
+html.staff-scope #__next,
+html.staff-scope main,
+html.staff-scope section,
+html.staff-scope article,
+html.staff-scope header,
+html.staff-scope footer,
+html.staff-scope aside,
+html.staff-scope nav,
+html.staff-scope div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+html.staff-scope #__next {
+  width: 100%;
+  overflow-x: clip;
+}
+
+html.staff-scope img,
+html.staff-scope svg,
+html.staff-scope video,
+html.staff-scope canvas,
+html.staff-scope table {
+  max-width: 100%;
+}
+
+html.staff-scope *,
+html.staff-scope *::before,
+html.staff-scope *::after {
   text-shadow: none !important;
 }
 
-html,
-body,
-#__next {
+html.staff-scope,
+html.staff-scope body,
+html.staff-scope #__next {
   height: 100%;
   min-height: 100dvh;
 }
 
-html {
+html.staff-scope {
   background: var(--page-shell-bg);
   overscroll-behavior-y: none;
 }
 
-body {
+html.staff-scope body {
   font-family: var(--font-family);
   background: var(--page-shell-bg);
   color: var(--surfaceText);
@@ -78,75 +105,75 @@ body {
 /* Force form controls to inherit the app font. Browsers don't inherit
    font-family on these by default, so without this rule buttons/inputs
    would fall back to the UA font and bypass --font-family. */
-button,
-input,
-optgroup,
-select,
-textarea {
+html.staff-scope button,
+html.staff-scope input,
+html.staff-scope optgroup,
+html.staff-scope select,
+html.staff-scope textarea {
   font-family: inherit;
 }
 
-html.modal-open,
-html:has(.popup-backdrop),
-html:has([aria-modal="true"]) {
+html.staff-scope.modal-open,
+html.staff-scope:has(.popup-backdrop),
+html.staff-scope:has([aria-modal="true"]) {
   overflow: hidden;
 }
 
-body.modal-open,
-body:has(.popup-backdrop),
-body:has([aria-modal="true"]) {
+html.staff-scope body.modal-open,
+html.staff-scope body:has(.popup-backdrop),
+html.staff-scope body:has([aria-modal="true"]) {
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-body.modal-open #__next,
-body:has(.popup-backdrop) #__next,
-body:has([aria-modal="true"]) #__next {
+html.staff-scope body.modal-open #__next,
+html.staff-scope body:has(.popup-backdrop) #__next,
+html.staff-scope body:has([aria-modal="true"]) #__next {
   pointer-events: none;
 }
 
-body.modal-open [data-modal-portal="true"] {
+html.staff-scope body.modal-open [data-modal-portal="true"] {
   pointer-events: auto;
 }
 
-body:has(.popup-backdrop) .popup-backdrop,
-body:has(.popup-backdrop) .popup-backdrop *,
-body:has([aria-modal="true"]) [aria-modal="true"],
-body:has([aria-modal="true"]) [aria-modal="true"] * {
+html.staff-scope body:has(.popup-backdrop) .popup-backdrop,
+html.staff-scope body:has(.popup-backdrop) .popup-backdrop *,
+html.staff-scope body:has([aria-modal="true"]) [aria-modal="true"],
+html.staff-scope body:has([aria-modal="true"]) [aria-modal="true"] * {
   pointer-events: auto;
 }
 
-.personal-widget-board {
+html.staff-scope .personal-widget-board {
   border-radius: 20px;
 }
 
-.personal-widget-board--move {
+html.staff-scope .personal-widget-board--move {
   border: none;
   background: var(--theme);
   padding: 10px;
 }
 
-.personal-widget-grid.personal-widget-grid--active {
+html.staff-scope .personal-widget-grid.personal-widget-grid--active {
   position: relative;
 }
 
-.personal-widget-grid {
+html.staff-scope .personal-widget-grid {
   width: 100%;
   min-width: 0;
 }
 
-.personal-widget-grid > * {
+html.staff-scope .personal-widget-grid > * {
   width: 100%;
   min-width: 0;
 }
 
 @media (max-width: 720px) and (orientation: portrait) {
-  .personal-widget-grid {
+  html.staff-scope .personal-widget-grid {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 
-.app-layout-main-column {
+html.staff-scope .app-layout-main-column {
   flex: 1;
   width: 100%;
   max-width: 100%;
@@ -160,7 +187,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   overflow-x: hidden;
 }
 
-.app-topbar-shell {
+html.staff-scope .app-topbar-shell {
   background: var(--nav-shell-bg);
   border: var(--nav-shell-border);
   border-radius: var(--page-card-radius);
@@ -169,7 +196,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   z-index: 3300;
 }
 
-.app-page-shell {
+html.staff-scope .app-page-shell {
   flex: 1;
   width: 100%;
   min-height: 0;
@@ -177,7 +204,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   overflow: visible;
 }
 
-.app-page-content {
+html.staff-scope .app-page-content {
   width: 100%;
   max-width: 100%;
   min-height: 100%;
@@ -185,7 +212,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   margin: 0;
 }
 
-.app-page-card {
+html.staff-scope .app-page-card {
   width: 100%;
   min-height: 100%;
   min-width: 0;
@@ -197,19 +224,19 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   box-shadow: none;
 }
 
-.app-page-card--bare {
+html.staff-scope .app-page-card--bare {
   background: transparent;
   border: none;
   border-radius: 0;
   padding: 0;
 }
 
-.app-page-card.app-page-card--no-hover:hover {
+html.staff-scope .app-page-card.app-page-card--no-hover:hover {
   transform: none;
   z-index: 0;
 }
 
-.app-page-stack {
+html.staff-scope .app-page-stack {
   display: flex;
   flex-direction: column;
   gap: var(--page-stack-gap);
@@ -217,7 +244,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   min-width: 0;
 }
 
-.app-section-card {
+html.staff-scope .app-section-card {
   background: var(--section-card-bg);
   border: var(--section-card-border);
   border-radius: var(--section-card-radius);
@@ -231,7 +258,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   filter: none;
 }
 
-.app-layout-page-shell {
+html.staff-scope .app-layout-page-shell {
   display: flex;
   flex-direction: column;
   gap: var(--page-stack-gap);
@@ -239,7 +266,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   min-width: 0;
 }
 
-.app-layout-content-width {
+html.staff-scope .app-layout-content-width {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -249,7 +276,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   gap: var(--page-stack-gap);
 }
 
-.app-layout-section-shell {
+html.staff-scope .app-layout-section-shell {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -263,7 +290,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   filter: none;
 }
 
-.app-layout-card {
+html.staff-scope .app-layout-card {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -277,7 +304,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   filter: none;
 }
 
-.app-layout-surface-subtle {
+html.staff-scope .app-layout-surface-subtle {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -291,7 +318,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   filter: none;
 }
 
-.app-layout-surface-accent {
+html.staff-scope .app-layout-surface-accent {
   --profile-card-bg: var(--theme);
   --profile-card-border: none;
   display: flex;
@@ -307,7 +334,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   filter: none;
 }
 
-.app-profile-accent-card {
+html.staff-scope .app-profile-accent-card {
   --profile-card-bg: var(--theme);
   --profile-card-border: none;
 }
@@ -317,7 +344,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 
 /* Canonical home: src/styles/families/tabs.css
  * (rules queued to migrate during UI cleanup pass) */
-.app-layout-tab-row {
+html.staff-scope .app-layout-tab-row {
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
@@ -328,14 +355,14 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   background: var(--tab-container-bg);
 }
 
-.app-layout-toolbar-row {
+html.staff-scope .app-layout-toolbar-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
 }
 
-.app-layout-stat-card {
+html.staff-scope .app-layout-stat-card {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -346,7 +373,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   border: none;
 }
 
-.app-layout-header-row {
+html.staff-scope .app-layout-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -360,7 +387,7 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 
 /* Shell outlines (solid) always render when the overlay is on — these are the
    main page sections the simplified view is meant to highlight. */
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-shell="1"] {
+html.staff-scope[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-shell="1"] {
   outline: 2px solid rgba(var(--accent-base-rgb), 0.92);
   outline-offset: 3px;
   outline-style: solid;
@@ -370,50 +397,50 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 /* Dashed outlines on nested/non-shell registered sections are tied to the
    "Dotted Lines" toggle. With the toggle off, you see only top-level shells —
    a clean overlay of the main page section cards. */
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-shell="0"] {
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-shell="0"] {
   outline: 2px dashed rgba(var(--accent-base-rgb), 0.92);
   outline-offset: 3px;
   box-shadow: inset 0 0 0 1px rgba(var(--surface-rgb), 0.62);
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="page-shell"] {
+html.staff-scope[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="page-shell"] {
   outline-color: #00e5ff;
 }
 
-:root[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="section-shell"] {
+html.staff-scope[data-dev-overlay-enabled="true"] [data-dev-section="1"][data-dev-section-type="section-shell"] {
   outline-color: rgba(var(--accent-base-rgb), 0.96);
 }
 
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="content-card"] {
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="content-card"] {
   outline-color: #ffd54a;
 }
 
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="toolbar"],
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="filter-row"] {
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="toolbar"],
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="filter-row"] {
   outline-color: #4ade80;
 }
 
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="tab-row"] {
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="tab-row"] {
   outline-color: #ff6b6b;
 }
 
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="data-table"] {
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="data-table"] {
   outline-color: #c084fc;
 }
 
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="table-headings"] {
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="table-headings"] {
   outline-color: #60a5fa;
 }
 
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="table-rows"] {
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="table-rows"] {
   outline-color: #f97316;
 }
 
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="stat-card"] {
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"] [data-dev-section="1"][data-dev-section-type="stat-card"] {
   outline-color: #facc15;
 }
 
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"]
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-legacy-markers="true"]
   :where(
     .app-page-card,
     .app-section-card,
@@ -439,18 +466,18 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
    data-dev-overlay-hide-<id>="1" on <html>. These rules remove the outline
    only for that category's section types so other categories keep working. */
 
-:root[data-dev-overlay-hide-page-shell="1"] [data-dev-section="1"][data-dev-section-type="page-shell"] {
+html.staff-scope[data-dev-overlay-hide-page-shell="1"] [data-dev-section="1"][data-dev-section-type="page-shell"] {
   outline: none !important;
   box-shadow: none !important;
 }
 
-:root[data-dev-overlay-hide-section="1"] [data-dev-section="1"][data-dev-section-type="section-shell"],
-:root[data-dev-overlay-hide-section="1"] [data-dev-section="1"][data-dev-section-type="content-card"] {
+html.staff-scope[data-dev-overlay-hide-section="1"] [data-dev-section="1"][data-dev-section-type="section-shell"],
+html.staff-scope[data-dev-overlay-hide-section="1"] [data-dev-section="1"][data-dev-section-type="content-card"] {
   outline: none !important;
   box-shadow: none !important;
 }
 
-:root[data-dev-overlay-hide-section="1"]
+html.staff-scope[data-dev-overlay-hide-section="1"]
   :where(
     .app-page-card,
     .app-section-card,
@@ -462,45 +489,45 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
   outline: none !important;
 }
 
-:root[data-dev-overlay-hide-stat-card="1"] [data-dev-section="1"][data-dev-section-type="stat-card"],
-:root[data-dev-overlay-hide-stat-card="1"] .app-layout-stat-card:not([data-dev-section="1"]) {
+html.staff-scope[data-dev-overlay-hide-stat-card="1"] [data-dev-section="1"][data-dev-section-type="stat-card"],
+html.staff-scope[data-dev-overlay-hide-stat-card="1"] .app-layout-stat-card:not([data-dev-section="1"]) {
   outline: none !important;
   box-shadow: none !important;
 }
 
-:root[data-dev-overlay-hide-toolbar="1"] [data-dev-section="1"][data-dev-section-type="toolbar"],
-:root[data-dev-overlay-hide-toolbar="1"] [data-dev-section="1"][data-dev-section-type="filter-row"],
-:root[data-dev-overlay-hide-toolbar="1"]
+html.staff-scope[data-dev-overlay-hide-toolbar="1"] [data-dev-section="1"][data-dev-section-type="toolbar"],
+html.staff-scope[data-dev-overlay-hide-toolbar="1"] [data-dev-section="1"][data-dev-section-type="filter-row"],
+html.staff-scope[data-dev-overlay-hide-toolbar="1"]
   :where(.app-toolbar-row, .app-layout-toolbar-row):not([data-dev-section="1"]) {
   outline: none !important;
   box-shadow: none !important;
 }
 
-:root[data-dev-overlay-hide-tabs="1"] [data-dev-section="1"][data-dev-section-type="tab-row"],
-:root[data-dev-overlay-hide-tabs="1"]
+html.staff-scope[data-dev-overlay-hide-tabs="1"] [data-dev-section="1"][data-dev-section-type="tab-row"],
+html.staff-scope[data-dev-overlay-hide-tabs="1"]
   :where(.tab-scroll-row, .tab-api, .app-layout-tab-row):not([data-dev-section="1"]) {
   outline: none !important;
   box-shadow: none !important;
 }
 
-:root[data-dev-overlay-hide-table="1"] [data-dev-section="1"][data-dev-section-type="data-table"],
-:root[data-dev-overlay-hide-table="1"] [data-dev-section="1"][data-dev-section-type="table-headings"],
-:root[data-dev-overlay-hide-table="1"] [data-dev-section="1"][data-dev-section-type="table-rows"],
-:root[data-dev-overlay-hide-table="1"] :where(.table-api, table):not([data-dev-section="1"]) {
+html.staff-scope[data-dev-overlay-hide-table="1"] [data-dev-section="1"][data-dev-section-type="data-table"],
+html.staff-scope[data-dev-overlay-hide-table="1"] [data-dev-section="1"][data-dev-section-type="table-headings"],
+html.staff-scope[data-dev-overlay-hide-table="1"] [data-dev-section="1"][data-dev-section-type="table-rows"],
+html.staff-scope[data-dev-overlay-hide-table="1"] :where(.table-api, table):not([data-dev-section="1"]) {
   outline: none !important;
   box-shadow: none !important;
 }
 
-:root[data-dev-overlay-hide-modal="1"] [data-dev-section="1"][data-dev-section-type="floating-action"],
-:root[data-dev-overlay-hide-modal="1"] [data-dev-section="1"][data-dev-section-type="modal"],
-:root[data-dev-overlay-hide-modal="1"] [data-dev-section="1"][data-dev-section-type="popup"],
-:root[data-dev-overlay-hide-modal="1"] [data-dev-section="1"][data-dev-section-type="drawer"] {
+html.staff-scope[data-dev-overlay-hide-modal="1"] [data-dev-section="1"][data-dev-section-type="floating-action"],
+html.staff-scope[data-dev-overlay-hide-modal="1"] [data-dev-section="1"][data-dev-section-type="modal"],
+html.staff-scope[data-dev-overlay-hide-modal="1"] [data-dev-section="1"][data-dev-section-type="popup"],
+html.staff-scope[data-dev-overlay-hide-modal="1"] [data-dev-section="1"][data-dev-section-type="drawer"] {
   outline: none !important;
   box-shadow: none !important;
 }
 
-.app-toolbar-row,
-.app-header-row {
+html.staff-scope .app-toolbar-row,
+html.staff-scope .app-header-row {
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -512,25 +539,25 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
    .app-topbar-link*, .app-topbar-toggle* rules were removed in the
    2026-04 UI audit. */
 
-.app-sidebar {
+html.staff-scope .app-sidebar {
   background: var(--nav-shell-bg);
   border: var(--nav-shell-border);
   border-radius: var(--page-card-radius);
 }
 
-.app-sidebar__header {
+html.staff-scope .app-sidebar__header {
   background: var(--surface);
   padding: var(--space-md) var(--space-5);
   color: var(--text-1);
   border-bottom: none;
 }
 
-.app-sidebar__body {
+html.staff-scope .app-sidebar__body {
   background: var(--surface);
   padding: var(--space-5);
 }
 
-.app-sidebar__section-title {
+html.staff-scope .app-sidebar__section-title {
   color: var(--accentText);
   font-weight: 700;
   font-size: 0.82rem;
@@ -544,30 +571,30 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
    layout property, not a visual one. */
 
 @media (max-width: 1024px) {
-  .app-layout-main-column {
+  html.staff-scope .app-layout-main-column {
     gap: 16px;
   }
 
-  .app-page-content {
+  html.staff-scope .app-page-content {
     max-width: 100%;
   }
 }
 
 @media (max-width: 640px) {
-  .app-layout-main-column {
+  html.staff-scope .app-layout-main-column {
     gap: var(--page-stack-gap-mobile);
     padding: var(--page-gutter-y-mobile) var(--page-gutter-x-mobile);
   }
 
-  .app-topbar-shell {
+  html.staff-scope .app-topbar-shell {
     padding: 10px 12px;
   }
 
-  .app-page-card {
+  html.staff-scope .app-page-card {
     padding: var(--page-card-padding-mobile);
   }
 
-  .app-section-card {
+  html.staff-scope .app-section-card {
     padding: var(--section-card-padding-sm);
   }
 }
@@ -579,12 +606,12 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
    content on desktop; on a portrait phone that ordering is inverted —
    the page card and its scoped stacking context need to win. */
 @media (max-width: 640px) and (orientation: portrait) {
-  .app-topbar-shell {
+  html.staff-scope .app-topbar-shell {
     z-index: 0;
   }
 
-  .app-page-shell,
-  .app-page-card {
+  html.staff-scope .app-page-shell,
+  html.staff-scope .app-page-card {
     position: relative;
     z-index: 1;
   }
@@ -595,23 +622,23 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 /* ========================================================= */
 
 /* Global scrollbar for all elements - hidden by default */
-* {
+html.staff-scope * {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   transition: scrollbar-color 0.3s ease;
 }
 
 /* Webkit browsers (Chrome, Safari, Edge) */
-*::-webkit-scrollbar {
+html.staff-scope *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-*::-webkit-scrollbar-track {
+html.staff-scope *::-webkit-scrollbar-track {
   background: transparent;
 }
 
-*::-webkit-scrollbar-thumb {
+html.staff-scope *::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: var(--radius-pill);
   border: 2px solid transparent;
@@ -620,143 +647,118 @@ body:has([aria-modal="true"]) [aria-modal="true"] * {
 }
 
 /* Show scrollbar when element has scrollbar-visible class */
-.scrollbar-visible {
+html.staff-scope .scrollbar-visible {
   scrollbar-color: var(--scrollbar-thumb) transparent !important;
 }
 
-.scrollbar-visible::-webkit-scrollbar-thumb {
+html.staff-scope .scrollbar-visible::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb) !important;
   background-clip: padding-box;
 }
 
 /* Hide scrollbar when element has scrollbar-hidden class */
-.scrollbar-hidden {
+html.staff-scope .scrollbar-hidden {
   scrollbar-color: transparent transparent !important;
 }
 
-.scrollbar-hidden::-webkit-scrollbar-thumb {
+html.staff-scope .scrollbar-hidden::-webkit-scrollbar-thumb {
   background: transparent !important;
 }
 
 /* Always show darker scrollbar on direct hover of scrollbar thumb */
-*::-webkit-scrollbar-thumb:hover {
+html.staff-scope *::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover) !important;
   background-clip: padding-box;
 }
 
 /* Show scrollbar on hover for all elements */
-*:hover {
+html.staff-scope *:hover {
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
-*:hover::-webkit-scrollbar-thumb {
+html.staff-scope *:hover::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   background-clip: padding-box;
 }
 
-/* Dark scrollbar gutter on every /website page. useWebsiteScope adds the
-   `website-scope` class to <html> when a /website page is mounted; this
-   rule paints the scrollbar TRACK black so it blends with the website's
-   permanent-dark skin (instead of the default white the browser draws
-   against the html background). The THUMB keeps the red accent from the
-   global scrollbar tokens. */
-html.website-scope,
-html.website-scope body {
-  scrollbar-color: var(--scrollbar-thumb) #07070b;
-}
-html.website-scope::-webkit-scrollbar,
-html.website-scope body::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-  background: #07070b;
-}
-html.website-scope::-webkit-scrollbar-track,
-html.website-scope body::-webkit-scrollbar-track {
-  background: #07070b;
-}
-html.website-scope::-webkit-scrollbar-corner,
-html.website-scope body::-webkit-scrollbar-corner {
-  background: #07070b;
-}
-
 /* Specific styling for tabs container to hide scrollbar completely */
-.tabs-scroll-container::-webkit-scrollbar {
+html.staff-scope .tabs-scroll-container::-webkit-scrollbar {
   display: none;
 }
 
-.tabs-scroll-container {
+html.staff-scope .tabs-scroll-container {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
 /* Tabs container with visible scrollbar - centered at bottom, half width */
-.tabs-scroll-container-visible {
+html.staff-scope .tabs-scroll-container-visible {
   position: relative;
   padding-bottom: 24px !important;
 }
 
-.tabs-scroll-container-visible::-webkit-scrollbar {
+html.staff-scope .tabs-scroll-container-visible::-webkit-scrollbar {
   height: 8px;
   position: absolute;
   bottom: 0;
 }
 
-.tabs-scroll-container-visible::-webkit-scrollbar-track {
+html.staff-scope .tabs-scroll-container-visible::-webkit-scrollbar-track {
   background: transparent;
   margin: 0 25%;
 }
 
-.tabs-scroll-container-visible::-webkit-scrollbar-thumb {
+html.staff-scope .tabs-scroll-container-visible::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: var(--radius-pill);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-.tabs-scroll-container-visible::-webkit-scrollbar-thumb:hover {
+html.staff-scope .tabs-scroll-container-visible::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
   background-clip: padding-box;
 }
 
 /* Firefox scrollbar styling for tabs */
-.tabs-scroll-container-visible {
+html.staff-scope .tabs-scroll-container-visible {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 /* Reusable themed scrollbar — apply via class or extend with comma selectors.
    Provides the standard thumb, track, and hover styles for dropdowns, pickers, etc. */
-.themed-scrollbar,
-.dropdown-api__menu,
-.timepicker-api__options {
+html.staff-scope .themed-scrollbar,
+html.staff-scope .dropdown-api__menu,
+html.staff-scope .timepicker-api__options {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
-.themed-scrollbar::-webkit-scrollbar,
-.dropdown-api__menu::-webkit-scrollbar,
-.timepicker-api__options::-webkit-scrollbar {
+html.staff-scope .themed-scrollbar::-webkit-scrollbar,
+html.staff-scope .dropdown-api__menu::-webkit-scrollbar,
+html.staff-scope .timepicker-api__options::-webkit-scrollbar {
   width: 6px;
 }
 
 /* Hide the up/down scrollbar buttons — a cleaner overlay bar with no chrome. */
-.themed-scrollbar::-webkit-scrollbar-button,
-.dropdown-api__menu::-webkit-scrollbar-button,
-.timepicker-api__options::-webkit-scrollbar-button {
+html.staff-scope .themed-scrollbar::-webkit-scrollbar-button,
+html.staff-scope .dropdown-api__menu::-webkit-scrollbar-button,
+html.staff-scope .timepicker-api__options::-webkit-scrollbar-button {
   display: none;
   width: 0;
   height: 0;
 }
 
-.themed-scrollbar::-webkit-scrollbar-track,
-.dropdown-api__menu::-webkit-scrollbar-track,
-.timepicker-api__options::-webkit-scrollbar-track {
+html.staff-scope .themed-scrollbar::-webkit-scrollbar-track,
+html.staff-scope .dropdown-api__menu::-webkit-scrollbar-track,
+html.staff-scope .timepicker-api__options::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.themed-scrollbar::-webkit-scrollbar-thumb,
-.dropdown-api__menu::-webkit-scrollbar-thumb,
-.timepicker-api__options::-webkit-scrollbar-thumb {
+html.staff-scope .themed-scrollbar::-webkit-scrollbar-thumb,
+html.staff-scope .dropdown-api__menu::-webkit-scrollbar-thumb,
+html.staff-scope .timepicker-api__options::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: var(--radius-pill);
   /* 1px transparent border insets the thumb slightly from the scrollbar
@@ -765,9 +767,9 @@ html.website-scope body::-webkit-scrollbar-corner {
   background-clip: padding-box;
 }
 
-.themed-scrollbar::-webkit-scrollbar-thumb:hover,
-.dropdown-api__menu::-webkit-scrollbar-thumb:hover,
-.timepicker-api__options::-webkit-scrollbar-thumb:hover {
+html.staff-scope .themed-scrollbar::-webkit-scrollbar-thumb:hover,
+html.staff-scope .dropdown-api__menu::-webkit-scrollbar-thumb:hover,
+html.staff-scope .timepicker-api__options::-webkit-scrollbar-thumb:hover {
   background: var(--scrollbar-thumb-hover);
 }
 
@@ -779,24 +781,24 @@ html.website-scope body::-webkit-scrollbar-corner {
 /* global show-on-scroll handler in _app.js adds `.scrollbar-visible`. To    */
 /* explicitly opt a tab rail back into showing a bar, use the dedicated      */
 /* `.tabs-scroll-container-visible` class.                                   */
-:where(
+html.staff-scope :where(
   .app-table-shell-scroll,
   [data-app-table-shell-scroll],
   .tabs-scroll-container,
   [data-dev-section-type="tab-row"]
 ):not(.tabs-scroll-container-visible),
-*:has(> table):not(.tabs-scroll-container-visible) {
+  html.staff-scope *:has(> table):not(.tabs-scroll-container-visible) {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
 }
 
-:where(
+html.staff-scope :where(
   .app-table-shell-scroll,
   [data-app-table-shell-scroll],
   .tabs-scroll-container,
   [data-dev-section-type="tab-row"]
 ):not(.tabs-scroll-container-visible)::-webkit-scrollbar,
-*:has(> table):not(.tabs-scroll-container-visible)::-webkit-scrollbar {
+  html.staff-scope *:has(> table):not(.tabs-scroll-container-visible)::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
   display: none !important;
@@ -807,7 +809,7 @@ html.website-scope body::-webkit-scrollbar-corner {
 /* ========================================================= */
 
 /* Style checkboxes to match theme */
-input[type="checkbox"] {
+html.staff-scope input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -823,12 +825,12 @@ input[type="checkbox"] {
   flex-shrink: 0;
 }
 
-input[type="checkbox"]:checked {
+html.staff-scope input[type="checkbox"]:checked {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
 }
 
-input[type="checkbox"]:checked::before {
+html.staff-scope input[type="checkbox"]:checked::before {
   content: "";
   position: absolute;
   left: 4px;
@@ -840,20 +842,20 @@ input[type="checkbox"]:checked::before {
   transform: rotate(45deg);
 }
 
-input[type="checkbox"]:disabled {
+html.staff-scope input[type="checkbox"]:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   border-color: var(--grey-accent-light);
   background: var(--surface);
 }
 
-input[type="checkbox"]:disabled:checked {
+html.staff-scope input[type="checkbox"]:disabled:checked {
   background: var(--grey-accent);
   border-color: var(--grey-accent);
 }
 
 /* Keep phone inputs visually consistent with other form fields across the app. */
-input[type="tel"] {
+html.staff-scope input[type="tel"] {
   font-family: inherit;
   font-size: inherit;
   font-weight: inherit;
@@ -862,47 +864,47 @@ input[type="tel"] {
 
 /* Responsive density tuning */
 @media (max-width: 1024px) {
-  body {
+  html.staff-scope body {
     font-size: 0.95rem;
     line-height: 1.3;
   }
-section,
-div.card,
-div.news-card {
+html.staff-scope section,
+html.staff-scope div.card,
+html.staff-scope div.news-card {
   padding: calc(var(--layout-card-padding) - 12px);
   margin-bottom: calc(var(--layout-card-gap) - 8px);
 }
 }
 
 @media (max-width: 640px) {
-  body {
+  html.staff-scope body {
     font-size: 0.9rem;
     line-height: 1.28;
   }
-  h1 {
+  html.staff-scope h1 {
     font-size: 1.25rem;
   }
-  h2 {
+  html.staff-scope h2 {
     font-size: 1.05rem;
   }
-  section,
-  div.card,
-  div.news-card {
+  html.staff-scope section,
+  html.staff-scope div.card,
+  html.staff-scope div.news-card {
     padding: calc(var(--layout-card-padding) - 14px);
     margin-bottom: calc(var(--layout-card-gap) - 12px);
     border-radius: var(--radius-card);
   }
 
-  .sidebar-logo-header {
+  html.staff-scope .sidebar-logo-header {
     display: none !important;
   }
 
-  .popup-backdrop {
+  html.staff-scope .popup-backdrop {
     padding: 10px !important;
     align-items: flex-start !important;
   }
 
-  .popup-card {
+  html.staff-scope .popup-card {
     width: min(100%, calc(100vw - 20px)) !important;
     max-width: min(100%, calc(100vw - 20px)) !important;
     max-height: calc(100dvh - 20px) !important;
@@ -910,42 +912,42 @@ div.news-card {
     overflow-y: auto !important;
   }
 
-  .popup-card h1,
-  .popup-card h2 {
+  html.staff-scope .popup-card h1,
+  html.staff-scope .popup-card h2 {
     font-size: 1.05rem !important;
     line-height: 1.3 !important;
   }
 
-  .popup-card h3,
-  .popup-card h4 {
+  html.staff-scope .popup-card h3,
+  html.staff-scope .popup-card h4 {
     font-size: 0.95rem !important;
     line-height: 1.3 !important;
   }
 
-  .popup-card p,
-  .popup-card span,
-  .popup-card label,
-  .popup-card li,
-  .popup-card td,
-  .popup-card th,
-  .popup-card button,
-  .popup-card input,
-  .popup-card textarea,
-  .popup-card select {
+  html.staff-scope .popup-card p,
+  html.staff-scope .popup-card span,
+  html.staff-scope .popup-card label,
+  html.staff-scope .popup-card li,
+  html.staff-scope .popup-card td,
+  html.staff-scope .popup-card th,
+  html.staff-scope .popup-card button,
+  html.staff-scope .popup-card input,
+  html.staff-scope .popup-card textarea,
+  html.staff-scope .popup-card select {
     font-size: 0.84rem !important;
     line-height: 1.3 !important;
   }
 }
 
 /* Links */
-a {
+html.staff-scope a {
   color: var(--accent-strong);
   text-decoration: none;
   transition: color 0.2s;
   position: relative;
   z-index: 0;
 }
-a:hover {
+html.staff-scope a:hover {
   color: var(--primary-hover);
   text-decoration: underline;
   z-index: var(--hover-surface-z);
@@ -955,42 +957,42 @@ a:hover {
    `<Button>` (the global component) carries .app-btn and is styled by the
    .app-btn--* rules below. Scoping these defaults to :not(.app-btn) keeps
    the global system as the single source of truth for variant appearance. */
-button,
-button:hover,
-button:focus,
-button:active,
-.app-btn,
-.app-btn:hover,
-.app-btn:focus,
-.app-btn:active,
-a.app-btn,
-a.app-btn:hover,
-a.app-btn:focus,
-a.app-btn:active,
-[role="button"],
-[role="button"]:hover,
-[role="button"]:focus,
-[role="button"]:active,
-input[type="button"],
-input[type="button"]:hover,
-input[type="button"]:focus,
-input[type="button"]:active,
-input[type="submit"],
-input[type="submit"]:hover,
-input[type="submit"]:focus,
-input[type="submit"]:active,
-input[type="reset"],
-input[type="reset"]:hover,
-input[type="reset"]:focus,
-input[type="reset"]:active,
-a.tab-api__item,
-a.tab-api__item:hover,
-a.tab-api__item:focus,
-a.tab-api__item:active {
+html.staff-scope button,
+html.staff-scope button:hover,
+html.staff-scope button:focus,
+html.staff-scope button:active,
+html.staff-scope .app-btn,
+html.staff-scope .app-btn:hover,
+html.staff-scope .app-btn:focus,
+html.staff-scope .app-btn:active,
+html.staff-scope a.app-btn,
+html.staff-scope a.app-btn:hover,
+html.staff-scope a.app-btn:focus,
+html.staff-scope a.app-btn:active,
+html.staff-scope [role="button"],
+html.staff-scope [role="button"]:hover,
+html.staff-scope [role="button"]:focus,
+html.staff-scope [role="button"]:active,
+html.staff-scope input[type="button"],
+html.staff-scope input[type="button"]:hover,
+html.staff-scope input[type="button"]:focus,
+html.staff-scope input[type="button"]:active,
+html.staff-scope input[type="submit"],
+html.staff-scope input[type="submit"]:hover,
+html.staff-scope input[type="submit"]:focus,
+html.staff-scope input[type="submit"]:active,
+html.staff-scope input[type="reset"],
+html.staff-scope input[type="reset"]:hover,
+html.staff-scope input[type="reset"]:focus,
+html.staff-scope input[type="reset"]:active,
+html.staff-scope a.tab-api__item,
+html.staff-scope a.tab-api__item:hover,
+html.staff-scope a.tab-api__item:focus,
+html.staff-scope a.tab-api__item:active {
   text-decoration: none !important;
 }
 
-button:not(.app-btn) {
+html.staff-scope button:not(.app-btn) {
   background: var(--accent-strong);
   color: var(--text-2);
   border: none;
@@ -1004,19 +1006,19 @@ button:not(.app-btn) {
   position: relative;
   z-index: 0;
 }
-button:not(.app-btn):hover {
+html.staff-scope button:not(.app-btn):hover {
   filter: brightness(1.06);
 }
-button:not(.app-btn):disabled {
+html.staff-scope button:not(.app-btn):disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.app-hover-tooltip {
+html.staff-scope .app-hover-tooltip {
   position: relative;
 }
 
-.app-hover-tooltip[data-tooltip]::after {
+html.staff-scope .app-hover-tooltip[data-tooltip]::after {
   content: attr(data-tooltip);
   position: absolute;
   left: 50%;
@@ -1040,20 +1042,20 @@ button:not(.app-btn):disabled {
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
-.app-hover-tooltip[data-tooltip]:hover::after,
-.app-hover-tooltip[data-tooltip]:focus-visible::after {
+html.staff-scope .app-hover-tooltip[data-tooltip]:hover::after,
+html.staff-scope .app-hover-tooltip[data-tooltip]:focus-visible::after {
   opacity: 1;
   transform: translate(-50%, 0);
 }
 
 /* Inputs, Textareas & Selects — base resets only; sizing handled by Shared Field Surface below */
-input[type="text"],
-input[type="number"],
-input[type="email"],
-input[type="date"],
-input[type="search"],
-textarea,
-select {
+html.staff-scope input[type="text"],
+html.staff-scope input[type="number"],
+html.staff-scope input[type="email"],
+html.staff-scope input[type="date"],
+html.staff-scope input[type="search"],
+html.staff-scope textarea,
+html.staff-scope select {
   width: 100%;
   font-family: inherit;
   outline: none;
@@ -1061,7 +1063,7 @@ select {
   z-index: 0;
 }
 
-input[type="search"] {
+html.staff-scope input[type="search"] {
   -webkit-appearance: none;
   appearance: none;
   min-height: var(--control-height);
@@ -1072,31 +1074,31 @@ input[type="search"] {
   color: var(--text-1);
 }
 
-input[type="search"]::placeholder {
+html.staff-scope input[type="search"]::placeholder {
   color: var(--textfieldbackground);
 }
-input:hover,
-textarea:hover,
-select:hover {
+html.staff-scope input:hover,
+html.staff-scope textarea:hover,
+html.staff-scope select:hover {
   background-color: var(--control-bg-hover);
   z-index: var(--hover-surface-z);
 }
-input:focus,
-textarea:focus,
-select:focus {
+html.staff-scope input:focus,
+html.staff-scope textarea:focus,
+html.staff-scope select:focus {
   background-color: var(--control-bg-hover);
   box-shadow: var(--control-ring);
   z-index: var(--hover-surface-z);
 }
 
 /* Placeholder style */
-input::placeholder,
-textarea::placeholder {
+html.staff-scope input::placeholder,
+html.staff-scope textarea::placeholder {
   color: var(--textfieldbackground);
 }
 
-.employee-form input::placeholder,
-.employee-form textarea::placeholder {
+html.staff-scope .employee-form input::placeholder,
+html.staff-scope .employee-form textarea::placeholder {
   opacity: 0.45;
 }
 
@@ -1108,7 +1110,7 @@ textarea::placeholder {
 /* === Canonical home: src/styles/families/inputs.css      === */
 /* === (rules queued to migrate during UI cleanup pass)    === */
 /* ========================================================= */
-.app-input {
+html.staff-scope .app-input {
   width: 100%;
   min-height: var(--control-height);
   padding: var(--control-padding);
@@ -1124,19 +1126,19 @@ textarea::placeholder {
   outline: none;
   transition: var(--control-transition);
 }
-.app-input:hover {
+html.staff-scope .app-input:hover {
   background: var(--control-bg-hover);
 }
-.app-input:focus {
+html.staff-scope .app-input:focus {
   background: var(--control-bg-hover);
   box-shadow: var(--control-ring);
 }
-.app-input::placeholder {
+html.staff-scope .app-input::placeholder {
   color: var(--textfieldbackground);
 }
 
 /* Labels */
-label {
+html.staff-scope label {
   font-size: var(--text-label);
   font-weight: 500;
   color: var(--text-1);
@@ -1144,7 +1146,7 @@ label {
   margin-bottom: 2px;
 }
 
-.app-status-message {
+html.staff-scope .app-status-message {
   padding: var(--space-3) var(--space-md);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
@@ -1152,25 +1154,25 @@ label {
   font-weight: 600;
 }
 
-.app-status-message--info {
+html.staff-scope .app-status-message--info {
   background: var(--theme);
   border: none;
   color: var(--text-1);
 }
 
-.app-status-message--success {
+html.staff-scope .app-status-message--success {
   background: var(--success-surface);
   border: none;
   color: var(--success-text);
 }
 
-.app-status-message--warning {
+html.staff-scope .app-status-message--warning {
   background: var(--warning-surface);
   border: none;
   color: var(--warning-text);
 }
 
-.app-status-message--danger {
+html.staff-scope .app-status-message--danger {
   background: var(--danger-surface);
   border: none;
   color: var(--danger-text);
@@ -1178,49 +1180,49 @@ label {
 
 /* Standard semantic colour utilities. Use these when a component needs the
    approved green / amber / red / info palette without inventing local colours. */
-.app-tone-success {
+html.staff-scope .app-tone-success {
   background: var(--success-surface);
   color: var(--success-text);
   border: none;
 }
 
-.app-tone-success-strong {
+html.staff-scope .app-tone-success-strong {
   background: var(--success);
   color: var(--text-2);
   border: none;
 }
 
-.app-tone-warning {
+html.staff-scope .app-tone-warning {
   background: var(--warning-surface);
   color: var(--warning-text);
   border: none;
 }
 
-.app-tone-warning-strong {
+html.staff-scope .app-tone-warning-strong {
   background: var(--warning);
   color: var(--text-2);
   border: none;
 }
 
-.app-tone-danger {
+html.staff-scope .app-tone-danger {
   background: var(--danger-surface);
   color: var(--danger-text);
   border: none;
 }
 
-.app-tone-danger-strong {
+html.staff-scope .app-tone-danger-strong {
   background: var(--danger);
   color: var(--text-2);
   border: none;
 }
 
-.app-tone-info {
+html.staff-scope .app-tone-info {
   background: var(--theme);
   color: var(--info);
   border: none;
 }
 
-.app-tone-info-strong {
+html.staff-scope .app-tone-info-strong {
   background: var(--info);
   color: var(--text-2);
   border: none;
@@ -1228,7 +1230,7 @@ label {
 
 /* Canonical home: src/styles/families/tables.css
  * (rules queued to migrate during UI cleanup pass) */
-.app-data-table {
+html.staff-scope .app-data-table {
   width: 100%;
   border-collapse: collapse;
   border-radius: var(--radius-md);
@@ -1236,8 +1238,8 @@ label {
   background: var(--surface);
 }
 
-.app-data-table th,
-.app-data-table td {
+html.staff-scope .app-data-table th,
+html.staff-scope .app-data-table td {
   padding: var(--space-3) var(--space-md);
   /* Row-bottom rule = the only "border-like" line allowed inside a table.
      Use --separating-line, never --primary-border or other deprecated tokens. */
@@ -1250,18 +1252,18 @@ label {
    sizing fallback; setting tr height makes browsers stretch td accordingly.
    The !important keeps this true repo-wide regardless of per-row inline
    padding so every .app-data-table row is exactly --table-row-height tall. */
-.app-data-table tbody tr {
+html.staff-scope .app-data-table tbody tr {
   height: var(--table-row-height) !important;
 }
 
 /* Default in-row button height — every <button> inside an .app-data-table
    snaps to --table-action-btn-height (32px). Wins over .app-btn via the
    higher specificity. To opt out, set an explicit height on the button. */
-.app-data-table button {
+html.staff-scope .app-data-table button {
   height: var(--table-action-btn-height) !important;
 }
 
-.app-data-table thead th {
+html.staff-scope .app-data-table thead th {
   position: sticky;
   top: 0;
   z-index: 3;
@@ -1272,7 +1274,7 @@ label {
   box-shadow: 0 1px 0 rgba(var(--accent-base-rgb), 0.14);
 }
 
-.app-data-table tbody tr:last-child td {
+html.staff-scope .app-data-table tbody tr:last-child td {
   border-bottom: none;
 }
 
@@ -1280,8 +1282,8 @@ label {
    --table-action-btn-height. Use this class on every <button> that lives
    inside an .app-data-table or row-list cell so heights stay aligned with
    the showcase. */
-.app-data-table .app-table-action-btn,
-.app-table-action-btn {
+html.staff-scope .app-data-table .app-table-action-btn,
+html.staff-scope .app-table-action-btn {
   height: var(--table-action-btn-height);
   display: inline-flex;
   align-items: center;
@@ -1299,18 +1301,18 @@ label {
   line-height: 1;
 }
 
-.app-table-action-btn--ghost {
+html.staff-scope .app-table-action-btn--ghost {
   border: none;
 }
 
-.app-table-action-btn--danger {
+html.staff-scope .app-table-action-btn--danger {
   color: var(--danger);
   border: none;
 }
 
 /* Canonical home: src/styles/families/badges.css
  * (rules queued to migrate during UI cleanup pass) */
-.app-badge {
+html.staff-scope .app-badge {
   min-width: 24px;
   min-height: 24px;
   padding: 0 var(--space-1);
@@ -1327,7 +1329,7 @@ label {
 /* Size: control = primary-button height/padding/radius, used on the
    per-feature badges that were previously vhc-badge, hr-employees-row-pill,
    jobcard-tab-badge, multiselect tag, severity pill, and the vhc modal badge. */
-.app-badge--control {
+html.staff-scope .app-badge--control {
   min-width: 0;
   min-height: var(--control-height);
   padding: var(--control-padding);
@@ -1338,73 +1340,73 @@ label {
   white-space: nowrap;
 }
 
-.app-badge--uppercase {
+html.staff-scope .app-badge--uppercase {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.app-badge--neutral {
+html.staff-scope .app-badge--neutral {
   background: rgba(var(--grey-accent-rgb), 0.18);
   color: var(--text-1);
 }
 
-.app-badge--accent-strong {
+html.staff-scope .app-badge--accent-strong {
   background: var(--accent-strong);
   color: var(--text-2);
 }
 
-.app-badge--accent-soft {
+html.staff-scope .app-badge--accent-soft {
   background: var(--theme);
   color: var(--accent-strong);
   border: none;
 }
 
-.app-badge--accent-hover {
+html.staff-scope .app-badge--accent-hover {
   background: var(--theme-hover);
   color: var(--text-1);
   transition: background-color 0.2s ease;
 }
-.app-badge--accent-hover:hover {
+html.staff-scope .app-badge--accent-hover:hover {
   background: rgba(var(--accent-base-rgb), 0.3);
 }
 
-.app-badge--danger {
+html.staff-scope .app-badge--danger {
   background: var(--danger-surface);
   color: var(--danger-dark);
   border: none;
 }
 
-.app-badge--danger-strong {
+html.staff-scope .app-badge--danger-strong {
   background: var(--danger);
   color: var(--text-2);
 }
 
-.app-badge--warning {
+html.staff-scope .app-badge--warning {
   background: var(--warning-surface);
   color: var(--warning-dark);
   border: none;
 }
 
-.app-badge--warning-strong {
+html.staff-scope .app-badge--warning-strong {
   background: var(--warning);
   color: var(--text-2);
 }
 
-.app-badge--success {
+html.staff-scope .app-badge--success {
   background: var(--success-surface);
   color: var(--success);
   border: none;
 }
 
-.app-badge--success-strong {
+html.staff-scope .app-badge--success-strong {
   background: var(--success);
   color: var(--text-2);
 }
 
 /* Active-tab override — when a jobcard tab badge sits inside an active tab
    item, swap its fill for a translucent white so it reads on the accent bg. */
-.app-badge--round-count,
-.jobcard-tab-notes-badge {
+html.staff-scope .app-badge--round-count,
+html.staff-scope .jobcard-tab-notes-badge {
   width: auto;
   height: 28px;
   min-width: 28px;
@@ -1423,22 +1425,22 @@ label {
   transition: var(--control-transition);
 }
 
-.jobcard-tab-notes-badge {
+html.staff-scope .jobcard-tab-notes-badge {
   margin-left: 4px;
 }
 
-.tab-api__item.is-active .app-badge--accent-strong,
-.tab-api__item.is-active .app-badge--danger-strong {
+html.staff-scope .tab-api__item.is-active .app-badge--accent-strong,
+html.staff-scope .tab-api__item.is-active .app-badge--danger-strong {
   background: rgba(255, 255, 255, 0.3);
 }
 
-.tab-api__item.is-active .app-badge--round-count {
+html.staff-scope .tab-api__item.is-active .app-badge--round-count {
   background: rgba(var(--accentMainRgb), 0.9);
   color: var(--onAccentText);
 }
 
 /* Customer portal layout grid — sidebar stacks on small screens, side-by-side on lg+ */
-.customer-portal-layout-grid {
+html.staff-scope .customer-portal-layout-grid {
   display: flex;
   flex-direction: column;
   gap: var(--page-stack-gap);
@@ -1446,30 +1448,30 @@ label {
   align-items: stretch;
 }
 
-.customer-portal-sidebar {
+html.staff-scope .customer-portal-sidebar {
   width: 100%;
 }
 
 /* Responsive nav-shell visibility (CustomerNavShell). Desktop rail and mobile
  * Menu button live in the DOM together; CSS picks which one is visible so the
  * desktop left-rail appears on first paint without waiting for hydration. */
-.customer-portal-nav-desktop {
+html.staff-scope .customer-portal-nav-desktop {
   display: none;
   width: 100%;
 }
 
-.customer-portal-nav-mobile {
+html.staff-scope .customer-portal-nav-mobile {
   display: block;
   width: 100%;
 }
 
 @media (min-width: 1024px) {
-  .customer-portal-layout-grid {
+  html.staff-scope .customer-portal-layout-grid {
     flex-direction: row;
     align-items: flex-start;
   }
 
-  .customer-portal-nav-desktop {
+  html.staff-scope .customer-portal-nav-desktop {
     display: block;
     width: 260px;
     min-width: 220px;
@@ -1479,11 +1481,11 @@ label {
     max-height: calc(100vh - 32px);
   }
 
-  .customer-portal-nav-mobile {
+  html.staff-scope .customer-portal-nav-mobile {
     display: none;
   }
 
-  .customer-portal-sidebar {
+  html.staff-scope .customer-portal-sidebar {
     width: 100%;
     height: 100%;
   }
@@ -1492,12 +1494,12 @@ label {
 /* Legacy customer-portal-* classes — kept rendering as borderless surfaces so any
  * lingering references still hit a tokenised background. New code must use
  * <LayerSurface> / <LayerTheme>. */
-.customer-portal-shell {
+html.staff-scope .customer-portal-shell {
   min-height: 100vh;
   background: var(--page-shell-bg);
 }
 
-.customer-portal-layout {
+html.staff-scope .customer-portal-layout {
   width: min(100%, var(--page-width-content));
   margin: 0 auto;
   min-height: 100vh;
@@ -1507,7 +1509,7 @@ label {
   padding: var(--page-gutter-y) var(--page-gutter-x);
 }
 
-.customer-portal-stack {
+html.staff-scope .customer-portal-stack {
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
@@ -1515,21 +1517,21 @@ label {
   gap: var(--space-6);
 }
 
-.customer-portal-card {
+html.staff-scope .customer-portal-card {
   border-radius: var(--page-card-radius);
   background: var(--surface);
   padding: var(--section-card-padding);
   box-shadow: none;
 }
 
-.customer-portal-card--muted {
+html.staff-scope .customer-portal-card--muted {
   border-radius: var(--radius-lg);
   background: var(--theme);
   padding: var(--space-md);
   box-shadow: none;
 }
 
-.customer-portal-header {
+html.staff-scope .customer-portal-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1541,12 +1543,12 @@ label {
   padding: var(--space-3) var(--space-md);
 }
 
-.customer-portal-header h3,
-.customer-portal-header p {
+html.staff-scope .customer-portal-header h3,
+html.staff-scope .customer-portal-header p {
   margin: 0;
 }
 
-.customer-portal-empty {
+html.staff-scope .customer-portal-empty {
   border-radius: var(--radius-lg);
   padding: var(--space-md) var(--space-lg);
   text-align: center;
@@ -1554,7 +1556,7 @@ label {
 }
 
 @media (min-width: 1024px) {
-  .customer-portal-layout {
+  html.staff-scope .customer-portal-layout {
     flex-direction: row;
     align-items: flex-start;
   }
@@ -1563,7 +1565,7 @@ label {
 /* ========================================================= */
 /* === Card & Section Styles for News Feed / Layout === */
 /* ========================================================= */
-section {
+html.staff-scope section {
   border-radius: var(--radius-card);
   padding: var(--layout-card-padding);
   margin-bottom: var(--layout-card-gap);
@@ -1575,8 +1577,8 @@ section {
   z-index: 0;
 }
 
-div.card,
-div.news-card {
+html.staff-scope div.card,
+html.staff-scope div.news-card {
   border-radius: var(--radius-card);
   padding: var(--layout-card-padding);
   margin-bottom: var(--layout-card-gap);
@@ -1587,39 +1589,39 @@ div.news-card {
   overflow: visible;
   z-index: 0;
 }
-section:hover,
-div.card:hover,
-div.news-card:hover {
+html.staff-scope section:hover,
+html.staff-scope div.card:hover,
+html.staff-scope div.news-card:hover {
   transform: translateY(-2px);
   z-index: var(--hover-surface-z);
 }
 
 /* Hover layering contract for future UI surfaces. */
-.hover-layer-root {
+html.staff-scope .hover-layer-root {
   position: relative;
   isolation: isolate;
 }
 
-.hover-lift {
+html.staff-scope .hover-lift {
   position: relative;
   z-index: 0;
 }
 
-.hover-lift:hover,
-.hover-lift:focus-within,
-.hover-lift:focus-visible {
+html.staff-scope .hover-lift:hover,
+html.staff-scope .hover-lift:focus-within,
+html.staff-scope .hover-lift:focus-visible {
   z-index: var(--hover-surface-z);
 }
 
-div.news-card h3,
-div.card h3 {
+html.staff-scope div.news-card h3,
+html.staff-scope div.card h3 {
   text-shadow: none;
 }
 
 /* ========================================================= */
 /* === Sidebar Link Styles === */
 /* ========================================================= */
-.sidebar-link {
+html.staff-scope .sidebar-link {
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-xs);
   text-decoration: none;
@@ -1628,28 +1630,28 @@ div.card h3 {
   display: block;
 }
 
-.sidebar-link:hover {
+html.staff-scope .sidebar-link:hover {
   background-color: var(--accent-base-hover); /* subtle hover effect */
   color: var(--text-1);
 }
 
-.sidebar-link.active {
+html.staff-scope .sidebar-link.active {
   background-color: var(--accent-strong); /* accent when active page */
   color: var(--text-2); /* contrast */
 }
 
-.sidebar-action {
+html.staff-scope .sidebar-action {
   text-decoration: none !important;
   transition: transform 0.2s ease,
     background 0.2s ease, color 0.2s ease;
 }
 
-.sidebar-action:hover {
+html.staff-scope .sidebar-action:hover {
   transform: translateY(-2px);
   text-decoration: none !important;
 }
 
-.sidebar-action:focus-visible {
+html.staff-scope .sidebar-action:focus-visible {
   outline: 2px solid var(--accent-base-hover);
   outline-offset: 2px;
   text-decoration: none !important;
@@ -1658,26 +1660,26 @@ div.card h3 {
 /* ========================================================= */
 /* === Misc / Utility Enhancements === */
 /* ========================================================= */
-hr {
+html.staff-scope hr {
   border: none;
   height: 1px;
   background: var(--surface);
   margin: 10px 0;
 }
 
-.bg-core-purple,
-[class*="bg-[var(--primary)"] {
+html.staff-scope .bg-core-purple,
+html.staff-scope [class*="bg-[var(--primary)"] {
   color: var(--text-2);
 }
-[class*="bg-[var(--primary)"] * {
+html.staff-scope [class*="bg-[var(--primary)"] * {
   color: inherit !important;
 }
-[style*="background: var(--primary)"],
-[style*="background-color: var(--primary)"] {
+html.staff-scope [style*="background: var(--primary)"],
+html.staff-scope [style*="background-color: var(--primary)"] {
   color: var(--text-2);
 }
 
-.text-gradient {
+html.staff-scope .text-gradient {
   background: none;
   color: var(--accent-strong);
   -webkit-background-clip: initial;
@@ -1686,7 +1688,7 @@ hr {
 
 
 /* Main content wrapper spacing */
-div#main-content {
+html.staff-scope div#main-content {
   padding: var(--layout-card-padding);
   display: flex;
   flex-direction: column;
@@ -1699,7 +1701,7 @@ div#main-content {
 /* global-slow-loader have been retired in favour of <PageLoadingSkeleton />. */
 /* The classes below remain because Layout.js orientation-lock composes them. */
 /* ========================================================= */
-.redirect-card {
+html.staff-scope .redirect-card {
   width: min(520px, 92vw);
   padding: 2.25rem;
   border-radius: var(--radius-xl);
@@ -1714,26 +1716,26 @@ div#main-content {
   backdrop-filter: none;
 }
 
-[data-theme="dark"] .redirect-card {
+html.staff-scope [data-theme="dark"] .redirect-card {
   background: rgba(15, 23, 42, 0.7);
 }
 
-.redirect-brand {
+html.staff-scope .redirect-brand {
   padding-bottom: 4px;
 }
 
-.redirect-card .login-logo {
+html.staff-scope .redirect-card .login-logo {
   width: 320px;
   max-width: 100%;
 }
 
-.redirect-copy {
+html.staff-scope .redirect-copy {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.redirect-kicker {
+html.staff-scope .redirect-kicker {
   font-size: 0.8rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -1741,25 +1743,25 @@ div#main-content {
   font-weight: 600;
 }
 
-.redirect-title {
+html.staff-scope .redirect-title {
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-1);
 }
 
-.redirect-sub {
+html.staff-scope .redirect-sub {
   font-size: 0.95rem;
   color: rgba(var(--text-1-rgb), 0.85);
 }
 
-.redirect-dots {
+html.staff-scope .redirect-dots {
   display: inline-flex;
   gap: 8px;
   align-items: center;
   justify-content: center;
 }
 
-.redirect-dots span {
+html.staff-scope .redirect-dots span {
   width: 8px;
   height: 8px;
   border-radius: var(--radius-pill);
@@ -1767,11 +1769,11 @@ div#main-content {
   animation: redirect-bounce 0.9s ease-in-out infinite;
 }
 
-.redirect-dots span:nth-child(2) {
+html.staff-scope .redirect-dots span:nth-child(2) {
   animation-delay: 0.12s;
 }
 
-.redirect-dots span:nth-child(3) {
+html.staff-scope .redirect-dots span:nth-child(3) {
   animation-delay: 0.24s;
 }
 
@@ -1792,14 +1794,14 @@ div#main-content {
 /* ========================================================= */
 
 /* Prevent horizontal scroll on login page */
-body:has(.login-page-wrapper) {
+html.staff-scope body:has(.login-page-wrapper) {
   overflow-x: hidden;
   overflow-y: hidden;
   width: 100vw;
   max-width: 100%;
 }
 
-.login-page-wrapper {
+html.staff-scope .login-page-wrapper {
   --login-dev-panel-width: 480px;
   --login-dev-panel-gap: 28px;
   height: 100dvh;
@@ -1822,7 +1824,7 @@ body:has(.login-page-wrapper) {
   isolation: isolate;
 }
 
-.login-stack {
+html.staff-scope .login-stack {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
@@ -1836,7 +1838,7 @@ body:has(.login-page-wrapper) {
   transform: scale(0.9);
 }
 
-.login-card-stack {
+html.staff-scope .login-card-stack {
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
@@ -1848,42 +1850,42 @@ body:has(.login-page-wrapper) {
   z-index: 201;
 }
 
-.login-card {
+html.staff-scope .login-card {
   position: relative;
   z-index: 202;
   width: 100%;
   max-width: 480px;
 }
 
-.login-card > div {
+html.staff-scope .login-card > div {
   background: var(--surface);
 }
 
-[data-theme="dark"] .login-card > div {
+html.staff-scope [data-theme="dark"] .login-card > div {
   background: var(--surface) !important;
   border-color: transparent !important;
 }
 
-.login-form {
+html.staff-scope .login-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.login-field {
+html.staff-scope .login-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.login-label {
+html.staff-scope .login-label {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-1);
 }
 
-.login-input,
-.login-select {
+html.staff-scope .login-input,
+html.staff-scope .login-select {
   width: 100%;
   border-radius: var(--radius-xl);
   border: none;
@@ -1895,7 +1897,7 @@ body:has(.login-page-wrapper) {
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.login-select {
+html.staff-scope .login-select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -1903,20 +1905,20 @@ body:has(.login-page-wrapper) {
   background-image: none;
 }
 
-.login-input:focus,
-.login-select:focus {
+html.staff-scope .login-input:focus,
+html.staff-scope .login-select:focus {
   outline: none;
   box-shadow: var(--control-ring);
   background: var(--control-bg-hover);
 }
 
-.login-select-wrapper {
+html.staff-scope .login-select-wrapper {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.login-error {
+html.staff-scope .login-error {
   border-radius: var(--radius-lg);
   background: rgba(var(--danger-rgb), 0.12);
   padding: 10px 14px;
@@ -1926,20 +1928,20 @@ body:has(.login-page-wrapper) {
 
 /* .login-button removed — login page now uses the global <Button> component. */
 
-.login-card-inner {
+html.staff-scope .login-card-inner {
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.login-dropdown {
+html.staff-scope .login-dropdown {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.login-dev-content {
+html.staff-scope .login-dev-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1947,22 +1949,22 @@ body:has(.login-page-wrapper) {
   height: 100%;
 }
 
-.login-identity-grid {
+html.staff-scope .login-identity-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
-.login-identity-field {
+html.staff-scope .login-identity-field {
   min-width: 0;
 }
 
-.login-identity-field--email {
+html.staff-scope .login-identity-field--email {
   grid-column: 1 / -1;
 }
 
 /* Keep login logo/card centered and place dev login beside it on larger screens. */
-.login-center-stage {
+html.staff-scope .login-center-stage {
   min-height: 0;
   width: min(520px, 100%);
   display: flex;
@@ -1973,16 +1975,16 @@ body:has(.login-page-wrapper) {
   padding: 0;
 }
 
-.login-center-stage .login-brand {
+html.staff-scope .login-center-stage .login-brand {
   padding-bottom: 0;
 }
 
-.login-center-stage .login-card--auth {
+html.staff-scope .login-center-stage .login-card--auth {
   width: 100%;
   max-width: 520px;
 }
 
-.login-dev-panel {
+html.staff-scope .login-dev-panel {
   position: static;
   right: auto;
   top: auto;
@@ -1995,22 +1997,22 @@ body:has(.login-page-wrapper) {
   z-index: 260;
 }
 
-.login-dev-panel .login-card--dev {
+html.staff-scope .login-dev-panel .login-card--dev {
   width: 100%;
   height: auto;
 }
 
-.login-dev-panel .login-card--dev > div {
+html.staff-scope .login-dev-panel .login-card--dev > div {
   height: auto;
   box-shadow: none !important;
 }
 
 @media (max-width: 1100px) {
-  body:has(.login-page-wrapper) {
+  html.staff-scope body:has(.login-page-wrapper) {
     overflow-y: auto;
   }
 
-  .login-page-wrapper {
+  html.staff-scope .login-page-wrapper {
     height: auto;
     min-height: 100dvh;
     overflow-y: auto;
@@ -2019,7 +2021,7 @@ body:has(.login-page-wrapper) {
     flex-direction: column;
   }
 
-  .login-center-stage {
+  html.staff-scope .login-center-stage {
     justify-content: center;
     min-height: auto;
     width: 100%;
@@ -2028,7 +2030,7 @@ body:has(.login-page-wrapper) {
     padding-bottom: 0;
   }
 
-  .login-dev-panel {
+  html.staff-scope .login-dev-panel {
     position: static;
     transform: none;
     width: 100%;
@@ -2040,21 +2042,21 @@ body:has(.login-page-wrapper) {
 }
 
 @media (min-width: 1100px) {
-  .login-identity-grid {
+  html.staff-scope .login-identity-grid {
     grid-template-columns: minmax(0, 1fr) 128px;
   }
 
-  .login-dev-panel {
+  html.staff-scope .login-dev-panel {
     align-self: center;
     margin-top: calc(1.4rem + clamp(92px, 10vw, 132px));
   }
 
-  .login-stack {
+  html.staff-scope .login-stack {
     max-width: 100%;
     align-items: center;
   }
 
-  .login-card-stack {
+  html.staff-scope .login-card-stack {
     align-items: center;
     position: static;
     left: auto;
@@ -2067,12 +2069,12 @@ body:has(.login-page-wrapper) {
     justify-content: center;
   }
 
-  .login-card--auth {
+  html.staff-scope .login-card--auth {
     margin-left: 0;
     flex-shrink: 0;
   }
 
-  .login-card--dev {
+  html.staff-scope .login-card--dev {
     position: static;
     flex-shrink: 0;
     z-index: 203;
@@ -2080,17 +2082,17 @@ body:has(.login-page-wrapper) {
   }
 }
 
-.login-dropdown__control {
+html.staff-scope .login-dropdown__control {
   width: 100%;
 }
 
-.login-select-wrapper {
+html.staff-scope .login-select-wrapper {
   position: relative;
   display: flex;
   flex-direction: column;
 }
 
-.login-select-label {
+html.staff-scope .login-select-label {
   position: absolute;
   left: 16px;
   top: 50%;
@@ -2104,8 +2106,8 @@ body:has(.login-page-wrapper) {
   z-index: 1;
 }
 
-.login-select-wrapper.has-value .login-select-label,
-.login-select:focus + .login-select-label {
+html.staff-scope .login-select-wrapper.has-value .login-select-label,
+html.staff-scope .login-select:focus + .login-select-label {
   top: 0;
   transform: translateY(-50%);
   font-size: 0.75rem;
@@ -2114,35 +2116,35 @@ body:has(.login-page-wrapper) {
   background: var(--surface);
 }
 
-.login-select-wrapper.has-value .login-select-label {
+html.staff-scope .login-select-wrapper.has-value .login-select-label {
   color: var(--text-1);
 }
 
-.login-loading-text {
+html.staff-scope .login-loading-text {
   font-size: 0.75rem;
   color: rgba(var(--text-1-rgb), 0.7);
   min-height: 18px;
 }
 
-.login-loading-text.is-hidden {
+html.staff-scope .login-loading-text.is-hidden {
   display: none;
 }
 
-.login-preview {
+html.staff-scope .login-preview {
   border-radius: var(--radius-xl);
   border: none;
   background: rgba(241, 245, 249, 0.65);
   padding: 16px;
 }
 
-.login-selection-summary {
+html.staff-scope .login-selection-summary {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 4px;
 }
 
-.login-brand {
+html.staff-scope .login-brand {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2153,29 +2155,29 @@ body:has(.login-page-wrapper) {
   pointer-events: none;
 }
 
-.login-logo {
+html.staff-scope .login-logo {
   width: 452px;
   height: auto;
   max-width: 100%;
   object-fit: contain;
 }
 
-.login-logo-dark {
+html.staff-scope .login-logo-dark {
   display: none;
 }
 
-[data-theme="dark"] .login-logo-light {
+html.staff-scope [data-theme="dark"] .login-logo-light {
   display: none;
 }
 
-[data-theme="dark"] .login-logo-dark {
+html.staff-scope [data-theme="dark"] .login-logo-dark {
   display: inline-block;
 }
 
 /* ========================================================= */
 /* === Phone Orientation Lock (Landscape Only) === */
 /* ========================================================= */
-.orientation-lock {
+html.staff-scope .orientation-lock {
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -2187,15 +2189,15 @@ body:has(.login-page-wrapper) {
   text-align: center;
 }
 
-.orientation-lock__card {
+html.staff-scope .orientation-lock__card {
   width: min(520px, 92vw);
 }
 
-[data-theme="dark"] .orientation-lock {
+html.staff-scope [data-theme="dark"] .orientation-lock {
   background: rgba(2, 6, 23, 0.98);
 }
 
-.orientation-lock__device-visual {
+html.staff-scope .orientation-lock__device-visual {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2203,7 +2205,7 @@ body:has(.login-page-wrapper) {
   padding: 6px 0 2px;
 }
 
-.orientation-lock__device {
+html.staff-scope .orientation-lock__device {
   position: relative;
   flex: 0 0 auto;
   border-radius: 18px;
@@ -2212,7 +2214,7 @@ body:has(.login-page-wrapper) {
   box-shadow: none;
 }
 
-.orientation-lock__device::before {
+html.staff-scope .orientation-lock__device::before {
   content: "";
   position: absolute;
   inset: 8px;
@@ -2221,17 +2223,17 @@ body:has(.login-page-wrapper) {
   border: none;
 }
 
-.orientation-lock__device--portrait {
+html.staff-scope .orientation-lock__device--portrait {
   width: 54px;
   height: 88px;
 }
 
-.orientation-lock__device--landscape {
+html.staff-scope .orientation-lock__device--landscape {
   width: 88px;
   height: 54px;
 }
 
-.orientation-lock__device-notch {
+html.staff-scope .orientation-lock__device-notch {
   position: absolute;
   left: 50%;
   top: 5px;
@@ -2243,7 +2245,7 @@ body:has(.login-page-wrapper) {
   z-index: 1;
 }
 
-.orientation-lock__device--landscape .orientation-lock__device-notch {
+html.staff-scope .orientation-lock__device--landscape .orientation-lock__device-notch {
   left: auto;
   top: 50%;
   right: 5px;
@@ -2252,7 +2254,7 @@ body:has(.login-page-wrapper) {
   transform: translateY(-50%);
 }
 
-.orientation-lock__rotate-arrow {
+html.staff-scope .orientation-lock__rotate-arrow {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2268,17 +2270,17 @@ body:has(.login-page-wrapper) {
   box-shadow: none;
 }
 
-.orientation-lock__kicker {
+html.staff-scope .orientation-lock__kicker {
   color: rgba(var(--accent-base-rgb), 0.8);
 }
 
-.orientation-lock__title {
+html.staff-scope .orientation-lock__title {
   max-width: 18ch;
   margin: 0 auto;
   line-height: 1.2;
 }
 
-.orientation-lock__sub {
+html.staff-scope .orientation-lock__sub {
   max-width: 34ch;
   margin: 0 auto;
 }
@@ -2286,49 +2288,49 @@ body:has(.login-page-wrapper) {
 @media (max-width: 900px) and (orientation: portrait) {
   /* Default: portrait is allowed — overlay stays hidden.
      Only show for pages that explicitly opt-in to requiring landscape. */
-  body.require-landscape .orientation-lock {
+  html.staff-scope body.require-landscape .orientation-lock {
     display: flex;
   }
 
-  body.require-landscape {
+  html.staff-scope body.require-landscape {
     overflow: hidden;
   }
 }
 
 @media (max-width: 480px) {
-  .orientation-lock {
+  html.staff-scope .orientation-lock {
     padding: 20px;
   }
 
-  .orientation-lock__card {
+  html.staff-scope .orientation-lock__card {
     padding: 1.75rem;
     border-radius: 28px;
     gap: 16px;
   }
 
-  .orientation-lock__title {
+  html.staff-scope .orientation-lock__title {
     font-size: 1.3rem;
   }
 
-  .orientation-lock__sub {
+  html.staff-scope .orientation-lock__sub {
     font-size: 0.9rem;
   }
 
-  .orientation-lock__device-visual {
+  html.staff-scope .orientation-lock__device-visual {
     gap: 12px;
   }
 
-  .orientation-lock__device--portrait {
+  html.staff-scope .orientation-lock__device--portrait {
     width: 46px;
     height: 76px;
   }
 
-  .orientation-lock__device--landscape {
+  html.staff-scope .orientation-lock__device--landscape {
     width: 76px;
     height: 46px;
   }
 
-  .orientation-lock__rotate-arrow {
+  html.staff-scope .orientation-lock__rotate-arrow {
     width: 40px;
     height: 40px;
     font-size: 1.35rem;
@@ -2338,15 +2340,15 @@ body:has(.login-page-wrapper) {
 /* ========================================================= */
 /* === Dropdown API (Custom combobox for login & beyond) === */
 /* ========================================================= */
-[data-theme="dark"] .login-dropdown__control .dropdown-api__control {
+html.staff-scope [data-theme="dark"] .login-dropdown__control .dropdown-api__control {
   background: rgba(15, 23, 42, 0.75);
   border-color: transparent;
 }
 
-.dropdown-api,
-.calendar-api,
-.monthpicker-api,
-.timepicker-api {
+html.staff-scope .dropdown-api,
+html.staff-scope .calendar-api,
+html.staff-scope .monthpicker-api,
+html.staff-scope .timepicker-api {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -2354,31 +2356,31 @@ body:has(.login-page-wrapper) {
   width: 100%;
 }
 
-.dropdown-api.is-open {
+html.staff-scope .dropdown-api.is-open {
   z-index: 1200;
 }
 
-.monthpicker-api.is-open {
+html.staff-scope .monthpicker-api.is-open {
   z-index: 1200;
 }
 
-.dropdown-api__label,
-.calendar-api__label,
-.monthpicker-api__label,
-.timepicker-api__label {
+html.staff-scope .dropdown-api__label,
+html.staff-scope .calendar-api__label,
+html.staff-scope .monthpicker-api__label,
+html.staff-scope .timepicker-api__label {
   font-size: var(--control-label-size);
   font-weight: var(--control-label-weight);
   color: var(--text-1);
   transition: color 0.2s ease;
 }
 
-.dropdown-api__control,
-.calendar-api__control,
-.timepicker-api__control,
-.searchbar-api,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input),
-select,
-textarea {
+html.staff-scope .dropdown-api__control,
+html.staff-scope .calendar-api__control,
+html.staff-scope .timepicker-api__control,
+html.staff-scope .searchbar-api,
+html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input),
+html.staff-scope select,
+html.staff-scope textarea {
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);
@@ -2395,10 +2397,10 @@ textarea {
     box-shadow 0.18s ease;
 }
 
-.dropdown-api__control,
-.calendar-api__control,
-.timepicker-api__control,
-.searchbar-api {
+html.staff-scope .dropdown-api__control,
+html.staff-scope .calendar-api__control,
+html.staff-scope .timepicker-api__control,
+html.staff-scope .searchbar-api {
   width: 100%;
   padding: var(--control-padding);
   display: flex;
@@ -2407,7 +2409,7 @@ textarea {
   gap: var(--control-gap);
 }
 
-.dropdown-api__control {
+html.staff-scope .dropdown-api__control {
   height: var(--dropdown-trigger-height);
   min-height: var(--dropdown-trigger-height);
   max-height: var(--dropdown-trigger-height);
@@ -2416,51 +2418,51 @@ textarea {
   line-height: 1;
 }
 
-.dropdown-api__control,
-.calendar-api__control,
-.timepicker-api__control {
+html.staff-scope .dropdown-api__control,
+html.staff-scope .calendar-api__control,
+html.staff-scope .timepicker-api__control {
   cursor: pointer;
 }
 
-.dropdown-api__control:hover:not(:disabled),
-.calendar-api__control:hover:not(:disabled),
-.timepicker-api__control:hover:not(:disabled),
-.searchbar-api:hover,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):hover,
-select:hover,
-textarea:hover {
+html.staff-scope .dropdown-api__control:hover:not(:disabled),
+html.staff-scope .calendar-api__control:hover:not(:disabled),
+html.staff-scope .timepicker-api__control:hover:not(:disabled),
+html.staff-scope .searchbar-api:hover,
+html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):hover,
+html.staff-scope select:hover,
+html.staff-scope textarea:hover {
   background: var(--control-bg-hover) !important;
 }
 
-.dropdown-api.is-open .dropdown-api__control,
-.dropdown-api__control:focus-visible,
-.calendar-api__control:focus,
-.calendar-api__control:focus-visible,
-.timepicker-api__control:focus,
-.timepicker-api__control:focus-visible,
-.searchbar-api:focus-within,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus-visible,
-select:focus,
-select:focus-visible,
-textarea:focus,
-textarea:focus-visible {
+html.staff-scope .dropdown-api.is-open .dropdown-api__control,
+html.staff-scope .dropdown-api__control:focus-visible,
+html.staff-scope .calendar-api__control:focus,
+html.staff-scope .calendar-api__control:focus-visible,
+html.staff-scope .timepicker-api__control:focus,
+html.staff-scope .timepicker-api__control:focus-visible,
+html.staff-scope .searchbar-api:focus-within,
+html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus,
+html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.searchbar-api__input):focus-visible,
+html.staff-scope select:focus,
+html.staff-scope select:focus-visible,
+html.staff-scope textarea:focus,
+html.staff-scope textarea:focus-visible {
   outline: none;
   background: var(--control-bg-hover) !important;
   box-shadow: var(--control-ring) !important;
 }
 
-.dropdown-api__control:disabled,
-.calendar-api__control:disabled,
-.timepicker-api__control:disabled,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):disabled,
-select:disabled,
-textarea:disabled {
+html.staff-scope .dropdown-api__control:disabled,
+html.staff-scope .calendar-api__control:disabled,
+html.staff-scope .timepicker-api__control:disabled,
+html.staff-scope input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):disabled,
+html.staff-scope select:disabled,
+html.staff-scope textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.tab-api__item:disabled {
+html.staff-scope .tab-api__item:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -2474,10 +2476,10 @@ textarea:disabled {
    page-level `style={{}}` or CSS module from re-introducing a different look
    or a border. If a variant genuinely needs different sizing, add a modifier
    class (e.g. `.app-topbar-dropdown`) instead of an inline style. */
-.dropdown-api__control,
-.calendar-api__control,
-.timepicker-api__control,
-.searchbar-api {
+html.staff-scope .dropdown-api__control,
+html.staff-scope .calendar-api__control,
+html.staff-scope .timepicker-api__control,
+html.staff-scope .searchbar-api {
   /* Trigger wears the Primary-button look via dropdown-dedicated tokens so
      the dropdown stays stable if Primary or --input-bg are later reskinned. */
   background: var(--dropdown-trigger-bg) !important;
@@ -2495,50 +2497,50 @@ textarea:disabled {
    carries a mask-image fade across the curved corners so text fades
    behind the curve instead of being clipped. The clear button still
    lands flush at the far right of the search section. */
-.searchbar-api,
-.searchbar-api:hover,
-.searchbar-api:focus-within {
+html.staff-scope .searchbar-api,
+html.staff-scope .searchbar-api:hover,
+html.staff-scope .searchbar-api:focus-within {
   height: var(--control-height) !important;
   padding: 0 !important;
   background: var(--theme) !important;
 }
 
-.dropdown-api.is-open .dropdown-api__control,
-.dropdown-api__control:focus-visible,
-.calendar-api__control:focus,
-.calendar-api__control:focus-visible,
-.timepicker-api__control:focus,
-.timepicker-api__control:focus-visible,
-.searchbar-api:focus-within {
+html.staff-scope .dropdown-api.is-open .dropdown-api__control,
+html.staff-scope .dropdown-api__control:focus-visible,
+html.staff-scope .calendar-api__control:focus,
+html.staff-scope .calendar-api__control:focus-visible,
+html.staff-scope .timepicker-api__control:focus,
+html.staff-scope .timepicker-api__control:focus-visible,
+html.staff-scope .searchbar-api:focus-within {
   background: var(--dropdown-trigger-hover-bg) !important;
   box-shadow: var(--control-ring) !important;
 }
 
-.dropdown-api__control:hover:not(:disabled),
-.calendar-api__control:hover:not(:disabled),
-.timepicker-api__control:hover:not(:disabled),
-.searchbar-api:hover {
+html.staff-scope .dropdown-api__control:hover:not(:disabled),
+html.staff-scope .calendar-api__control:hover:not(:disabled),
+html.staff-scope .timepicker-api__control:hover:not(:disabled),
+html.staff-scope .searchbar-api:hover {
   background: var(--dropdown-trigger-hover-bg) !important;
 }
 
-.dropdown-api__value,
-.calendar-api__value,
-.timepicker-api__value {
+html.staff-scope .dropdown-api__value,
+html.staff-scope .calendar-api__value,
+html.staff-scope .timepicker-api__value {
   color: var(--dropdown-trigger-color) !important;
 }
 
-.dropdown-api__chevron,
-.calendar-api__icon,
-.timepicker-api__icon,
-.searchbar-api__icon {
+html.staff-scope .dropdown-api__chevron,
+html.staff-scope .calendar-api__icon,
+html.staff-scope .timepicker-api__icon,
+html.staff-scope .searchbar-api__icon {
   color: var(--dropdown-trigger-color) !important;
 }
 
 /* .app-btn variant locks moved to src/styles/families/buttons.css. */
 
-.dropdown-api__value,
-.calendar-api__value,
-.timepicker-api__value {
+html.staff-scope .dropdown-api__value,
+html.staff-scope .calendar-api__value,
+html.staff-scope .timepicker-api__value {
   flex: 1;
   display: flex;
   align-items: center;
@@ -2552,17 +2554,17 @@ textarea:disabled {
   text-overflow: ellipsis;
 }
 
-.dropdown-api__value.is-placeholder,
-.calendar-api__value.is-placeholder,
-.timepicker-api__value.is-placeholder {
+html.staff-scope .dropdown-api__value.is-placeholder,
+html.staff-scope .calendar-api__value.is-placeholder,
+html.staff-scope .timepicker-api__value.is-placeholder {
   color: var(--dropdown-trigger-color);
   opacity: 0.72;
 }
 
-.dropdown-api__chevron,
-.calendar-api__icon,
-.timepicker-api__icon,
-.searchbar-api__icon {
+html.staff-scope .dropdown-api__chevron,
+html.staff-scope .calendar-api__icon,
+html.staff-scope .timepicker-api__icon,
+html.staff-scope .searchbar-api__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2571,13 +2573,13 @@ textarea:disabled {
   transition: transform 0.2s ease, color 0.2s ease;
 }
 
-.dropdown-api.is-open .dropdown-api__chevron {
+html.staff-scope .dropdown-api.is-open .dropdown-api__chevron {
   transform: rotate(180deg);
 }
 
 /* Compact dropdown variants used inside the top bar — keep the secondary-button
    look but shrink padding/font for the dense topbar row. */
-.app-topbar-dropdown .dropdown-api__control {
+html.staff-scope .app-topbar-dropdown .dropdown-api__control {
   height: var(--dropdown-trigger-height);
   min-height: var(--dropdown-trigger-height);
   max-height: var(--dropdown-trigger-height);
@@ -2586,24 +2588,24 @@ textarea:disabled {
   font-size: var(--text-caption);
 }
 
-.app-topbar-dropdown--mode .dropdown-api__control {
+html.staff-scope .app-topbar-dropdown--mode .dropdown-api__control {
   font-size: 0.65rem;
   letter-spacing: 0.04em;
 }
 
-.app-topbar-dropdown--status .dropdown-api__control {
+html.staff-scope .app-topbar-dropdown--status .dropdown-api__control {
   font-size: var(--text-body-sm);
 }
 
 @media (max-width: 768px) {
-  .app-topbar-dropdown--status .dropdown-api__control {
+  html.staff-scope .app-topbar-dropdown--status .dropdown-api__control {
     font-size: var(--text-caption);
   }
 }
 
 /* Search result rows inside the status sidebar live on the primary-coloured
    header, so they inherit inverse text and a translucent hover treatment. */
-.status-sidebar__search-result {
+html.staff-scope .status-sidebar__search-result {
   padding: 11px 12px;
   background: transparent;
   border: none;
@@ -2615,18 +2617,18 @@ textarea:disabled {
   gap: 4px;
   transition: background-color 0.18s ease;
 }
-.status-sidebar__search-result + .status-sidebar__search-result {
+html.staff-scope .status-sidebar__search-result + .status-sidebar__search-result {
   margin-top: 0;
 }
-.status-sidebar__search-result:hover,
-.status-sidebar__search-result:focus-visible {
+html.staff-scope .status-sidebar__search-result:hover,
+html.staff-scope .status-sidebar__search-result:focus-visible {
   background: rgba(var(--surface-rgb), 0.12);
   outline: none;
 }
 
-.dropdown-api__menu,
-.calendar-api__menu,
-.timepicker-api__menu {
+html.staff-scope .dropdown-api__menu,
+html.staff-scope .calendar-api__menu,
+html.staff-scope .timepicker-api__menu {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
@@ -2636,7 +2638,7 @@ textarea:disabled {
   box-shadow: var(--dropdown-menu-shadow);
 }
 
-.dropdown-api__menu {
+html.staff-scope .dropdown-api__menu {
   width: 100%;
   /* Uniform breathing room: padding on the menu provides the edge gap,
      flex gap provides the inter-row gap — so the distance around any
@@ -2658,11 +2660,11 @@ textarea:disabled {
   z-index: 1250;
 }
 
-.dropdown-api__search {
+html.staff-scope .dropdown-api__search {
   padding: 2px;
 }
 
-.dropdown-api__search-input {
+html.staff-scope .dropdown-api__search-input {
   width: 100%;
   min-height: var(--control-height-sm);
   padding: var(--control-padding-sm);
@@ -2676,11 +2678,11 @@ textarea:disabled {
   box-shadow: none;
 }
 
-.dropdown-api__search-input:focus-visible {
+html.staff-scope .dropdown-api__search-input:focus-visible {
   box-shadow: var(--control-ring);
 }
 
-.dropdown-api__menu[hidden] {
+html.staff-scope .dropdown-api__menu[hidden] {
   display: none;
 }
 
@@ -2692,7 +2694,7 @@ textarea:disabled {
    `button:not(.app-btn) { background: var(--accent-strong) }` at the top of
    staffglobal.css has higher specificity than a bare .dropdown-api__option
    selector. Prefixing keeps specificity in parity so these rules win. */
-button.dropdown-api__option {
+html.staff-scope button.dropdown-api__option {
   /* Inset from the menu edges via the menu's own padding (8px) and the
      menu's flex-gap (8px between options). Options keep width:100% of the
      padded content area, so they stop short of the menu edge on every
@@ -2718,16 +2720,16 @@ button.dropdown-api__option {
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-button.dropdown-api__option:hover,
-button.dropdown-api__option:focus-visible {
+html.staff-scope button.dropdown-api__option:hover,
+html.staff-scope button.dropdown-api__option:focus-visible {
   background: var(--dropdown-option-hover-bg);
   color: var(--dropdown-option-color);
   outline: none;
 }
 
-button.dropdown-api__option.is-selected,
-button.dropdown-api__option.is-selected:hover,
-button.dropdown-api__option.is-selected:focus-visible {
+html.staff-scope button.dropdown-api__option.is-selected,
+html.staff-scope button.dropdown-api__option.is-selected:hover,
+html.staff-scope button.dropdown-api__option.is-selected:focus-visible {
   /* Selected row permanently wears the Secondary-style treatment (via
      dropdown-dedicated tokens), visible without needing to hover. */
   background: var(--dropdown-option-selected-bg);
@@ -2735,18 +2737,18 @@ button.dropdown-api__option.is-selected:focus-visible {
   outline: none;
 }
 
-.dropdown-api__option.is-disabled {
+html.staff-scope .dropdown-api__option.is-disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
-.dropdown-api__option-label {
+html.staff-scope .dropdown-api__option-label {
   display: flex;
   align-items: center;
   font-weight: 600;
 }
 
-.multiselect-dropdown-api__option .dropdown-api__option-label {
+html.staff-scope .multiselect-dropdown-api__option .dropdown-api__option-label {
   flex: 1 1 auto;
   justify-content: center;
   text-align: center;
@@ -2754,42 +2756,42 @@ button.dropdown-api__option.is-selected:focus-visible {
   padding-right: 30px;
 }
 
-select {
+html.staff-scope select {
   padding: var(--control-padding);
 }
 
-.dropdown-api__option-description,
-.dropdown-api__helper,
-.calendar-api__helper,
-.monthpicker-api__helper,
-.timepicker-api__helper {
+html.staff-scope .dropdown-api__option-description,
+html.staff-scope .dropdown-api__helper,
+html.staff-scope .calendar-api__helper,
+html.staff-scope .monthpicker-api__helper,
+html.staff-scope .timepicker-api__helper {
   color: var(--control-muted-text);
 }
 
-.dropdown-api__option-description {
+html.staff-scope .dropdown-api__option-description {
   font-size: 0.8rem;
 }
 
-.dropdown-api__helper,
-.calendar-api__helper,
-.monthpicker-api__helper,
-.timepicker-api__helper {
+html.staff-scope .dropdown-api__helper,
+html.staff-scope .calendar-api__helper,
+html.staff-scope .monthpicker-api__helper,
+html.staff-scope .timepicker-api__helper {
   font-size: 0.8125rem;
   margin-top: 2px;
   line-height: 1.4;
 }
 
-.dropdown-api__empty {
+html.staff-scope .dropdown-api__empty {
   padding: 14px 10px;
   font-size: 0.85rem;
   color: var(--control-muted-text);
   text-align: center;
 }
 
-.dropdown-api.is-disabled .dropdown-api__control,
-.calendar-api.is-disabled .calendar-api__control,
-.monthpicker-api.is-disabled .monthpicker-api__control,
-.timepicker-api.is-disabled .timepicker-api__control {
+html.staff-scope .dropdown-api.is-disabled .dropdown-api__control,
+html.staff-scope .calendar-api.is-disabled .calendar-api__control,
+html.staff-scope .monthpicker-api.is-disabled .monthpicker-api__control,
+html.staff-scope .timepicker-api.is-disabled .timepicker-api__control {
   background: rgba(var(--surface-rgb), 0.5);
 }
 
@@ -2797,7 +2799,7 @@ select {
    render in --accentText via their own dedicated tokens, which reads
    fine in both themes — no dark-mode override needed. */
 
-[data-theme="dark"] .dropdown-api__option-description {
+html.staff-scope [data-theme="dark"] .dropdown-api__option-description {
   color: var(--control-muted-text);
 }
 
@@ -2810,7 +2812,7 @@ select {
 /* Multi-select search-bar trigger. Paints --control-bg across the full
    container width. The search input runs edge-to-edge on the left and is
    bounded only by the independent chevron button on the right. */
-.multiselect-dropdown-api .dropdown-api__control {
+html.staff-scope .multiselect-dropdown-api .dropdown-api__control {
   height: var(--control-height) !important;
   padding: 0 4px 0 14px !important;
   background: var(--control-bg) !important;
@@ -2824,10 +2826,10 @@ select {
    `input:hover` / `input:focus` rules that would otherwise paint an inner
    box inside the search-bar control. The input should be invisible chrome
    — only the parent control paints a background. */
-.multiselect-dropdown-api__search-input,
-.multiselect-dropdown-api__search-input:hover,
-.multiselect-dropdown-api__search-input:focus,
-.multiselect-dropdown-api__search-input:focus-visible {
+html.staff-scope .multiselect-dropdown-api__search-input,
+html.staff-scope .multiselect-dropdown-api__search-input:hover,
+html.staff-scope .multiselect-dropdown-api__search-input:focus,
+html.staff-scope .multiselect-dropdown-api__search-input:focus-visible {
   border: none !important;
   background: transparent !important;
   background-color: transparent !important;
@@ -2843,14 +2845,14 @@ select {
   outline: none !important;
 }
 
-.multiselect-dropdown-api__search-input::placeholder {
+html.staff-scope .multiselect-dropdown-api__search-input::placeholder {
   color: var(--control-muted-text);
 }
 
 /* Independent chevron button — the `button.` prefix beats the global
    `button:not(.app-btn)` reset so the chevron doesn't inherit the solid
    brand button fill. Square hit target, transparent background. */
-button.multiselect-dropdown-api__chevron {
+html.staff-scope button.multiselect-dropdown-api__chevron {
   width: var(--control-height);
   height: var(--control-height);
   min-height: 0;
@@ -2867,20 +2869,20 @@ button.multiselect-dropdown-api__chevron {
   transition: background-color 0.18s ease;
 }
 
-button.multiselect-dropdown-api__chevron:hover:not(:disabled),
-button.multiselect-dropdown-api__chevron:focus-visible {
+html.staff-scope button.multiselect-dropdown-api__chevron:hover:not(:disabled),
+html.staff-scope button.multiselect-dropdown-api__chevron:focus-visible {
   background: var(--dropdown-trigger-hover-bg);
   outline: none;
 }
 
-button.multiselect-dropdown-api__chevron:disabled {
+html.staff-scope button.multiselect-dropdown-api__chevron:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
 /* Option row — checkbox on the left, label pushed right with a consistent
    gap. Overrides the parent .dropdown-api__option flex-direction:column. */
-.multiselect-dropdown-api__option {
+html.staff-scope .multiselect-dropdown-api__option {
   flex-direction: row !important;
   align-items: center;
   justify-content: center;
@@ -2889,7 +2891,7 @@ button.multiselect-dropdown-api__chevron:disabled {
   text-align: center;
 }
 
-.multiselect-dropdown-api__checkbox {
+html.staff-scope .multiselect-dropdown-api__checkbox {
   width: 18px;
   height: 18px;
   cursor: pointer;
@@ -2904,7 +2906,7 @@ button.multiselect-dropdown-api__chevron:disabled {
   margin-bottom: auto;
 }
 
-.multiselect-dropdown-api__option:hover .multiselect-dropdown-api__checkbox {
+html.staff-scope .multiselect-dropdown-api__option:hover .multiselect-dropdown-api__checkbox {
   accent-color: var(--accent-strong);
 }
 
@@ -2912,13 +2914,13 @@ button.multiselect-dropdown-api__chevron:disabled {
 /* === Calendar API Styles === */
 /* ========================================================= */
 
-.calendar-api__required,
-.monthpicker-api__required,
-.timepicker-api__required {
+html.staff-scope .calendar-api__required,
+html.staff-scope .monthpicker-api__required,
+html.staff-scope .timepicker-api__required {
   color: var(--accent-strong);
 }
 
-.calendar-api__menu {
+html.staff-scope .calendar-api__menu {
   z-index: 1000;
   width: 320px;
   padding: 16px;
@@ -2938,7 +2940,7 @@ button.multiselect-dropdown-api__chevron:disabled {
 
 /* Centre the calendar popup on phone vertical screens */
 @media (max-width: 480px) {
-  .calendar-api__menu {
+  html.staff-scope .calendar-api__menu {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -2953,7 +2955,7 @@ button.multiselect-dropdown-api__chevron:disabled {
 /* Calendar header — the whole [prev | Month Year | next] row is one
    Primary-styled container so it visually matches the Today button width.
    Uses calendar-day tokens (copy-not-link from Primary/Secondary). */
-.calendar-api__header {
+html.staff-scope .calendar-api__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2967,7 +2969,7 @@ button.multiselect-dropdown-api__chevron:disabled {
   border-radius: var(--control-radius);
 }
 
-.timepicker-api__header {
+html.staff-scope .timepicker-api__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2979,7 +2981,7 @@ button.multiselect-dropdown-api__chevron:disabled {
 /* Nav buttons sit inside the Primary-styled header — transparent so the
    header bg shows through. `button.` prefix beats the global
    `button:not(.app-btn)` reset. */
-button.calendar-api__nav-button {
+html.staff-scope button.calendar-api__nav-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2996,8 +2998,8 @@ button.calendar-api__nav-button {
   flex-shrink: 0;
 }
 
-button.calendar-api__nav-button:hover,
-button.calendar-api__nav-button:focus-visible {
+html.staff-scope button.calendar-api__nav-button:hover,
+html.staff-scope button.calendar-api__nav-button:focus-visible {
   /* Secondary-style hover on the nav buttons so the pressed cell is
      visibly distinct inside the Primary-styled header. */
   background: var(--calendar-day-selected-bg);
@@ -3005,16 +3007,16 @@ button.calendar-api__nav-button:focus-visible {
   outline: none;
 }
 
-.calendar-api__nav-button:active,
-.timepicker-api__option:active,
-.calendar-api__day:active:not(:disabled) {
+html.staff-scope .calendar-api__nav-button:active,
+html.staff-scope .timepicker-api__option:active,
+html.staff-scope .calendar-api__day:active:not(:disabled) {
   transform: scale(0.95);
 }
 
 /* Month-year label is a real button so it can toggle the month-year
    picker. Styled transparent so it inherits the header's Primary look;
    `button.` prefix beats the global button reset. */
-button.calendar-api__month-year {
+html.staff-scope button.calendar-api__month-year {
   flex: 1;
   height: 100%;
   min-height: 0;
@@ -3030,9 +3032,9 @@ button.calendar-api__month-year {
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-button.calendar-api__month-year:hover,
-button.calendar-api__month-year:focus-visible,
-button.calendar-api__month-year[aria-expanded="true"] {
+html.staff-scope button.calendar-api__month-year:hover,
+html.staff-scope button.calendar-api__month-year:focus-visible,
+html.staff-scope button.calendar-api__month-year[aria-expanded="true"] {
   background: var(--calendar-day-selected-bg);
   color: var(--calendar-day-selected-color);
   outline: none;
@@ -3042,7 +3044,7 @@ button.calendar-api__month-year[aria-expanded="true"] {
    Two columns: 3×4 month grid on the left, scrollable year list on the
    right. Stays on the calendar surface (no extra shadow / no popup) so
    it reads as part of the same panel, not a dropdown. */
-.calendar-api__month-year-picker {
+html.staff-scope .calendar-api__month-year-picker {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
@@ -3051,14 +3053,14 @@ button.calendar-api__month-year[aria-expanded="true"] {
   height: 252px;
 }
 
-.calendar-api__month-grid {
+html.staff-scope .calendar-api__month-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: 1fr;
   gap: 4px;
 }
 
-.calendar-api__year-scroll {
+html.staff-scope .calendar-api__year-scroll {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3069,25 +3071,25 @@ button.calendar-api__month-year[aria-expanded="true"] {
 }
 
 /* Reuse the slim scrollbar styling from the dropdown — same `.themed-scrollbar` family. */
-.calendar-api__year-scroll {
+html.staff-scope .calendar-api__year-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
-.calendar-api__year-scroll::-webkit-scrollbar { width: 6px; }
-.calendar-api__year-scroll::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
-.calendar-api__year-scroll::-webkit-scrollbar-track { background: transparent; }
-.calendar-api__year-scroll::-webkit-scrollbar-thumb {
+html.staff-scope .calendar-api__year-scroll::-webkit-scrollbar { width: 6px; }
+html.staff-scope .calendar-api__year-scroll::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+html.staff-scope .calendar-api__year-scroll::-webkit-scrollbar-track { background: transparent; }
+html.staff-scope .calendar-api__year-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: var(--radius-pill);
   border: 1px solid transparent;
   background-clip: padding-box;
 }
-.calendar-api__year-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+html.staff-scope .calendar-api__year-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
 /* Picker cell — shares the calendar-day token set so months/years look
    identical to day buttons (Primary resting, Secondary when selected).
    `button.` prefix beats the global button reset. */
-button.calendar-api__picker-cell {
+html.staff-scope button.calendar-api__picker-cell {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3104,20 +3106,20 @@ button.calendar-api__picker-cell {
   flex-shrink: 0;
 }
 
-button.calendar-api__picker-cell:hover:not(.is-selected),
-button.calendar-api__picker-cell:focus-visible:not(.is-selected) {
+html.staff-scope button.calendar-api__picker-cell:hover:not(.is-selected),
+html.staff-scope button.calendar-api__picker-cell:focus-visible:not(.is-selected) {
   background: var(--calendar-day-hover-bg);
   outline: none;
 }
 
-button.calendar-api__picker-cell.is-selected {
+html.staff-scope button.calendar-api__picker-cell.is-selected {
   background: var(--calendar-day-selected-bg);
   color: var(--calendar-day-selected-color);
   font-weight: 600;
 }
 
 /* === Month Picker API Styles === */
-.monthpicker-api__control {
+html.staff-scope .monthpicker-api__control {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3133,17 +3135,17 @@ button.calendar-api__picker-cell.is-selected {
   box-shadow: none;
 }
 
-.monthpicker-api__control:hover,
-.monthpicker-api.is-open .monthpicker-api__control {
+html.staff-scope .monthpicker-api__control:hover,
+html.staff-scope .monthpicker-api.is-open .monthpicker-api__control {
   background: var(--calendar-day-bg);
 }
 
-.monthpicker-api.is-open .monthpicker-api__control {
+html.staff-scope .monthpicker-api.is-open .monthpicker-api__control {
   box-shadow: var(--control-ring);
 }
 
-button.monthpicker-api__nav-button,
-button.monthpicker-api__month-year {
+html.staff-scope button.monthpicker-api__nav-button,
+html.staff-scope button.monthpicker-api__month-year {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3161,12 +3163,12 @@ button.monthpicker-api__month-year {
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-button.monthpicker-api__nav-button {
+html.staff-scope button.monthpicker-api__nav-button {
   flex: 0 0 auto;
   min-width: 58px;
 }
 
-button.monthpicker-api__month-year {
+html.staff-scope button.monthpicker-api__month-year {
   flex: 1 1 auto;
   min-width: 0;
   background: rgba(255, 255, 255, 0);
@@ -3175,35 +3177,35 @@ button.monthpicker-api__month-year {
   text-overflow: ellipsis;
 }
 
-.monthpicker-api.is-empty button.monthpicker-api__month-year {
+html.staff-scope .monthpicker-api.is-empty button.monthpicker-api__month-year {
   color: var(--dropdown-trigger-color);
   opacity: 0.72;
 }
 
-button.monthpicker-api__nav-button:hover,
-button.monthpicker-api__nav-button:focus-visible,
-button.monthpicker-api__month-year:hover,
-button.monthpicker-api__month-year:focus-visible,
-button.monthpicker-api__month-year[aria-expanded="true"] {
+html.staff-scope button.monthpicker-api__nav-button:hover,
+html.staff-scope button.monthpicker-api__nav-button:focus-visible,
+html.staff-scope button.monthpicker-api__month-year:hover,
+html.staff-scope button.monthpicker-api__month-year:focus-visible,
+html.staff-scope button.monthpicker-api__month-year[aria-expanded="true"] {
   background: var(--calendar-day-selected-bg);
   color: var(--calendar-day-selected-color);
   outline: none;
 }
 
-button.monthpicker-api__nav-button:active,
-button.monthpicker-api__month-year:active,
-button.monthpicker-api__picker-cell:active {
+html.staff-scope button.monthpicker-api__nav-button:active,
+html.staff-scope button.monthpicker-api__month-year:active,
+html.staff-scope button.monthpicker-api__picker-cell:active {
   transform: scale(0.95);
 }
 
-button.monthpicker-api__nav-button:disabled,
-button.monthpicker-api__month-year:disabled,
-button.monthpicker-api__picker-cell:disabled {
+html.staff-scope button.monthpicker-api__nav-button:disabled,
+html.staff-scope button.monthpicker-api__month-year:disabled,
+html.staff-scope button.monthpicker-api__picker-cell:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.monthpicker-api__menu {
+html.staff-scope .monthpicker-api__menu {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
@@ -3221,14 +3223,14 @@ button.monthpicker-api__picker-cell:disabled {
   animation: calendar-slide-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.monthpicker-api__month-grid {
+html.staff-scope .monthpicker-api__month-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: 1fr;
   gap: 4px;
 }
 
-.monthpicker-api__year-scroll {
+html.staff-scope .monthpicker-api__year-scroll {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3239,18 +3241,18 @@ button.monthpicker-api__picker-cell:disabled {
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
-.monthpicker-api__year-scroll::-webkit-scrollbar { width: 6px; }
-.monthpicker-api__year-scroll::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
-.monthpicker-api__year-scroll::-webkit-scrollbar-track { background: transparent; }
-.monthpicker-api__year-scroll::-webkit-scrollbar-thumb {
+html.staff-scope .monthpicker-api__year-scroll::-webkit-scrollbar { width: 6px; }
+html.staff-scope .monthpicker-api__year-scroll::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+html.staff-scope .monthpicker-api__year-scroll::-webkit-scrollbar-track { background: transparent; }
+html.staff-scope .monthpicker-api__year-scroll::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
   border-radius: var(--radius-pill);
   border: 1px solid transparent;
   background-clip: padding-box;
 }
-.monthpicker-api__year-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+html.staff-scope .monthpicker-api__year-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
-button.monthpicker-api__picker-cell {
+html.staff-scope button.monthpicker-api__picker-cell {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3267,20 +3269,20 @@ button.monthpicker-api__picker-cell {
   flex-shrink: 0;
 }
 
-button.monthpicker-api__picker-cell:hover:not(.is-selected),
-button.monthpicker-api__picker-cell:focus-visible:not(.is-selected) {
+html.staff-scope button.monthpicker-api__picker-cell:hover:not(.is-selected),
+html.staff-scope button.monthpicker-api__picker-cell:focus-visible:not(.is-selected) {
   background: var(--calendar-day-hover-bg);
   outline: none;
 }
 
-button.monthpicker-api__picker-cell.is-selected {
+html.staff-scope button.monthpicker-api__picker-cell.is-selected {
   background: var(--calendar-day-selected-bg);
   color: var(--calendar-day-selected-color);
   font-weight: 600;
 }
 
 @media (max-width: 480px) {
-  .monthpicker-api__menu {
+  html.staff-scope .monthpicker-api__menu {
     position: fixed;
     top: 50%;
     left: 50%;
@@ -3293,32 +3295,32 @@ button.monthpicker-api__picker-cell.is-selected {
 }
 
 @media (max-width: 640px) and (orientation: portrait) {
-  .monthpicker-api {
+  html.staff-scope .monthpicker-api {
     width: min(100%, 260px);
   }
 
-  .monthpicker-api__control {
+  html.staff-scope .monthpicker-api__control {
     gap: 2px;
     padding: 5px;
   }
 
-  button.monthpicker-api__nav-button {
+  html.staff-scope button.monthpicker-api__nav-button {
     min-width: 46px;
     padding-inline: 8px;
   }
 
-  button.monthpicker-api__month-year {
+  html.staff-scope button.monthpicker-api__month-year {
     padding-inline: 8px;
   }
 
-  .monthpicker-api__menu {
+  html.staff-scope .monthpicker-api__menu {
     width: min(calc(100vw - 56px), 288px);
     max-width: 288px;
     padding: 12px;
   }
 }
 
-.timepicker-api__display {
+html.staff-scope .timepicker-api__display {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-1);
@@ -3327,7 +3329,7 @@ button.monthpicker-api__picker-cell.is-selected {
 /* Today button — Primary at rest, Secondary on hover / focus / active,
    all via the calendar-day tokens (copy-not-link). `button.` prefix beats
    the global button reset. */
-button.calendar-api__today-button {
+html.staff-scope button.calendar-api__today-button {
   display: block;
   width: 100%;
   height: var(--control-height);
@@ -3344,9 +3346,9 @@ button.calendar-api__today-button {
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-button.calendar-api__today-button:hover,
-button.calendar-api__today-button:focus-visible,
-button.calendar-api__today-button:active {
+html.staff-scope button.calendar-api__today-button:hover,
+html.staff-scope button.calendar-api__today-button:focus-visible,
+html.staff-scope button.calendar-api__today-button:active {
   background: var(--calendar-day-selected-bg);
   color: var(--calendar-day-selected-color);
   outline: none;
@@ -3354,7 +3356,7 @@ button.calendar-api__today-button:active {
 
 /* `button.` prefix beats the global `button:not(.app-btn)` reset so the
    dedicated --timepicker-now-* tokens win. Locked at 44px. */
-button.timepicker-api__now-button {
+html.staff-scope button.timepicker-api__now-button {
   height: var(--control-height);
   max-height: var(--control-height);
   min-height: 0;
@@ -3369,21 +3371,21 @@ button.timepicker-api__now-button {
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-button.timepicker-api__now-button:hover,
-button.timepicker-api__now-button:focus-visible {
+html.staff-scope button.timepicker-api__now-button:hover,
+html.staff-scope button.timepicker-api__now-button:focus-visible {
   background: var(--timepicker-now-hover-bg);
   color: var(--timepicker-now-color);
   outline: none;
 }
 
-.calendar-api__weekdays {
+html.staff-scope .calendar-api__weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   margin-bottom: 8px;
 }
 
-.calendar-api__weekday {
+html.staff-scope .calendar-api__weekday {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3394,7 +3396,7 @@ button.timepicker-api__now-button:focus-visible {
   text-transform: uppercase;
 }
 
-.calendar-api__days {
+html.staff-scope .calendar-api__days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
@@ -3406,7 +3408,7 @@ button.timepicker-api__now-button:focus-visible {
    specificity in parity so the calendar-day tokens win.
    Each day is independent from the .app-btn family and seats itself
    inside its grid column via the parent .calendar-api__days 7-col grid. */
-button.calendar-api__day {
+html.staff-scope button.calendar-api__day {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3425,19 +3427,19 @@ button.calendar-api__day {
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-button.calendar-api__day--empty {
+html.staff-scope button.calendar-api__day--empty {
   visibility: hidden;
   pointer-events: none;
 }
 
-button.calendar-api__day:hover:not(:disabled):not(.is-selected),
-button.calendar-api__day:focus-visible:not(:disabled):not(.is-selected) {
+html.staff-scope button.calendar-api__day:hover:not(:disabled):not(.is-selected),
+html.staff-scope button.calendar-api__day:focus-visible:not(:disabled):not(.is-selected) {
   background: var(--calendar-day-hover-bg);
   color: var(--calendar-day-color);
   outline: none;
 }
 
-button.calendar-api__day.is-selected {
+html.staff-scope button.calendar-api__day.is-selected {
   /* Selected day wears the current Secondary-button look (stronger tint +
      accent text) via dedicated tokens. */
   background: var(--calendar-day-selected-bg);
@@ -3447,18 +3449,18 @@ button.calendar-api__day.is-selected {
 
 /* Tab-api active wears the Secondary-button look via dedicated tab
    tokens. `button.` / `a.` prefix beats the global button/anchor resets. */
-button.tab-api__item.is-active,
-button.tab-api__item.is-active:hover,
-button.tab-api__item.is-active:focus-visible,
-a.tab-api__item.is-active,
-a.tab-api__item.is-active:hover,
-a.tab-api__item.is-active:focus-visible {
+html.staff-scope button.tab-api__item.is-active,
+html.staff-scope button.tab-api__item.is-active:hover,
+html.staff-scope button.tab-api__item.is-active:focus-visible,
+html.staff-scope a.tab-api__item.is-active,
+html.staff-scope a.tab-api__item.is-active:hover,
+html.staff-scope a.tab-api__item.is-active:focus-visible {
   background: var(--tab-button-selected-bg);
   color: var(--tab-button-selected-color);
   font-weight: 600;
 }
 
-button.calendar-api__day.is-today:not(.is-selected) {
+html.staff-scope button.calendar-api__day.is-today:not(.is-selected) {
   /* "Today" at rest has no border or special marker — it looks like any
      other Primary-styled day. The Secondary treatment kicks in only when
      the day is actually picked (.is-selected). */
@@ -3469,35 +3471,35 @@ button.calendar-api__day.is-today:not(.is-selected) {
    Primary-styled day cell bg remains consistent; only the numeral shifts
    into the danger/warning tone. When the cell is selected, Secondary
    takes over and these text colours step aside via :not(.is-selected). */
-button.calendar-api__day.is-sunday:not(.is-selected):not(:disabled),
-button.calendar-api__day.is-bank-holiday:not(.is-selected):not(:disabled) {
+html.staff-scope button.calendar-api__day.is-sunday:not(.is-selected):not(:disabled),
+html.staff-scope button.calendar-api__day.is-bank-holiday:not(.is-selected):not(:disabled) {
   color: var(--danger-text);
 }
 
-button.calendar-api__day.is-saturday:not(.is-selected):not(:disabled) {
+html.staff-scope button.calendar-api__day.is-saturday:not(.is-selected):not(:disabled) {
   color: var(--warning-text);
 }
 
 /* Weekday-header tint mirrors the column below it. */
-.calendar-api__weekday.is-sunday {
+html.staff-scope .calendar-api__weekday.is-sunday {
   color: var(--danger-text);
 }
-.calendar-api__weekday.is-saturday {
+html.staff-scope .calendar-api__weekday.is-saturday {
   color: var(--warning-text);
 }
 
-button.calendar-api__day.is-highlighted:not(.is-selected) {
+html.staff-scope button.calendar-api__day.is-highlighted:not(.is-selected) {
   background: var(--calendar-day-hover-bg);
 }
 
-button.calendar-api__day:disabled,
-button.calendar-api__day.is-disabled {
+html.staff-scope button.calendar-api__day:disabled,
+html.staff-scope button.calendar-api__day.is-disabled {
   color: var(--text-1);
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-[data-theme="dark"] .calendar-api__today-button {
+html.staff-scope [data-theme="dark"] .calendar-api__today-button {
   background: var(--theme-hover);
 }
 
@@ -3505,7 +3507,7 @@ button.calendar-api__day.is-disabled {
 /* === Time Picker API Styles === */
 /* ========================================================= */
 
-.timepicker-api__menu {
+html.staff-scope .timepicker-api__menu {
   z-index: 1000;
   width: 280px;
   padding: 16px;
@@ -3523,23 +3525,23 @@ button.calendar-api__day.is-disabled {
   }
 }
 
-.timepicker-api__selectors {
+html.staff-scope .timepicker-api__selectors {
   display: flex;
   gap: 8px;
 }
 
-.timepicker-api__column {
+html.staff-scope .timepicker-api__column {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.timepicker-api__column--period {
+html.staff-scope .timepicker-api__column--period {
   flex: 0 0 60px;
 }
 
-.timepicker-api__column-label {
+html.staff-scope .timepicker-api__column-label {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--control-muted-text);
@@ -3548,7 +3550,7 @@ button.calendar-api__day.is-disabled {
   padding: 4px 0;
 }
 
-.timepicker-api__options {
+html.staff-scope .timepicker-api__options {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3559,7 +3561,7 @@ button.calendar-api__day.is-disabled {
 
 /* `button.` prefix keeps specificity in parity with the global
    `button:not(.app-btn)` reset so the timepicker-option tokens win. */
-button.timepicker-api__option {
+html.staff-scope button.timepicker-api__option {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3578,16 +3580,16 @@ button.timepicker-api__option {
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
-button.timepicker-api__option:hover:not(.is-selected),
-button.timepicker-api__option:focus-visible:not(.is-selected) {
+html.staff-scope button.timepicker-api__option:hover:not(.is-selected),
+html.staff-scope button.timepicker-api__option:focus-visible:not(.is-selected) {
   background: var(--timepicker-option-hover-bg);
   color: var(--timepicker-option-color);
   outline: none;
 }
 
-button.timepicker-api__option.is-selected,
-button.timepicker-api__option.is-selected:hover,
-button.timepicker-api__option.is-selected:focus-visible {
+html.staff-scope button.timepicker-api__option.is-selected,
+html.staff-scope button.timepicker-api__option.is-selected:hover,
+html.staff-scope button.timepicker-api__option.is-selected:focus-visible {
   /* Selected wears the Secondary-button look via dedicated tokens. */
   background: var(--timepicker-option-selected-bg);
   color: var(--timepicker-option-selected-color);
@@ -3599,14 +3601,14 @@ button.timepicker-api__option.is-selected:focus-visible {
 /* === Shared Field Surface === */
 /* ========================================================= */
 
-textarea {
+html.staff-scope textarea {
   resize: vertical;
 }
 
-input[type="search"]::-webkit-search-decoration,
-input[type="search"]::-webkit-search-cancel-button,
-input[type="search"]::-webkit-search-results-button,
-input[type="search"]::-webkit-search-results-decoration {
+html.staff-scope input[type="search"]::-webkit-search-decoration,
+html.staff-scope input[type="search"]::-webkit-search-cancel-button,
+html.staff-scope input[type="search"]::-webkit-search-results-button,
+html.staff-scope input[type="search"]::-webkit-search-results-decoration {
   -webkit-appearance: none;
 }
 
@@ -3620,10 +3622,10 @@ input[type="search"]::-webkit-search-results-decoration {
    `position: relative; z-index: 2` lifts the actual text characters to
    the top of the local stacking context so nothing in the search bar
    can render on top of them. */
-.searchbar-api__input,
-.searchbar-api__input:hover,
-.searchbar-api__input:focus,
-.searchbar-api__input:focus-visible {
+html.staff-scope .searchbar-api__input,
+html.staff-scope .searchbar-api__input:hover,
+html.staff-scope .searchbar-api__input:focus,
+html.staff-scope .searchbar-api__input:focus-visible {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
@@ -3654,15 +3656,15 @@ input[type="search"]::-webkit-search-results-decoration {
   mask-image: linear-gradient(to right, transparent 0, #000 var(--control-radius), #000 calc(100% - 8px), transparent 100%);
 }
 
-.searchbar-api__input::-webkit-search-decoration,
-.searchbar-api__input::-webkit-search-cancel-button,
-.searchbar-api__input::-webkit-search-results-button,
-.searchbar-api__input::-webkit-search-results-decoration {
+html.staff-scope .searchbar-api__input::-webkit-search-decoration,
+html.staff-scope .searchbar-api__input::-webkit-search-cancel-button,
+html.staff-scope .searchbar-api__input::-webkit-search-results-button,
+html.staff-scope .searchbar-api__input::-webkit-search-results-decoration {
   display: none;
   -webkit-appearance: none;
 }
 
-.searchbar-api__input::placeholder {
+html.staff-scope .searchbar-api__input::placeholder {
   color: var(--control-muted-text);
   opacity: 1;
 }
@@ -3672,7 +3674,7 @@ input[type="search"]::-webkit-search-results-decoration {
    sitting at the far right of the search bar. 44px hit target so it's
    still easy to tap. `button.` prefix beats the global
    `button:not(.app-btn)` reset that would otherwise paint it brand accent. */
-button.searchbar-api__clear {
+html.staff-scope button.searchbar-api__clear {
   flex: 0 0 auto;
   height: var(--control-height);
   width: var(--control-height);
@@ -3694,54 +3696,54 @@ button.searchbar-api__clear {
   transition: opacity 0.18s ease, color 0.18s ease;
 }
 
-button.searchbar-api__clear:disabled {
+html.staff-scope button.searchbar-api__clear:disabled {
   visibility: hidden;
   pointer-events: none;
 }
 
-button.searchbar-api__clear:hover:not(:disabled),
-button.searchbar-api__clear:focus-visible {
+html.staff-scope button.searchbar-api__clear:hover:not(:disabled),
+html.staff-scope button.searchbar-api__clear:focus-visible {
   background: transparent;
   color: var(--accentText);
   outline: none;
 }
 
-.status-sidebar__searchbar {
+html.staff-scope .status-sidebar__searchbar {
   background: var(--secondary);
   color: var(--accentText);
   box-shadow: none;
   padding-right: 48px;
 }
 
-.status-sidebar__searchbar:hover,
-.status-sidebar__searchbar:focus-within {
+html.staff-scope .status-sidebar__searchbar:hover,
+html.staff-scope .status-sidebar__searchbar:focus-within {
   background: var(--secondary-hover);
   box-shadow: none;
 }
 
-.status-sidebar__searchbar .searchbar-api__input,
-.status-sidebar__searchbar-input {
+html.staff-scope .status-sidebar__searchbar .searchbar-api__input,
+html.staff-scope .status-sidebar__searchbar-input {
   color: var(--text-1);
   padding-right: 58px !important;
 }
 
-.status-sidebar__searchbar .searchbar-api__input::placeholder,
-.status-sidebar__searchbar-input::placeholder {
+html.staff-scope .status-sidebar__searchbar .searchbar-api__input::placeholder,
+html.staff-scope .status-sidebar__searchbar-input::placeholder {
   color: var(--text-1);
 }
 
-.status-sidebar__searchbar .searchbar-api__clear {
+html.staff-scope .status-sidebar__searchbar .searchbar-api__clear {
   background: var(--surface);
   color: var(--text-1);
 }
 
-.status-sidebar__searchbar .searchbar-api__clear:hover,
-.status-sidebar__searchbar .searchbar-api__clear:focus-visible {
+html.staff-scope .status-sidebar__searchbar .searchbar-api__clear:hover,
+html.staff-scope .status-sidebar__searchbar .searchbar-api__clear:focus-visible {
   background: var(--secondary-hover);
   color: var(--text-1);
 }
 
-.status-sidebar__search-submit {
+html.staff-scope .status-sidebar__search-submit {
   position: absolute;
   top: 50%;
   right: 6px;
@@ -3761,17 +3763,17 @@ button.searchbar-api__clear:focus-visible {
   transition: background-color 0.18s ease, transform 0.18s ease;
 }
 
-.status-sidebar__search-submit:hover,
-.status-sidebar__search-submit:focus-visible {
+html.staff-scope .status-sidebar__search-submit:hover,
+html.staff-scope .status-sidebar__search-submit:focus-visible {
   background: var(--primary-selected);
   outline: none;
 }
 
-.status-sidebar__search-submit:active {
+html.staff-scope .status-sidebar__search-submit:active {
   transform: translateY(-50%) scale(0.96);
 }
 
-.status-sidebar__search-submit svg {
+html.staff-scope .status-sidebar__search-submit svg {
   width: 17px;
   height: 17px;
   fill: currentColor;
@@ -3781,27 +3783,27 @@ button.searchbar-api__clear:focus-visible {
 /* === Semantic Utility Overrides === */
 /* ========================================================= */
 
-[class*="text-rose-"],
-[class*="text-red-"] {
+html.staff-scope [class*="text-rose-"],
+html.staff-scope [class*="text-red-"] {
   color: var(--dangerMain) !important;
 }
 
-[class*="text-amber-"],
-[class*="text-yellow-"],
-[class*="text-orange-"] {
+html.staff-scope [class*="text-amber-"],
+html.staff-scope [class*="text-yellow-"],
+html.staff-scope [class*="text-orange-"] {
   color: var(--warningMain) !important;
 }
 
-[class*="text-green-"] {
+html.staff-scope [class*="text-green-"] {
   color: var(--successMain) !important;
 }
 
-[class*="text-slate-"],
-[class*="text-gray-"] {
+html.staff-scope [class*="text-slate-"],
+html.staff-scope [class*="text-gray-"] {
   color: var(--surfaceTextMuted) !important;
 }
 
-[class*="bg-black/"] {
+html.staff-scope [class*="bg-black/"] {
   background-color: var(--overlay) !important;
 }
 
@@ -3809,7 +3811,7 @@ button.searchbar-api__clear:focus-visible {
 /* === Tab API === */
 /* ========================================================= */
 
-.tab-api {
+html.staff-scope .tab-api {
   display: flex;
   flex-wrap: wrap;
   /* 4px padding + 35px tab + 4px padding keeps the strip inside the 44px
@@ -3825,7 +3827,7 @@ button.searchbar-api__clear:focus-visible {
   border: none;
 }
 
-.page-surface-plain {
+html.staff-scope .page-surface-plain {
   background: var(--surface);
   border: none;
   border-radius: 0;
@@ -3833,7 +3835,7 @@ button.searchbar-api__clear:focus-visible {
   padding: 0;
 }
 
-.tab-scroll-row {
+html.staff-scope .tab-scroll-row {
   display: flex;
   gap: 6px;
   width: 100%;
@@ -3850,22 +3852,22 @@ button.searchbar-api__clear:focus-visible {
   cursor: default;
 }
 
-.tab-scroll-row.is-overflowing {
+html.staff-scope .tab-scroll-row.is-overflowing {
   justify-content: flex-start;
   padding-bottom: 6px;
   cursor: grab;
 }
 
-.tab-api--grid {
+html.staff-scope .tab-api--grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
-.tab-api--stretch .tab-api__item {
+html.staff-scope .tab-api--stretch .tab-api__item {
   width: 100%;
 }
 
-.tab-api--inline {
+html.staff-scope .tab-api--inline {
   display: inline-flex;
   width: fit-content;
   max-width: 100%;
@@ -3877,8 +3879,8 @@ button.searchbar-api__clear:focus-visible {
    height is dedicated to the tab family (35px, independent of the global
    control-height scale), but corner radius is borrowed from --control-radius
    so tabs share the button-family shape. */
-button.tab-api__item,
-a.tab-api__item {
+html.staff-scope button.tab-api__item,
+html.staff-scope a.tab-api__item {
   height: 35px;
   min-height: 35px !important;
   padding: 0 var(--space-sm);
@@ -3906,44 +3908,44 @@ a.tab-api__item {
     box-shadow 0.18s ease;
 }
 
-button.tab-api__item:hover:not(:disabled):not(.is-active),
-a.tab-api__item:hover:not(.is-active) {
+html.staff-scope button.tab-api__item:hover:not(:disabled):not(.is-active),
+html.staff-scope a.tab-api__item:hover:not(.is-active) {
   background: var(--tab-button-hover-bg);
   color: var(--tab-button-color);
 }
 
-button.tab-api__item:focus-visible:not(.is-active),
-a.tab-api__item:focus-visible:not(.is-active) {
+html.staff-scope button.tab-api__item:focus-visible:not(.is-active),
+html.staff-scope a.tab-api__item:focus-visible:not(.is-active) {
   outline: none;
   background: var(--tab-button-hover-bg);
   box-shadow: var(--control-ring);
 }
 
-.tab-api__item.is-active:focus-visible {
+html.staff-scope .tab-api__item.is-active:focus-visible {
   outline: none;
   box-shadow: var(--control-ring);
 }
 
-.tab-api__item[data-tone="default"] {
+html.staff-scope .tab-api__item[data-tone="default"] {
   border: none;
 }
 
-.tab-api__item[data-tone="success"] {
+html.staff-scope .tab-api__item[data-tone="success"] {
   border: none;
   background: var(--success-surface);
   color: var(--success-dark);
 }
 
-.tab-api__item[data-tone="success"].is-active {
+html.staff-scope .tab-api__item[data-tone="success"].is-active {
   background: var(--success);
   color: var(--text-2);
 }
 
-.hr-manager-shell {
+html.staff-scope .hr-manager-shell {
   min-height: calc(100vh - 40px);
 }
 
-.hr-manager-tabs-row {
+html.staff-scope .hr-manager-tabs-row {
   justify-content: flex-start;
   padding: 0 2px;
   overflow-x: auto;
@@ -3955,24 +3957,24 @@ a.tab-api__item:focus-visible:not(.is-active) {
   gap: 6px;
 }
 
-.hr-manager-tabs-row::-webkit-scrollbar {
+html.staff-scope .hr-manager-tabs-row::-webkit-scrollbar {
   display: none;
 }
 
-.hr-manager-tabs-row.is-overflowing {
+html.staff-scope .hr-manager-tabs-row.is-overflowing {
   justify-content: flex-start;
   padding-bottom: 0;
   cursor: default;
 }
 
-.hr-manager-tabs-row .tab-api {
+html.staff-scope .hr-manager-tabs-row .tab-api {
   flex: 0 0 max-content;
   flex-wrap: nowrap;
   width: max-content;
   max-width: none;
 }
 
-.hr-manager-tabs-row .tab-api__item {
+html.staff-scope .hr-manager-tabs-row .tab-api__item {
   flex: 0 0 auto;
   min-width: max-content;
   padding: 10px 8px;
@@ -3982,7 +3984,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   word-break: normal;
 }
 
-.hr-manager-tab-panel {
+html.staff-scope .hr-manager-tab-panel {
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -3992,7 +3994,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   box-shadow: none;
 }
 
-.hr-manager-tab-content {
+html.staff-scope .hr-manager-tab-content {
   width: 100%;
   max-width: 100%;
   display: flex;
@@ -4000,13 +4002,13 @@ a.tab-api__item:focus-visible:not(.is-active) {
   gap: 20px;
 }
 
-.hr-manager-tab-content > .app-page-stack {
+html.staff-scope .hr-manager-tab-content > .app-page-stack {
   width: 100%;
   max-width: 100%;
   padding: 8px 0;
 }
 
-.hr-manager-tab-content .app-section-card {
+html.staff-scope .hr-manager-tab-content .app-section-card {
   padding: 0;
   border: none;
   border-radius: 0;
@@ -4014,14 +4016,14 @@ a.tab-api__item:focus-visible:not(.is-active) {
   box-shadow: none;
 }
 
-.hr-manager-tab-content .app-page-stack > .app-section-card,
-.hr-manager-tab-content .app-page-stack > section > .app-section-card,
-.hr-manager-tab-content .app-page-stack > div > .app-section-card {
+html.staff-scope .hr-manager-tab-content .app-page-stack > .app-section-card,
+html.staff-scope .hr-manager-tab-content .app-page-stack > section > .app-section-card,
+html.staff-scope .hr-manager-tab-content .app-page-stack > div > .app-section-card {
   width: 100%;
   max-width: 100%;
 }
 
-.hr-employees-topbar {
+html.staff-scope .hr-employees-topbar {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -4029,7 +4031,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   flex-wrap: wrap;
 }
 
-.hr-employees-topbar-copy {
+html.staff-scope .hr-employees-topbar-copy {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -4037,7 +4039,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   flex: 1 1 320px;
 }
 
-.hr-employees-kicker {
+html.staff-scope .hr-employees-kicker {
   margin: 0;
   color: var(--text-1);
   text-transform: uppercase;
@@ -4045,34 +4047,34 @@ a.tab-api__item:focus-visible:not(.is-active) {
   letter-spacing: var(--tracking-caps);
 }
 
-.hr-employees-heading {
+html.staff-scope .hr-employees-heading {
   margin: 0;
   color: var(--accent-strong);
   font-size: clamp(1.75rem, 2vw, 2rem);
   line-height: var(--leading-tight);
 }
 
-.hr-employees-subtitle {
+html.staff-scope .hr-employees-subtitle {
   margin: 0;
   color: var(--text-1);
   max-width: 720px;
 }
 
-.hr-employees-layout {
+html.staff-scope .hr-employees-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
   gap: 24px;
   align-items: start;
 }
 
-.hr-employees-directory-shell {
+html.staff-scope .hr-employees-directory-shell {
   display: flex;
   flex-direction: column;
   min-width: 0;
   width: 100%;
 }
 
-.hr-employees-directory-card {
+html.staff-scope .hr-employees-directory-card {
   gap: 16px;
   min-width: 0;
   max-width: 100%;
@@ -4081,7 +4083,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   border: none;
 }
 
-.hr-employees-directory-toolbar {
+html.staff-scope .hr-employees-directory-toolbar {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
@@ -4089,7 +4091,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   justify-content: space-between;
 }
 
-.hr-employees-directory-actions {
+html.staff-scope .hr-employees-directory-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -4099,13 +4101,13 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 /* .hr-employees-add-button + helpers removed — HR Employees tab now uses the global <Button> component. */
 
-.hr-employees-search {
+html.staff-scope .hr-employees-search {
   position: relative;
   min-width: 260px;
   flex: 1 1 320px;
 }
 
-.hr-employees-search-input {
+html.staff-scope .hr-employees-search-input {
   width: 100%;
   padding: 11px 126px 11px 14px;
   border-radius: var(--input-radius);
@@ -4116,12 +4118,12 @@ a.tab-api__item:focus-visible:not(.is-active) {
   outline: none;
 }
 
-.hr-employees-search-input:focus {
+html.staff-scope .hr-employees-search-input:focus {
   border-color: transparent;
   box-shadow: 0 0 0 3px rgba(var(--accent-base-rgb), 0.12);
 }
 
-.hr-employees-search-meta {
+html.staff-scope .hr-employees-search-meta {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -4132,13 +4134,13 @@ a.tab-api__item:focus-visible:not(.is-active) {
   white-space: nowrap;
 }
 
-.hr-employees-summary-row {
+html.staff-scope .hr-employees-summary-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
-.hr-employees-summary-card {
+html.staff-scope .hr-employees-summary-card {
   display: grid;
   gap: 4px;
   padding: 12px 14px;
@@ -4147,7 +4149,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   background: var(--theme);
 }
 
-.hr-employees-summary-label {
+html.staff-scope .hr-employees-summary-label {
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -4155,12 +4157,12 @@ a.tab-api__item:focus-visible:not(.is-active) {
   color: var(--text-1);
 }
 
-.hr-employees-summary-value {
+html.staff-scope .hr-employees-summary-value {
   font-size: 1.15rem;
   color: var(--text-1);
 }
 
-.hr-employees-list {
+html.staff-scope .hr-employees-list {
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -4171,65 +4173,65 @@ a.tab-api__item:focus-visible:not(.is-active) {
   background: var(--surface);
 }
 
-.hr-employees-table {
+html.staff-scope .hr-employees-table {
   width: 100%;
   min-width: 0;
   table-layout: fixed;
 }
 
-.hr-employees-table.app-table-shell {
+html.staff-scope .hr-employees-table.app-table-shell {
   min-width: 0;
 }
 
-.hr-employees-table th,
-.hr-employees-table td {
+html.staff-scope .hr-employees-table th,
+html.staff-scope .hr-employees-table td {
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
-.hr-employees-table th:nth-child(1),
-.hr-employees-table td:nth-child(1) {
+html.staff-scope .hr-employees-table th:nth-child(1),
+html.staff-scope .hr-employees-table td:nth-child(1) {
   width: 64%;
 }
 
-.hr-employees-table th:nth-child(2),
-.hr-employees-table td:nth-child(2) {
+html.staff-scope .hr-employees-table th:nth-child(2),
+html.staff-scope .hr-employees-table td:nth-child(2) {
   width: 18%;
 }
 
-.hr-employees-table th:nth-child(3),
-.hr-employees-table td:nth-child(3) {
+html.staff-scope .hr-employees-table th:nth-child(3),
+html.staff-scope .hr-employees-table td:nth-child(3) {
   width: 18%;
 }
 
-.hr-employees-list.app-table-shell-wrap,
-.hr-employees-list.app-table-shell-scroll {
+html.staff-scope .hr-employees-list.app-table-shell-wrap,
+html.staff-scope .hr-employees-list.app-table-shell-scroll {
   min-width: 0;
   max-width: 100%;
   overflow-x: hidden;
   overflow-y: hidden;
 }
 
-.hr-employees-table-row {
+html.staff-scope .hr-employees-table-row {
   cursor: pointer;
   outline: none;
 }
 
-.hr-employees-table-row:hover td,
-.hr-employees-table-row:focus-visible td {
+html.staff-scope .hr-employees-table-row:hover td,
+html.staff-scope .hr-employees-table-row:focus-visible td {
   background: var(--theme-hover, rgba(var(--accent-base-rgb), 0.08)) !important;
 }
 
-.hr-employees-table-row.is-selected td {
+html.staff-scope .hr-employees-table-row.is-selected td {
   background: rgba(var(--accent-base-rgb), 0.12) !important;
 }
 
-.hr-employees-empty-row {
+html.staff-scope .hr-employees-empty-row {
   text-align: center;
   color: var(--text-1);
 }
 
-.hr-employees-person-cell {
+html.staff-scope .hr-employees-person-cell {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -4237,47 +4239,47 @@ a.tab-api__item:focus-visible:not(.is-active) {
   width: 100%;
 }
 
-.hr-employees-table .hr-employees-row-avatar {
+html.staff-scope .hr-employees-table .hr-employees-row-avatar {
   width: 32px;
   height: 32px;
   flex: 0 0 32px;
   font-size: 0.72rem;
 }
 
-.hr-employees-table .hr-employees-row-body {
+html.staff-scope .hr-employees-table .hr-employees-row-body {
   gap: 2px;
 }
 
-.hr-employees-table .hr-employees-row-header {
+html.staff-scope .hr-employees-table .hr-employees-row-header {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
   gap: 2px;
 }
 
-.hr-employees-table .hr-employees-row-name {
+html.staff-scope .hr-employees-table .hr-employees-row-name {
   font-size: 0.9rem;
 }
 
-.hr-employees-table .hr-employees-row-email {
+html.staff-scope .hr-employees-table .hr-employees-row-email {
   font-size: 0.76rem;
 }
 
-.hr-employees-table .hr-employees-row-role,
-.hr-employees-table .hr-employees-row-meta {
+html.staff-scope .hr-employees-table .hr-employees-row-role,
+html.staff-scope .hr-employees-table .hr-employees-row-meta {
   display: none;
 }
 
-.hr-employees-table .hr-employees-row-end {
+html.staff-scope .hr-employees-table .hr-employees-row-end {
   align-items: flex-start;
   gap: 0;
 }
 
-.hr-employees-table .hr-employees-row-chevron {
+html.staff-scope .hr-employees-table .hr-employees-row-chevron {
   display: none;
 }
 
-.hr-employees-row {
+html.staff-scope .hr-employees-row {
   cursor: pointer;
   text-align: left;
   width: 100%;
@@ -4292,24 +4294,24 @@ a.tab-api__item:focus-visible:not(.is-active) {
   transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.hr-employees-row:hover,
-.hr-employees-row:focus-visible {
+html.staff-scope .hr-employees-row:hover,
+html.staff-scope .hr-employees-row:focus-visible {
   background: rgba(var(--surface-rgb), 0.95);
   transform: translateY(-1px);
   box-shadow: 0 0 28px rgba(15, 23, 42, 0.08);
 }
 
-.hr-employees-row:focus-visible {
+html.staff-scope .hr-employees-row:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(var(--accent-base-rgb), 0.12);
 }
 
-.hr-employees-row.is-selected {
+html.staff-scope .hr-employees-row.is-selected {
   background: rgba(var(--primary-rgb), 0.14);
   box-shadow: 0 0 30px rgba(var(--primary-rgb), 0.12);
 }
 
-.hr-employees-row-avatar {
+html.staff-scope .hr-employees-row-avatar {
   width: 52px;
   height: 52px;
   border-radius: var(--radius-full);
@@ -4324,14 +4326,14 @@ a.tab-api__item:focus-visible:not(.is-active) {
   letter-spacing: 0.08em;
 }
 
-.hr-employees-row-body {
+html.staff-scope .hr-employees-row-body {
   display: flex;
   flex-direction: column;
   gap: 6px;
   min-width: 0;
 }
 
-.hr-employees-row-header {
+html.staff-scope .hr-employees-row-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -4339,49 +4341,49 @@ a.tab-api__item:focus-visible:not(.is-active) {
   flex-wrap: wrap;
 }
 
-.hr-employees-row-name {
+html.staff-scope .hr-employees-row-name {
   font-weight: 700;
   color: var(--text-1);
   font-size: 1.02rem;
   line-height: 1.2;
 }
 
-.hr-employees-row-email,
-.hr-employees-row-role,
-.hr-employees-row-meta {
+html.staff-scope .hr-employees-row-email,
+html.staff-scope .hr-employees-row-role,
+html.staff-scope .hr-employees-row-meta {
   color: var(--text-1);
 }
 
-.hr-employees-row-email {
+html.staff-scope .hr-employees-row-email {
   font-size: 0.8rem;
 }
 
-.hr-employees-row-role {
+html.staff-scope .hr-employees-row-role {
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-1);
 }
 
-.hr-employees-row-meta {
+html.staff-scope .hr-employees-row-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 10px;
   font-size: 0.78rem;
 }
 
-.hr-employees-row-meta span {
+html.staff-scope .hr-employees-row-meta span {
   padding: 4px 8px;
   border-radius: var(--radius-pill);
   background: rgba(var(--grey-accent-rgb), 0.12);
 }
 
-.hr-employees-row-badges {
+html.staff-scope .hr-employees-row-badges {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.hr-employees-row-end {
+html.staff-scope .hr-employees-row-end {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4389,13 +4391,13 @@ a.tab-api__item:focus-visible:not(.is-active) {
   justify-content: flex-end;
 }
 
-.hr-employees-row-chevron {
+html.staff-scope .hr-employees-row-chevron {
   color: var(--text-1);
   font-size: 1rem;
   line-height: 1;
 }
 
-.hr-employees-detail-panel {
+html.staff-scope .hr-employees-detail-panel {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -4410,80 +4412,80 @@ a.tab-api__item:focus-visible:not(.is-active) {
   box-shadow: none;
 }
 
-.hr-employees-detail-panel .app-section-card,
-.hr-employees-detail-panel [data-dev-section-type="content-card"] {
+html.staff-scope .hr-employees-detail-panel .app-section-card,
+html.staff-scope .hr-employees-detail-panel [data-dev-section-type="content-card"] {
   background: transparent;
   border: none;
   box-shadow: none;
 }
 
-.hr-employee-profile-header-card {
+html.staff-scope .hr-employee-profile-header-card {
   border-bottom: none;
   padding: 0 0 20px 0 !important;
 }
 
-.hr-employee-profile-sections {
+html.staff-scope .hr-employee-profile-sections {
   gap: 14px !important;
 }
 
-.hr-employee-card-block {
+html.staff-scope .hr-employee-card-block {
   border-radius: 16px;
   background: var(--surface) !important;
   border: none !important;
   padding: 16px !important;
 }
 
-.hr-employee-basic-salary-card {
+html.staff-scope .hr-employee-basic-salary-card {
   background: var(--surface) !important;
   border: none !important;
 }
 
-.hr-employee-key-value {
+html.staff-scope .hr-employee-key-value {
   padding: 10px 0;
   border-bottom: none;
 }
 
-.hr-employee-key-value:last-child {
+html.staff-scope .hr-employee-key-value:last-child {
   border-bottom: none;
 }
 
 @media (max-width: 1100px) {
-  .hr-employees-layout {
+  html.staff-scope .hr-employees-layout {
     grid-template-columns: 1fr;
   }
 
-  .hr-employees-detail-panel {
+  html.staff-scope .hr-employees-detail-panel {
     position: static;
   }
 }
 
 @media (max-width: 720px) {
-  .hr-employees-directory-actions {
+  html.staff-scope .hr-employees-directory-actions {
     width: auto;
     justify-content: flex-end;
     gap: 8px;
   }
 
-  .hr-employees-summary-row {
+  html.staff-scope .hr-employees-summary-row {
     grid-template-columns: 1fr;
   }
 
-  .hr-employees-row {
+  html.staff-scope .hr-employees-row {
     grid-template-columns: 44px minmax(0, 1fr);
   }
 
-  .hr-employees-row-end {
+  html.staff-scope .hr-employees-row-end {
     grid-column: 1 / -1;
     flex-direction: row;
     justify-content: space-between;
     padding-top: 4px;
   }
 
-  .hr-employees-search-input {
+  html.staff-scope .hr-employees-search-input {
     padding-right: 14px;
   }
 
-  .hr-employees-search-meta {
+  html.staff-scope .hr-employees-search-meta {
     position: static;
     display: block;
     transform: none;
@@ -4491,50 +4493,50 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 }
 
-.tab-api__item[data-tone="warning"] {
+html.staff-scope .tab-api__item[data-tone="warning"] {
   border: none;
   background: var(--warning-surface);
   color: var(--warning-dark);
 }
 
-.tab-api__item[data-tone="warning"].is-active {
+html.staff-scope .tab-api__item[data-tone="warning"].is-active {
   background: var(--warning);
   color: var(--text-2);
 }
 
-.dropdown-api--sm .dropdown-api__control,
-.calendar-api--sm .calendar-api__control,
-.timepicker-api--sm .timepicker-api__control,
-.dropdown-api.compact-picker .dropdown-api__control,
-.calendar-api.compact-picker .calendar-api__control,
-.timepicker-api.compact-picker .timepicker-api__control,
-.dropdown-api.job-request-payment-dropdown .dropdown-api__control,
-.dropdown-api.edit-requests-payment-dropdown .dropdown-api__control,
-.dropdown-api.start-job-request-dropdown .dropdown-api__control,
-.dropdown-api.history-reg-dropdown .dropdown-api__control,
-.dropdown-api.prepick-popup-dropdown .dropdown-api__control,
-.dropdown-api.leave-modal-field .dropdown-api__control,
-.calendar-api.leave-modal-field .calendar-api__control {
+html.staff-scope .dropdown-api--sm .dropdown-api__control,
+html.staff-scope .calendar-api--sm .calendar-api__control,
+html.staff-scope .timepicker-api--sm .timepicker-api__control,
+html.staff-scope .dropdown-api.compact-picker .dropdown-api__control,
+html.staff-scope .calendar-api.compact-picker .calendar-api__control,
+html.staff-scope .timepicker-api.compact-picker .timepicker-api__control,
+html.staff-scope .dropdown-api.job-request-payment-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.edit-requests-payment-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.start-job-request-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.history-reg-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.prepick-popup-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.leave-modal-field .dropdown-api__control,
+html.staff-scope .calendar-api.leave-modal-field .calendar-api__control {
   min-height: var(--dropdown-trigger-height-sm);
   padding: var(--dropdown-trigger-padding-sm);
   border-radius: var(--dropdown-trigger-radius-sm);
 }
 
-.dropdown-api--sm .dropdown-api__control,
-.dropdown-api.compact-picker .dropdown-api__control,
-.dropdown-api.job-request-payment-dropdown .dropdown-api__control,
-.dropdown-api.edit-requests-payment-dropdown .dropdown-api__control,
-.dropdown-api.start-job-request-dropdown .dropdown-api__control,
-.dropdown-api.history-reg-dropdown .dropdown-api__control,
-.dropdown-api.prepick-popup-dropdown .dropdown-api__control,
-.dropdown-api.leave-modal-field .dropdown-api__control {
+html.staff-scope .dropdown-api--sm .dropdown-api__control,
+html.staff-scope .dropdown-api.compact-picker .dropdown-api__control,
+html.staff-scope .dropdown-api.job-request-payment-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.edit-requests-payment-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.start-job-request-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.history-reg-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.prepick-popup-dropdown .dropdown-api__control,
+html.staff-scope .dropdown-api.leave-modal-field .dropdown-api__control {
   height: var(--dropdown-trigger-height);
   min-height: var(--dropdown-trigger-height);
   max-height: var(--dropdown-trigger-height);
 }
 
-.popup-card .calendar-api__menu,
-.calendar-api.leave-modal-field .calendar-api__menu {
+html.staff-scope .popup-card .calendar-api__menu,
+html.staff-scope .calendar-api.leave-modal-field .calendar-api__menu {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -4542,34 +4544,34 @@ a.tab-api__item:focus-visible:not(.is-active) {
   z-index: 1250;
 }
 
-.dropdown-api.job-request-payment-dropdown {
+html.staff-scope .dropdown-api.job-request-payment-dropdown {
   width: 160px;
 }
 
-.dropdown-api.start-job-request-dropdown,
-.dropdown-api.efficiency-request-dropdown {
+html.staff-scope .dropdown-api.start-job-request-dropdown,
+html.staff-scope .dropdown-api.efficiency-request-dropdown {
   width: 100%;
 }
 
-.calendar-api.efficiency-filter-calendar,
-.dropdown-api.efficiency-tech-filter-dropdown,
-.compact-dropdown,
-.compact-calendar {
+html.staff-scope .calendar-api.efficiency-filter-calendar,
+html.staff-scope .dropdown-api.efficiency-tech-filter-dropdown,
+html.staff-scope .compact-dropdown,
+html.staff-scope .compact-calendar {
   width: fit-content;
 }
 
-.dropdown-api.efficiency-request-dropdown .dropdown-api__menu {
+html.staff-scope .dropdown-api.efficiency-request-dropdown .dropdown-api__menu {
   max-height: 144px;
   overflow-y: auto;
 }
 
-.dropdown-api.efficiency-tech-filter-dropdown .dropdown-api__menu {
+html.staff-scope .dropdown-api.efficiency-tech-filter-dropdown .dropdown-api__menu {
   min-width: 100%;
   width: max-content;
 }
 
-.dropdown-api.start-job-request-dropdown .dropdown-api__option-description,
-.dropdown-api.efficiency-request-dropdown .dropdown-api__option-description {
+html.staff-scope .dropdown-api.start-job-request-dropdown .dropdown-api__option-description,
+html.staff-scope .dropdown-api.efficiency-request-dropdown .dropdown-api__option-description {
   display: inline-flex;
   align-items: center;
   width: fit-content;
@@ -4590,14 +4592,14 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* === Table API — curved rows matching control style     === */
 /* ========================================================= */
 
-.table-api {
+html.staff-scope .table-api {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 8px;
   min-width: 0;
 }
 
-.table-api thead tr th {
+html.staff-scope .table-api thead tr th {
   padding: 8px 12px;
   text-align: left;
   font-size: 0.8rem;
@@ -4608,7 +4610,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   white-space: nowrap;
 }
 
-.table-api tbody tr td {
+html.staff-scope .table-api tbody tr td {
   padding: 12px;
   background: var(--surface);
   color: var(--text-1);
@@ -4618,25 +4620,25 @@ a.tab-api__item:focus-visible:not(.is-active) {
   transition: background-color 0.18s ease;
 }
 
-.table-api tbody tr td:first-child {
+html.staff-scope .table-api tbody tr td:first-child {
   border-radius: var(--control-radius) 0 0 var(--control-radius);
   padding-left: 14px;
 }
 
-.table-api tbody tr td:last-child {
+html.staff-scope .table-api tbody tr td:last-child {
   border-radius: 0 var(--control-radius) var(--control-radius) 0;
   padding-right: 14px;
 }
 
-.table-api tbody tr:hover td {
+html.staff-scope .table-api tbody tr:hover td {
   background: var(--theme);
 }
 
-[data-theme="dark"] .table-api tbody tr td {
+html.staff-scope [data-theme="dark"] .table-api tbody tr td {
   background: var(--surface);
 }
 
-[data-theme="dark"] .table-api tbody tr:hover td {
+html.staff-scope [data-theme="dark"] .table-api tbody tr:hover td {
   background: var(--theme-hover);
 }
 
@@ -4645,14 +4647,14 @@ a.tab-api__item:focus-visible:not(.is-active) {
        Independent from the global rules so row backgrounds and
        per-row tints can be tuned without touching every table.   */
 /* ========================================================= */
-.vhc-parts-identified-table {
+html.staff-scope .vhc-parts-identified-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 0;
   font-size: 12px;
 }
 
-.vhc-parts-identified-table thead tr th {
+html.staff-scope .vhc-parts-identified-table thead tr th {
   padding: 12px;
   text-align: left;
   font-size: 0.7rem;
@@ -4664,20 +4666,20 @@ a.tab-api__item:focus-visible:not(.is-active) {
   white-space: nowrap;
 }
 
-.vhc-parts-identified-table thead tr th:first-child {
+html.staff-scope .vhc-parts-identified-table thead tr th:first-child {
   padding-left: 14px;
 }
 
-.vhc-parts-identified-table thead tr th:last-child {
+html.staff-scope .vhc-parts-identified-table thead tr th:last-child {
   padding-right: 14px;
 }
 
-.vhc-parts-identified-table tbody tr {
+html.staff-scope .vhc-parts-identified-table tbody tr {
   background: var(--surface);
   transition: background-color 0.18s ease;
 }
 
-.vhc-parts-identified-table tbody tr td {
+html.staff-scope .vhc-parts-identified-table tbody tr td {
   padding: 12px;
   background: transparent;
   color: var(--text-1);
@@ -4687,18 +4689,18 @@ a.tab-api__item:focus-visible:not(.is-active) {
   transition: background-color 0.18s ease;
 }
 
-.vhc-parts-identified-table tbody tr td:first-child {
+html.staff-scope .vhc-parts-identified-table tbody tr td:first-child {
   padding-left: 14px;
 }
 
-.vhc-parts-identified-table tbody tr td:last-child {
+html.staff-scope .vhc-parts-identified-table tbody tr td:last-child {
   padding-right: 14px;
 }
 
 /* Expanded "Add Part" panel that opens beneath a clicked Parts Identified row.
    Styles only the surrounding background/frame — the inner table and buttons
    keep their existing inline styles. */
-.vhc-parts-identified-expanded {
+html.staff-scope .vhc-parts-identified-expanded {
   padding: 20px 24px 24px;
   border-top: 1px solid var(--theme);
   /* background is set inline per-row to match the clicked row's hover colour */
@@ -4714,17 +4716,17 @@ a.tab-api__item:focus-visible:not(.is-active) {
    Rules are intentionally strong so individual pages inherit the shared look
    without every table needing to be rewritten. */
 
-.app-table-shell-wrap {
+html.staff-scope .app-table-shell-wrap {
   border-radius: var(--radius-md);
   overflow: hidden;
 }
 
-.app-table-shell-scroll {
+html.staff-scope .app-table-shell-scroll {
   border: none;
   background: var(--surface);
 }
 
-.app-table-shell {
+html.staff-scope .app-table-shell {
   width: 100%;
   color: var(--text-1);
   background: var(--surface) !important;
@@ -4734,8 +4736,8 @@ a.tab-api__item:focus-visible:not(.is-active) {
   overflow: hidden;
 }
 
-.app-table-shell th,
-.app-table-shell td {
+html.staff-scope .app-table-shell th,
+html.staff-scope .app-table-shell td {
   box-sizing: border-box;
   background-clip: padding-box;
   box-shadow: none !important;
@@ -4747,31 +4749,31 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 /* Enforced paddings so every table shares the same rhythm. */
-.app-table-shell thead th {
+html.staff-scope .app-table-shell thead th {
   padding: 12px 10px !important;
 }
 
-.app-table-shell tbody td {
+html.staff-scope .app-table-shell tbody td {
   padding: 12px 10px !important;
 }
 
-.app-table-shell thead th:first-child,
-.app-table-shell tbody td:first-child {
+html.staff-scope .app-table-shell thead th:first-child,
+html.staff-scope .app-table-shell tbody td:first-child {
   padding-left: 14px !important;
 }
 
-.app-table-shell thead th:last-child,
-.app-table-shell tbody td:last-child {
+html.staff-scope .app-table-shell thead th:last-child,
+html.staff-scope .app-table-shell tbody td:last-child {
   padding-right: 14px !important;
 }
 
 /* ---------- With headings ---------- */
-.app-table-shell--with-headings {
+html.staff-scope .app-table-shell--with-headings {
   border-collapse: separate !important;
   border-spacing: 0 !important;
 }
 
-.app-table-shell--with-headings thead th {
+html.staff-scope .app-table-shell--with-headings thead th {
   position: sticky;
   top: 0;
   z-index: 4;
@@ -4787,84 +4789,84 @@ a.tab-api__item:focus-visible:not(.is-active) {
   box-shadow: 0 1px 0 rgba(var(--accent-purple-rgb, 122, 92, 250), 0.16) !important;
 }
 
-.app-table-shell--with-headings thead th > * {
+html.staff-scope .app-table-shell--with-headings thead th > * {
   vertical-align: middle;
 }
 
-.app-table-shell--with-headings thead th:first-child {
+html.staff-scope .app-table-shell--with-headings thead th:first-child {
   padding-left: 14px;
 }
 
-.app-table-shell--with-headings thead th:last-child {
+html.staff-scope .app-table-shell--with-headings thead th:last-child {
   padding-right: 14px;
 }
 
-.app-table-shell--with-headings tbody tr {
+html.staff-scope .app-table-shell--with-headings tbody tr {
   background: var(--surface) !important;
   background-image: none !important;
 }
 
-.app-table-shell--with-headings tbody tr:nth-child(even) {
+html.staff-scope .app-table-shell--with-headings tbody tr:nth-child(even) {
   background: var(--surface, var(--surface)) !important;
 }
 
-.app-table-shell--with-headings tbody td {
+html.staff-scope .app-table-shell--with-headings tbody td {
   border-top: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12) !important;
   border-bottom: none !important;
   background: transparent !important;
   background-image: none !important;
 }
 
-.app-table-shell--with-headings tbody td:first-child {
+html.staff-scope .app-table-shell--with-headings tbody td:first-child {
   padding-left: 14px;
 }
 
-.app-table-shell--with-headings tbody td:last-child {
+html.staff-scope .app-table-shell--with-headings tbody td:last-child {
   padding-right: 14px;
 }
 
 /* ---------- Rows only (no thead) — same body look as attendance history ---------- */
-.app-table-shell--rows-only {
+html.staff-scope .app-table-shell--rows-only {
   border-collapse: separate !important;
   border-spacing: 0 !important;
 }
 
-.app-table-shell--rows-only tbody tr {
+html.staff-scope .app-table-shell--rows-only tbody tr {
   background: var(--surface) !important;
   background-image: none !important;
 }
 
-.app-table-shell--rows-only tbody tr:nth-child(even) {
+html.staff-scope .app-table-shell--rows-only tbody tr:nth-child(even) {
   background: var(--surface, var(--surface)) !important;
 }
 
-.app-table-shell--rows-only tbody td {
+html.staff-scope .app-table-shell--rows-only tbody td {
   border-top: 1px solid rgba(var(--accent-purple-rgb, 122, 92, 250), 0.12) !important;
   border-bottom: none !important;
   background: transparent !important;
   background-image: none !important;
 }
 
-.app-table-shell--rows-only tbody tr:first-child td {
+html.staff-scope .app-table-shell--rows-only tbody tr:first-child td {
   border-top: none !important;
 }
 
-.app-table-shell--rows-only tbody td:first-child {
+html.staff-scope .app-table-shell--rows-only tbody td:first-child {
   padding-left: 14px;
 }
 
-.app-table-shell--rows-only tbody td:last-child {
+html.staff-scope .app-table-shell--rows-only tbody td:last-child {
   padding-right: 14px;
 }
 
 /* ---------- Dark theme ---------- */
-[data-theme="dark"] .app-table-shell,
-[data-theme="dark"] .app-table-shell-scroll {
+html.staff-scope [data-theme="dark"] .app-table-shell,
+html.staff-scope [data-theme="dark"] .app-table-shell-scroll {
   border-color: rgba(var(--accent-purple-rgb, 122, 92, 250), 0.2);
 }
 
-[data-theme="dark"] .app-table-shell--with-headings tbody tr:nth-child(even),
-[data-theme="dark"] .app-table-shell--rows-only tbody tr:nth-child(even) {
+html.staff-scope [data-theme="dark"] .app-table-shell--with-headings tbody tr:nth-child(even),
+html.staff-scope [data-theme="dark"] .app-table-shell--rows-only tbody tr:nth-child(even) {
   background: var(--surface) !important;
 }
 
@@ -4872,63 +4874,63 @@ a.tab-api__item:focus-visible:not(.is-active) {
    Tables stay tabular but become horizontally scrollable inside their wrapper
    and use tighter spacing + smaller type so columns don't squash or clip. */
 @media (max-width: 640px) {
-  .app-table-shell-wrap,
-  .app-table-shell-scroll {
+  html.staff-scope .app-table-shell-wrap,
+  html.staff-scope .app-table-shell-scroll {
     -webkit-overflow-scrolling: touch;
     overflow-x: auto;
     max-width: 100%;
   }
 
-  .app-table-shell {
+  html.staff-scope .app-table-shell {
     /* Keep cells at a legible min-size and let the wrapper scroll horizontally. */
     min-width: max-content;
     border-radius: var(--radius-sm, 10px);
   }
 
-  .app-table-shell th,
-  .app-table-shell td {
+  html.staff-scope .app-table-shell th,
+  html.staff-scope .app-table-shell td {
     font-size: 0.78rem;
     line-height: 1.3;
   }
 
-  .app-table-shell thead th {
+  html.staff-scope .app-table-shell thead th {
     padding: 10px 8px !important;
     font-size: 0.66rem;
     letter-spacing: 0.03em;
   }
 
-  .app-table-shell tbody td {
+  html.staff-scope .app-table-shell tbody td {
     padding: 10px 8px !important;
   }
 
-  .app-table-shell thead th:first-child,
-  .app-table-shell tbody td:first-child {
+  html.staff-scope .app-table-shell thead th:first-child,
+  html.staff-scope .app-table-shell tbody td:first-child {
     padding-left: 12px !important;
   }
 
-  .app-table-shell thead th:last-child,
-  .app-table-shell tbody td:last-child {
+  html.staff-scope .app-table-shell thead th:last-child,
+  html.staff-scope .app-table-shell tbody td:last-child {
     padding-right: 12px !important;
   }
 
   /* Pills, status tags, and action buttons inside cells often force fixed
      widths — clamp them so a single row still fits neatly on narrow screens. */
-  .app-table-shell td .app-btn,
-  .app-table-shell td button {
+  html.staff-scope .app-table-shell td .app-btn,
+  html.staff-scope .app-table-shell td button {
     font-size: 0.72rem;
     padding: 6px 10px;
   }
 
   /* Subtle scroll hint on the wrapper so the user knows more content exists. */
-  .app-table-shell-scroll {
+  html.staff-scope .app-table-shell-scroll {
     scrollbar-width: thin;
   }
 
-  .app-table-shell-scroll::-webkit-scrollbar {
+  html.staff-scope .app-table-shell-scroll::-webkit-scrollbar {
     height: 6px;
   }
 
-  .app-table-shell-scroll::-webkit-scrollbar-thumb {
+  html.staff-scope .app-table-shell-scroll::-webkit-scrollbar-thumb {
     background: rgba(var(--accent-purple-rgb, 122, 92, 250), 0.25);
     border-radius: 999px;
   }
@@ -4936,16 +4938,16 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 /* Slightly tighter rhythm on small tablets / large phones in landscape. */
 @media (min-width: 641px) and (max-width: 860px) {
-  .app-table-shell th,
-  .app-table-shell td {
+  html.staff-scope .app-table-shell th,
+  html.staff-scope .app-table-shell td {
     font-size: 0.8rem;
   }
 
-  .app-table-shell thead th {
+  html.staff-scope .app-table-shell thead th {
     padding: 10px 9px !important;
   }
 
-  .app-table-shell tbody td {
+  html.staff-scope .app-table-shell tbody td {
     padding: 10px 9px !important;
   }
 }
@@ -4956,189 +4958,189 @@ a.tab-api__item:focus-visible:not(.is-active) {
 
 /* iPad Pro 12.9" and similar large tablets (portrait & landscape) */
 @media (max-width: 1024px) {
-  .login-page-wrapper {
+  html.staff-scope .login-page-wrapper {
     padding: 48px 24px;
   }
 
-  .login-stack {
+  html.staff-scope .login-stack {
     max-width: 600px;
     gap: 20px;
   }
 
-  .login-card-stack {
+  html.staff-scope .login-card-stack {
     max-width: 480px;
     gap: 20px;
   }
 
-  .login-logo {
+  html.staff-scope .login-logo {
     width: 400px;
   }
 }
 
 /* iPad and tablets (portrait & landscape) */
 @media (max-width: 820px) {
-  .login-page-wrapper {
+  html.staff-scope .login-page-wrapper {
     padding: 40px 20px;
   }
 
-  .login-stack {
+  html.staff-scope .login-stack {
     max-width: 100%;
     gap: 18px;
   }
 
-  .login-card-stack {
+  html.staff-scope .login-card-stack {
     max-width: 100%;
     gap: 18px;
   }
 
-  .login-logo {
+  html.staff-scope .login-logo {
     width: 100%;
     max-width: 380px;
   }
 
-  .login-brand {
+  html.staff-scope .login-brand {
     padding-bottom: 12px;
   }
 
   /* Adjust card padding for tablets */
-  .login-card-stack > div > div {
+  html.staff-scope .login-card-stack > div > div {
     padding: 1.75rem;
   }
 
-  .login-form {
+  html.staff-scope .login-form {
     gap: 18px;
   }
 }
 
 /* iPhone landscape and small tablets */
 @media (max-width: 768px) and (orientation: landscape) {
-  .login-page-wrapper {
+  html.staff-scope .login-page-wrapper {
     padding: 24px 16px;
     min-height: auto;
   }
 
-  .login-stack {
+  html.staff-scope .login-stack {
     gap: 16px;
   }
 
-  .login-card-stack {
+  html.staff-scope .login-card-stack {
     gap: 16px;
   }
 
-  .login-logo {
+  html.staff-scope .login-logo {
     width: 100%;
     max-width: 280px;
   }
 
-  .login-brand {
+  html.staff-scope .login-brand {
     padding-bottom: 8px;
   }
 
   /* Reduce card padding in landscape */
-  .login-card-stack > div > div {
+  html.staff-scope .login-card-stack > div > div {
     padding: 1.5rem;
   }
 
-  .login-form {
+  html.staff-scope .login-form {
     gap: 16px;
   }
 
-  .login-card-inner {
+  html.staff-scope .login-card-inner {
     gap: 16px;
   }
 }
 
 /* iPhone and mobile devices (portrait) */
 @media (max-width: 480px) {
-  .login-page-wrapper {
+  html.staff-scope .login-page-wrapper {
     padding: 32px 16px;
   }
 
-  .login-stack {
+  html.staff-scope .login-stack {
     gap: 16px;
   }
 
-  .login-card-stack {
+  html.staff-scope .login-card-stack {
     gap: 16px;
   }
 
-  .login-logo {
+  html.staff-scope .login-logo {
     width: 100%;
     max-width: 300px;
   }
 
-  .login-brand {
+  html.staff-scope .login-brand {
     padding-bottom: 10px;
   }
 
   /* Adjust card styling for mobile */
-  .login-card-stack > div > div {
+  html.staff-scope .login-card-stack > div > div {
     padding: 1.5rem;
     border-radius: var(--radius-xl);
   }
 
-  .login-form {
+  html.staff-scope .login-form {
     gap: 16px;
   }
 
-  .login-card-inner {
+  html.staff-scope .login-card-inner {
     gap: 16px;
   }
 
-  .login-input,
-  .login-select {
+  html.staff-scope .login-input,
+  html.staff-scope .login-select {
     padding: 11px 14px;
     font-size: 0.9rem;
     border-radius: var(--radius-lg);
   }
 
-  .login-label {
+  html.staff-scope .login-label {
     font-size: 0.8rem;
   }
 
   /* Adjust title sizes for mobile */
-  .login-card-stack h2 {
+  html.staff-scope .login-card-stack h2 {
     font-size: 1.3rem;
   }
 
-  .login-card-stack p {
+  html.staff-scope .login-card-stack p {
     font-size: 0.88rem;
   }
 }
 
 /* iPhone SE and small devices (portrait) */
 @media (max-width: 375px) {
-  .login-page-wrapper {
+  html.staff-scope .login-page-wrapper {
     padding: 24px 12px;
   }
 
-  .login-logo {
+  html.staff-scope .login-logo {
     max-width: 260px;
   }
 
-  .login-card-stack > div > div {
+  html.staff-scope .login-card-stack > div > div {
     padding: 1.25rem;
     border-radius: var(--radius-lg);
   }
 
-  .login-input,
-  .login-select {
+  html.staff-scope .login-input,
+  html.staff-scope .login-select {
     padding: 10px 12px;
     font-size: 0.85rem;
     border-radius: var(--radius-lg);
   }
 
-  .login-card-stack h2 {
+  html.staff-scope .login-card-stack h2 {
     font-size: 1.2rem;
   }
 
-  .login-card-stack p {
+  html.staff-scope .login-card-stack p {
     font-size: 0.85rem;
   }
 }
 
 @media (max-width: 640px) and (orientation: portrait) {
-  .login-page-wrapper {
+  html.staff-scope .login-page-wrapper {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
@@ -5146,18 +5148,18 @@ a.tab-api__item:focus-visible:not(.is-active) {
     padding: max(12px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom)) !important;
   }
 
-  .login-center-stage {
+  html.staff-scope .login-center-stage {
     order: 1;
     width: 100%;
     max-width: 420px;
     gap: 12px;
   }
 
-  .login-identity-grid {
+  html.staff-scope .login-identity-grid {
     grid-template-columns: 1fr !important;
   }
 
-  .login-dev-panel {
+  html.staff-scope .login-dev-panel {
     order: 2;
     width: 100%;
     max-width: 420px;
@@ -5167,17 +5169,17 @@ a.tab-api__item:focus-visible:not(.is-active) {
     overflow: visible;
   }
 
-  .login-logo {
+  html.staff-scope .login-logo {
     width: min(72vw, 230px) !important;
     max-width: 230px !important;
   }
 
-  .login-brand {
+  html.staff-scope .login-brand {
     padding-bottom: 0 !important;
   }
 
-  .login-card > div,
-  .login-dev-panel .login-card--dev > div {
+  html.staff-scope .login-card > div,
+  html.staff-scope .login-dev-panel .login-card--dev > div {
     padding: 16px !important;
   }
 }
@@ -5185,11 +5187,11 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* Real portrait phones keep login cards stacked even when browser UI changes
    make CSS width and device width disagree. */
 @media (max-device-width: 640px) and (orientation: portrait), (pointer: coarse) and (orientation: portrait) {
-  body:has(.login-page-wrapper) {
+  html.staff-scope body:has(.login-page-wrapper) {
     overflow-y: auto;
   }
 
-  .login-page-wrapper {
+  html.staff-scope .login-page-wrapper {
     height: auto;
     min-height: 100dvh;
     flex-direction: column;
@@ -5200,18 +5202,18 @@ a.tab-api__item:focus-visible:not(.is-active) {
     overflow-y: auto;
   }
 
-  .login-center-stage {
+  html.staff-scope .login-center-stage {
     order: 1;
     width: 100%;
     max-width: 420px;
     gap: 12px;
   }
 
-  .login-identity-grid {
+  html.staff-scope .login-identity-grid {
     grid-template-columns: 1fr !important;
   }
 
-  .login-dev-panel {
+  html.staff-scope .login-dev-panel {
     order: 2;
     width: 100%;
     max-width: 420px;
@@ -5221,70 +5223,70 @@ a.tab-api__item:focus-visible:not(.is-active) {
     overflow: visible;
   }
 
-  .login-logo {
+  html.staff-scope .login-logo {
     width: min(72vw, 230px) !important;
     max-width: 230px !important;
   }
 
-  .login-brand {
+  html.staff-scope .login-brand {
     padding-bottom: 0 !important;
   }
 
-  .login-card > div,
-  .login-dev-panel .login-card--dev > div {
+  html.staff-scope .login-card > div,
+  html.staff-scope .login-dev-panel .login-card--dev > div {
     padding: 16px !important;
   }
 }
 
 @media (max-width: 390px) and (orientation: portrait) {
-  .login-logo {
+  html.staff-scope .login-logo {
     width: min(70vw, 200px) !important;
     max-width: 200px !important;
   }
 
-  .login-card > div,
-  .login-dev-panel .login-card--dev > div {
+  html.staff-scope .login-card > div,
+  html.staff-scope .login-dev-panel .login-card--dev > div {
     padding: 14px !important;
   }
 }
 
 /* iPhone landscape (very specific) */
 @media (max-width: 844px) and (max-height: 428px) and (orientation: landscape) {
-  .login-page-wrapper {
+  html.staff-scope .login-page-wrapper {
     padding: 20px 16px;
   }
 
-  .login-logo {
+  html.staff-scope .login-logo {
     max-width: 240px;
   }
 
-  .login-brand {
+  html.staff-scope .login-brand {
     padding-bottom: 6px;
   }
 
-  .login-card-stack > div > div {
+  html.staff-scope .login-card-stack > div > div {
     padding: 1.25rem;
   }
 
-  .login-form {
+  html.staff-scope .login-form {
     gap: 14px;
   }
 
-  .login-card-inner {
+  html.staff-scope .login-card-inner {
     gap: 14px;
   }
 
-  .login-input,
-  .login-select {
+  html.staff-scope .login-input,
+  html.staff-scope .login-select {
     padding: 9px 12px;
     font-size: 0.85rem;
   }
 
-  .login-card-stack h2 {
+  html.staff-scope .login-card-stack h2 {
     font-size: 1.2rem;
   }
 
-  .login-card-stack p {
+  html.staff-scope .login-card-stack p {
     font-size: 0.82rem;
   }
 }
@@ -5292,7 +5294,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* ========================================================= */
 /* === Popup Dialog Styles === */
 /* ========================================================= */
-.popup-backdrop {
+html.staff-scope .popup-backdrop {
   --popup-viewport-gap: clamp(10px, 2.5vw, 20px);
   position: fixed;
   top: 0;
@@ -5314,19 +5316,19 @@ a.tab-api__item:focus-visible:not(.is-active) {
   padding: var(--popup-viewport-gap);
 }
 
-.app-section-card,
-.app-layout-section-shell,
-.app-layout-card,
-.app-layout-surface-subtle,
-.app-layout-surface-accent,
-[data-dev-section-type="section-shell"],
-[data-dev-section-type="content-card"] {
+html.staff-scope .app-section-card,
+html.staff-scope .app-layout-section-shell,
+html.staff-scope .app-layout-card,
+html.staff-scope .app-layout-surface-subtle,
+html.staff-scope .app-layout-surface-accent,
+html.staff-scope [data-dev-section-type="section-shell"],
+html.staff-scope [data-dev-section-type="content-card"] {
   background-image: none !important;
   backdrop-filter: none !important;
   filter: none !important;
 }
 
-.popup-card {
+html.staff-scope .popup-card {
   background-color: var(--surface);
   border: none;
   border-radius: var(--radius-lg);
@@ -5340,7 +5342,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   min-height: 0;
 }
 
-.popup-backdrop > * {
+html.staff-scope .popup-backdrop > * {
   max-width: calc(100vw - (var(--popup-viewport-gap) * 2));
   max-height: calc(100dvh - (var(--popup-viewport-gap) * 2));
   overflow-y: auto;
@@ -5349,9 +5351,9 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 @media (orientation: portrait), (max-width: 768px) {
-  .popup-backdrop,
-  [aria-modal="true"].popup-backdrop,
-  [data-modal-portal="true"] > .popup-backdrop {
+  html.staff-scope .popup-backdrop,
+  html.staff-scope [aria-modal="true"].popup-backdrop,
+  html.staff-scope [data-modal-portal="true"] > .popup-backdrop {
     --popup-viewport-gap: max(8px, env(safe-area-inset-top), env(safe-area-inset-bottom));
     width: 100vw !important;
     height: 100dvh !important;
@@ -5362,8 +5364,8 @@ a.tab-api__item:focus-visible:not(.is-active) {
     padding: var(--popup-viewport-gap) !important;
   }
 
-  .popup-card,
-  .popup-backdrop > * {
+  html.staff-scope .popup-card,
+  html.staff-scope .popup-backdrop > * {
     width: min(100%, calc(100vw - (var(--popup-viewport-gap) * 2))) !important;
     max-width: calc(100vw - (var(--popup-viewport-gap) * 2)) !important;
     max-height: calc(100dvh - (var(--popup-viewport-gap) * 2)) !important;
@@ -5376,11 +5378,11 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 }
 
-.video-editor-backdrop {
+html.staff-scope .video-editor-backdrop {
   align-items: center;
 }
 
-.video-editor-popup {
+html.staff-scope .video-editor-popup {
   width: min(100%, var(--video-editor-max-width, 520px));
   max-width: min(var(--video-editor-max-width, 520px), calc(100vw - (var(--popup-viewport-gap) * 2)));
   background: var(--surface);
@@ -5394,7 +5396,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   font-family: var(--font-family);
 }
 
-.video-editor-popup__header {
+html.staff-scope .video-editor-popup__header {
   padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--primary-border);
   display: flex;
@@ -5403,7 +5405,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   gap: var(--space-3);
 }
 
-.video-editor-popup__title {
+html.staff-scope .video-editor-popup__title {
   margin: 0;
   color: var(--surfaceText);
   font-size: var(--text-h3);
@@ -5411,13 +5413,13 @@ a.tab-api__item:focus-visible:not(.is-active) {
   line-height: 1.2;
 }
 
-.video-editor-popup__meta {
+html.staff-scope .video-editor-popup__meta {
   color: var(--surfaceTextMuted);
   font-size: var(--text-caption);
   font-weight: 700;
 }
 
-.video-editor-popup__body {
+html.staff-scope .video-editor-popup__body {
   display: grid;
   grid-template-rows: auto auto;
   gap: var(--space-4);
@@ -5426,7 +5428,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   overflow: auto;
 }
 
-.video-editor-popup__footer {
+html.staff-scope .video-editor-popup__footer {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -5437,11 +5439,11 @@ a.tab-api__item:focus-visible:not(.is-active) {
   flex-wrap: wrap;
 }
 
-.video-editor-popup__cancel {
+html.staff-scope .video-editor-popup__cancel {
   margin-right: auto;
 }
 
-.video-editor-popup__status {
+html.staff-scope .video-editor-popup__status {
   padding: var(--space-sm) var(--space-3);
   border-radius: var(--radius-md);
   background: var(--control-bg);
@@ -5451,12 +5453,12 @@ a.tab-api__item:focus-visible:not(.is-active) {
   border: none;
 }
 
-.video-editor-popup__status.is-error {
+html.staff-scope .video-editor-popup__status.is-error {
   background: rgba(var(--danger-rgb), 0.12);
   color: var(--danger);
 }
 
-.video-editor-player {
+html.staff-scope .video-editor-player {
   position: relative;
   width: 100%;
   aspect-ratio: var(--video-editor-aspect-ratio, 0.5625);
@@ -5467,7 +5469,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   box-shadow: var(--hud-shadow-lg);
 }
 
-.video-editor-player__video {
+html.staff-scope .video-editor-player__video {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -5476,7 +5478,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   display: block;
 }
 
-.video-editor-player__loading {
+html.staff-scope .video-editor-player__loading {
   position: absolute;
   inset: 0;
   display: flex;
@@ -5487,23 +5489,23 @@ a.tab-api__item:focus-visible:not(.is-active) {
   text-align: center;
 }
 
-.video-editor-player__loading-content {
+html.staff-scope .video-editor-player__loading-content {
   display: grid;
   gap: var(--space-sm);
   max-width: 380px;
 }
 
-.video-editor-player__loading-title {
+html.staff-scope .video-editor-player__loading-title {
   font-size: var(--text-h3);
   font-weight: 800;
 }
 
-.video-editor-player__loading-copy {
+html.staff-scope .video-editor-player__loading-copy {
   color: var(--hud-text-muted);
   font-size: var(--text-body-sm);
 }
 
-.video-editor-player__time-strip {
+html.staff-scope .video-editor-player__time-strip {
   position: absolute;
   left: 0;
   right: 0;
@@ -5521,12 +5523,12 @@ a.tab-api__item:focus-visible:not(.is-active) {
   transition: opacity 160ms ease;
 }
 
-.video-editor-player__clip-range {
+html.staff-scope .video-editor-player__clip-range {
   color: rgba(255, 255, 255, 0.75);
   font-size: var(--text-caption);
 }
 
-.video-editor-timeline {
+html.staff-scope .video-editor-timeline {
   background: var(--surface);
   border-radius: var(--radius-lg);
   border: 1px solid var(--primary-border);
@@ -5534,7 +5536,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   color: var(--surfaceText);
 }
 
-.video-editor-timeline__header {
+html.staff-scope .video-editor-timeline__header {
   color: var(--surfaceTextMuted);
   font-size: var(--text-caption);
   font-weight: 800;
@@ -5542,18 +5544,18 @@ a.tab-api__item:focus-visible:not(.is-active) {
   text-transform: uppercase;
 }
 
-.video-editor-timeline__time {
+html.staff-scope .video-editor-timeline__time {
   color: var(--surfaceText);
   font-variant-numeric: tabular-nums;
 }
 
-.video-editor-timeline__audio-toggle {
+html.staff-scope .video-editor-timeline__audio-toggle {
   color: var(--surfaceText);
   font-size: var(--text-body-sm);
   font-weight: 600;
 }
 
-.video-editor-timeline__track {
+html.staff-scope .video-editor-timeline__track {
   height: 56px;
   border-radius: var(--radius-md);
   background: var(--control-bg);
@@ -5561,19 +5563,19 @@ a.tab-api__item:focus-visible:not(.is-active) {
   margin-bottom: 18px;
 }
 
-.video-editor-timeline__legend {
+html.staff-scope .video-editor-timeline__legend {
   color: var(--surfaceTextMuted);
   font-size: var(--text-caption);
 }
 
-.video-editor-timeline__switch {
+html.staff-scope .video-editor-timeline__switch {
   width: 44px;
   height: var(--control-height);
   border-radius: var(--control-radius);
   border: 1px solid var(--primary-border);
 }
 
-.video-editor-timeline__tool-button {
+html.staff-scope .video-editor-timeline__tool-button {
   min-height: var(--control-height);
   padding: 0 var(--space-3);
   border-radius: var(--control-radius);
@@ -5585,40 +5587,40 @@ a.tab-api__item:focus-visible:not(.is-active) {
 }
 
 @media (max-width: 640px) {
-  .video-editor-popup__header,
-  .video-editor-popup__body,
-  .video-editor-popup__footer {
+  html.staff-scope .video-editor-popup__header,
+  html.staff-scope .video-editor-popup__body,
+  html.staff-scope .video-editor-popup__footer {
     padding-inline: var(--space-3);
   }
 
-  .video-editor-popup__footer .app-btn {
+  html.staff-scope .video-editor-popup__footer .app-btn {
     flex: 1 1 auto;
   }
 
-  .video-editor-popup__cancel {
+  html.staff-scope .video-editor-popup__cancel {
     margin-right: 0;
   }
 }
 
 /* Prevent global hover lift clipping inside the Start New Chat modal's scroll containers. */
-.start-new-chat-popup button:hover,
-.start-new-chat-popup button:active {
+html.staff-scope .start-new-chat-popup button:hover,
+html.staff-scope .start-new-chat-popup button:active {
   transform: none;
 }
 
 /* Keep hover feedback inside Start New Chat without lift/jank. */
-.start-new-chat-popup .chat-user-option {
+html.staff-scope .start-new-chat-popup .chat-user-option {
   transition: background-color 0.14s ease, border-color 0.14s ease;
 }
 
-.start-new-chat-popup .chat-user-option:hover,
-.start-new-chat-popup .chat-user-option:focus-visible {
+html.staff-scope .start-new-chat-popup .chat-user-option:hover,
+html.staff-scope .start-new-chat-popup .chat-user-option:focus-visible {
   background-color: var(--theme) !important;
   border-color: rgba(var(--accent-base-rgb), 0.4) !important;
 }
 
 @media (max-width: 768px) {
-  .popup-backdrop {
+  html.staff-scope .popup-backdrop {
     align-items: flex-start;
   }
 }
@@ -5627,37 +5629,37 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* === Cosmetic Notes Textarea Styles === */
 /* ========================================================= */
 /* Light mode: white background */
-.cosmetic-notes-active {
+html.staff-scope .cosmetic-notes-active {
   background-color: var(--surface) !important;
   color: var(--text-1) !important;
 }
 
-.job-cards-create-bottom-row {
+html.staff-scope .job-cards-create-bottom-row {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   align-items: stretch;
 }
 
-.job-cards-create-bottom-card {
+html.staff-scope .job-cards-create-bottom-card {
   min-width: 0;
   height: 100%;
 }
 
-.job-cards-create-info-header {
+html.staff-scope .job-cards-create-info-header {
   row-gap: 10px;
 }
 
-.job-cards-create-selector-wrap {
+html.staff-scope .job-cards-create-selector-wrap {
   min-width: 0;
 }
 
-.job-cards-create-selector {
+html.staff-scope .job-cards-create-selector {
   min-width: 0;
 }
 
 /* Dark mode: dark grey background with white text */
-[data-theme="dark"] .cosmetic-notes-active {
+html.staff-scope [data-theme="dark"] .cosmetic-notes-active {
   background-color: var(--surface) !important;
   color: var(--text-1) !important;
 }
@@ -5665,12 +5667,12 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* ========================================================= */
 /* === My Jobs Row Layout === */
 /* ========================================================= */
-.myjobs-row {
+html.staff-scope .myjobs-row {
   flex-wrap: wrap;
   row-gap: 6px;
 }
 
-.myjobs-cell {
+html.staff-scope .myjobs-cell {
   min-width: 0;
   flex: 0 1 auto;
   overflow: hidden;
@@ -5678,100 +5680,100 @@ a.tab-api__item:focus-visible:not(.is-active) {
   white-space: nowrap;
 }
 
-.myjobs-status,
-.myjobs-clock,
-.myjobs-writeup {
+html.staff-scope .myjobs-status,
+html.staff-scope .myjobs-clock,
+html.staff-scope .myjobs-writeup {
   flex: 0 0 auto;
 }
 
-.myjobs-customer,
-.myjobs-make {
+html.staff-scope .myjobs-customer,
+html.staff-scope .myjobs-make {
   flex: 1 1 160px;
 }
 
-.myjobs-jobnumber,
-.myjobs-reg,
-.myjobs-type,
-.myjobs-date {
+html.staff-scope .myjobs-jobnumber,
+html.staff-scope .myjobs-reg,
+html.staff-scope .myjobs-type,
+html.staff-scope .myjobs-date {
   flex: 0 1 110px;
 }
 
 @media (min-width: 920px) {
-  .myjobs-row {
+  html.staff-scope .myjobs-row {
     flex-wrap: nowrap;
   }
 }
 
 @media (max-width: 1100px) {
-  .job-cards-create-bottom-row {
+  html.staff-scope .job-cards-create-bottom-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .job-cards-create-info-header {
+  html.staff-scope .job-cards-create-info-header {
     align-items: flex-start !important;
   }
 
-  .job-cards-create-selector-wrap {
+  html.staff-scope .job-cards-create-selector-wrap {
     width: 100%;
     justify-content: flex-start !important;
   }
 
-  .job-cards-create-bottom-card-header {
+  html.staff-scope .job-cards-create-bottom-card-header {
     flex-direction: column;
     align-items: flex-start !important;
   }
 }
 
 @media (max-width: 720px) {
-  .myjobs-header {
+  html.staff-scope .myjobs-header {
     display: none;
   }
 
-  .myjobs-status,
-  .myjobs-clock,
-  .myjobs-writeup,
-  .myjobs-jobnumber,
-  .myjobs-reg,
-  .myjobs-type,
-  .myjobs-date {
+  html.staff-scope .myjobs-status,
+  html.staff-scope .myjobs-clock,
+  html.staff-scope .myjobs-writeup,
+  html.staff-scope .myjobs-jobnumber,
+  html.staff-scope .myjobs-reg,
+  html.staff-scope .myjobs-type,
+  html.staff-scope .myjobs-date {
     flex: 0 1 calc(50% - 6px) !important;
     min-width: 0 !important;
   }
 
-  .myjobs-customer,
-  .myjobs-make {
+  html.staff-scope .myjobs-customer,
+  html.staff-scope .myjobs-make {
     flex: 1 1 100% !important;
     min-width: 0 !important;
   }
 
-  .job-cards-create-bottom-row {
+  html.staff-scope .job-cards-create-bottom-row {
     grid-template-columns: 1fr;
   }
 
-  .job-cards-create-selector {
+  html.staff-scope .job-cards-create-selector {
     width: 100%;
   }
 
-  .job-cards-create-selector button,
-  .job-cards-create-add-linked-button,
-  .job-cards-create-remove-linked-button {
+  html.staff-scope .job-cards-create-selector button,
+  html.staff-scope .job-cards-create-add-linked-button,
+  html.staff-scope .job-cards-create-remove-linked-button {
     flex: 1 1 auto;
   }
 }
 
 /* iPhone / phone vertical view — full-width stacked card rows */
 @media (max-width: 480px) {
-  .myjobs-header {
+  html.staff-scope .myjobs-header {
     display: none !important;
   }
 
-  .myjobs-row {
+  html.staff-scope .myjobs-row {
     flex-wrap: wrap !important;
     row-gap: 4px !important;
     padding: 10px 12px !important;
   }
 
-  .myjobs-cell {
+  html.staff-scope .myjobs-cell {
     min-width: 0 !important;
     white-space: normal !important;
     overflow: visible !important;
@@ -5779,7 +5781,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Status spans full width as a header badge */
-  .myjobs-status {
+  html.staff-scope .myjobs-status {
     flex: 1 1 100% !important;
     min-width: 0 !important;
     text-align: left !important;
@@ -5787,23 +5789,23 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Job number and Reg share a row — each takes half */
-  .myjobs-jobnumber,
-  .myjobs-reg {
+  html.staff-scope .myjobs-jobnumber,
+  html.staff-scope .myjobs-reg {
     flex: 1 1 calc(50% - 6px) !important;
     min-width: 0 !important;
   }
 
   /* Customer, Make/Model, Type each get full width */
-  .myjobs-customer,
-  .myjobs-make,
-  .myjobs-type,
-  .myjobs-date {
+  html.staff-scope .myjobs-customer,
+  html.staff-scope .myjobs-make,
+  html.staff-scope .myjobs-type,
+  html.staff-scope .myjobs-date {
     flex: 1 1 100% !important;
     min-width: 0 !important;
   }
 
-  .myjobs-clock,
-  .myjobs-writeup {
+  html.staff-scope .myjobs-clock,
+  html.staff-scope .myjobs-writeup {
     flex: 0 1 calc(50% - 6px) !important;
     min-width: 0 !important;
   }
@@ -5820,10 +5822,10 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Hide everything by default */
-  body > *,
-  body > div > *,
-  #__next > *,
-  #__next > div > * {
+  html.staff-scope body > *,
+  html.staff-scope body > div > *,
+  html.staff-scope #__next > *,
+  html.staff-scope #__next > div > * {
     visibility: hidden !important;
     position: absolute !important;
     overflow: hidden !important;
@@ -5835,8 +5837,8 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Show the invoice print area and all its children */
-  [data-invoice-print-area],
-  [data-invoice-print-area] * {
+  html.staff-scope [data-invoice-print-area],
+  html.staff-scope [data-invoice-print-area] * {
     visibility: visible !important;
     position: static !important;
     overflow: visible !important;
@@ -5845,7 +5847,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Make the invoice area the root of the print layout */
-  [data-invoice-print-area] {
+  html.staff-scope [data-invoice-print-area] {
     display: block !important;
     position: fixed !important;
     top: 0 !important;
@@ -5858,21 +5860,21 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Hide the prerequisites warning in print */
-  [data-invoice-print-area] > div:first-child:has(ul) {
+  html.staff-scope [data-invoice-print-area] > div:first-child:has(ul) {
     display: none !important;
   }
 
   /* Hide the print and email buttons in print output */
-  [data-invoice-print-area] .invoice-action-buttons {
+  html.staff-scope [data-invoice-print-area] .invoice-action-buttons {
     display: none !important;
   }
 
   /* Ensure all ancestors are visible and unstyled for print flow */
-  body,
-  #__next,
-  #__next > div,
-  main,
-  section {
+  html.staff-scope body,
+  html.staff-scope #__next,
+  html.staff-scope #__next > div,
+  html.staff-scope main,
+  html.staff-scope section {
     visibility: visible !important;
     position: static !important;
     overflow: visible !important;
@@ -5888,7 +5890,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Clean print-friendly styling for the invoice shell */
-  [data-invoice-print-area] article {
+  html.staff-scope [data-invoice-print-area] article {
     background: #fff !important;
     border: none !important;
     border-radius: 0 !important;
@@ -5899,14 +5901,14 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Print-friendly table styles */
-  [data-invoice-print-area] table {
+  html.staff-scope [data-invoice-print-area] table {
     width: 100% !important;
     border-collapse: collapse !important;
     font-size: 10pt !important;
     page-break-inside: auto !important;
   }
 
-  [data-invoice-print-area] table th {
+  html.staff-scope [data-invoice-print-area] table th {
     background: #f5f5f5 !important;
     color: #333 !important;
     border-bottom: 2px solid #333 !important;
@@ -5916,31 +5918,31 @@ a.tab-api__item:focus-visible:not(.is-active) {
     print-color-adjust: exact !important;
   }
 
-  [data-invoice-print-area] table td {
+  html.staff-scope [data-invoice-print-area] table td {
     border-bottom: 1px solid #ddd !important;
     padding: 5px 8px !important;
     color: #000 !important;
   }
 
   /* Make headings and text black for print */
-  [data-invoice-print-area] h1,
-  [data-invoice-print-area] h2,
-  [data-invoice-print-area] h3,
-  [data-invoice-print-area] strong,
-  [data-invoice-print-area] p,
-  [data-invoice-print-area] span,
-  [data-invoice-print-area] li,
-  [data-invoice-print-area] div {
+  html.staff-scope [data-invoice-print-area] h1,
+  html.staff-scope [data-invoice-print-area] h2,
+  html.staff-scope [data-invoice-print-area] h3,
+  html.staff-scope [data-invoice-print-area] strong,
+  html.staff-scope [data-invoice-print-area] p,
+  html.staff-scope [data-invoice-print-area] span,
+  html.staff-scope [data-invoice-print-area] li,
+  html.staff-scope [data-invoice-print-area] div {
     color: #000 !important;
   }
 
   /* Totals section – print friendly */
-  [data-invoice-print-area] [class*="totalsFooter"] {
+  html.staff-scope [data-invoice-print-area] [class*="totalsFooter"] {
     border-top: 2px solid #333 !important;
     padding-top: 8px !important;
   }
 
-  [data-invoice-print-area] [class*="totalCard"] {
+  html.staff-scope [data-invoice-print-area] [class*="totalCard"] {
     background: #f9f9f9 !important;
     border: 1px solid #ccc !important;
     -webkit-print-color-adjust: exact !important;
@@ -5948,7 +5950,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Request blocks – prevent break inside */
-  [data-invoice-print-area] [class*="requestBlock"] {
+  html.staff-scope [data-invoice-print-area] [class*="requestBlock"] {
     border: 1px solid #ddd !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
@@ -5956,8 +5958,8 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Vehicle row and header boxes */
-  [data-invoice-print-area] [class*="headerBox"],
-  [data-invoice-print-area] [class*="vehicleRow"] {
+  html.staff-scope [data-invoice-print-area] [class*="headerBox"],
+  html.staff-scope [data-invoice-print-area] [class*="vehicleRow"] {
     border: 1px solid #ddd !important;
     background: #fafafa !important;
     -webkit-print-color-adjust: exact !important;
@@ -5965,7 +5967,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Payment details */
-  [data-invoice-print-area] [class*="paymentDetails"] {
+  html.staff-scope [data-invoice-print-area] [class*="paymentDetails"] {
     border: 1px solid #ddd !important;
     background: #fafafa !important;
     page-break-inside: avoid !important;
@@ -5974,14 +5976,14 @@ a.tab-api__item:focus-visible:not(.is-active) {
   }
 
   /* Company header layout */
-  [data-invoice-print-area] [class*="companyHeader"] {
+  html.staff-scope [data-invoice-print-area] [class*="companyHeader"] {
     border-bottom: 2px solid #333 !important;
     padding-bottom: 12px !important;
     margin-bottom: 12px !important;
   }
 
   /* Links should show as plain text */
-  [data-invoice-print-area] a {
+  html.staff-scope [data-invoice-print-area] a {
     color: #000 !important;
     text-decoration: none !important;
   }
@@ -5990,14 +5992,14 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* ── Appointments calendar table — Saturday row highlight ─────────────── */
 /* Applied via className="appt-sat-row" on the <tr>.                       */
 /* !important overrides row-level backgroundColor and any td inline styles */
-#appointments-auto-data-table-2 tr.appt-sat-row,
-#appointments-auto-data-table-2 tr.appt-sat-row td {
+html.staff-scope #appointments-auto-data-table-2 tr.appt-sat-row,
+html.staff-scope #appointments-auto-data-table-2 tr.appt-sat-row td {
   background: var(--warning-surface) !important;
   color: var(--warning-text) !important;
 }
 
-#appointments-auto-data-table-2 tr.appt-today-row,
-#appointments-auto-data-table-2 tr.appt-today-row td {
+html.staff-scope #appointments-auto-data-table-2 tr.appt-today-row,
+html.staff-scope #appointments-auto-data-table-2 tr.appt-today-row td {
   background: var(--success-surface) !important;
   color: var(--success-text) !important;
 }
@@ -6007,7 +6009,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* Uses inset box-shadow instead of filter — filter creates a stacking     */
 /* context on tbody rows which can paint over the sticky thead.            */
 /* box-shadow never creates a stacking context, so sticky stays on top.    */
-#appointments-auto-data-table-2 tbody tr:hover td {
+html.staff-scope #appointments-auto-data-table-2 tbody tr:hover td {
   box-shadow: inset 0 0 0 9999px rgba(var(--shadow-rgb), 0.07);
   transition: box-shadow 0.15s ease;
 }
@@ -6015,104 +6017,104 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* Scroll still works; the visual scrollbar is hidden. Firefox uses          */
 /* scrollbar-width: none, Webkit hides the ::-webkit-scrollbar pseudo, and   */
 /* IE/legacy Edge use -ms-overflow-style: none.                              */
-.appointments-calendar-table-scroll {
+html.staff-scope .appointments-calendar-table-scroll {
   --appointments-scrollbar-overlay-width: 0px;
   background: transparent !important;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.appointments-calendar-table-scroll::-webkit-scrollbar {
+html.staff-scope .appointments-calendar-table-scroll::-webkit-scrollbar {
   width: 0;
   height: 0;
   display: none;
 }
 
-.appointments-calendar-table-scroll #appointments-auto-data-table-2 {
+html.staff-scope .appointments-calendar-table-scroll #appointments-auto-data-table-2 {
   width: calc(100% + var(--appointments-scrollbar-overlay-width)) !important;
   min-width: calc(100% + var(--appointments-scrollbar-overlay-width)) !important;
   margin-right: calc(var(--appointments-scrollbar-overlay-width) * -1);
 }
 
-#appointments-auto-data-table-2 thead th {
+html.staff-scope #appointments-auto-data-table-2 thead th {
   background: var(--page-shell-bg) !important;
   color: var(--text-1) !important;
 }
 
-#appointments-auto-data-table-2 tbody tr {
+html.staff-scope #appointments-auto-data-table-2 tbody tr {
   background: var(--surface) !important;
   background-image: none !important;
 }
 
-#appointments-auto-data-table-2 tbody td {
+html.staff-scope #appointments-auto-data-table-2 tbody td {
   background: transparent !important;
   background-image: none !important;
 }
 
-#appointments-auto-data-table-2 tr.appt-sat-row,
-#appointments-auto-data-table-2 tr.appt-sat-row td {
+html.staff-scope #appointments-auto-data-table-2 tr.appt-sat-row,
+html.staff-scope #appointments-auto-data-table-2 tr.appt-sat-row td {
   background: var(--warning-surface) !important;
 }
 
-#appointments-auto-data-table-2 tr.appt-today-row,
-#appointments-auto-data-table-2 tr.appt-today-row td {
+html.staff-scope #appointments-auto-data-table-2 tr.appt-today-row,
+html.staff-scope #appointments-auto-data-table-2 tr.appt-today-row td {
   background: var(--success-surface) !important;
 }
 
-#appointments-auto-data-table-2 tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row),
-#appointments-auto-data-table-2 tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row) td {
+html.staff-scope #appointments-auto-data-table-2 tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row),
+html.staff-scope #appointments-auto-data-table-2 tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row) td {
   background: rgba(var(--primary-rgb), 0.25) !important;
   color: var(--text-1) !important;
 }
 
-#appointments-auto-data-table-2 tr.appt-sat-row.appt-selected-row,
-#appointments-auto-data-table-2 tr.appt-sat-row.appt-selected-row td {
+html.staff-scope #appointments-auto-data-table-2 tr.appt-sat-row.appt-selected-row,
+html.staff-scope #appointments-auto-data-table-2 tr.appt-sat-row.appt-selected-row td {
   background: var(--warning-text) !important;
   color: var(--text-2) !important;
 }
 
-#appointments-auto-data-table-2 tr.appt-today-row.appt-selected-row,
-#appointments-auto-data-table-2 tr.appt-today-row.appt-selected-row td {
+html.staff-scope #appointments-auto-data-table-2 tr.appt-today-row.appt-selected-row,
+html.staff-scope #appointments-auto-data-table-2 tr.appt-today-row.appt-selected-row td {
   background: var(--success-text) !important;
   color: var(--text-2) !important;
 }
 
-#appointments-auto-data-table-2 tr.appt-sat-row *,
-#appointments-auto-data-table-2 tr.appt-today-row *,
-#appointments-auto-data-table-2 tr.appt-selected-row * {
+html.staff-scope #appointments-auto-data-table-2 tr.appt-sat-row *,
+html.staff-scope #appointments-auto-data-table-2 tr.appt-today-row *,
+html.staff-scope #appointments-auto-data-table-2 tr.appt-selected-row * {
   color: inherit !important;
 }
 
-#appointments-auto-data-table-2 tbody tr:not(.appt-sat-row):not(.appt-today-row):not(.appt-selected-row):hover td {
+html.staff-scope #appointments-auto-data-table-2 tbody tr:not(.appt-sat-row):not(.appt-today-row):not(.appt-selected-row):hover td {
   background: var(--control-bg-hover) !important;
   box-shadow: none !important;
   transition: background-color 0.15s ease;
 }
 
-#appointments-auto-data-table-2 tbody tr.appt-sat-row:hover td {
+html.staff-scope #appointments-auto-data-table-2 tbody tr.appt-sat-row:hover td {
   background: var(--warning-surface-hover) !important;
   color: var(--warning-text) !important;
   box-shadow: none !important;
 }
 
-#appointments-auto-data-table-2 tbody tr.appt-today-row:hover td {
+html.staff-scope #appointments-auto-data-table-2 tbody tr.appt-today-row:hover td {
   background: var(--success-surface-hover) !important;
   color: var(--text-1) !important;
   box-shadow: none !important;
 }
 
-#appointments-auto-data-table-2 tbody tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row):hover td {
+html.staff-scope #appointments-auto-data-table-2 tbody tr.appt-selected-row:not(.appt-today-row):not(.appt-sat-row):hover td {
   background: var(--theme-hover) !important;
   box-shadow: none !important;
 }
 
-#appointments-auto-data-table-2 tbody tr.appt-sat-row.appt-selected-row:hover td {
+html.staff-scope #appointments-auto-data-table-2 tbody tr.appt-sat-row.appt-selected-row:hover td {
   background: var(--warning-surface-hover) !important;
   color: var(--warning-text) !important;
   box-shadow: none !important;
 }
 
-#appointments-auto-data-table-2 tbody tr.appt-today-row.appt-selected-row:hover td {
+html.staff-scope #appointments-auto-data-table-2 tbody tr.appt-today-row.appt-selected-row:hover td {
   background: var(--success-surface-hover) !important;
   color: var(--text-1) !important;
   box-shadow: none !important;
@@ -6123,7 +6125,7 @@ a.tab-api__item:focus-visible:not(.is-active) {
 /* === Single-line height by default, grows up to 2 lines  === */
 /* === Same surface treatment as a standard input          === */
 /* ========================================================= */
-.app-notes-input {
+html.staff-scope .app-notes-input {
   /* Match the global input surface so this reads as an input, not a textarea. */
   background: var(--control-bg);
   resize: none;
@@ -6139,12 +6141,12 @@ a.tab-api__item:focus-visible:not(.is-active) {
   overflow: auto;
 }
 
-.app-notes-input:hover {
+html.staff-scope .app-notes-input:hover {
   background: var(--control-bg-hover);
 }
 
-.app-notes-input:focus,
-.app-notes-input:focus-visible {
+html.staff-scope .app-notes-input:focus,
+html.staff-scope .app-notes-input:focus-visible {
   background: var(--control-bg-hover);
   box-shadow: var(--control-ring);
   outline: none;

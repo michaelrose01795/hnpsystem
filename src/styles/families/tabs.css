@@ -15,7 +15,7 @@
 
 /* -------------------------------------------------------------------------- */
 /* Base tab item — shared across every variant */
-.app-tab {
+html.staff-scope .app-tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -30,63 +30,63 @@
   white-space: nowrap;
 }
 
-.app-tab:hover:not([aria-disabled="true"]) {
+html.staff-scope .app-tab:hover:not([aria-disabled="true"]) {
   background: var(--tab-item-bg-hover);
 }
 
-.app-tab[aria-selected="true"],
-.app-tab.is-active {
+html.staff-scope .app-tab[aria-selected="true"],
+html.staff-scope .app-tab.is-active {
   background: var(--primary);
   color: var(--onAccentText);
 }
 
-.app-tab[aria-disabled="true"] {
+html.staff-scope .app-tab[aria-disabled="true"] {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* Variants */
-.app-tab--page {
+html.staff-scope .app-tab--page {
   min-height: 40px;
   padding: 8px 18px;
   font-size: 0.95rem;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
-.app-tab--inner {
+html.staff-scope .app-tab--inner {
   min-height: 32px;
   padding: 6px 14px;
   font-size: 0.88rem;
   border-radius: var(--radius-xs);
 }
 
-.app-tab--pill {
+html.staff-scope .app-tab--pill {
   min-height: 32px;
   padding: 6px 16px;
   font-size: 0.88rem;
   border-radius: var(--radius-pill);
 }
 
-.app-tab--segmented {
+html.staff-scope .app-tab--segmented {
   min-height: 34px;
   padding: 6px 14px;
   font-size: 0.88rem;
   border-radius: 0;
 }
 
-.app-tab--segmented:first-child {
+html.staff-scope .app-tab--segmented:first-child {
   border-top-left-radius: var(--radius-xs);
   border-bottom-left-radius: var(--radius-xs);
 }
 
-.app-tab--segmented:last-child {
+html.staff-scope .app-tab--segmented:last-child {
   border-top-right-radius: var(--radius-xs);
   border-bottom-right-radius: var(--radius-xs);
 }
 
 /* -------------------------------------------------------------------------- */
 /* Trace mode — loud yellow outlines on every tab-family element. */
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-tabs="1"])
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-tabs="1"])
   :where(
     .app-layout-tab-row,
     .tab-scroll-row,

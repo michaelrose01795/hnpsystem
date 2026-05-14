@@ -18,7 +18,7 @@
 
 /* -------------------------------------------------------------------------- */
 /* Trace mode — loud green outlines on every card/surface element. */
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-section="1"])
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-section="1"])
   :where(
     .app-page-card,
     .app-section-card,
@@ -33,7 +33,7 @@
   box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.32) !important;
 }
 
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-stat-card="1"])
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-stat-card="1"])
   :where(.app-layout-stat-card, [class*="stat-card"], [class*="metric-card"]) {
   outline: 2px solid #16a34a !important;
   outline-offset: 2px;

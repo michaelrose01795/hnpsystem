@@ -35,7 +35,14 @@ export default function CustomerLoginPage() {
     firstname: "",
     lastname: "",
     mobile: "",
+    telephone: "",
+    postcode: "",
+    address: "",
   });
+  const [addressManual, setAddressManual] = useState(false);
+  const [addressLookupLoading, setAddressLookupLoading] = useState(false);
+  const [addressLookupMessage, setAddressLookupMessage] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [matchedName, setMatchedName] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -90,8 +97,74 @@ export default function CustomerLoginPage() {
     setStep(STEP_EMAIL);
     setPassword("");
     setMatchedName(null);
-    setSignupExtras({ firstname: "", lastname: "", mobile: "" });
+    setSignupExtras({
+      firstname: "",
+      lastname: "",
+      mobile: "",
+      telephone: "",
+      postcode: "",
+      address: "",
+    });
+    setAddressManual(false);
+    setAddressLookupMessage("");
+    setAddressSuggestions([]);
     setError("");
+  };
+
+  const updateSignupField = (field, value) => {
+    setSignupExtras((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const handleAddressLookup = async () => {
+    const postcode = signupExtras.postcode.trim();
+    setAddressLookupMessage("");
+    setAddressSuggestions([]);
+    if (!postcode) {
+      setAddressLookupMessage("Enter a postcode first.");
+      return;
+    }
+
+    setAddressLookupLoading(true);
+    try {
+      const res = await fetch(`/api/postcode-lookup?postcode=${encodeURIComponent(postcode)}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Could not find addresses for that postcode.");
+      }
+      const suggestions = data.suggestions || [];
+      setAddressSuggestions(suggestions);
+      setAddressLookupMessage(
+        suggestions.length
+          ? "Choose the matching address below."
+          : "No addresses found. Enter the address manually.",
+      );
+      if (suggestions.length === 1) {
+        const match = suggestions[0];
+        setSignupExtras((current) => ({
+          ...current,
+          postcode: match.postcode || current.postcode,
+          address: match.fullAddress || match.label || current.address,
+        }));
+      }
+    } catch (err) {
+      setAddressLookupMessage(err.message);
+      setAddressManual(true);
+    } finally {
+      setAddressLookupLoading(false);
+    }
+  };
+
+  const handleAddressSuggestion = (e) => {
+    const suggestion = addressSuggestions.find((item) => String(item.id) === e.target.value);
+    if (!suggestion) return;
+    setSignupExtras((current) => ({
+      ...current,
+      postcode: suggestion.postcode || current.postcode,
+      address: suggestion.fullAddress || suggestion.label || current.address,
+    }));
   };
 
   const handleEmailContinue = async (e) => {
@@ -225,19 +298,18 @@ export default function CustomerLoginPage() {
       <div className={styles.authShell}>
         <main className={styles.authMain}>
           <div className={styles.authCard}>
-            <Link href="/website" className={styles.authBackLink}>
-              Back to website
-            </Link>
+            <div className={styles.authTopRow}>
+              <Link href="/website" className={styles.authBackLink}>
+                Back to website
+              </Link>
 
-            <div className={styles.authBrand}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={siteContent.brand.logoUrl}
-                alt={siteContent.brand.name}
-              />
-              <span className={styles.authBrandText}>
-                <span className={styles.authBrandName}>Customer portal</span>
-              </span>
+              <div className={styles.authBrand}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={siteContent.brand.logoUrl}
+                  alt={siteContent.brand.name}
+                />
+              </div>
             </div>
 
             {step === STEP_EMAIL ? (
@@ -367,75 +439,160 @@ export default function CustomerLoginPage() {
 
             {step === STEP_SIGNUP ? (
               <>
-                <h1 className={styles.authTitle}>Create your account</h1>
-                <p className={styles.authSubtitle}>
-                  We don't have you on file yet. Fill in a few details to get
-                  set up.
-                </p>
+                <div className={styles.signupHeader}>
+                  <span className={styles.signupEyebrow}>New customer</span>
+                  <h1 className={styles.authTitle}>Create your account</h1>
+                  <p className={styles.authSubtitle}>
+                    We don't have you on file yet. Add your details and we'll
+                    open your customer portal.
+                  </p>
+                  <div className={styles.signupEmailSummary}>
+                    <span>Email</span>
+                    <strong>{email}</strong>
+                  </div>
+                </div>
                 {error ? <p className={styles.authError}>{error}</p> : null}
-                <form className={styles.authForm} onSubmit={handleSignup}>
-                  <div className={styles.authRow}>
+                <form
+                  className={`${styles.authForm} ${styles.signupForm}`}
+                  onSubmit={handleSignup}
+                >
+                  <div className={styles.signupPanel}>
+                    <div className={styles.authRow}>
+                      <div className={styles.authField}>
+                        <label className={styles.authLabel}>
+                          First name <span className={styles.requiredMark}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          autoComplete="given-name"
+                          required
+                          autoFocus
+                          className={styles.authInput}
+                          value={signupExtras.firstname}
+                          onChange={(e) => updateSignupField("firstname", e.target.value)}
+                        />
+                      </div>
+                      <div className={styles.authField}>
+                        <label className={styles.authLabel}>
+                          Second name <span className={styles.requiredMark}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          autoComplete="family-name"
+                          required
+                          className={styles.authInput}
+                          value={signupExtras.lastname}
+                          onChange={(e) => updateSignupField("lastname", e.target.value)}
+                        />
+                      </div>
+                    </div>
                     <div className={styles.authField}>
-                      <label className={styles.authLabel}>First name</label>
+                      <label className={styles.authLabel}>
+                        Mobile <span className={styles.requiredMark}>*</span>
+                      </label>
                       <input
-                        type="text"
-                        autoComplete="given-name"
+                        type="tel"
+                        autoComplete="tel"
                         required
                         className={styles.authInput}
-                        value={signupExtras.firstname}
-                        onChange={(e) =>
-                          setSignupExtras({
-                            ...signupExtras,
-                            firstname: e.target.value,
-                          })
-                        }
+                        value={signupExtras.mobile}
+                        onChange={(e) => updateSignupField("mobile", e.target.value)}
                       />
                     </div>
                     <div className={styles.authField}>
-                      <label className={styles.authLabel}>Last name</label>
+                      <label className={styles.authLabel}>Telephone</label>
                       <input
-                        type="text"
-                        autoComplete="family-name"
-                        required
+                        type="tel"
+                        autoComplete="tel-national"
                         className={styles.authInput}
-                        value={signupExtras.lastname}
-                        onChange={(e) =>
-                          setSignupExtras({
-                            ...signupExtras,
-                            lastname: e.target.value,
-                          })
-                        }
+                        value={signupExtras.telephone}
+                        onChange={(e) => updateSignupField("telephone", e.target.value)}
                       />
                     </div>
-                  </div>
-                  <div className={styles.authField}>
-                    <label className={styles.authLabel}>Mobile (optional)</label>
-                    <input
-                      type="tel"
-                      autoComplete="tel"
-                      className={styles.authInput}
-                      value={signupExtras.mobile}
-                      onChange={(e) =>
-                        setSignupExtras({
-                          ...signupExtras,
-                          mobile: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className={styles.authField}>
-                    <label className={styles.authLabel}>
-                      Password (min. 12 characters)
-                    </label>
-                    <input
-                      type="password"
-                      autoComplete="new-password"
-                      minLength={12}
-                      required
-                      className={styles.authInput}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
+                    <div className={styles.authField}>
+                      <label className={styles.authLabel}>
+                        Postcode <span className={styles.requiredMark}>*</span>
+                      </label>
+                      <div className={styles.postcodeLookupRow}>
+                        <input
+                          type="text"
+                          autoComplete="postal-code"
+                          required
+                          className={styles.authInput}
+                          value={signupExtras.postcode}
+                          onChange={(e) => updateSignupField("postcode", e.target.value.toUpperCase())}
+                        />
+                        <button
+                          type="button"
+                          className={`app-btn ${styles.postcodeLookupButton}`}
+                          onClick={handleAddressLookup}
+                          disabled={addressLookupLoading}
+                        >
+                          {addressLookupLoading ? "Searching" : "Search"}
+                        </button>
+                      </div>
+                      {addressLookupMessage ? (
+                        <span className={styles.signupHint}>{addressLookupMessage}</span>
+                      ) : null}
+                    </div>
+                    {addressSuggestions.length > 0 ? (
+                      <div className={styles.authField}>
+                        <label className={styles.authLabel}>Select address</label>
+                        <select
+                          className={styles.authInput}
+                          defaultValue=""
+                          onChange={handleAddressSuggestion}
+                        >
+                          <option value="" disabled>
+                            Choose address
+                          </option>
+                          {addressSuggestions.map((suggestion) => (
+                            <option key={suggestion.id} value={suggestion.id}>
+                              {suggestion.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : null}
+                    <div className={styles.authField}>
+                      <div className={styles.addressFieldHeader}>
+                        <label className={styles.authLabel}>
+                          Full address <span className={styles.requiredMark}>*</span>
+                        </label>
+                        <button
+                          type="button"
+                          className={styles.addressManualButton}
+                          onClick={() => setAddressManual((current) => !current)}
+                        >
+                          {addressManual ? "Use lookup" : "Enter manually"}
+                        </button>
+                      </div>
+                      <textarea
+                        autoComplete="street-address"
+                        required
+                        readOnly={!addressManual && addressSuggestions.length > 0}
+                        className={`${styles.authInput} ${styles.authTextarea}`}
+                        value={signupExtras.address}
+                        onChange={(e) => updateSignupField("address", e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.authField}>
+                      <label className={styles.authLabel}>
+                        Password <span className={styles.requiredMark}>*</span>
+                      </label>
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={12}
+                        required
+                        className={styles.authInput}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <span className={styles.signupHint}>
+                        Use at least 12 characters.
+                      </span>
+                    </div>
                   </div>
                   <button
                     type="submit"

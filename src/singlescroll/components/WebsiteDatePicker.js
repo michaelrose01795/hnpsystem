@@ -112,19 +112,29 @@ export default function WebsiteDatePicker({
     : placeholder;
 
   return (
-    <div ref={rootRef} className={styles.wsRoot} data-open={open ? "true" : "false"}>
+    <div
+      ref={rootRef}
+      className={`${styles.wsRoot} website-date-picker`}
+      data-open={open ? "true" : "false"}
+    >
       <button
         type="button"
-        className={`app-btn ${styles.wsTrigger} ${className}`}
+        className={`app-btn ${styles.wsTrigger} website-date-picker__trigger ${className}`}
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="dialog"
         aria-expanded={open}
       >
-        <span className={selected ? styles.wsTriggerValue : styles.wsTriggerPlaceholder}>
+        <span
+          className={
+            selected
+              ? `${styles.wsTriggerValue} website-date-picker__value`
+              : `${styles.wsTriggerPlaceholder} website-date-picker__placeholder`
+          }
+        >
           {labelText}
         </span>
-        <span className={styles.wsCalIcon} aria-hidden="true" />
+        <span className={`${styles.wsCalIcon} website-date-picker__icon`} aria-hidden="true" />
       </button>
       {required ? (
         <input
@@ -145,11 +155,15 @@ export default function WebsiteDatePicker({
         />
       ) : null}
       {open ? (
-        <div className={styles.wsCalPanel} role="dialog" aria-label="Choose a date">
-          <div className={styles.wsCalHeader}>
+        <div
+          className={`${styles.wsCalPanel} website-calendar`}
+          role="dialog"
+          aria-label="Choose a date"
+        >
+          <div className={`${styles.wsCalHeader} website-calendar__header`}>
             <button
               type="button"
-              className={styles.wsCalNav}
+              className={`${styles.wsCalNav} website-calendar__nav`}
               onClick={() => {
                 const next = new Date(cursor);
                 next.setMonth(cursor.getMonth() - 1);
@@ -159,12 +173,12 @@ export default function WebsiteDatePicker({
             >
               ‹
             </button>
-            <div className={styles.wsCalTitle}>
+            <div className={`${styles.wsCalTitle} website-calendar__title`}>
               {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
             </div>
             <button
               type="button"
-              className={styles.wsCalNav}
+              className={`${styles.wsCalNav} website-calendar__nav`}
               onClick={() => {
                 const next = new Date(cursor);
                 next.setMonth(cursor.getMonth() + 1);
@@ -175,12 +189,12 @@ export default function WebsiteDatePicker({
               ›
             </button>
           </div>
-          <div className={styles.wsCalWeekdays}>
+          <div className={`${styles.wsCalWeekdays} website-calendar__weekdays`}>
             {WEEKDAYS.map((w) => (
               <span key={w}>{w}</span>
             ))}
           </div>
-          <div className={styles.wsCalGrid}>
+          <div className={`${styles.wsCalGrid} website-calendar__grid`}>
             {grid.map((d) => {
               const muted = d.getMonth() !== cursor.getMonth();
               const isSel = sameDay(d, selected);
@@ -191,9 +205,11 @@ export default function WebsiteDatePicker({
                   key={d.toISOString()}
                   type="button"
                   disabled={dis}
-                  className={`${styles.wsCalDay} ${muted ? styles.wsCalDayMuted : ""} ${
-                    isSel ? styles.wsCalDaySelected : ""
-                  } ${isToday ? styles.wsCalDayToday : ""}`}
+                  className={`${styles.wsCalDay} website-calendar__day ${
+                    muted ? `${styles.wsCalDayMuted} website-calendar__day--muted` : ""
+                  } ${isSel ? `${styles.wsCalDaySelected} website-calendar__day--selected` : ""} ${
+                    isToday ? `${styles.wsCalDayToday} website-calendar__day--today` : ""
+                  }`}
                   onClick={() => {
                     onChange(toIso(d));
                     setOpen(false);
@@ -204,7 +220,7 @@ export default function WebsiteDatePicker({
               );
             })}
           </div>
-          <div className={styles.wsCalFooter}>
+          <div className={`${styles.wsCalFooter} website-calendar__footer`}>
             <button
               type="button"
               onClick={() => {

@@ -30,6 +30,9 @@ export default async function handler(req, res) {
   const firstname = String(req.body?.firstname ?? "").trim();
   const lastname = String(req.body?.lastname ?? "").trim();
   const mobile = String(req.body?.mobile ?? "").trim();
+  const telephone = String(req.body?.telephone ?? "").trim();
+  const postcode = String(req.body?.postcode ?? "").trim().toUpperCase();
+  const address = String(req.body?.address ?? "").trim();
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ success: false, message: "Enter a valid email." });
@@ -40,10 +43,10 @@ export default async function handler(req, res) {
       message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters.`,
     });
   }
-  if (!firstname || !lastname) {
+  if (!firstname || !lastname || !mobile || !postcode || !address) {
     return res.status(400).json({
       success: false,
-      message: "First and last name are required.",
+      message: "First name, last name, mobile, postcode and address are required.",
     });
   }
 
@@ -58,7 +61,15 @@ export default async function handler(req, res) {
   // Match an existing customers row by email; if none, create one.
   let customer = await findCustomerByEmail(email);
   if (!customer) {
-    customer = await createCustomerRow({ firstname, lastname, email, mobile });
+    customer = await createCustomerRow({
+      firstname,
+      lastname,
+      email,
+      mobile,
+      telephone,
+      address,
+      postcode,
+    });
     if (!customer) {
       return res.status(500).json({
         success: false,

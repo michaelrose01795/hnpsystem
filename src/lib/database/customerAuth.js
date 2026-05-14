@@ -65,6 +65,9 @@ export async function createCustomerRow({
   lastname,
   email,
   mobile,
+  telephone,
+  address,
+  postcode,
 }) {
   const { data, error } = await db()
     .from("customers")
@@ -73,9 +76,12 @@ export async function createCustomerRow({
       lastname: lastname || null,
       email: normaliseEmail(email) || null,
       mobile: mobile || null,
+      telephone: telephone || null,
+      address: address || null,
+      postcode: postcode || null,
       contact_preference: "email",
     })
-    .select("id, firstname, lastname, email, mobile")
+    .select("id, firstname, lastname, email, mobile, telephone, address, postcode")
     .single();
   if (error) {
     console.error("createCustomerRow:", error.message);

@@ -14,28 +14,28 @@
 
 /* -------------------------------------------------------------------------- */
 /* New variants */
-.app-data-table--compact th,
-.app-data-table--compact td {
+html.staff-scope .app-data-table--compact th,
+html.staff-scope .app-data-table--compact td {
   padding: 6px 10px !important;
   font-size: 0.85rem;
   line-height: 1.25;
 }
 
-.app-data-table--workflow tbody tr {
+html.staff-scope .app-data-table--workflow tbody tr {
   transition: background-color 0.18s ease;
 }
 
-.app-data-table--workflow tbody tr[data-row-state="active"] {
+html.staff-scope .app-data-table--workflow tbody tr[data-row-state="active"] {
   background: var(--secondary);
 }
 
-.app-data-table--workflow tbody tr[data-row-state="muted"] {
+html.staff-scope .app-data-table--workflow tbody tr[data-row-state="muted"] {
   opacity: 0.62;
 }
 
 /* -------------------------------------------------------------------------- */
 /* Trace mode — loud grey outlines on every table-family element. */
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-table="1"])
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-table="1"])
   :where(
     table:not([data-dev-overlay-internal] table),
     .app-data-table,

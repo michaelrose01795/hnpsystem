@@ -13,14 +13,14 @@
  * it to src/styles/families/ instead of aliasing it.
  */
 
-.vhc-section-shell {
+html.staff-scope .vhc-section-shell {
   display: flex;
   flex-direction: column;
   gap: var(--page-stack-gap);
   height: 100%;
 }
 
-.vhc-toolbar {
+html.staff-scope .vhc-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -30,48 +30,48 @@
   border: none;
 }
 
-.vhc-toolbar__title {
+html.staff-scope .vhc-toolbar__title {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
   color: var(--primary);
 }
 
-.vhc-toolbar__subtitle {
+html.staff-scope .vhc-toolbar__subtitle {
   margin: 4px 0 0 0;
   font-size: 13px;
   color: var(--text-1);
 }
 
-.vhc-content-card {
+html.staff-scope .vhc-content-card {
   background: var(--section-card-bg);
   border: none;
   border-radius: var(--section-card-radius);
   padding: var(--section-card-padding);
 }
 
-.vhc-content-card--bordered {
+html.staff-scope .vhc-content-card--bordered {
   border: none;
 }
 
-.vhc-section-heading {
+html.staff-scope .vhc-section-heading {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 12px;
   color: var(--primary);
 }
 
-.vhc-section-heading--secondary {
+html.staff-scope .vhc-section-heading--secondary {
   color: var(--text-1);
 }
 
-.vhc-card-grid {
+html.staff-scope .vhc-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
 }
 
-.vhc-card {
+html.staff-scope .vhc-card {
   background: var(--control-bg);
   border: none;
   border-radius: var(--section-card-radius);
@@ -82,24 +82,24 @@
   z-index: 0;
 }
 
-.vhc-card:hover {
+html.staff-scope .vhc-card:hover {
   z-index: var(--hover-surface-z, 80);
   box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
 
-.vhc-card--mandatory {
+html.staff-scope .vhc-card--mandatory {
   border: none;
 }
 
-.vhc-card__header {
+html.staff-scope .vhc-card__header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 12px;
 }
 
-.vhc-card__title {
+html.staff-scope .vhc-card__title {
   margin: 0;
   color: var(--accent-strong);
   font-size: var(--text-h3);
@@ -107,13 +107,13 @@
   line-height: var(--leading-tight);
 }
 
-.vhc-card__description {
+html.staff-scope .vhc-card__description {
   margin: 0;
   font-size: 13px;
   color: var(--text-1);
 }
 
-.vhc-btn {
+html.staff-scope .vhc-btn {
   min-height: var(--control-height);
   padding: 6px 12px;
   border-radius: var(--radius-xs);
@@ -127,26 +127,26 @@
   color: var(--accent-purple);
 }
 
-.vhc-btn:hover {
+html.staff-scope .vhc-btn:hover {
   background: var(--accent-purple);
   color: var(--surface);
 }
 
-.vhc-btn--active {
+html.staff-scope .vhc-btn--active {
   background: var(--accent-purple);
   color: var(--surface);
 }
 
-.vhc-btn--active:hover {
+html.staff-scope .vhc-btn--active:hover {
   background: var(--primary-selected, var(--accent-purple));
 }
 
-.vhc-btn:disabled {
+html.staff-scope .vhc-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.vhc-summary-banner {
+html.staff-scope .vhc-summary-banner {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -157,20 +157,20 @@
   font-weight: 700;
 }
 
-.vhc-summary-item {
+html.staff-scope .vhc-summary-item {
   padding: 12px 16px;
   background: var(--surface);
   border-radius: var(--radius-xs);
   margin-bottom: 8px;
 }
 
-.vhc-summary-item__section {
+html.staff-scope .vhc-summary-item__section {
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 4px;
 }
 
-.vhc-summary-item__text {
+html.staff-scope .vhc-summary-item__text {
   font-size: 13px;
   color: var(--text-1);
 }

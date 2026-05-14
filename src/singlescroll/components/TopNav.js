@@ -122,10 +122,6 @@ export default function TopNav({ onFilterChange }) {
             alt={siteContent.brand.name}
             className={styles.navLogo}
           />
-          <span className={styles.navBrandText}>
-            <span className={styles.navBrandName}>{siteContent.brand.name}</span>
-            <span className={styles.navBrandTagline}>{siteContent.brand.tagline}</span>
-          </span>
         </a>
 
         <nav className={styles.navTabsWrap} aria-label="Primary">

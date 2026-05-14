@@ -55,6 +55,8 @@ import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/pre
 // — only the inner children swap.
 const defaultGetLayout = (page) => <Layout>{page}</Layout>;
 
+const isWebsitePath = (path = "") => path === "/website" || path.startsWith("/website/");
+
 function AppWrapper({ Component, pageProps }) {
   const router = useRouter();
   const pathname = router?.pathname || "";
@@ -68,17 +70,28 @@ function AppWrapper({ Component, pageProps }) {
   if (typeof window !== "undefined") setPresentationMode(isPresentationRoute);
   const notesHiddenRoutes = new Set(["/", "/login", "/presentation"]);
   const isCustomerRoute = pathname.startsWith("/customer");
-  const isWebsiteRoute =
-    pathname === "/website" ||
-    pathname.startsWith("/website/") ||
-    asPathWithoutQuery === "/website" ||
-    asPathWithoutQuery.startsWith("/website/");
+  const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
   const hideNotesWidget =
     isCustomerRoute ||
     isWebsiteRoute ||
     notesHiddenRoutes.has(pathname) ||
     notesHiddenRoutes.has(asPathWithoutQuery);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
+
+  // Route-owned global style scopes. Next loads global CSS from _app only, so
+  // the route decides which global family is active by toggling root classes:
+  // staffglobal.css applies under html.staff-scope, custglobal.css applies
+  // under html.website-scope.
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const root = document.documentElement;
+    const body = document.body;
+    root.classList.toggle("website-scope", isWebsiteRoute);
+    root.classList.toggle("staff-scope", !isWebsiteRoute);
+    body?.classList.toggle("website-scope", isWebsiteRoute);
+    body?.classList.toggle("staff-scope", !isWebsiteRoute);
+    return undefined;
+  }, [isWebsiteRoute]);
 
   // Install / restore the /api/* fetch interceptor based on whether we're on a
   // /presentation/* route. Real routes always get the original window.fetch.

@@ -7,7 +7,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { TabRow } from "@/components/ui/layout-system";
+import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { COMPLIANCE_ADMIN_ROLES } from "@/lib/compliance/roles";
 
 const TABS = [
@@ -30,11 +30,14 @@ export default function ComplianceLayout({ title, children }) {
       <Head>
         <title>{title ? `${title} - Compliance` : "Compliance"} - HNP System</title>
       </Head>
-      <div className="app-page-stack">
-        <TabRow
+      <div className="app-page-stack" style={{ gap: 10 }}>
+        <DevLayoutSection
+          as="nav"
           sectionKey="admin-compliance-tabs"
           parentKey="app-layout-page-card"
-          style={{ width: "fit-content", maxWidth: "100%" }}
+          sectionType="tab-row"
+          className="tab-api tab-api--inline"
+          aria-label="Compliance sections"
         >
           {TABS.map((tab) => {
             const active =
@@ -47,13 +50,13 @@ export default function ComplianceLayout({ title, children }) {
                 key={tab.href}
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`app-tab app-tab--page${active ? " is-active" : ""}`}
+                className={`tab-api__item${active ? " is-active" : ""}`}
               >
                 {tab.label}
               </Link>
             );
           })}
-        </TabRow>
+        </DevLayoutSection>
         {children}
       </div>
     </ProtectedRoute>

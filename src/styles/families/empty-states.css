@@ -11,7 +11,7 @@
  */
 
 /* -------------------------------------------------------------------------- */
-.app-empty-state {
+html.staff-scope .app-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -21,34 +21,34 @@
   color: var(--text-1);
 }
 
-.app-empty-state__title {
+html.staff-scope .app-empty-state__title {
   font-size: var(--text-h4);
   font-weight: 600;
   color: var(--text-1);
   margin: 0;
 }
 
-.app-empty-state__description {
+html.staff-scope .app-empty-state__description {
   font-size: var(--text-body-sm);
   color: var(--text-1);
   margin: 0;
   max-width: 46ch;
 }
 
-.app-empty-state__actions {
+html.staff-scope .app-empty-state__actions {
   display: flex;
   gap: 8px;
   justify-content: center;
   margin-top: 8px;
 }
 
-.app-empty-state--inline {
+html.staff-scope .app-empty-state--inline {
   padding: 20px 16px;
   background: var(--surface);
   border-radius: var(--radius-sm);
 }
 
-.app-empty-state--page {
+html.staff-scope .app-empty-state--page {
   padding: 56px 24px;
   background: var(--section-card-bg);
   border-radius: var(--section-card-radius);
@@ -56,7 +56,7 @@
 
 /* -------------------------------------------------------------------------- */
 /* Trace mode — slate outlines. */
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   :where(.app-empty-state) {
   outline: 2px solid #475569 !important;
   outline-offset: 2px;

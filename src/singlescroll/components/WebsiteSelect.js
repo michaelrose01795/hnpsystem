@@ -78,22 +78,28 @@ export default function WebsiteSelect({
   return (
     <div
       ref={rootRef}
-      className={styles.wsRoot}
+      className={`${styles.wsRoot} website-select`}
       data-open={open ? "true" : "false"}
     >
       <button
         type="button"
         id={triggerId}
-        className={`app-btn ${styles.wsTrigger} ${className}`}
+        className={`app-btn ${styles.wsTrigger} website-select__trigger ${className}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className={selected ? styles.wsTriggerValue : styles.wsTriggerPlaceholder}>
+        <span
+          className={
+            selected
+              ? `${styles.wsTriggerValue} website-select__value`
+              : `${styles.wsTriggerPlaceholder} website-select__placeholder`
+          }
+        >
           {selected ? selected.label : placeholder}
         </span>
-        <span className={styles.wsCaret} aria-hidden="true" />
+        <span className={`${styles.wsCaret} website-select__caret`} aria-hidden="true" />
       </button>
       {required ? (
         // Hidden native field so the surrounding <form> still validates
@@ -120,10 +126,10 @@ export default function WebsiteSelect({
           ref={listRef}
           role="listbox"
           aria-labelledby={triggerId}
-          className={styles.wsMenu}
+          className={`${styles.wsMenu} website-select__menu`}
         >
           {options.length === 0 ? (
-            <li className={styles.wsEmpty}>No options</li>
+            <li className={`${styles.wsEmpty} website-select__empty`}>No options</li>
           ) : (
             options.map((opt, idx) => {
               const isSel = String(opt.value) === String(value);
@@ -133,18 +139,18 @@ export default function WebsiteSelect({
                   key={`${opt.value}-${idx}`}
                   role="option"
                   aria-selected={isSel}
-                  className={`${styles.wsOption} ${
-                    isSel ? styles.wsOptionSelected : ""
-                  } ${isActive ? styles.wsOptionActive : ""}`}
+                  className={`${styles.wsOption} website-select__option ${
+                    isSel ? `${styles.wsOptionSelected} website-select__option--selected` : ""
+                  } ${isActive ? `${styles.wsOptionActive} website-select__option--active` : ""}`}
                   onMouseEnter={() => setActiveIdx(idx)}
                   onClick={() => {
                     onChange(opt.value);
                     setOpen(false);
                   }}
                 >
-                  <span className={styles.wsOptionLabel}>{opt.label}</span>
+                  <span className={`${styles.wsOptionLabel} website-select__option-label`}>{opt.label}</span>
                   {opt.hint ? (
-                    <span className={styles.wsOptionHint}>{opt.hint}</span>
+                    <span className={`${styles.wsOptionHint} website-select__option-hint`}>{opt.hint}</span>
                   ) : null}
                 </li>
               );

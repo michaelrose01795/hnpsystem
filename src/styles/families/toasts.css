@@ -13,7 +13,7 @@
  */
 
 /* -------------------------------------------------------------------------- */
-.app-toast {
+html.staff-scope .app-toast {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -28,7 +28,7 @@
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.12);
 }
 
-.app-toast__icon {
+html.staff-scope .app-toast__icon {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
@@ -41,29 +41,29 @@
 /* Toasts no longer carry a coloured left border — borders are only allowed on
    inputs, checkboxes, ghost buttons, and focus rings. The variant is signalled
    by the icon colour and surface tint. */
-.app-toast--info .app-toast__icon {
+html.staff-scope .app-toast--info .app-toast__icon {
   background: var(--secondary);
   color: var(--primary);
 }
 
-.app-toast--success .app-toast__icon {
+html.staff-scope .app-toast--success .app-toast__icon {
   background: var(--success-surface);
   color: var(--success-strong);
 }
 
-.app-toast--warning .app-toast__icon {
+html.staff-scope .app-toast--warning .app-toast__icon {
   background: var(--warning-surface);
   color: var(--warning-strong);
 }
 
-.app-toast--error .app-toast__icon {
+html.staff-scope .app-toast--error .app-toast__icon {
   background: var(--danger-surface);
   color: var(--danger-strong);
 }
 
 /* -------------------------------------------------------------------------- */
 /* Trace mode — amber outlines. */
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   :where(.app-toast) {
   outline: 2px solid #f59e0b !important;
   outline-offset: 2px;

@@ -4,7 +4,7 @@ UI THEME / SURFACE REVIEW — SIDEBAR PAGES PER USER
 RETAIL
 ====================================================
 
-- /login
+- /login (DONE
 
 
 ----------------------------------------------------
@@ -24,11 +24,9 @@ SALES
 Admin Manager
 ----------------------------------------------------
 
-- /admin/compliance (CHECK)
-have it so "/admin/compliance :: 1.2.2.1.1 (admin-compliance-auto-page-shell-1) — “Dashboard Subject Requests Breaches DPIAs ROPA Retention At…”" section uses "--theme" colour background 
+- /admin/compliance (DONE
 
-- /dashboard/admin 
-remove ℹ️ from “Notices Latest alerts ℹ️ Job #00078 status updated to Relea…” cards 
+- /dashboard/admin (DONE
 
 
 ----------------------------------------------------
@@ -53,34 +51,26 @@ Accounts Manager
 Owner
 ----------------------------------------------------
 
-- /hr/manager (CHECK)
-remove "/hr/manager :: 1.2.2.1.1.1.2.1 (hr-employees-workspace)" card and move the content into the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" card. have it os the the empty card at the top of the "/hr/manager :: 1.2.2.1.1.1.2 (hr-manager-tab-employees)" section is removed, dev overlay is setting it to a green line but i cant click it to easily tell u what card it is. do the same thing for each tab section to put the cards wihtin the cards into the mian section etc. 
+- /hr/manager (DONE
 
-(CHECK)
-have it so the rows within "/hr/manager :: 1.2.2.1.1.1.2.1.1.6 (hr-employees-directory-list)" section follows the global.css table design 
 
 ----------------------------------------------------
 Painters
 ----------------------------------------------------
 
-- /dashboard/painting (DOne
+- /dashboard/painting (DONE
 
 ====================================================
 CUSTOMER
 ====================================================
 
-- /customer (CHECK)
-remove the customer select dropdown from the /login page as to test the use can go to /website and use dev login from there etc to find the link and see the customer details for texting etc.
+- /customer (DONE
 
-- /website/profile (CHECK)
-remove the mock data from all of the sections and link it to actual data within the database. if sections require third party api links, hvae it so just has a short front end todo in small print so saying connection to api still required etc.
+- /website/profile (DONE
 
-- /website (TODO)
-create global.css liek file for /website, keep global.css for staff seperate to custoemrs so we can tell with the file names as well like custglobal.css and staffglobal.css etc so theres a seperation of two differnt styles to be used etc.
-Done: split staff and customer global styles into staffglobal.css and custglobal.css, updated all imports/references, and made /website skip loading the 3D scene completely on low-power phones, poor connections, or reduced-motion devices.
-have it so if the device is a low proceesing phone/not much single, have it so the 3D models dont show and dont hide jsut doesnt load it at all.
+- /website (DONE
 
-- /website/login
+- /website/login (DONE
 
 
 ====================================================

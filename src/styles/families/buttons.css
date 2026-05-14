@@ -18,7 +18,7 @@
 /* ========================================================= */
 /* === Base rule                                           === */
 /* ========================================================= */
-.app-btn {
+html.staff-scope .app-btn {
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--control-radius);
@@ -36,7 +36,7 @@
   text-decoration: none;
 }
 
-.app-btn:disabled {
+html.staff-scope .app-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
@@ -47,11 +47,11 @@
 /* === Height stays locked to --control-height (44px)      === */
 /* === so every button aligns on the same baseline.        === */
 /* ========================================================= */
-.app-btn--sm {
+html.staff-scope .app-btn--sm {
   padding: var(--control-padding-sm);
 }
 
-.app-btn--xs {
+html.staff-scope .app-btn--xs {
   padding: var(--control-padding-xs);
   font-size: 0.82rem;
 }
@@ -59,7 +59,7 @@
 /* ========================================================= */
 /* === Shape modifier                                      === */
 /* ========================================================= */
-.app-btn--pill {
+html.staff-scope .app-btn--pill {
   border-radius: var(--radius-pill);
 }
 
@@ -68,7 +68,7 @@
 /* === --nav: full-width, left-aligned — used for sidebar  === */
 /* === nav links (Link components wearing .app-btn).       === */
 /* ========================================================= */
-.app-btn--nav {
+html.staff-scope .app-btn--nav {
   display: flex;
   width: 100%;
   justify-content: flex-start;
@@ -83,7 +83,7 @@
 /* === inline keys; Links wearing .app-btn are guarded     === */
 /* === here.                                               === */
 /* ========================================================= */
-.app-btn--primary {
+html.staff-scope .app-btn--primary {
   /* Primary tracks the text-field background so form surfaces (input + CTA)
      read as one family. --input-bg resolves to --control-bg (pale accent
      tint in whichever theme colour the user has chosen). */
@@ -91,39 +91,39 @@
   color: var(--text-1) !important;
   border: none !important;
 }
-.app-btn--primary:hover,
-.app-btn--primary:focus-visible {
+html.staff-scope .app-btn--primary:hover,
+html.staff-scope .app-btn--primary:focus-visible {
   background: var(--control-bg-hover) !important;
 }
 
-.app-btn--secondary {
+html.staff-scope .app-btn--secondary {
   background: var(--control-bg) !important;
   color: var(--text-accent) !important;
   border: none !important;
 }
-.app-btn--secondary:hover,
-.app-btn--secondary:focus-visible {
+html.staff-scope .app-btn--secondary:hover,
+html.staff-scope .app-btn--secondary:focus-visible {
   background: var(--control-bg-hover) !important;
 }
 
-.app-btn--ghost {
+html.staff-scope .app-btn--ghost {
   background: transparent !important;
   color: var(--accentText) !important;
   /* Ghost buttons are one of the four allowed "ring" use-cases. */
   border: var(--ghostbutton-ring) !important;
 }
-.app-btn--ghost:hover,
-.app-btn--ghost:focus-visible {
+html.staff-scope .app-btn--ghost:hover,
+html.staff-scope .app-btn--ghost:focus-visible {
   background: var(--control-bg) !important;
 }
 
-.app-btn--danger {
+html.staff-scope .app-btn--danger {
   background: var(--danger) !important;
   color: #fff !important;
   border: none !important;
 }
-.app-btn--danger:hover,
-.app-btn--danger:focus-visible {
+html.staff-scope .app-btn--danger:hover,
+html.staff-scope .app-btn--danger:focus-visible {
   background: var(--danger-dark) !important;
 }
 
@@ -135,13 +135,13 @@
 /* === Hover/Active/Focus mockups side-by-side for review.  === */
 /* === Not for production code.                             === */
 /* ========================================================= */
-.app-btn[data-demo-state="hover"] {
+html.staff-scope .app-btn[data-demo-state="hover"] {
   background: var(--primary-hover) !important;
 }
-.app-btn[data-demo-state="active"] {
+html.staff-scope .app-btn[data-demo-state="active"] {
   background: var(--primary-pressed) !important;
 }
-.app-btn[data-demo-state="focus"] {
+html.staff-scope .app-btn[data-demo-state="focus"] {
   box-shadow: var(--focus-ring) !important;
   outline: none !important;
 }
@@ -152,7 +152,7 @@
 /* === route. Wins over --control and --secondary because  === */
 /* === it is declared after them in this file.             === */
 /* ========================================================= */
-.app-btn.is-active {
+html.staff-scope .app-btn.is-active {
   background: var(--primary) !important;
   color: var(--onAccentText) !important;
 }
@@ -162,7 +162,7 @@
    dev overlay is in "trace" mode. Suppressed if the button category filter
    is switched off. Skips overlay-internal elements to avoid recursive
    visual noise. */
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-button="1"])
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-button="1"])
   :where(
     button:not([data-dev-ignore]):not([data-dev-overlay-internal]),
     .app-btn,

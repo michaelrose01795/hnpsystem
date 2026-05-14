@@ -15,7 +15,7 @@
 
 /* -------------------------------------------------------------------------- */
 /* Trace mode — lavender outlines on every skeleton element. */
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]
   :where(
     .skeleton-block,
     [data-skeleton="1"]

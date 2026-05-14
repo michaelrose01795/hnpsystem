@@ -16,7 +16,7 @@
 
 /* -------------------------------------------------------------------------- */
 /* Trace mode — loud magenta outlines on dropdowns and menus. */
-:root[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-select="1"])
+html.staff-scope[data-dev-overlay-enabled="true"][data-dev-overlay-mode="trace"]:not([data-dev-overlay-hide-select="1"])
   :where(
     select,
     [role="combobox"],

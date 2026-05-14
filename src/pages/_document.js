@@ -149,6 +149,14 @@ const themeBootScript = `
     var tm = document.querySelector('meta[name="theme-color"]');
     if (tm) tm.setAttribute("content", runtime.shellBackground);
 
+    const isWebsiteRoute = window.location.pathname === "/website" || window.location.pathname.startsWith("/website/");
+    document.documentElement.classList.toggle("website-scope", isWebsiteRoute);
+    document.documentElement.classList.toggle("staff-scope", !isWebsiteRoute);
+    if (document.body) {
+      document.body.classList.toggle("website-scope", isWebsiteRoute);
+      document.body.classList.toggle("staff-scope", !isWebsiteRoute);
+    }
+
     document.cookie = "hp-dms-theme=" + encodeURIComponent(mode) + "; path=/; max-age=31536000; samesite=lax";
     document.cookie = "hp-dms-accent=" + encodeURIComponent(storedAccent) + "; path=/; max-age=31536000; samesite=lax";
 
