@@ -71,6 +71,14 @@ export const sidebarSections = [
         href: "/admin/compliance",
         roles: ["owner"],
       },
+      {
+        // Staff-side Website Management area (content + analytics).
+        // Access: Admin, Managers and Sales — keep this list in sync with
+        // WEBSITE_MANAGER_ROLES in src/pages/staff/website-manager.js.
+        label: "Website Manager",
+        href: "/staff/website-manager",
+        roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+      },
     ],
   },
   {

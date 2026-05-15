@@ -104,11 +104,6 @@ export default function Sidebar({
     color: "var(--success-text)",
     border: "1px solid var(--success)",
   };
-  const dangerGhostControlStyle = {
-    background: "transparent",
-    color: "var(--danger-text)",
-    border: "1px solid var(--danger)",
-  };
   const successControlStyle = {
     background: "var(--success-surface)",
     color: "var(--success-text)",
@@ -500,11 +495,11 @@ export default function Sidebar({
                         {clockLoading ? "..." : isClockedIn ? "Clock Out" : "Clock In"}
                       </button>
                       <button
-                        className="app-btn"
+                        className="app-btn app-tone-danger"
                         type="button"
                         onClick={handleLogout}
                         data-presentation-allow-interaction="true"
-                        style={{ flex: 1, ...dangerGhostControlStyle }}
+                        style={{ flex: 1 }}
                       >
                         Logout
                       </button>
