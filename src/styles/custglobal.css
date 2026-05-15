@@ -89,6 +89,16 @@ html.website-scope {
   /* Dark scrollbar with a brand-red thumb on /website. */
   --scrollbar-thumb: #b91c1c !important;
   --scrollbar-thumb-hover: #d22424 !important;
+
+  /* /website surface elevation — the translucent "lifted panel" washes
+     used by the customer-portal cards / rows / chips / bars (inline-styled
+     in src/pages/website/profile.js). Dark theme lifts them with faint
+     white; the light theme below re-paints them as faint dark washes so
+     the same panels stay visible on the pale surface. */
+  --website-elev-1: rgba(255, 255, 255, 0.03) !important;
+  --website-elev-2: rgba(255, 255, 255, 0.04) !important;
+  --website-elev-3: rgba(255, 255, 255, 0.06) !important;
+  --website-elev-4: rgba(255, 255, 255, 0.10) !important;
 }
 
 html.website-scope body {
@@ -340,7 +350,7 @@ html.website-scope button.calendar-api__day {
 }
 html.website-scope button.calendar-api__nav-button,
 html.website-scope button.website-calendar__nav,
-html.website-scope .website-calendar__footer button {
+html.website-scope .website-calendar__footer button:not(.app-btn) {
   min-height: 32px;
   padding: 0;
   background: rgba(255, 255, 255, 0.06);
@@ -516,7 +526,10 @@ html.website-scope .website-native-select__menu {
   flex-direction: column;
   gap: 6px;
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(28, 28, 38, 0.96) 0%, rgba(16, 16, 22, 0.98) 100%);
+  /* Card background style (.website-dev-flat-card) — the single /website
+     card surface. The backdrop-filter blur keeps the floating menu
+     readable despite the translucent fill. */
+  background: rgba(255, 255, 255, 0.03);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
@@ -542,11 +555,12 @@ html.website-scope .website-native-select__option {
   justify-content: center;
   gap: 2px;
   min-height: var(--website-control-height);
-  padding: 0 14px;
+  padding: 0 18px;
   font-size: 13px;
   line-height: 1.3;
   color: var(--txt-bright, #fff);
-  border-radius: 10px;
+  /* Full-pill capsule — matches the /website button shape style. */
+  border-radius: 999px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -660,7 +674,10 @@ html.website-scope textarea:not(.app-btn) {
   -webkit-backdrop-filter: blur(22px) saturate(180%);
   backdrop-filter: blur(22px) saturate(180%);
   border: none;
-  border-radius: var(--website-control-radius);
+  /* Text box / textarea share the Primary action capsule shape — the
+     full-pill 999px corner used by the /website buttons, not the
+     rectangular --website-control-radius (14px). */
+  border-radius: 999px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
     inset 0 -1px 0 rgba(0, 0, 0, 0.18),
@@ -805,7 +822,10 @@ html.website-scope .website-calendar {
   z-index: 50;
   max-width: min(100vw - 24px, 100%);
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(28, 28, 38, 0.78) 0%, rgba(16, 16, 22, 0.86) 100%);
+  /* Card background style (.website-dev-flat-card) — the single /website
+     card surface. The backdrop-filter blur below keeps the floating panel
+     readable despite the translucent fill. */
+  background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(28px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
   box-shadow:
@@ -818,6 +838,11 @@ html.website-scope .website-calendar {
   max-width: calc(100vw - 24px);
   padding: 14px;
   border-radius: 16px;
+  /* Theme-aware default text colour for the whole calendar surface —
+     --txt-bright resolves to white in dark mode and to near-black in
+     light mode, so the title and any uncoloured text always reads
+     against the calendar background. */
+  color: var(--txt-bright, #fff);
 }
 
 html.website-scope .website-calendar__header,
@@ -839,7 +864,7 @@ html.website-scope .website-calendar__title {
 }
 
 html.website-scope .website-calendar__nav,
-html.website-scope .website-calendar__footer button {
+html.website-scope .website-calendar__footer button:not(.app-btn) {
   appearance: none;
   display: inline-flex;
   align-items: center;
@@ -865,7 +890,7 @@ html.website-scope .website-calendar__nav {
 }
 
 html.website-scope .website-calendar__nav:hover,
-html.website-scope .website-calendar__footer button:hover {
+html.website-scope .website-calendar__footer button:not(.app-btn):hover {
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -926,22 +951,55 @@ html.website-scope .website-calendar__day--muted {
   color: rgba(255, 255, 255, 0.28);
 }
 
-html.website-scope .website-calendar__day--today {
-  box-shadow: inset 0 0 0 1px rgba(var(--accentMainRgb), 0.6);
+/* Day cells take the full-pill /website button shape. Scoped with the
+   `.website-calendar__grid` ancestor (0,3,2) so it beats the calendar
+   opt-out block (`button.website-calendar__day`, 0,2,2 — radius 8px)
+   without touching the shared `.calendar-api__day` reset. */
+html.website-scope .website-calendar__grid button.website-calendar__day {
+  border-radius: 999px;
 }
 
-html.website-scope .website-calendar__day--selected,
-html.website-scope .website-calendar__day--selected:hover {
+/* Current day — marked by the brand-red focus-ring outline
+   (var(--focus-ring)), NOT a filled capsule. The cell otherwise stays a
+   plain day: transparent fill, theme-aware day-number colour, same pill
+   shape as every other day. */
+/* NOTE: specificity must beat the LIGHT-mode generic button rule
+   `html.website-scope[data-website-theme="light"] button:not(.app-btn)`,
+   which is (0,3,2) — `.website-scope` + `[data-website-theme]` + `:not()`
+   are all class-level — and would otherwise repaint the cell with a white
+   gradient + shadow in light mode. The `.website-calendar__grid` ancestor
+   + both day classes lift this selector to (0,4,2) so the ring wins in
+   BOTH themes. */
+html.website-scope .website-calendar__grid button.website-calendar__day.website-calendar__day--today {
+  font-weight: 600;
+  background: transparent;
+  /* INSET ring — drawn inside the cell so today does not grow larger than
+     a plain day. An outer box-shadow (e.g. var(--focus-ring)) would extend
+     past the cell edge into the 2px grid gap. */
+  box-shadow: inset 0 0 0 2px rgba(var(--accentMainRgb), 0.7);
+}
+html.website-scope .website-calendar__grid button.website-calendar__day.website-calendar__day--today:hover {
+  /* Hover keeps the cell transparent and just intensifies the inset red
+     ring — theme-agnostic, so no per-theme background override is needed. */
+  background: transparent;
+  box-shadow: inset 0 0 0 2px rgb(var(--accentMainRgb));
+}
+
+/* Selected day keeps the solid red fill but NOT a heavier weight — every
+   plain day number 1–31 stays the same size and weight (500, set by the
+   calendar opt-out block above). Only today opts out, into the .app-btn
+   capsule. */
+html.website-scope .website-calendar__grid button.website-calendar__day.website-calendar__day--selected,
+html.website-scope .website-calendar__grid button.website-calendar__day.website-calendar__day--selected:hover {
   color: #fff;
   background: linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%);
-  font-weight: 800;
 }
 
 html.website-scope .website-calendar__footer {
   margin-top: 10px;
 }
 
-html.website-scope .website-calendar__footer button {
+html.website-scope .website-calendar__footer button:not(.app-btn) {
   flex: 1;
   min-height: 34px;
   padding: 8px 10px;
@@ -949,6 +1007,16 @@ html.website-scope .website-calendar__footer button {
   font-size: 11px;
   line-height: 1;
   white-space: nowrap;
+}
+
+/* The footer's "Today" (current-date) button opts into the Secondary
+   action style by carrying `app-btn`. Keep it sized to the footer row —
+   flex:1 so it shares width with "Clear", and a 34px floor so it lines
+   up with the sibling instead of the 44px control-system default. */
+html.website-scope .website-calendar__footer button.app-btn {
+  flex: 1;
+  min-height: 34px;
+  font-size: 11px;
 }
 
 html.website-scope .website-time-picker {
@@ -1356,6 +1424,14 @@ html.website-scope .website-dev-calendar-static {
   position: static;
 }
 
+/* Static showcase of the open select menu — drops the absolute positioning
+   so the dropdown list renders inline, the same way the calendar surface
+   is shown above it. */
+html.website-scope .website-dev-select-static {
+  position: static;
+  max-height: none;
+}
+
 html.website-scope .website-dev-flat-card {
   display: flex;
   flex-direction: column;
@@ -1459,4 +1535,437 @@ html.website-scope .website-dev-locked__body {
   html.website-scope .website-dev-row__label {
     padding-top: 0;
   }
+}
+
+/* ═══ /website light theme ════════════════════════════════════════════
+   Everything above renders the customer surface DARK by default — that
+   is the baseline `html.website-scope` look. When the profile page's
+   theme cycle button writes data-website-theme="light" onto <html>, the
+   overrides below repaint the same control / surface / calendar / banner
+   primitives for a light background.
+
+   data-website-theme="dark" (or the attribute being absent) keeps the
+   dark default, so only the light branch needs declaring here. The
+   "System" choice is resolved to a concrete "light" / "dark" value in JS
+   before the attribute is written, so the CSS only ever sees one of the
+   two real themes.
+
+   These selectors carry the extra [data-website-theme="light"] attribute,
+   so they out-specify the dark rules above; `!important` is only repeated
+   where the dark baseline itself used `!important` (the token block,
+   the body/html background and the scrollbar gutter — all of which must
+   still beat the staff themeProvider's inline styles). */
+html.website-scope[data-website-theme="light"] {
+  color-scheme: light !important;
+
+  /* Light surface tokens. Brand red is untouched — it stays fixed in
+     both themes (the --accentMain / --primary block above still wins). */
+  --surface: #ffffff !important;
+  --surfaceMain: #ffffff !important;
+  --surfaceText: #14141a !important;
+
+  /* Light text scale — dark ink on the pale surface (mirrors the dark
+     --txt-* ramp, flipped). */
+  --txt-bright: #14141a !important;
+  --txt-soft: rgba(20, 20, 26, 0.74) !important;
+  --txt-mute: rgba(20, 20, 26, 0.54) !important;
+  --txt-faint: rgba(20, 20, 26, 0.34) !important;
+
+  /* Rings darken so they read on the light surface. */
+  --ghostbutton-ring: 1px solid rgba(0, 0, 0, 0.16) !important;
+  --input-ring: 1px solid rgba(0, 0, 0, 0.14) !important;
+  --checkbox-ring: 2px solid rgba(0, 0, 0, 0.28) !important;
+  --focus-ring: 0 0 0 3px rgba(185, 28, 28, 0.30) !important;
+
+  /* Light scrollbar gutter, brand-red thumb retained. */
+  --scrollbar-thumb: #b91c1c !important;
+  --scrollbar-thumb-hover: #d22424 !important;
+
+  /* Surface elevation re-painted as faint dark washes — the customer
+     cards stay just as visible on the pale surface as the white washes
+     are on the dark one. */
+  --website-elev-1: rgba(0, 0, 0, 0.05) !important;
+  --website-elev-2: rgba(0, 0, 0, 0.06) !important;
+  --website-elev-3: rgba(0, 0, 0, 0.085) !important;
+  --website-elev-4: rgba(0, 0, 0, 0.11) !important;
+}
+
+/* Light customer surface — mirrors the dark body wash, flipped: two
+   red glows top-right + bottom-left, two soft cool-grey glows in the
+   opposite corners, over a near-white base. The red uses a brighter
+   tone (232, 60, 60) at a slightly higher alpha than the dark wash so
+   it still reads as a warm corner glow against the pale surface. */
+html.website-scope[data-website-theme="light"] body {
+  background:
+    radial-gradient(ellipse at top right, rgba(237, 33, 33, 0.22), transparent 60%),
+    radial-gradient(ellipse at bottom left, rgba(237, 33, 33, 0.22), transparent 60%),
+    radial-gradient(ellipse at top left, rgba(214, 214, 222, 0.55), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(214, 214, 222, 0.55), transparent 60%),
+    #fdfdfe !important;
+  background-attachment: fixed !important;
+}
+html.website-scope[data-website-theme="light"] {
+  background: #fdfdfe !important;
+}
+
+/* Light scrollbar gutter. */
+html.website-scope[data-website-theme="light"],
+html.website-scope[data-website-theme="light"] body {
+  scrollbar-color: var(--scrollbar-thumb) #e6e6ea;
+}
+html.website-scope[data-website-theme="light"]::-webkit-scrollbar,
+html.website-scope[data-website-theme="light"] body::-webkit-scrollbar,
+html.website-scope[data-website-theme="light"]::-webkit-scrollbar-track,
+html.website-scope[data-website-theme="light"] body::-webkit-scrollbar-track,
+html.website-scope[data-website-theme="light"]::-webkit-scrollbar-corner,
+html.website-scope[data-website-theme="light"] body::-webkit-scrollbar-corner {
+  background: #e6e6ea;
+}
+
+/* Primary action — light glass: white-glass capsule with dark ink and a
+   soft neutral shadow (the dark theme's translucent white-glass would
+   vanish against the light surface). */
+html.website-scope[data-website-theme="light"] button:not(.app-btn),
+html.website-scope[data-website-theme="light"] [role="button"]:not(.app-btn) {
+  color: #14141a;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.15) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.10),
+    0 8px 22px rgba(0, 0, 0, 0.12);
+}
+html.website-scope[data-website-theme="light"] button:not(.app-btn):hover,
+html.website-scope[data-website-theme="light"] [role="button"]:not(.app-btn):hover {
+  color: #14141a;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.30) 100%);
+}
+html.website-scope[data-website-theme="light"] button:not(.app-btn):focus-visible,
+html.website-scope[data-website-theme="light"] [role="button"]:not(.app-btn):focus-visible {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.10),
+    0 8px 22px rgba(0, 0, 0, 0.12),
+    0 0 0 3px rgba(185, 28, 28, 0.30);
+}
+
+/* Secondary action — light: a brand-red capsule. The fill is kept lighter
+   / a touch more transparent than a flat solid red, but still opaque
+   enough that the white label keeps its contrast on the white surface
+   (the dark theme's faint red wash would be near-invisible pink here).
+   Hover lifts back toward the fuller red. */
+html.website-scope[data-website-theme="light"] button.app-btn,
+html.website-scope[data-website-theme="light"] [role="button"].app-btn,
+html.website-scope[data-website-theme="light"] a.app-btn {
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(var(--accentMainRgb), 0.88) 0%, rgba(var(--accentMainRgb), 0.74) 100%);
+  /* Same shadow as the light Primary action button — neutral drop +
+     inset rim, not the red-tinted shadow it carried before. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.10),
+    0 8px 22px rgba(0, 0, 0, 0.12);
+}
+html.website-scope[data-website-theme="light"] button.app-btn:hover,
+html.website-scope[data-website-theme="light"] [role="button"].app-btn:hover,
+html.website-scope[data-website-theme="light"] a.app-btn:hover {
+  color: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(var(--accentMainRgb), 0.96) 0%, rgba(var(--accentMainRgb), 0.84) 100%);
+}
+/* Focus shadow also matches the light Primary action button. */
+html.website-scope[data-website-theme="light"] button.app-btn:focus-visible,
+html.website-scope[data-website-theme="light"] [role="button"].app-btn:focus-visible,
+html.website-scope[data-website-theme="light"] a.app-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.10),
+    0 8px 22px rgba(0, 0, 0, 0.12),
+    0 0 0 3px rgba(185, 28, 28, 0.30);
+}
+
+/* Light select trigger — light glass + dark ink + dark caret. */
+html.website-scope[data-website-theme="light"] select:not(.app-btn) {
+  color: #14141a;
+  background-image:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%2314141a' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.15) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.10),
+    0 8px 22px rgba(0, 0, 0, 0.12);
+}
+html.website-scope[data-website-theme="light"] select:not(.app-btn):hover {
+  background-image:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%2314141a' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.30) 100%);
+}
+html.website-scope[data-website-theme="light"] select:not(.app-btn) option {
+  color: #14141a;
+  background: #ffffff;
+}
+/* Light selected / hovered option — the dark rule paints white text on a
+   faint red tint (rgba(red, 0.28) over white), which is unreadable on the
+   white light menu. Light mode uses the solid brand red with white ink. */
+html.website-scope[data-website-theme="light"] select:not(.app-btn) option:checked,
+html.website-scope[data-website-theme="light"] select:not(.app-btn) option:hover {
+  background: rgb(var(--accentMainRgb));
+  color: #ffffff;
+}
+
+/* Custom select trigger / caret / menu — light surfaces. */
+html.website-scope[data-website-theme="light"] .website-native-select__placeholder,
+html.website-scope[data-website-theme="light"] .website-native-datetime__placeholder {
+  color: rgba(20, 20, 26, 0.55);
+}
+html.website-scope[data-website-theme="light"] .website-native-select__caret {
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%2314141a' stroke-width='1.5'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+html.website-scope[data-website-theme="light"] .website-native-datetime__icon {
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2314141a' stroke-width='1.4'%3E%3Crect x='2.5' y='3' width='11' height='11' rx='1.5'/%3E%3Cpath d='M2.5 6h11M5 2v2M11 2v2'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+html.website-scope[data-website-theme="light"] .website-native-datetime[data-type="time"] .website-native-datetime__icon {
+  background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2314141a' stroke-width='1.4'%3E%3Ccircle cx='8' cy='8' r='5.5'/%3E%3Cpath d='M8 4.5V8l2.5 1.5'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+html.website-scope[data-website-theme="light"] .website-native-select__menu {
+  /* Card background style — light (.website-dev-flat-card light variant). */
+  background: rgba(0, 0, 0, 0.035);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 24px 56px rgba(0, 0, 0, 0.18);
+}
+html.website-scope[data-website-theme="light"] .website-native-select__option:hover,
+html.website-scope[data-website-theme="light"] .website-native-select__option--active {
+  background: rgba(0, 0, 0, 0.05);
+}
+/* Light selected option row — the dark rule (faint red tint + white ink)
+   is unreadable on the white light menu. Light mode paints the row solid
+   brand red with white ink so it reads as a clear, selected capsule. */
+html.website-scope[data-website-theme="light"] .website-native-select__option--selected,
+html.website-scope[data-website-theme="light"] .website-native-select__option--selected:hover,
+html.website-scope[data-website-theme="light"] .website-native-select__option--selected.website-native-select__option--active {
+  background: rgb(var(--accentMainRgb));
+  color: #ffffff;
+}
+/* The secondary hint line follows the row ink onto the red fill. */
+html.website-scope[data-website-theme="light"] .website-native-select__option--selected .website-native-select__option-hint {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* Light text-like inputs / textareas — light glass + dark ink. */
+html.website-scope[data-website-theme="light"] input[type="text"]:not(.app-btn),
+html.website-scope[data-website-theme="light"] input[type="password"]:not(.app-btn),
+html.website-scope[data-website-theme="light"] input[type="tel"]:not(.app-btn),
+html.website-scope[data-website-theme="light"] input[type="number"]:not(.app-btn),
+html.website-scope[data-website-theme="light"] input[type="search"]:not(.app-btn),
+html.website-scope[data-website-theme="light"] input[type="url"]:not(.app-btn),
+html.website-scope[data-website-theme="light"] input[type="date"]:not(.app-btn),
+html.website-scope[data-website-theme="light"] input[type="time"]:not(.app-btn),
+html.website-scope[data-website-theme="light"] textarea:not(.app-btn) {
+  color: #14141a;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.15) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.10),
+    0 8px 22px rgba(0, 0, 0, 0.12);
+}
+html.website-scope[data-website-theme="light"] input[type="text"]:not(.app-btn):focus-visible,
+html.website-scope[data-website-theme="light"] input[type="password"]:not(.app-btn):focus-visible,
+html.website-scope[data-website-theme="light"] input[type="tel"]:not(.app-btn):focus-visible,
+html.website-scope[data-website-theme="light"] input[type="number"]:not(.app-btn):focus-visible,
+html.website-scope[data-website-theme="light"] input[type="search"]:not(.app-btn):focus-visible,
+html.website-scope[data-website-theme="light"] input[type="url"]:not(.app-btn):focus-visible,
+html.website-scope[data-website-theme="light"] input[type="date"]:not(.app-btn):focus-visible,
+html.website-scope[data-website-theme="light"] input[type="time"]:not(.app-btn):focus-visible,
+html.website-scope[data-website-theme="light"] textarea:not(.app-btn):focus-visible {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.30) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.10),
+    0 8px 22px rgba(0, 0, 0, 0.12),
+    0 0 0 3px rgba(185, 28, 28, 0.30);
+}
+html.website-scope[data-website-theme="light"] input::placeholder,
+html.website-scope[data-website-theme="light"] textarea::placeholder {
+  color: rgba(20, 20, 26, 0.5);
+}
+
+/* Native date/time picker indicator — dark glyph on the light capsule. */
+html.website-scope[data-website-theme="light"] input[type="date"],
+html.website-scope[data-website-theme="light"] input[type="time"] {
+  color-scheme: light;
+}
+html.website-scope[data-website-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator,
+html.website-scope[data-website-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: opacity(0.7);
+}
+
+/* File picker button — light glass. */
+html.website-scope[data-website-theme="light"] input[type="file"]::file-selector-button {
+  color: #14141a;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0.15) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.10),
+    0 8px 22px rgba(0, 0, 0, 0.12);
+}
+html.website-scope[data-website-theme="light"] input[type="file"]::file-selector-button:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.50) 0%, rgba(255, 255, 255, 0.30) 100%);
+}
+
+/* Light calendar / time-picker surfaces. */
+html.website-scope[data-website-theme="light"] .website-calendar,
+html.website-scope[data-website-theme="light"] .website-time-picker {
+  /* Card background style — light (.website-dev-flat-card light variant). */
+  background: rgba(0, 0, 0, 0.035);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 24px 56px rgba(0, 0, 0, 0.18);
+}
+html.website-scope[data-website-theme="light"] .website-calendar__nav,
+html.website-scope[data-website-theme="light"] .website-calendar__footer button:not(.app-btn),
+html.website-scope[data-website-theme="light"] button.website-time-picker__option {
+  color: #14141a;
+  background: rgba(0, 0, 0, 0.05);
+}
+html.website-scope[data-website-theme="light"] .website-calendar__nav:hover,
+html.website-scope[data-website-theme="light"] .website-calendar__footer button:not(.app-btn):hover,
+html.website-scope[data-website-theme="light"] button.website-time-picker__option:hover {
+  background: rgba(0, 0, 0, 0.10);
+}
+html.website-scope[data-website-theme="light"] .website-calendar__day:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+/* Today's red focus-ring hover is theme-agnostic (see the --today:hover
+   rule near the day-cell block) — no light-mode override needed. */
+html.website-scope[data-website-theme="light"] .website-calendar__day:disabled {
+  color: rgba(20, 20, 26, 0.25);
+}
+html.website-scope[data-website-theme="light"] .website-calendar__day--muted {
+  color: rgba(20, 20, 26, 0.32);
+}
+/* Selected day / time still render white-on-red — kept from the dark rules. */
+html.website-scope[data-website-theme="light"] button.website-time-picker__option--selected,
+html.website-scope[data-website-theme="light"] button.website-time-picker__option--selected:hover {
+  color: #ffffff;
+}
+
+/* Banner / alert — light: a soft red tint with dark ink so the title and
+   the --txt-soft sub-text both read (the dark theme paints white-on-red). */
+html.website-scope[data-website-theme="light"] .website-banner {
+  color: #14141a;
+  background:
+    linear-gradient(180deg, rgba(var(--accentMainRgb), 0.14) 0%, rgba(var(--accentMainRgb), 0.08) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 0 0 1px rgba(var(--accentMainRgb), 0.18),
+    0 8px 22px rgba(var(--accentMainRgb), 0.12);
+}
+
+/* Radio — light: the unchecked well darkens so it reads on the light
+   surface. The checked state already paints white-on-red, unchanged. */
+html.website-scope[data-website-theme="light"] input[type="radio"]:not(.app-btn) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* ── /website/dev showcase — light variants ──────────────────────────
+   The dev page reuses these website-dev-* primitives. Each carries a
+   light counterpart here so the showcase reads the same way with the
+   light theme active — dark ink on pale panels, mirroring the dark
+   values used above. */
+html.website-scope[data-website-theme="light"] .website-dev-shell {
+  color: #14141a;
+}
+html.website-scope[data-website-theme="light"] .website-dev-section,
+html.website-scope[data-website-theme="light"] .website-dev-flat-card {
+  background: rgba(0, 0, 0, 0.035);
+}
+html.website-scope[data-website-theme="light"] .website-dev-page-title,
+html.website-scope[data-website-theme="light"] .website-dev-section__title,
+html.website-scope[data-website-theme="light"] .website-dev-swatch__label,
+html.website-scope[data-website-theme="light"] .website-dev-card-title,
+html.website-scope[data-website-theme="light"] .website-dev-banner-strong,
+html.website-scope[data-website-theme="light"] .website-dev-code {
+  color: #14141a;
+}
+html.website-scope[data-website-theme="light"] .website-dev-row__label,
+html.website-scope[data-website-theme="light"] .website-dev-form-label,
+html.website-scope[data-website-theme="light"] .website-dev-swatch__note,
+html.website-scope[data-website-theme="light"] .website-dev-meta,
+html.website-scope[data-website-theme="light"] .website-dev-ref-note {
+  color: rgba(20, 20, 26, 0.54);
+}
+html.website-scope[data-website-theme="light"] .website-dev-wash-caption,
+html.website-scope[data-website-theme="light"] .website-dev-card-lead,
+html.website-scope[data-website-theme="light"] .website-dev-token-cell--purpose,
+html.website-scope[data-website-theme="light"] .website-dev-token-cell--value,
+html.website-scope[data-website-theme="light"] .website-dev-code-mono,
+html.website-scope[data-website-theme="light"] .website-dev-choice,
+html.website-scope[data-website-theme="light"] .website-dev-banner-copy,
+html.website-scope[data-website-theme="light"] .website-dev-ref-list,
+html.website-scope[data-website-theme="light"] .website-dev-scroll-host {
+  color: rgba(20, 20, 26, 0.72);
+}
+html.website-scope[data-website-theme="light"] .website-dev-swatch,
+html.website-scope[data-website-theme="light"] .website-dev-scroll-host {
+  background: rgba(0, 0, 0, 0.04);
+}
+html.website-scope[data-website-theme="light"] .website-dev-swatch__chip,
+html.website-scope[data-website-theme="light"] .website-dev-token-chip {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+html.website-scope[data-website-theme="light"] .website-dev-token-chip--missing {
+  background:
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06) 3px, transparent 3px, transparent 6px);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.10);
+}
+html.website-scope[data-website-theme="light"] .website-dev-token-th {
+  color: rgba(20, 20, 26, 0.5);
+}
+html.website-scope[data-website-theme="light"] .website-dev-code {
+  background: rgba(0, 0, 0, 0.07);
+}
+/* Demonstration text scale flips so each step still reads against the
+   light panel. */
+html.website-scope[data-website-theme="light"] .website-dev-text-bright { color: #14141a; }
+html.website-scope[data-website-theme="light"] .website-dev-text-soft { color: rgba(20, 20, 26, 0.74); }
+html.website-scope[data-website-theme="light"] .website-dev-text-mute { color: rgba(20, 20, 26, 0.54); }
+html.website-scope[data-website-theme="light"] .website-dev-text-faint { color: rgba(20, 20, 26, 0.34); }
+html.website-scope[data-website-theme="light"] .website-dev-card-eyebrow {
+  color: #b91c1c;
+}
+html.website-scope[data-website-theme="light"] .website-dev-locked {
+  color: rgba(20, 20, 26, 0.72);
+  background: #fdfdfe;
+}
+html.website-scope[data-website-theme="light"] .website-dev-locked__title {
+  color: #14141a;
+}
+/* Body wash preview swatch — light variant. Mirrors the light body wash
+   (brighter 232,60,60 red + cool-grey corners over a near-white base),
+   amplified the same way the dark preview amplifies the dark wash so the
+   glows read clearly inside the small swatch. */
+html.website-scope[data-website-theme="light"] .website-dev-wash-preview {
+  background:
+    radial-gradient(ellipse at top right, rgba(237, 33, 33, 0.48), transparent 60%),
+    radial-gradient(ellipse at bottom left, rgba(237, 33, 33, 0.48), transparent 60%),
+    radial-gradient(ellipse at top left, rgba(214, 214, 222, 0.85), transparent 60%),
+    radial-gradient(ellipse at bottom right, rgba(214, 214, 222, 0.85), transparent 60%),
+    #fdfdfe;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }

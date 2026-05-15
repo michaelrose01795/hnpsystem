@@ -82,6 +82,27 @@ const daysUntil = (value) => {
   return diff;
 };
 
+// /website light/dark/system theme cycle. The choice is persisted to
+// localStorage and applied by writing data-website-theme onto <html>;
+// custglobal.css repaints the customer surface for whichever concrete
+// theme is written. "system" is resolved to a real light/dark value
+// here before the attribute is set, so the stylesheet only ever sees one
+// of the two themes.
+const WEBSITE_THEME_KEY = "hnp-website-theme";
+const WEBSITE_THEME_CYCLE = ["light", "dark", "system"];
+
+const resolveWebsiteTheme = (preference) => {
+  if (preference === "system") {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      return window.matchMedia("(prefers-color-scheme: light)").matches
+        ? "light"
+        : "dark";
+    }
+    return "dark";
+  }
+  return preference;
+};
+
 const getTrackerStages = (job) => {
   const stages = [
     { key: "booked", label: "Booked", reached: !!job.created_at },
@@ -162,15 +183,16 @@ const SERVICE_TYPES = [
 ];
 
 // ── Inline style primitives ──────────────────────────────────────
-// Cards reuse the 3% white wash / 18px radius treatment used across
-// /website/dev so they sit naturally on the dark gradient body
-// painted by custglobal.css.
+// Card / row / chip backgrounds use the --website-elev-* tokens from
+// custglobal.css instead of literal white washes, so they re-paint as
+// faint dark washes when the light theme is active and stay visible on
+// the pale surface. Body text uses --txt-bright for the same reason.
 const cardStyle = {
   display: "flex",
   flexDirection: "column",
   gap: 14,
   padding: "clamp(16px, 3vw, 24px)",
-  background: "rgba(255, 255, 255, 0.03)",
+  background: "var(--website-elev-1)",
   borderRadius: 18,
 };
 const cardWideStyle = { ...cardStyle, gridColumn: "1 / -1" };
@@ -181,7 +203,7 @@ const cardHeaderStyle = {
   gap: 12,
   flexWrap: "wrap",
 };
-const cardTitleStyle = { margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: 0.2, color: "#fff" };
+const cardTitleStyle = { margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: 0.2, color: "var(--txt-bright)" };
 const cardCountStyle = {
   display: "inline-flex",
   alignItems: "center",
@@ -190,7 +212,7 @@ const cardCountStyle = {
   fontSize: 11,
   fontWeight: 700,
   letterSpacing: 0.5,
-  background: "rgba(255, 255, 255, 0.08)",
+  background: "var(--website-elev-4)",
   color: "var(--txt-soft)",
 };
 const badgeStyle = {
@@ -202,7 +224,7 @@ const badgeStyle = {
   fontWeight: 700,
   letterSpacing: 0.5,
   textTransform: "uppercase",
-  background: "rgba(255, 255, 255, 0.06)",
+  background: "var(--website-elev-3)",
   color: "var(--txt-soft)",
   whiteSpace: "nowrap",
 };
@@ -219,9 +241,9 @@ const itemRowStyle = {
   gap: 12,
   padding: "12px 14px",
   borderRadius: 12,
-  background: "rgba(255, 255, 255, 0.04)",
+  background: "var(--website-elev-2)",
 };
-const itemTitleStyle = { fontSize: 14, fontWeight: 600, color: "#fff" };
+const itemTitleStyle = { fontSize: 14, fontWeight: 600, color: "var(--txt-bright)" };
 const itemMetaStyle = { fontSize: 12, color: "var(--txt-mute)", marginTop: 2 };
 const formStyle = { display: "flex", flexDirection: "column", gap: "var(--website-field-gap)" };
 const formRowStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--website-field-gap)" };
@@ -235,7 +257,7 @@ const settingsRowHeaderStyle = {
   gap: 12,
   flexWrap: "wrap",
 };
-const settingsTitleStyle = { fontSize: 14, fontWeight: 600, color: "#fff" };
+const settingsTitleStyle = { fontSize: 14, fontWeight: 600, color: "var(--txt-bright)" };
 const settingsHintStyle = { fontSize: 12, color: "var(--txt-mute)", margin: 0 };
 const tagBaseStyle = {
   display: "inline-flex",
@@ -244,7 +266,7 @@ const tagBaseStyle = {
   borderRadius: 999,
   fontSize: 11,
   fontWeight: 600,
-  background: "rgba(255, 255, 255, 0.06)",
+  background: "var(--website-elev-3)",
   color: "var(--txt-soft)",
 };
 const tagAccentStyle = { ...tagBaseStyle, background: "rgba(var(--accentMainRgb), 0.22)", color: "#fca5a5" };
@@ -255,9 +277,9 @@ const balanceHeroStyle = {
   gap: 4,
   padding: "16px 18px",
   borderRadius: 14,
-  background: "rgba(255, 255, 255, 0.04)",
+  background: "var(--website-elev-2)",
 };
-const balanceFigureStyle = { fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: -0.5 };
+const balanceFigureStyle = { fontSize: 28, fontWeight: 800, color: "var(--txt-bright)", letterSpacing: -0.5 };
 const balanceMetaStyle = { fontSize: 12, color: "var(--txt-mute)" };
 const detailGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 };
 const detailFieldStyle = {
@@ -266,10 +288,10 @@ const detailFieldStyle = {
   gap: 4,
   padding: "12px 14px",
   borderRadius: 12,
-  background: "rgba(255, 255, 255, 0.04)",
+  background: "var(--website-elev-2)",
 };
 const detailLabelStyle = { fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "var(--txt-mute)" };
-const detailValueStyle = { fontSize: 14, color: "#fff" };
+const detailValueStyle = { fontSize: 14, color: "var(--txt-bright)" };
 const bubbleBase = { maxWidth: "80%", padding: "10px 14px", borderRadius: 14, fontSize: 13, lineHeight: 1.45, display: "flex", flexDirection: "column", gap: 4 };
 const bubbleCustomerStyle = {
   ...bubbleBase,
@@ -280,7 +302,7 @@ const bubbleCustomerStyle = {
 const bubbleStaffStyle = {
   ...bubbleBase,
   alignSelf: "flex-start",
-  background: "rgba(255, 255, 255, 0.06)",
+  background: "var(--website-elev-3)",
   color: "var(--txt-bright)",
 };
 const bubbleMetaStyle = { fontSize: 10, opacity: 0.75 };
@@ -291,7 +313,7 @@ const mediaThumbStyle = {
   aspectRatio: "4 / 3",
   borderRadius: 12,
   overflow: "hidden",
-  background: "rgba(255, 255, 255, 0.04)",
+  background: "var(--website-elev-2)",
 };
 const mediaTagStyle = {
   position: "absolute",
@@ -323,7 +345,7 @@ const timelineRowStyle = {
   gap: 14,
   padding: "10px 12px",
   borderRadius: 10,
-  background: "rgba(255, 255, 255, 0.03)",
+  background: "var(--website-elev-1)",
 };
 const timelineWhenStyle = { fontSize: 11, color: "var(--txt-mute)", whiteSpace: "nowrap" };
 const timelineWhatStyle = { fontSize: 13, color: "var(--txt-bright)" };
@@ -343,9 +365,9 @@ const cardChipStyle = {
   gap: 4,
   padding: "12px 14px",
   borderRadius: 12,
-  background: "rgba(255, 255, 255, 0.04)",
+  background: "var(--website-elev-2)",
 };
-const cardBrandStyle = { fontSize: 13, fontWeight: 700, color: "#fff" };
+const cardBrandStyle = { fontSize: 13, fontWeight: 700, color: "var(--txt-bright)" };
 const cardLineStyle = { fontSize: 12, color: "var(--txt-soft)" };
 const mileageListStyle = { display: "flex", flexDirection: "column", gap: 8 };
 const mileageRowStyle = {
@@ -360,7 +382,7 @@ const mileageBarStyle = {
   flex: 1,
   height: 6,
   borderRadius: 999,
-  background: "rgba(255, 255, 255, 0.08)",
+  background: "var(--website-elev-4)",
   overflow: "hidden",
 };
 const mileageBarFillStyle = (pct) => ({
@@ -369,7 +391,7 @@ const mileageBarFillStyle = (pct) => ({
   width: `${pct}%`,
   background: "linear-gradient(90deg, rgba(255,90,90,0.9), var(--accentText))",
 });
-const mileageValueStyle = { fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap" };
+const mileageValueStyle = { fontSize: 12, fontWeight: 700, color: "var(--txt-bright)", whiteSpace: "nowrap" };
 const vhcLightStyle = (tone) => ({
   display: "inline-flex",
   alignItems: "center",
@@ -410,7 +432,7 @@ const headerEyebrowStyle = {
   color: "var(--accentText)",
   fontWeight: 700,
 };
-const headerTitleStyle = { margin: "6px 0 4px", fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 800, color: "#fff" };
+const headerTitleStyle = { margin: "6px 0 4px", fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 800, color: "var(--txt-bright)" };
 const headerSubtitleStyle = { margin: 0, fontSize: 14, color: "var(--txt-soft)", maxWidth: 520 };
 const headerActionsStyle = { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" };
 const layoutStyle = {
@@ -426,7 +448,7 @@ const sideNavStyle = {
   position: "sticky",
   top: 16,
   padding: 12,
-  background: "rgba(255, 255, 255, 0.03)",
+  background: "var(--website-elev-1)",
   borderRadius: 14,
 };
 const sideNavHeadingStyle = {
@@ -458,7 +480,7 @@ const trackerStepStyle = (state) => ({
   fontSize: 11,
   color:
     state === "done"
-      ? "#fff"
+      ? "var(--txt-bright)"
       : state === "active"
       ? "var(--accentText)"
       : "var(--txt-faint)",
@@ -473,7 +495,7 @@ const trackerDotStyle = (state) => ({
       ? "linear-gradient(180deg, rgba(255, 90, 90, 0.98), var(--accentText))"
       : state === "active"
       ? "var(--accentText)"
-      : "rgba(255, 255, 255, 0.18)",
+      : "var(--website-elev-4)",
 });
 const serviceGridStyle = {
   display: "grid",
@@ -499,18 +521,18 @@ const serviceTileStyle = (active) => ({
   borderRadius: 14,
   border: "none",
   cursor: "pointer",
-  color: "#fff",
+  color: "var(--txt-bright)",
   background: active
     ? "linear-gradient(180deg, rgba(var(--accentMainRgb), 0.32) 0%, rgba(var(--accentMainRgb), 0.18) 100%)"
-    : "rgba(255, 255, 255, 0.04)",
+    : "var(--website-elev-2)",
   WebkitBackdropFilter: "none",
   backdropFilter: "none",
   boxShadow: active
     ? "inset 0 0 0 1px rgba(var(--accentMainRgb), 0.5)"
-    : "inset 0 0 0 1px rgba(255, 255, 255, 0.06)",
+    : "inset 0 0 0 1px var(--website-elev-3)",
   transition: "background 0.2s ease",
 });
-const serviceTileTitleStyle = { fontSize: 13, fontWeight: 700, color: "#fff" };
+const serviceTileTitleStyle = { fontSize: 13, fontWeight: 700, color: "var(--txt-bright)" };
 const serviceTileHintStyle = { fontSize: 11, color: "var(--txt-mute)", lineHeight: 1.4 };
 const toggleRowStyle = {
   display: "flex",
@@ -519,7 +541,7 @@ const toggleRowStyle = {
   gap: 12,
   padding: "10px 14px",
   borderRadius: 12,
-  background: "rgba(255, 255, 255, 0.04)",
+  background: "var(--website-elev-2)",
   cursor: "pointer",
 };
 const toggleSwitchStyle = (checked) => ({
@@ -529,7 +551,7 @@ const toggleSwitchStyle = (checked) => ({
   borderRadius: 999,
   background: checked
     ? "linear-gradient(180deg, rgba(255, 90, 90, 0.98) 0%, var(--accentText) 100%)"
-    : "rgba(255, 255, 255, 0.14)",
+    : "var(--website-elev-4)",
   flexShrink: 0,
   transition: "background 0.2s ease",
 });
@@ -563,6 +585,9 @@ export default function CustomerProfilePage() {
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
   const [actionFlash, setActionFlash] = useState({});
+  // Theme cycle preference: "light" | "dark" | "system". Defaults to dark
+  // (the historic /website look) until the stored choice loads on mount.
+  const [websiteThemePref, setWebsiteThemePref] = useState("dark");
 
   useEffect(() => {
     // Force dark mode + red accent for the whole /website/profile experience.
@@ -577,6 +602,50 @@ export default function CustomerProfilePage() {
     setTemporaryOverride({ mode: "dark", accent: "red" });
     return () => setTemporaryOverride(null);
   }, [setTemporaryOverride]);
+
+  // Load the saved /website theme preference once on mount.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(WEBSITE_THEME_KEY);
+    if (stored && WEBSITE_THEME_CYCLE.includes(stored)) {
+      setWebsiteThemePref(stored);
+    }
+  }, []);
+
+  // Apply the resolved theme to <html> via data-website-theme, and when
+  // the preference is "system" keep it in sync with the OS scheme. The
+  // attribute is removed on navigation away so other /website pages keep
+  // their dark default.
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const apply = () => {
+      document.documentElement.setAttribute(
+        "data-website-theme",
+        resolveWebsiteTheme(websiteThemePref),
+      );
+    };
+    apply();
+    let media;
+    if (websiteThemePref === "system" && window.matchMedia) {
+      media = window.matchMedia("(prefers-color-scheme: light)");
+      media.addEventListener("change", apply);
+    }
+    return () => {
+      if (media) media.removeEventListener("change", apply);
+      document.documentElement.removeAttribute("data-website-theme");
+    };
+  }, [websiteThemePref]);
+
+  const cycleWebsiteTheme = () => {
+    setWebsiteThemePref((prev) => {
+      const idx = WEBSITE_THEME_CYCLE.indexOf(prev);
+      const next = WEBSITE_THEME_CYCLE[(idx + 1) % WEBSITE_THEME_CYCLE.length];
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(WEBSITE_THEME_KEY, next);
+      }
+      return next;
+    });
+  };
 
   const refresh = () =>
     fetch("/api/website/profile", { credentials: "same-origin" })
@@ -796,7 +865,7 @@ export default function CustomerProfilePage() {
         style={{
           minHeight: "100vh",
           padding: "clamp(16px, 3vw, 32px) clamp(16px, 4vw, 48px) 96px",
-          color: "#fff",
+          color: "var(--txt-bright)",
         }}
       >
         <main style={{ maxWidth: 1280, margin: "0 auto" }}>
@@ -824,7 +893,16 @@ export default function CustomerProfilePage() {
                   </p>
                 </div>
                 <div style={headerActionsStyle}>
-                  <Link href="/website">Back to site</Link>
+                  <button
+                    type="button"
+                    onClick={cycleWebsiteTheme}
+                    aria-label={`Theme: ${websiteThemePref}. Click to cycle light, dark, system.`}
+                  >
+                    {`Theme: ${websiteThemePref.charAt(0).toUpperCase()}${websiteThemePref.slice(1)}`}
+                  </button>
+                  <Link href="/website" role="button">
+                    Back to site
+                  </Link>
                   <button type="button" className="app-btn" onClick={handleLogout}>
                     Log out
                   </button>
@@ -1553,7 +1631,7 @@ export default function CustomerProfilePage() {
                           return (
                             <div
                               key={t.transaction_id}
-                              style={{ ...stmtRowStyle, background: "rgba(255, 255, 255, 0.03)" }}
+                              style={{ ...stmtRowStyle, background: "var(--website-elev-1)" }}
                             >
                               <span style={stmtMetaStyle}>
                                 {formatDate(t.transaction_date)}

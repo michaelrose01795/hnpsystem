@@ -11,10 +11,9 @@
 // snap has been removed so the 3D scene can transition between
 // presets continuously rather than jumping section-to-section.
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Head from "next/head";
-import { useTheme } from "@/styles/themeProvider";
 
 import TopNav from "./components/TopNav";
 import Hero from "./components/Hero";
@@ -37,6 +36,7 @@ import useScrollAnimations from "./hooks/useScrollAnimations";
 import useIs3DCapable from "./hooks/useIs3DCapable";
 import useReducedMotion from "./hooks/useReducedMotion";
 import useWebsiteScope from "./hooks/useWebsiteScope";
+import useWebsiteTheme from "./hooks/useWebsiteTheme";
 import { siteContent } from "./data/siteContent";
 import styles from "./styles/singlescroll.module.css";
 
@@ -61,17 +61,13 @@ const Website3DScene = dynamic(
 export default function WebsitePage() {
   const rootRef = useRef(null);
   const [galleryFilter, setGalleryFilter] = useState("all");
-  const { setTemporaryOverride } = useTheme();
   const reducedMotion = useReducedMotion();
   const { ready: checked3D, capable: canLoad3D, lowQuality } = useIs3DCapable();
 
-  // Dark cinematic base with the brand red as accent — unwinds cleanly
-  // when the visitor leaves /website.
-  useEffect(() => {
-    setTemporaryOverride({ mode: "dark", accent: "red" });
-    return () => setTemporaryOverride(null);
-  }, [setTemporaryOverride]);
-
+  // Dark cinematic default for anonymous visitors; once logged in, /website
+  // follows the colour mode the user picked for their account. Brand-red
+  // accent either way. Unwinds cleanly when the visitor leaves /website.
+  useWebsiteTheme();
   useWebsiteScope();
   useScrollAnimations(rootRef);
 

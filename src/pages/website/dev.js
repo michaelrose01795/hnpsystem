@@ -42,6 +42,26 @@ import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
 import WebsiteNativeSelect from "@/singlescroll/components/WebsiteNativeSelect";
 import WebsiteNativeDateTimeInput from "@/singlescroll/components/WebsiteNativeDateTimeInput";
 
+// /website light/dark/system theme cycle (mirrors src/pages/website/
+// profile.js). The choice is persisted to localStorage and applied by
+// writing data-website-theme onto <html>; custglobal.css repaints the
+// showcase for whichever concrete theme is written. "system" resolves
+// to a real light/dark value before the attribute is set.
+const WEBSITE_THEME_KEY = "hnp-website-theme";
+const WEBSITE_THEME_CYCLE = ["light", "dark", "system"];
+
+const resolveWebsiteTheme = (preference) => {
+  if (preference === "system") {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      return window.matchMedia("(prefers-color-scheme: light)").matches
+        ? "light"
+        : "dark";
+    }
+    return "dark";
+  }
+  return preference;
+};
+
 // Tokens we want to surface in the live token reference. These are the
 // variables custglobal.css re-asserts under `html.website-scope` so the
 // staff theme can't bleed into /website.
@@ -180,6 +200,49 @@ export default function WebsiteDevShowcasePage() {
   const [timeValue, setTimeValue] = useState("09:30");
   const [radio, setRadio] = useState("standard");
 
+  // Theme cycle preference: "light" | "dark" | "system". Defaults to
+  // dark until the stored choice loads on mount.
+  const [websiteThemePref, setWebsiteThemePref] = useState("dark");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(WEBSITE_THEME_KEY);
+    if (stored && WEBSITE_THEME_CYCLE.includes(stored)) {
+      setWebsiteThemePref(stored);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const apply = () => {
+      document.documentElement.setAttribute(
+        "data-website-theme",
+        resolveWebsiteTheme(websiteThemePref),
+      );
+    };
+    apply();
+    let media;
+    if (websiteThemePref === "system" && window.matchMedia) {
+      media = window.matchMedia("(prefers-color-scheme: light)");
+      media.addEventListener("change", apply);
+    }
+    return () => {
+      if (media) media.removeEventListener("change", apply);
+      document.documentElement.removeAttribute("data-website-theme");
+    };
+  }, [websiteThemePref]);
+
+  const cycleWebsiteTheme = () => {
+    setWebsiteThemePref((prev) => {
+      const idx = WEBSITE_THEME_CYCLE.indexOf(prev);
+      const next = WEBSITE_THEME_CYCLE[(idx + 1) % WEBSITE_THEME_CYCLE.length];
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(WEBSITE_THEME_KEY, next);
+      }
+      return next;
+    });
+  };
+
   if (!canShowDevPages()) {
     return (
       <div className="website-dev-locked">
@@ -197,7 +260,30 @@ export default function WebsiteDevShowcasePage() {
       </Head>
 
       <main className="website-dev-shell">
-        <h1 className="website-dev-page-title">Customer UI Showcase</h1>
+        {/* Title row — page heading on the left, theme cycle button on
+            the right. The wrapper takes the full grid row (same as the
+            .website-dev-page-title span) so the button sits flush right. */}
+        <div
+          style={{
+            gridColumn: "1 / -1",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <h1 className="website-dev-page-title" style={{ gridColumn: "auto" }}>
+            Customer UI Showcase
+          </h1>
+          <button
+            type="button"
+            onClick={cycleWebsiteTheme}
+            aria-label={`Theme: ${websiteThemePref}. Click to cycle light, dark, system.`}
+          >
+            {`Theme: ${websiteThemePref.charAt(0).toUpperCase()}${websiteThemePref.slice(1)}`}
+          </button>
+        </div>
 
         {/* ── Brand & surface ────────────────────────────────────── */}
         <ShowcaseSection
@@ -339,20 +425,6 @@ export default function WebsiteDevShowcasePage() {
               />
             </div>
           </Row>
-          <Row label="Raw <select> fallback">
-            <div className="website-dev-control-width">
-              <WebsiteNativeSelect
-                value={nativeSelectValue}
-                onChange={setNativeSelectValue}
-                options={[
-                  { value: "service", label: "Service Booking", hint: "Annual & interim" },
-                  { value: "mot", label: "MOT Test", hint: "Class 4" },
-                  { value: "valuation", label: "Vehicle Valuation" },
-                  { value: "callback", label: "Call-back Request" },
-                ]}
-              />
-            </div>
-          </Row>
           <Row label="Disabled native">
             <div className="website-dev-control-width">
               <WebsiteNativeSelect
@@ -361,6 +433,38 @@ export default function WebsiteDevShowcasePage() {
                 onChange={() => {}}
                 options={[{ value: "service", label: "Service Booking" }]}
               />
+            </div>
+          </Row>
+          <Row label="Inline Dropdown List (.website-native-select__menu)">
+            <div className="website-dev-control-width">
+              <ul
+                role="listbox"
+                aria-label="Booking type"
+                className="website-native-select__menu website-dev-select-static"
+              >
+                <li role="option" aria-selected="false" className="website-native-select__option">
+                  <span className="website-native-select__option-label">Service Booking</span>
+                  <span className="website-native-select__option-hint">Annual &amp; interim</span>
+                </li>
+                <li
+                  role="option"
+                  aria-selected="true"
+                  className="website-native-select__option website-native-select__option--selected"
+                >
+                  <span className="website-native-select__option-label">MOT Test</span>
+                  <span className="website-native-select__option-hint">Class 4</span>
+                </li>
+                <li
+                  role="option"
+                  aria-selected="false"
+                  className="website-native-select__option website-native-select__option--active"
+                >
+                  <span className="website-native-select__option-label">Vehicle Valuation</span>
+                </li>
+                <li role="option" aria-selected="false" className="website-native-select__option">
+                  <span className="website-native-select__option-label">Call-back Request</span>
+                </li>
+              </ul>
             </div>
           </Row>
         </ShowcaseSection>
@@ -411,8 +515,10 @@ export default function WebsiteDevShowcasePage() {
                   {Array.from({ length: 35 }, (_, i) => {
                     const day = i - 3;
                     const inMonth = day >= 1 && day <= 31;
-                    const isToday = day === 14;
+                    const isToday = day === 15;
                     const isSelected = day === 21;
+                    // Sat / Sun are the last two columns (Mo–Su grid) — not selectable.
+                    const isWeekend = i % 7 >= 5;
                     const cls = [
                       "website-calendar__day",
                       !inMonth && "website-calendar__day--muted",
@@ -422,7 +528,12 @@ export default function WebsiteDevShowcasePage() {
                       .filter(Boolean)
                       .join(" ");
                     return (
-                      <button key={i} type="button" className={cls}>
+                      <button
+                        key={i}
+                        type="button"
+                        disabled={isWeekend}
+                        className={cls}
+                      >
                         {inMonth ? day : ""}
                       </button>
                     );
@@ -430,7 +541,7 @@ export default function WebsiteDevShowcasePage() {
                 </div>
                 <div className="website-calendar__footer">
                   <button type="button">Clear</button>
-                  <button type="button">Today</button>
+                  <button type="button" className="app-btn">Today</button>
                 </div>
               </div>
             </div>

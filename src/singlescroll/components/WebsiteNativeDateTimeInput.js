@@ -201,7 +201,9 @@ export default function WebsiteNativeDateTimeInput({
               const muted = date.getMonth() !== cursor.getMonth();
               const isSelected = sameDay(date, selectedDate);
               const isToday = sameDay(date, new Date());
-              const isDisabled = isDateDisabled(date);
+              // Weekends are not selectable — Sat (6) / Sun (0) columns.
+              const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+              const isDisabled = isDateDisabled(date) || isWeekend;
               const className = [
                 "website-calendar__day",
                 muted && "website-calendar__day--muted",
@@ -238,6 +240,7 @@ export default function WebsiteNativeDateTimeInput({
             </button>
             <button
               type="button"
+              className="app-btn"
               onClick={() => {
                 onChange?.(toIso(new Date()));
                 setOpen(false);

@@ -68,14 +68,14 @@ CUSTOMER
 check global.css style
 
 - /website (CHECK)
-check global.css style
+have it so each section wihtin the /website pge follows more of the light theme withi the custglobal.css
+
 
 - /website/dev (CHECK)
 check global.css style
 
 - /website/login (TODO)
 check global.css style
-
 
 
 ====================================================

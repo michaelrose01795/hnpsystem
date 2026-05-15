@@ -12,10 +12,10 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useTheme } from "@/styles/themeProvider";
 import { siteContent } from "@/singlescroll/data/siteContent";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
 import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
+import useWebsiteTheme from "@/singlescroll/hooks/useWebsiteTheme";
 import WebsiteNativeSelect from "@/singlescroll/components/WebsiteNativeSelect";
 import styles from "@/singlescroll/styles/singlescroll.module.css";
 
@@ -26,8 +26,8 @@ const STEP_SIGNUP = "signup";
 
 export default function CustomerLoginPage() {
   const router = useRouter();
-  const { setTemporaryOverride } = useTheme();
   useWebsiteScope();
+  useWebsiteTheme();
   const [step, setStep] = useState(STEP_EMAIL);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,11 +52,6 @@ export default function CustomerLoginPage() {
   const [devCustomerId, setDevCustomerId] = useState("");
   const [devLoading, setDevLoading] = useState(false);
   const pageTitle = `Sign in - ${siteContent.brand.name}`;
-
-  useEffect(() => {
-    setTemporaryOverride({ mode: "dark", accent: "red" });
-    return () => setTemporaryOverride(null);
-  }, [setTemporaryOverride]);
 
   // Skip the page entirely if the user is already signed in.
   useEffect(() => {
