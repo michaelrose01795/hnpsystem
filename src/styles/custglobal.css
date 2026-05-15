@@ -1969,3 +1969,841 @@ html.website-scope[data-website-theme="light"] .website-dev-wash-preview {
     #fdfdfe;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PUBLIC MARKETING PAGE  (/website)
+
+   Full stylesheet for src/singlescroll/WebsitePage.js — the `.ws-*` class
+   family. Everything the customer marketing page needs lives here; the
+   page component carries no styling of its own.
+
+   Colours come from the website token system declared higher in this file
+   (--txt-bright/soft/mute, --accentText, --website-elev-*) so the whole
+   page follows the data-website-theme="light" flip automatically. The
+   handful of page-specific tokens below (--ws-*) are declared for the dark
+   default on `.ws-page` and re-painted in the light block beneath.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+html.website-scope {
+  scroll-behavior: smooth;
+}
+
+/* ── Page tokens — dark default ──────────────────────────────────────── */
+/* Card surfaces reuse the custglobal "/website surface elevation" washes
+   (--website-elev-*, declared higher in this file) — the same frosted-glass
+   card language as .website-dev-flat-card. They flip per theme on their
+   own, so --ws-card needs no light override. */
+html.website-scope .ws-page {
+  --ws-card: var(--website-elev-2);
+  --ws-card-soft: var(--website-elev-4);
+  --ws-line: rgba(255, 255, 255, 0.10);
+  --ws-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+  --ws-tint: rgba(255, 255, 255, 0.035);
+  --ws-nav-bg: rgba(10, 10, 14, 0.86);
+  --ws-maxw: 1200px;
+  --ws-nav-h: 66px;
+  --ws-radius: 18px;
+}
+
+/* ── Page tokens — light repaint ─────────────────────────────────────── */
+html.website-scope[data-website-theme="light"] .ws-page {
+  --ws-line: rgba(15, 23, 42, 0.12);
+  --ws-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+  --ws-tint: rgba(15, 23, 42, 0.045);
+  --ws-nav-bg: rgba(255, 255, 255, 0.90);
+}
+
+/* ── Logo theme swap — white logo on dark, dark logo on light ────────── */
+html.website-scope .ws-logo {
+  height: 38px;
+  width: auto;
+  display: block;
+}
+html.website-scope .ws-logo--light {
+  display: none;
+}
+html.website-scope[data-website-theme="light"] .ws-logo--light {
+  display: block;
+}
+html.website-scope[data-website-theme="light"] .ws-logo--dark {
+  display: none;
+}
+
+/* ── Layout primitives ───────────────────────────────────────────────── */
+html.website-scope .ws-page {
+  color: var(--txt-bright);
+}
+html.website-scope .ws-container {
+  width: 100%;
+  max-width: var(--ws-maxw);
+  margin: 0 auto;
+  padding: 0 clamp(18px, 4vw, 40px);
+}
+html.website-scope .ws-section {
+  padding: clamp(56px, 8vw, 104px) 0;
+  scroll-margin-top: calc(var(--ws-nav-h) + 16px);
+}
+html.website-scope .ws-section--tint {
+  background: var(--ws-tint);
+}
+
+/* ── Typography ──────────────────────────────────────────────────────── */
+html.website-scope .ws-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accentText);
+}
+html.website-scope .ws-h1 {
+  font-size: clamp(32px, 5vw, 54px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  margin: 12px 0 0;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-h2 {
+  font-size: clamp(26px, 3.4vw, 40px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.018em;
+  margin: 10px 0 0;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-h3 {
+  font-size: clamp(20px, 2.4vw, 27px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-lead {
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.6;
+  color: var(--txt-soft);
+  margin: 16px 0 0;
+  max-width: 60ch;
+}
+html.website-scope .ws-muted {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--txt-soft);
+  margin: 10px 0 0;
+}
+html.website-scope .ws-head {
+  margin-bottom: clamp(28px, 4vw, 48px);
+  max-width: 760px;
+}
+html.website-scope .ws-head--center {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+html.website-scope .ws-subhead {
+  margin: clamp(40px, 6vw, 72px) 0 24px;
+}
+
+/* ── Buttons (anchors styled as CTAs) ────────────────────────────────── */
+html.website-scope .ws-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+html.website-scope .ws-btn:hover {
+  transform: translateY(-2px);
+}
+html.website-scope .ws-btn--primary {
+  background: var(--accentMain);
+  color: var(--onAccentText);
+  box-shadow: 0 10px 24px rgba(var(--accentMainRgb), 0.32);
+}
+html.website-scope .ws-btn--primary:hover {
+  background: var(--primary-hover);
+}
+html.website-scope .ws-btn--ghost {
+  background: var(--ws-card);
+  color: var(--txt-bright);
+  box-shadow: inset 0 0 0 1px var(--ws-line);
+}
+html.website-scope .ws-btn--ghost:hover {
+  background: var(--ws-card-soft);
+}
+
+/* ── Top navigation ──────────────────────────────────────────────────── */
+html.website-scope .ws-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--ws-nav-bg);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: 0 1px 0 var(--ws-line);
+}
+html.website-scope .ws-nav-inner {
+  position: relative;
+  width: 100%;
+  max-width: var(--ws-maxw);
+  margin: 0 auto;
+  padding: 0 clamp(18px, 4vw, 40px);
+  min-height: var(--ws-nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+html.website-scope .ws-brand {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+html.website-scope .ws-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+html.website-scope .ws-nav-link {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--txt-soft);
+  transition: color 0.18s ease, background 0.18s ease;
+}
+html.website-scope .ws-nav-link:hover {
+  color: var(--txt-bright);
+  background: var(--ws-tint);
+}
+html.website-scope .ws-nav-link--active {
+  color: var(--accentText);
+}
+html.website-scope .ws-nav-phone {
+  margin-left: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--onAccentText);
+  background: var(--accentMain);
+}
+html.website-scope .ws-nav-phone:hover {
+  background: var(--primary-hover);
+}
+html.website-scope button.ws-nav-toggle {
+  display: none;
+  appearance: none;
+  min-height: 42px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt-bright);
+  background: var(--ws-card);
+  box-shadow: inset 0 0 0 1px var(--ws-line);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  cursor: pointer;
+}
+
+@media (max-width: 1080px) {
+  html.website-scope button.ws-nav-toggle {
+    display: inline-flex;
+    align-items: center;
+  }
+  html.website-scope .ws-nav-links {
+    display: none;
+  }
+  html.website-scope .ws-nav-links--open {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 2px;
+    position: absolute;
+    top: var(--ws-nav-h);
+    left: 0;
+    right: 0;
+    padding: 12px clamp(18px, 4vw, 40px) 18px;
+    background: var(--ws-nav-bg);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
+  }
+  html.website-scope .ws-nav-links--open .ws-nav-link {
+    padding: 12px;
+    font-size: 15px;
+  }
+  html.website-scope .ws-nav-links--open .ws-nav-phone {
+    margin: 8px 0 0;
+    text-align: center;
+  }
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────── */
+html.website-scope .ws-hero {
+  padding: clamp(40px, 6vw, 80px) 0 clamp(48px, 6vw, 80px);
+  scroll-margin-top: var(--ws-nav-h);
+}
+html.website-scope .ws-hero-inner {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+}
+html.website-scope .ws-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+html.website-scope .ws-hero-media img {
+  width: 100%;
+  border-radius: var(--ws-radius);
+  box-shadow: var(--ws-shadow);
+  display: block;
+}
+html.website-scope .ws-trust {
+  list-style: none;
+  margin: clamp(36px, 5vw, 56px) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+html.website-scope .ws-trust-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--ws-card);
+  box-shadow: inset 0 0 0 1px var(--ws-line);
+  text-align: center;
+}
+html.website-scope .ws-trust-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accentText);
+}
+html.website-scope .ws-trust-label {
+  font-size: 12px;
+  color: var(--txt-mute);
+}
+
+/* ── Brand strip ─────────────────────────────────────────────────────── */
+html.website-scope .ws-brands-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px 44px;
+}
+html.website-scope .ws-brands-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-brands-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 32px;
+  margin: 0;
+  padding: 0;
+}
+html.website-scope .ws-brands-list img {
+  height: 30px;
+  width: auto;
+  opacity: 0.85;
+}
+
+/* ── Grids ───────────────────────────────────────────────────────────── */
+html.website-scope .ws-grid {
+  display: grid;
+  gap: clamp(16px, 2vw, 24px);
+}
+html.website-scope .ws-grid--cards {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+html.website-scope .ws-grid--steps {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+}
+html.website-scope .ws-grid--reviews {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+}
+html.website-scope .ws-grid--team {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+}
+
+/* ── Cards ───────────────────────────────────────────────────────────── */
+/* Frosted-glass card surface — the same recipe as the custglobal
+   .website-dev-flat-card: an elevation wash, a backdrop blur, a thin
+   specular top highlight, a hairline ring and a soft drop shadow. */
+html.website-scope .ws-card {
+  background: var(--ws-card);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-radius: var(--ws-radius);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px var(--ws-line),
+    var(--ws-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+html.website-scope .ws-card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+html.website-scope .ws-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 2px 0 0;
+  color: var(--txt-bright);
+}
+
+/* Vehicle / offer / blog media */
+html.website-scope .ws-vehicle-media,
+html.website-scope .ws-offer-media,
+html.website-scope .ws-blog-media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--ws-card-soft);
+}
+html.website-scope .ws-vehicle-media img,
+html.website-scope .ws-offer-media img,
+html.website-scope .ws-blog-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+html.website-scope .ws-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--onAccentText);
+  background: var(--accentMain);
+}
+html.website-scope .ws-vehicle-brand {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-vehicle-price {
+  margin: 6px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accentText);
+}
+
+/* ── Filter tabs ─────────────────────────────────────────────────────── */
+html.website-scope .ws-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+html.website-scope button.ws-tab {
+  appearance: none;
+  min-height: 42px;
+  padding: 0 20px;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--txt-soft);
+  background: var(--ws-card);
+  box-shadow: inset 0 0 0 1px var(--ws-line);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+html.website-scope button.ws-tab:hover {
+  color: var(--txt-bright);
+}
+html.website-scope button.ws-tab.ws-tab--active {
+  color: var(--onAccentText);
+  background: var(--accentMain);
+  box-shadow: none;
+}
+
+/* ── Steps ───────────────────────────────────────────────────────────── */
+html.website-scope .ws-step {
+  padding: 24px;
+}
+html.website-scope .ws-step-n {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--accentText);
+  letter-spacing: -0.02em;
+}
+
+/* ── Panels & tick lists ─────────────────────────────────────────────── */
+html.website-scope .ws-panel {
+  padding: clamp(24px, 3vw, 36px);
+}
+html.website-scope .ws-sell-panel {
+  margin-top: 24px;
+  gap: 22px;
+  align-items: flex-start;
+}
+html.website-scope .ws-ticks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 10px 24px;
+}
+html.website-scope .ws-ticks li {
+  position: relative;
+  padding-left: 28px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-ticks li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--onAccentText);
+  background: var(--accentMain);
+}
+
+/* ── Split layouts ───────────────────────────────────────────────────── */
+html.website-scope .ws-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(28px, 5vw, 60px);
+  align-items: center;
+}
+html.website-scope .ws-split-media img {
+  width: 100%;
+  border-radius: var(--ws-radius);
+  box-shadow: var(--ws-shadow);
+  display: block;
+}
+html.website-scope .ws-split-text > .ws-muted:first-of-type {
+  margin-top: 18px;
+}
+html.website-scope .ws-split-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Opening-hours tables ────────────────────────────────────────────── */
+html.website-scope .ws-hours {
+  margin-top: 20px;
+}
+html.website-scope .ws-hours-caption {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--txt-mute);
+  margin: 0 0 6px;
+}
+html.website-scope .ws-hours-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+html.website-scope .ws-hours-table th,
+html.website-scope .ws-hours-table td {
+  padding: 9px 0;
+  font-size: 14px;
+  text-align: left;
+  box-shadow: inset 0 -1px 0 var(--ws-line);
+}
+html.website-scope .ws-hours-table th {
+  font-weight: 600;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-hours-table td {
+  text-align: right;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-hours-table tr:last-child th,
+html.website-scope .ws-hours-table tr:last-child td {
+  box-shadow: none;
+}
+
+/* ── Motability range ────────────────────────────────────────────────── */
+html.website-scope .ws-range {
+  padding: 22px;
+  gap: 12px;
+}
+html.website-scope .ws-price-line {
+  margin: 18px 0 22px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accentText);
+}
+html.website-scope .ws-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+html.website-scope .ws-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--txt-soft);
+  background: var(--ws-card-soft);
+}
+
+/* ── Timeline ────────────────────────────────────────────────────────── */
+html.website-scope .ws-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: clamp(16px, 2vw, 24px);
+}
+html.website-scope .ws-milestone {
+  padding: 22px;
+  gap: 8px;
+}
+html.website-scope .ws-milestone-year {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accentText);
+  letter-spacing: -0.01em;
+}
+
+/* ── Reviews ─────────────────────────────────────────────────────────── */
+html.website-scope .ws-ratings {
+  list-style: none;
+  margin: 0 0 32px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+html.website-scope .ws-rating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 26px;
+  border-radius: 14px;
+  background: var(--ws-card);
+  box-shadow: inset 0 0 0 1px var(--ws-line);
+}
+html.website-scope .ws-rating-score {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-stars {
+  display: inline-flex;
+  gap: 2px;
+  font-size: 16px;
+}
+html.website-scope .ws-star {
+  color: var(--txt-faint);
+}
+html.website-scope .ws-star--on {
+  color: var(--accentText);
+}
+html.website-scope .ws-review {
+  padding: 24px;
+  gap: 14px;
+}
+html.website-scope .ws-review-quote {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--txt-bright);
+  margin: 0;
+  flex: 1;
+}
+html.website-scope .ws-review-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+html.website-scope .ws-review-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt-bright);
+}
+
+/* ── Team ────────────────────────────────────────────────────────────── */
+html.website-scope .ws-team-group {
+  margin-top: clamp(32px, 4vw, 48px);
+}
+html.website-scope .ws-team-group .ws-h3 {
+  margin-bottom: 18px;
+}
+html.website-scope .ws-member-photo {
+  aspect-ratio: 4 / 3;
+  background: var(--ws-card-soft);
+}
+html.website-scope .ws-member-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+html.website-scope .ws-member .ws-card-body {
+  padding: 14px 16px;
+}
+
+/* ── Contact ─────────────────────────────────────────────────────────── */
+html.website-scope .ws-contact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(20px, 3vw, 32px);
+  align-items: stretch;
+}
+html.website-scope .ws-contact-details {
+  gap: 24px;
+}
+html.website-scope .ws-contact-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+html.website-scope .ws-contact-phone {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accentText);
+}
+html.website-scope .ws-contact-address {
+  font-style: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-contact-hours {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: 8px 28px;
+}
+html.website-scope .ws-contact-hours .ws-hours {
+  margin-top: 0;
+}
+html.website-scope .ws-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+html.website-scope .ws-contact-map {
+  min-height: 320px;
+}
+html.website-scope .ws-contact-map iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  border: 0;
+  display: block;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+html.website-scope .ws-footer {
+  padding: clamp(40px, 5vw, 64px) 0 32px;
+  background: var(--ws-tint);
+  box-shadow: 0 1px 0 var(--ws-line) inset;
+}
+html.website-scope .ws-footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+html.website-scope .ws-footer-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 8px;
+}
+html.website-scope .ws-footer-links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0;
+  padding: 0;
+}
+html.website-scope .ws-footer-links a {
+  font-size: 14px;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-footer-links a:hover {
+  color: var(--txt-bright);
+}
+html.website-scope .ws-footer-legal {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--txt-mute);
+  margin: 0;
+  max-width: 90ch;
+}
+html.website-scope .ws-footer-copy {
+  font-size: 12px;
+  color: var(--txt-faint);
+  margin: 6px 0 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  html.website-scope .ws-hero-inner,
+  html.website-scope .ws-split,
+  html.website-scope .ws-contact {
+    grid-template-columns: 1fr;
+  }
+  html.website-scope .ws-split--reverse .ws-split-text {
+    order: -1;
+  }
+  html.website-scope .ws-sell-panel {
+    flex-direction: column;
+  }
+}
+

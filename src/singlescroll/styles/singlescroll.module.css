@@ -37,6 +37,37 @@
     rgba(7, 7, 11, 0.78) 100%
   );
 
+  /* Section-level veils. These are the translucent chapter backdrops that
+     sit over the persistent 3D canvas. Tokenised so the light-theme block
+     below can repaint them — the raw rgba() values they replace could not
+     follow the data-website-theme="light" flip. */
+  --section-veil: rgba(7, 7, 11, 0.84);
+  --section-veil-nav: rgba(7, 7, 11, 0.72);
+  --section-veil-strong: rgba(7, 7, 11, 0.86);
+  --section-dark-bg: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
+  --footer-bg: #0f0f0f;
+  --footer-text: rgba(255, 255, 255, 0.7);
+
+  /* SceneShell backdrops — the master section primitive every chapter
+     (vehicle gallery, sell-your-car, service, blog, contact) renders. */
+  --scene-surface-bg:
+    radial-gradient(circle at 50% 18%, rgba(var(--accentMainRgb), 0.10) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(7, 7, 11, 0.94) 0%, rgba(12, 12, 18, 0.97) 50%, rgba(7, 7, 11, 0.94) 100%);
+  --scene-transparent-bg:
+    radial-gradient(circle at 50% 45%, rgba(var(--accentMainRgb), 0.20) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(7, 7, 11, 0.84) 0%, rgba(7, 7, 11, 0.40) 50%, rgba(7, 7, 11, 0.84) 100%);
+
+  /* RGB triplet for the translucent band the "scene" sections (diorama,
+     timeline, reviews) bake behind their text. Tokenised so light mode
+     can flip the whole band — every section reuses it at its own alpha. */
+  --scene-band-rgb: 8, 8, 11;
+
+  /* Card elevation shadow — heavy in dark mode (cards float on a near-black
+     page), repainted soft + neutral in the light override block below so
+     light-mode cards lift off the grey section surface without going harsh. */
+  --card-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --card-shadow-hover: 0 32px 80px rgba(0, 0, 0, 0.7);
+
   /* Re-scope the app's surface tokens for this page so <LayerSurface>
      children render dark by default. */
   --surface: var(--card-bg);
@@ -65,6 +96,55 @@
   min-height: 100vh;
 }
 
+/* Light-theme override for the page-scoped token block. The dark `.page`
+   tokens above out-specify the light overrides custglobal.css applies to
+   <html>, so the marketing sections stayed dark even in light mode. This
+   rule re-defines the same locals with light values when the shared theme
+   cycle has written data-website-theme="light" onto <html>, flipping every
+   section veil, surface and text ramp that reads from these tokens. */
+:global(html.website-scope[data-website-theme="light"]) .page {
+  --page-bg: #fdfdfe;
+  --section-bg: #f4f4f6;
+  --card-bg: #ffffff;
+  --card-bg-elevated: #f4f4f6;
+  --hairline: rgba(0, 0, 0, 0.08);
+  --hairline-strong: rgba(0, 0, 0, 0.14);
+  --txt-bright: #14141a;
+  --txt-soft: rgba(20, 20, 26, 0.74);
+  --txt-mute: rgba(20, 20, 26, 0.54);
+  --txt-faint: rgba(20, 20, 26, 0.34);
+  --hero-overlay: linear-gradient(
+    180deg,
+    rgba(253, 253, 254, 0.55) 0%,
+    rgba(253, 253, 254, 0.18) 38%,
+    rgba(253, 253, 254, 0.82) 100%
+  );
+
+  /* Section surfaces are tinted a soft cool grey (not pure white) so the
+     white cards that sit inside them read as raised, distinct surfaces —
+     the standard light-mode "card on a grey page" separation. */
+  --section-veil: rgba(233, 235, 240, 0.92);
+  --section-veil-nav: rgba(233, 235, 240, 0.80);
+  --section-veil-strong: rgba(233, 235, 240, 0.94);
+  --section-dark-bg: linear-gradient(180deg, #e9eaee 0%, #dededf 100%);
+  --footer-bg: #e9eaee;
+  --footer-text: rgba(20, 20, 26, 0.7);
+
+  --scene-surface-bg:
+    radial-gradient(circle at 50% 18%, rgba(var(--accentMainRgb), 0.06) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(233, 235, 240, 0.96) 0%, rgba(227, 229, 235, 0.98) 50%, rgba(233, 235, 240, 0.96) 100%);
+  --scene-transparent-bg:
+    radial-gradient(circle at 50% 45%, rgba(var(--accentMainRgb), 0.10) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(233, 235, 240, 0.88) 0%, rgba(233, 235, 240, 0.52) 50%, rgba(233, 235, 240, 0.88) 100%);
+
+  --scene-band-rgb: 233, 235, 240;
+
+  /* Soft neutral card lift — replaces the dark-mode 0.55/0.7 black shadow,
+     which is far too harsh on a light surface. */
+  --card-shadow: 0 14px 34px rgba(15, 23, 42, 0.13);
+  --card-shadow-hover: 0 22px 48px rgba(15, 23, 42, 0.20);
+}
+
 /* The main content scrolls above the persistent fixed 3D canvas. Each
    section either covers the canvas with its own background (card section)
    or has a transparent / dark-translucent backdrop that lets the canvas
@@ -87,7 +167,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background: rgba(7, 7, 11, 0.72);
+  background: var(--section-veil-nav);
   backdrop-filter: saturate(160%) blur(18px);
   -webkit-backdrop-filter: saturate(160%) blur(18px);
   box-shadow: 0 1px 0 var(--hairline);
@@ -391,14 +471,14 @@
    through. Soft fades top + bottom blend into adjacent card sections. */
 .sceneSection {
   position: relative;
-  color: #fff;
+  color: var(--txt-bright);
   background:
     linear-gradient(180deg, var(--surface) 0%, transparent 14%, transparent 86%, var(--surface) 100%),
-    linear-gradient(180deg, rgba(8, 8, 11, 0) 0%, rgba(8, 8, 11, 0.55) 18%, rgba(8, 8, 11, 0.55) 82%, rgba(8, 8, 11, 0) 100%);
+    linear-gradient(180deg, rgba(var(--scene-band-rgb), 0) 0%, rgba(var(--scene-band-rgb), 0.55) 18%, rgba(var(--scene-band-rgb), 0.55) 82%, rgba(var(--scene-band-rgb), 0) 100%);
 }
 .sceneSection .heading,
-.sceneSection .lead { color: #fff; }
-.sceneSection .eyebrow { color: rgba(255, 255, 255, 0.85); }
+.sceneSection .lead { color: var(--txt-bright); }
+.sceneSection .eyebrow { color: var(--txt-soft); }
 
 /* ====================== HERO ====================== */
 .hero {
@@ -409,7 +489,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: #fff;
+  color: var(--txt-bright);
   overflow: hidden;
   isolation: isolate;
   margin-top: calc(var(--nav-height) * -1);
@@ -457,7 +537,7 @@
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--txt-bright);
   background: rgba(var(--accentMainRgb), 0.92);
   padding: 7px 16px;
   border-radius: 999px;
@@ -478,7 +558,7 @@
   font-size: clamp(16px, 1.6vw, 20px);
   line-height: 1.55;
   max-width: 640px;
-  color: rgba(255, 255, 255, 0.94);
+  color: var(--txt-soft);
   margin: 0;
   font-weight: 400;
 }
@@ -502,7 +582,7 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--txt-mute);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 2px;
@@ -606,7 +686,7 @@
 /* ====================== TRUST BAR ====================== */
 .trustBar {
   position: relative;
-  background: rgba(7, 7, 11, 0.84);
+  background: var(--section-veil);
   padding: 48px 0 40px;
   margin-top: -2px;
   box-shadow: inset 0 -1px 0 var(--hairline);
@@ -645,7 +725,7 @@
 
 /* ====================== BRAND STRIP ====================== */
 .brandStrip {
-  background: rgba(7, 7, 11, 0.84);
+  background: var(--section-veil);
   padding: 28px 0 48px;
   box-shadow: inset 0 -1px 0 var(--hairline);
 }
@@ -692,7 +772,7 @@
      atmospheric depth. The card-shaped elements inside sections (vehicle
      cards, offer cards, etc.) keep their fully-opaque backgrounds so
      content sits on solid surfaces. */
-  background: rgba(7, 7, 11, 0.84);
+  background: var(--section-veil);
   width: 100%;
   /* Razorpay-style hairline between sections — box-shadow rather than
      border so it doesn't trip the border-ban check (CLAUDE.md §3.0a). */
@@ -712,8 +792,8 @@
 }
 
 .sectionDark {
-  background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
-  color: #fff;
+  background: var(--section-dark-bg);
+  color: var(--txt-bright);
   max-width: none;
 }
 
@@ -1297,8 +1377,8 @@
 
 /* ====================== FOOTER ====================== */
 .footer {
-  background: #0f0f0f;
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--footer-bg);
+  color: var(--footer-text);
   padding: 56px 28px 32px;
 }
 
@@ -1332,23 +1412,23 @@
   padding: 0;
 }
 .footerLinks a {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--txt-soft);
   font-size: 13px;
   text-decoration: none;
   transition: color 0.18s ease;
 }
-.footerLinks a:hover { color: #fff; }
+.footerLinks a:hover { color: var(--txt-bright); }
 
 .footerLegal {
   font-size: 12px;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--txt-mute);
   margin: 0;
 }
 
 .footerCopy {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--txt-mute);
   margin-top: 6px;
 }
 
@@ -1432,15 +1512,15 @@
   background:
     linear-gradient(180deg, var(--surface) 0%, transparent 14%, transparent 86%, var(--surface) 100%),
     radial-gradient(circle at 50% 50%, rgba(var(--accentMainRgb), 0.18) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(8, 8, 11, 0) 0%, rgba(8, 8, 11, 0.6) 18%, rgba(8, 8, 11, 0.6) 82%, rgba(8, 8, 11, 0) 100%);
-  color: #fff;
+    linear-gradient(180deg, rgba(var(--scene-band-rgb), 0) 0%, rgba(var(--scene-band-rgb), 0.6) 18%, rgba(var(--scene-band-rgb), 0.6) 82%, rgba(var(--scene-band-rgb), 0) 100%);
+  color: var(--txt-bright);
   overflow: hidden;
   isolation: isolate;
 }
 
-.diorama .eyebrow { color: rgba(255, 255, 255, 0.95); }
-.diorama .heading { color: #fff; }
-.diorama .lead { color: rgba(255, 255, 255, 0.85); }
+.diorama .eyebrow { color: var(--txt-bright); }
+.diorama .heading { color: var(--txt-bright); }
+.diorama .lead { color: var(--txt-soft); }
 
 /* Huge ghost numeral 1947 floating in the back, parallaxes on scroll */
 .dioramaBackdrop {
@@ -1573,8 +1653,9 @@
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.025em;
-  /* Light gradient — white → red — readable on the dark scene-section bg */
-  background: linear-gradient(180deg, #ffffff 0%, var(--accentText) 100%);
+  /* Gradient — bright ink → red — the bright stop follows the theme so it
+     stays readable on both the dark and light scene-section backdrop. */
+  background: linear-gradient(180deg, var(--txt-bright) 0%, var(--accentText) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1588,7 +1669,7 @@
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 2px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--txt-soft);
   text-transform: uppercase;
   z-index: 1;
 }
@@ -1742,14 +1823,14 @@
   background:
     linear-gradient(180deg, var(--surface) 0%, transparent 12%, transparent 88%, var(--surface) 100%),
     radial-gradient(circle at 50% 50%, rgba(var(--accentMainRgb), 0.14) 0%, transparent 60%),
-    linear-gradient(180deg, rgba(8, 8, 11, 0) 0%, rgba(8, 8, 11, 0.62) 16%, rgba(8, 8, 11, 0.62) 84%, rgba(8, 8, 11, 0) 100%);
-  color: #fff;
+    linear-gradient(180deg, rgba(var(--scene-band-rgb), 0) 0%, rgba(var(--scene-band-rgb), 0.62) 16%, rgba(var(--scene-band-rgb), 0.62) 84%, rgba(var(--scene-band-rgb), 0) 100%);
+  color: var(--txt-bright);
   overflow: hidden;
   isolation: isolate;
 }
-.timelineSection .heading { color: #fff; }
-.timelineSection .lead { color: rgba(255, 255, 255, 0.8); }
-.timelineSection .eyebrow { color: rgba(255, 255, 255, 0.95); }
+.timelineSection .heading { color: var(--txt-bright); }
+.timelineSection .lead { color: var(--txt-soft); }
+.timelineSection .eyebrow { color: var(--txt-bright); }
 
 .timeline {
   position: relative;
@@ -1905,14 +1986,14 @@
   background:
     linear-gradient(180deg, var(--surface) 0%, transparent 12%, transparent 88%, var(--surface) 100%),
     radial-gradient(circle at 50% 35%, rgba(var(--accentMainRgb), 0.16) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(8, 8, 11, 0) 0%, rgba(8, 8, 11, 0.6) 16%, rgba(8, 8, 11, 0.6) 84%, rgba(8, 8, 11, 0) 100%);
-  color: #fff;
+    linear-gradient(180deg, rgba(var(--scene-band-rgb), 0) 0%, rgba(var(--scene-band-rgb), 0.6) 16%, rgba(var(--scene-band-rgb), 0.6) 84%, rgba(var(--scene-band-rgb), 0) 100%);
+  color: var(--txt-bright);
   overflow: hidden;
   isolation: isolate;
 }
-.reviewsSection .heading { color: #fff; }
-.reviewsSection .lead { color: rgba(255, 255, 255, 0.8); }
-.reviewsSection .eyebrow { color: rgba(255, 255, 255, 0.95); }
+.reviewsSection .heading { color: var(--txt-bright); }
+.reviewsSection .lead { color: var(--txt-soft); }
+.reviewsSection .eyebrow { color: var(--txt-bright); }
 
 .ratingsRow {
   display: flex;
@@ -1929,7 +2010,7 @@
   gap: 2px;
   padding: 12px 22px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--website-elev-2);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -1937,7 +2018,7 @@
 .ratingScore {
   font-size: 18px;
   font-weight: 800;
-  color: #fff;
+  color: var(--txt-bright);
   letter-spacing: -0.01em;
 }
 
@@ -1946,7 +2027,7 @@
   letter-spacing: 1.4px;
   text-transform: uppercase;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--txt-soft);
 }
 
 .reviewsGrid {
@@ -2078,7 +2159,7 @@
   width: 100%;
   /* Marquee text is high-contrast and short — it can sit on a slightly more
      opaque veil than long-form sections without dimming the 3D backdrop. */
-  background: rgba(7, 7, 11, 0.86);
+  background: var(--section-veil-strong);
   overflow: hidden;
   padding: 22px 0;
   box-shadow: inset 0 1px 0 var(--hairline), inset 0 -1px 0 var(--hairline);
@@ -2137,7 +2218,7 @@
   background: linear-gradient(180deg, var(--card-bg-elevated) 0%, var(--card-bg) 60%);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 24px 60px rgba(0, 0, 0, 0.55),
+    var(--card-shadow),
     0 0 0 1px var(--hairline);
 }
 
@@ -2149,7 +2230,7 @@
 .card3d:hover .timelineCard {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 32px 80px rgba(0, 0, 0, 0.7),
+    var(--card-shadow-hover),
     0 0 0 1px rgba(var(--accentMainRgb), 0.4),
     0 0 40px rgba(var(--accentMainRgb), 0.18);
 }
@@ -2213,7 +2294,7 @@
    canvas show through. */
 .sectionTinted {
   background:
-    linear-gradient(180deg, rgba(7, 7, 11, 0.86) 0%, rgba(17, 17, 26, 0.88) 50%, rgba(7, 7, 11, 0.86) 100%);
+    linear-gradient(180deg, rgba(var(--scene-band-rgb), 0.86) 0%, rgba(var(--scene-band-rgb), 0.88) 50%, rgba(var(--scene-band-rgb), 0.86) 100%);
 }
 
 /* Trust bar items use bright accent for value, soft white for labels */
@@ -2224,7 +2305,7 @@
 .diorama {
   background:
     radial-gradient(circle at 50% 45%, rgba(var(--accentMainRgb), 0.22) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(7, 7, 11, 0.84) 0%, rgba(7, 7, 11, 0.42) 50%, rgba(7, 7, 11, 0.84) 100%);
+    linear-gradient(180deg, rgba(var(--scene-band-rgb), 0.84) 0%, rgba(var(--scene-band-rgb), 0.42) 50%, rgba(var(--scene-band-rgb), 0.84) 100%);
 }
 .dioramaBackdrop > span {
   background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.18) 0%, rgba(var(--accentMainRgb), 0.02) 80%);
@@ -2238,13 +2319,13 @@
 .timelineSection {
   background:
     radial-gradient(circle at 50% 50%, rgba(var(--accentMainRgb), 0.18) 0%, transparent 60%),
-    linear-gradient(180deg, rgba(7, 7, 11, 0.84) 0%, rgba(7, 7, 11, 0.4) 50%, rgba(7, 7, 11, 0.84) 100%);
+    linear-gradient(180deg, rgba(var(--scene-band-rgb), 0.84) 0%, rgba(var(--scene-band-rgb), 0.4) 50%, rgba(var(--scene-band-rgb), 0.84) 100%);
 }
 
 .reviewsSection {
   background:
     radial-gradient(circle at 50% 35%, rgba(var(--accentMainRgb), 0.2) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(7, 7, 11, 0.84) 0%, rgba(7, 7, 11, 0.4) 50%, rgba(7, 7, 11, 0.84) 100%);
+    linear-gradient(180deg, rgba(var(--scene-band-rgb), 0.84) 0%, rgba(var(--scene-band-rgb), 0.4) 50%, rgba(var(--scene-band-rgb), 0.84) 100%);
 }
 
 /* Footer hairline against the dark page */
@@ -2293,22 +2374,18 @@
   isolation: isolate;
   overflow: hidden;
   width: 100%;
-  color: #fff;
+  color: var(--txt-bright);
 }
 
 /* Solid premium card background — covers the persistent 3D canvas. */
 .sceneSurface {
-  background:
-    radial-gradient(circle at 50% 18%, rgba(var(--accentMainRgb), 0.10) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(7, 7, 11, 0.94) 0%, rgba(12, 12, 18, 0.97) 50%, rgba(7, 7, 11, 0.94) 100%);
+  background: var(--scene-surface-bg);
   box-shadow: inset 0 -1px 0 var(--hairline);
 }
 
 /* Translucent — the persistent 3D canvas reads through as atmosphere. */
 .sceneTransparent {
-  background:
-    radial-gradient(circle at 50% 45%, rgba(var(--accentMainRgb), 0.20) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(7, 7, 11, 0.84) 0%, rgba(7, 7, 11, 0.40) 50%, rgba(7, 7, 11, 0.84) 100%);
+  background: var(--scene-transparent-bg);
 }
 
 .sceneInner {
@@ -2395,7 +2472,9 @@
   line-height: 0.98;
   margin: 0;
   max-width: 18ch;
-  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.74) 100%);
+  /* Theme-following ink gradient — clipped to the text. The bright→soft
+     stops both track --txt-*, so the title stays legible in light mode. */
+  background: linear-gradient(180deg, var(--txt-bright) 0%, var(--txt-soft) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -2424,7 +2503,7 @@
 
 .scenePanel {
   position: relative;
-  background: linear-gradient(180deg, rgba(28, 28, 38, 0.9) 0%, rgba(16, 16, 22, 0.94) 60%);
+  background: linear-gradient(180deg, var(--card-bg-elevated) 0%, var(--card-bg) 60%);
   border-radius: var(--radius-lg, 22px);
   padding: 28px 26px;
   display: flex;
@@ -2434,7 +2513,7 @@
   -webkit-backdrop-filter: blur(14px);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 24px 60px rgba(0, 0, 0, 0.55),
+    var(--card-shadow),
     0 0 0 1px var(--hairline);
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.45s ease;
   height: 100%;
@@ -2443,7 +2522,7 @@
   transform: translateY(-3px);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.1) inset,
-    0 32px 80px rgba(0, 0, 0, 0.65),
+    var(--card-shadow-hover),
     0 0 0 1px rgba(var(--accentMainRgb), 0.4),
     0 0 60px rgba(var(--accentMainRgb), 0.12);
 }
@@ -2540,6 +2619,8 @@
   left: 18px;
   right: 18px;
   bottom: 18px;
+  /* Dark glass caption pinned over the workshop photo — stays dark in both
+     themes so the white label keeps contrast against any photo behind it. */
   background: rgba(7, 7, 11, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -2547,7 +2628,7 @@
   border-radius: 14px;
   font-size: 13px;
   letter-spacing: 0.4px;
-  color: var(--txt-bright);
+  color: #fff;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2718,13 +2799,13 @@
 .heroStatValue {
   font-size: clamp(20px, 2.2vw, 28px);
   font-weight: 800;
-  color: #fff;
+  color: var(--txt-bright);
   letter-spacing: -0.025em;
   line-height: 1;
 }
 .heroStatLabel {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--txt-mute);
   letter-spacing: 1.6px;
   text-transform: uppercase;
   font-weight: 700;
@@ -2755,10 +2836,10 @@
 .scene .teamCard,
 .scene .partsCard,
 .scene .timelineCard {
-  background: linear-gradient(180deg, rgba(28, 28, 38, 0.92) 0%, rgba(16, 16, 22, 0.96) 60%);
+  background: linear-gradient(180deg, var(--card-bg-elevated) 0%, var(--card-bg) 60%);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.05) inset,
-    0 24px 60px rgba(0, 0, 0, 0.55),
+    var(--card-shadow),
     0 0 0 1px var(--hairline);
 }
 
@@ -2833,14 +2914,14 @@
 .scenePartsChip {
   padding: 18px 20px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--website-elev-1);
   display: flex;
   flex-direction: column;
   gap: 4px;
   transition: background 0.25s ease, transform 0.3s ease;
 }
 .scenePartsChip:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--website-elev-3);
   transform: translateY(-2px);
 }
 .scenePartsChipBrand {
