@@ -17,6 +17,7 @@ import { buildRosterPayload, EMPTY_ROSTER_PAYLOAD } from "@/lib/users/rosterPayl
 import Button from "@/components/ui/Button";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LoginPageUi from "@/components/page-ui/login-ui"; // Extracted presentation layer.
+import { trace, useTraceMount, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 const FIELD_MAX_WIDTH = 380;
 const LOGOUT_BARRIER_STORAGE_KEY = "hnp-logout-barrier-until";
@@ -160,7 +161,7 @@ export default function LoginPage() {
     allUsers,
     isLoading: rosterLoading
   } = useRoster();
-  const { setTemporaryOverride } = useTheme();
+  const { setTemporaryOverride, commitUserTheme } = useTheme();
 
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -180,6 +181,10 @@ export default function LoginPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const devLoginInProgressRef = useRef(false);
   const finalizedPendingLogoutRef = useRef(false);
+
+  useTraceMount("LoginPage");
+  useTraceValue("login.isRedirecting", isRedirecting);
+  useTraceValue("login.sessionStatus", sessionStatus);
 
   useEffect(() => {
     setTemporaryOverride({ mode: "system", accent: "red" });
@@ -303,6 +308,7 @@ export default function LoginPage() {
     }
 
     if (Number.isFinite(numericId) && numericId > 0) {
+      trace("login", "devLogin: signIn start", { numericId, target });
       const result = await signIn("credentials", {
         userId: String(numericId),
         callbackUrl: target,
@@ -310,15 +316,22 @@ export default function LoginPage() {
       });
 
       if (result?.error || !result?.ok) {
+        trace("login", "devLogin: signIn FAILED");
         setErrorMessage("Developer login failed. Session was not created.");
         devLoginInProgressRef.current = false;
         return;
       }
 
+      trace("login", "devLogin: signIn ok -> show shell loading");
       showAppShellLoading();
       setIsRedirecting(true);
+      // Resolve + lock the destination user's saved theme while the loading
+      // screen is showing, so the next page boots straight into it instead of
+      // changing colour again once /newsfeed has mounted.
+      await commitUserTheme(numericId);
       // Hard navigation forces NextAuth to read the freshly-issued JWT cookie
       // and rebuilds the user/role context from the new session.
+      trace("login", "devLogin: hard navigation (window.location.assign)", target);
       window.location.assign(target);
       return;
     }
@@ -331,8 +344,13 @@ export default function LoginPage() {
       return;
     }
 
+    trace("login", "devLogin (fallback): ok -> show shell loading", target);
     showAppShellLoading();
     setIsRedirecting(true);
+    // Lock the destination user's saved theme in before navigating so the
+    // colour settles once, on the loading screen.
+    await commitUserTheme(userId);
+    trace("login", "devLogin (fallback): router.replace", target);
     await router.replace(target);
   };
 
@@ -358,8 +376,13 @@ export default function LoginPage() {
       }
 
       if (result?.ok) {
+        trace("login", "dbLogin: signIn ok -> show shell loading", target);
         showAppShellLoading();
         setIsRedirecting(true);
+        // Lock the destination user's saved theme in before navigating so the
+        // colour settles once, on the loading screen.
+        await commitUserTheme();
+        trace("login", "dbLogin: router.replace", target);
         await router.replace(target);
       }
     } catch (err) {
@@ -425,6 +448,10 @@ export default function LoginPage() {
     user || (sessionStatus === "authenticated" && session?.user ? session.user : null);
     if (!activeUser) return;
 
+    trace("login", "auto-redirect: active user detected", {
+      username: activeUser.username,
+      id: activeUser.id,
+    });
     showAppShellLoading();
     setIsRedirecting(true);
 
@@ -459,8 +486,14 @@ export default function LoginPage() {
     }
 
     const target = getPostLoginRoute(router, activeUser);
-    router.replace(target);
-  }, [user, session, sessionStatus, router, dbUserId, logoutInProgress]);
+    trace("login", "auto-redirect: commit theme, then router.replace", target);
+    // Lock the destination theme in before navigating so the colour settles
+    // once, on the loading screen, instead of after the next page mounts.
+    commitUserTheme(activeUser.id).finally(() => {
+      trace("login", "auto-redirect: router.replace now", target);
+      router.replace(target);
+    });
+  }, [user, session, sessionStatus, router, dbUserId, logoutInProgress, commitUserTheme]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

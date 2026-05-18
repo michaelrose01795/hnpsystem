@@ -91,6 +91,10 @@ html.staff-scope {
   background: var(--page-shell-bg);
   overflow-x: clip;
   overscroll-behavior-y: none;
+  /* Smooth the shell colour change on soft navigations (e.g. login <-> app)
+     so the theme eases in once rather than snapping. Matches body's existing
+     background-color transition. */
+  transition: background-color 0.3s ease;
 }
 
 html.staff-scope body {

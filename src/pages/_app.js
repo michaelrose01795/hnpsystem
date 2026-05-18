@@ -49,6 +49,7 @@ import { setPresentationMode } from "@/features/presentation/runtime/presentatio
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
 import { useUser } from "@/context/UserContext";
 import { canAccessPath } from "@/lib/auth/pageAccess";
+import { trace } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 // Default page layout: every page is wrapped by the persistent <Layout>. Pages that
 // need custom layout props (jobNumber, requiresLandscape, disableContentCardHover,
@@ -157,19 +158,34 @@ function AppWrapper({ Component, pageProps }) {
     return () => window.removeEventListener("pageshow", clearLegacyBootArtifacts);
   }, []);
 
+  // TEMP diagnostic: mark each fresh document/app boot.
+  useEffect(() => {
+    trace("boot", "app shell mounted");
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
-    const handleRouteStart = () => setIsRouteLoading(true);
-    const handleRouteDone = () => setIsRouteLoading(false);
+    const handleRouteStart = (url) => {
+      trace("route", "routeChangeStart", url);
+      setIsRouteLoading(true);
+    };
+    const handleRouteComplete = (url) => {
+      trace("route", "routeChangeComplete", url);
+      setIsRouteLoading(false);
+    };
+    const handleRouteError = (err, url) => {
+      trace("route", "routeChangeError", { url, error: String(err?.message || err) });
+      setIsRouteLoading(false);
+    };
 
     router.events.on("routeChangeStart", handleRouteStart);
-    router.events.on("routeChangeComplete", handleRouteDone);
-    router.events.on("routeChangeError", handleRouteDone);
+    router.events.on("routeChangeComplete", handleRouteComplete);
+    router.events.on("routeChangeError", handleRouteError);
     return () => {
       router.events.off("routeChangeStart", handleRouteStart);
-      router.events.off("routeChangeComplete", handleRouteDone);
-      router.events.off("routeChangeError", handleRouteDone);
+      router.events.off("routeChangeComplete", handleRouteComplete);
+      router.events.off("routeChangeError", handleRouteError);
     };
   }, [router.events]);
 

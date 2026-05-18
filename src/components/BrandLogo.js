@@ -92,7 +92,10 @@ export default function BrandLogo({
   height,
   ...rest
 }) {
-  const { resolvedMode, accent } = useTheme();
+  // `effectiveAccent` follows any active theme override (e.g. the red /login
+  // theme) so the logo recolours to match what is actually on screen — not the
+  // user's stored accent preference.
+  const { resolvedMode, effectiveAccent } = useTheme();
   const [src, setSrc] = useState(() => LIGHT_LOGO_SRC);
 
   const mode = resolvedMode === "dark" ? "dark" : "light";
@@ -101,7 +104,7 @@ export default function BrandLogo({
   const targetRgb = useMemo(() => {
     const paletteMap =
       ACCENT_PALETTES && typeof ACCENT_PALETTES === "object" ? ACCENT_PALETTES : FALLBACK_ACCENT_PALETTES;
-    const palette = paletteMap[accent] || paletteMap.red || FALLBACK_ACCENT_PALETTES.red;
+    const palette = paletteMap[effectiveAccent] || paletteMap.red || FALLBACK_ACCENT_PALETTES.red;
     const hex = mode === "dark" ? palette?.dark : palette?.light;
     const safeHex = String(hex || "").replace("#", "");
     if (!/^[0-9a-fA-F]{6}$/.test(safeHex)) return DEFAULT_TARGET_RGB[mode];
@@ -110,7 +113,7 @@ export default function BrandLogo({
       g: parseInt(safeHex.slice(2, 4), 16),
       b: parseInt(safeHex.slice(4, 6), 16),
     };
-  }, [accent, mode]);
+  }, [effectiveAccent, mode]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

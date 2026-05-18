@@ -10,9 +10,8 @@
   width: 56px;
   height: 56px;
   border-radius: var(--radius-pill);
-  border: none;
-  background: var(--primary);
-  color: var(--text-2);
+  background: var(--primary) !important;
+  color: var(--onAccentText) !important;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
   font-weight: 700;
   cursor: grab;
@@ -41,20 +40,19 @@
 }
 
 .bubbleOpen {
-  background: var(--primary);
-  color: var(--text-2);
+  background: var(--primary) !important;
+  color: var(--onAccentText) !important;
 }
 
 .bubbleOpen .bubbleLabel,
 .bubble:active .bubbleLabel {
-  color: var(--text-2);
+  color: var(--onAccentText);
 }
 
 .panel {
   position: fixed;
   pointer-events: auto;
-  border-radius: var(--radius-lg);
-  border: none;
+  border-radius: var(--section-card-radius);
   background: var(--surface);
   box-shadow:
     0 28px 52px -18px rgba(0, 0, 0, 0.34),
@@ -68,6 +66,8 @@
   font-family: inherit;
   display: flex;
   flex-direction: column;
+  padding: 0;
+  gap: 0;
 }
 
 .panelEnter {
@@ -108,7 +108,7 @@
   align-items: center;
   justify-content: center;
   height: 22px;
-  background: rgba(var(--primary-rgb), 0.08);
+  background: var(--theme);
   cursor: move;
   user-select: none;
   touch-action: none;
@@ -120,7 +120,8 @@
   width: 42px;
   height: 5px;
   border-radius: var(--radius-pill);
-  background: rgba(var(--primary-rgb), 0.35);
+  background: var(--accentText);
+  opacity: 0.35;
 }
 
 .header {
@@ -128,9 +129,9 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  background: rgba(var(--primary-rgb), 0.08);
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--theme);
   border-bottom-left-radius: 14px;
   border-bottom-right-radius: 14px;
 }
@@ -139,7 +140,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   width: 100%;
   min-width: 0;
   padding: 4px 6px;
@@ -148,7 +149,7 @@
 }
 
 .heading {
-  font-size: 13px;
+  font-size: var(--text-label);
   letter-spacing: 0.01em;
 }
 
@@ -157,7 +158,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-sm);
   flex: 0 0 auto;
 }
 
@@ -165,24 +166,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   color: var(--text-1);
 }
 
 .headerButton,
 .primaryAction {
-  border: none;
-  background: var(--control-bg);
-  color: var(--text-1);
-  border-radius: var(--control-radius);
-  padding: 7px 10px;
-  cursor: pointer;
-  font-size: 12px;
   line-height: 1.1;
-}
-
-.primaryAction {
-  background: rgba(var(--primary-rgb), 0.14);
 }
 
 .tabBarScroller {
@@ -192,6 +182,8 @@
   align-items: center;
   overflow-x: auto;
   overflow-y: visible;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: 3px 0 1px;
   border-radius: 0;
   background: transparent;
@@ -199,21 +191,23 @@
   z-index: 2;
 }
 
+.tabBarScroller::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .tabBar {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
   min-width: max-content;
 }
 
 .tab {
-  border: none;
-  background: var(--control-bg);
-  color: var(--text-1);
   border-radius: var(--radius-pill);
-  padding: 6px 10px;
-  font-size: 12px;
-  cursor: pointer;
+  padding: var(--control-padding-xs);
+  font-size: var(--text-caption);
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
@@ -232,8 +226,8 @@
 }
 
 .tabActive {
-  background: var(--primary);
-  color: var(--text-2);
+  background: var(--primary) !important;
+  color: var(--onAccentText) !important;
 }
 
 .tabAdd {
@@ -246,8 +240,8 @@
   font-size: 17px;
   font-weight: 700;
   line-height: 1;
-  background: var(--primary);
-  color: var(--text-2);
+  background: var(--primary) !important;
+  color: var(--onAccentText) !important;
 }
 
 .tabTitle {
@@ -257,18 +251,19 @@
 }
 
 .tabBadge {
-  font-size: 10px;
+  font-size: var(--text-caption);
   border-radius: var(--radius-pill);
   padding: 2px 6px;
-  border: none;
-  background: rgba(var(--primary-rgb), 0.13);
+  background: var(--theme);
+  color: var(--text-1);
 }
 
 .tabClose {
-  border: 0;
-  background: transparent;
-  color: var(--text-1);
-  cursor: pointer;
+  min-width: 24px;
+  min-height: 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   font-size: 15px;
   line-height: 1;
 }
@@ -276,8 +271,8 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  gap: var(--layout-card-gap);
+  padding: var(--section-card-padding);
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -286,27 +281,27 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-sm);
   flex: 0 0 auto;
 }
 
 .fieldGrow {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-sm);
   flex: 1 1 auto;
   min-height: 0;
   position: relative;
 }
 
 .label {
-  font-size: 13px;
+  font-size: var(--text-label);
   color: var(--text-1);
   font-family: inherit;
 }
 
 .titleLabel {
-  font-size: 14px;
+  font-size: var(--text-body-sm);
   font-weight: 600;
 }
 
@@ -314,30 +309,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-3);
 }
 
 .titleActions {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
   flex: 0 0 auto;
 }
 
 .descriptionLabel {
-  font-size: 13px;
+  font-size: var(--text-label);
   font-weight: 500;
 }
 
 .input,
 .textarea {
   width: 100%;
-  border-radius: var(--control-radius);
-  border: none;
-  background: var(--control-bg);
-  color: var(--text-1);
-  padding: var(--control-padding);
-  outline: none;
   font-family: inherit;
 }
 
@@ -361,11 +350,10 @@
   min-height: 120px;
   height: 100%;
   flex: 1 1 auto;
-  border-radius: var(--control-radius);
-  border: none;
-  background: var(--control-bg);
+  border-radius: var(--input-radius);
+  background: var(--input-bg);
   color: var(--text-1);
-  padding: 9px 11px;
+  padding: var(--control-padding);
   font-family: inherit;
   font-size: 16px;
   line-height: 1.45;
@@ -393,7 +381,7 @@
 }
 
 .richEditorReadOnly {
-  background: var(--surface);
+  background: var(--theme);
 }
 
 .titleInput {
@@ -416,7 +404,6 @@
   z-index: 6;
   min-width: 220px;
   max-width: min(320px, calc(100% - 20px));
-  border: none;
   background: var(--surface);
   border-radius: var(--control-radius);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
@@ -435,7 +422,7 @@
 }
 
 .commandSuggestionItemActive {
-  background: rgba(var(--primary-rgb), 0.14);
+  background: var(--control-bg-hover);
 }
 
 .commandSuggestionCmd {
@@ -445,22 +432,14 @@
 
 /* AI button in the Title row — positioned to the left of Share */
 .aiButton {
-  border: none;
-  /* Accent surface so it's visually distinct from Share but not louder */
-  background: rgba(var(--primary-rgb), 0.14);
-  color: var(--primary);
-  border-radius: var(--control-radius);
-  padding: 6px 10px;
-  font-size: 12px;
+  color: var(--accentText) !important;
   font-weight: 700;
   letter-spacing: 0.03em;
-  cursor: pointer;
   transition: background 0.14s ease, color 0.14s ease;
 }
 
 .aiButton:hover {
-  background: var(--primary);
-  color: var(--text-2);
+  background: var(--control-bg-hover) !important;
 }
 
 /* AI tab in the header tab bar — always present */
@@ -481,13 +460,7 @@
 /* When the AI tab is active it inherits .tabActive — no extra rule needed */
 
 .shareButton {
-  border: none;
-  background: rgba(var(--primary-rgb), 0.14);
-  color: var(--text-1);
-  border-radius: var(--control-radius);
-  padding: 6px 10px;
-  font-size: 12px;
-  cursor: pointer;
+  color: var(--accentText) !important;
 }
 
 .shareButton:disabled {
@@ -497,19 +470,12 @@
 
 .visibilitySwitch {
   min-width: 48px;
-  min-height: var(--control-height);
   height: auto;
-  border-radius: var(--control-radius);
-  border: none !important;
-  background: var(--control-bg) !important;
-  color: var(--text-1) !important;
   position: relative;
   cursor: pointer;
-  padding: var(--control-padding);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--control-font-size);
   font-weight: 600;
   letter-spacing: 0.02em;
   transform: none !important;
@@ -525,7 +491,7 @@
 
 .visibilitySwitchOn {
   background: var(--primary) !important;
-  color: var(--text-2) !important;
+  color: var(--onAccentText) !important;
 }
 
 .visibilitySwitchOn:hover {
@@ -542,25 +508,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-sm);
   flex-wrap: wrap;
   font-size: 11px;
   color: var(--text-1);
 }
 
 .readOnly {
-  color: var(--warning-dark);
+  color: var(--warning);
 }
 
 .error {
-  font-size: 12px;
-  color: var(--danger-dark);
+  font-size: var(--text-caption);
+  color: var(--danger);
 }
 
 .emptyState {
   height: 100%;
   border-radius: var(--control-radius);
-  background: rgba(var(--primary-rgb), 0.05);
+  background: var(--theme);
   display: grid;
   align-content: center;
   justify-items: center;
@@ -570,12 +536,12 @@
 }
 
 .emptyState h4 {
-  font-size: 14px;
+  font-size: var(--text-body-sm);
 }
 
 .emptyState p {
-  font-size: 12px;
-  color: var(--text-1);
+  font-size: var(--text-caption);
+  color: var(--surfaceTextMuted);
   max-width: 320px;
 }
 
@@ -601,7 +567,7 @@
 .shareOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.28);
+  background: var(--modal-backdrop-bg, rgba(0, 0, 0, 0.28));
   z-index: 3400;
   display: flex;
   align-items: center;
@@ -613,19 +579,18 @@
 .shareModal {
   width: 360px;
   max-width: calc(100vw - 28px);
-  border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--section-card-radius);
   background: var(--surface);
-  box-shadow: 0 24px 46px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--dropdown-menu-shadow);
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: var(--layout-card-gap);
+  padding: var(--section-card-padding);
 }
 
 .shareModalHeader {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .shareSearchWrap {
@@ -635,12 +600,7 @@
 
 .shareSearch {
   width: 100%;
-  border: none;
-  border-radius: var(--control-radius);
-  background: var(--control-bg);
-  color: var(--text-1);
   padding: 8px 126px 8px 10px;
-  font-size: var(--control-font-size);
 }
 
 .shareSelectedCount {
@@ -648,26 +608,19 @@
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 10px;
-  color: var(--text-1);
+  font-size: var(--text-caption);
+  color: var(--surfaceTextMuted);
   pointer-events: none;
   white-space: nowrap;
 }
 
 .shareCloseButton {
-  border: none;
-  background: var(--control-bg);
-  color: var(--text-1);
-  border-radius: var(--control-radius);
-  padding: 8px 10px;
-  font-size: 12px;
-  cursor: pointer;
+  flex: 0 0 auto;
 }
 
 .shareUserList {
-  border: none;
   border-radius: var(--radius-sm);
-  background: var(--control-bg);
+  background: var(--theme);
   overflow-y: auto;
   max-height: 230px;
 }
@@ -687,7 +640,7 @@
 }
 
 .shareUserName {
-  font-size: 13px;
+  font-size: var(--text-body-sm);
   color: var(--text-1);
   line-height: 1.2;
   overflow: hidden;
@@ -697,8 +650,8 @@
 
 .shareUserEmail {
   grid-column: 2 / 3;
-  font-size: 11px;
-  color: var(--text-1);
+  font-size: var(--text-caption);
+  color: var(--surfaceTextMuted);
   line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -707,8 +660,8 @@
 
 .shareEmpty {
   padding: 12px;
-  font-size: 12px;
-  color: var(--text-1);
+  font-size: var(--text-caption);
+  color: var(--surfaceTextMuted);
 }
 
 @media (max-width: 640px) {
