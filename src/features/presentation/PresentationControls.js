@@ -60,10 +60,8 @@ export default function PresentationControls({ onExport, exportBusy }) {
           type="button"
           className="app-btn app-btn--primary app-btn--sm"
           onClick={next}
-          disabled={atEnd}
-          style={{ opacity: atEnd ? 0.5 : 1 }}
         >
-          Next
+          {atEnd ? "Finish" : "Next"}
         </button>
       </div>
 

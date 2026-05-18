@@ -2,10 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { ALL_SLIDES, buildSlidesForRole } from "./slides";
-import {
-  getPresentationRoleByKey,
-  orderSlidesForRole,
-} from "@/config/presentationRoleAccess";
+import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 import {
   setOverlayHidden as publishOverlayHidden,
   subscribeOverlayVisibility,
@@ -49,6 +46,53 @@ function getQuerySlide(querySlide) {
   );
 }
 
+function routeToLabel(route) {
+  const [path, query = ""] = String(route || "").split("?");
+  const label = (path.replace(/^\//, "") || "home")
+    .split("/")
+    .map((part) =>
+      part
+        .replace(/\[|\]/g, "")
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+    )
+    .join(" / ");
+  return query ? `${label} (${query.replace(/=/g, ": ").replace(/&/g, ", ")})` : label;
+}
+
+function routeMatches(template, candidate) {
+  const [templatePath, templateQuery = ""] = String(template || "").split("#")[0].split("?");
+  const [candidatePath, candidateQuery = ""] = String(candidate || "").split("#")[0].split("?");
+  if (templateQuery !== candidateQuery) return false;
+  if (!templatePath.includes("[")) return templatePath === candidatePath;
+  const pattern = new RegExp(
+    "^" + templatePath.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"
+  );
+  return pattern.test(candidatePath);
+}
+
+function buildSlidesFromPresentationRole(role, allSlides) {
+  return (role?.routes || []).map((route, index) => {
+    const slide = allSlides.find((candidate) => routeMatches(route, candidate.route));
+    if (slide) return slide;
+    return {
+      id: `presentation-${role.key}-${index}`,
+      route,
+      title: routeToLabel(route),
+      roles: null,
+      workflowIndex: index,
+      steps: [
+        {
+          kind: "main",
+          position: "center",
+          title: routeToLabel(route),
+          body: "This presentation page uses the real app screen with demo data.",
+        },
+      ],
+    };
+  });
+}
+
 export function PresentationProvider({ children }) {
   const { user, loading } = useUser();
   const router = useRouter();
@@ -89,11 +133,7 @@ export function PresentationProvider({ children }) {
 
   const slides = useMemo(() => {
     if (activeRole) {
-      const ordered = orderSlidesForRole(activeRole, ALL_SLIDES);
-      // Fallback: if the doc-driven ordering yielded no match (unlikely), fall
-      // back to the role-filtered slide set so the runner still has content.
-      if (ordered.length > 0) return ordered;
-      return buildSlidesForRole([activeRole.roleId]);
+      return buildSlidesFromPresentationRole(activeRole, ALL_SLIDES);
     }
     return isPublicViewer ? ALL_SLIDES : buildSlidesForRole(userRoles);
   }, [activeRole, isPublicViewer, userRoles]);
@@ -185,7 +225,7 @@ export function PresentationProvider({ children }) {
       undefined,
       { shallow: false }
     );
-  }, [activeRole?.key, activeRole?.routes, router, router.isReady, router.query.slide]);
+  }, [activeRole?.key, activeRole?.routes, router]);
 
   const currentSlide = slides[slideIndex] || null;
   const currentSteps = useMemo(() => currentSlide?.steps || [], [currentSlide]);
@@ -213,8 +253,10 @@ export function PresentationProvider({ children }) {
       replaceSlidePath(target, 0);
       setSlideIndex(target);
       setStepIndex(0);
+    } else if (activeRole) {
+      router.push("/loginPresentation");
     }
-  }, [stepIndex, currentSteps.length, slideIndex, slides.length, replaceSlidePath]);
+  }, [stepIndex, currentSteps.length, slideIndex, slides.length, replaceSlidePath, activeRole, router]);
 
   const prev = useCallback(() => {
     if (stepIndex > 0) {

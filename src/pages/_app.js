@@ -58,6 +58,15 @@ import { canAccessPath } from "@/lib/auth/pageAccess";
 const defaultGetLayout = (page) => <Layout>{page}</Layout>;
 
 const isWebsitePath = (path = "") => path === "/website" || path.startsWith("/website/");
+const isAllowedPresentationNavigation = (url = "") => {
+  try {
+    const parsed = new URL(url, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    if (typeof window !== "undefined" && parsed.origin !== window.location.origin) return false;
+    return parsed.pathname.startsWith("/presentation/") || parsed.pathname === "/presentation" || parsed.pathname === "/loginPresentation";
+  } catch {
+    return url.startsWith("/presentation/") || url === "/presentation" || url.startsWith("/loginPresentation");
+  }
+};
 
 function AppWrapper({ Component, pageProps }) {
   const router = useRouter();
@@ -102,6 +111,37 @@ function AppWrapper({ Component, pageProps }) {
     else restoreFetchInterceptor();
     return () => restoreFetchInterceptor();
   }, [isPresentationRoute]);
+
+  // Presentation mode is a closed demo surface. Real app page actions may still
+  // contain ordinary links/buttons; keep them from navigating out to live routes
+  // where the normal data layer would be active again.
+  useEffect(() => {
+    if (!isPresentationRoute || typeof document === "undefined") return undefined;
+
+    const blockLiveRouteClick = (event) => {
+      const anchor = event.target?.closest?.("a[href]");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href") || "";
+      if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+      if (isAllowedPresentationNavigation(href)) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    document.addEventListener("click", blockLiveRouteClick, true);
+    return () => document.removeEventListener("click", blockLiveRouteClick, true);
+  }, [isPresentationRoute]);
+
+  useEffect(() => {
+    if (!isPresentationRoute) return undefined;
+    const blockLiveRouteChange = (url) => {
+      if (isAllowedPresentationNavigation(url)) return;
+      router.events.emit("routeChangeError", new Error("Presentation mode blocked live route navigation"), url, { shallow: false });
+      throw "Presentation mode blocked live route navigation";
+    };
+    router.events.on("routeChangeStart", blockLiveRouteChange);
+    return () => router.events.off("routeChangeStart", blockLiveRouteChange);
+  }, [isPresentationRoute, router.events]);
 
   // Remove legacy reload/boot classes that can persist on iOS Safari and block manual reloads.
   useEffect(() => {

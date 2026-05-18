@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePresentation } from "./PresentationProvider";
+import { isAnchorVisible, scrollAnchorIntoView } from "./runtime/anchorVisibility";
 
 const KIND_LABEL = {
   main: "Overview",
@@ -204,19 +205,10 @@ function pickPlacement(anchorRect, calloutSize, preferredSide) {
   return best;
 }
 
-function isAnchorVisible(selector) {
-  if (!selector || typeof document === "undefined") return false;
-  const el = document.querySelector(selector);
-  if (!el) return false;
-  const rect = el.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0;
-}
-
 export default function PresentationCallout({ step }) {
   const ref = useRef(null);
   const [anchorRect, setAnchorRect] = useState(null);
   const [calloutSize, setCalloutSize] = useState({ width: 380, height: 260 });
-  const [anchorFound, setAnchorFound] = useState(() => isAnchorVisible(step?.anchor));
 
   const {
     slides,
@@ -245,20 +237,23 @@ export default function PresentationCallout({ step }) {
   }, [step]);
 
   useEffect(() => {
+    let scrollAttempts = 0;
+
     function resolveAnchor() {
       if (!step?.anchor) {
         setAnchorRect(null);
-        setAnchorFound(false);
         return;
       }
       const el = document.querySelector(step.anchor);
       if (!el) {
         setAnchorRect(null);
-        setAnchorFound(false);
         return;
       }
+      if (!isAnchorVisible(step.anchor) && scrollAttempts < 6) {
+        scrollAttempts += 1;
+        scrollAnchorIntoView(step.anchor);
+      }
       const rect = el.getBoundingClientRect();
-      setAnchorFound(rect.width > 0 && rect.height > 0);
       setAnchorRect(rect.width > 0 && rect.height > 0 ? rect : null);
     }
 
@@ -331,20 +326,6 @@ export default function PresentationCallout({ step }) {
       <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--text-1)" }}>
         {step?.body}
       </div>
-      {step?.anchor && !anchorFound && (
-        <div
-          style={{
-            fontSize: 12,
-            color: "var(--warning)",
-            background: "var(--warning-surface)",
-            borderRadius: "var(--radius-xs)",
-            padding: "7px 9px",
-          }}
-        >
-          Anchor not visible for this viewport; the note is docked instead.
-        </div>
-      )}
-
       <div style={{ fontSize: 11, color: "var(--text-1)", marginTop: 2 }}>
         <strong style={{ color: "var(--text-1)" }}>{currentSlide?.title}</strong>
         {" | "}Slide {slideIndex + 1}/{slideCount}
@@ -375,10 +356,8 @@ export default function PresentationCallout({ step }) {
           type="button"
           className="app-btn app-btn--primary app-btn--sm"
           onClick={next}
-          disabled={atEnd}
-          style={{ opacity: atEnd ? 0.5 : 1 }}
         >
-          Next
+          {atEnd ? "Finish" : "Next"}
         </button>
         <button
           type="button"

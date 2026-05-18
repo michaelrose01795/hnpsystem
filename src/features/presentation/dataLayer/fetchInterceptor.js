@@ -29,10 +29,19 @@ export function installFetchInterceptor() {
   installed = true;
 
   window.fetch = async (input, init) => {
-    const url = typeof input === "string" ? input : input?.url || "";
+    const rawUrl = typeof input === "string" ? input : input?.url || "";
+    let apiPath = "";
+    try {
+      const parsed = new URL(rawUrl, window.location.origin);
+      if (parsed.origin === window.location.origin) {
+        apiPath = `${parsed.pathname}${parsed.search}`;
+      }
+    } catch {
+      apiPath = rawUrl;
+    }
     const method = (init?.method || (typeof input === "object" && input?.method) || "GET").toUpperCase();
-    if (isPresentationMode() && /^\/api\//.test(url) && !PASSTHROUGH_RE.test(url)) {
-      const mock = buildMockApiResponse(url, method);
+    if (isPresentationMode() && /^\/api\//.test(apiPath) && !PASSTHROUGH_RE.test(apiPath)) {
+      const mock = buildMockApiResponse(apiPath, method);
       return makeMockResponse(mock);
     }
     return originalFetch(input, init);

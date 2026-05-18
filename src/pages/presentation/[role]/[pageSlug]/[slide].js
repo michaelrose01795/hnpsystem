@@ -26,6 +26,7 @@ import LayerTheme from "@/components/ui/LayerTheme";
 function PresentationContent() {
   const router = useRouter();
   const role = typeof router.query.role === "string" ? router.query.role : null;
+  const pageSlug = typeof router.query.pageSlug === "string" ? router.query.pageSlug : null;
   const slideParam = router.query.slide;
   const slideIndex = Number.parseInt(Array.isArray(slideParam) ? slideParam[0] : slideParam, 10);
 
@@ -34,7 +35,10 @@ function PresentationContent() {
   // dynamically-imported real page) sees `true` from the very first call.
   setPresentationMode(true);
 
-  const resolved = useMemo(() => resolvePresentationRoute(role, slideIndex), [role, slideIndex]);
+  const resolved = useMemo(
+    () => resolvePresentationRoute(role, slideIndex, pageSlug),
+    [role, slideIndex, pageSlug]
+  );
   const [Page, setPage] = useState(null);
 
   useEffect(() => {
@@ -70,9 +74,9 @@ function PresentationContent() {
       <div style={{ padding: 40 }}>
         <LayerSurface>
           <LayerTheme>
-            <h2 style={{ marginTop: 0 }}>Unknown presentation role</h2>
+            <h2 style={{ marginTop: 0 }}>Presentation page not available</h2>
             <p style={{ color: "var(--text-1)" }}>
-              No PRESENTATION_ROLES entry for <code>{String(role)}</code>. Pick a tile on /loginPresentation.
+              This URL is not part of the selected presentation deck. Pick a tile on /loginPresentation.
             </p>
           </LayerTheme>
         </LayerSurface>

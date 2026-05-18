@@ -16,6 +16,7 @@ export default function LoginPageUi(props) {
     handleDevLogin,
     handleLoginIdentityInput,
     handlePasswordReset,
+    handlePresentationSelect,
     isResettingPassword,
     loadingDevUsers,
     loginFullName,
@@ -98,7 +99,7 @@ export default function LoginPageUi(props) {
         {allowDevUserSelection && <div className="login-dev-panel">
             <LoginCard className="login-card--dev" title="Developer Login">
               <div className="login-dev-content">
-                <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} onSingleUserDepartmentLogin={handleDevLogin} />
+                <LoginDropdown selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedUser={selectedUser} setSelectedUser={setSelectedUser} allUsers={allUsers} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} roleCategories={loginRoleCategories} onSingleUserDepartmentLogin={handleDevLogin} onPresentationSelect={handlePresentationSelect} />
 
                 <p className={["login-loading-text", !(loadingDevUsers || rosterLoading) ? "is-hidden" : ""].filter(Boolean).join(" ")}>
                   Loading database users for dev login...

@@ -8,6 +8,7 @@ const ROLE_ALIASES = {
 const DEFAULT_DEV_LOGIN_CATEGORY = "retail";
 const DEFAULT_DEV_LOGIN_DEPARTMENT = "workshop";
 const DEFAULT_DEV_LOGIN_USER = "michael";
+const PRESENTATION_CATEGORY_VALUE = "__presentation__";
 
 const normalizeValue = (value) =>
   String(value || "")
@@ -107,6 +108,7 @@ export default function LoginDropdown({
   usersByRoleDetailed,
   roleCategories,
   onSingleUserDepartmentLogin,
+  onPresentationSelect,
   className = "",
 }) {
   const formatUserName = (role, user) => {
@@ -259,12 +261,19 @@ export default function LoginDropdown({
   }, [selectedCategory]);
 
   const categoryOptions = useMemo(
-    () =>
-      Object.keys(roleCategories || {}).map((category) => ({
+    () => [
+      ...Object.keys(roleCategories || {}).map((category) => ({
         key: category,
         value: category,
         label: category,
       })),
+      {
+        key: PRESENTATION_CATEGORY_VALUE,
+        value: PRESENTATION_CATEGORY_VALUE,
+        label: "Presentation",
+        description: "Open presentation mode",
+      },
+    ],
     [roleCategories]
   );
 
@@ -319,6 +328,10 @@ export default function LoginDropdown({
         onChange={(raw) => {
           const nextCategory =
             (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
+          if (nextCategory === PRESENTATION_CATEGORY_VALUE) {
+            onPresentationSelect?.();
+            return;
+          }
           setSelectedCategory(nextCategory);
           setSelectedDepartment("");
           setSelectedUser(null);

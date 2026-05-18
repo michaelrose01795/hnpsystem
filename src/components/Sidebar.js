@@ -24,7 +24,6 @@ const LOGOUT_BARRIER_MS = 8000;
 const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
 const PRESENTATION_LOGOUT_DESTINATION = "/loginPresentation";
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
-const PRESENTATION_RETURN_TO_STORAGE_KEY = "presentation:returnTo";
 
 const hiddenHrRoutes = new Set([
   "/hr/employees",
@@ -59,6 +58,55 @@ function buildRouteAllowedChecker(allowedRoutes) {
   };
 }
 
+function routeToSlug(route) {
+  const [path, query = ""] = String(route || "").split("?");
+  const base = path
+    .replace(/^\//, "")
+    .replace(/\//g, "-")
+    .replace(/\[/g, "")
+    .replace(/\]/g, "")
+    || "home";
+  const querySuffix = query
+    ? `-${query.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+    : "";
+  return `${base}${querySuffix}`;
+}
+
+function buildPresentationHref(href, allowedRoutes, roleKey) {
+  if (!roleKey || !Array.isArray(allowedRoutes)) return href;
+  const cleanHref = String(href || "").split("#")[0];
+  const targetIndex = allowedRoutes.findIndex((template) => {
+    const [templatePath, templateQuery = ""] = String(template || "").split("?");
+    const [hrefPath, hrefQuery = ""] = cleanHref.split("?");
+    if (templatePath.includes("[")) {
+      const pattern = new RegExp(
+        "^" + templatePath.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"
+      );
+      if (!pattern.test(hrefPath)) return false;
+    } else if (hrefPath !== templatePath) {
+      return false;
+    }
+    return templateQuery ? templateQuery === hrefQuery : true;
+  });
+  if (targetIndex < 0) return href;
+  const route = allowedRoutes[targetIndex];
+  return `/presentation/${roleKey}/${routeToSlug(route)}/${targetIndex}`;
+}
+
+function routeToLabel(route) {
+  const [path, query = ""] = String(route || "").split("?");
+  const label = (path.replace(/^\//, "") || "home")
+    .split("/")
+    .map((part) =>
+      part
+        .replace(/\[|\]/g, "")
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase())
+    )
+    .join(" / ");
+  return query ? `${label} (${query.replace(/=/g, ": ").replace(/&/g, ", ")})` : label;
+}
+
 export default function Sidebar({
   onToggle,
   onNavigate,
@@ -67,6 +115,7 @@ export default function Sidebar({
   visibleRoles = null,
   modeLabel: _modeLabel = null, // keep legacy prop available without rendering the old text block
   allowedRoutes = null,
+  presentationRoleKey = null,
   inPresentationMode = false,
 }) {
   void _modeLabel;
@@ -124,8 +173,21 @@ export default function Sidebar({
       ? visibleRoles.map((role) => role.toLowerCase())
       : derivedRoles;
   const isRouteAllowed = useMemo(() => buildRouteAllowedChecker(allowedRoutes), [allowedRoutes]);
+  const getNavHref = useCallback((href) => {
+    if (!inPresentationMode) return href;
+    return buildPresentationHref(href, allowedRoutes, presentationRoleKey);
+  }, [allowedRoutes, inPresentationMode, presentationRoleKey]);
+  const presentationPageLinks = useMemo(() => {
+    if (!inPresentationMode || !presentationRoleKey || !Array.isArray(allowedRoutes)) return [];
+    return allowedRoutes.map((route, index) => ({
+      route,
+      href: `/presentation/${presentationRoleKey}/${routeToSlug(route)}/${index}`,
+      label: routeToLabel(route),
+    }));
+  }, [allowedRoutes, inPresentationMode, presentationRoleKey]);
   const dashboardShortcuts = departmentDashboardShortcuts.filter((shortcut) => {
     if (isRouteAllowed && shortcut.href && !isRouteAllowed(shortcut.href)) return false;
+    if (inPresentationMode && isRouteAllowed && shortcut.href) return true;
     if (!shortcut.roles || shortcut.roles.length === 0) return true;
     return shortcut.roles.some((role) => userRoles.includes(role));
   });
@@ -156,6 +218,7 @@ export default function Sidebar({
     // even if their `roles` would otherwise grant access.
     if (isRouteAllowed && item?.href) {
       if (!isRouteAllowed(item.href)) return false;
+      if (inPresentationMode) return true;
     }
     if (!item.roles || item.roles.length === 0) return true;
     // Check if any of the item's required roles match the user's roles (case-insensitive)
@@ -176,8 +239,8 @@ export default function Sidebar({
         items: (section.items || []).filter(
           (item) =>
             hasAccess(item) &&
-            (!item.href || !hiddenHrRoutes.has(item.href)) &&
-            !(hasRestrictedJobSectionRole && item.href === "/job-cards/archive")
+            (inPresentationMode || !item.href || !hiddenHrRoutes.has(item.href)) &&
+            (inPresentationMode || !(hasRestrictedJobSectionRole && item.href === "/job-cards/archive"))
         ),
       }))
       .filter((section) => section.items.length > 0);
@@ -198,7 +261,6 @@ export default function Sidebar({
     if (inPresentationMode) {
       if (typeof window !== "undefined") {
         window.sessionStorage.removeItem(PRESENTATION_ROLE_STORAGE_KEY);
-        window.sessionStorage.removeItem(PRESENTATION_RETURN_TO_STORAGE_KEY);
         window.location.replace(PRESENTATION_LOGOUT_DESTINATION);
         return;
       }
@@ -376,7 +438,29 @@ export default function Sidebar({
           minHeight: 0,
         }}
       >
-        {dashboardShortcuts.length > 0 && (
+        {presentationPageLinks.length > 0 && (
+          <>
+            <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
+              Presentation Pages
+            </div>
+            {presentationPageLinks.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
+                  key={`${item.route}-${item.href}`}
+                  href={item.href}
+                  onClick={handleNavigationPress}
+                  data-presentation-allow-interaction="true"
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </>
+        )}
+
+        {!inPresentationMode && dashboardShortcuts.length > 0 && (
           <>
             <div
               style={{
@@ -409,9 +493,10 @@ export default function Sidebar({
                 <Link
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={shortcut.href}
-                  href={shortcut.href}
+                  href={getNavHref(shortcut.href)}
                   title={shortcut.description}
                   onClick={handleNavigationPress}
+                  data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                 >
                   {shortcut.label}
                 </Link>
@@ -421,7 +506,7 @@ export default function Sidebar({
         )}
 
         {/* General Section */}
-        {generalSections.length > 0 && (
+        {!inPresentationMode && generalSections.length > 0 && (
           <>
             <div className="app-sidebar__section-title" style={{ marginBottom: "10px" }}>
               General
@@ -433,8 +518,9 @@ export default function Sidebar({
                 <Link
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
-                  href={item.href}
+                  href={getNavHref(item.href)}
                   onClick={handleNavigationPress}
+                  data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                 >
                   {renderLinkLabel(item.label, item.href)}
                 </Link>
@@ -444,7 +530,7 @@ export default function Sidebar({
         )}
 
         {/* Department Sections - NO COLLAPSE, just headers */}
-        {departmentSections.map((section) => (
+        {!inPresentationMode && departmentSections.map((section) => (
           <Fragment key={section.label}>
             <div className="app-sidebar__section-title" style={{ marginTop: "16px", marginBottom: "10px" }}>
               {section.label}
@@ -456,8 +542,9 @@ export default function Sidebar({
                 <Link
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
-                  href={item.href}
+                  href={getNavHref(item.href)}
                   onClick={handleNavigationPress}
+                  data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                 >
                   {renderLinkLabel(item.label, item.href)}
                 </Link>
@@ -538,42 +625,22 @@ export default function Sidebar({
                         )}
                       </div>
                     )}
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-                        gap: "8px",
-                        marginTop: "8px",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="app-btn"
-                        style={inPresentationRoute ? successGhostControlStyle : ghostControlStyle}
-                        aria-current={inPresentationRoute ? "page" : undefined}
-                        onClick={() => {
-                          if (typeof window !== "undefined") {
-                            const current = router?.asPath || "/";
-                            if (!current.startsWith("/presentation")) {
-                              window.sessionStorage.setItem(PRESENTATION_RETURN_TO_STORAGE_KEY, current);
-                            }
-                          }
-                          router.push("/presentation");
-                          handleNavigationPress();
-                        }}
-                      >
-                        Presentation
-                      </button>
+                    {!inPresentationMode && (
                       <Link
                         className="app-btn"
-                        style={inVisionRoute ? successGhostControlStyle : ghostControlStyle}
+                        style={{
+                          display: "flex",
+                          width: "100%",
+                          marginTop: "8px",
+                          ...(inVisionRoute ? successGhostControlStyle : ghostControlStyle),
+                        }}
                         href="/vision"
                         aria-current={inVisionRoute ? "page" : undefined}
                         onClick={handleNavigationPress}
                       >
                         Vision
                       </Link>
-                    </div>
+                    )}
                     {inPresentationRoute && overlayHidden && (
                       <button
                         type="button"
@@ -607,13 +674,15 @@ export default function Sidebar({
               }
 
               if (item.href) {
+                if (inPresentationMode) return null;
                 const isActive = pathname === item.href;
                 return (
                   <Link
                     className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                     key={item.href}
-                    href={item.href}
+                    href={getNavHref(item.href)}
                     onClick={handleNavigationPress}
+                    data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                     style={{
                       marginBottom: "10px",
                     }}

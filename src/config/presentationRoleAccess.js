@@ -11,26 +11,26 @@ export function getPresentationRoleByKey(key) {
 // Convert a route template like "/job-cards/[jobNumber]" into a regex matcher.
 function buildRouteMatcher(template) {
   if (!template) return null;
-  const cleanTemplate = String(template).split("?")[0].split("#")[0];
-  if (!template.includes("[")) {
+  const [templatePath, templateQuery = ""] = String(template).split("#")[0].split("?");
+  if (!templatePath.includes("[")) {
     return (candidate) => {
-      const cleanCandidate = String(candidate || "").split("?")[0].split("#")[0];
-      return cleanCandidate === cleanTemplate;
+      const [candidatePath, candidateQuery = ""] = String(candidate || "").split("#")[0].split("?");
+      return candidatePath === templatePath && candidateQuery === templateQuery;
     };
   }
   const pattern = new RegExp(
-    "^" + cleanTemplate.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"
+    "^" + templatePath.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"
   );
   return (candidate) => {
-    const cleanCandidate = String(candidate || "").split("?")[0].split("#")[0];
-    return pattern.test(cleanCandidate);
+    const [candidatePath, candidateQuery = ""] = String(candidate || "").split("#")[0].split("?");
+    return pattern.test(candidatePath) && candidateQuery === templateQuery;
   };
 }
 
 // True if the given concrete route belongs to this role's allowed list.
 export function routeAllowedForRole(role, route) {
   if (!role || !route) return false;
-  const stripped = String(route).split("?")[0].split("#")[0];
+  const stripped = String(route).split("#")[0];
   return role.routes.some((template) => {
     const match = buildRouteMatcher(template);
     return match ? match(stripped) : false;

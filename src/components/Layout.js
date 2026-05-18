@@ -846,6 +846,7 @@ export default function Layout({
               visibleRoles={userRoles}
               modeLabel={activeModeLabel}
               allowedRoutes={presentationAllowedRoutes}
+              presentationRoleKey={activePresentationRole?.key || null}
               inPresentationMode={presentationShell}
             />
           )}
@@ -972,6 +973,7 @@ export default function Layout({
                     visibleRoles={userRoles}
                     modeLabel={activeModeLabel}
                     allowedRoutes={presentationAllowedRoutes}
+                    presentationRoleKey={activePresentationRole?.key || null}
                     inPresentationMode={presentationShell}
                   />
                 </div>

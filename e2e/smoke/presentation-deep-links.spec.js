@@ -19,12 +19,21 @@ const PASSTHROUGH_RE = /^\/api\/(auth|health|img-proxy)\b/;
 function loadPresentationUrls() {
   const docPath = path.resolve(__dirname, '../../docs/ui/ui-presentation');
   const raw = fs.readFileSync(docPath, 'utf8');
-  // Every line that starts with /presentation/<role>/... is a URL we should hit.
+  // Every documented /presentation/<role>/... URL is one we should hit.
   return raw
     .split(/\r?\n/)
     .map((line) => line.trim())
-    .map((line) => line.match(/^(\/presentation\/[^\s/]+\/[^\s/]+\/\d+)\b/)?.[1])
+    .map((line) => line.match(/(\/presentation\/[^\s/]+\/[^\s/]+\/\d+)\b/)?.[1])
     .filter(Boolean);
+}
+
+function groupUrlsByRole(urls) {
+  return urls.reduce((groups, url) => {
+    const role = url.split('/')[2];
+    groups[role] = groups[role] || [];
+    groups[role].push(url);
+    return groups;
+  }, {});
 }
 
 test.describe('Presentation deep-link smoke', () => {
@@ -36,6 +45,110 @@ test.describe('Presentation deep-link smoke', () => {
   // mode obvious in CI.
   test('the doc lists at least one URL', () => {
     expect(urls.length).toBeGreaterThan(0);
+  });
+
+  test('tampered presentation URLs do not load another deck page', async ({ page }) => {
+    const tamperedUrls = [
+      '/presentation/workshop-manager/accounts/1',
+      '/presentation/workshop-manager/job-cards-view/99',
+      '/presentation/not-a-role/messages/0',
+    ];
+
+    for (const url of tamperedUrls) {
+      await page.goto(url, { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+
+      const isRolePicker = page.url().includes('/loginPresentation');
+      const isBlocked = await page
+        .locator('body')
+        .getByText('Presentation page not available')
+        .isVisible()
+        .catch(() => false);
+
+      expect(isRolePicker || isBlocked, `${url} should not render a real presentation page`).toBe(true);
+    }
+  });
+
+  test('presentation sidebar exposes exactly the documented pages for each role', async ({ page }) => {
+    const grouped = groupUrlsByRole(urls);
+
+    for (const [role, roleUrls] of Object.entries(grouped)) {
+      await page.goto(roleUrls[0], { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+
+      const sidebarUrls = await page
+        .locator('.app-sidebar a[href^="/presentation/"]')
+        .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
+
+      expect(sidebarUrls, `${role} should show one sidebar link per documented page`).toHaveLength(roleUrls.length);
+      for (const url of roleUrls) {
+        expect(sidebarUrls, `${role} sidebar should include ${url}`).toContain(url);
+      }
+    }
+  });
+
+  test('presentation mode blocks live data and live route escape hatches', async ({ page }) => {
+    const leakedRequests = [];
+    page.on('request', (req) => {
+      const target = req.url();
+      if (target.includes('supabase.co')) {
+        leakedRequests.push(`supabase:${target}`);
+        return;
+      }
+      const parsed = new URL(target);
+      if (
+        parsed.origin === page.context()._options.baseURL &&
+        parsed.pathname.startsWith('/api/') &&
+        !PASSTHROUGH_RE.test(parsed.pathname)
+      ) {
+        leakedRequests.push(`api:${parsed.pathname}`);
+      }
+    });
+
+    await page.goto('/presentation/general/messages/0', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    const fetchResults = await page.evaluate(async () => {
+      const relativeGet = await fetch('/api/messages').then((res) => res.json());
+      const absoluteGet = await fetch(`${location.origin}/api/messages`).then((res) => res.json());
+      const postNoop = await fetch('/api/messages/threads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      }).then((res) => res.json());
+      return {
+        relativeGetOk: relativeGet?.success === true,
+        absoluteGetOk: absoluteGet?.success === true,
+        postNoopOk: postNoop?.success === true,
+      };
+    });
+
+    expect(fetchResults).toEqual({
+      relativeGetOk: true,
+      absoluteGetOk: true,
+      postNoopOk: true,
+    });
+
+    const beforeLiveClickUrl = page.url();
+    await page.evaluate(() => {
+      const link = document.createElement('a');
+      link.href = '/dashboard';
+      link.textContent = 'Injected live dashboard link';
+      document.body.appendChild(link);
+      link.click();
+    });
+    await page.waitForTimeout(500);
+
+    expect(page.url()).toBe(beforeLiveClickUrl);
+    expect(leakedRequests).toEqual([]);
+  });
+
+  test('finishing a presentation returns to the presentation picker', async ({ page }) => {
+    await page.goto('/presentation/workshop-manager/tracking/8', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    await page.getByRole('button', { name: 'Finish' }).first().click();
+    await expect(page).toHaveURL(/\/loginPresentation$/);
   });
 
   for (const url of urls) {

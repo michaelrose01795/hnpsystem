@@ -14,47 +14,15 @@ General
 ====================================================
 
 1. /presentation/general/messages/0
-Route: /messages
-Shared page for all staff roles.
-Highlights:
-- Thread list with job context and unread state.
-- Main conversation area with job-linked messages and audit trail value.
-Section description: Shows how internal communication works across every role without repeating the page inside each role deck.
 
 2. /presentation/general/newsfeed/1
-Route: /newsfeed
-Shared page for all staff roles.
-Highlights:
-- Internal updates and company announcements.
-- Staff-wide information area that replaces buried email reminders.
-Section description: Shows the shared staff newsfeed once inside the General deck instead of repeating it for every role.
 
 3. /presentation/general/profile/2
-Route: /profile
-Profile work tab.
-Highlights:
-- Work and Personal tab switcher.
-- Work KPI card group for hours, payslips, estimated pay, and leave.
-- Work summary sections for leave, emergency contact, attendance, overtime, and staff vehicles.
-Section description: Shows the staff work profile as a self-service area for employment, HR, clocking, payslip, and staff record information.
 
 4. /presentation/general/profile-tab-personal/3
-Route: /profile?tab=personal
-Profile personal tab.
-Highlights:
-- Work and Personal tab switcher.
-- Personal dashboard insights.
-- Personal widget grid and configurable private dashboard areas.
-Section description: Shows the personal profile area separately from work data, with private planning widgets and personal dashboard sections.
 
 5. /presentation/general/login/4
-Route: /login
-Shared login page.
-Highlights:
-- Staff/customer login card.
-- Password reset entry point.
-- Dev login section hidden inside /presentation.
-Section description: Shows the real login presentation view without exposing the development login selector during demos.
+
 
 
 ====================================================

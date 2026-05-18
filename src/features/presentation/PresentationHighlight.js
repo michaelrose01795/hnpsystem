@@ -1,13 +1,5 @@
 import { useEffect, useState } from "react";
-
-function getAnchorRect(anchor) {
-  if (!anchor || typeof document === "undefined") return null;
-  const el = document.querySelector(anchor);
-  if (!el) return null;
-  const rect = el.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) return null;
-  return { rect, el };
-}
+import { getAnchorRect, scrollAnchorIntoView } from "./runtime/anchorVisibility";
 
 function readBorderRadius(el) {
   if (!el || typeof window === "undefined") return null;
@@ -19,34 +11,6 @@ function readBorderRadius(el) {
     // ignore
   }
   return null;
-}
-
-function isRectInViewport(rect, pad = 32) {
-  if (!rect || typeof window === "undefined") return false;
-  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-
-  return (
-    rect.top >= pad &&
-    rect.left >= pad &&
-    rect.bottom <= viewportHeight - pad &&
-    rect.right <= viewportWidth - pad
-  );
-}
-
-function scrollAnchorIntoView(anchor) {
-  const found = getAnchorRect(anchor);
-  if (!found) return false;
-
-  if (!isRectInViewport(found.rect)) {
-    found.el.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    });
-  }
-
-  return true;
 }
 
 // Thick brand-accent border around the highlighted feature, with an inverse

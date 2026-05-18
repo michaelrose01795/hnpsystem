@@ -40,12 +40,30 @@ function fillParam(name) {
   return row?.[source.column] || `demo-${name}`;
 }
 
-export function resolvePresentationRoute(roleKey, slideIndex) {
+export function routeToSlug(route) {
+  const [path, query = ""] = String(route || "").split("?");
+  const base = path
+    .replace(/^\//, "")
+    .replace(/\//g, "-")
+    .replace(/\[/g, "")
+    .replace(/\]/g, "")
+    || "home";
+  const querySuffix = query
+    ? `-${query.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+    : "";
+  return `${base}${querySuffix}`;
+}
+
+export function resolvePresentationRoute(roleKey, slideIndex, pageSlug = null) {
   const role = getPresentationRoleByKey(roleKey);
   if (!role) return null;
-  const safeIndex = Math.max(0, Math.min(Number(slideIndex) || 0, role.routes.length - 1));
-  const template = role.routes[safeIndex];
+  if (!Number.isInteger(slideIndex) || slideIndex < 0 || slideIndex >= role.routes.length) {
+    return null;
+  }
+  const template = role.routes[slideIndex];
   if (!template) return null;
+  const expectedSlug = routeToSlug(template);
+  if (pageSlug && pageSlug !== expectedSlug) return null;
 
   const [pageTemplate, queryString = ""] = String(template).split("?");
   const params = {};
@@ -62,5 +80,12 @@ export function resolvePresentationRoute(roleKey, slideIndex) {
   });
   Object.assign(params, ROUTE_PARAM_OVERRIDES[template]?.() || ROUTE_PARAM_OVERRIDES[pageTemplate]?.());
 
-  return { template: pageTemplate, presentationTemplate: template, realRoute, params, role };
+  return {
+    template: pageTemplate,
+    presentationTemplate: template,
+    presentationSlug: expectedSlug,
+    realRoute,
+    params,
+    role,
+  };
 }

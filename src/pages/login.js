@@ -189,7 +189,6 @@ export default function LoginPage() {
   }, [setTemporaryOverride]);
 
   const loginRoleCategories = React.useMemo(() => {
-    const rosterRoles = Object.keys(usersByRoleDetailed || usersByRole || {}).filter(Boolean);
     const categories = roleCategories || {};
     const seen = new Map();
     const normalizedCategory = {};
@@ -214,7 +213,7 @@ export default function LoginPage() {
     });
 
     return normalizedCategory;
-  }, [usersByRole, usersByRoleDetailed]);
+  }, []);
 
   const loginLookupUsers = React.useMemo(
     () =>
@@ -259,6 +258,13 @@ export default function LoginPage() {
       syncLoginIdentityFields(match);
     }
   }, [resolveLoginIdentityMatch, syncLoginIdentityFields]);
+
+  const handlePresentationSelect = React.useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("presentation:returnTo", "/login");
+    }
+    router.push("/loginPresentation");
+  }, [router]);
 
   // Developer login routes through NextAuth's credentials provider with the
   // picked user's database id. Server-side Supabase access is reliable, so the
@@ -497,7 +503,7 @@ export default function LoginPage() {
     return <LoginPageUi view="section1" PageSkeleton={PageSkeleton} />;
   }
 
-  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handleLoginIdentityInput={handleLoginIdentityInput} handlePasswordReset={handlePasswordReset} isResettingPassword={isResettingPassword} loadingDevUsers={loadingDevUsers} loginFullName={loginFullName} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} loginUserId={loginUserId} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetStatus={resetStatus} resetStatusType={resetStatusType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setPassword={setPassword} setResetEmail={setResetEmail} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} showResetModal={showResetModal} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
+  return <LoginPageUi view="section2" allowDevUserSelection={allowDevUserSelection} allUsers={allUsers} BrandLogo={BrandLogo} Button={Button} closeResetModal={closeResetModal} email={email} errorMessage={errorMessage} handleDbLogin={handleDbLogin} handleDevLogin={handleDevLogin} handleLoginIdentityInput={handleLoginIdentityInput} handlePasswordReset={handlePasswordReset} handlePresentationSelect={handlePresentationSelect} isResettingPassword={isResettingPassword} loadingDevUsers={loadingDevUsers} loginFullName={loginFullName} LoginCard={LoginCard} LoginDropdown={LoginDropdown} loginRoleCategories={loginRoleCategories} loginUserId={loginUserId} openResetModal={openResetModal} password={password} resetEmail={resetEmail} resetStatus={resetStatus} resetStatusType={resetStatusType} rosterLoading={rosterLoading} selectedCategory={selectedCategory} selectedDepartment={selectedDepartment} selectedUser={selectedUser} setPassword={setPassword} setResetEmail={setResetEmail} setSelectedCategory={setSelectedCategory} setSelectedDepartment={setSelectedDepartment} setSelectedUser={setSelectedUser} showResetModal={showResetModal} usersByRole={usersByRole} usersByRoleDetailed={usersByRoleDetailed} />;
 
 
 
