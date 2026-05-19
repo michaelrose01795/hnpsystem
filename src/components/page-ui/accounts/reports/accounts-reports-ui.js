@@ -100,14 +100,16 @@ export default function AccountsReportsPageUi(props) {
               </div>
             )}
 
-            {/* Search — canonical SearchBar; shrinks so the rest of the row stays visible */}
+            {/* Search — fixed-ish width so the whole toolbar fits on one row.
+                flex 0 1 means it does not grow (no greedy fill) but can shrink
+                down to 120px on tight screens before the row wraps. */}
             <SearchBar
               placeholder="Search…"
               aria-label="Search reports"
               value={searchText || ""}
               onChange={(event) => setSearchText(event.target.value)}
               onClear={() => setSearchText("")}
-              style={{ flex: "1 1 120px", minWidth: "100px" }}
+              style={{ flex: "0 1 200px", minWidth: "120px", maxWidth: "240px" }}
             />
 
             {/* Export — push to far right */}

@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"; // imp
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import InvoiceTable from "@/components/accounts/InvoiceTable";
+import InvoiceTableToolbar from "@/components/accounts/InvoiceTableToolbar";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import Button from "@/components/ui/Button";
 import { useUser } from "@/context/UserContext";
@@ -60,7 +61,7 @@ export default function InvoicesPage() {
   const handleExport = () => {
     exportToCsv("invoices.csv", invoices, ["invoice_id", "account_id", "customer_id", "job_number", "grand_total", "payment_status", "due_date"]);
   };
-  return <InvoicesPageUi view="section1" Button={Button} DevLayoutSection={DevLayoutSection} filters={filters} handleExport={handleExport} handlePageChange={handlePageChange} INVOICE_ROLES={INVOICE_ROLES} invoices={invoices} InvoiceTable={InvoiceTable} loading={loading} pagination={pagination} ProtectedRoute={ProtectedRoute} router={router} setFilters={setFilters} />;
+  return <InvoicesPageUi view="section1" Button={Button} DevLayoutSection={DevLayoutSection} filters={filters} handleExport={handleExport} handlePageChange={handlePageChange} INVOICE_ROLES={INVOICE_ROLES} invoices={invoices} InvoiceTable={InvoiceTable} InvoiceTableToolbar={InvoiceTableToolbar} loading={loading} pagination={pagination} ProtectedRoute={ProtectedRoute} router={router} setFilters={setFilters} />;
 
 
 

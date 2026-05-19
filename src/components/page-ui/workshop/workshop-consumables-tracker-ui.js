@@ -177,7 +177,7 @@ export default function ConsumablesTrackerPageUi(props) {
               you believe you should have access please contact the systems
               administrator.
             </p>
-            <Link href="/dashboard" style={{
+            <Link href="/newsfeed" style={{
               display: "inline-block",
               padding: "10px 18px",
               borderRadius: "var(--radius-pill)",
@@ -186,7 +186,7 @@ export default function ConsumablesTrackerPageUi(props) {
               fontWeight: 600,
               textDecoration: "none"
             }}>
-              Return to dashboard
+              Return to news feed
             </Link>
           </div>
         </div>

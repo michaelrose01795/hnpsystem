@@ -14,11 +14,6 @@ import ViewAccountPageUi from "@/components/page-ui/accounts/view/accounts-view-
 
 const VIEW_ROLES = ["ADMIN", "OWNER", "ADMIN MANAGER", "ACCOUNTS", "ACCOUNTS MANAGER", "GENERAL MANAGER", "SERVICE MANAGER", "WORKSHOP MANAGER", "SALES"];
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
-const statusBadgeStyles = {
-  Active: { background: "rgba(var(--success-rgb), 0.16)", color: "var(--success-text)" },
-  Frozen: { background: "rgba(var(--warning-rgb), 0.18)", color: "var(--warning-text)" },
-  Closed: { background: "rgba(var(--danger-rgb), 0.16)", color: "var(--danger-dark)" }
-};
 
 export default function ViewAccountPage() {
   const router = useRouter();
@@ -29,31 +24,57 @@ export default function ViewAccountPage() {
   const [transactions, setTransactions] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  // notFound flips true only when the server has *definitively* said the
+  // account isn't there (404 or `data: null`). Until then the page stays in
+  // the skeleton loading state — never flashing "Account not found".
+  const [notFound, setNotFound] = useState(false);
   const [filters, setFilters] = useState({ search: "", type: "", payment_method: "", from: "", to: "" });
   const [invoiceFilters, setInvoiceFilters] = useState({ search: "", status: "", from: "", to: "" });
   useEffect(() => {
     if (!accountId) return;
     const controller = new AbortController();
+    let cancelled = false;
     const loadAccount = async () => {
       setLoading(true);
+      setNotFound(false);
       try {
         const response = await fetch(`/api/accounts/${accountId}`, { signal: controller.signal });
+        if (cancelled) return;
+        if (response.status === 404) {
+          setAccount(null);
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
         const payload = await response.json();
+        if (cancelled) return;
         if (!response.ok) {
           throw new Error(payload?.message || "Failed to load account");
         }
-        setAccount(payload.data || null);
-        setTransactions(payload.transactions || []);
-        setInvoices(payload.invoices || []);
+        if (!payload?.data) {
+          // Definitive empty result — server confirms there's nothing here.
+          setAccount(null);
+          setNotFound(true);
+        } else {
+          setAccount(payload.data);
+          setTransactions(payload.transactions || []);
+          setInvoices(payload.invoices || []);
+        }
+        setLoading(false);
       } catch (error) {
+        // An abort means a newer request has taken over — leave state alone
+        // so the in-flight load owns the loading flag and the skeleton stays.
         if (error.name === "AbortError") return;
+        if (cancelled) return;
         console.error("Failed to load account", error);
-      } finally {
         setLoading(false);
       }
     };
     loadAccount();
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [accountId]);
   const handleFreezeToggle = async () => {
     if (!account) return;
@@ -81,7 +102,7 @@ export default function ViewAccountPage() {
     router.push(`/accounts/invoices?accountId=${account?.account_id || ""}`);
   };
 
-  // detailCard sits inside the overview LayerSurface, so per the alternation rule it's a LayerTheme.
+  // detailCard sits inside the metrics-grid LayerSurface, so per the alternation rule it's a LayerTheme.
   const detailCard = (label, value) =>
   <LayerTheme radius="var(--radius-sm)" padding="16px">
       <p style={{ margin: 0, color: "var(--text-1)", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
@@ -89,7 +110,7 @@ export default function ViewAccountPage() {
     </LayerTheme>;
 
 
-  return <ViewAccountPageUi view="section1" account={account} Button={Button} currencyFormatter={currencyFormatter} detailCard={detailCard} DevLayoutSection={DevLayoutSection} filters={filters} handleEdit={handleEdit} handleFreezeToggle={handleFreezeToggle} handleInvoicesPage={handleInvoicesPage} handleTransactionsPage={handleTransactionsPage} invoiceFilters={invoiceFilters} invoices={invoices} InvoiceTable={InvoiceTable} loading={loading} permissions={permissions} ProtectedRoute={ProtectedRoute} router={router} setFilters={setFilters} setInvoiceFilters={setInvoiceFilters} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} statusBadgeStyles={statusBadgeStyles} transactions={transactions} TransactionTable={TransactionTable} VIEW_ROLES={VIEW_ROLES} />;
+  return <ViewAccountPageUi view="section1" account={account} Button={Button} currencyFormatter={currencyFormatter} detailCard={detailCard} DevLayoutSection={DevLayoutSection} filters={filters} handleEdit={handleEdit} handleFreezeToggle={handleFreezeToggle} handleInvoicesPage={handleInvoicesPage} handleTransactionsPage={handleTransactionsPage} invoiceFilters={invoiceFilters} invoices={invoices} InvoiceTable={InvoiceTable} loading={loading} notFound={notFound} permissions={permissions} ProtectedRoute={ProtectedRoute} router={router} setFilters={setFilters} setInvoiceFilters={setInvoiceFilters} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} transactions={transactions} TransactionTable={TransactionTable} VIEW_ROLES={VIEW_ROLES} />;
 
 
 

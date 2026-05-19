@@ -124,69 +124,105 @@ export default function CompanyAccountDetailPage() {
     }
   };
 
+  // Tab content sits inside the page LayerSurface, so each section card is a
+  // LayerTheme (--theme background) per the strict layer-alternation rule.
   const renderOverviewTab = () =>
-  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        gap: "16px"
-      }}>
-      
-        {detailRow("Primary contact", account.contact_name)}
-        {detailRow("Email", account.contact_email)}
-        {detailRow("Phone", account.contact_phone)}
-        {detailRow("City", account.billing_city)}
-        {detailRow("Postcode", account.billing_postcode)}
-        {detailRow("Country", account.billing_country)}
-      </div>
+  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <LayerTheme
+      sectionKey="company-account-detail-overview-contact"
+      parentKey="company-account-detail-card"
+      radius="var(--radius-sm)"
+      padding="16px"
+      gap="16px">
+
+        <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: "16px"
+        }}>
+
+          {detailRow("Primary contact", account.contact_name)}
+          {detailRow("Email", account.contact_email)}
+          {detailRow("Phone", account.contact_phone)}
+          {detailRow("City", account.billing_city)}
+          {detailRow("Postcode", account.billing_postcode)}
+          {detailRow("Country", account.billing_country)}
+        </div>
+      </LayerTheme>
       {(account.billing_address_line1 || account.billing_address_line2) &&
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+    <LayerTheme
+      sectionKey="company-account-detail-overview-address"
+      parentKey="company-account-detail-card"
+      radius="var(--radius-sm)"
+      padding="16px"
+      gap="6px">
+
           <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Billing Address</span>
           <div>
             {account.billing_address_line1 && <p style={{ margin: 0 }}>{account.billing_address_line1}</p>}
             {account.billing_address_line2 && <p style={{ margin: 0 }}>{account.billing_address_line2}</p>}
           </div>
-        </div>
+        </LayerTheme>
     }
     </div>;
 
 
-  const renderBillingTab = () =>
-  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      {(account.linked_account_label || account.linked_account_id) &&
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Linked Ledger Account</span>
-          <strong>{account.linked_account_label || account.linked_account_id}</strong>
-        </div>
+  const renderBillingTab = () => {
+    const hasLinked = account.linked_account_label || account.linked_account_id;
+    if (!account.notes && !hasLinked) {
+      return (
+        <p className="app-status-message app-status-message--info" style={{ margin: 0 }}>
+          No billing information or notes available.
+        </p>);
+
     }
-      {account.notes &&
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Notes</span>
-          <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{account.notes}</p>
-        </div>
-    }
-      {!account.notes && !(account.linked_account_label || account.linked_account_id) &&
-    <p style={{ color: "var(--text-1)", fontStyle: "italic" }}>No billing information or notes available.</p>
-    }
-    </div>;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {hasLinked &&
+        <LayerTheme
+          sectionKey="company-account-detail-billing-linked"
+          parentKey="company-account-detail-card"
+          radius="var(--radius-sm)"
+          padding="16px"
+          gap="6px">
+
+            <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Linked Ledger Account</span>
+            <strong>{account.linked_account_label || account.linked_account_id}</strong>
+          </LayerTheme>
+        }
+        {account.notes &&
+        <LayerTheme
+          sectionKey="company-account-detail-billing-notes"
+          parentKey="company-account-detail-card"
+          radius="var(--radius-sm)"
+          padding="16px"
+          gap="6px">
+
+            <span style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>Notes</span>
+            <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{account.notes}</p>
+          </LayerTheme>
+        }
+      </div>);
+
+  };
 
 
   const renderHistoryTab = () => {
     const hasJobs = history.jobs && history.jobs.length > 0;
     const hasInvoices = history.invoices && history.invoices.length > 0;
 
-    // Each row card uses a wrapper div for the click handler / hover state, with
-    // a LayerTheme inside painting the surface (the outer container on this tab is
-    // a LayerSurface — see company-accounts-account-number-ui.js).
+    // Each row is a --theme card (LayerTheme) sitting inside the page
+    // LayerSurface, so the surface/theme alternation holds. The wrapper div
+    // owns the click handler + hover lift.
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         {/* Jobs Section */}
         <div>
-          <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem" }}>Job Cards</h3>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem", color: "var(--text-1)" }}>Job Cards</h3>
           {hasJobs ?
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {history.jobs.map((job) =>
+              {history.jobs.map((job, index) =>
             <div
               key={job.id}
               onClick={() => router.push(`/job-cards/${job.job_number}`)}
@@ -201,27 +237,21 @@ export default function CompanyAccountDetailPage() {
               }}
               style={{
                 cursor: "pointer",
-                transition: "all 0.2s ease"
+                transition: "transform 0.2s ease"
               }}>
 
-                  <LayerTheme radius="var(--radius-sm)" padding="16px">
+                  <LayerTheme
+                sectionKey={`company-account-detail-job-${index}`}
+                parentKey="company-account-detail-card"
+                radius="var(--radius-sm)"
+                padding="16px">
+
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: "200px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
                         <strong style={{ fontSize: "1rem" }}>Job #{job.job_number}</strong>
                         {job.status &&
-                    <span
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "var(--radius-pill)",
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        background: "var(--surface)",
-                        color: "var(--text-1)"
-                      }}>
-
-                            {job.status}
-                          </span>
+                    <span className="app-badge app-badge--neutral app-badge--control">{job.status}</span>
                     }
                       </div>
                       {job.customer && <p style={{ margin: "4px 0", color: "var(--text-1)" }}>{job.customer}</p>}
@@ -253,64 +283,51 @@ export default function CompanyAccountDetailPage() {
             )}
             </div> :
 
-          <p style={{ color: "var(--text-1)", fontStyle: "italic" }}>No job cards found for this account.</p>
+          <p className="app-status-message app-status-message--info" style={{ margin: 0 }}>No job cards found for this account.</p>
           }
         </div>
 
         {/* Invoices Section */}
         <div>
-          <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem" }}>Invoices</h3>
+          <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem", color: "var(--text-1)" }}>Invoices</h3>
           {hasInvoices ?
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {history.invoices.map((invoice) =>
-            <div
-              key={invoice.id}
-              onClick={() => router.push(`/invoices/${invoice.invoice_number}`)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px)";
-                e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.zIndex = "0";
-              }}
-              style={{
-                cursor: "pointer",
-                transition: "all 0.2s ease"
-              }}>
+              {history.invoices.map((invoice, index) => {
+              const status = invoice.payment_status;
+              const statusTone = status === "Paid" ? "app-badge--success" : status === "Overdue" ? "app-badge--danger" : "app-badge--neutral";
+              return (
+                <div
+                key={invoice.id}
+                onClick={() => router.push(`/invoices/${invoice.invoice_number}`)}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.zIndex = "var(--hover-surface-z, 80)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.zIndex = "0";
+                }}
+                style={{
+                  cursor: "pointer",
+                  transition: "transform 0.2s ease"
+                }}>
 
-                  <LayerTheme radius="var(--radius-sm)" padding="16px">
+                  <LayerTheme
+                  sectionKey={`company-account-detail-invoice-${index}`}
+                  parentKey="company-account-detail-card"
+                  radius="var(--radius-sm)"
+                  padding="16px">
+
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: "200px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
                         <strong style={{ fontSize: "1rem" }}>Invoice #{invoice.invoice_number}</strong>
-                        {invoice.payment_status &&
-                    <span
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "var(--radius-pill)",
-                        fontSize: "0.75rem",
-                        fontWeight: 600,
-                        background:
-                        invoice.payment_status === "Paid" ?
-                        "var(--success-surface)" :
-                        invoice.payment_status === "Overdue" ?
-                        "var(--danger-surface)" :
-                        "var(--surface)",
-                        color:
-                        invoice.payment_status === "Paid" ?
-                        "var(--success)" :
-                        invoice.payment_status === "Overdue" ?
-                        "var(--danger)" :
-                        "var(--text-1)"
-                      }}>
-
-                            {invoice.payment_status}
-                          </span>
+                        {status &&
+                    <span className={`app-badge app-badge--control ${statusTone}`}>{status}</span>
                     }
                       </div>
                       {invoice.invoice_to && <p style={{ margin: "4px 0", color: "var(--text-1)" }}>{invoice.invoice_to}</p>}
-                      <div style={{ display: "flex", gap: "16px", marginTop: "8px", fontSize: "0.85rem" }}>
+                      <div style={{ display: "flex", gap: "16px", marginTop: "8px", fontSize: "0.85rem", flexWrap: "wrap" }}>
                         {invoice.job_number && <span>Job: #{invoice.job_number}</span>}
                         {invoice.order_number && <span>Order: #{invoice.order_number}</span>}
                       </div>
@@ -319,7 +336,7 @@ export default function CompanyAccountDetailPage() {
                       {invoice.invoice_total &&
                   <>
                           <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "var(--text-1)" }}>Total</p>
-                          <p style={{ margin: "0 0 12px 0", fontSize: "1.2rem", fontWeight: 700, color: "var(--primary)" }}>
+                          <p style={{ margin: "0 0 12px 0", fontSize: "1.2rem", fontWeight: 700, color: "var(--text-accent)" }}>
                             £{parseFloat(invoice.invoice_total).toFixed(2)}
                           </p>
                         </>
@@ -335,11 +352,12 @@ export default function CompanyAccountDetailPage() {
                     </div>
                   </div>
                   </LayerTheme>
-                </div>
-            )}
+                </div>);
+
+            })}
             </div> :
 
-          <p style={{ color: "var(--text-1)", fontStyle: "italic" }}>No invoices found for this account.</p>
+          <p className="app-status-message app-status-message--info" style={{ margin: 0 }}>No invoices found for this account.</p>
           }
         </div>
       </div>);

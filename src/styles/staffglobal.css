@@ -1085,8 +1085,8 @@ html.staff-scope .app-hover-tooltip[data-tooltip]::after {
   min-height: var(--control-height-xs);
   padding: var(--control-padding-xs);
   border-radius: var(--control-radius-xs);
-  background: var(--control-bg-hover);
-  color: var(--text-1);
+  background: var(--primary-hover);
+  color: var(--onAccentText);
   box-shadow: var(--dropdown-menu-shadow), 0 12px 28px rgba(0, 0, 0, 0.18);
   opacity: 0;
   pointer-events: none;
@@ -1319,6 +1319,14 @@ html.staff-scope .app-data-table button {
   height: var(--table-action-btn-height) !important;
 }
 
+/* Same 32px convention for status .app-badge bubbles that sit inside an
+   .app-data-table cell — keeps Status pills aligned with the row's
+   .app-table-action-btn height instead of dropping to the 24px base pill. */
+html.staff-scope .app-data-table .app-badge {
+  min-height: var(--table-action-btn-height);
+  padding: 0 var(--space-2);
+}
+
 html.staff-scope .app-data-table thead th {
   position: sticky;
   top: 0;
@@ -1361,9 +1369,28 @@ html.staff-scope .app-table-action-btn--ghost {
   border: none;
 }
 
+/* Tone modifiers carry the `.app-data-table` selector too, so they match the
+   specificity of the base `.app-data-table .app-table-action-btn` rule and win
+   when the button sits inside a data table. */
+html.staff-scope .app-data-table .app-table-action-btn--danger,
 html.staff-scope .app-table-action-btn--danger {
   color: var(--danger);
   border: none;
+}
+
+/* Primary-toned in-row action button — keeps the 32px table height of
+   .app-table-action-btn but wears the .app-btn--primary fill. */
+html.staff-scope .app-data-table .app-table-action-btn--primary,
+html.staff-scope .app-table-action-btn--primary {
+  background: var(--input-bg);
+  color: var(--text-1);
+  border: none;
+}
+html.staff-scope .app-data-table .app-table-action-btn--primary:hover,
+html.staff-scope .app-data-table .app-table-action-btn--primary:focus-visible,
+html.staff-scope .app-table-action-btn--primary:hover,
+html.staff-scope .app-table-action-btn--primary:focus-visible {
+  background: var(--control-bg-hover);
 }
 
 /* Canonical home: src/styles/families/badges.css

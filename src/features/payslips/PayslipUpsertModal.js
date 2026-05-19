@@ -8,6 +8,7 @@ import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import { CalendarField } from "@/components/ui/calendarAPI";
+import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 import { emptyPayslipDraft } from "./payslipUtils";
 
 const STATUS_OPTIONS = [
@@ -28,6 +29,23 @@ const labelStyle = {
 const inputStyle = {
   width: "100%",
 };
+
+// Standard --theme section card for a group of form fields. Sits inside the
+// modal surface, so per the layer-alternation rule it is a LayerTheme.
+function FieldGroup({ children, columns }) {
+  return (
+    <LayerTheme
+      style={{
+        padding: "14px",
+        display: "grid",
+        gap: "12px",
+        ...(columns ? { gridTemplateColumns: columns } : {}),
+      }}
+    >
+      {children}
+    </LayerTheme>
+  );
+}
 
 function NumberField({ value, onChange, ...rest }) {
   return (
@@ -225,9 +243,9 @@ export default function PayslipUpsertModal({
           </Button>
         </div>
 
-        <div style={{ padding: "20px 24px", overflowY: "auto", display: "grid", gap: "18px" }}>
+        <div style={{ padding: "20px 24px", overflowY: "auto", display: "grid", gap: "16px" }}>
           {/* Person + status */}
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+          <FieldGroup columns="repeat(auto-fit, minmax(220px, 1fr))">
             <label style={labelStyle}>
               User
               <DropdownField
@@ -251,10 +269,10 @@ export default function PayslipUpsertModal({
               Reference
               <TextField value={draft.reference} onChange={(value) => update({ reference: value })} />
             </label>
-          </div>
+          </FieldGroup>
 
           {/* Dates */}
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+          <FieldGroup columns="repeat(auto-fit, minmax(220px, 1fr))">
             <label style={labelStyle}>
               Paid date
               <CalendarField
@@ -287,10 +305,10 @@ export default function PayslipUpsertModal({
                 placeholder="e.g. April 2026"
               />
             </label>
-          </div>
+          </FieldGroup>
 
           {/* Headline figures */}
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+          <FieldGroup columns="repeat(auto-fit, minmax(160px, 1fr))">
             <label style={labelStyle}>Gross pay
               <NumberField value={draft.grossPay} onChange={(value) => update({ grossPay: value })} />
             </label>
@@ -315,10 +333,10 @@ export default function PayslipUpsertModal({
             <label style={labelStyle}>Other deductions
               <NumberField value={draft.otherDeductions} onChange={(value) => update({ otherDeductions: value })} />
             </label>
-          </div>
+          </FieldGroup>
 
           {/* Pay context */}
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+          <FieldGroup columns="repeat(auto-fit, minmax(160px, 1fr))">
             <label style={labelStyle}>Hourly rate
               <NumberField value={draft.hourlyRate} onChange={(value) => update({ hourlyRate: value })} />
             </label>
@@ -331,10 +349,10 @@ export default function PayslipUpsertModal({
             <label style={labelStyle}>NI number
               <TextField value={draft.niNumber} onChange={(value) => update({ niNumber: value })} />
             </label>
-          </div>
+          </FieldGroup>
 
           {/* YTD */}
-          <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+          <FieldGroup columns="repeat(auto-fit, minmax(140px, 1fr))">
             <label style={labelStyle}>YTD gross
               <NumberField value={draft.ytdGross} onChange={(value) => update({ ytdGross: value })} />
             </label>
@@ -350,45 +368,46 @@ export default function PayslipUpsertModal({
             <label style={labelStyle}>YTD pension
               <NumberField value={draft.ytdPension} onChange={(value) => update({ ytdPension: value })} />
             </label>
-          </div>
+          </FieldGroup>
 
-          <RowsEditor
-            title="Earnings rows"
-            rows={draft.earnings}
-            onChange={(rows) => update({ earnings: rows })}
-            defaultLabel="Basic pay"
-          />
-
-          <RowsEditor
-            title="Deduction rows"
-            rows={draft.deductions}
-            onChange={(rows) => update({ deductions: rows })}
-            defaultLabel="PAYE Tax"
-          />
-
-          <label style={labelStyle}>
-            Notes
-            <textarea
-              className="app-input"
-              rows={3}
-              value={draft.notes || ""}
-              onChange={(event) => update({ notes: event.target.value })}
-              style={{ resize: "vertical" }}
+          {/* Earnings rows */}
+          <FieldGroup>
+            <RowsEditor
+              title="Earnings rows"
+              rows={draft.earnings}
+              onChange={(rows) => update({ earnings: rows })}
+              defaultLabel="Basic pay"
             />
-          </label>
+          </FieldGroup>
+
+          {/* Deduction rows */}
+          <FieldGroup>
+            <RowsEditor
+              title="Deduction rows"
+              rows={draft.deductions}
+              onChange={(rows) => update({ deductions: rows })}
+              defaultLabel="PAYE Tax"
+            />
+          </FieldGroup>
+
+          {/* Notes */}
+          <FieldGroup>
+            <label style={labelStyle}>
+              Notes
+              <textarea
+                className="app-input"
+                rows={3}
+                value={draft.notes || ""}
+                onChange={(event) => update({ notes: event.target.value })}
+                style={{ resize: "vertical" }}
+              />
+            </label>
+          </FieldGroup>
 
           {error ? (
-            <div
-              style={{
-                padding: "10px 12px",
-                borderRadius: "var(--radius-md, 12px)",
-                background: "rgba(198, 40, 40, 0.08)",
-                color: "var(--danger, #c62828)",
-                fontSize: "0.85rem",
-              }}
-            >
+            <p className="app-status-message app-status-message--danger" style={{ margin: 0 }}>
               {error}
-            </div>
+            </p>
           ) : null}
         </div>
 

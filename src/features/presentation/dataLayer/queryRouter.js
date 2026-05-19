@@ -53,26 +53,52 @@ function matchesFilter(row, { kind, column, value }) {
   return true;
 }
 
+// Split a PostgREST or() expression on top-level commas only, so an
+// `in.(a,b,c)` value is not split on its own inner commas.
+function splitOrExpression(expression) {
+  const parts = [];
+  let depth = 0;
+  let current = "";
+  for (const char of expression) {
+    if (char === "(") depth += 1;
+    else if (char === ")") depth = Math.max(0, depth - 1);
+    if (char === "," && depth === 0) {
+      parts.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  if (current) parts.push(current);
+  return parts.map((part) => part.trim()).filter(Boolean);
+}
+
+// Evaluate a single `column.op.value` clause from an or() expression, reusing
+// the same operator semantics as a normal filter.
+function matchesOrPart(row, part) {
+  const match = part.match(/^([a-zA-Z0-9_]+)\.([a-zA-Z]+)\.(.*)$/);
+  if (!match) return false;
+  const [, column, op, rawValue] = match;
+  if (op === "in") {
+    const values = rawValue
+      .replace(/^\(|\)$/g, "")
+      .split(",")
+      .map((value) => value.trim().replace(/^"|"$/g, ""))
+      .filter(Boolean);
+    return matchesFilter(row, { kind: "in", column, value: values });
+  }
+  let value = rawValue;
+  if (op === "is") {
+    if (value === "null") value = null;
+    else if (value === "true") value = true;
+    else if (value === "false") value = false;
+  }
+  return matchesFilter(row, { kind: op, column, value });
+}
+
 function matchesOrExpression(row, expression) {
   if (typeof expression !== "string" || expression.trim().length === 0) return true;
-  const parts = [];
-  const wholeMatch = expression.trim().match(/^([a-zA-Z0-9_]+)\.in\.\((.*)\)$/);
-  if (wholeMatch) {
-    parts.push(expression.trim());
-  } else {
-    parts.push(...expression.split(","));
-  }
-  return parts.some((part) => {
-    const match = part.trim().match(/^([a-zA-Z0-9_]+)\.in\.\((.*)\)$/);
-    if (!match) return false;
-    const [, column, rawValues] = match;
-    const values = rawValues
-      .split(",")
-      .map((value) => value.trim().replace(/^"|"$/g, "").toLowerCase())
-      .filter(Boolean);
-    const cell = String(row?.[column] ?? "").toLowerCase();
-    return values.includes(cell);
-  });
+  return splitOrExpression(expression).some((part) => matchesOrPart(row, part));
 }
 
 export function routeSupabaseQuery(descriptor) {

@@ -221,11 +221,10 @@ export default function AccountsListPage() {
   }];
 
 
-  // The DevLayoutSection page-shell in accounts-ui.js does not paint a surface,
-  // so these requested accounts cards use LayerTheme. Inner cards alternate to LayerSurface.
+  // renderFilters is rendered inside the AccountTable card so the controls live
+  // directly in accounts-ledger-table-card without creating a nested card.
   const renderFilters = () =>
-  <LayerTheme as="section" sectionKey="accounts-filter-panel" sectionType="content-card" parentKey="accounts-page-shell" gap="16px">
-      <DevLayoutSection sectionKey="accounts-filter-toolbar" sectionType="filter-row" parentKey="accounts-filter-panel">
+  <DevLayoutSection sectionKey="accounts-filter-toolbar" sectionType="filter-row" parentKey="accounts-ledger-table-card">
       <ToolbarRow>
       <SearchBar
           name="search"
@@ -266,8 +265,7 @@ export default function AccountsListPage() {
         Clear filters
       </Button>
       </ToolbarRow>
-      </DevLayoutSection>
-    </LayerTheme>;
+    </DevLayoutSection>;
 
 
   const renderLinkedFinance = () =>

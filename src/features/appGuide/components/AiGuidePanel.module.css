@@ -9,6 +9,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  gap: var(--space-2);
   /* fills the .body area provided by GlobalNotesWidget */
 }
 
@@ -17,41 +18,29 @@
 .sessionBar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 0 8px;
+  gap: var(--space-2);
+  padding: 0 0 var(--space-sm);
   flex-shrink: 0;
 }
 
 
 .newChatButton {
   flex-shrink: 0;
-  border: none;
-  border-radius: var(--control-radius);
-  background: rgba(var(--primary-rgb), 0.14);
-  color: var(--text-1);
-  padding: 6px 10px;
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
+  min-height: 35px;
   white-space: nowrap;
   line-height: 1.2;
-  transition: background 0.14s ease;
-}
-
-.newChatButton:hover {
-  background: rgba(var(--primary-rgb), 0.22);
 }
 
 .deleteSessionButton {
   flex-shrink: 0;
-  border: none;
-  border-radius: var(--control-radius);
-  background: transparent;
-  color: var(--text-1);
-  padding: 6px 8px;
+  width: 35px;
+  min-width: 35px;
+  height: 35px;
+  min-height: 35px;
+  padding: 0 !important;
+  border-radius: var(--radius-full) !important;
   font-size: 16px;
   line-height: 1;
-  cursor: pointer;
   transition: color 0.12s ease;
 }
 
@@ -72,8 +61,8 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 8px 0;
+  gap: var(--space-2);
+  padding: var(--space-xs) 0;
   /* smooth scroll on interaction */
   scroll-behavior: smooth;
 }
@@ -85,8 +74,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 20px;
+  gap: var(--space-sm);
+  padding: var(--section-card-padding);
   text-align: center;
   color: var(--text-1);
 }
@@ -109,27 +98,17 @@
 .emptySuggestions {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-sm);
   width: 100%;
   max-width: 320px;
 }
 
 .suggestionChip {
-  border: none;
-  border-radius: var(--control-radius);
-  background: var(--control-bg);
-  color: var(--text-1);
-  padding: 7px 10px;
-  font-size: 11px;
-  font-family: inherit;
+  width: 100%;
   text-align: left;
-  cursor: pointer;
   line-height: 1.3;
-  transition: background 0.12s ease;
-}
-
-.suggestionChip:hover {
-  background: var(--control-bg-hover);
+  white-space: normal !important;
+  justify-content: flex-start !important;
 }
 
 /* ─── Individual message bubbles ─────────────────────────────────────────── */
@@ -151,7 +130,7 @@
 
 .bubbleContent {
   border-radius: var(--radius-sm);
-  padding: 8px 11px;
+  padding: var(--space-sm) var(--space-3);
   font-size: 13px;
   line-height: 1.5;
   max-width: 92%;
@@ -161,13 +140,13 @@
 /* User message styling */
 .messageUser .bubbleContent {
   background: var(--primary);
-  color: var(--text-2);
+  color: var(--onAccentText);
   border-bottom-right-radius: 4px;
 }
 
 /* Assistant message styling */
 .messageAssistant .bubbleContent {
-  background: var(--control-bg);
+  background: var(--theme);
   color: var(--text-1);
   border-bottom-left-radius: 4px;
 }
@@ -197,6 +176,59 @@
   margin: 8px 0;
 }
 
+/* ─── Structured answer rendering (headings, steps, bullets) ─────────────── */
+/* Used for guide answers such as the slash-command how-to so step-by-step
+   replies read as a clean, numbered guide rather than a wall of text. */
+
+.mdHeading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1.35;
+  padding-bottom: 2px;
+}
+
+.mdStep {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+  padding: 3px 0;
+}
+
+.mdStepNum {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--onAccentText);
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mdBullet {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+  padding: 2px 0;
+}
+
+.mdBulletDot {
+  flex: 0 0 auto;
+  color: var(--primary);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.mdStepText {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* Timestamps */
 .messageTime {
   font-size: 10px;
@@ -209,9 +241,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 10px 14px;
+  padding: var(--space-sm) var(--space-3);
   border-radius: var(--radius-sm);
-  background: var(--control-bg);
+  background: var(--theme);
   border-bottom-left-radius: 4px;
 }
 
@@ -266,26 +298,15 @@
 .followUpRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: var(--space-xs);
   padding: 4px 2px 0;
 }
 
 .followUpChip {
-  border: none;
   border-radius: var(--radius-pill);
-  background: rgba(var(--primary-rgb), 0.1);
-  color: var(--text-1);
-  padding: 4px 10px;
   font-size: 11px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.12s ease;
-  white-space: nowrap;
+  white-space: normal !important;
   line-height: 1.3;
-}
-
-.followUpChip:hover {
-  background: rgba(var(--primary-rgb), 0.2);
 }
 
 /* ─── Input row ───────────────────────────────────────────────────────────── */
@@ -293,37 +314,35 @@
 .inputRow {
   flex-shrink: 0;
   display: flex;
-  gap: 6px;
-  align-items: flex-end;
-  padding-top: 8px;
+  gap: var(--space-2);
+  /* Send button sits at the vertical middle of the chatbox */
+  align-items: center;
+  padding-top: var(--space-xs);
 }
 
 .inputWrap {
   flex: 1 1 auto;
   min-width: 0;
   position: relative;
+  display: flex;
 }
 
+/* Message box — starts at a single 44px row, then grows by one line-height
+   per extra wrapped line (handled in JS); it stops after 3 lines and
+   scrolls internally beyond that. Manual drag-resize is disabled.
+   The !important overrides are required because the input family rule
+   `textarea.app-input { min-height: 96px; padding: 12px 14px }`
+   (src/styles/families/inputs.css) outranks this CSS-module class. */
 .input {
-  width: 100%;
-  border: none;
-  border-radius: var(--control-radius);
-  background: var(--control-bg);
-  color: var(--text-1);
-  padding: 8px 11px;
-  font-size: 13px;
-  font-family: inherit;
-  resize: none;
-  min-height: 38px;
-  max-height: 110px;
-  outline: none;
-  line-height: 1.45;
-  overflow-y: auto;
-}
-
-.input:focus {
-  background: var(--control-bg-hover);
-  box-shadow: var(--control-ring);
+  resize: none !important;
+  min-height: 44px !important;
+  height: 44px;
+  /* 44px first row + 2 extra line-heights (1.4em each) */
+  max-height: calc(44px + 2.8em) !important;
+  padding: var(--control-padding) !important;
+  line-height: 1.4;
+  /* Hidden while growing (rows 1-3); JS flips it to auto past the 3rd line */
+  overflow-y: hidden;
 }
 
 .input::placeholder {
@@ -332,27 +351,9 @@
 
 .sendButton {
   flex-shrink: 0;
-  border: none;
-  border-radius: var(--control-radius);
-  background: var(--primary);
-  color: var(--text-2);
-  padding: 8px 14px;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  font-weight: 600;
+  min-height: 38px;
   line-height: 1.2;
-  transition: opacity 0.12s ease;
-  align-self: flex-end;
-}
-
-.sendButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.sendButton:not(:disabled):hover {
-  opacity: 0.88;
+  align-self: center;
 }
 
 /* ─── Error state ─────────────────────────────────────────────────────────── */

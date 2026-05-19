@@ -12,6 +12,7 @@ import { SearchBar } from "@/components/ui/searchBarAPI";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
 import PayslipUpsertModal from "@/features/payslips/PayslipUpsertModal";
 import PayslipDetailPopup from "@/features/payslips/PayslipDetailPopup";
+import ConfirmationDialog from "@/components/popups/ConfirmationDialog";
 import PayslipsAdminPageUi from "@/components/page-ui/accounts/payslips/payslips-ui";
 
 const ALLOWED_ROLES = [
@@ -48,6 +49,7 @@ export default function PayslipsAdminPage() {
   const [activePayslip, setActivePayslip] = useState(null);
   const [editingPayslip, setEditingPayslip] = useState(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -119,13 +121,7 @@ export default function PayslipsAdminPage() {
     ];
   }, [users]);
 
-  const handleDelete = async (payslip) => {
-    if (typeof window !== "undefined") {
-      const confirmed = window.confirm(
-        `Delete payslip from ${payslip.paidDate} for ${payslip.user?.name || "this user"}?`
-      );
-      if (!confirmed) return;
-    }
+  const performDelete = async (payslip) => {
     try {
       const response = await fetch(`/api/payslips/${payslip.id}`, {
         method: "DELETE",
@@ -137,8 +133,19 @@ export default function PayslipsAdminPage() {
       }
       fetchPayslips();
     } catch (err) {
-      window.alert(err?.message || "Unable to delete payslip.");
+      setError(err?.message || "Unable to delete payslip.");
     }
+  };
+
+  // Opens the staffglobal ConfirmationDialog instead of a native window.confirm.
+  const handleDelete = (payslip) => {
+    setConfirmDialog({
+      message: `Delete payslip from ${payslip.paidDate} for ${payslip.user?.name || "this user"}?`,
+      onConfirm: () => {
+        setConfirmDialog(null);
+        performDelete(payslip);
+      },
+    });
   };
 
   return (
@@ -146,6 +153,7 @@ export default function PayslipsAdminPage() {
       view="section1"
       ALLOWED_ROLES={ALLOWED_ROLES}
       Button={Button}
+      ConfirmationDialog={ConfirmationDialog}
       DevLayoutSection={DevLayoutSection}
       DropdownField={DropdownField}
       PayslipDetailPopup={PayslipDetailPopup}
@@ -155,6 +163,7 @@ export default function PayslipsAdminPage() {
       STATUS_OPTIONS={STATUS_OPTIONS}
       ToolbarRow={ToolbarRow}
       activePayslip={activePayslip}
+      confirmDialog={confirmDialog}
       departmentOptions={departmentOptions}
       editingPayslip={editingPayslip}
       error={error}
@@ -167,6 +176,7 @@ export default function PayslipsAdminPage() {
       loading={loading}
       payslips={payslips}
       setActivePayslip={setActivePayslip}
+      setConfirmDialog={setConfirmDialog}
       setEditingPayslip={setEditingPayslip}
       setIsCreateOpen={setIsCreateOpen}
       userOptions={userOptions}

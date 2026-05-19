@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { SearchBar } from "@/components/ui/searchBarAPI";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup"; // canonical staffglobal .tab-api tab system
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
@@ -185,7 +186,7 @@ export default function CompanyAccountsIndexPage() {
         </div>
       </DevLayoutSection>
       {ledgerFeedback && !ledgerAccounts.length && !ledgerLoading &&
-    <p style={{ margin: 0, color: "var(--text-1)" }}>{ledgerFeedback}</p>
+    <p className="app-status-message app-status-message--info" style={{ margin: 0 }}>{ledgerFeedback}</p>
     }
       <DevLayoutSection sectionKey="company-accounts-ledger-table" sectionType="data-table" parentKey="company-accounts-ledger-panel">
         <AccountTable
@@ -223,12 +224,16 @@ export default function CompanyAccountsIndexPage() {
 
     }
     if (!accounts.length) {
-      return <p>{feedback || "No company accounts to display."}</p>;
+      return (
+        <p className="app-status-message app-status-message--info" style={{ margin: 0 }}>
+          {feedback || "No company accounts to display."}
+        </p>
+      );
     }
     return (
       <LayerTheme sectionKey="company-accounts-company-list" sectionType="content-card" parentKey="company-accounts-page-shell">
-        <div style={{ overflowX: "auto" }}>
-          <table className="app-data-table">
+        <div className="app-table-shell-scroll">
+          <table className="app-data-table app-table-shell app-table-shell--with-headings">
             <thead>
               <tr>
                 <th style={{ whiteSpace: "nowrap" }}>Account #</th>
@@ -264,7 +269,7 @@ export default function CompanyAccountsIndexPage() {
 
   };
 
-  return <CompanyAccountsIndexPageUi view="section1" accounts={accounts} activeTab={activeTab} ALLOWED_ROLES={ALLOWED_ROLES} Button={Button} CompanyAccountForm={CompanyAccountForm} DevLayoutSection={DevLayoutSection} feedback={feedback} fetchAccounts={fetchAccounts} handleCreate={handleCreate} loading={loading} permissions={permissions} ProtectedRoute={ProtectedRoute} renderLedgerTab={renderLedgerTab} renderList={renderList} saving={saving} search={search} SearchBar={SearchBar} setActiveTab={setActiveTab} setSearch={setSearch} setShowForm={setShowForm} showForm={showForm} tabs={tabs} />;
+  return <CompanyAccountsIndexPageUi view="section1" accounts={accounts} activeTab={activeTab} ALLOWED_ROLES={ALLOWED_ROLES} Button={Button} CompanyAccountForm={CompanyAccountForm} DevLayoutSection={DevLayoutSection} feedback={feedback} fetchAccounts={fetchAccounts} handleCreate={handleCreate} loading={loading} permissions={permissions} ProtectedRoute={ProtectedRoute} renderLedgerTab={renderLedgerTab} renderList={renderList} saving={saving} search={search} SearchBar={SearchBar} TabGroup={TabGroup} setActiveTab={setActiveTab} setSearch={setSearch} setShowForm={setShowForm} showForm={showForm} tabs={tabs} />;
 
 
 

@@ -1,12 +1,15 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import { ALL_SLIDES, buildSlidesForRole } from "./slides";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 import {
+  isOverlayHidden,
   setOverlayHidden as publishOverlayHidden,
+  clearOverlayHidden,
   subscribeOverlayVisibility,
 } from "./runtime/overlayVisibility";
+import { consumePresentationNext } from "./runtime/presentationNextHook";
 
 const PresentationContext = createContext(null);
 const RETURN_TO_STORAGE_KEY = "presentation:returnTo";
@@ -146,6 +149,9 @@ export function PresentationProvider({ children }) {
   // in the sidebar. We mirror the value to a module-scope pub/sub so the
   // sidebar (mounted above PresentationProvider in the tree) can read + flip
   // it without us hoisting the provider.
+  // Starts false to match SSR; the mount effect below syncs it from the
+  // persisted flag so a mid-presentation reload keeps the overlay hidden and
+  // "Show overlay" resumes the deck from exactly where the presenter left off.
   const [overlayHidden, setOverlayHiddenState] = useState(false);
   const hideOverlay = useCallback(() => {
     setOverlayHiddenState(true);
@@ -155,9 +161,16 @@ export function PresentationProvider({ children }) {
     setOverlayHiddenState(false);
     publishOverlayHidden(false);
   }, []);
-  // Reset visibility when the active role changes (entering a new demo deck
-  // should start with the overlay visible again).
+  // Reset visibility only on a genuine deck switch (one role → a different
+  // role). The first time the role resolves on mount we keep the persisted
+  // hidden state, otherwise a reload would always force the overlay back on.
+  const prevRoleKeyRef = useRef(activeRole?.key ?? null);
   useEffect(() => {
+    const currentKey = activeRole?.key ?? null;
+    if (prevRoleKeyRef.current === currentKey) return;
+    const hadPreviousRole = Boolean(prevRoleKeyRef.current);
+    prevRoleKeyRef.current = currentKey;
+    if (!hadPreviousRole) return;
     setOverlayHiddenState(false);
     publishOverlayHidden(false);
   }, [activeRole?.key]);
@@ -167,6 +180,9 @@ export function PresentationProvider({ children }) {
   // react. Without this, the sidebar button would update the pub/sub flag
   // but our local React state would stay stale.
   useEffect(() => {
+    // Sync the persisted flag on mount (covers a reload or a remount that
+    // happened while the overlay was hidden), then track future toggles.
+    setOverlayHiddenState(isOverlayHidden());
     const unsubscribe = subscribeOverlayVisibility((next) => {
       setOverlayHiddenState(next);
     });
@@ -228,7 +244,24 @@ export function PresentationProvider({ children }) {
   }, [activeRole?.key, activeRole?.routes, router]);
 
   const currentSlide = slides[slideIndex] || null;
-  const currentSteps = useMemo(() => currentSlide?.steps || [], [currentSlide]);
+  // Every slide ends with a synthetic "break" step: the Overview popup with no
+  // highlighted section, docked clear of the page content, so the presenter can
+  // show the whole screen before advancing to the next page.
+  const currentSteps = useMemo(() => {
+    const baseSteps = currentSlide?.steps || [];
+    if (baseSteps.length === 0) return baseSteps;
+    const breakStep = {
+      kind: "main",
+      isBreak: true,
+      anchor: null,
+      title: currentSlide?.title || "Full page",
+      body:
+        "Full page view — no section is highlighted. Take a moment to review the whole screen, then press Next to continue.",
+      // Default resting spot for the break popup; a slide may override it.
+      defaultPosition: currentSlide?.breakPosition || "bottom-left",
+    };
+    return [...baseSteps, breakStep];
+  }, [currentSlide]);
   const currentStep = currentSteps[stepIndex] || null;
 
   useEffect(() => {
@@ -245,6 +278,9 @@ export function PresentationProvider({ children }) {
   }, [currentSteps.length]);
 
   const next = useCallback(() => {
+    // A page may register a blocking step (e.g. the personal dashboard unlock
+    // popup). If it consumes this Next press, the deck stays put for this click.
+    if (consumePresentationNext()) return;
     const stepsLen = currentSteps.length;
     if (stepIndex < stepsLen - 1) {
       setStepIndex((i) => i + 1);
@@ -290,6 +326,9 @@ export function PresentationProvider({ children }) {
 
   const exit = useCallback(() => {
     if (!canExit) return;
+    // Leaving the presentation — drop the persisted overlay-hidden flag so the
+    // next session starts with the overlay visible.
+    clearOverlayHidden();
     // When a presentation role is active, exiting goes back to the picker.
     if (activeRole) {
       router.push("/loginPresentation");
@@ -309,7 +348,7 @@ export function PresentationProvider({ children }) {
       router.back();
       return;
     }
-    router.push("/dashboard");
+    router.push("/newsfeed");
   }, [canExit, activeRole, router]);
 
   const toggleDevOverlay = useCallback(() => setDevOverlayOn(false), []);

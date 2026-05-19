@@ -1,78 +1,80 @@
 ====================================================
+STAFFGLOBAL.CSS
+====================================================
+
+tab backgrouind width going the whole page, have it only go the width of the last button. 
+
+global table, have it so the heading section is always shown and doesnt scroll away with the table does whent he scroll is used, this should always be within the table view, if the scroll is used, have it so the row is hidn when it goes behind the heading seciton 
+
+
+====================================================
 General
 ====================================================
 
-- /messages
+- /messages (DOONE
 
 
 - /newsfeed (CHECK)
-add the floating notes button onto the newsfeed page only within the presnentaino, have this floating notes section only show the AI tab, and 3 other tabs created which are fully mock data, have the global toggle button not show wihtint he presnentiaon mode section, this is to demonstaight the ai tab and what other tabs look like within the notes section. 
 
 
-- /profile
+- /profile?tab=work (DONE
 
 
-- /profile?tab=personal
+- /profile?tab=personal (DONE
 
 
-- /login (CHECK)
-make sure the "login" page within the presentation follows the login style as the actual /login page but doesnt show the dev login section, have everything else the same.
-
-- floating notes (CEHCK)
-have it os the tab section follows the staffglobal.css tab tesign. have it so the "x" buttons wihtin the tab buttons does not follow the staffglobal.css and overrides any size or style, have it so this button only shows the "x" inside a circle button which is small to not change the size of the tab button. have it so the tab buttons fits the whole title within the button, only show the "Title" within the tab button and the "x" (delete) button.
-
-(CHECK)
-have it so the "Tooltips (native title=)" uses a glogble primary button style hover text display when hover text is being used etc. have it so this uses a shadow backgorund ot make it seem like its floating above everything else. make this change to everywhere where its used within the staffglobal.css pages as well as the "/dev/user-diagnostic" showcase section.
+- /login (DONE
 
 
-- /password-reset/new
+- floating notes (DONE
+
+
+
+- /password-reset/new (DONE
 
 
 ====================================================
 Accounts Manager
 ====================================================
 
-- /dashboard/accounts
+- /dashboard/accounts (DONE
 
 
-- /accounts
+- /accounts (TODO)
+wihtin the "/accounts :: 1.2.1.1.1.2.1 (accounts-ledger-table-card) — “17 records Account ID Customer Type Status Balance Credit L…”" section remove the "17 records" text section. 
+
+- /accounts/create (DONE
 
 
-- /accounts/create
+- /accounts/edit/CA3606 (DONE
 
 
-- /accounts/edit/[accountId]
+- /accounts/view/CA3606 (DONE
 
 
-- /accounts/view/[accountId]
-fix the spacing along the edge within the "/accounts/view/[accountId]" page
+- /accounts/transactions/CA3606 (DONE
 
 
-- /accounts/transactions/[accountId]
-add "--theme" backgorund cards within the "/accounts/transactions/[accountId]" page
-
-- /accounts/invoices
-move the filter intop the top section to fill the gap within the "/accounts/invoices" page 
-
-- /accounts/invoices/[invoiceId]
+- /accounts/invoices (DONE
 
 
-- /accounts/payslips
+- /accounts/invoices/INV-2026-00001 (DONE
 
 
-- /accounts/reports
-make the seach bar smaller to fit everything wihtin one row with different size screens
+- /accounts/payslips (DONE
+
+
+- /accounts/reports (DONE
+
 
 - /accounts/settings
 
 
-- /company-accounts
-make sure the tab section follows the staffglobal.css tab style
+- /company-accounts (DONE
 
 
-- /company-accounts/[accountNumber]
-have it so the whole page follows the staffglobal.css and the layout is better to fit all screen sizes as well as adding "--theme" background cards.
-
+- /company-accounts/CA3771 (CHECK)
+mvoe "A2 Tyres Ltd A2 Tyres #CA3771" within the same row as the "← All company accounts" button remove the "←" as well from the button. also change the tab section so the background only goes the width of the last button. move the "Edit Delete" buttons wtihin the same row as the "All company accounts" button as well. 
 
 ====================================================
 Admin Manager

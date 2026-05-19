@@ -12,6 +12,7 @@ import { generateHeadline, generateInsights } from "@/lib/profile/personalInsigh
 import { PERSONAL_WIDGET_DEFINITIONS, PERSONAL_WIDGET_TYPE_OPTIONS, sortWidgetsForDisplay } from "@/lib/profile/personalWidgets";
 import Button from "@/components/ui/Button";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { setPresentationNextInterceptor } from "@/features/presentation/runtime/presentationNextHook";
 import { PRESENTATION_PERSONAL_PASSCODE } from "@/features/presentation/mockData/personal";
 import {
   EmptyState,
@@ -709,27 +710,6 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
 
   useEffect(() => () => onHeaderActionsChange?.(null), [onHeaderActionsChange]);
 
-  if (disabled) {
-    return (
-      <DevLayoutSection
-        sectionKey="profile-personal-disabled-state"
-        parentKey="profile-active-tab-panel"
-        sectionType="section-shell"
-        shell
-        style={{
-          background: "var(--surface)",
-          borderRadius: "14px",
-          padding: "24px",
-          color: "var(--text-1)",
-          fontSize: "0.88rem",
-          lineHeight: 1.5,
-        }}
-      >
-        Personal dashboard access is only available when you are viewing your own profile.
-      </DevLayoutSection>
-    );
-  }
-
   const passcodeMode = dashboard.isSetup ? "unlock" : "setup";
 
   const handlePasscodeSubmit = async ({ passcode, confirmPasscode }) => {
@@ -765,6 +745,55 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
       setIsSubmitting(false);
     }
   };
+
+  // In a presentation deck the unlock popup is pre-filled. While it is open,
+  // pressing the deck's "Next" submits the passcode and unlocks the dashboard
+  // instead of advancing the slide — the presenter never clicks "Unlock"
+  // inside the page. The next press after unlocking advances as normal.
+  useEffect(() => {
+    if (
+      !isPresentationMode() ||
+      disabled ||
+      !isPasscodeModalOpen ||
+      dashboard.isUnlocked ||
+      passcodeMode !== "unlock"
+    ) {
+      setPresentationNextInterceptor(null);
+      return undefined;
+    }
+    setPresentationNextInterceptor(() => {
+      if (!isSubmitting) {
+        handlePasscodeSubmit({
+          passcode: PRESENTATION_PERSONAL_PASSCODE,
+          confirmPasscode: PRESENTATION_PERSONAL_PASSCODE,
+        });
+      }
+      return true;
+    });
+    return () => setPresentationNextInterceptor(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled, isPasscodeModalOpen, dashboard.isUnlocked, passcodeMode, isSubmitting]);
+
+  if (disabled) {
+    return (
+      <DevLayoutSection
+        sectionKey="profile-personal-disabled-state"
+        parentKey="profile-active-tab-panel"
+        sectionType="section-shell"
+        shell
+        style={{
+          background: "var(--surface)",
+          borderRadius: "14px",
+          padding: "24px",
+          color: "var(--text-1)",
+          fontSize: "0.88rem",
+          lineHeight: 1.5,
+        }}
+      >
+        Personal dashboard access is only available when you are viewing your own profile.
+      </DevLayoutSection>
+    );
+  }
 
   return (
     <>

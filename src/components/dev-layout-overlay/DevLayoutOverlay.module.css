@@ -163,20 +163,21 @@
   right: 20px;
   bottom: 20px;
   z-index: 2850;
-  width: min(420px, calc(100vw - 24px));
-  max-height: min(78vh, 720px);
+  width: min(480px, calc(100vw - 24px));
+  max-height: min(82vh, 760px);
   overflow: hidden;
+  box-sizing: border-box;
+  padding: 16px;
   border-radius: 18px;
   background: rgba(var(--surface-rgb), 0.96);
   color: var(--text-1);
-  box-shadow:
-    0 0 0 1px rgba(var(--accent-base-rgb), 0.18),
-    0 16px 40px rgba(var(--text-1-rgb), 0.22);
+  box-shadow: 0 16px 40px rgba(var(--text-1-rgb), 0.22);
   backdrop-filter: blur(18px) saturate(1.15);
   -webkit-backdrop-filter: blur(18px) saturate(1.15);
   pointer-events: auto;
   display: flex;
   flex-direction: column;
+  gap: 14px;
 }
 
 .launcherWrap {
@@ -237,8 +238,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border-radius: 8px;
   border: 1px solid var(--ghostbutton-ring);
@@ -256,8 +257,8 @@
 }
 
 .iconBtnSm {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   flex-shrink: 0;
 }
@@ -272,53 +273,57 @@
 .backgroundBlock {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(var(--accent-base-rgb), 0.05);
+  gap: var(--layout-card-gap);
+  padding: var(--section-card-padding);
+  border-radius: var(--section-card-radius);
+  background: var(--theme);
 }
 
 .controlsBlock {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(var(--surface-rgb), 0.5);
+  gap: var(--layout-card-gap);
+  padding: var(--section-card-padding);
+  border-radius: var(--section-card-radius);
+  background: var(--theme);
 }
 
 .controlsHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .controlRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
+  min-height: 44px;
 }
 
 .controlLabel {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
   color: var(--text-1);
   min-width: 0;
 }
 
 .controlHint {
-  font-size: 0.68rem;
-  font-weight: 500;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--text-1);
+  opacity: 0.72;
 }
 
 .switch {
-  --switch-size: 22px;
+  --switch-size: 24px;
   position: relative;
   width: calc(var(--switch-size) * 2);
   height: var(--switch-size);
@@ -364,16 +369,19 @@
 }
 
 .modeRow {
-  display: inline-flex;
-  gap: 4px;
-  padding: 3px;
-  border-radius: var(--radius-pill);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  width: min(260px, 100%);
+  padding: 4px;
+  border-radius: 12px;
   background: rgba(var(--text-1-rgb), 0.08);
 }
 
 .modeBtn {
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
+  min-height: 32px;
+  padding: 6px 8px;
+  border-radius: 9px;
   border: none;
   background: transparent;
   color: var(--text-1);
@@ -400,8 +408,8 @@
 
 .countChip {
   display: inline-block;
-  padding: 1px 7px;
-  margin-left: 4px;
+  padding: 3px 8px;
+  margin-left: 6px;
   border-radius: var(--radius-pill);
   background: rgba(var(--accent-base-rgb), 0.12);
   color: var(--text-1);
@@ -413,12 +421,14 @@
 
 .bulkRow {
   display: inline-flex;
-  gap: 4px;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .bulkBtn {
-  padding: 3px 9px;
-  border-radius: var(--radius-pill);
+  min-height: 32px;
+  padding: 5px 10px;
+  border-radius: 8px;
   border: 1px solid var(--ghostbutton-ring);
   background: rgba(var(--surface-rgb), 0.6);
   color: var(--text-1);
@@ -441,21 +451,22 @@
 
 .categoryGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 6px;
 }
 
 .categoryPill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
   background: rgba(var(--surface-rgb), 0.4);
   color: var(--text-1);
   cursor: pointer;
   text-align: left;
-  min-height: 32px;
+  min-height: 44px;
+  box-shadow: inset 0 0 0 1px rgba(var(--text-1-rgb), 0.04);
 }
 
 .categoryPill:hover:not(:disabled) {
@@ -468,7 +479,7 @@
 }
 
 .categoryPillActive {
-  background: rgba(var(--accent-base-rgb), 0.1);
+  background: rgba(var(--accent-base-rgb), 0.12);
   color: var(--text-1);
 }
 
@@ -495,16 +506,16 @@
 
 .categorySwatch {
   /* Diagram primitive — colour swatch in legend */
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
   flex-shrink: 0;
   border: 1px solid rgba(var(--text-1-rgb), 0.18);
 }
 
 .categoryName {
-  font-size: 0.74rem;
-  font-weight: 600;
+  font-size: 0.76rem;
+  font-weight: 700;
   color: inherit;
   white-space: nowrap;
   overflow: hidden;
@@ -516,10 +527,10 @@
 .selectedBlock {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(var(--accent-base-rgb), 0.05);
+  gap: var(--layout-card-gap);
+  padding: var(--section-card-padding);
+  border-radius: var(--section-card-radius);
+  background: var(--theme);
 }
 
 .selectedHead {
@@ -565,10 +576,12 @@
 
 .footerHint {
   margin: 0;
-  padding: 8px 14px 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
   font-size: 0.66rem;
+  line-height: 1.65;
   color: var(--text-1);
-  background: rgba(var(--surface-rgb), 0.4);
+  background: var(--theme);
 }
 
 .footerHint kbd {
@@ -592,31 +605,33 @@
 
 .panelScroll {
   overflow-y: auto;
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.panelScroll::-webkit-scrollbar {
+  display: none;
 }
 
 .panelHeader {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--layout-card-gap);
   align-items: flex-start;
   flex-wrap: wrap;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding-bottom: 12px;
-  background: rgba(var(--surface-rgb), 0.35);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  padding: var(--section-card-padding);
+  border-radius: var(--section-card-radius);
+  background: var(--theme);
 }
 
 .panelTitleBlock {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
   flex: 1 1 200px;
 }
@@ -632,22 +647,26 @@
 
 .kicker {
   margin: 0;
-  font-size: 0.74rem;
+  font-size: 0.68rem;
+  font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--text-1);
+  color: var(--accentText);
 }
 
 .title {
   margin: 0;
-  font-size: 1.04rem;
+  font-size: 1.08rem;
+  line-height: 1.25;
   color: var(--text-1);
 }
 
 .subtitle {
-  margin: 2px 0 0;
-  font-size: 0.74rem;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
   color: var(--text-1);
+  opacity: 0.74;
 }
 
 .sectionBlock {
@@ -828,10 +847,6 @@
     max-height: calc(100vh - 24px);
   }
 
-  .panelScroll {
-    padding: 14px;
-  }
-
   .summaryRow {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -846,10 +861,6 @@
 }
 
 @media (max-width: 640px) {
-  .panelScroll {
-    padding: 12px;
-  }
-
   .panelHeaderActions {
     justify-content: flex-start;
   }

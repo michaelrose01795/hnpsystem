@@ -13,6 +13,8 @@ import {
 import AiGuidePanel from "@/features/appGuide/components/AiGuidePanel";
 import styles from "@/components/GlobalNotesWidget.module.css";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const BUBBLE_SIZE = 56;
 const PANEL_DEFAULT = { x: 120, y: 90, width: 460, height: 360 };
@@ -24,22 +26,22 @@ const PRESENTATION_DEMO_NOTES = [
   {
     noteId: -101,
     userId: PRESENTATION_DEMO_USER_ID,
-    title: "Service",
-    description: "Morning handover\n- MOT bay fully booked until 11:30\n- Waiting customer on DEMO-1042\n- Warranty call-back due after lunch",
+    title: "To Do",
+    description: "Today\n- Call back Mr Reynolds about the DEMO-1042 quote\n- Tell Sarah on reception the courtesy car is booked for Friday\n- Chase the warranty claim before lunch\n- Approve the new starter's holiday request",
     isGlobal: false,
   },
   {
     noteId: -102,
     userId: PRESENTATION_DEMO_USER_ID,
-    title: "Workshop",
-    description: "Prep focus\n- Prioritise used car checks before 15:00\n- Parts awaiting ETA on brake sensor\n- Apprentice paired with senior tech for VHC review",
+    title: "Parts to Order",
+    description: "Order these parts\n- Front brake pads + discs for DEMO-1043\n- CKP sensor — check ETA with the supplier first\n- Pollen filter for the Friday service\n- Wiper blades x2 for the courtesy car",
     isGlobal: false,
   },
   {
     noteId: -103,
     userId: PRESENTATION_DEMO_USER_ID,
-    title: "Sales",
-    description: "Customer follow-ups\n- Enquiry from Sarah Jones needs finance figures\n- Demo vehicle booked for Friday\n- Confirm handover pack before close",
+    title: "Reminders",
+    description: "Don't forget\n- Order workshop consumables — gloves, brake cleaner, rags\n- Tell the techs about the new VHC photo process\n- Book the ramp inspection for next week\n- Email the customer their service reminder",
     isGlobal: false,
   },
 ];
@@ -559,12 +561,15 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         event.preventDefault();
         const dx = event.clientX - panelResize.startX;
         const dy = event.clientY - panelResize.startY;
+        // Top-right corner handle: width follows the cursor right, height
+        // follows the cursor up (dragging up grows the panel), and the top
+        // edge moves with the cursor while the bottom edge stays anchored.
         setPanelRect(
           clampPanelRect({
             x: panelResize.initialX,
-            y: panelResize.initialY,
+            y: panelResize.initialY + dy,
             width: panelResize.initialWidth + dx,
-            height: panelResize.initialHeight + dy,
+            height: panelResize.initialHeight - dy,
           })
         );
       }
@@ -969,26 +974,6 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     await flushSave(note.noteId, { title: note.title, description: note.description });
   };
 
-  const onToggleGlobal = async (checked) => {
-    if (presentationDemo) return;
-
-    if (!activeNote || !activeNoteOwnedByUser) return;
-
-    const previous = Boolean(activeNote.isGlobal);
-    updateLocalNote(activeNote.noteId, (note) => ({ ...note, isGlobal: checked }));
-    setSaveStatus("saving");
-    const result = await updateFloatingNote(activeNote.noteId, { isGlobal: checked });
-    if (!result.success) {
-      updateLocalNote(activeNote.noteId, (note) => ({ ...note, isGlobal: previous }));
-      setSaveStatus("error");
-      setError(result.error?.message || "Failed to update visibility");
-      return;
-    }
-
-    updateLocalNote(activeNote.noteId, (note) => ({ ...note, ...result.data }));
-    setSaveStatus("saved");
-  };
-
   // Switch the panel body to the AI Guide view
   const openAiTab = () => setActiveView("ai");
 
@@ -1078,8 +1063,12 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
       </button>
 
       {isPanelMounted && (
-        <section
-          className={`app-section-card ${styles.panel} ${isPanelVisible ? styles.panelEnter : styles.panelExit}`}
+        <LayerSurface
+          as="section"
+          className={`${styles.panel} ${isPanelVisible ? styles.panelEnter : styles.panelExit}`}
+          radius="var(--section-card-radius)"
+          padding="var(--space-2)"
+          gap="var(--space-2)"
           style={{
             left: panelRect.x,
             top: panelRect.y,
@@ -1087,80 +1076,91 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
             height: panelRect.height,
           }}
         >
+          {/* Drag-to-move grip — sits directly on the --surface panel */}
           <div className={styles.dragHandle} onPointerDown={startPanelDrag}>
             <span className={styles.dragHandleGrip} aria-hidden="true" />
           </div>
 
-          <header className={styles.header}>
-            <div className={styles.headerRow}>
-              <div className={styles.tabBarScroller} onPointerDown={(event) => event.stopPropagation()}>
-                <div className={`tab-api tab-api--inline ${styles.tabBar}`}>
-                  {/* AI Guide tab — always present, positioned before note tabs */}
-                  <button
-                    type="button"
-                    className={`tab-api__item ${styles.tab} ${styles.tabAi} ${
-                      activeView === "ai" ? "is-active" : ""
-                    }`}
-                    onClick={openAiTab}
-                    title="App Guide — ask questions about the system"
-                    aria-label="Open AI App Guide"
-                  >
-                    <span className={styles.tabTitle}>AI</span>
-                  </button>
+          {/* Resize grip — tucked into the curved top-right corner.
+              Hidden in the AI view so the chat area can't be resized manually. */}
+          {activeView !== "ai" && (
+            <div
+              className={styles.resizeHandle}
+              onPointerDown={startResize}
+              role="presentation"
+              aria-hidden="true"
+            />
+          )}
 
-                  {notes.map((note) => {
-                    const editable = !presentationDemo && Number(note.userId) === Number(dbUserId);
-                    return (
-                      <button
-                        key={note.noteId}
-                        type="button"
-                        className={`tab-api__item ${styles.tab} ${
-                          note.noteId === activeNoteId && activeView === "notes" ? "is-active" : ""
-                        }`}
-                        onClick={() => openNoteTab(note.noteId)}
-                        title={note.title || "Untitled"}
+          <header className={styles.header}>
+            <div
+              className={`tab-api ${styles.tabBar}`}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              {/* App Guide (HELP) tab — always present, before note tabs */}
+              <button
+                type="button"
+                className={`tab-api__item ${styles.tab} ${styles.tabAi} ${
+                  activeView === "ai" ? "is-active" : ""
+                }`}
+                onClick={openAiTab}
+                title="App Guide — ask questions about the system"
+                aria-label="Open App Guide help"
+              >
+                <span className={styles.tabTitle}>HELP</span>
+              </button>
+
+              {notes.map((note) => {
+                const editable = !presentationDemo && Number(note.userId) === Number(dbUserId);
+                return (
+                  <button
+                    key={note.noteId}
+                    type="button"
+                    className={`tab-api__item ${styles.tab} ${
+                      note.noteId === activeNoteId && activeView === "notes" ? "is-active" : ""
+                    }`}
+                    onClick={() => openNoteTab(note.noteId)}
+                    title={note.title || "Untitled"}
+                  >
+                    <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
+                    {editable && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className={styles.tabClose}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          deleteTab(note.noteId);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            deleteTab(note.noteId);
+                          }
+                        }}
+                        aria-label="Close tab"
                       >
-                        <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
-                        {editable && (
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            className={styles.tabClose}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              deleteTab(note.noteId);
-                            }}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                deleteTab(note.noteId);
-                              }
-                            }}
-                            aria-label="Close tab"
-                          >
-                            ×
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                  {!presentationDemo && (
-                    <button
-                      type="button"
-                      className={`tab-api__item is-active ${styles.tab} ${styles.tabAdd}`}
-                      onClick={createTab}
-                      aria-label="Add tab"
-                      title="Add tab"
-                    >
-                      +
-                    </button>
-                  )}
-                </div>
-              </div>
+                        ×
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+              {!presentationDemo && (
+                <button
+                  type="button"
+                  className={`tab-api__item is-active ${styles.tab} ${styles.tabAdd}`}
+                  onClick={createTab}
+                  aria-label="Add tab"
+                  title="Add tab"
+                >
+                  +
+                </button>
+              )}
             </div>
           </header>
 
-          <div className={`${styles.body} themed-scrollbar`}>
+          <div className={`${styles.body} ${activeView === "ai" ? styles.bodyAi : ""} themed-scrollbar`}>
             {/* AI Guide panel — shown when the AI tab is active */}
             {activeView === "ai" && (
               <AiGuidePanel
@@ -1173,77 +1173,53 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
             {activeView === "notes" && isLoading && <NotesLoadingSkeleton />}
 
             {activeView === "notes" && !isLoading && notes.length === 0 && (
-              <div className={styles.emptyState}>
+              <LayerTheme
+                className={styles.emptyState}
+                radius="var(--control-radius)"
+                padding="var(--section-card-padding)"
+                gap="var(--space-sm)"
+              >
                 <h4>No notes yet</h4>
                 <p>Create your first note to track tasks, reminders, or test instructions.</p>
                 <button type="button" className={`app-btn app-btn--primary ${styles.primaryAction}`} onClick={createTab}>
                   Create your first note
                 </button>
-              </div>
+              </LayerTheme>
             )}
 
             {activeView === "notes" && !isLoading && activeNote && (
               <>
-                <div className={styles.field}>
-                  <div className={styles.titleRow}>
-                    <label className={`${styles.label} ${styles.titleLabel}`} htmlFor="floating-note-title">
-                      Title
-                    </label>
-                    <div className={styles.titleActions}>
-                      {/* AI button — opens the App Guide panel */}
-                      <button
-                        type="button"
-                        className={`app-btn app-btn--secondary ${styles.aiButton}`}
-                        onClick={openAiTab}
-                        title="Open App Guide — ask questions about the system"
-                        aria-label="Open AI App Guide"
-                      >
-                        AI
-                      </button>
-                      {!presentationDemo && (
-                        <>
-                          <button
-                            type="button"
-                            className={`app-btn app-btn--secondary ${styles.shareButton}`}
-                            onClick={openShareModal}
-                            disabled={!activeNoteOwnedByUser}
-                          >
-                            Share
-                          </button>
-                          <button
-                            type="button"
-                            role="switch"
-                            aria-checked={Boolean(activeNote.isGlobal)}
-                            aria-label="Toggle global note visibility"
-                            className={`app-btn app-btn--secondary ${styles.visibilitySwitch} ${
-                              activeNote.isGlobal ? styles.visibilitySwitchOn : ""
-                            }`}
-                            onClick={() => onToggleGlobal(!activeNote.isGlobal)}
-                            disabled={!activeNoteOwnedByUser}
-                          >
-                            {activeNote.isGlobal ? "ON" : "OFF"}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                {/* Title + per-note actions share one wrapping toolbar row */}
+                <div className={styles.titleRow}>
                   <input
                     id="floating-note-title"
-                    className={`app-input ${styles.input} ${styles.titleInput}`}
+                    className={`app-input ${styles.titleInput}`}
                     value={activeNote.title || ""}
                     onChange={(event) => onChangeTitle(event.target.value)}
                     onBlur={() => onBlurSave(activeNote.noteId)}
-                    placeholder="Title"
+                    placeholder="Note title"
+                    aria-label="Note title"
                     disabled={activeNoteReadOnly}
                   />
+                  <div className={styles.titleActions}>
+                    {!presentationDemo && (
+                      <button
+                        type="button"
+                        className={`app-btn app-btn--secondary app-btn--sm ${styles.shareButton}`}
+                        onClick={openShareModal}
+                        disabled={!activeNoteOwnedByUser}
+                        title="Share this note with other users"
+                      >
+                        Share
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className={styles.fieldGrow}>
-                  <label className={`${styles.label} ${styles.descriptionLabel}`} htmlFor="floating-note-description">
-                    Description
-                  </label>
                   <div
                     id="floating-note-description"
+                    aria-label="Note description"
                     ref={descriptionInputRef}
                     className={`app-input themed-scrollbar ${styles.richEditor} ${
                       activeNoteReadOnly ? styles.richEditorReadOnly : ""
@@ -1301,14 +1277,17 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
             {activeView === "notes" && error && <div className={styles.error}>{error}</div>}
           </div>
 
-          <div className={styles.resizeHandle} onPointerDown={startResize} />
-        </section>
+        </LayerSurface>
       )}
 
       {isShareModalOpen && (
         <div className={styles.shareOverlay} onClick={closeShareModal}>
-          <section
-            className={`app-section-card ${styles.shareModal}`}
+          <LayerSurface
+            as="section"
+            className={styles.shareModal}
+            radius="var(--section-card-radius)"
+            padding="var(--section-card-padding)"
+            gap="var(--layout-card-gap)"
             role="dialog"
             aria-label="Share note"
             onClick={(event) => event.stopPropagation()}
@@ -1331,7 +1310,13 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
               </button>
             </div>
 
-            <div className={`${styles.shareUserList} themed-scrollbar`} aria-busy={isShareLoading ? "true" : "false"}>
+            <LayerTheme
+              className={`${styles.shareUserList} themed-scrollbar`}
+              radius="var(--radius-sm)"
+              padding="0"
+              gap="0"
+              aria-busy={isShareLoading ? "true" : "false"}
+            >
               {isShareLoading && <div className={styles.shareEmpty}>Loading users...</div>}
               {!isShareLoading && filteredShareUsers.length === 0 && (
                 <div className={styles.shareEmpty}>No users found</div>
@@ -1352,8 +1337,8 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
                     </label>
                   );
                 })}
-            </div>
-          </section>
+            </LayerTheme>
+          </LayerSurface>
         </div>
       )}
     </div>

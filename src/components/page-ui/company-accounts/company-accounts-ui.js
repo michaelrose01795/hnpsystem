@@ -8,6 +8,7 @@ export default function CompanyAccountsIndexPageUi(props) {
     DevLayoutSection,
     ProtectedRoute,
     SearchBar,
+    TabGroup,
     accounts,
     activeTab,
     feedback,
@@ -43,29 +44,13 @@ export default function CompanyAccountsIndexPageUi(props) {
               gap: "12px",
               flexWrap: "wrap"
             }}>
-              <DevLayoutSection sectionKey="company-accounts-tab-row" sectionType="tab-row" parentKey="company-accounts-page-shell">
-                <div className="app-layout-tab-row" style={{
-                  display: "flex",
-                  gap: "6px",
-                  width: "100%",
-                  overflowX: "auto",
-                  flexShrink: 0,
-                  scrollbarWidth: "thin",
-                  scrollbarColor: "var(--scrollbar-thumb) transparent",
-                  scrollBehavior: "smooth",
-                  WebkitOverflowScrolling: "touch"
-                }}>
-                {tabs.map(tab => {
-                  const isActive = tab.id === activeTab;
-                  return <DevLayoutSection key={tab.id} as="button" sectionKey={`company-accounts-tab-${tab.id}`} sectionType="tab-chip" parentKey="company-accounts-tab-row" className={`app-btn ${isActive ? "app-btn--primary" : "app-btn--secondary"} app-btn--pill app-btn--sm`} type="button" onClick={() => setActiveTab(tab.id)} style={{
-                    flex: "0 0 auto",
-                    whiteSpace: "nowrap"
-                  }}>
-                      {tab.label}
-                    </DevLayoutSection>;
-                })}
-                </div>
-              </DevLayoutSection>
+              <TabGroup
+                items={tabs.map(tab => ({ value: tab.id, label: tab.label }))}
+                value={activeTab}
+                onChange={setActiveTab}
+                ariaLabel="Company accounts views"
+                devSectionKey="company-accounts-tab-row"
+                devSectionParent="company-accounts-page-shell" />
               {activeTab === "companies" && !showForm && <DevLayoutSection sectionKey="company-accounts-company-toolbar" sectionType="filter-row" parentKey="company-accounts-page-shell" style={{
                 flex: "1 1 420px",
                 minWidth: 0
@@ -82,7 +67,7 @@ export default function CompanyAccountsIndexPageUi(props) {
                     minWidth: "220px"
                   }} />
                   {permissions.canCreateAccount && <DevLayoutSection sectionKey="company-accounts-add-account-button" sectionType="floating-action" parentKey="company-accounts-company-toolbar">
-                      <Button type="button" variant="primary" pill onClick={() => setShowForm(true)} style={{
+                      <Button type="button" variant="primary" onClick={() => setShowForm(true)} style={{
                         flex: "0 0 auto"
                       }}>
                         Add new account
@@ -103,43 +88,14 @@ export default function CompanyAccountsIndexPageUi(props) {
             await handleCreate(values);
             fetchAccounts();
           }} onCancel={() => setShowForm(false)} /> : <>
-                  {feedback && !accounts.length && !loading && <p style={{
-              margin: 0,
-              color: "var(--text-1)"
+                  {feedback && !accounts.length && !loading && <p className="app-status-message app-status-message--info" style={{
+              margin: 0
             }}>{feedback}</p>}
                   {renderList()}
                 </>}
             </> : renderLedgerTab()}
           </div>
         </DevLayoutSection>
-        <style jsx>{`
-          .company-accounts-row:hover .company-accounts-row-surface,
-          .company-accounts-row:focus-visible .company-accounts-row-surface {
-            background: rgba(var(--primary-rgb), 0.1) !important;
-            box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.16);
-          }
-
-          .company-accounts-row:focus-visible {
-            outline: none;
-          }
-
-          .company-accounts-meta-pill {
-            pointer-events: none;
-            max-width: 100%;
-            color: var(--primary);
-            background: var(--control-bg);
-          }
-
-          .company-accounts-account-pill {
-            font-weight: 700;
-          }
-
-          @media (max-width: 900px) {
-            .company-accounts-row {
-              align-items: flex-start !important;
-            }
-          }
-        `}</style>
       </>
     </ProtectedRoute>; // render extracted page section.
     default:

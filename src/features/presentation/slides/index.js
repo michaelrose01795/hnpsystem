@@ -2,7 +2,6 @@ import { hasAnyRole, normalizeRoles } from "@/lib/auth/roles";
 import { validateSlide } from "./schema";
 
 // Existing slides
-import { dashboardSlide } from "./definitions/dashboard";
 import { jobCardsListSlide } from "./definitions/jobCardsList";
 import { jobCreateSlide } from "./definitions/jobCreate";
 import { appointmentsSlide } from "./definitions/appointments";
@@ -124,7 +123,6 @@ import { vhcCustomerSlide } from "./definitions/vhcCustomer";
 import { jobCardsIndexSlide, jobCardsAppointmentsSlide } from "./definitions/jobCardsExtras";
 
 export const ALL_SLIDES = [
-  dashboardSlide,
   jobCardsListSlide,
   jobCreateSlide,
   appointmentsSlide,

@@ -61,6 +61,15 @@ const getDueDateDisplayValue = (invoice) => {
   return invoiceDate.toLocaleDateString("en-GB");
 };
 
+// Invoice status → staffglobal .app-badge tone modifier.
+const invoiceStatusToneClass = (status) => {
+  const s = String(status || "").toLowerCase();
+  if (s === "paid" || s === "settled") return "app-badge--success";
+  if (s === "overdue") return "app-badge--danger";
+  if (s === "cancelled" || s === "void") return "app-badge--neutral";
+  return "app-badge--accent-soft"; // Draft, Issued, Pending, etc.
+};
+
 const isInvoiceOverdue = (invoice) => {
   if (!invoice) return false;
   const status = invoice.payment_status || invoice.status || "";
@@ -74,7 +83,7 @@ const isInvoiceOverdue = (invoice) => {
   if (Number.isNaN(due.getTime())) return false;
   return due.getTime() < Date.now();
 };
-export default function InvoiceTable({ invoices, filters, onFilterChange, pagination, onPageChange, onExport, loading, accentSurface = false, navigationDisabled = false }) {
+export default function InvoiceTable({ invoices, filters, onFilterChange, pagination, onPageChange, onExport, loading, accentSurface = false, navigationDisabled = false, showHeader = true }) {
   const Layer = accentSurface ? LayerTheme : LayerSurface;
   const router = useRouter();
   void onPageChange;
@@ -131,6 +140,7 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
       parentKey="accounts-invoices-table"
       style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
+      {showHeader &&
       <DevLayoutSection sectionKey="accounts-invoices-table-header" sectionType="content-card" parentKey="accounts-invoices-table-card">
         <header style={{ display: "grid", gridTemplateColumns: "auto minmax(280px, 1fr) auto", alignItems: "center", gap: "12px" }}>
           <DevLayoutSection sectionKey="accounts-invoices-table-title" sectionType="content-card" parentKey="accounts-invoices-table-header">
@@ -173,18 +183,24 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
           </DevLayoutSection>
         </header>
       </DevLayoutSection>
+      }
       <DevLayoutSection sectionKey="accounts-invoices-table-scroll" sectionType="content-card" parentKey="accounts-invoices-table-card">
-        <div style={{ overflowX: "auto", overflowY: filteredInvoices.length > 10 ? "auto" : "visible", maxHeight: filteredInvoices.length > 10 ? "640px" : "none" }}>
-          <table data-dev-section-key="accounts-invoices-data-table" data-dev-section-type="data-table" data-dev-section-parent="accounts-invoices-table-card" style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead data-dev-section-key="accounts-invoices-data-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="accounts-invoices-data-table" style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-1)" }}>
+        <div className="app-table-shell-scroll" style={{ overflowX: "auto", overflowY: filteredInvoices.length > 10 ? "auto" : "visible", maxHeight: filteredInvoices.length > 10 ? "640px" : "none" }}>
+          <table
+            data-dev-section-key="accounts-invoices-data-table"
+            data-dev-section-type="data-table"
+            data-dev-section-parent="accounts-invoices-table-card"
+            className="app-data-table app-table-shell app-table-shell--with-headings"
+            style={{ minWidth: "880px" }}>
+            <thead data-dev-section-key="accounts-invoices-data-table-headings" data-dev-section-type="table-headings" data-dev-section-parent="accounts-invoices-data-table">
             <tr>
-              <th style={{ textAlign: "left", padding: "12px" }}>Invoice</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Customer</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Account</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Job</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Grand Total</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Status</th>
-              <th style={{ textAlign: "left", padding: "12px" }}>Due</th>
+              <th>Invoice</th>
+              <th>Customer</th>
+              <th>Account</th>
+              <th>Job</th>
+              <th>Grand Total</th>
+              <th>Status</th>
+              <th>Due</th>
             </tr>
             </thead>
             <tbody data-dev-section-key="accounts-invoices-data-table-rows" data-dev-section-type="table-rows" data-dev-section-parent="accounts-invoices-data-table">
@@ -215,19 +231,25 @@ export default function InvoiceTable({ invoices, filters, onFilterChange, pagina
                     tabIndex={navigationDisabled ? undefined : 0}
                     role={navigationDisabled ? undefined : "button"}
                     aria-label={navigationDisabled ? undefined : `Open invoice ${getInvoiceDisplayValue(invoice)}`}
-                    style={{ borderBottom: "1px solid var(--separating-line)", background: hoveredInvoiceId === invoice.invoice_id ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)", transition: "background-color 0.18s ease", cursor: navigationDisabled ? "default" : "pointer" }}>
+                    style={{ background: hoveredInvoiceId === invoice.invoice_id ? "rgba(var(--primary-rgb), 0.12)" : "transparent", transition: "background-color 0.18s ease", cursor: navigationDisabled ? "default" : "pointer" }}>
 
-                  <td style={{ padding: "12px", fontWeight: 600 }}>{getInvoiceDisplayValue(invoice)}</td>
-                  <td style={{ padding: "12px" }}>{getCustomerDisplayValue(invoice)}</td>
-                  <td style={{ padding: "12px" }}>{getAccountDisplayValue(invoice)}</td>
-                  <td style={{ padding: "12px" }}>{invoice.job_number || "—"}</td>
-                  <td style={{ padding: "12px", fontWeight: 600 }}>{currencyFormatter.format(getInvoiceAmountValue(invoice))}</td>
-                  <td style={{ padding: "12px" }}>
-                    <span style={{ padding: "4px 12px", borderRadius: "var(--radius-pill)", background: "rgba(var(--primary-rgb), 0.12)", color: "var(--text-1)", fontWeight: 600 }}>{invoice.payment_status || invoice.status || "Draft"}</span>
+                  <td style={{ fontWeight: 600 }}>{getInvoiceDisplayValue(invoice)}</td>
+                  <td>{getCustomerDisplayValue(invoice)}</td>
+                  <td>{getAccountDisplayValue(invoice)}</td>
+                  <td>{invoice.job_number || "—"}</td>
+                  <td style={{ fontWeight: 600 }}>{currencyFormatter.format(getInvoiceAmountValue(invoice))}</td>
+                  <td>
+                    {/* .app-badge — staffglobal status bubble; rule in
+                        staffglobal.css snaps it to 32px inside .app-data-table. */}
+                    <span className={`app-badge ${invoiceStatusToneClass(invoice.payment_status || invoice.status)}`}>
+                      {invoice.payment_status || invoice.status || "Draft"}
+                    </span>
                   </td>
-                  <td style={{ padding: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-                    {getDueDateDisplayValue(invoice)}
-                    {overdue && <span style={{ background: "var(--warning-surface)", color: "var(--warning-text)", borderRadius: "var(--radius-pill)", padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700 }}>Overdue</span>}
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      {getDueDateDisplayValue(invoice)}
+                      {overdue && <span className="app-badge app-badge--warning">Overdue</span>}
+                    </div>
                   </td>
                 </tr>);
 
@@ -248,7 +270,8 @@ InvoiceTable.propTypes = {
   onExport: PropTypes.func.isRequired,
   loading: PropTypes.bool,
   accentSurface: PropTypes.bool,
-  navigationDisabled: PropTypes.bool
+  navigationDisabled: PropTypes.bool,
+  showHeader: PropTypes.bool
 };
 InvoiceTable.defaultProps = {
   invoices: [],
@@ -256,5 +279,6 @@ InvoiceTable.defaultProps = {
   pagination: { page: 1, pageSize: 20, total: 0 },
   loading: false,
   accentSurface: false,
-  navigationDisabled: false
+  navigationDisabled: false,
+  showHeader: true
 };

@@ -281,7 +281,7 @@ function AppWrapper({ Component, pageProps }) {
   ); // render the requested page inside its (persistent) layout shell
 }
 
-// Redirects unauthorised users back to /dashboard whenever the route
+// Redirects unauthorised users back to /newsfeed whenever the route
 // changes (or on first paint). Pages reachable via the user's filtered
 // sidebar/topbar are allowed; everything else is rejected. See
 // src/lib/auth/pageAccess.js for the rule.
@@ -294,8 +294,8 @@ function PageAccessGuard({ pathname }) {
     // Skip the guard while the user is still being hydrated or on routes
     // that always exit through their own auth flow.
     if (canAccessPath(pathname, user?.roles)) return;
-    if (router.pathname === "/dashboard") return;
-    router.replace("/dashboard");
+    if (router.pathname === "/newsfeed") return;
+    router.replace("/newsfeed");
   }, [pathname, user, loading, router]);
   return null;
 }

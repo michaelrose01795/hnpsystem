@@ -15,7 +15,7 @@ export default function UnauthorizedPageUi(props) {
       <h1>Unauthorized</h1>
       <p>You do not have permission to view that page.</p>
       <p>
-        <Link href="/dashboard">Back to dashboard</Link>
+        <Link href="/newsfeed">Back to news feed</Link>
       </p>
     </div>; // render extracted page section.
     default:

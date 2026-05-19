@@ -2,6 +2,13 @@
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
+// Status → staffglobal .app-badge tone modifier.
+const statusToneClass = (status) => {
+  if (status === "Frozen") return "app-badge--warning";
+  if (status === "Closed") return "app-badge--danger";
+  return "app-badge--success";
+};
+
 export default function ViewAccountPageUi(props) {
   const {
     Button,
@@ -23,13 +30,17 @@ export default function ViewAccountPageUi(props) {
     invoiceFilters,
     invoices,
     loading,
+    notFound,
     permissions,
     router,
     setFilters,
     setInvoiceFilters,
-    statusBadgeStyles,
     transactions,
   } = props; // receive page logic props.
+
+  // The page sits in the skeleton state until we have a definitive answer —
+  // either an account loaded, or the server confirmed it's not there.
+  const showSkeleton = loading || (!account && !notFound);
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -41,9 +52,10 @@ export default function ViewAccountPageUi(props) {
         flexDirection: "column",
         gap: "20px"
       }}>
-          {loading && <>
+          {showSkeleton && <>
               <SkeletonKeyframes />
-              <LayerSurface as="section" gap="14px">
+              {/* Header skeleton — mirrors the real --theme header card. */}
+              <LayerTheme as="section" gap="14px">
                 <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -61,42 +73,45 @@ export default function ViewAccountPageUi(props) {
                 </div>
                 <SkeletonBlock width="60%" height="12px" />
                 <SkeletonBlock width="50%" height="12px" />
-              </LayerSurface>
-              <LayerSurface as="section" style={{
+              </LayerTheme>
+              {/* Overview skeleton — --theme card holding --surface metric tiles. */}
+              <LayerTheme as="section" style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: 16
           }}>
                 {Array.from({
               length: 4
-            }).map((_, i) => <LayerTheme key={i} radius="var(--radius-sm)" padding="16px" gap="8px">
+            }).map((_, i) => <LayerSurface key={i} radius="var(--radius-sm)" padding="16px" gap="8px">
                     <SkeletonBlock width="50%" height="10px" />
                     <SkeletonBlock width="80%" height="22px" />
                     <SkeletonBlock width="40%" height="10px" />
-                  </LayerTheme>)}
-              </LayerSurface>
+                  </LayerSurface>)}
+              </LayerTheme>
             </>}
-          {!loading && account && <>
-              <LayerSurface as="section" sectionKey="account-view-header" sectionType="content-card" parentKey="account-view-page-shell" gap="16px">
+          {!showSkeleton && account && <>
+              {/* Header — --theme card; identity, chips and actions on one wrapping row. */}
+              <LayerTheme as="section" sectionKey="account-view-header" sectionType="content-card" parentKey="account-view-page-shell" gap="16px">
                 <div style={{
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              gap: "16px",
-              flexWrap: "wrap"
+              flexWrap: "wrap",
+              alignItems: "center",
+              gap: "12px"
             }}>
-                  <div>
-                    <h1 style={{
-                  margin: 0,
-                  fontSize: "2rem",
-                  color: "var(--text-1)"
-                }}>{account.billing_name || account.account_id}</h1>
-                  </div>
+                  <h1 style={{
+                margin: 0,
+                fontSize: "clamp(1.3rem, 2.4vw, 1.75rem)",
+                color: "var(--text-1)"
+              }}>{account.billing_name || account.account_id}</h1>
+                  <span className="app-badge app-badge--neutral app-badge--control">ID: {account.account_id}</span>
+                  <span className="app-badge app-badge--neutral app-badge--control">Customer: {account.customer_id || "—"}</span>
+                  <span className="app-badge app-badge--neutral app-badge--control">Type: {account.account_type}</span>
+                  <span className={`app-badge app-badge--control ${statusToneClass(account.status)}`}>{account.status}</span>
                   <div style={{
                 display: "flex",
                 gap: "10px",
                 flexWrap: "wrap",
-                justifyContent: "flex-end"
+                marginLeft: "auto"
               }}>
                     <Button type="button" variant="secondary" onClick={handleTransactionsPage}>Transactions</Button>
                     <Button type="button" variant="secondary" onClick={handleInvoicesPage}>Invoices</Button>
@@ -104,117 +119,111 @@ export default function ViewAccountPageUi(props) {
                     {permissions.canFreezeAccount && <Button type="button" onClick={handleFreezeToggle}>{account.status === "Frozen" ? "Unfreeze" : "Freeze"}</Button>}
                   </div>
                 </div>
-                <div style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-              flexWrap: "wrap"
-            }}>
-                  <span className="app-btn app-btn--secondary app-btn--sm" style={{
-                cursor: "default"
-              }}>ID: {account.account_id}</span>
-                  <span className="app-btn app-btn--secondary app-btn--sm" style={{
-                cursor: "default"
-              }}>Customer: {account.customer_id || "—"}</span>
-                  <span className="app-btn app-btn--secondary app-btn--sm" style={{
-                cursor: "default"
-              }}>Type: {account.account_type}</span>
-                  <span className="app-btn app-btn--sm" style={{
-                cursor: "default",
-                ...(statusBadgeStyles[account.status] || {
-                  background: "var(--surface)",
-                  color: "var(--text-1)"
-                })
-              }}>{account.status}</span>
-                </div>
-              </LayerSurface>
-              <LayerSurface as="section" sectionKey="account-view-overview-card" sectionType="content-card" parentKey="account-view-page-shell" gap="18px">
-                <DevLayoutSection sectionKey="account-view-metrics-grid" sectionType="content-card" parentKey="account-view-overview-card">
-                <div style={{
+              </LayerTheme>
+              {/* Overview — --theme card holding three --surface sections. */}
+              <LayerTheme as="section" sectionKey="account-view-overview-card" sectionType="content-card" parentKey="account-view-page-shell" gap="16px">
+                <LayerSurface
+              as="section"
+              sectionKey="account-view-metrics-grid"
+              sectionType="content-card"
+              parentKey="account-view-overview-card"
+              radius="var(--radius-sm)"
+              padding="16px">
+                  <div style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
                 gap: "16px"
               }}>
-                  {detailCard("Balance", currencyFormatter.format(Number(account.balance || 0)))}
-                  {detailCard("Credit Limit", currencyFormatter.format(Number(account.credit_limit || 0)))}
-                  {detailCard("Credit Terms", `${account.credit_terms || 0} days`)}
-                  {detailCard("Created", account.created_at ? new Date(account.created_at).toLocaleDateString("en-GB") : "—")}
-                </div>
-                </DevLayoutSection>
-                <DevLayoutSection sectionKey="account-view-billing-section" sectionType="content-card" parentKey="account-view-overview-card">
-                <LayerTheme radius="var(--radius-sm)" padding="16px" gap="14px">
-                  <h2 style={{
-                  margin: 0,
-                  color: "var(--text-1)",
-                  fontSize: "1.2rem"
-                }}>Billing Information</h2>
-                  <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "12px"
-                }}>
-                    <div><p style={{
-                      margin: 0,
-                      color: "var(--text-1)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      fontSize: "0.75rem"
-                    }}>Name</p><strong style={{
-                      display: "block",
-                      marginTop: "6px",
-                      color: "var(--text-1)"
-                    }}>{account.billing_name || "—"}</strong></div>
-                    <div><p style={{
-                      margin: 0,
-                      color: "var(--text-1)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      fontSize: "0.75rem"
-                    }}>Email</p><strong style={{
-                      display: "block",
-                      marginTop: "6px",
-                      color: "var(--text-1)"
-                    }}>{account.billing_email || "—"}</strong></div>
-                    <div><p style={{
-                      margin: 0,
-                      color: "var(--text-1)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      fontSize: "0.75rem"
-                    }}>Phone</p><strong style={{
-                      display: "block",
-                      marginTop: "6px",
-                      color: "var(--text-1)"
-                    }}>{account.billing_phone || "—"}</strong></div>
-                    <div><p style={{
-                      margin: 0,
-                      color: "var(--text-1)",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      fontSize: "0.75rem"
-                    }}>Address</p><strong style={{
-                      display: "block",
-                      marginTop: "6px",
-                      color: "var(--text-1)"
-                    }}>{[account.billing_address_line1, account.billing_address_line2, account.billing_city, account.billing_postcode, account.billing_country].filter(Boolean).join(", ") || "—"}</strong></div>
+                    {detailCard("Balance", currencyFormatter.format(Number(account.balance || 0)))}
+                    {detailCard("Credit Limit", currencyFormatter.format(Number(account.credit_limit || 0)))}
+                    {detailCard("Credit Terms", `${account.credit_terms || 0} days`)}
+                    {detailCard("Created", account.created_at ? new Date(account.created_at).toLocaleDateString("en-GB") : "—")}
                   </div>
-                </LayerTheme>
-                </DevLayoutSection>
-                <DevLayoutSection sectionKey="account-view-notes-section" sectionType="content-card" parentKey="account-view-overview-card">
-                <LayerTheme radius="var(--radius-sm)" padding="16px" gap="12px">
+                </LayerSurface>
+                <LayerSurface
+              as="section"
+              sectionKey="account-view-billing-section"
+              sectionType="content-card"
+              parentKey="account-view-overview-card"
+              radius="var(--radius-sm)"
+              padding="16px"
+              gap="14px">
                   <h2 style={{
-                  margin: 0,
-                  color: "var(--text-1)",
-                  fontSize: "1.2rem"
-                }}>Internal Notes</h2>
+                margin: 0,
+                color: "var(--text-1)",
+                fontSize: "1.2rem"
+              }}>Billing Information</h2>
+                  <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "12px"
+              }}>
+                    <div><p style={{
+                    margin: 0,
+                    color: "var(--text-1)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    fontSize: "0.75rem"
+                  }}>Name</p><strong style={{
+                    display: "block",
+                    marginTop: "6px",
+                    color: "var(--text-1)"
+                  }}>{account.billing_name || "—"}</strong></div>
+                    <div><p style={{
+                    margin: 0,
+                    color: "var(--text-1)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    fontSize: "0.75rem"
+                  }}>Email</p><strong style={{
+                    display: "block",
+                    marginTop: "6px",
+                    color: "var(--text-1)"
+                  }}>{account.billing_email || "—"}</strong></div>
+                    <div><p style={{
+                    margin: 0,
+                    color: "var(--text-1)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    fontSize: "0.75rem"
+                  }}>Phone</p><strong style={{
+                    display: "block",
+                    marginTop: "6px",
+                    color: "var(--text-1)"
+                  }}>{account.billing_phone || "—"}</strong></div>
+                    <div><p style={{
+                    margin: 0,
+                    color: "var(--text-1)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    fontSize: "0.75rem"
+                  }}>Address</p><strong style={{
+                    display: "block",
+                    marginTop: "6px",
+                    color: "var(--text-1)"
+                  }}>{[account.billing_address_line1, account.billing_address_line2, account.billing_city, account.billing_postcode, account.billing_country].filter(Boolean).join(", ") || "—"}</strong></div>
+                  </div>
+                </LayerSurface>
+                <LayerSurface
+              as="section"
+              sectionKey="account-view-notes-section"
+              sectionType="content-card"
+              parentKey="account-view-overview-card"
+              radius="var(--radius-sm)"
+              padding="16px"
+              gap="12px">
+                  <h2 style={{
+                margin: 0,
+                color: "var(--text-1)",
+                fontSize: "1.2rem"
+              }}>Internal Notes</h2>
                   <p style={{
-                  margin: 0,
-                  color: "var(--text-1)",
-                  lineHeight: 1.6
-                }}>{account.notes || "No notes recorded."}</p>
-                </LayerTheme>
-                </DevLayoutSection>
-              </LayerSurface>
+                margin: 0,
+                color: "var(--text-1)",
+                lineHeight: 1.6
+              }}>{account.notes || "No notes recorded."}</p>
+                </LayerSurface>
+              </LayerTheme>
               <DevLayoutSection sectionKey="account-view-transactions" sectionType="data-table" parentKey="account-view-page-shell">
               <TransactionTable transactions={transactions} loading={loading} filters={filters} onFilterChange={setFilters} pagination={{
               page: 1,
@@ -230,9 +239,8 @@ export default function ViewAccountPageUi(props) {
             }} onPageChange={handleInvoicesPage} onExport={() => router.push(`/accounts/invoices?accountId=${account.account_id}`)} loading={loading} accentSurface />
               </DevLayoutSection>
             </>}
-          {!loading && !account && <p style={{
-          color: "var(--danger)"
-        }}>Account not found.</p>}
+          {!showSkeleton && !account && notFound &&
+            <p className="app-status-message app-status-message--danger" style={{ margin: 0 }}>Account not found.</p>}
         </div>
         </DevLayoutSection>
       </>

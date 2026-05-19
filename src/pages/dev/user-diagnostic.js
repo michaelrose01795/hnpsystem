@@ -2084,6 +2084,10 @@ function GlobalUiShowcase() {
           font-size: 11px;
           font-weight: 600;
         }
+        .user-diagnostic-showcase .showcase-tooltip-active.app-hover-tooltip[data-tooltip]::after {
+          opacity: 1;
+          transform: translate(-50%, 0);
+        }
         .showcase-card-note {
           margin: 0;
           font-size: 11px;
@@ -3465,7 +3469,7 @@ function GlobalUiShowcase() {
       <ShowcaseCategoryHeader category="Tooltips" visible={visibleCategorySet.has("Tooltips")} />
       {isSectionVisible("tooltips-native") &&
       <ShowcaseSection title="Tooltips (native title=)" itemKey="tooltips-native" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
           <button
             type="button"
             className="app-btn app-btn--primary app-hover-tooltip"
@@ -3477,6 +3481,19 @@ function GlobalUiShowcase() {
             
             Hover me for a description
           </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)", paddingBottom: "48px" }}>
+            <button
+              type="button"
+              className="app-btn app-btn--primary app-hover-tooltip showcase-tooltip-active"
+              data-tooltip="Active preview: this is the same shared tooltip shown without needing hover or keyboard focus."
+              style={{
+                cursor: "help",
+                width: "fit-content"
+              }}>
+              
+              Always-visible active preview
+            </button>
+          </div>
           <span style={{ fontSize: "11px", color: "var(--text-1)" }}>
             Styled hover text uses <code>.app-hover-tooltip</code> with <code>data-tooltip</code> so the display can follow the global button system.
           </span>

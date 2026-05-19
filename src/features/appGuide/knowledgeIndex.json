@@ -17,17 +17,6 @@
       "relatedIds": ["page-messages", "role-admin-manager"]
     },
     {
-      "id": "page-dashboard",
-      "type": "page",
-      "title": "Retail Dashboard",
-      "keywords": ["dashboard", "retail", "overview", "stats", "summary", "home"],
-      "route": "/dashboard",
-      "roles": ["service manager", "workshop manager", "after sales director"],
-      "description": "The Retail Dashboard gives department managers a real-time overview of job card activity, staff, and performance.",
-      "details": "This page is available to Service Managers, Workshop Managers, and After Sales Directors. It aggregates job card counts, current workflow status, and team utilisation. Each role sees a dashboard tailored to their department's key metrics.",
-      "relatedIds": ["page-job-cards-list", "role-service-manager", "role-workshop-manager"]
-    },
-    {
       "id": "page-messages",
       "type": "page",
       "title": "Messages",
@@ -472,8 +461,8 @@
       "route": null,
       "roles": ["service manager"],
       "description": "Service Managers oversee service department operations including job card management and parts goods-in.",
-      "details": "Service Managers can access: Retail Dashboard, Next Jobs, Job Cards, and Goods In. They can see the full job card list for their department, manage the incoming job queue, and process parts deliveries. They cannot access HR or User Admin.",
-      "relatedIds": ["page-dashboard", "page-job-cards-list", "page-goods-in"]
+      "details": "Service Managers can access: Next Jobs, Job Cards, and Goods In. They can see the full job card list for their department, manage the incoming job queue, and process parts deliveries. They cannot access HR or User Admin.",
+      "relatedIds": ["page-job-cards-list", "page-goods-in"]
     },
     {
       "id": "role-workshop-manager",
@@ -483,8 +472,8 @@
       "route": null,
       "roles": ["workshop manager"],
       "description": "Workshop Managers run the workshop floor, managing job cards, clocking, consumables, and goods-in.",
-      "details": "Workshop Managers can access: Retail Dashboard, Next Jobs, Job Cards, Clocking, Consumables Tracker, and Goods In. They manage technician attendance through Clocking, oversee consumable usage, and handle parts receipts. They can see all job cards across the workshop.",
-      "relatedIds": ["page-dashboard", "page-clocking", "page-workshop-consumables-tracker", "page-goods-in"]
+      "details": "Workshop Managers can access: Next Jobs, Job Cards, Clocking, Consumables Tracker, and Goods In. They manage technician attendance through Clocking, oversee consumable usage, and handle parts receipts. They can see all job cards across the workshop.",
+      "relatedIds": ["page-clocking", "page-workshop-consumables-tracker", "page-goods-in"]
     },
     {
       "id": "role-aftersales-manager",

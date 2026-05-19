@@ -26,6 +26,9 @@ export default function AccountsDashboardUi(props) {
     JobList,
     MetricCard,
     TrendBlock,
+    TransactionTable,
+    AccountBalanceTable,
+    formatCurrency,
     data,
     error,
     loading,
@@ -41,11 +44,17 @@ export default function AccountsDashboardUi(props) {
         shell
         backgroundToken="transparent"
         data-dev-text-preview="Accounts dashboard"
-        style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}
+        style={{
+          display: "grid",
+          // 50/50 two-column split on tablet/desktop; collapses to one column under ~840px.
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
+          gap: "var(--layout-card-gap)",
+          alignItems: "start"
+        }}
       >
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-1" title="Invoice stats">
           {loading ? <p style={{
-        color: "var(--text-2)"
+        color: "var(--text-1)"
       }}>Loading financial KPIs…</p> : error ? <p style={{
         color: "var(--text-accent)"
       }}>{error}</p> : <div style={{
@@ -59,9 +68,42 @@ export default function AccountsDashboardUi(props) {
             </div>}
         </ThemeSection>
 
+        <ThemeSection sectionKey="dashboard-accounts-auto-content-card-cashflow" title="Cashflow snapshot" subtitle="Movement across customer accounts in the last 7 days">
+          {loading ? <p style={{
+        color: "var(--text-1)"
+      }}>Loading cashflow…</p> : error ? <p style={{
+        color: "var(--text-accent)"
+      }}>{error}</p> : <div style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "16px"
+      }}>
+              <MetricCard label="Revenue received" value={formatCurrency(data.weeklyRevenue)} helper={`${data.paymentsReceived} payments in 7 days`} />
+              <MetricCard label="Money out" value={formatCurrency(data.weeklyOutgoing)} helper="Debits in 7 days" />
+              <MetricCard label="Outstanding debt" value={formatCurrency(data.outstandingDebt)} helper="Owed across active accounts" />
+              <MetricCard label="Accounts at risk" value={data.accountsAtRisk} helper="At/over 80% of credit limit" />
+            </div>}
+        </ThemeSection>
+
+        <ThemeSection sectionKey="dashboard-accounts-auto-content-card-transactions" title="Recent transactions" subtitle="Latest entries posted to customer accounts">
+          {loading ? <p style={{
+        color: "var(--text-1)"
+      }}>Loading transactions…</p> : error ? <p style={{
+        color: "var(--text-accent)"
+      }}>{error}</p> : <TransactionTable transactions={data.recentTransactions} />}
+        </ThemeSection>
+
+        <ThemeSection sectionKey="dashboard-accounts-auto-content-card-balances" title="Credit watchlist" subtitle="Accounts ranked by how much of their credit limit is used">
+          {loading ? <p style={{
+        color: "var(--text-1)"
+      }}>Loading account balances…</p> : error ? <p style={{
+        color: "var(--text-accent)"
+      }}>{error}</p> : <AccountBalanceTable accounts={data.creditAccounts} />}
+        </ThemeSection>
+
         <ThemeSection sectionKey="dashboard-accounts-auto-content-card-2" title="Outstanding jobs" subtitle="Most recent completions without invoice">
           {loading ? <p style={{
-        color: "var(--text-2)"
+        color: "var(--text-1)"
       }}>Loading outstanding jobs…</p> : error ? <p style={{
         color: "var(--text-accent)"
       }}>{error}</p> : <JobList jobs={data.outstandingJobs} />}

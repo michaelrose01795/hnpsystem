@@ -6,6 +6,7 @@ export default function InvoicesPageUi(props) {
     DevLayoutSection,
     INVOICE_ROLES,
     InvoiceTable,
+    InvoiceTableToolbar,
     ProtectedRoute,
     filters,
     handleExport,
@@ -29,11 +30,11 @@ export default function InvoicesPageUi(props) {
       }}>
             <DevLayoutSection as="div" data-presentation="invoices-actions" sectionKey="accounts-invoices-header-actions" sectionType="toolbar" parentKey="accounts-invoices-page-shell" style={{
           display: "flex",
-          justifyContent: "flex-end",
           gap: "10px",
           flexWrap: "wrap",
           alignItems: "center"
         }}>
+              <InvoiceTableToolbar filters={filters} onFilterChange={setFilters} onExport={handleExport} />
               <Button type="button" variant="secondary" onClick={handleExport}>
                 Export
               </Button>
@@ -45,7 +46,7 @@ export default function InvoicesPageUi(props) {
               </Button>
             </DevLayoutSection>
             <DevLayoutSection data-presentation="invoices-table" sectionKey="accounts-invoices-table" sectionType="data-table" parentKey="accounts-invoices-page-shell">
-              <InvoiceTable invoices={invoices} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} loading={loading} accentSurface />
+              <InvoiceTable invoices={invoices} filters={filters} onFilterChange={setFilters} pagination={pagination} onPageChange={handlePageChange} onExport={handleExport} loading={loading} accentSurface showHeader={false} />
             </DevLayoutSection>
           </div>
         </DevLayoutSection>

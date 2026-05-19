@@ -28,13 +28,26 @@ const TOPBAR_LINKS = [
   { href: "/parts/goods-in", roles: PARTS_NAV_ROLE_SET },
 ];
 
+const ACCOUNTS_NAV_ROLE_SET = new Set(["accounts", "accounts manager"]);
+
+// Hard-coded mirror of the dynamic "Accounts" sidebar section built in
+// src/components/Layout.js (accountsSidebarSections). That section is added
+// at render time rather than living in config/navigation.js, so it is not
+// picked up by the sidebarSections walk below — mirror it here and keep the
+// two lists in sync if either changes.
+const ACCOUNTS_NAV_LINKS = [
+  { href: "/accounts", roles: ACCOUNTS_NAV_ROLE_SET },
+  { href: "/company-accounts", roles: ACCOUNTS_NAV_ROLE_SET },
+  { href: "/accounts/invoices", roles: ACCOUNTS_NAV_ROLE_SET },
+  { href: "/accounts/reports", roles: ACCOUNTS_NAV_ROLE_SET },
+];
+
 // Paths that any authenticated user can reach regardless of role. Covers
 // the auth flow, the user's own profile, dashboards (each user has their
 // own), the customer portal/website, presentation/slideshow, and the
 // public share routes.
 const ALWAYS_ALLOWED_EXACT = new Set([
   "/",
-  "/dashboard",
   "/login",
   "/loginPresentation",
   "/unauthorized",
@@ -186,6 +199,12 @@ export const getAccessibleNavPaths = (roles) => {
   }
 
   for (const link of TOPBAR_LINKS) {
+    if (hasMatchingRole(link.roles, userRoleSet)) {
+      accessible.add(link.href);
+    }
+  }
+
+  for (const link of ACCOUNTS_NAV_LINKS) {
     if (hasMatchingRole(link.roles, userRoleSet)) {
       accessible.add(link.href);
     }

@@ -74,13 +74,24 @@ function renderMarkdown(text) {
       continue;
     }
 
-    // Numbered list item
-    const numberedMatch = line.match(/^(\d+)\.\s+(.*)$/);
+    // Section heading — a line that is entirely bold
+    const headingMatch = line.match(/^\*\*(.+)\*\*$/);
+    if (headingMatch) {
+      elements.push(
+        <div key={key++} className={styles.mdHeading}>
+          {headingMatch[1]}
+        </div>
+      );
+      continue;
+    }
+
+    // Numbered list item — rendered as a numbered step row
+    const numberedMatch = line.match(/^(\d+)\.\s*(.*)$/);
     if (numberedMatch) {
       elements.push(
-        <div key={key++} style={{ paddingLeft: "4px" }}>
-          <span style={{ fontWeight: 600, marginRight: 6 }}>{numberedMatch[1]}.</span>
-          {renderInline(numberedMatch[2], key++)}
+        <div key={key++} className={styles.mdStep}>
+          <span className={styles.mdStepNum}>{numberedMatch[1]}</span>
+          <span className={styles.mdStepText}>{renderInline(numberedMatch[2], key++)}</span>
         </div>
       );
       continue;
@@ -89,9 +100,9 @@ function renderMarkdown(text) {
     // Bullet list item
     if (line.startsWith("• ") || line.startsWith("- ")) {
       elements.push(
-        <div key={key++} style={{ paddingLeft: "4px" }}>
-          <span style={{ marginRight: 6 }}>•</span>
-          {renderInline(line.slice(2), key++)}
+        <div key={key++} className={styles.mdBullet}>
+          <span className={styles.mdBulletDot} aria-hidden="true">•</span>
+          <span className={styles.mdStepText}>{renderInline(line.slice(2), key++)}</span>
         </div>
       );
       continue;
@@ -486,12 +497,21 @@ export default function AiGuidePanel({ userId, userRoles }) {
   // Handle input submission
   // ─────────────────────────────────────────────────────────────────────
 
+  // Collapse the auto-grown textarea back to its single 44px row.
+  const resetInputHeight = () => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "";
+      inputRef.current.style.overflowY = "";
+    }
+  };
+
   const handleInputKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       const text = inputValue.trim();
       if (text) {
         setInputValue("");
+        resetInputHeight();
         sendMessage(text);
       }
     }
@@ -501,6 +521,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
     const text = inputValue.trim();
     if (text) {
       setInputValue("");
+      resetInputHeight();
       sendMessage(text);
     }
   };
@@ -582,10 +603,23 @@ export default function AiGuidePanel({ userId, userRoles }) {
 
   const handleInputChange = (event) => {
     setInputValue(event.target.value);
-    // Auto-resize
+    // The box starts at a single 44px row, then grows by ONE line-height
+    // per extra wrapped line (not a full 44px). It stops growing after
+    // 3 lines and scrolls internally beyond that.
     const el = event.target;
+    const FIRST_ROW = 44;
+    const MAX_LINES = 3;
+    const cs = window.getComputedStyle(el);
+    const lineHeight = parseFloat(cs.lineHeight) || 22;
+    const vPadding = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 110)}px`;
+    const textHeight = el.scrollHeight - vPadding;
+    const rawLines = Math.max(1, Math.round(textHeight / lineHeight));
+    const lines = Math.min(MAX_LINES, rawLines);
+    el.style.height = `${FIRST_ROW + (lines - 1) * lineHeight}px`;
+    // Only show a scrollbar once the text exceeds the 3rd line — while
+    // it is still growing (lines 1-3) the box is sized to fit exactly.
+    el.style.overflowY = rawLines > MAX_LINES ? "auto" : "hidden";
   };
 
   // ─────────────────────────────────────────────────────────────────────
@@ -618,7 +652,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
             {/* Delete current session */}
             <button
               type="button"
-              className={styles.deleteSessionButton}
+              className={`app-btn app-btn--secondary ${styles.deleteSessionButton}`}
               onClick={handleDeleteSession}
               disabled={!currentSessionId}
               title="Delete this chat"
@@ -632,7 +666,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
         {/* New chat button */}
         <button
           type="button"
-          className={styles.newChatButton}
+          className={`app-btn app-btn--secondary ${styles.newChatButton}`}
           onClick={handleNewChat}
           disabled={isSending}
         >
@@ -669,7 +703,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
                 <button
                   key={q}
                   type="button"
-                  className={styles.suggestionChip}
+                  className={`app-btn app-btn--secondary ${styles.suggestionChip}`}
                   onClick={() => handleSuggestionClick(q)}
                 >
                   {q}
@@ -731,7 +765,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
                       <button
                         key={q}
                         type="button"
-                        className={styles.followUpChip}
+                        className={`app-btn app-btn--secondary ${styles.followUpChip}`}
                         onClick={() => handleSuggestionClick(q)}
                       >
                         {q}
@@ -773,7 +807,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
         <div className={styles.inputWrap}>
           <textarea
             ref={inputRef}
-            className={styles.input}
+            className={`app-input ${styles.input}`}
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
@@ -786,7 +820,7 @@ export default function AiGuidePanel({ userId, userRoles }) {
         </div>
         <button
           type="button"
-          className={styles.sendButton}
+          className={`app-btn app-btn--primary ${styles.sendButton}`}
           onClick={handleSendClick}
           disabled={!canSend}
           aria-label="Send message"

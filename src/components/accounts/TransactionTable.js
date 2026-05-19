@@ -11,7 +11,7 @@ import ToolbarRow from "@/components/ui/ToolbarRow";
 import Button from "@/components/ui/Button";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
-export default function TransactionTable({ transactions, loading, filters, onFilterChange, pagination, onPageChange, onExport, accentSurface = false }) {
+export default function TransactionTable({ transactions, loading, filters, onFilterChange, pagination, onPageChange, onExport, accentSurface = false, headerless = false }) {
   const Layer = accentSurface ? LayerTheme : LayerSurface;
   const [hoveredTransactionId, setHoveredTransactionId] = React.useState(null);
   const handleFilterChange = (event) => {
@@ -50,6 +50,9 @@ export default function TransactionTable({ transactions, loading, filters, onFil
 
   return (
     <Layer as="section" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* headerless: consumers (e.g. the transactions page) hoist these filters
+          into their own toolbar; the card then renders the table alone. */}
+      {!headerless &&
       <header style={{ display: "grid", gridTemplateColumns: "auto minmax(280px, 1fr) auto", alignItems: "center", gap: "12px" }}>
         <h3 style={{ margin: 0, fontSize: "1.1rem", color: "var(--text-1)" }}>Transactions</h3>
         <ToolbarRow style={{ minWidth: 0 }}>
@@ -89,6 +92,7 @@ export default function TransactionTable({ transactions, loading, filters, onFil
           <Button type="button" size="sm" onClick={onExport}>Export CSV</Button>
         </div>
       </header>
+      }
       <div style={{ overflowX: "auto", overflowY: filteredTransactions.length > 10 ? "auto" : "visible", maxHeight: filteredTransactions.length > 10 ? "640px" : "none" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-1)" }}>
@@ -143,12 +147,14 @@ TransactionTable.propTypes = {
   pagination: PropTypes.shape({ page: PropTypes.number, pageSize: PropTypes.number, total: PropTypes.number }),
   onPageChange: PropTypes.func.isRequired,
   onExport: PropTypes.func.isRequired,
-  accentSurface: PropTypes.bool
+  accentSurface: PropTypes.bool,
+  headerless: PropTypes.bool
 };
 TransactionTable.defaultProps = {
   transactions: [],
   loading: false,
   filters: { search: "", type: "", payment_method: "", from: "", to: "" },
   pagination: { page: 1, pageSize: 20, total: 0 },
-  accentSurface: false
+  accentSurface: false,
+  headerless: false
 };

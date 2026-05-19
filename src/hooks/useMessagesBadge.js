@@ -23,10 +23,14 @@ export function useMessagesBadge(userId) {
 
     try {
       const response = await fetch(`/api/messages/threads${buildQuery({ userId })}`);
-      const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload.message || "Unable to load conversations.");
+        // No session yet, or the user can't view threads — this badge is a
+        // best-effort poll, so just show no count instead of surfacing a
+        // runtime error.
+        setUnreadCount(0);
+        return;
       }
+      const payload = await response.json();
       const threads = Array.isArray(payload.data) ? payload.data : [];
       const totalUnread = threads.reduce(
         (sum, thread) => sum + (thread.hasUnread ? 1 : 0),

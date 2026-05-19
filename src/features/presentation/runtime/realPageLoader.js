@@ -32,7 +32,6 @@ const ROUTE_TO_MODULE = {
   "/staff/website-manager": () => import("@/pages/staff/website-manager"),
 
   // Dashboards
-  "/dashboard": () => import("@/pages/dashboard"),
   "/dashboard/managers": () => import("@/pages/dashboard/managers/index"),
   "/dashboard/mot": () => import("@/pages/dashboard/mot/index"),
   "/dashboard/painting": () => import("@/pages/dashboard/painting/index"),

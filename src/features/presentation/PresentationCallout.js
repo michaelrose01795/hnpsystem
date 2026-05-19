@@ -14,7 +14,6 @@ const PAGE_FILE_BY_ROUTE = {
   "/website": "src/pages/website.js",
   "/website/login": "src/pages/website/login.js",
   "/website/profile": "src/pages/website/profile.js",
-  "/dashboard": "src/pages/dashboard.js",
   "/hr": "src/pages/hr/index.js",
   "/job-cards/DEMO-1042": "src/pages/job-cards/[jobNumber].js",
   "/job-cards/archive": "src/pages/job-cards/archive/index.js",
@@ -149,6 +148,27 @@ function buildCandidates(anchor, calloutSize, viewport) {
   });
 }
 
+// Resting spot for the Overview "break" popup. It is parked clear of the page
+// content (default: bottom-left, roughly the sidebar column) so the presenter
+// can see the whole screen with nothing highlighted.
+function pickBreakPlacement(calloutSize, defaultPosition) {
+  if (typeof window === "undefined") {
+    return { left: VIEWPORT_PAD, top: VIEWPORT_PAD, side: "break-dock" };
+  }
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const maxLeft = Math.max(VIEWPORT_PAD, vw - calloutSize.width - VIEWPORT_PAD);
+  const maxTop = Math.max(VIEWPORT_PAD, vh - calloutSize.height - VIEWPORT_PAD);
+  const corners = {
+    "bottom-left": { left: VIEWPORT_PAD, top: maxTop },
+    "bottom-right": { left: maxLeft, top: maxTop },
+    "top-left": { left: VIEWPORT_PAD, top: VIEWPORT_PAD },
+    "top-right": { left: maxLeft, top: VIEWPORT_PAD },
+  };
+  const spot = corners[defaultPosition] || corners["bottom-left"];
+  return { ...spot, side: "break-dock" };
+}
+
 function pickPlacement(anchorRect, calloutSize, preferredSide) {
   if (typeof window === "undefined") {
     return { left: VIEWPORT_PAD, top: VIEWPORT_PAD, side: "rail" };
@@ -210,6 +230,12 @@ export default function PresentationCallout({ step }) {
   const ref = useRef(null);
   const [anchorRect, setAnchorRect] = useState(null);
   const [calloutSize, setCalloutSize] = useState({ width: 380, height: 260 });
+  // Manual drag position. Null = follow the automatic placement. This is kept
+  // in component state only (never persisted), so it resets on reload and the
+  // popup returns to its default spot for each step.
+  const [dragPos, setDragPos] = useState(null);
+
+  const isBreak = Boolean(step?.isBreak);
 
   const {
     slides,
@@ -272,7 +298,43 @@ export default function PresentationCallout({ step }) {
   // `step.preferredSide` is the new authoring hint; `step.position` stays
   // honored as a legacy fallback for slides not yet migrated.
   const preferredSide = step?.preferredSide || step?.position || null;
-  const placement = pickPlacement(anchorRect, calloutSize, preferredSide);
+  const placement = isBreak
+    ? pickBreakPlacement(calloutSize, step?.defaultPosition)
+    : pickPlacement(anchorRect, calloutSize, preferredSide);
+
+  // A manual drag overrides the automatic placement until the step changes.
+  const left = dragPos ? dragPos.left : placement.left;
+  const top = dragPos ? dragPos.top : placement.top;
+
+  // Drag the popup anywhere on screen by its header. Position is clamped to the
+  // viewport and lives in state only — it is forgotten on reload.
+  const handleDragStart = (event) => {
+    if (typeof window === "undefined" || !ref.current) return;
+    event.preventDefault();
+    const rect = ref.current.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left;
+    const offsetY = event.clientY - rect.top;
+
+    const handleMove = (moveEvent) => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const nextLeft = Math.max(
+        VIEWPORT_PAD,
+        Math.min(moveEvent.clientX - offsetX, vw - rect.width - VIEWPORT_PAD)
+      );
+      const nextTop = Math.max(
+        VIEWPORT_PAD,
+        Math.min(moveEvent.clientY - offsetY, vh - rect.height - VIEWPORT_PAD)
+      );
+      setDragPos({ left: nextLeft, top: nextTop });
+    };
+    const handleUp = () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+  };
 
   return (
     <aside
@@ -285,7 +347,9 @@ export default function PresentationCallout({ step }) {
       style={{
         position: "fixed",
         zIndex: 10002,
-        width: "min(calc(100vw - 24px), 400px)",
+        width: isBreak
+          ? "min(calc(100vw - 24px), 300px)"
+          : "min(calc(100vw - 24px), 400px)",
         maxHeight: "min(72vh, 520px)",
         overflow: "auto",
         pointerEvents: "auto",
@@ -296,11 +360,22 @@ export default function PresentationCallout({ step }) {
         gap: 10,
         background: "rgba(var(--surface-rgb), 0.98)",
         backdropFilter: "blur(12px)",
-        left: placement.left,
-        top: placement.top,
+        left,
+        top,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <div
+        onPointerDown={handleDragStart}
+        title="Drag to move this popup"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          minWidth: 0,
+          cursor: "grab",
+          touchAction: "none",
+        }}
+      >
         <span
           style={{
             fontSize: 11,

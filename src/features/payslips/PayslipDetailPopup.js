@@ -8,7 +8,7 @@
 import React from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
-import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 import {
   formatCurrency,
   formatDate,
@@ -232,7 +232,7 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
               gap: "16px",
             }}
           >
-            <LayerSurface style={{ padding: "14px", gap: "10px" }}>
+            <LayerTheme style={{ padding: "14px", gap: "10px" }}>
               <span style={sectionTitleStyle}>Employer</span>
               <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-1)" }}>
                 <strong style={{ fontSize: "0.95rem" }}>
@@ -247,8 +247,8 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
                   </span>
                 ) : null}
               </div>
-            </LayerSurface>
-            <LayerSurface style={{ padding: "14px", gap: "10px" }}>
+            </LayerTheme>
+            <LayerTheme style={{ padding: "14px", gap: "10px" }}>
               <span style={sectionTitleStyle}>Employee</span>
               <div style={{ display: "grid", gap: "6px", fontSize: "0.88rem", color: "var(--text-1)" }}>
                 <strong style={{ fontSize: "0.95rem" }}>{employeeSnapshot?.name || "—"}</strong>
@@ -262,11 +262,11 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
                   <span style={{ color: "var(--text-1)" }}>Tax code {payslip.taxCode}</span>
                 ) : null}
               </div>
-            </LayerSurface>
+            </LayerTheme>
           </div>
 
           {/* Pay context */}
-          <LayerSurface
+          <LayerTheme
             style={{
               padding: "14px",
               display: "grid",
@@ -290,22 +290,22 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
                   : "—"
               }
             />
-          </LayerSurface>
+          </LayerTheme>
 
           {/* Earnings */}
-          <div style={{ display: "grid", gap: "8px" }}>
+          <LayerTheme style={{ display: "grid", gap: "8px", padding: "14px" }}>
             <span style={sectionTitleStyle}>Earnings</span>
             <RowsTable
               rows={payslip.earnings}
               fallbackLabel="No itemised earnings recorded — gross pay shown below."
               totalLabel="Total earnings"
               totalValue={grossDisplay}
-              accentColor="var(--success, #2e7d32)"
+              accentColor="var(--success)"
             />
-          </div>
+          </LayerTheme>
 
           {/* Deductions */}
-          <div style={{ display: "grid", gap: "8px" }}>
+          <LayerTheme style={{ display: "grid", gap: "8px", padding: "14px" }}>
             <span style={sectionTitleStyle}>Deductions</span>
             <RowsTable
               rows={
@@ -325,9 +325,9 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
               fallbackLabel="No deductions recorded."
               totalLabel="Total deductions"
               totalValue={totalDeductionsDisplay}
-              accentColor="var(--danger, #c62828)"
+              accentColor="var(--danger)"
             />
-          </div>
+          </LayerTheme>
 
           {/* Totals strip */}
           <div
@@ -337,34 +337,34 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
               gap: "12px",
             }}
           >
-            <LayerSurface style={{ padding: "14px", gap: "4px" }}>
+            <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Gross pay</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--success, #2e7d32)" }}>
                 {formatCurrency(payslip.grossPay)}
               </span>
-            </LayerSurface>
-            <LayerSurface style={{ padding: "14px", gap: "4px" }}>
+            </LayerTheme>
+            <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Taxable pay</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-1)" }}>
                 {formatCurrency(payslip.taxablePay ?? payslip.grossPay)}
               </span>
-            </LayerSurface>
-            <LayerSurface style={{ padding: "14px", gap: "4px" }}>
+            </LayerTheme>
+            <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Net pay</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--accentText, var(--accent))" }}>
                 {formatCurrency(payslip.netPay)}
               </span>
-            </LayerSurface>
-            <LayerSurface style={{ padding: "14px", gap: "4px" }}>
+            </LayerTheme>
+            <LayerTheme style={{ padding: "14px", gap: "4px" }}>
               <span style={labelStyle}>Employer pension</span>
               <span style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text-1)" }}>
                 {formatCurrency(payslip.pensionEmployer)}
               </span>
-            </LayerSurface>
+            </LayerTheme>
           </div>
 
           {/* YTD totals */}
-          <LayerSurface style={{ padding: "14px", gap: "10px" }}>
+          <LayerTheme style={{ padding: "14px", gap: "10px" }}>
             <span style={sectionTitleStyle}>Year to date</span>
             <div
               style={{
@@ -379,16 +379,16 @@ export default function PayslipDetailPopup({ isOpen, payslip, onClose }) {
               <InfoCell label="YTD NI" value={payslip.ytdNi !== null && payslip.ytdNi !== undefined ? formatCurrency(payslip.ytdNi) : "—"} />
               <InfoCell label="YTD Pension" value={payslip.ytdPension !== null && payslip.ytdPension !== undefined ? formatCurrency(payslip.ytdPension) : "—"} />
             </div>
-          </LayerSurface>
+          </LayerTheme>
 
           {/* Notes */}
           {payslip.notes ? (
-            <LayerSurface style={{ padding: "14px", gap: "8px" }}>
+            <LayerTheme style={{ padding: "14px", gap: "8px" }}>
               <span style={sectionTitleStyle}>Notes</span>
               <p style={{ margin: 0, fontSize: "0.88rem", color: "var(--text-1)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
                 {payslip.notes}
               </p>
-            </LayerSurface>
+            </LayerTheme>
           ) : null}
         </div>
       </div>

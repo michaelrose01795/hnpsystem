@@ -68,11 +68,11 @@ export default function TechConsumableRequestPageUi(props) {
         color: "var(--grey-accent-dark)"
       }}>
               This page is reserved for workshop technicians to request
-              consumables. Please navigate back to your dashboard if this was in
+              consumables. Please navigate back to the news feed if this was in
               error.
             </p>
             <DevLayoutSection as="div" sectionKey="tech-consumables-access-action" parentKey="tech-consumables-access-card" sectionType="floating-action" backgroundToken="transparent">
-              <Link href="/dashboard" style={{
+              <Link href="/newsfeed" style={{
           display: "inline-block",
           padding: "var(--control-padding)",
           borderRadius: "var(--control-radius)",
@@ -81,7 +81,7 @@ export default function TechConsumableRequestPageUi(props) {
           fontWeight: 600,
           textDecoration: "none"
         }}>
-                Return to dashboard
+                Return to news feed
               </Link>
             </DevLayoutSection>
           </LayerSurface>

@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"; // imp
 import { useRouter } from "next/router";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import TransactionTable from "@/components/accounts/TransactionTable";
-import { Button, ControlGroup, PageSection } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { useUser } from "@/context/UserContext";
 import { deriveAccountPermissions } from "@/lib/accounts/permissions";
 import { exportToCsv } from "@/utils/exportUtils";
@@ -52,7 +52,7 @@ export default function AccountTransactionsPage() {
   const handleExport = () => {
     exportToCsv(`account-${accountId}-transactions.csv`, transactions, ["transaction_id", "transaction_date", "type", "amount", "payment_method", "job_number", "created_by"]);
   };
-  return <AccountTransactionsPageUi view="section1" accountId={accountId} Button={Button} ControlGroup={ControlGroup} filters={filters} handleExport={handleExport} handlePageChange={handlePageChange} loading={loading} PageSection={PageSection} pagination={pagination} permissions={permissions} ProtectedRoute={ProtectedRoute} router={router} setFilters={setFilters} TRANSACTION_ROLES={TRANSACTION_ROLES} transactions={transactions} TransactionTable={TransactionTable} />;
+  return <AccountTransactionsPageUi view="section1" accountId={accountId} Button={Button} filters={filters} handleExport={handleExport} handlePageChange={handlePageChange} loading={loading} pagination={pagination} permissions={permissions} ProtectedRoute={ProtectedRoute} router={router} setFilters={setFilters} TRANSACTION_ROLES={TRANSACTION_ROLES} transactions={transactions} TransactionTable={TransactionTable} />;
 
 
 

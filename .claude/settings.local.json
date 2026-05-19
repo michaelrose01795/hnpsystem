@@ -149,7 +149,15 @@
       "PowerShell(npx eslint src/utils/loadTrace.js 2>&1)",
       "PowerShell(npx eslint src/styles/themeProvider.js src/components/BrandLogo.js 2>&1)",
       "Bash(git push *)",
-      "Bash(node --input-type=module -e \"import\\('./src/features/presentation/mockData/compliance.js'\\).then\\(m=>console.log\\('compliance ok:',Object.keys\\(m\\)\\)\\).catch\\(e=>console.log\\('ERR',e.message\\)\\)\")"
+      "Bash(node --input-type=module -e \"import\\('./src/features/presentation/mockData/compliance.js'\\).then\\(m=>console.log\\('compliance ok:',Object.keys\\(m\\)\\)\\).catch\\(e=>console.log\\('ERR',e.message\\)\\)\")",
+      "Bash(npx --no-install babel src/features/presentation/dataLayer/apiRouteTable.js)",
+      "Bash(node --input-type=module --check)",
+      "Bash(sed -n '28,45p' /c/hnpsystem/src/features/presentation/runtime/realPageLoader.js)",
+      "Bash(sed -n '340,360p' /c/hnpsystem/src/features/presentation/PresentationProvider.js)",
+      "Bash(sed -n '55,80p' /c/hnpsystem/src/proxy.js)",
+      "Bash(sed -n '10,30p' /c/hnpsystem/src/features/presentation/PresentationCallout.js)",
+      "Bash(sed -n '68,85p' /c/hnpsystem/src/components/page-ui/tech/tech-consumables-request-ui.js)",
+      "Bash(sed -n '173,190p' /c/hnpsystem/src/components/page-ui/workshop/workshop-consumables-tracker-ui.js)"
     ],
     "deny": [],
     "ask": [],

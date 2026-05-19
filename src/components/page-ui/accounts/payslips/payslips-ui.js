@@ -8,15 +8,25 @@ import {
   formatDate,
   formatPeriodLabel,
   formatStatusLabel,
-  getStatusTone,
 } from "@/features/payslips/payslipUtils";
 import LayerTheme from "@/components/ui/LayerTheme";
 import { MonthPickerField } from "@/components/ui/monthPickerAPI";
+
+// Payslip status → staffglobal .app-badge tone modifier.
+const STATUS_BADGE_TONE = {
+  paid: "app-badge--success",
+  issued: "app-badge--accent-soft",
+  draft: "app-badge--neutral",
+  void: "app-badge--danger",
+};
+const statusToneClass = (status) =>
+  STATUS_BADGE_TONE[String(status || "").toLowerCase()] || "app-badge--neutral";
 
 export default function PayslipsAdminPageUi(uiProps) {
   const {
     ALLOWED_ROLES,
     Button,
+    ConfirmationDialog,
     DevLayoutSection,
     DropdownField,
     PayslipDetailPopup,
@@ -26,6 +36,7 @@ export default function PayslipsAdminPageUi(uiProps) {
     STATUS_OPTIONS,
     ToolbarRow,
     activePayslip,
+    confirmDialog,
     departmentOptions,
     editingPayslip,
     error,
@@ -38,6 +49,7 @@ export default function PayslipsAdminPageUi(uiProps) {
     loading,
     payslips,
     setActivePayslip,
+    setConfirmDialog,
     setEditingPayslip,
     setIsCreateOpen,
     userOptions,
@@ -122,21 +134,13 @@ export default function PayslipsAdminPageUi(uiProps) {
             gap="12px"
           >
             {error ? (
-              <div
-                style={{
-                  padding: "12px 14px",
-                  borderRadius: "var(--radius-md, 12px)",
-                  background: "rgba(198, 40, 40, 0.08)",
-                  color: "var(--danger, #c62828)",
-                  fontSize: "0.88rem",
-                }}
-              >
+              <p className="app-status-message app-status-message--danger" style={{ margin: 0 }}>
                 {error?.message || "Unable to load payslips."}
-              </div>
+              </p>
             ) : null}
 
-            <div style={{ overflowX: "auto" }}>
-              <table className="app-data-table" style={{ minWidth: "1180px", fontSize: "0.88rem" }}>
+            <div className="app-table-shell-scroll" style={{ overflowX: "auto" }}>
+              <table className="app-data-table app-table-shell app-table-shell--with-headings" style={{ minWidth: "1180px", fontSize: "0.88rem" }}>
                 <colgroup>
                   <col style={{ width: "130px" }} />
                   <col style={{ width: "270px" }} />
@@ -148,15 +152,15 @@ export default function PayslipsAdminPageUi(uiProps) {
                   <col style={{ width: "210px" }} />
                 </colgroup>
                 <thead>
-                  <tr style={{ textAlign: "left", color: "var(--text-1)", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    <th style={{ padding: "10px 18px" }}>Paid date</th>
-                    <th style={{ padding: "10px 18px" }}>User</th>
-                    <th style={{ padding: "10px 18px" }}>Department</th>
-                    <th style={{ padding: "10px 18px" }}>Period</th>
-                    <th style={{ padding: "10px 18px", textAlign: "right" }}>Gross</th>
-                    <th style={{ padding: "10px 18px", textAlign: "right" }}>Net</th>
-                    <th style={{ padding: "10px 18px" }}>Status</th>
-                    <th style={{ padding: "10px 18px", textAlign: "right" }}>Actions</th>
+                  <tr>
+                    <th>Paid date</th>
+                    <th>User</th>
+                    <th>Department</th>
+                    <th>Period</th>
+                    <th style={{ textAlign: "right" }}>Gross</th>
+                    <th style={{ textAlign: "right" }}>Net</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: "right" }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -168,61 +172,49 @@ export default function PayslipsAdminPageUi(uiProps) {
                     </tr>
                   ) : null}
                   {payslips.map((slip) => {
-                    const tone = getStatusTone(slip.status);
                     return (
-                      <tr key={slip.id} style={{ background: "var(--surface)" }}>
-                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)" }}>
+                      <tr key={slip.id}>
+                        <td>
                           <strong style={{ color: "var(--text-1)" }}>{formatDate(slip.paidDate)}</strong>
                         </td>
-                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)" }}>
+                        <td>
                           <div style={{ display: "grid", gap: "2px" }}>
                             <span style={{ color: "var(--text-1)", fontWeight: 600 }}>
                               {slip.user?.name || `User ${slip.userId}`}
                             </span>
                             {slip.user?.email ? (
-                              <span style={{ color: "var(--text-1)", fontSize: "0.78rem" }}>{slip.user.email}</span>
+                              <span style={{ color: "var(--surfaceTextMuted)", fontSize: "0.78rem" }}>{slip.user.email}</span>
                             ) : null}
                           </div>
                         </td>
-                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", color: "var(--text-1)" }}>
+                        <td style={{ color: "var(--text-1)" }}>
                           {slip.user?.department || "—"}
                         </td>
-                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", color: "var(--text-1)" }}>
+                        <td style={{ color: "var(--text-1)" }}>
                           {formatPeriodLabel(slip)}
                         </td>
-                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", textAlign: "right", fontWeight: 600 }}>
+                        <td style={{ textAlign: "right", fontWeight: 600 }}>
                           {formatCurrency(slip.grossPay)}
                         </td>
-                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", textAlign: "right", fontWeight: 700, color: "var(--accentText, var(--accent))" }}>
+                        <td style={{ textAlign: "right", fontWeight: 700, color: "var(--text-accent)" }}>
                           {formatCurrency(slip.netPay)}
                         </td>
-                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)" }}>
-                          <span
-                            style={{
-                              padding: "2px 8px",
-                              borderRadius: "999px",
-                              background: tone.bg,
-                              color: tone.color,
-                              fontSize: "0.72rem",
-                              fontWeight: 700,
-                              textTransform: "uppercase",
-                              letterSpacing: "0.04em",
-                            }}
-                          >
+                        <td>
+                          <span className={`app-badge app-badge--control app-badge--uppercase ${statusToneClass(slip.status)}`}>
                             {formatStatusLabel(slip.status)}
                           </span>
                         </td>
-                        <td style={{ padding: "12px 18px", borderTop: "var(--separating-line)", textAlign: "right" }}>
+                        <td style={{ textAlign: "right" }}>
                           <div style={{ display: "inline-flex", gap: "8px" }}>
-                            <Button type="button" variant="primary" size="xs" className="app-table-action-btn" onClick={() => setActivePayslip(slip)}>
+                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => setActivePayslip(slip)}>
                               View
-                            </Button>
-                            <Button type="button" variant="primary" size="xs" className="app-table-action-btn" onClick={() => setEditingPayslip(slip)}>
+                            </button>
+                            <button type="button" className="app-table-action-btn app-table-action-btn--primary" onClick={() => setEditingPayslip(slip)}>
                               Edit
-                            </Button>
-                            <Button type="button" variant="primary" size="xs" className="app-table-action-btn" onClick={() => handleDelete(slip)}>
+                            </button>
+                            <button type="button" className="app-table-action-btn app-table-action-btn--danger" onClick={() => handleDelete(slip)}>
                               Delete
-                            </Button>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -256,6 +248,15 @@ export default function PayslipsAdminPageUi(uiProps) {
         isOpen={Boolean(activePayslip)}
         payslip={activePayslip}
         onClose={() => setActivePayslip(null)}
+      />
+
+      <ConfirmationDialog
+        isOpen={Boolean(confirmDialog)}
+        message={confirmDialog?.message}
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={confirmDialog?.onConfirm}
       />
     </ProtectedRoute>
   );

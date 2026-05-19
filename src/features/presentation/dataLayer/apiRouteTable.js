@@ -9,6 +9,12 @@
 
 import { getMockRows } from "../mockData";
 import { buildPresentationPersonalState } from "../mockData/personal";
+import {
+  threads as messageThreads,
+  threadMessages as messageThreadMessages,
+  directory as messageDirectory,
+  customerRequests as messageCustomerRequests,
+} from "../mockData/messages";
 
 // In-memory lock status for the demo /profile → Personal tab. The presenter
 // enters the (pre-filled) passcode to flip this to unlocked; it survives the
@@ -624,40 +630,290 @@ const partsDeliveriesList = () => (rows, q) => {
   return { success: true, deliveries: page.data, data: page.data, pagination: page.pagination, count: rows.length };
 };
 
+// Date helpers for building demo profile data relative to the live demo date,
+// so attendance always lands inside the current 26th-to-25th pay period and
+// every work-tab card has fresh content regardless of when the deck is shown.
+const pad2 = (value) => String(value).padStart(2, "0");
+const isoDate = (date) =>
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+const shiftDate = (baseDate, days) => {
+  const next = new Date(baseDate);
+  next.setDate(baseDate.getDate() + days);
+  return isoDate(next);
+};
+
 const buildProfileResponse = () => {
   const user = (getMockRows("users") || [])[0] || {};
   const employee = (getMockRows("hr_employees") || [])[0] || {};
-  const today = new Date().toISOString().slice(0, 10);
   const profile = {
     id: employee.id || "demo-emp-001",
     userId: user.user_id || 1,
-    employeeNumber: employee.employee_number || "EMP-001",
-    name: employee.full_name || user.display_name || "Demo User",
-    email: employee.email || user.email || "demo.user@hnp.example",
-    phone: employee.phone || "07700 800001",
-    jobTitle: employee.job_title || "Demo Role",
-    department: employee.department || user.department || "Demo",
+    employeeNumber: employee.employee_number || "EMP-1042",
+    name: employee.full_name || user.display_name || "Demo Manager",
+    email: employee.email || user.email || "demo.manager@hnp.example",
+    phone: employee.phone || "07700 800142",
+    jobTitle: employee.job_title || "Service Manager",
+    department: employee.department || user.department || "Service",
     status: employee.status || "Active",
-    startDate: employee.start_date || "2022-04-04",
-    hourlyRate: 18.5,
+    startDate: employee.start_date || "2021-09-06",
+    address: "14 Brookfield Road, Exeter, EX4 6QP",
+    hourlyRate: 22.5,
     overtimeRate: 27.75,
-    emergencyContact: "Demo Contact, 07700 800099, Family",
+    contractedWeeklyHours: 40,
+    emergencyContact: "Janet Maddox, 07700 900611, Spouse",
   };
+
+  const at = (dateStr, time) => `${dateStr}T${time}:00.000Z`;
+  const now = new Date();
+
+  // Generate ~4 weeks of attendance: a weekday shift each working day, the
+  // odd Saturday shift, and a logged/auto overtime block every third weekday.
+  const attendanceLogs = [];
+  let overtimeCounter = 0;
+  for (let offset = 27; offset >= 0; offset -= 1) {
+    const day = new Date(now);
+    day.setDate(now.getDate() - offset);
+    const dateStr = isoDate(day);
+    const dow = day.getDay(); // 0 Sun … 6 Sat
+    const isToday = offset === 0;
+    const base = {
+      employeeId: profile.userId,
+      userId: profile.userId,
+      date: dateStr,
+    };
+
+    if (dow === 0 || dow === 6) {
+      if (dow === 6 && offset % 2 === 0) {
+        attendanceLogs.push({
+          ...base,
+          id: `demo-att-${dateStr}-wknd`,
+          clockIn: at(dateStr, "08:30"),
+          clockOut: at(dateStr, "13:00"),
+          totalHours: 4.5,
+          status: "Weekend",
+          type: "Weekend",
+          origin: "manual",
+        });
+      }
+      continue;
+    }
+
+    if (isToday) {
+      // Today is still clocked in — renders the "Active" badge.
+      attendanceLogs.push({
+        ...base,
+        id: `demo-att-${dateStr}-day`,
+        clockIn: at(dateStr, "08:00"),
+        clockOut: null,
+        totalHours: 0,
+        status: "Active",
+        type: "Weekday",
+        origin: "manual",
+      });
+      continue;
+    }
+
+    attendanceLogs.push({
+      ...base,
+      id: `demo-att-${dateStr}-day`,
+      clockIn: at(dateStr, "08:00"),
+      clockOut: at(dateStr, "16:30"),
+      totalHours: 8,
+      status: "On Time",
+      type: "Weekday",
+      origin: "manual",
+    });
+    if (overtimeCounter % 3 === 1) {
+      const autoLogged = overtimeCounter % 2 === 0;
+      attendanceLogs.push({
+        ...base,
+        id: `demo-att-${dateStr}-ot`,
+        clockIn: at(dateStr, "16:45"),
+        clockOut: at(dateStr, "19:15"),
+        totalHours: 2.5,
+        status: "Overtime",
+        type: "Overtime",
+        origin: autoLogged ? "auto" : "manual",
+      });
+    }
+    overtimeCounter += 1;
+  }
+  // Newest first so the history tables read most-recent-down.
+  attendanceLogs.reverse();
+
   return {
     success: true,
     data: {
       profile,
-      attendanceLogs: [
-        { id: "demo-att-001", employeeId: profile.userId, userId: profile.userId, date: today, clockIn: `${today}T08:00:00.000Z`, clockOut: `${today}T16:30:00.000Z`, totalHours: 8, status: "On Time", type: "Weekday", origin: "manual" },
-        { id: "demo-att-002", employeeId: profile.userId, userId: profile.userId, date: today, clockIn: `${today}T17:00:00.000Z`, clockOut: `${today}T19:00:00.000Z`, totalHours: 2, status: "Overtime", type: "Overtime", origin: "manual" },
-      ],
-      overtimeSummary: { id: profile.userId, userId: profile.userId, overtimeRate: 27.75, bonus: 0, status: "In Progress" },
-      leaveBalance: { employeeId: profile.id, remaining: 18, used: 7, entitlement: 25 },
+      attendanceLogs,
+      overtimeSummary: {
+        id: profile.userId,
+        userId: profile.userId,
+        overtimeRate: 27.75,
+        bonus: 145,
+        status: "In Progress",
+      },
+      leaveBalance: {
+        employeeId: profile.id,
+        entitlement: 25,
+        used: 11,
+        taken: 11,
+        remaining: 14,
+      },
       leaveRequests: [
-        { id: "demo-leave-001", status: "Approved", type: "Holiday", startDate: today, endDate: today, totalDays: 1, notes: "Demo leave request" },
+        {
+          id: "demo-leave-001",
+          status: "Approved",
+          type: "Holiday",
+          startDate: shiftDate(now, -24),
+          endDate: shiftDate(now, -22),
+          totalDays: 3,
+          requestNotes: "Family trip away — cover arranged with the workshop team.",
+        },
+        {
+          id: "demo-leave-002",
+          status: "Pending",
+          type: "Holiday",
+          startDate: shiftDate(now, 21),
+          endDate: shiftDate(now, 25),
+          totalDays: 5,
+          requestNotes: "Summer holiday — awaiting manager sign-off.",
+        },
+        {
+          id: "demo-leave-003",
+          status: "Declined",
+          type: "Unpaid",
+          startDate: shiftDate(now, -12),
+          endDate: shiftDate(now, -11),
+          totalDays: 2,
+          requestNotes: "Personal appointment.",
+          declineReason:
+            "Clashes with the MOT bay being short-staffed that week — please rebook.",
+        },
+        {
+          id: "demo-leave-004",
+          status: "Approved",
+          type: "Sick",
+          startDate: shiftDate(now, -6),
+          endDate: shiftDate(now, -6),
+          totalDays: 1,
+          requestNotes: "Off with a 24-hour bug — GP note on file.",
+        },
+        {
+          id: "demo-leave-005",
+          status: "Approved",
+          type: "Holiday",
+          startDate: shiftDate(now, -48),
+          endDate: shiftDate(now, -46),
+          totalDays: 3,
+          requestNotes: "Long weekend — booked well in advance.",
+        },
+        {
+          id: "demo-leave-006",
+          status: "Pending",
+          type: "Compassionate",
+          startDate: shiftDate(now, 9),
+          endDate: shiftDate(now, 9),
+          totalDays: 1,
+          requestNotes: "Family commitment — flexible on the exact day if needed.",
+        },
       ],
-      staffVehicles: getMockRows("staff_vehicles"),
-      staffVehiclePayrollDeductions: [],
+      staffVehicles: [
+        {
+          id: "demo-staff-veh-001",
+          userId: profile.userId,
+          make: "Ford",
+          model: "Focus ST",
+          registration: "EX21 HNP",
+          vin: "WF0AXXGCBAAA12345",
+          colour: "Magnetic Grey",
+          payrollDeductionEnabled: true,
+          payrollDeductionReference: "STAFF-CAR-014",
+          history: [
+            {
+              id: "demo-veh-hist-001",
+              description: "Full service + MOT",
+              recordedAt: shiftDate(now, -40),
+              deductFromPayroll: true,
+              cost: 245.0,
+            },
+            {
+              id: "demo-veh-hist-002",
+              description: "Front brake pads & discs replaced",
+              recordedAt: shiftDate(now, -110),
+              deductFromPayroll: true,
+              cost: 312.5,
+            },
+          ],
+        },
+        {
+          id: "demo-staff-veh-002",
+          userId: profile.userId,
+          make: "Volkswagen",
+          model: "Golf Match",
+          registration: "WK19 PRK",
+          vin: "WVWZZZ1KZAW000111",
+          colour: "Pure White",
+          payrollDeductionEnabled: false,
+          payrollDeductionReference: "",
+          history: [
+            {
+              id: "demo-veh-hist-003",
+              description: "Air-conditioning re-gas",
+              recordedAt: shiftDate(now, -70),
+              deductFromPayroll: false,
+              cost: 89.99,
+            },
+          ],
+        },
+        {
+          id: "demo-staff-veh-003",
+          userId: profile.userId,
+          make: "Toyota",
+          model: "Yaris Hybrid",
+          registration: "EX70 HNP",
+          vin: "JTDKB20U093000222",
+          colour: "Tokyo Red",
+          payrollDeductionEnabled: true,
+          payrollDeductionReference: "STAFF-CAR-031",
+          history: [
+            {
+              id: "demo-veh-hist-004",
+              description: "Hybrid battery health check",
+              recordedAt: shiftDate(now, -20),
+              deductFromPayroll: true,
+              cost: 60.0,
+            },
+            {
+              id: "demo-veh-hist-005",
+              description: "Four-wheel alignment",
+              recordedAt: shiftDate(now, -130),
+              deductFromPayroll: true,
+              cost: 75.0,
+            },
+          ],
+        },
+      ],
+      staffVehiclePayrollDeductions: [
+        {
+          id: "demo-veh-deduction-001",
+          vehicleId: "demo-staff-veh-001",
+          userId: profile.userId,
+          label: "Staff car scheme — Focus ST",
+          amount: 145.0,
+          frequency: "monthly",
+          reference: "STAFF-CAR-014",
+        },
+        {
+          id: "demo-veh-deduction-002",
+          vehicleId: "demo-staff-veh-003",
+          userId: profile.userId,
+          label: "Staff car scheme — Yaris Hybrid",
+          amount: 110.0,
+          frequency: "monthly",
+          reference: "STAFF-CAR-031",
+        },
+      ],
     },
   };
 };
@@ -901,6 +1157,26 @@ const buildPrivacyMeResponse = () => {
   };
 };
 
+// Pull the thread id out of /api/messages/threads/<id>/(messages|members).
+const threadIdFromPath = (parsed) => {
+  const parts = parsed?.pathname?.split("/").filter(Boolean) || [];
+  const threadsIndex = parts.indexOf("threads");
+  return threadsIndex >= 0 ? parts[threadsIndex + 1] || null : null;
+};
+
+// GET /api/messages/threads/<id>/messages — the conversation transcript.
+const threadMessagesResponse = () => (_rows, _q, parsed) => {
+  const threadId = threadIdFromPath(parsed);
+  return { success: true, data: messageThreadMessages[String(threadId)] || [] };
+};
+
+// GET /api/messages/threads/<id>/members — participants of a single thread.
+const threadMembersResponse = () => (_rows, _q, parsed) => {
+  const threadId = Number(threadIdFromPath(parsed));
+  const thread = messageThreads.find((row) => row.id === threadId) || null;
+  return { success: true, data: thread?.members || [] };
+};
+
 export const API_ROUTE_TABLE = [
   // Accounts / invoices / company-accounts
   { pattern: /^\/api\/accounts\/?$/, table: "accounts", transform: (rows, q) => (
@@ -1029,15 +1305,18 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/website\/actions(\/.*)?\/?$/, table: "customer_activity_events", transform: () => ({ success: true }) },
 
   // Messages / notifications
-  { pattern: /^\/api\/messages\/unread-count\/?$/, table: "messages", transform: (rows) => ({ success: true, count: rows.filter((row) => row.read === false).length }) },
+  { pattern: /^\/api\/messages\/unread-count\/?$/, table: "messages", transform: () => ({ success: true, count: messageThreads.filter((thread) => thread.hasUnread).length }) },
   { pattern: /^\/api\/messages\/connect-customer\/?$/, table: "messages", transform: () => ({ success: true }) },
+  { pattern: /^\/api\/messages\/customer-requests\/process\/?$/, table: "messages", transform: () => ({ success: true }) },
+  { pattern: /^\/api\/messages\/customer-requests\/[^/]+\/?$/, table: "messages", transform: () => ({ success: true }) },
+  { pattern: /^\/api\/messages\/customer-requests\/?$/, table: "messages", transform: () => ({ success: true, items: messageCustomerRequests }) },
   { pattern: /^\/api\/messages\/system-notifications\/send\/?$/, table: "messages", transform: () => ({ success: true }) },
   { pattern: /^\/api\/messages\/system-notifications\/?$/, table: "messages", transform: passthroughList() },
-  { pattern: /^\/api\/messages\/threads\/[^/]+\/members\/?$/, table: "users", transform: passthroughList() },
-  { pattern: /^\/api\/messages\/threads\/[^/]+\/messages\/?$/, table: "messages", transform: passthroughList() },
-  { pattern: /^\/api\/messages\/threads\/?$/, table: "messages", transform: passthroughList() },
+  { pattern: /^\/api\/messages\/threads\/[^/]+\/members\/?$/, table: "messages", transform: threadMembersResponse() },
+  { pattern: /^\/api\/messages\/threads\/[^/]+\/messages\/?$/, table: "messages", transform: threadMessagesResponse() },
+  { pattern: /^\/api\/messages\/threads\/?$/, table: "messages", transform: () => ({ success: true, data: messageThreads }) },
   { pattern: /^\/api\/messages\/messages\/[^/]+\/save\/?$/, table: "messages", transform: () => ({ success: true }) },
-  { pattern: /^\/api\/messages\/users\/?$/, table: "users", transform: passthroughList() },
+  { pattern: /^\/api\/messages\/users\/?$/, table: "messages", transform: () => ({ success: true, data: messageDirectory }) },
   { pattern: /^\/api\/messages\/?$/, table: "messages", transform: passthroughList() },
 
   // Mobile

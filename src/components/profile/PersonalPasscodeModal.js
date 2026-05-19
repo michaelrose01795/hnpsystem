@@ -6,6 +6,8 @@
 import React, { useEffect, useState } from "react";
 import PopupModal from "@/components/popups/popupStyleApi";
 import Button from "@/components/ui/Button";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { PRESENTATION_PERSONAL_PASSCODE } from "@/features/presentation/mockData/personal";
 
 const passcodeCardStyle = {
   width: "min(100%, 420px)",
@@ -37,7 +39,12 @@ export default function PersonalPasscodeModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setPasscode("");
+    // Presentation decks pre-fill the unlock code so the presenter can show the
+    // passcode popup and just click "Unlock" to step into the demo — matching
+    // the "Unlock personal dashboard" popup behaviour.
+    setPasscode(
+      isPresentationMode() && mode === "unlock" ? PRESENTATION_PERSONAL_PASSCODE : ""
+    );
     setConfirmPasscode("");
   }, [isOpen, mode]);
 

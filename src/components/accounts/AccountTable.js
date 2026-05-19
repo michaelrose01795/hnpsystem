@@ -2,7 +2,6 @@
 import React from "react"; // import React to define component
 import LayerTheme from "@/components/ui/LayerTheme";
 import PropTypes from "prop-types";
-import Button from "@/components/ui/Button";
 
 const columnDefinitions = [
 { key: "account_id", label: "Account ID" },
@@ -23,25 +22,17 @@ const formatDate = (value) => {
   if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
-const statusStyles = {
-  active: { background: "rgba(var(--success-rgb), 0.15)", color: "#047857" },
-  frozen: { background: "rgba(var(--warning-rgb), 0.18)", color: "var(--warning-text)" },
-  closed: { background: "rgba(var(--danger-rgb), 0.15)", color: "var(--danger-dark)" }
+// Status renders as a staffglobal .app-badge bubble at control (button) size.
+const statusToneClass = {
+  active: "app-badge--success",
+  frozen: "app-badge--warning",
+  closed: "app-badge--danger"
 };
 const renderStatusBadge = (status) => {
   const normalized = (status || "").toLowerCase();
-  const palette = statusStyles[normalized] || statusStyles.active;
+  const tone = statusToneClass[normalized] || "app-badge--neutral";
   return (
-    <span
-      style={{
-        padding: "4px 10px",
-        borderRadius: "var(--radius-pill)",
-        fontSize: "0.75rem",
-        fontWeight: 700,
-        textTransform: "uppercase",
-        ...palette
-      }}>
-
+    <span className={`app-badge app-badge--uppercase ${tone}`}>
       {status || "Unknown"}
     </span>);
 
@@ -49,15 +40,11 @@ const renderStatusBadge = (status) => {
 export default function AccountTable({
   accounts,
   loading,
-  pagination,
   onSortChange,
   sortState,
   onSelectAccount,
   selectedAccountId,
-  canExport,
-  canCreateAccount,
-  onExport,
-  onCreateAccount
+  toolbar
 }) {
   const [hoveredAccountId, setHoveredAccountId] = React.useState(null);
 
@@ -78,54 +65,24 @@ export default function AccountTable({
 
   return (
     <LayerTheme as="section" sectionKey="accounts-ledger-table-card" sectionType="content-card" parentKey="accounts-ledger-table" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-1)" }}>Customer Accounts</h2>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <span style={{ color: "var(--text-1)", fontSize: "0.92rem" }}>
-            {pagination.total || 0} records
-          </span>
-          {canExport &&
-          <Button type="button" variant="secondary" onClick={onExport}>
-              Export
-            </Button>
-          }
-          {canCreateAccount &&
-          <Button type="button" onClick={onCreateAccount}>
-              New Account
-            </Button>
-          }
-        </div>
-      </div>
-      <div style={{ overflowX: "auto", overflowY: accounts.length > 10 ? "auto" : "visible", maxHeight: accounts.length > 10 ? "640px" : "none" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead style={{ background: "rgba(var(--primary-rgb), 0.08)", color: "var(--text-1)" }}>
+      {/* Filter toolbar (when supplied by the consumer) sits at the top of the card. */}
+      {toolbar}
+      <div
+        className="app-table-shell-scroll"
+        style={{ overflowX: "auto", overflowY: accounts.length > 10 ? "auto" : "visible", maxHeight: accounts.length > 10 ? "640px" : "none" }}>
+        <table className="app-data-table app-table-shell app-table-shell--with-headings" style={{ minWidth: "720px" }}>
+          <thead>
           <tr>
             {columnDefinitions.map((column) =>
               <th
                 key={column.key}
                 onClick={() => handleSort(column.key)}
-                style={{
-                  padding: "13px 12px",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  fontSize: "0.85rem",
-                  userSelect: "none",
-                  whiteSpace: "nowrap"
-                }}>
+                style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}>
 
                 {column.label} {sortedIcon(column.key)}
               </th>
               )}
-            <th
-                style={{
-                  padding: "13px 12px",
-                  textAlign: "right",
-                  fontSize: "0.85rem",
-                  whiteSpace: "nowrap"
-                }}>
-
+            <th style={{ textAlign: "right", whiteSpace: "nowrap" }}>
               Actions
             </th>
           </tr>
@@ -168,8 +125,7 @@ export default function AccountTable({
                   onMouseEnter={() => setHoveredAccountId(account.account_id)}
                   onMouseLeave={() => setHoveredAccountId((current) => current === account.account_id ? null : current)}
                   style={{
-                    background: isSelected ? "rgba(var(--primary-rgb), 0.16)" : isHovered ? "rgba(var(--primary-rgb), 0.12)" : "var(--surface)",
-                    borderBottom: "1px solid var(--separating-line)",
+                    background: isSelected ? "rgba(var(--primary-rgb), 0.16)" : isHovered ? "rgba(var(--primary-rgb), 0.12)" : "transparent",
                     transition: "background-color 0.18s ease"
                   }}>
 
@@ -188,7 +144,6 @@ export default function AccountTable({
                       <td
                         key={column.key}
                         style={{
-                          padding: "14px 12px",
                           fontWeight: column.key === "account_id" ? 600 : 400,
                           whiteSpace: column.key === "billing_name" ? "normal" : "nowrap"
                         }}>
@@ -197,14 +152,22 @@ export default function AccountTable({
                       </td>);
 
                   })}
-                  <td style={{ padding: "14px 12px", textAlign: "right" }}>
+                  <td style={{ textAlign: "right" }}>
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" }}>
-                      <Button type="button" variant="ghost" size="xs" onClick={() => onSelectAccount && onSelectAccount(account, "view")}>
+                      {/* In-row action buttons — .app-table-action-btn locks height to
+                          --table-action-btn-height (32px) per the staffglobal table style. */}
+                      <button
+                        type="button"
+                        className="app-table-action-btn app-table-action-btn--ghost"
+                        onClick={() => onSelectAccount && onSelectAccount(account, "view")}>
                         View
-                      </Button>
-                      <Button type="button" variant="secondary" size="xs" onClick={() => onSelectAccount && onSelectAccount(account, "edit")}>
+                      </button>
+                      <button
+                        type="button"
+                        className="app-table-action-btn"
+                        onClick={() => onSelectAccount && onSelectAccount(account, "edit")}>
                         Edit
-                      </Button>
+                      </button>
                     </div>
                   </td>
                 </tr>);
@@ -232,10 +195,7 @@ AccountTable.propTypes = {
   }),
   onSelectAccount: PropTypes.func,
   selectedAccountId: PropTypes.string,
-  canExport: PropTypes.bool,
-  canCreateAccount: PropTypes.bool,
-  onExport: PropTypes.func,
-  onCreateAccount: PropTypes.func
+  toolbar: PropTypes.node
 };
 AccountTable.defaultProps = {
   accounts: [],
@@ -246,8 +206,5 @@ AccountTable.defaultProps = {
   sortState: { field: "updated_at", direction: "desc" },
   onSelectAccount: () => {},
   selectedAccountId: null,
-  canExport: false,
-  canCreateAccount: false,
-  onExport: () => {},
-  onCreateAccount: () => {}
+  toolbar: null
 };

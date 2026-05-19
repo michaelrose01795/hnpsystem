@@ -49,11 +49,18 @@ export default function AccountsListPageUi(props) {
             <Button type="button" variant="secondary" size="sm" onClick={openSettingsModal}>
               Accounts Settings
             </Button>
+            {canExport &&
+            <Button type="button" variant="secondary" size="sm" onClick={handleExport}>
+                Export
+              </Button>}
+            {canCreateAccount &&
+            <Button type="button" size="sm" onClick={openCreateModal}>
+                New Account
+              </Button>}
           </ToolbarRow>
           {renderLinkedFinance()}
-          {renderFilters()}
           <DevLayoutSection sectionKey="accounts-ledger-table" sectionType="data-table" parentKey="accounts-page-shell">
-            <AccountTable accounts={accounts} loading={loading} pagination={pagination} onPageChange={handlePageChange} sortState={sortState} onSortChange={handleSortChange} onSelectAccount={handleAccountSelect} canExport={canExport} canCreateAccount={canCreateAccount} onExport={handleExport} onCreateAccount={openCreateModal} />
+            <AccountTable toolbar={renderFilters()} accounts={accounts} loading={loading} pagination={pagination} onPageChange={handlePageChange} sortState={sortState} onSortChange={handleSortChange} onSelectAccount={handleAccountSelect} />
           </DevLayoutSection>
         </div>
         <AccountUpsertModal isOpen={isAccountModalOpen} mode={modalMode} accountId={modalAccountId} onClose={closeAccountModal} onSaved={fetchAccounts} />

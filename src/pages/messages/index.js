@@ -12,6 +12,7 @@ import React, {
 import { useRouter } from "next/router"; // Next.js router for reading query params
 import { useUser } from "@/context/UserContext";
 import { hasCustomerBookingRequestAccess } from "@/lib/auth/serviceActionRoles";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { supabase } from "@/lib/database/supabaseClient";
 import { appShellTheme } from "@/styles/appTheme";
 import useMessagesApi from "@/hooks/api/useMessagesApi";
@@ -1427,11 +1428,16 @@ function MessagesPage() {
         });
         setMessages(payload?.data || payload?.messages || []);
         setConversationError("");
-        setThreads((prev) =>
-        prev.map((thread) =>
-        thread.id === threadId ? { ...thread, hasUnread: false } : thread
-        )
-        );
+        // In the presentation deck the thread list is fixed demo data — keep
+        // the unread badges showing even after a thread is opened so the
+        // read/unread states stay on screen for the whole walkthrough.
+        if (!isPresentationMode()) {
+          setThreads((prev) =>
+          prev.map((thread) =>
+          thread.id === threadId ? { ...thread, hasUnread: false } : thread
+          )
+          );
+        }
       } catch (error) {
         console.error("❌ Failed to load conversation:", error);
         setConversationError(error.message || "Unable to load conversation.");
@@ -1441,6 +1447,29 @@ function MessagesPage() {
     },
     [dbUserId, ensureMobileConversationHistory, isMobileView, listThreadMessages, setThreads, threads]
   );
+
+  // Presentation/demo transcripts can ship pre-seeded reactions on a message's
+  // metadata (`metadata.reactions: [{ userId, emoji }]`). Real conversations
+  // never set this key, so outside the presentation deck this effect is a
+  // no-op — it only hydrates the local reaction state from that demo metadata.
+  useEffect(() => {
+    if (!messages.length) return;
+    setMessageReactions((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      messages.forEach((message) => {
+        const seeded = message?.metadata?.reactions;
+        if (Array.isArray(seeded) && seeded.length && !next[message.id]) {
+          next[message.id] = seeded.map((reaction) => ({
+            userId: reaction.userId,
+            emoji: reaction.emoji,
+          }));
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [messages]);
 
   const openSystemNotificationsThread = useCallback(() => {
     ensureMobileConversationHistory();
