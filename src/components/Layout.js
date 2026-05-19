@@ -36,6 +36,7 @@ import BrandLogo from "@/components/BrandLogo";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
+import { trace, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
 
@@ -384,6 +385,9 @@ export default function Layout({
     if (showLoginShellLoading) return;
     if (userLoading) return;
     if (user === null && !hideSidebar) {
+      trace("layout", "user is null on a gated route -> router.replace(/login)", {
+        route: router.pathname,
+      });
       router.replace("/login");
     }
   }, [user, userLoading, hideSidebar, router, presentationShell, publicRoute, showLoginShellLoading]);
@@ -489,6 +493,15 @@ export default function Layout({
   // stacking, no fade. Pages handle their own data-loading skeletons inside
   // their own render once auth is resolved.
   const isPreAuthLoading = !publicRoute && !presentationShell && !hideSidebar && (userLoading || !user);
+
+  // TEMP diagnostic: each of these flipping is a candidate for the page
+  // "flicking off then coming back" — isPreAuthLoading swaps children for a
+  // skeleton, contentKey changes remount the whole page subtree.
+  useTraceValue("layout.route", router.pathname);
+  useTraceValue("layout.isPreAuthLoading", isPreAuthLoading);
+  useTraceValue("layout.showLoginShellLoading", showLoginShellLoading);
+  useTraceValue("layout.hideSidebar", hideSidebar);
+  useTraceValue("layout.contentKey", contentKey);
 
   useEffect(() => {
     if (isTablet) {

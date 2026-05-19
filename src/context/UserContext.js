@@ -7,6 +7,7 @@ import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
 import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
+import { useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 const DEV_ROLE_COOKIE = "hnp-dev-roles";
 const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -73,6 +74,14 @@ export function UserProvider({ children }) {
   const [currentJob, setCurrentJob] = useState(null);
   const hasLogoutBarrier = logoutBarrierUntil > Date.now();
   const authSyncBlocked = isLoggingOut || hasLogoutBarrier;
+
+  // TEMP diagnostic: auth state churn is a prime suspect for the page flicker
+  // (user briefly null -> Layout swaps in a skeleton / redirects to /login).
+  useTraceValue("user.sessionStatus", sessionStatus);
+  useTraceValue("user.identity", user ? `${user.username}#${user.id}` : "null");
+  useTraceValue("user.loading", loading);
+  useTraceValue("user.dbUserId", dbUserId);
+  useTraceValue("user.logoutInProgress", authSyncBlocked);
 
   useEffect(() => {
     const nextBarrierUntil = readLogoutBarrierUntil();

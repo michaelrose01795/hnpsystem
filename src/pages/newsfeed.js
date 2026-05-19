@@ -9,6 +9,7 @@ import { MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import { roleCategories } from "@/config/users";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import NewsFeedUi from "@/components/page-ui/newsfeed-ui"; // Extracted presentation layer.
+import { trace, useTraceMount, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 const FALLBACK_UPDATES = [
 {
@@ -176,11 +177,16 @@ export default function NewsFeed() {
   });
   const [notificationError, setNotificationError] = useState("");
 
+  useTraceMount("NewsFeed page");
+  useTraceValue("newsfeed.loading", loading);
+  useTraceValue("newsfeed.user", user ? `${user.username}#${user.id}` : "null");
+
   const userRoles = useMemo(() => user?.roles || [], [user?.roles]);
   const userDepartments = useMemo(() => deriveDepartmentsFromRoles(userRoles), [userRoles]);
   const canManageUpdates = useMemo(() => isManagerRole(userRoles), [userRoles]);
 
   const fetchUpdates = useCallback(async () => {
+    trace("newsfeed", "fetchUpdates: start");
     setLoading(true);
     try {
       const { data, error } = await supabase.
@@ -203,6 +209,7 @@ export default function NewsFeed() {
     } catch (err) {
       console.error("Failed to load news updates:", err);
     } finally {
+      trace("newsfeed", "fetchUpdates: done");
       setLoading(false);
     }
   }, []);

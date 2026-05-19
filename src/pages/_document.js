@@ -22,15 +22,20 @@ const parseCookieHeader = (cookieHeader = "") =>
       return acc;
     }, {});
 
-const getBootTheme = (cookies = {}) => {
+const getBootTheme = (cookies = {}, pathname = "") => {
   // Resolve the requested theme mode from cookies first.
   const requestedMode = normalizeMode(cookies["hp-dms-theme"] || "system");
 
   // Resolve the server-side boot mode conservatively so initial HTML remains deterministic.
   const resolvedMode = requestedMode === "dark" ? "dark" : "light";
 
-  // Resolve the stored accent with the shared runtime validator.
-  const accentName = normalizeAccent(cookies["hp-dms-accent"] || DEFAULT_ACCENT);
+  // /login always boots the brand-red login theme so a hard navigation onto it
+  // (e.g. logout) never flashes the previous user's accent. The stored accent
+  // is left untouched — only what is painted changes.
+  const accentName =
+    pathname === "/login"
+      ? DEFAULT_ACCENT
+      : normalizeAccent(cookies["hp-dms-accent"] || DEFAULT_ACCENT);
 
   // Build the same semantic runtime values that the client provider will later reuse.
   const runtime = buildThemeRuntime({ resolvedMode, accentName });
@@ -136,7 +141,12 @@ const themeBootScript = `
     const accents = ${JSON.stringify(ACCENT_PALETTES)};
 
     const storedAccent = (window.localStorage.getItem("hp-dms-accent") || readCookie("hp-dms-accent") || "${DEFAULT_ACCENT}").toLowerCase();
-    const palette = accents[storedAccent] || accents["${DEFAULT_ACCENT}"];
+    // /login always paints brand red regardless of the stored accent, so a hard
+    // navigation onto it never flashes the previous user's colour. The stored
+    // value itself is preserved (the cookie write below still uses storedAccent).
+    const isLoginRoute = window.location.pathname === "/login";
+    const paintAccent = isLoginRoute ? "${DEFAULT_ACCENT}" : storedAccent;
+    const palette = accents[paintAccent] || accents["${DEFAULT_ACCENT}"];
     const resolvedAccent = resolvedMode === "dark" ? palette.dark : palette.light;
     const runtime = ${buildClientRuntimeExpression()};
 
@@ -304,7 +314,7 @@ class MyDocument extends Document {
     const cookies = parseCookieHeader(ctx?.req?.headers?.cookie || "");
     return {
       ...initialProps,
-      bootTheme: getBootTheme(cookies),
+      bootTheme: getBootTheme(cookies, ctx?.pathname || ""),
       hasAuthCookie: hasAuthenticatedCookie(cookies),
     };
   }

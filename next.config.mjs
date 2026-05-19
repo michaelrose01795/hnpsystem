@@ -1,5 +1,6 @@
 const nextConfig = { // Exported Next.js configuration object
   reactStrictMode: true, // Enable React strict mode for highlighting potential issues
+  devIndicators: false, // Disable the Next.js dev tools indicator overlay for this project
   
   turbopack: {}, // CRITICAL FIX: Add empty turbopack config to silence Next.js 16 error and enable Turbopack by default
   

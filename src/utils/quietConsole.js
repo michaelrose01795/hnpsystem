@@ -22,6 +22,17 @@ const allowDebug = activeLevel >= LOG_LEVELS.debug;
 const noop = () => {};
 
 if (!globalThis.__HNP_QUIET_CONSOLE__) {
+  // Preserve the native console methods before they are silenced so diagnostic
+  // tooling (see src/utils/loadTrace.js) can still print at any log level.
+  globalThis.__HNP_NATIVE_CONSOLE__ = {
+    log: console.log.bind(console),
+    info: console.info.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console),
+    debug: console.debug.bind(console),
+    table: (console.table || console.log).bind(console),
+  };
+
   if (!allowInfo) {
     console.log = noop;
     console.info = noop;

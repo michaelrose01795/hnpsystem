@@ -1,5 +1,14 @@
 // file location: src/styles/themeProvider.js
 // React theme provider that maps the saved mode and accent preference into the shared semantic CSS token system.
+//
+// Single-writer painting model:
+//  - `mode` / `accent` state always hold the USER'S TRUE preference. Nothing
+//    transient is ever allowed to overwrite them.
+//  - `temporaryOverride` holds a short-lived display theme (e.g. the brand-red
+//    /login theme). It is purely visual and never touches `mode` / `accent`.
+//  - Exactly ONE effect paints the document. It paints `temporaryOverride` when
+//    set, otherwise the true preference. Because nothing else writes theme
+//    tokens to the DOM, the theme can never "fight itself" mid-transition.
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { supabaseClient } from "@/lib/database/supabaseClient";
@@ -13,6 +22,7 @@ import {
   normalizeDbMode,
   normalizeMode,
 } from "@/styles/themeRuntime";
+import { trace } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 const STORAGE_KEY = "hp-dms-theme";
 const ACCENT_STORAGE_KEY = "hp-dms-accent";
@@ -22,6 +32,15 @@ const PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const THEME_SEQUENCE = ["system", "light", "dark"];
 const NETWORK_TIMEOUT_MS = 4000;
 const IS_PLAYWRIGHT_AUTH = process.env.NEXT_PUBLIC_PLAYWRIGHT_TEST_AUTH === "1";
+
+// Routes that always display the brand-red login theme regardless of which
+// user's preference is stored. Used so the very first paint after a hard
+// navigation onto /login is already red — _document.js mirrors this server-side.
+const LOGIN_THEME_ROUTES = new Set(["/login"]);
+const LOGIN_THEME_OVERRIDE = { mode: "system", accent: DEFAULT_ACCENT };
+
+const isLoginThemeRoute = () =>
+  typeof window !== "undefined" && LOGIN_THEME_ROUTES.has(window.location.pathname);
 
 const withTimeout = (promise, label, timeoutMs = NETWORK_TIMEOUT_MS) => {
   let timeoutId;
@@ -87,6 +106,42 @@ const readStoredAccent = () => {
   return normalizeAccent(cookieAccent || DEFAULT_ACCENT);
 };
 
+// Pure DOM painter — the single source of truth for what is on screen. Writes
+// every semantic token + shell colour for the given resolved mode + accent and
+// never touches React state, so it cannot trigger or fight other effects.
+const paintTheme = (resolvedMode, accentName) => {
+  if (typeof document === "undefined") return;
+
+  // Build the complete semantic token set from the sidebar-led accent model.
+  const runtime = buildThemeRuntime({ resolvedMode, accentName });
+  const root = document.documentElement;
+
+  trace("theme", `paint -> ${resolvedMode} / ${accentName}`, { shell: runtime.shellBackground });
+
+  // Apply every semantic and compatibility variable directly to the root element.
+  Object.entries(runtime.legacy).forEach(([token, value]) => {
+    root.style.setProperty(token, value);
+  });
+
+  // Keep the resolved-mode signals in sync for CSS / boot logic that reads them.
+  root.setAttribute("data-theme", resolvedMode);
+  root.style.colorScheme = resolvedMode;
+
+  // Update html/body background so mobile overscroll areas and safe-area insets
+  // show the shell colour instead of plain white/dark.
+  root.style.backgroundColor = runtime.shellBackground;
+  if (document.body) document.body.style.backgroundColor = runtime.shellBackground;
+
+  // Keep mobile browser chrome (theme-color meta) matching the shell colour.
+  let themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (!themeMeta) {
+    themeMeta = document.createElement("meta");
+    themeMeta.setAttribute("name", "theme-color");
+    document.head.appendChild(themeMeta);
+  }
+  themeMeta.setAttribute("content", runtime.shellBackground);
+};
+
 const ThemeContext = createContext({
   mode: "system",
   resolvedMode: "light",
@@ -94,14 +149,18 @@ const ThemeContext = createContext({
   currentTheme: themes.light,
   toggleTheme: () => {},
   accent: DEFAULT_ACCENT,
+  effectiveAccent: DEFAULT_ACCENT,
   setAccent: () => {},
   setTemporaryOverride: () => {},
+  commitUserTheme: async () => null,
   loading: true,
 });
 
 export function ThemeProvider({ children, defaultMode = "system" }) {
   const { user, dbUserId, authUserId } = useUser() || {};
   const normalizedDefault = normalizeMode(defaultMode);
+
+  // `mode` / `accent` always hold the user's TRUE preference — never an override.
   const [mode, setMode] = useState(() => {
     if (typeof document !== "undefined") {
       const docMode = document.documentElement.getAttribute("data-theme");
@@ -115,167 +174,138 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
       ? storedMode
       : normalizedDefault;
   });
-  const [resolvedMode, setResolvedMode] = useState(() => {
-    if (typeof document !== "undefined") {
-      const docMode = document.documentElement.getAttribute("data-theme");
-      if (docMode === "dark" || docMode === "light") return docMode;
-    }
-    const storedMode = readStoredMode();
-    const initialMode =
-      storedMode === "light" || storedMode === "dark" || storedMode === "system"
-        ? storedMode
-        : normalizedDefault;
-    return initialMode === "system" ? getSystemPreferredMode() : initialMode;
-  });
   const [accent, setAccent] = useState(() => readStoredAccent());
+
+  // Concrete light/dark resolution of the OS preference — the only "resolved"
+  // value kept in state; everything else is derived from it each render.
+  const [systemMode, setSystemMode] = useState(() => getSystemPreferredMode());
+
   const [loading, setLoading] = useState(true);
-  const [temporaryOverride, setTemporaryOverride] = useState(null);
 
-  const applyAccent = useCallback((nextAccent, modeOverride = null) => {
-    // Normalise the requested accent so only supported palettes are applied.
-    const normalizedAccent = normalizeAccent(nextAccent);
+  // Transient display theme. Initialised to the red login theme when the app
+  // first paints on /login so there is no flash before the login page mounts.
+  const [temporaryOverride, setTemporaryOverride] = useState(() =>
+    isLoginThemeRoute() ? LOGIN_THEME_OVERRIDE : null
+  );
 
-    // Resolve the current colour mode so the runtime helper can derive the right light/dark tokens.
-    const resolved =
-      modeOverride ||
-      (typeof document !== "undefined" ? document.documentElement.getAttribute("data-theme") : null) ||
-      "light";
+  // Resolved mode of the true preference.
+  const resolvedMode = mode === "system" ? systemMode : normalizeMode(mode);
 
-    // Build the complete semantic token set from the sidebar-led accent model.
-    const runtime = buildThemeRuntime({ resolvedMode: resolved, accentName: normalizedAccent });
-
-    if (typeof document !== "undefined") {
-      // Apply every semantic and compatibility variable directly to the root element.
-      Object.entries(runtime.legacy).forEach(([token, value]) => {
-        document.documentElement.style.setProperty(token, value);
-      });
-
-      // Update html/body background to accent layer so mobile browser overscroll
-      // areas and safe-area insets show the accent colour instead of plain white/dark.
-      document.documentElement.style.backgroundColor = runtime.shellBackground;
-      if (document.body) document.body.style.backgroundColor = runtime.shellBackground;
-      // Update theme-color meta so mobile browser chrome matches
-      let themeMeta = document.querySelector('meta[name="theme-color"]');
-      if (!themeMeta) {
-        themeMeta = document.createElement("meta");
-        themeMeta.setAttribute("name", "theme-color");
-        document.head.appendChild(themeMeta);
-      }
-      themeMeta.setAttribute("content", runtime.shellBackground);
-    }
-    setAccent(normalizedAccent);
-    return normalizedAccent;
-  }, []);
-
-  const applyMode = useCallback((nextMode) => {
-    const requested = normalizeMode(nextMode);
-    const resolved = requested === "system" ? getSystemPreferredMode() : requested;
-    if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme", resolved);
-    }
-    setMode(requested);
-    setResolvedMode(resolved);
-    return { requested, resolved };
-  }, []);
-
-  useEffect(() => {
-    const storedMode = readStoredMode();
-    const storedAccent = readStoredAccent();
-    const initial =
-      storedMode === "light" || storedMode === "dark" || storedMode === "system" ? storedMode : normalizedDefault;
-    const { resolved } = applyMode(initial);
-    applyAccent(storedAccent, resolved);
-    writePreferenceCookie(THEME_COOKIE_KEY, initial);
-    writePreferenceCookie(ACCENT_COOKIE_KEY, storedAccent);
-  }, [applyAccent, applyMode, normalizedDefault]);
-
-  useEffect(() => {
-    applyAccent(accent, resolvedMode);
-  }, [accent, applyAccent, resolvedMode]);
-
-  useEffect(() => {
-    if (!temporaryOverride) {
-      const targetMode = mode === "system" ? getSystemPreferredMode() : mode;
-      if (typeof document !== "undefined") {
-        document.documentElement.setAttribute("data-theme", targetMode);
-      }
-      setResolvedMode(targetMode);
-      applyAccent(accent, targetMode);
-      return;
-    }
-
+  // What the painter should actually show right now: the override when present,
+  // otherwise the true preference.
+  let paintMode = resolvedMode;
+  let paintAccent = accent;
+  if (temporaryOverride) {
     const overrideMode = normalizeMode(temporaryOverride.mode || mode);
-    const overrideResolved = overrideMode === "system" ? getSystemPreferredMode() : overrideMode;
-    const overrideAccent = normalizeAccent(temporaryOverride.accent || accent);
-    if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme", overrideResolved);
-    }
-    setResolvedMode(overrideResolved);
-    applyAccent(overrideAccent, overrideResolved);
-  }, [temporaryOverride, mode, accent, applyAccent]);
+    paintMode = overrideMode === "system" ? systemMode : overrideMode;
+    paintAccent = normalizeAccent(temporaryOverride.accent || accent);
+  }
 
+  // THE single paint pass. Nothing else writes theme tokens to the document, so
+  // a transition can only ever produce one repaint into one final theme.
   useEffect(() => {
-    if (mode !== "system") return;
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    paintTheme(paintMode, paintAccent);
+  }, [paintMode, paintAccent]);
 
+  // Track the OS colour-scheme so `system` mode stays correct.
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (event) => {
-      const nextResolved = event.matches ? "dark" : "light";
-      if (typeof document !== "undefined") {
-        document.documentElement.setAttribute("data-theme", nextResolved);
-      }
-      setResolvedMode(nextResolved);
-      applyAccent(accent, nextResolved);
-    };
-
-    const supportsAddEventListener = typeof media.addEventListener === "function";
-    const supportsRemoveEventListener = typeof media.removeEventListener === "function";
-
-    if (supportsAddEventListener) {
+    const handleChange = (event) => setSystemMode(event.matches ? "dark" : "light");
+    setSystemMode(media.matches ? "dark" : "light");
+    if (typeof media.addEventListener === "function") {
       media.addEventListener("change", handleChange);
-    } else {
-      media.addListener(handleChange);
+      return () => media.removeEventListener("change", handleChange);
     }
-    return () => {
-      if (supportsRemoveEventListener) {
-        media.removeEventListener("change", handleChange);
-      } else {
-        media.removeListener(handleChange);
-      }
-    };
-  }, [accent, applyAccent, mode]);
+    media.addListener(handleChange);
+    return () => media.removeListener(handleChange);
+  }, []);
 
+  const persistPreference = useCallback(
+    async (nextMode) => {
+      if (!dbUserId) return;
+      try {
+        const query = new URLSearchParams();
+        if (process.env.NODE_ENV !== "production") {
+          query.set("userId", String(dbUserId));
+        }
+        const response = await fetchWithTimeout(
+          `/api/profile/theme-preferences${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ mode: normalizeMode(nextMode) }),
+          }
+        );
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.message || `Theme preference save failed (${response.status})`);
+        }
+      } catch (error) {
+        console.error("Failed to save theme preference", error?.message || error);
+      }
+    },
+    [dbUserId]
+  );
+
+  const persistAccentPreference = useCallback(
+    async (nextAccent) => {
+      if (!dbUserId) return;
+      try {
+        const query = new URLSearchParams();
+        if (process.env.NODE_ENV !== "production") {
+          query.set("userId", String(dbUserId));
+        }
+        const response = await fetchWithTimeout(
+          `/api/profile/theme-preferences${query.toString() ? `?${query.toString()}` : ""}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ accent: normalizeAccent(nextAccent) }),
+          }
+        );
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.message || `Accent preference save failed (${response.status})`);
+        }
+      } catch (error) {
+        console.error("Failed to save accent preference", error?.message || error);
+      }
+    },
+    [dbUserId]
+  );
+
+  // Load the signed-in user's saved preference into state. STATE-ONLY — the
+  // paint effect picks it up. It never paints directly, so it cannot fight an
+  // active override (e.g. the red /login theme during a login redirect).
   useEffect(() => {
     let cancelled = false;
 
-    const applyPreferencePayload = (payload = {}) => {
-      const preference = normalizeDbMode(payload.dark_mode ?? payload.themeMode);
-      const { resolved } = applyMode(preference);
+    const writePreferenceState = (modeValue, accentValue) => {
+      const nextMode = normalizeDbMode(modeValue);
       const nextAccent =
-        typeof (payload.accent_color ?? payload.accentColor) === "string" &&
-        (payload.accent_color ?? payload.accentColor).length > 0
-          ? normalizeAccent(payload.accent_color ?? payload.accentColor)
+        typeof accentValue === "string" && accentValue.length > 0
+          ? normalizeAccent(accentValue)
           : DEFAULT_ACCENT;
-      applyAccent(nextAccent, resolved);
+      setMode(nextMode);
+      setAccent(nextAccent);
       if (typeof window !== "undefined") {
-        window.localStorage.setItem(STORAGE_KEY, preference);
+        window.localStorage.setItem(STORAGE_KEY, nextMode);
         window.localStorage.setItem(ACCENT_STORAGE_KEY, nextAccent);
       }
-      writePreferenceCookie(THEME_COOKIE_KEY, preference);
+      writePreferenceCookie(THEME_COOKIE_KEY, nextMode);
       writePreferenceCookie(ACCENT_COOKIE_KEY, nextAccent);
     };
 
     const applyLocalPreference = () => {
       const storedMode = readStoredMode();
-      const storedAccent = readStoredAccent();
       const nextMode =
         storedMode === "light" || storedMode === "dark" || storedMode === "system"
           ? storedMode
           : normalizedDefault;
-      const { resolved } = applyMode(nextMode);
-      applyAccent(storedAccent, resolved);
-      writePreferenceCookie(THEME_COOKIE_KEY, nextMode);
-      writePreferenceCookie(ACCENT_COOKIE_KEY, storedAccent);
+      writePreferenceState(nextMode, readStoredAccent());
     };
 
     const fetchPreference = async () => {
@@ -343,7 +373,7 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
         }
 
         if (!cancelled && data) {
-          applyPreferencePayload(data);
+          writePreferenceState(data.dark_mode ?? data.themeMode, data.accent_color ?? data.accentColor);
         } else if (!cancelled) {
           applyLocalPreference();
         }
@@ -363,97 +393,145 @@ export function ThemeProvider({ children, defaultMode = "system" }) {
     return () => {
       cancelled = true;
     };
-  }, [user, dbUserId, authUserId, applyAccent, applyMode, normalizedDefault]);
-
-  const persistPreference = useCallback(
-    async (nextMode) => {
-      if (!dbUserId) return;
-      try {
-        const query = new URLSearchParams();
-        if (process.env.NODE_ENV !== "production") {
-          query.set("userId", String(dbUserId));
-        }
-        const response = await fetchWithTimeout(
-          `/api/profile/theme-preferences${query.toString() ? `?${query.toString()}` : ""}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ mode: normalizeMode(nextMode) }),
-          }
-        );
-        if (!response.ok) {
-          const payload = await response.json().catch(() => null);
-          throw new Error(payload?.message || `Theme preference save failed (${response.status})`);
-        }
-      } catch (error) {
-        console.error("Failed to save theme preference", error?.message || error);
-      }
-    },
-    [dbUserId]
-  );
-
-  const persistAccentPreference = useCallback(
-    async (nextAccent) => {
-      if (!dbUserId) return;
-      try {
-        const query = new URLSearchParams();
-        if (process.env.NODE_ENV !== "production") {
-          query.set("userId", String(dbUserId));
-        }
-        const response = await fetchWithTimeout(
-          `/api/profile/theme-preferences${query.toString() ? `?${query.toString()}` : ""}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ accent: normalizeAccent(nextAccent) }),
-          }
-        );
-        if (!response.ok) {
-          const payload = await response.json().catch(() => null);
-          throw new Error(payload?.message || `Accent preference save failed (${response.status})`);
-        }
-      } catch (error) {
-        console.error("Failed to save accent preference", error?.message || error);
-      }
-    },
-    [dbUserId]
-  );
+  }, [user, dbUserId, authUserId, normalizedDefault]);
 
   const toggleTheme = useCallback(() => {
     const currentIndex = THEME_SEQUENCE.indexOf(mode);
     const nextMode = THEME_SEQUENCE[(currentIndex + 1) % THEME_SEQUENCE.length];
-    const { requested } = applyMode(nextMode);
+    setMode(nextMode);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, requested);
+      window.localStorage.setItem(STORAGE_KEY, nextMode);
     }
-    writePreferenceCookie(THEME_COOKIE_KEY, requested);
-    persistPreference(requested);
-  }, [applyMode, mode, persistPreference]);
+    writePreferenceCookie(THEME_COOKIE_KEY, nextMode);
+    persistPreference(nextMode);
+  }, [mode, persistPreference]);
 
-  const setAccentPreference = useCallback((nextAccent) => {
-    const normalizedAccent = applyAccent(nextAccent);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(ACCENT_STORAGE_KEY, normalizedAccent);
+  const setAccentPreference = useCallback(
+    (nextAccent) => {
+      const normalizedAccent = normalizeAccent(nextAccent);
+      setAccent(normalizedAccent);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(ACCENT_STORAGE_KEY, normalizedAccent);
+      }
+      writePreferenceCookie(ACCENT_COOKIE_KEY, normalizedAccent);
+      persistAccentPreference(normalizedAccent);
+    },
+    [persistAccentPreference]
+  );
+
+  // Resolve a specific user's saved theme. Used at the login → app boundary so
+  // the destination theme is known before the navigation completes.
+  const resolveUserThemePreference = useCallback(async (userId) => {
+    const numericUserId =
+      Number.isInteger(Number(userId)) && Number(userId) > 0 ? Number(userId) : null;
+
+    if (numericUserId) {
+      try {
+        const { data, error } = await withTimeout(
+          supabaseClient
+            .from("users")
+            .select("dark_mode, accent_color")
+            .eq("user_id", numericUserId)
+            .maybeSingle(),
+          "Theme preference commit load"
+        );
+        if (error) throw error;
+        if (data) return { mode: data.dark_mode, accent: data.accent_color };
+      } catch (fullErr) {
+        try {
+          const { data, error } = await withTimeout(
+            supabaseClient
+              .from("users")
+              .select("dark_mode")
+              .eq("user_id", numericUserId)
+              .maybeSingle(),
+            "Theme preference commit fallback load"
+          );
+          if (error) throw error;
+          if (data) return { mode: data.dark_mode, accent: null };
+        } catch (fallbackErr) {
+          console.warn("Theme commit DB load failed", fallbackErr?.message || fallbackErr);
+        }
+        console.warn("Theme commit accent column unavailable", fullErr?.message || fullErr);
+      }
+      return null;
     }
-    writePreferenceCookie(ACCENT_COOKIE_KEY, normalizedAccent);
-    persistAccentPreference(normalizedAccent);
-  }, [applyAccent, persistAccentPreference]);
+
+    // No numeric id available — fall back to the session-scoped profile endpoint.
+    try {
+      const response = await fetchWithTimeout("/api/profile/me", {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) return null;
+      const payload = await response.json().catch(() => null);
+      const profile = payload?.data?.profile || payload?.profile || null;
+      if (!profile) return null;
+      return {
+        mode: profile.dark_mode ?? profile.themeMode,
+        accent: profile.accent_color ?? profile.accentColor,
+      };
+    } catch (err) {
+      console.warn("Theme commit profile load failed", err?.message || err);
+      return null;
+    }
+  }, []);
+
+  // Atomically: store the real preference, release any override, and let the
+  // single paint pass repaint exactly once into the final theme.
+  const commitTheme = useCallback(({ mode: nextModeRaw, accent: nextAccentRaw }) => {
+    const nextMode = normalizeDbMode(nextModeRaw);
+    const nextAccent =
+      typeof nextAccentRaw === "string" && nextAccentRaw.length > 0
+        ? normalizeAccent(nextAccentRaw)
+        : DEFAULT_ACCENT;
+    trace("theme", `commitTheme -> ${nextMode} / ${nextAccent} (override cleared)`);
+    setMode(nextMode);
+    setAccent(nextAccent);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(STORAGE_KEY, nextMode);
+      window.localStorage.setItem(ACCENT_STORAGE_KEY, nextAccent);
+    }
+    writePreferenceCookie(THEME_COOKIE_KEY, nextMode);
+    writePreferenceCookie(ACCENT_COOKIE_KEY, nextAccent);
+    setTemporaryOverride(null);
+    return { mode: nextMode, accent: nextAccent };
+  }, []);
+
+  // Resolve a user's saved theme and commit it. Called during the login loading
+  // screen so the colour changes once, mid-transition, then stays put. Returns
+  // null (committing nothing) if the preference cannot be resolved — the normal
+  // fetchPreference pass then settles the theme on the destination page.
+  const commitUserTheme = useCallback(
+    async (userId) => {
+      trace("theme", "commitUserTheme: resolving preference", { userId: userId ?? null });
+      const preference = await resolveUserThemePreference(userId);
+      trace("theme", "commitUserTheme: resolved", preference);
+      if (!preference) return null;
+      return commitTheme(preference);
+    },
+    [resolveUserThemePreference, commitTheme]
+  );
 
   const contextValue = useMemo(
     () => ({
       mode,
-      resolvedMode,
-      isDark: resolvedMode === "dark",
-      currentTheme: themes[resolvedMode] || themes.light,
+      resolvedMode: paintMode,
+      isDark: paintMode === "dark",
+      currentTheme: themes[paintMode] || themes.light,
       toggleTheme,
+      // `accent` is the user's TRUE saved preference (for theme controls).
+      // `effectiveAccent` is what is actually painted right now — it follows a
+      // temporary override (e.g. the red /login theme), so UI that must match
+      // the on-screen colour (the brand logo) should read this one.
       accent,
+      effectiveAccent: paintAccent,
       setAccent: setAccentPreference,
       setTemporaryOverride,
+      commitUserTheme,
       loading,
     }),
-    [mode, resolvedMode, toggleTheme, accent, setAccentPreference, loading, setTemporaryOverride]
+    [mode, paintMode, paintAccent, toggleTheme, accent, setAccentPreference, setTemporaryOverride, commitUserTheme, loading]
   );
 
   return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;

@@ -993,7 +993,9 @@ export default function GlobalNotesWidget() {
     <div className={styles.wrapper}>
       <button
         type="button"
-        className={`${styles.bubble} ${isPanelVisible || isPanelMounted ? styles.bubbleOpen : ""}`}
+        className={`app-btn app-btn--primary ${styles.bubble} ${
+          isPanelVisible || isPanelMounted ? styles.bubbleOpen : ""
+        }`}
         style={{
           left:
             isWideBubblePage && typeof window !== "undefined"
@@ -1017,7 +1019,7 @@ export default function GlobalNotesWidget() {
 
       {isPanelMounted && (
         <section
-          className={`${styles.panel} ${isPanelVisible ? styles.panelEnter : styles.panelExit}`}
+          className={`app-section-card ${styles.panel} ${isPanelVisible ? styles.panelEnter : styles.panelExit}`}
           style={{
             left: panelRect.x,
             top: panelRect.y,
@@ -1036,7 +1038,9 @@ export default function GlobalNotesWidget() {
                   {/* AI Guide tab — always present, positioned before note tabs */}
                   <button
                     type="button"
-                    className={`${styles.tab} ${styles.tabAi} ${activeView === "ai" ? styles.tabActive : ""}`}
+                    className={`app-btn app-btn--secondary app-btn--pill ${styles.tab} ${styles.tabAi} ${
+                      activeView === "ai" ? styles.tabActive : ""
+                    }`}
                     onClick={openAiTab}
                     title="App Guide — ask questions about the system"
                     aria-label="Open AI App Guide"
@@ -1050,7 +1054,9 @@ export default function GlobalNotesWidget() {
                       <button
                         key={note.noteId}
                         type="button"
-                        className={`${styles.tab} ${note.noteId === activeNoteId && activeView === "notes" ? styles.tabActive : ""}`}
+                        className={`app-btn app-btn--secondary app-btn--pill ${styles.tab} ${
+                          note.noteId === activeNoteId && activeView === "notes" ? styles.tabActive : ""
+                        }`}
                         onClick={() => openNoteTab(note.noteId)}
                         title={note.title || "Untitled"}
                       >
@@ -1060,7 +1066,7 @@ export default function GlobalNotesWidget() {
                           <span
                             role="button"
                             tabIndex={0}
-                            className={styles.tabClose}
+                            className={`app-btn app-btn--ghost ${styles.tabClose}`}
                             onClick={(event) => {
                               event.stopPropagation();
                               deleteTab(note.noteId);
@@ -1081,7 +1087,7 @@ export default function GlobalNotesWidget() {
                   })}
                   <button
                     type="button"
-                    className={`${styles.tab} ${styles.tabAdd}`}
+                    className={`app-btn app-btn--primary app-btn--pill ${styles.tab} ${styles.tabAdd}`}
                     onClick={createTab}
                     aria-label="Add tab"
                     title="Add tab"
@@ -1093,7 +1099,7 @@ export default function GlobalNotesWidget() {
             </div>
           </header>
 
-          <div className={styles.body}>
+          <div className={`${styles.body} themed-scrollbar`}>
             {/* AI Guide panel — shown when the AI tab is active */}
             {activeView === "ai" && (
               <AiGuidePanel
@@ -1109,7 +1115,7 @@ export default function GlobalNotesWidget() {
               <div className={styles.emptyState}>
                 <h4>No notes yet</h4>
                 <p>Create your first note to track tasks, reminders, or test instructions.</p>
-                <button type="button" className={styles.primaryAction} onClick={createTab}>
+                <button type="button" className={`app-btn app-btn--primary ${styles.primaryAction}`} onClick={createTab}>
                   Create your first note
                 </button>
               </div>
@@ -1126,7 +1132,7 @@ export default function GlobalNotesWidget() {
                       {/* AI button — opens the App Guide panel */}
                       <button
                         type="button"
-                        className={styles.aiButton}
+                        className={`app-btn app-btn--secondary ${styles.aiButton}`}
                         onClick={openAiTab}
                         title="Open App Guide — ask questions about the system"
                         aria-label="Open AI App Guide"
@@ -1135,7 +1141,7 @@ export default function GlobalNotesWidget() {
                       </button>
                       <button
                         type="button"
-                        className={styles.shareButton}
+                        className={`app-btn app-btn--secondary ${styles.shareButton}`}
                         onClick={openShareModal}
                         disabled={!activeNoteOwnedByUser}
                       >
@@ -1146,7 +1152,9 @@ export default function GlobalNotesWidget() {
                         role="switch"
                         aria-checked={Boolean(activeNote.isGlobal)}
                         aria-label="Toggle global note visibility"
-                        className={`${styles.visibilitySwitch} ${activeNote.isGlobal ? styles.visibilitySwitchOn : ""}`}
+                        className={`app-btn app-btn--secondary ${styles.visibilitySwitch} ${
+                          activeNote.isGlobal ? styles.visibilitySwitchOn : ""
+                        }`}
                         onClick={() => onToggleGlobal(!activeNote.isGlobal)}
                         disabled={!activeNoteOwnedByUser}
                       >
@@ -1156,7 +1164,7 @@ export default function GlobalNotesWidget() {
                   </div>
                   <input
                     id="floating-note-title"
-                    className={`${styles.input} ${styles.titleInput}`}
+                    className={`app-input ${styles.input} ${styles.titleInput}`}
                     value={activeNote.title || ""}
                     onChange={(event) => onChangeTitle(event.target.value)}
                     onBlur={() => onBlurSave(activeNote.noteId)}
@@ -1172,7 +1180,9 @@ export default function GlobalNotesWidget() {
                   <div
                     id="floating-note-description"
                     ref={descriptionInputRef}
-                    className={`${styles.richEditor} ${activeNoteReadOnly ? styles.richEditorReadOnly : ""}`}
+                    className={`app-input themed-scrollbar ${styles.richEditor} ${
+                      activeNoteReadOnly ? styles.richEditorReadOnly : ""
+                    }`}
                     contentEditable={!activeNoteReadOnly}
                     suppressContentEditableWarning
                     onFocus={() => {
@@ -1192,7 +1202,7 @@ export default function GlobalNotesWidget() {
                   />
                   {commandSuggestions.length > 0 && (
                     <div
-                      className={styles.commandSuggestions}
+                      className={`${styles.commandSuggestions} themed-scrollbar`}
                       style={{ top: `${commandMenuPosition.top}px`, left: `${commandMenuPosition.left}px` }}
                     >
                       {commandSuggestions.map((cmd, index) => (
@@ -1233,7 +1243,7 @@ export default function GlobalNotesWidget() {
       {isShareModalOpen && (
         <div className={styles.shareOverlay} onClick={closeShareModal}>
           <section
-            className={styles.shareModal}
+            className={`app-section-card ${styles.shareModal}`}
             role="dialog"
             aria-label="Share note"
             onClick={(event) => event.stopPropagation()}
@@ -1242,7 +1252,7 @@ export default function GlobalNotesWidget() {
               <div className={styles.shareSearchWrap}>
                 <input
                   type="text"
-                  className={styles.shareSearch}
+                  className={`app-input ${styles.shareSearch}`}
                   placeholder="Search users"
                   value={shareSearch}
                   onChange={(event) => setShareSearch(event.target.value)}
@@ -1251,12 +1261,12 @@ export default function GlobalNotesWidget() {
                   {selectedShareUserIds.length} out of {totalShareUserCount} selected
                 </span>
               </div>
-              <button type="button" className={styles.shareCloseButton} onClick={closeShareModal}>
+              <button type="button" className={`app-btn app-btn--secondary ${styles.shareCloseButton}`} onClick={closeShareModal}>
                 Close
               </button>
             </div>
 
-            <div className={styles.shareUserList} aria-busy={isShareLoading ? "true" : "false"}>
+            <div className={`${styles.shareUserList} themed-scrollbar`} aria-busy={isShareLoading ? "true" : "false"}>
               {isShareLoading && <div className={styles.shareEmpty}>Loading users...</div>}
               {!isShareLoading && filteredShareUsers.length === 0 && (
                 <div className={styles.shareEmpty}>No users found</div>
