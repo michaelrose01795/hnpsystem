@@ -271,7 +271,6 @@ export default function LoginDropdown({
         key: PRESENTATION_CATEGORY_VALUE,
         value: PRESENTATION_CATEGORY_VALUE,
         label: "Presentation",
-        description: "Open presentation mode",
       },
     ],
     [roleCategories]

@@ -41,7 +41,14 @@ export function installFetchInterceptor() {
     }
     const method = (init?.method || (typeof input === "object" && input?.method) || "GET").toUpperCase();
     if (isPresentationMode() && /^\/api\//.test(apiPath) && !PASSTHROUGH_RE.test(apiPath)) {
-      const mock = buildMockApiResponse(apiPath, method);
+      // Pass the request body through so route transforms that branch on a
+      // payload `action` (e.g. /api/personal/security lock/unlock) can read it.
+      let parsedBody = null;
+      const rawBody = init?.body ?? (typeof input === "object" ? input?.body : null);
+      if (typeof rawBody === "string" && rawBody) {
+        try { parsedBody = JSON.parse(rawBody); } catch { parsedBody = null; }
+      }
+      const mock = buildMockApiResponse(apiPath, method, parsedBody);
       return makeMockResponse(mock);
     }
     return originalFetch(input, init);

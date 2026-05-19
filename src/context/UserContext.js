@@ -1,10 +1,12 @@
 // ✅ Imports converted to use absolute alias "@/"
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/router";
 import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { ensureDevDbUserAndGetId } from "@/lib/users/devUsers";
 import { getUserActiveJobs } from "@/lib/database/jobClocking";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { getPresentationRoleByKey } from "@/config/presentationRoleAccess";
+import { DEV_FULL_ACCESS_ROLES } from "@/lib/auth/roles";
 
 const DEV_ROLE_COOKIE = "hnp-dev-roles";
 const DEV_COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
@@ -61,6 +63,7 @@ const UserContext = createContext();
 
 export function UserProvider({ children }) {
   const { data: session, status: sessionStatus } = useSession(); // NextAuth session
+  const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -104,18 +107,43 @@ export function UserProvider({ children }) {
 
   // Presentation mode: synthesise a user from the active demo role so the rest
   // of the app (role-gated UI, sidebars, dashboards) renders without ever
-  // hitting NextAuth or the dev-login flow. The active role key is written to
-  // sessionStorage by PresentationProvider when the user picks a tile on
-  // /loginPresentation.
+  // hitting NextAuth or the dev-login flow.
+  //
+  // This effect keys on `router.asPath` so it re-runs on every route change —
+  // including *client-side* navigation into a /presentation/* deck (e.g.
+  // picking a tile on /loginPresentation). Keying it only on `sessionStatus`
+  // meant the demo user was never created when entering a deck via a Next
+  // <Link> (sessionStatus doesn't change during a client navigation), so
+  // role-gated pages such as /messages fell back to their "please log in"
+  // state. The route segment itself is the authoritative role source.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!isPresentationMode()) return;
+    if (!isPresentationMode()) {
+      // Left the presentation deck — drop the synthetic demo user so the real
+      // auth effects below can take over again.
+      setUser((prev) =>
+        prev && typeof prev.id === "string" && prev.id.startsWith("demo-") ? null : prev
+      );
+      return;
+    }
     const pathRoleKey = window.location.pathname.match(/^\/presentation\/([^/]+)/)?.[1] || null;
-    const key = window.sessionStorage.getItem("presentation:activeRoleKey") || pathRoleKey;
+    const key = pathRoleKey || window.sessionStorage.getItem("presentation:activeRoleKey");
     const role = getPresentationRoleByKey(key);
     if (!role) return;
     window.sessionStorage.setItem("presentation:activeRoleKey", role.key);
-    const roleAliases = new Set([String(role.roleId || role.key).toUpperCase()]);
+    // Presentation decks mount the real, role-gated pages with mock data only.
+    // Those pages run their own in-page role checks (separate from
+    // ProtectedRoute, which already no-ops in presentation mode) and would
+    // otherwise render a "you do not have permission" panel whenever the picked
+    // demo role doesn't match a page's expected role(s). Presentation mode is
+    // read-only mock data with no working actions, so the demo user carries
+    // every known role — this lets every page in every deck render its full
+    // content. The picked tile's role is listed first so any page that reads a
+    // "primary" role still reflects the chosen presentation role.
+    const roleAliases = new Set([
+      String(role.roleId || role.key).toUpperCase(),
+      ...DEV_FULL_ACCESS_ROLES.map((r) => String(r).toUpperCase()),
+    ]);
     if (role.key === "mobile-technician") roleAliases.add("TECHS");
     const demoUser = {
       id: `demo-${role.key}`,
@@ -126,10 +154,12 @@ export function UserProvider({ children }) {
       isDevLogin: false,
       impersonatedRole: role.roleId || role.key,
     };
-    setUser(demoUser);
+    // Keep the existing object reference when the role hasn't changed so a
+    // slide/step hash navigation inside the same deck doesn't churn renders.
+    setUser((prev) => (prev && prev.id === demoUser.id ? prev : demoUser));
     setDbUserId(1);
     setLoading(false);
-  }, [sessionStatus]);
+  }, [sessionStatus, router.asPath]);
 
   // Load dev user from localStorage
   useEffect(() => {

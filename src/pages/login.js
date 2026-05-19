@@ -420,6 +420,10 @@ export default function LoginPage() {
   // While the redirect is in flight, the login page swaps in PageLoadingSkeleton so
   // the user sees the global loading style instead of a flash of the login form.
   useEffect(() => {
+    // The /login screen is also one of the Presentation deck slides. There the
+    // synthetic demo user is always present, so this post-login redirect must
+    // not fire — it would bounce the slide out of the presentation deck.
+    if (isPresentationMode()) return;
     if (logoutInProgress || hasActiveLogoutBarrier()) return;
     const activeUser =
     user || (sessionStatus === "authenticated" && session?.user ? session.user : null);

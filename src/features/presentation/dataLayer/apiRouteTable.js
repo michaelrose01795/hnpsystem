@@ -8,6 +8,44 @@
 // with a console.warn so gaps surface during demo walkthroughs.
 
 import { getMockRows } from "../mockData";
+import { buildPresentationPersonalState } from "../mockData/personal";
+
+// In-memory lock status for the demo /profile → Personal tab. The presenter
+// enters the (pre-filled) passcode to flip this to unlocked; it survives the
+// dashboard hook's focus/visibility re-fetches within a single demo session.
+let presentationPersonalUnlocked = false;
+
+// Transform for /api/personal/security. GET reports the current lock status;
+// POST branches on the payload `action` (unlock / setup / lock / reset).
+function personalSecurityResponse(_rows, _query, _parsed, ctx = {}) {
+  const action = ctx.body?.action || null;
+  if (action === "lock") {
+    presentationPersonalUnlocked = false;
+    return { success: true, data: { isSetup: true, isUnlocked: false } };
+  }
+  if (action === "reset") {
+    presentationPersonalUnlocked = false;
+    return { success: true, data: { isSetup: false, isUnlocked: false } };
+  }
+  if (action === "unlock" || action === "setup") {
+    presentationPersonalUnlocked = true;
+    return {
+      success: true,
+      data: { isSetup: true, isUnlocked: true, personalState: buildPresentationPersonalState() },
+    };
+  }
+  // GET — report the current status, including the state blob once unlocked.
+  return {
+    success: true,
+    data: {
+      isSetup: true,
+      isUnlocked: presentationPersonalUnlocked,
+      ...(presentationPersonalUnlocked
+        ? { personalState: buildPresentationPersonalState() }
+        : {}),
+    },
+  };
+}
 
 function paginate(rows, query) {
   const page = Math.max(1, Number(query.get("page") || 1));
@@ -899,7 +937,9 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/email-api\/?/, table: "users", transform: () => ({ success: true }) },
   { pattern: /^\/api\/location\//, table: "users", transform: () => ({ success: true, data: { minutes: 12 } }) },
   { pattern: /^\/api\/profile\/me\/?$/, table: "users", transform: buildProfileResponse },
-  { pattern: /^\/api\/personal\/state\/?$/, table: "users", transform: () => ({ success: true, data: { financeState: null } }) },
+  // Personal dashboard (passcode-locked /profile tab).
+  { pattern: /^\/api\/personal\/security\/?$/, table: "users", transform: personalSecurityResponse },
+  { pattern: /^\/api\/personal\/state\/?$/, table: "users", transform: () => ({ success: true, data: buildPresentationPersonalState() }) },
 ];
 
 export function resolveApiRoute(pathname) {
@@ -909,7 +949,7 @@ export function resolveApiRoute(pathname) {
   return null;
 }
 
-export function buildMockApiResponse(url, method = "GET") {
+export function buildMockApiResponse(url, method = "GET", requestBody = null) {
   let parsed;
   try {
     parsed = new URL(url, "http://localhost");
@@ -917,6 +957,9 @@ export function buildMockApiResponse(url, method = "GET") {
     return { status: 200, body: { success: true, data: [] } };
   }
   const entry = resolveApiRoute(parsed.pathname);
+  // 4th transform arg carries request context for routes that branch on the
+  // HTTP method or a JSON payload (e.g. /api/personal/security).
+  const ctx = { body: requestBody, method };
 
   if (method !== "GET") {
     if (!entry) {
@@ -926,7 +969,7 @@ export function buildMockApiResponse(url, method = "GET") {
       return { status: 200, body: { success: true, data: null } };
     }
     const rows = getMockRows(entry.table) || [];
-    const body = entry.transform ? entry.transform(rows, parsed.searchParams, parsed) : { success: true, data: null };
+    const body = entry.transform ? entry.transform(rows, parsed.searchParams, parsed, ctx) : { success: true, data: null };
     return { status: 200, body };
   }
 
@@ -938,6 +981,6 @@ export function buildMockApiResponse(url, method = "GET") {
   }
 
   const rows = getMockRows(entry.table) || [];
-  const body = entry.transform ? entry.transform(rows, parsed.searchParams, parsed) : { success: true, data: rows };
+  const body = entry.transform ? entry.transform(rows, parsed.searchParams, parsed, ctx) : { success: true, data: rows };
   return { status: 200, body };
 }

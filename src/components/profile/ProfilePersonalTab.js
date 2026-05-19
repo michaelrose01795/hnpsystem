@@ -11,6 +11,8 @@ import { MonthPickerField } from "@/components/ui/monthPickerAPI";
 import { generateHeadline, generateInsights } from "@/lib/profile/personalInsights";
 import { PERSONAL_WIDGET_DEFINITIONS, PERSONAL_WIDGET_TYPE_OPTIONS, sortWidgetsForDisplay } from "@/lib/profile/personalWidgets";
 import Button from "@/components/ui/Button";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { PRESENTATION_PERSONAL_PASSCODE } from "@/features/presentation/mockData/personal";
 import {
   EmptyState,
   StatusBadge,
@@ -86,7 +88,11 @@ function PasscodeModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setPasscode("");
+    // Presentation decks pre-fill the unlock code so the presenter can show the
+    // passcode popup and step straight through it into the demo dashboard.
+    setPasscode(
+      isPresentationMode() && mode === "unlock" ? PRESENTATION_PERSONAL_PASSCODE : ""
+    );
     setConfirmPasscode("");
   }, [isOpen, mode]);
 
@@ -639,7 +645,15 @@ export default function ProfilePersonalTab({ disabled = false, onHeaderActionsCh
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!disabled && !dashboard.isInitialising && !dashboard.isUnlocked && !dashboard.isSetup) {
+    // Normally the passcode popup only auto-opens for first-time setup; in a
+    // presentation deck it also auto-opens on the unlock step so the demo
+    // flows without an extra click.
+    if (
+      !disabled &&
+      !dashboard.isInitialising &&
+      !dashboard.isUnlocked &&
+      (!dashboard.isSetup || isPresentationMode())
+    ) {
       setIsPasscodeModalOpen(true);
     }
     if (dashboard.isUnlocked) {
