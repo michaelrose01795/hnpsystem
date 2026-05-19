@@ -1,223 +1,354 @@
-UI THEME / SURFACE REVIEW — SIDEBAR PAGES PER USER
-
 ====================================================
-RETAIL
+General
 ====================================================
 
-- /login
+- /messages
 
 
-----------------------------------------------------
-Valet Service
-----------------------------------------------------
+- /newsfeed (CHECK)
+add the floating notes button onto the newsfeed page only within the presnentaino, have this floating notes section only show the AI tab, and 3 other tabs created which are fully mock data, have the global toggle button not show wihtint he presnentiaon mode section, this is to demonstaight the ai tab and what other tabs look like within the notes section. 
 
-- /valet
 
-- /dashboard/valeting
+- /profile
+
+
+- /profile?tab=personal
+
+
+- /login (CHECK)
+make sure the "login" page within the presentation follows the login style as the actual /login page but doesnt show the dev login section, have everything else the same.
+
+- floating notes (CEHCK)
+have it os the tab section follows the staffglobal.css tab tesign. have it so the "x" buttons wihtin the tab buttons does not follow the staffglobal.css and overrides any size or style, have it so this button only shows the "x" inside a circle button which is small to not change the size of the tab button. have it so the tab buttons fits the whole title within the button, only show the "Title" within the tab button and the "x" (delete) button.
+
+(CHECK)
+have it so the "Tooltips (native title=)" uses a glogble primary button style hover text display when hover text is being used etc. have it so this uses a shadow backgorund ot make it seem like its floating above everything else. make this change to everywhere where its used within the staffglobal.css pages as well as the "/dev/user-diagnostic" showcase section.
+
+
+- /password-reset/new
 
 
 ====================================================
-SALES
+Accounts Manager
 ====================================================
 
-----------------------------------------------------
+- /dashboard/accounts
+
+
+- /accounts
+
+
+- /accounts/create
+
+
+- /accounts/edit/[accountId]
+
+
+- /accounts/view/[accountId]
+fix the spacing along the edge within the "/accounts/view/[accountId]" page
+
+
+- /accounts/transactions/[accountId]
+add "--theme" backgorund cards within the "/accounts/transactions/[accountId]" page
+
+- /accounts/invoices
+move the filter intop the top section to fill the gap within the "/accounts/invoices" page 
+
+- /accounts/invoices/[invoiceId]
+
+
+- /accounts/payslips
+
+
+- /accounts/reports
+make the seach bar smaller to fit everything wihtin one row with different size screens
+
+- /accounts/settings
+
+
+- /company-accounts
+make sure the tab section follows the staffglobal.css tab style
+
+
+- /company-accounts/[accountNumber]
+have it so the whole page follows the staffglobal.css and the layout is better to fit all screen sizes as well as adding "--theme" background cards.
+
+
+====================================================
 Admin Manager
-----------------------------------------------------
-
-- /admin/compliance
+====================================================
 
 - /dashboard/admin
 
 
-----------------------------------------------------
-Accounts Manager
-----------------------------------------------------
-
-- /accounts
-
-- /company-accounts (TODO)
-make sure the tab section follows the staffglobal.css tab style
-
-- /company-accounts/[accountNumber] (TODO)
-have it so the whole page follows the staffglobal.css and the layout is better to fit all screen sizes as well as adding "--theme" background cards.
-
-- /accounts/invoices (TODO)
-move the filter intop the top section to fill the gap
+- /admin/users
+have it so this page follows the staffglobal.css style, and the cards within this page follows the "--theme" colour background and gaps of the page adjsuted with the dev overlay improved.
 
 
-- /accounts/invoices/INV-2026-00001
-
-- /accounts/reports (TODO)
-make the seach bar smaller to fit everything wihtin one row with different size screens
-
-- /accounts/payslips
-
-- /dashboard/accounts
-
-- /accounts/view/[accountId] (TODO)
-fix the spacing along the edge
-
-- /accounts/transactions/[accountId] (TODO)
-add "--theme" backgorund cards
+- /admin/profiles/[user]
+remove this page
 
 
-----------------------------------------------------
-Owner
-----------------------------------------------------
+- /admin/compliance
+
+
+- /admin/compliance/breaches
+
+
+- /admin/compliance/dpias
+
+
+- /admin/compliance/retention
+
+
+- /admin/compliance/ropa
+
+
+- /admin/compliance/sars
+
+
+- /profile/privacy
+
+
+- /account/security
+
+
+- /staff/website-manager
+
+
+====================================================
+Customer
+====================================================
+
+have it so within this apge the user can see exactylw hwat the customer will see wihtin all of the /website pages. not "the following so delete these pages.
+- /customer delete page
+
+
+- /customer/messages delete page
+
+
+- /customer/parts delete page
+
+
+- /customer/payments delete page
+
+
+- /customer/vehicles delete page
+
+
+- /customer/vhc delete page"
+
+LINK the following TO THE "/website/profile" page so the user can view from there. have it so these pages follow the custglobal.css style."
+
+- /vhc/customer-preview/[jobNumber]
+
+
+- /vhc/customer-view/[jobNumber]
+
+
+- /vhc/share/[jobNumber]/[linkCode]" have it so these pages are then shown within the presentation as the customer would from the /website pages etc.
+
+
+- /vhc/customer/[jobNumber]/[linkCode]
+
+
+====================================================
+HR Manager
+====================================================
+
+- /hr
+
 
 - /hr/manager
 
 
-----------------------------------------------------
-ADMIN
-----------------------------------------------------
-
-- admin/users (TODO)
-have it so this page follows the staffglobal.css style, and the cards within this page follows the "--theme" colour background and gaps of the page adjsuted with the dev overlay improved.
-
-- admin/profiles/[user] (TODO)
-remove this page
-
-----------------------------------------------------
-Painters
-----------------------------------------------------
+- /hr/attendance
 
 
-- /dashboard/painting
-
-====================================================
-CUSTOMER
-====================================================
-
-- Presentaiton mode (TODO)
-have it so within this apge the user can see exactylw hwat the customer will see wihtin all of the /website pages. not "Customer
-Customer / Messages
-Customer / Parts
-Customer / Payments
-Customer / Vehicles
-Customer / Vhc " pages
-
-(TODO) LINK THESE TO THE "/website/profile" page so the user can view from there. have it so these pages follow the custglobal.css style.
-"Vhc / Customer Preview / JobNumber
-Vhc / Customer View / JobNumber
-Vhc / Share / JobNumber / LinkCode"
+- /hr/disciplinary
 
 
+- /hr/employees
 
-- /website/profile (CHECK)
-check global.css style
-have it detect if the reg numbers already on the system
 
-UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht dropdown, tab section etc
-add a see preview button which when pressed opens a new webbrowser tab and shows what the changes are making from the /staff/website-manager page in real time etc. delete image but still showing fix this as well
+- /hr/leave
 
-- /website (CHECK)
-add a link which the staff uers can add delete uploa change etc anything within the /website page from a website page accessed within the "/login" section
 
-- /website/dev (CHECK)
-check global.css style
+- /hr/payroll
 
-- /website/login (TODO)
-check global.css style
+
+- /hr/performance
+
+
+- /hr/recruitment
+
+
+- /hr/reports
+
+
+- /hr/settings
+
+
+- /hr/training
 
 
 ====================================================
-DONE
-====================================================
-
-====================================================
-GENERAL  (shared across roles — review once)
-====================================================
-
-- /login (TODO)
-make sure the "login" page within the presentation follows the login style as the actual /login page but doesnt show the dev login section, have everything else the same.
-
-- /messages
-
-- /tracking
-
-- /profile (TODO)
-add more mock data within all sections wihtin this page.
-
-add more mock data into the "profile?tab=personal" page as well
-
-- Floating notes (TODO)
-
-
-====================================================
-RETAIL
-====================================================
-
-----------------------------------------------------
-Techs
-----------------------------------------------------
-
-- /job-cards/myjobs
-
-- /tech/consumables-request
-
-- /tech/efficiency
-
-- /tech/dashboard
-
-
-----------------------------------------------------
 Mobile Technician
-----------------------------------------------------
+====================================================
 
 - /mobile/dashboard
 
-- /tech/consumables-request
 
-- /appointments
-
-
-----------------------------------------------------
-Parts Manager
-----------------------------------------------------
-
-- /stock-catalogue
-
-- /parts/deliveries
-
-- /parts/manager
-
-- /dashboard/parts
+- /mobile/delivery/[jobNumber]
 
 
-----------------------------------------------------
+====================================================
 MOT Tester
-----------------------------------------------------
+====================================================
 
 - /dashboard/mot
 
 
-----------------------------------------------------
-Service Manager
-----------------------------------------------------
+====================================================
+Owner
+====================================================
 
-- /job-cards/waiting/nextjobs
+- /dashboard/managers
+
+
+- /hr/manager
+
+
+====================================================
+Parts Manager
+====================================================
+
+- /dashboard/parts
+
+
+- /parts
+
+
+- /parts/manager
+
 
 - /job-cards/view
 
-- /job-cards/view?division=retail
 
-- /job-cards/archive
+- /stock-catalogue
+
+
+- /parts/create-order
+
+
+- /parts/create-order/[orderNumber]
+
+
+- /parts/deliveries
+
+
+- /parts/deliveries/[deliveryId]
+
+
+- /parts/delivery-planner
+
 
 - /parts/goods-in
 
-- /mobile/appointments CHECK NEW PAGE
 
-- /mobile/create CHECK NEW PAGE
+- /parts/goods-in/[goodsInNumber]
 
-- /dashboard/service
 
--/customers/[fisrtlastname]
+====================================================
+Techs
+====================================================
 
-----------------------------------------------------
+- /dashboard/workshop
+
+
+- /tech/dashboard
+
+
+- /job-cards/myjobs
+
+
+- /job-cards/myjobs/[jobNumber]
+
+
+- /job-cards/[jobNumber]
+
+
+- /tech/consumables-request
+
+
+- /tech/efficiency
+
+
+- /vhc
+
+
+- /tracking
+
+
+====================================================
+Valet Service
+====================================================
+
+- /dashboard/valeting
+
+
+- /valet
+
+
+- /job-cards/valet/[jobnumber]
+
+
+====================================================
 Workshop Manager
-----------------------------------------------------
+====================================================
+
+- /dashboard/workshop
+
+
+- /workshop/consumables-tracker
+
+
+- /job-cards/waiting/nextjobs
+
+
+- /job-cards/view
+
+
+- /job-cards/[jobNumber]
+
 
 - /clocking
 
-- /workshop/consumables-tracker
+
+- /clocking/[technicianSlug]
+
+
+- /parts/goods-in
+
+
+- /tracking
+
+
+- /job-cards
+
+
+- /job-cards/create
+
+
+- /job-cards/archive
+
+
+- /job-cards/appointments
+
+
+- /customers/[customerSlug]
+
+
+- /appointments
+
+

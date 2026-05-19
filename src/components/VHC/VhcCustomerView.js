@@ -52,7 +52,7 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
     <div
       style={{
         padding: "14px 14px",
-        borderBottom: "1px solid var(--separating-line)",
+        boxShadow: "inset 0 -1px 0 var(--separating-line)",
         background: rowBg,
         display: "flex",
         flexDirection: "column",
@@ -66,22 +66,22 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
               fontSize: 11,
               textTransform: "uppercase",
               letterSpacing: "0.06em",
-              color: "var(--info)"
+              color: "var(--txt-mute)"
             }}
           >
             {categoryLabel}
           </div>
         )}
-        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--accent-purple)", marginTop: 2 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--txt-bright)", marginTop: 2 }}>
           {detailLabel}
         </div>
         {detailContent && (
-          <div style={{ fontSize: 13, color: "var(--info-dark)", marginTop: 4 }}>
+          <div style={{ fontSize: 13, color: "var(--txt-soft)", marginTop: 4 }}>
             {detailContent}
           </div>
         )}
         {measurement && (
-          <div style={{ fontSize: 12, color: "var(--info)", marginTop: 4 }}>{measurement}</div>
+          <div style={{ fontSize: 12, color: "var(--txt-mute)", marginTop: 4 }}>{measurement}</div>
         )}
       </div>
 
@@ -95,20 +95,20 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
           }}
         >
           <div>
-            <div style={{ color: "var(--info)", fontSize: 11 }}>Parts</div>
-            <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+            <div style={{ color: "var(--txt-mute)", fontSize: 11 }}>Parts</div>
+            <div style={{ fontWeight: 600, color: "var(--txt-bright)" }}>
               {formatCurrency(partsCost)}
             </div>
           </div>
           <div>
-            <div style={{ color: "var(--info)", fontSize: 11 }}>Labour</div>
-            <div style={{ fontWeight: 600, color: "var(--accent-purple)" }}>
+            <div style={{ color: "var(--txt-mute)", fontSize: 11 }}>Labour</div>
+            <div style={{ fontWeight: 600, color: "var(--txt-bright)" }}>
               {labourHours > 0 ? `${labourHours}h · ${formatCurrency(labourCost)}` : "—"}
             </div>
           </div>
           <div>
-            <div style={{ color: "var(--info)", fontSize: 11 }}>Total</div>
-            <div style={{ fontWeight: 700, color: "var(--accent-purple)" }}>
+            <div style={{ color: "var(--txt-mute)", fontSize: 11 }}>Total</div>
+            <div style={{ fontWeight: 700, color: "var(--txt-bright)" }}>
               {formatCurrency(total)}
             </div>
           </div>
@@ -126,8 +126,8 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
               minHeight: 44,
               padding: "10px 12px",
               borderRadius: "var(--radius-sm)",
-              background: isAuthorized ? "var(--success-surface)" : "var(--surface)",
-              color: isAuthorized ? "var(--success)" : "var(--text-1)",
+              background: isAuthorized ? "var(--success-surface)" : "var(--website-elev-2)",
+              color: isAuthorized ? "var(--success)" : "var(--txt-bright)",
               fontWeight: 600,
               fontSize: 13,
               cursor: isUpdating ? "not-allowed" : "pointer",
@@ -145,8 +145,8 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
               minHeight: 44,
               padding: "10px 12px",
               borderRadius: "var(--radius-sm)",
-              background: isDeclined ? "var(--danger-surface)" : "var(--surface)",
-              color: isDeclined ? "var(--danger)" : "var(--text-1)",
+              background: isDeclined ? "var(--danger-surface)" : "var(--website-elev-2)",
+              color: isDeclined ? "var(--danger)" : "var(--txt-bright)",
               fontWeight: 600,
               fontSize: 13,
               cursor: isUpdating ? "not-allowed" : "pointer",
@@ -162,7 +162,7 @@ function Row({ item, severity, interactive, onUpdateStatus, isUpdating }) {
 }
 
 function Section({ title, items, severity, interactive, onUpdateStatus, updatingIds }) {
-  const theme = SEVERITY_THEME[severity] || { bg: "var(--surface)", text: "var(--accent-purple)" };
+  const theme = SEVERITY_THEME[severity] || { bg: "var(--website-elev-1)", text: "var(--txt-bright)" };
   let authorizedTotal = 0;
   let declinedTotal = 0;
   items.forEach((item) => {
@@ -180,7 +180,7 @@ function Section({ title, items, severity, interactive, onUpdateStatus, updating
         borderRadius: "var(--radius-md)",
         background:
           severity === "authorized" || severity === "declined"
-            ? "var(--surface)"
+            ? "var(--website-elev-1)"
             : theme.bg,
         overflow: "hidden",
         marginBottom: 14
@@ -218,7 +218,7 @@ function Section({ title, items, severity, interactive, onUpdateStatus, updating
         )}
       </div>
       {items.length === 0 ? (
-        <div style={{ padding: 14, fontSize: 13, color: "var(--info)" }}>No items recorded.</div>
+        <div style={{ padding: 14, fontSize: 13, color: "var(--txt-mute)" }}>No items recorded.</div>
       ) : (
         items.map((item) => (
           <Row
@@ -240,7 +240,7 @@ function TotalsGrid({ totals }) {
     { label: "Red Work", value: totals.red, color: "var(--danger)" },
     { label: "Amber Work", value: totals.amber, color: "var(--warning)" },
     { label: "Authorised", value: totals.authorized, color: "var(--success)" },
-    { label: "Declined", value: totals.declined, color: "var(--info)" }
+    { label: "Declined", value: totals.declined, color: "var(--txt-soft)" }
   ];
   return (
     <div
@@ -260,7 +260,7 @@ function TotalsGrid({ totals }) {
             background: `${it.color}11`
           }}
         >
-          <div style={{ fontSize: 11, color: "var(--info)", marginBottom: 4 }}>{it.label}</div>
+          <div style={{ fontSize: 11, color: "var(--txt-mute)", marginBottom: 4 }}>{it.label}</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: it.color }}>
             {formatCurrency(it.value)}
           </div>
@@ -277,8 +277,8 @@ function PhotosTab({ photoFiles }) {
         style={{
           padding: 18,
           borderRadius: "var(--radius-sm)",
-          background: "var(--theme)",
-          color: "var(--info)",
+          background: "var(--website-elev-1)",
+          color: "var(--txt-mute)",
           fontSize: 13
         }}
       >
@@ -298,12 +298,12 @@ function PhotosTab({ photoFiles }) {
         <div
           key={file.file_id}
           style={{
-            background: "var(--surface)",
+            background: "var(--website-elev-1)",
             borderRadius: "var(--radius-sm)",
             overflow: "hidden"
           }}
         >
-          <div style={{ position: "relative", paddingTop: "75%", background: "var(--theme)" }}>
+          <div style={{ position: "relative", paddingTop: "75%", background: "var(--website-elev-2)" }}>
             <img
               src={file.file_url}
               alt={file.file_name || "Photo"}
@@ -323,7 +323,7 @@ function PhotosTab({ photoFiles }) {
               style={{
                 fontSize: 12,
                 fontWeight: 500,
-                color: "var(--accent-purple)",
+                color: "var(--txt-bright)",
                 wordBreak: "break-word"
               }}
             >
@@ -343,8 +343,8 @@ function VideosTab({ videoFiles }) {
         style={{
           padding: 18,
           borderRadius: "var(--radius-sm)",
-          background: "var(--theme)",
-          color: "var(--info)",
+          background: "var(--website-elev-1)",
+          color: "var(--txt-mute)",
           fontSize: 13
         }}
       >
@@ -364,12 +364,12 @@ function VideosTab({ videoFiles }) {
         <div
           key={file.file_id}
           style={{
-            background: "var(--surface)",
+            background: "var(--website-elev-1)",
             borderRadius: "var(--radius-sm)",
             overflow: "hidden"
           }}
         >
-          <div style={{ position: "relative", paddingTop: "56.25%", background: "var(--accent-purple)" }}>
+          <div style={{ position: "relative", paddingTop: "56.25%", background: "var(--website-elev-2)" }}>
             <video
               src={file.file_url}
               controls
@@ -389,7 +389,7 @@ function VideosTab({ videoFiles }) {
               style={{
                 fontSize: 12,
                 fontWeight: 500,
-                color: "var(--accent-purple)",
+                color: "var(--txt-bright)",
                 wordBreak: "break-word"
               }}
             >
@@ -438,6 +438,7 @@ export default function VhcCustomerView({
           minHeight: "100vh",
           minHeight: "100dvh",
           background: "var(--surface)",
+          color: "var(--txt-bright)",
           display: "flex",
           flexDirection: "column"
         }}
@@ -448,6 +449,7 @@ export default function VhcCustomerView({
         <header
           style={{
             background: "var(--surface)",
+            boxShadow: "inset 0 -1px 0 var(--separating-line)",
             position: "sticky",
             top: 0,
             zIndex: 50,
@@ -468,13 +470,13 @@ export default function VhcCustomerView({
                 style={{
                   fontSize: 14,
                   fontWeight: 700,
-                  color: "var(--accent-purple)",
+                  color: "var(--txt-bright)",
                   lineHeight: 1.2
                 }}
               >
                 Vehicle Health Check
               </div>
-              <div style={{ fontSize: 12, color: "var(--info-dark)", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--txt-soft)", marginTop: 2 }}>
                 Job #{jobNumber}
                 {vehicleInfo?.registration ? ` · ${vehicleInfo.registration}` : ""}
                 {vehicleInfo?.make || vehicleInfo?.model
@@ -482,7 +484,7 @@ export default function VhcCustomerView({
                   : ""}
               </div>
               {customerInfo?.name && (
-                <div style={{ fontSize: 12, color: "var(--info)", marginTop: 1 }}>
+                <div style={{ fontSize: 12, color: "var(--txt-mute)", marginTop: 1 }}>
                   {customerInfo.name}
                 </div>
               )}
@@ -496,8 +498,8 @@ export default function VhcCustomerView({
                   minHeight: 36,
                   padding: "8px 14px",
                   borderRadius: "var(--radius-sm)",
-                  background: "var(--surface)",
-                  color: "var(--text-1)",
+                  background: "var(--website-elev-2)",
+                  color: "var(--txt-bright)",
                   fontWeight: 600,
                   fontSize: 13,
                   cursor: "pointer"
@@ -528,10 +530,9 @@ export default function VhcCustomerView({
                 style={{
                   padding: "10px 14px",
                   background: "transparent",
-                  border: "none",
                   fontWeight: activeTab === tab.id ? 700 : 500,
                   fontSize: 13,
-                  color: activeTab === tab.id ? "var(--primary)" : "var(--info)",
+                  color: activeTab === tab.id ? "var(--accentText)" : "var(--txt-mute)",
                   cursor: "pointer",
                   whiteSpace: "nowrap"
                 }}
@@ -617,11 +618,12 @@ export default function VhcCustomerView({
         <footer
           style={{
             background: "var(--surface)",
+            boxShadow: "inset 0 1px 0 var(--separating-line)",
             padding: "12px 14px",
             textAlign: "center"
           }}
         >
-          <div style={{ fontSize: 11, color: "var(--info)" }}>
+          <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>
             Vehicle Health Check Report · Job #{jobNumber}
             {expiresAt && (
               <>

@@ -9,10 +9,11 @@ import { supabase } from "@/lib/database/supabaseClient";
 import { summariseTechnicianVhc, parseVhcBuilderPayload } from "@/lib/vhc/summary";
 import { normaliseDecisionStatus, resolveSeverityKey } from "@/features/vhc/vhcStatusEngine";
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
-import { useTheme } from "@/styles/themeProvider";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import VhcCustomerView from "@/components/VHC/VhcCustomerView";
 import LayerSurface from "@/components/ui/LayerSurface";
+import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
+import useWebsiteTheme from "@/singlescroll/hooks/useWebsiteTheme";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -138,8 +139,8 @@ const getWearColor = (wornPercent) => {
 export default function CustomerPreviewPage() {
   const router = useRouter();
   const { jobNumber } = router.query;
-  const { resolvedMode, isDark } = useTheme();
-  const [isMounted, setIsMounted] = useState(false);
+  useWebsiteScope();
+  useWebsiteTheme();
 
   const [job, setJob] = useState(null);
   const [vhcChecksData, setVhcChecksData] = useState([]);
@@ -151,11 +152,6 @@ export default function CustomerPreviewPage() {
   const [updatingStatus, setUpdatingStatus] = useState(new Set());
   const [jobFiles, setJobFiles] = useState([]);
   const [partsJobItems, setPartsJobItems] = useState([]);
-
-  // Handle client-side mounting for theme
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const refetchTimerRef = useRef(null);
   const fetchJobDataRef = useRef(null);
@@ -1430,10 +1426,10 @@ export default function CustomerPreviewPage() {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--accent-purple)", marginBottom: 8 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--txt-bright)", marginBottom: 8 }}>
             Unable to load report
           </div>
-          <div style={{ fontSize: 14, color: "var(--info)" }}>{error}</div>
+          <div style={{ fontSize: 14, color: "var(--txt-soft)" }}>{error}</div>
         </div>
       </div>
     );
@@ -1466,8 +1462,8 @@ export default function CustomerPreviewPage() {
   const previewBanner = (
     <div
       style={{
-        background: "var(--accent-purple)",
-        color: "var(--surface)",
+        background: "rgba(var(--accentMainRgb), 0.22)",
+        color: "var(--accentText)",
         padding: "6px 14px",
         fontSize: 12,
         fontWeight: 600,
@@ -1640,3 +1636,5 @@ export default function CustomerPreviewPage() {
 
 
 }
+
+CustomerPreviewPage.getLayout = (page) => page;

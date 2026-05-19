@@ -1,83 +1,12 @@
 // file location: src/pages/vhc/customer-view/[jobNumber].js
-"use client";
+// Customer-facing VHC route without a share code. It reuses the same page
+// customers see in the staff preview so /website/profile and presentations
+// show the customer surface, not the staff VHC panel.
 
-import React from "react";
-import { useRouter } from "next/router";
-import Layout from "@/components/Layout";
-import VhcDetailsPanel from "@/components/VHC/VhcDetailsPanel";
-import { useUser } from "@/context/UserContext";
-import VhcCustomerViewPageUi from "@/components/page-ui/vhc/customer-view/vhc-customer-view-job-number-ui"; // Extracted presentation layer.
-
-const CUSTOMER_ROLE_ALLOWLIST = ["CUSTOMER"];
+import CustomerPreviewPage from "@/pages/vhc/customer-preview/[jobNumber]";
 
 export default function VhcCustomerViewPage() {
-  const router = useRouter();
-  const { jobNumber, returnTo } = router.query;
-  const { user } = useUser();
-  const isCustomer = user?.roles?.some((role) =>
-  CUSTOMER_ROLE_ALLOWLIST.includes((role || "").toUpperCase())
-  );
-
-  const resolveReturnTarget = () => {
-    if (typeof returnTo === "string" && returnTo.length > 0) {
-      try {
-        return decodeURIComponent(returnTo);
-      } catch (_error) {
-        return returnTo;
-      }
-    }
-    return jobNumber ? `/job-cards/${jobNumber}?vhcPreview=1` : "/job-cards/view";
-  };
-
-  const handleBack = () => {
-    const target = resolveReturnTarget();
-    if (target) {
-      router.push(target);
-    }
-  };
-
-  return <VhcCustomerViewPageUi view="section1" handleBack={handleBack} isCustomer={isCustomer} jobNumber={jobNumber} VhcDetailsPanel={VhcDetailsPanel} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return <CustomerPreviewPage />;
 }
 
-VhcCustomerViewPage.getLayout = (page) => <Layout requiresLandscape>{page}</Layout>;
+VhcCustomerViewPage.getLayout = (page) => page;

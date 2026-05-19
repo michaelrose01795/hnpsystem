@@ -19,6 +19,30 @@ const PANEL_DEFAULT = { x: 120, y: 90, width: 460, height: 360 };
 const PANEL_CLOSE_ANIMATION_MS = 150;
 const SAVE_DEBOUNCE_MS = 520;
 const DRAG_START_THRESHOLD = 4;
+const PRESENTATION_DEMO_USER_ID = 0;
+const PRESENTATION_DEMO_NOTES = [
+  {
+    noteId: -101,
+    userId: PRESENTATION_DEMO_USER_ID,
+    title: "Service",
+    description: "Morning handover\n- MOT bay fully booked until 11:30\n- Waiting customer on DEMO-1042\n- Warranty call-back due after lunch",
+    isGlobal: false,
+  },
+  {
+    noteId: -102,
+    userId: PRESENTATION_DEMO_USER_ID,
+    title: "Workshop",
+    description: "Prep focus\n- Prioritise used car checks before 15:00\n- Parts awaiting ETA on brake sensor\n- Apprentice paired with senior tech for VHC review",
+    isGlobal: false,
+  },
+  {
+    noteId: -103,
+    userId: PRESENTATION_DEMO_USER_ID,
+    title: "Sales",
+    description: "Customer follow-ups\n- Enquiry from Sarah Jones needs finance figures\n- Demo vehicle booked for Friday\n- Confirm handover pack before close",
+    isGlobal: false,
+  },
+];
 const NOTE_SLASH_COMMANDS = [
   { command: "/job[number]", autocomplete: "/job", pattern: "job" },
   { command: "/[number]", autocomplete: "/", pattern: "" },
@@ -163,9 +187,13 @@ function NotesLoadingSkeleton() {
   );
 }
 
-export default function GlobalNotesWidget() {
+export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
   const { dbUserId, user } = useUser() || {};
   const router = useRouter();
+  const numericDbUserId = Number(dbUserId);
+  const effectiveUserId = presentationDemo
+    ? (Number.isInteger(numericDbUserId) ? numericDbUserId : 1)
+    : numericDbUserId;
   // Widen the bubble on the public VHC customer link page so it stays
   // visible against the locked red theme.
   const isWideBubblePage = (router?.pathname || "").startsWith("/vhc/customer/[jobNumber]/[linkCode]");
@@ -175,8 +203,10 @@ export default function GlobalNotesWidget() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPanelVisible, setIsPanelVisible] = useState(false);
   const [isPanelMounted, setIsPanelMounted] = useState(false);
-  const [notes, setNotes] = useState([]);
-  const [activeNoteId, setActiveNoteId] = useState(null);
+  const [notes, setNotes] = useState(() => (presentationDemo ? PRESENTATION_DEMO_NOTES : []));
+  const [activeNoteId, setActiveNoteId] = useState(() =>
+    presentationDemo ? PRESENTATION_DEMO_NOTES[0]?.noteId || null : null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -191,7 +221,7 @@ export default function GlobalNotesWidget() {
   const [isShareLoading, setIsShareLoading] = useState(false);
   const [isShareSaving, setIsShareSaving] = useState(false);
   // "notes" shows the regular note editor; "ai" shows the App Guide AI panel
-  const [activeView, setActiveView] = useState("notes");
+  const [activeView, setActiveView] = useState(presentationDemo ? "ai" : "notes");
 
   const notesRef = useRef([]);
   const panelRectRef = useRef(panelRect);
@@ -206,10 +236,11 @@ export default function GlobalNotesWidget() {
   const editingNoteIdRef = useRef(null);
 
   const storageSuffix = useMemo(() => {
+    if (presentationDemo) return "presentation-newsfeed-demo";
     const numericUserId = Number(dbUserId);
     if (Number.isInteger(numericUserId)) return String(numericUserId);
     return user?.id ? String(user.id) : "anon";
-  }, [dbUserId, user?.id]);
+  }, [dbUserId, presentationDemo, user?.id]);
 
   const bubbleStorageKey = `hnp-floating-notes-bubble-${storageSuffix}`;
   const panelStorageKey = `hnp-floating-notes-panel-${storageSuffix}`;
@@ -230,8 +261,8 @@ export default function GlobalNotesWidget() {
     });
   }, [shareUsers, shareSearch]);
 
-  const activeNoteOwnedByUser = Boolean(activeNote && Number(activeNote.userId) === Number(dbUserId));
-  const activeNoteReadOnly = !activeNoteOwnedByUser;
+  const activeNoteOwnedByUser = !presentationDemo && Boolean(activeNote && Number(activeNote.userId) === Number(dbUserId));
+  const activeNoteReadOnly = presentationDemo || !activeNoteOwnedByUser;
 
   useEffect(() => {
     setHasHydrated(true);
@@ -304,6 +335,17 @@ export default function GlobalNotesWidget() {
   };
 
   const loadNotes = async () => {
+    if (presentationDemo) {
+      setIsLoading(false);
+      setNotes(PRESENTATION_DEMO_NOTES);
+      setActiveNoteId((current) =>
+        PRESENTATION_DEMO_NOTES.some((row) => row.noteId === current)
+          ? current
+          : PRESENTATION_DEMO_NOTES[0]?.noteId || null
+      );
+      return;
+    }
+
     const numericUserId = Number(dbUserId);
     if (!Number.isInteger(numericUserId)) {
       setNotes([]);
@@ -334,6 +376,11 @@ export default function GlobalNotesWidget() {
   };
 
   const flushSave = async (noteId, payload) => {
+    if (presentationDemo) {
+      setSaveStatus("saved");
+      return;
+    }
+
     const pending = saveTimersRef.current.get(noteId);
     if (pending) {
       clearTimeout(pending);
@@ -353,6 +400,11 @@ export default function GlobalNotesWidget() {
   };
 
   const scheduleSave = (noteId, payload) => {
+    if (presentationDemo) {
+      setSaveStatus("saved");
+      return;
+    }
+
     const pending = saveTimersRef.current.get(noteId);
     if (pending) clearTimeout(pending);
 
@@ -428,7 +480,7 @@ export default function GlobalNotesWidget() {
 
   useEffect(() => {
     loadNotes();
-  }, [dbUserId]);
+  }, [dbUserId, presentationDemo]);
 
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
@@ -632,6 +684,8 @@ export default function GlobalNotesWidget() {
   };
 
   const createTab = async () => {
+    if (presentationDemo) return;
+
     setError("");
     const result = await createFloatingNote({
       userId: Number(dbUserId),
@@ -652,6 +706,8 @@ export default function GlobalNotesWidget() {
   };
 
   const deleteTab = async (noteId) => {
+    if (presentationDemo) return;
+
     const target = notesRef.current.find((note) => note.noteId === noteId);
     if (!target) return;
 
@@ -914,6 +970,8 @@ export default function GlobalNotesWidget() {
   };
 
   const onToggleGlobal = async (checked) => {
+    if (presentationDemo) return;
+
     if (!activeNote || !activeNoteOwnedByUser) return;
 
     const previous = Boolean(activeNote.isGlobal);
@@ -941,6 +999,8 @@ export default function GlobalNotesWidget() {
   };
 
   const openShareModal = async () => {
+    if (presentationDemo) return;
+
     if (!activeNote || !activeNoteOwnedByUser) return;
     setIsShareModalOpen(true);
     setShareSearch("");
@@ -985,7 +1045,7 @@ export default function GlobalNotesWidget() {
     }
   };
 
-  if (!hasHydrated || !Number.isInteger(Number(dbUserId)) || isModalOpen) {
+  if (!hasHydrated || (!presentationDemo && !Number.isInteger(Number(dbUserId))) || isModalOpen) {
     return null;
   }
 
@@ -1034,12 +1094,12 @@ export default function GlobalNotesWidget() {
           <header className={styles.header}>
             <div className={styles.headerRow}>
               <div className={styles.tabBarScroller} onPointerDown={(event) => event.stopPropagation()}>
-                <div className={styles.tabBar}>
+                <div className={`tab-api tab-api--inline ${styles.tabBar}`}>
                   {/* AI Guide tab — always present, positioned before note tabs */}
                   <button
                     type="button"
-                    className={`app-btn app-btn--secondary app-btn--pill ${styles.tab} ${styles.tabAi} ${
-                      activeView === "ai" ? styles.tabActive : ""
+                    className={`tab-api__item ${styles.tab} ${styles.tabAi} ${
+                      activeView === "ai" ? "is-active" : ""
                     }`}
                     onClick={openAiTab}
                     title="App Guide — ask questions about the system"
@@ -1049,24 +1109,23 @@ export default function GlobalNotesWidget() {
                   </button>
 
                   {notes.map((note) => {
-                    const editable = Number(note.userId) === Number(dbUserId);
+                    const editable = !presentationDemo && Number(note.userId) === Number(dbUserId);
                     return (
                       <button
                         key={note.noteId}
                         type="button"
-                        className={`app-btn app-btn--secondary app-btn--pill ${styles.tab} ${
-                          note.noteId === activeNoteId && activeView === "notes" ? styles.tabActive : ""
+                        className={`tab-api__item ${styles.tab} ${
+                          note.noteId === activeNoteId && activeView === "notes" ? "is-active" : ""
                         }`}
                         onClick={() => openNoteTab(note.noteId)}
                         title={note.title || "Untitled"}
                       >
                         <span className={styles.tabTitle}>{note.title || "Untitled"}</span>
-                        {note.isGlobal && <span className={styles.tabBadge}>Global</span>}
                         {editable && (
                           <span
                             role="button"
                             tabIndex={0}
-                            className={`app-btn app-btn--ghost ${styles.tabClose}`}
+                            className={styles.tabClose}
                             onClick={(event) => {
                               event.stopPropagation();
                               deleteTab(note.noteId);
@@ -1085,15 +1144,17 @@ export default function GlobalNotesWidget() {
                       </button>
                     );
                   })}
-                  <button
-                    type="button"
-                    className={`app-btn app-btn--primary app-btn--pill ${styles.tab} ${styles.tabAdd}`}
-                    onClick={createTab}
-                    aria-label="Add tab"
-                    title="Add tab"
-                  >
-                    +
-                  </button>
+                  {!presentationDemo && (
+                    <button
+                      type="button"
+                      className={`tab-api__item is-active ${styles.tab} ${styles.tabAdd}`}
+                      onClick={createTab}
+                      aria-label="Add tab"
+                      title="Add tab"
+                    >
+                      +
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1103,7 +1164,7 @@ export default function GlobalNotesWidget() {
             {/* AI Guide panel — shown when the AI tab is active */}
             {activeView === "ai" && (
               <AiGuidePanel
-                userId={dbUserId}
+                userId={effectiveUserId}
                 userRoles={user?.roles || []}
               />
             )}
@@ -1139,27 +1200,31 @@ export default function GlobalNotesWidget() {
                       >
                         AI
                       </button>
-                      <button
-                        type="button"
-                        className={`app-btn app-btn--secondary ${styles.shareButton}`}
-                        onClick={openShareModal}
-                        disabled={!activeNoteOwnedByUser}
-                      >
-                        Share
-                      </button>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={Boolean(activeNote.isGlobal)}
-                        aria-label="Toggle global note visibility"
-                        className={`app-btn app-btn--secondary ${styles.visibilitySwitch} ${
-                          activeNote.isGlobal ? styles.visibilitySwitchOn : ""
-                        }`}
-                        onClick={() => onToggleGlobal(!activeNote.isGlobal)}
-                        disabled={!activeNoteOwnedByUser}
-                      >
-                        {activeNote.isGlobal ? "ON" : "OFF"}
-                      </button>
+                      {!presentationDemo && (
+                        <>
+                          <button
+                            type="button"
+                            className={`app-btn app-btn--secondary ${styles.shareButton}`}
+                            onClick={openShareModal}
+                            disabled={!activeNoteOwnedByUser}
+                          >
+                            Share
+                          </button>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={Boolean(activeNote.isGlobal)}
+                            aria-label="Toggle global note visibility"
+                            className={`app-btn app-btn--secondary ${styles.visibilitySwitch} ${
+                              activeNote.isGlobal ? styles.visibilitySwitchOn : ""
+                            }`}
+                            onClick={() => onToggleGlobal(!activeNote.isGlobal)}
+                            disabled={!activeNoteOwnedByUser}
+                          >
+                            {activeNote.isGlobal ? "ON" : "OFF"}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                   <input

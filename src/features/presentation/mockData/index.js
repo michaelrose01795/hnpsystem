@@ -35,6 +35,14 @@ import { rows as appointments } from "./appointments";
 import { rows as activityLogs } from "./activity_logs";
 import { rows as parts } from "./parts";
 import { rows as newsUpdates } from "./news_updates";
+import {
+  breachRecords,
+  dpiaRecords,
+  retentionPolicies,
+  retentionRuns,
+  processingActivities,
+  subjectRequests,
+} from "./compliance";
 
 const TABLES = {
   jobs,
@@ -103,6 +111,12 @@ const TABLES = {
   appointments,
   activity_logs: activityLogs,
   news_updates: newsUpdates,
+  breach_records: breachRecords,
+  dpia_records: dpiaRecords,
+  retention_policies: retentionPolicies,
+  retention_runs: retentionRuns,
+  processing_activities: processingActivities,
+  subject_requests: subjectRequests,
 };
 
 export function getMockRows(table) {

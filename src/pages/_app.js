@@ -84,6 +84,7 @@ function AppWrapper({ Component, pageProps }) {
   const isCustomerRoute = pathname.startsWith("/customer");
   const isWebsiteRoute = isWebsitePath(pathname) || isWebsitePath(asPathWithoutQuery);
   const hideNotesWidget =
+    isPresentationRoute ||
     isCustomerRoute ||
     isWebsiteRoute ||
     notesHiddenRoutes.has(pathname) ||

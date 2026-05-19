@@ -3,6 +3,14 @@
 import React from "react";
 import SectionShell from "./SectionShell";
 import { Stack, Grid, Tile, SubHeader, GhostBtn, MoneyHero, Empty, ItemList, ItemRow, Badge } from "./_websiteParts";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+
+const VHC_PRESENTATION_LINKS = {
+  preview: "/presentation/customer/vhc-customer-preview-jobNumber/3",
+  customerView: "/presentation/customer/vhc-customer-view-jobNumber/4",
+  share: "/presentation/customer/vhc-share-jobNumber-linkCode/5",
+  customer: "/presentation/customer/vhc-customer-jobNumber-linkCode/6",
+};
 
 function MediaThumb({ item }) {
   const type = String(item.mime_type || item.media_type || "");
@@ -34,10 +42,28 @@ export default function VhcEnhancementsCard({
   vhcByJob = {},
   vhcDeclinations = [],
   vhcMedia = [],
+  vhcShareLinks = [],
 }) {
-  const jobsWithVhc = jobs.filter((job) => vhcByJob[job.id]);
+  const [presentationMode, setPresentationMode] = React.useState(false);
+
+  React.useEffect(() => {
+    setPresentationMode(isPresentationMode());
+  }, []);
+
+  const getVhcSummary = (job) => vhcByJob[job.id] || vhcByJob[job.job_number];
+  const jobsWithVhc = jobs.filter((job) => getVhcSummary(job));
   const latestJob = jobsWithVhc[0];
-  const latestSummary = latestJob ? vhcByJob[latestJob.id] : null;
+  const latestSummary = latestJob ? getVhcSummary(latestJob) : null;
+  const latestShareLink = latestJob
+    ? vhcShareLinks.find(
+        (link) =>
+          String(link.job_id || "") === String(latestJob.id || "") ||
+          String(link.job_number || "") === String(latestJob.job_number || ""),
+      )
+    : null;
+  const encodedJobNumber = encodeURIComponent(latestJob?.job_number || "");
+  const encodedLinkCode = encodeURIComponent(latestShareLink?.link_code || "");
+  const getRouteHref = (kind, liveHref) => (presentationMode ? VHC_PRESENTATION_LINKS[kind] : liveHref);
   const latestMedia = latestJob
     ? vhcMedia.filter((item) => item.job_number === latestJob.job_number).slice(0, 6)
     : vhcMedia.slice(0, 6);
@@ -52,9 +78,24 @@ export default function VhcEnhancementsCard({
       title="VHC hub"
       action={
         latestJob ? (
-          <GhostBtn href={`/vhc/customer-preview/${encodeURIComponent(latestJob.job_number || "")}`}>
-            Open VHC viewer
-          </GhostBtn>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <GhostBtn href={getRouteHref("preview", `/vhc/customer-preview/${encodedJobNumber}`)}>
+              Preview
+            </GhostBtn>
+            <GhostBtn href={getRouteHref("customerView", `/vhc/customer-view/${encodedJobNumber}`)}>
+              Customer view
+            </GhostBtn>
+            {encodedLinkCode ? (
+              <>
+                <GhostBtn href={getRouteHref("share", `/vhc/share/${encodedJobNumber}/${encodedLinkCode}`)}>
+                  Share link
+                </GhostBtn>
+                <GhostBtn href={getRouteHref("customer", `/vhc/customer/${encodedJobNumber}/${encodedLinkCode}`)}>
+                  Customer link
+                </GhostBtn>
+              </>
+            ) : null}
+          </div>
         ) : null
       }
     >

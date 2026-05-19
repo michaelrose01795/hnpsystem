@@ -9,6 +9,8 @@ import { MultiSelectDropdown } from "@/components/ui/dropdownAPI";
 import { roleCategories } from "@/config/users";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import NewsFeedUi from "@/components/page-ui/newsfeed-ui"; // Extracted presentation layer.
+import GlobalNotesWidget from "@/components/GlobalNotesWidget";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { trace, useTraceMount, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tracer — remove after load flicker is fixed
 
 const FALLBACK_UPDATES = [
@@ -176,10 +178,15 @@ export default function NewsFeed() {
     departments: []
   });
   const [notificationError, setNotificationError] = useState("");
+  const [showPresentationNotesDemo, setShowPresentationNotesDemo] = useState(false);
 
   useTraceMount("NewsFeed page");
   useTraceValue("newsfeed.loading", loading);
   useTraceValue("newsfeed.user", user ? `${user.username}#${user.id}` : "null");
+
+  useEffect(() => {
+    setShowPresentationNotesDemo(isPresentationMode());
+  }, []);
 
   const userRoles = useMemo(() => user?.roles || [], [user?.roles]);
   const userDepartments = useMemo(() => deriveDepartmentsFromRoles(userRoles), [userRoles]);
@@ -276,7 +283,12 @@ export default function NewsFeed() {
     }
   };
 
-  return <NewsFeedUi view="section1" accessibleUpdates={accessibleUpdates} AVAILABLE_DEPARTMENTS={AVAILABLE_DEPARTMENTS} canManageUpdates={canManageUpdates} formatTimeAgo={formatTimeAgo} formState={formState} handleCreateUpdate={handleCreateUpdate} loading={loading} modalOpen={modalOpen} ModalPortal={ModalPortal} MultiSelectDropdown={MultiSelectDropdown} notificationError={notificationError} resetModal={resetModal} saving={saving} setFormState={setFormState} setModalOpen={setModalOpen} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} />;
+  return (
+    <>
+      <NewsFeedUi view="section1" accessibleUpdates={accessibleUpdates} AVAILABLE_DEPARTMENTS={AVAILABLE_DEPARTMENTS} canManageUpdates={canManageUpdates} formatTimeAgo={formatTimeAgo} formState={formState} handleCreateUpdate={handleCreateUpdate} loading={loading} modalOpen={modalOpen} ModalPortal={ModalPortal} MultiSelectDropdown={MultiSelectDropdown} notificationError={notificationError} resetModal={resetModal} saving={saving} setFormState={setFormState} setModalOpen={setModalOpen} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} />
+      {showPresentationNotesDemo && <GlobalNotesWidget presentationDemo />}
+    </>
+  );
 
 
 

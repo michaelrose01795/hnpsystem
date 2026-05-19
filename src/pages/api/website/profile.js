@@ -140,6 +140,7 @@ export default async function handler(req, res) {
   let vhcDeclinations = [];
   let vhcSendHistory = [];
   let vhcMedia = [];
+  let vhcShareLinks = [];
   let transactions = [];
   let jobStatusHistory = [];
   let invoicePayments = [];
@@ -185,6 +186,15 @@ export default async function handler(req, res) {
         .order("created_at", { ascending: false })
         .limit(40);
       vhcMedia = data || [];
+    })(),
+    (async () => {
+      if (jobNumbers.length === 0) return;
+      const { data } = await client
+        .from("job_share_links")
+        .select("id, job_id, job_number, link_code, created_at, viewed_at")
+        .in("job_number", jobNumbers)
+        .order("created_at", { ascending: false });
+      vhcShareLinks = data || [];
     })(),
     (async () => {
       if (accountIds.length === 0) return;
@@ -288,6 +298,7 @@ export default async function handler(req, res) {
     vhcDeclinations,
     vhcSendHistory,
     vhcMedia,
+    vhcShareLinks,
     transactions,
     jobStatusHistory,
     invoicePayments,

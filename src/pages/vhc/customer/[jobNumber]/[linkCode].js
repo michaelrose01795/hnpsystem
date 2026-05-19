@@ -13,12 +13,16 @@ import { normaliseDecisionStatus, resolveSeverityKey } from "@/features/vhc/vhcS
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import VhcCustomerView from "@/components/VHC/VhcCustomerView";
+import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
+import useWebsiteTheme from "@/singlescroll/hooks/useWebsiteTheme";
 
 const LABOUR_RATE = 85;
 
 export default function CustomerLinkPage() {
   const router = useRouter();
   const { jobNumber, linkCode } = router.query;
+  useWebsiteScope();
+  useWebsiteTheme();
 
   const [job, setJob] = useState(null);
   const [vhcChecksData, setVhcChecksData] = useState([]);
@@ -243,54 +247,9 @@ export default function CustomerLinkPage() {
     [jobNumber, linkCode]
   );
 
-  // Lock the red theme + black text on this customer-facing page regardless
-  // of the user's saved theme. CSS custom properties set on the wrapper div
-  // override the same tokens applied at :root by ThemeProvider, scoped to
-  // descendants only. A body class is also added so the global floating notes
-  // widget (rendered outside this subtree) can detect the page.
-  const lockedThemeStyle = {
-    "--primary": "#dc2626",
-    "--accentMainRgb": "220, 38, 38",
-    "--accentText": "#dc2626",
-    "--primary-hover": "#b91c1c",
-    "--primary-pressed": "#991b1b",
-    "--secondary": "rgba(220, 38, 38, 0.14)",
-    "--secondary-hover": "rgba(220, 38, 38, 0.22)",
-    "--theme": "rgba(220, 38, 38, 0.08)",
-    "--accent-base": "rgba(220, 38, 38, 0.14)",
-    "--accent-base-rgb": "220, 38, 38",
-    "--accent-base-hover": "rgba(220, 38, 38, 0.22)",
-    "--accent-strong": "#dc2626",
-    "--accent-purple": "#000000",
-    "--accent-purple-rgb": "0, 0, 0",
-    "--primary": "#dc2626",
-    "--primary-hover": "#ef4444",
-    "--primary-selected": "#991b1b",
-    "--primary-rgb": "220, 38, 38",
-    "--surface": "#ffffff",
-    "--surface-rgb": "255, 255, 255",
-    "--surface": "#fafafa",
-    "--surface": "#f5f5f5",
-    "--surface": "#ffffff",
-    "--surfaceText": "#000000",
-    "--text-1": "#000000",
-    "--text-1-rgb": "0, 0, 0",
-    "--text-1": "#1f1f1f",
-    "--text-2": "#ffffff",
-    "--primary-border": "#e5e7eb",
-    "--info": "#4b5563",
-    "--info-dark": "#1f2937",
-    "--theme": "#f3f4f6",
-    "--info-rgb": "75, 85, 99",
-    "--danger": "#dc2626",
-    "--danger-base": "#dc2626",
-    "--danger-surface": "#fee2e2",
-    "--danger-text": "#991b1b",
-    "--warning": "#b45309",
-    "--warning-surface": "#fef3c7",
-    "--success": "#15803d",
-    "--success-surface": "#dcfce7",
-    color: "#000000",
+  const customerPageStyle = {
+    background: "var(--surface)",
+    color: "var(--txt-bright)",
     fontSize: "16px",
     lineHeight: 1.5,
     minHeight: "100vh"
@@ -308,7 +267,7 @@ export default function CustomerLinkPage() {
 
   if (loading) {
     return (
-      <div style={{ ...lockedThemeStyle, background: "#fafafa", padding: "16px 12px" }}>
+      <div style={{ ...customerPageStyle, padding: "16px 12px" }}>
         <SkeletonKeyframes />
         <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
           <SkeletonBlock width="100%" height="64px" />
@@ -330,19 +289,18 @@ export default function CustomerLinkPage() {
     return (
       <div
         style={{
-          ...lockedThemeStyle,
+          ...customerPageStyle,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#fafafa",
           padding: 16
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 18, fontWeight: 600, color: "#000000", marginBottom: 8 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: "var(--txt-bright)", marginBottom: 8 }}>
             Unable to load report
           </div>
-          <div style={{ fontSize: 14, color: "#4b5563" }}>{error}</div>
+          <div style={{ fontSize: 14, color: "var(--txt-soft)" }}>{error}</div>
         </div>
       </div>
     );
@@ -352,7 +310,7 @@ export default function CustomerLinkPage() {
   const customerInfo = job?.customer;
 
   return (
-    <div style={lockedThemeStyle}>
+    <div style={customerPageStyle}>
       <VhcCustomerView
         jobNumber={jobNumber}
         vehicleInfo={vehicleInfo}

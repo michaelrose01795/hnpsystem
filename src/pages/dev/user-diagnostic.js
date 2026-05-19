@@ -3466,24 +3466,19 @@ function GlobalUiShowcase() {
       {isSectionVisible("tooltips-native") &&
       <ShowcaseSection title="Tooltips (native title=)" itemKey="tooltips-native" onOpenUsage={openUsage} noteText={showcaseNotes} onNoteChange={handleNoteChange} noteSaving={noteSaving}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <span
-            title="This is the description shown on hover. The app currently relies on the native browser tooltip — there is no centralised styled tooltip component."
+          <button
+            type="button"
+            className="app-btn app-btn--primary app-hover-tooltip"
+            data-tooltip="This is the shared hover text display. It uses the primary button hover background and a floating shadow."
             style={{
-              display: "inline-block",
-              padding: "8px 12px",
-              borderRadius: "var(--radius-xs)",
-              background: "var(--secondary)",
-              border: "1px dashed var(--primary-border)",
-              fontSize: "13px",
-              color: "var(--text-1)",
               cursor: "help",
               width: "fit-content"
             }}>
             
             Hover me for a description
-          </span>
+          </button>
           <span style={{ fontSize: "11px", color: "var(--text-1)" }}>
-            No global styled tooltip exists. <code>title=</code> uses browser default styling only.
+            Styled hover text uses <code>.app-hover-tooltip</code> with <code>data-tooltip</code> so the display can follow the global button system.
           </span>
         </div>
       </ShowcaseSection>

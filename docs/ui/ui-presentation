@@ -14,15 +14,22 @@ General
 ====================================================
 
 1. /presentation/general/messages/0
+Route: /messages
 
 2. /presentation/general/newsfeed/1
+Route: /newsfeed
 
 3. /presentation/general/profile/2
+Route: /profile
 
 4. /presentation/general/profile-tab-personal/3
+Route: /profile?tab=personal
 
 5. /presentation/general/login/4
+Route: /login
 
+6. /presentation/general/password-reset-new/5
+Route: /password-reset/new
 
 
 ====================================================
@@ -82,37 +89,58 @@ Route: /admin/users
 3. /presentation/admin-manager/admin-profiles-user/2
 Route: /admin/profiles/[user]
 
+4. /presentation/admin-manager/admin-compliance/3
+Route: /admin/compliance
+
+5. /presentation/admin-manager/admin-compliance-breaches/4
+Route: /admin/compliance/breaches
+
+6. /presentation/admin-manager/admin-compliance-dpias/5
+Route: /admin/compliance/dpias
+
+7. /presentation/admin-manager/admin-compliance-retention/6
+Route: /admin/compliance/retention
+
+8. /presentation/admin-manager/admin-compliance-ropa/7
+Route: /admin/compliance/ropa
+
+9. /presentation/admin-manager/admin-compliance-sars/8
+Route: /admin/compliance/sars
+
+10. /presentation/admin-manager/profile-privacy/9
+Route: /profile/privacy
+
+11. /presentation/admin-manager/account-security/10
+Route: /account/security
+
+12. /presentation/admin-manager/staff-website-manager/11
+Route: /staff/website-manager
+
 
 ====================================================
 Customer
 ====================================================
 
-1. /presentation/customer/customer/0
-Route: /customer
+1. /presentation/customer/website/0
+Route: /website
 
-2. /presentation/customer/customer-messages/1
-Route: /customer/messages
+2. /presentation/customer/website-login/1
+Route: /website/login
 
-3. /presentation/customer/customer-parts/2
-Route: /customer/parts
+3. /presentation/customer/website-profile/2
+Route: /website/profile
 
-4. /presentation/customer/customer-payments/3
-Route: /customer/payments
-
-5. /presentation/customer/customer-vehicles/4
-Route: /customer/vehicles
-
-6. /presentation/customer/customer-vhc/5
-Route: /customer/vhc
-
-7. /presentation/customer/vhc-customer-preview-jobNumber/6
+4. /presentation/customer/vhc-customer-preview-jobNumber/3
 Route: /vhc/customer-preview/[jobNumber]
 
-8. /presentation/customer/vhc-customer-view-jobNumber/7
+5. /presentation/customer/vhc-customer-view-jobNumber/4
 Route: /vhc/customer-view/[jobNumber]
 
-9. /presentation/customer/vhc-share-jobNumber-linkCode/8
+6. /presentation/customer/vhc-share-jobNumber-linkCode/5
 Route: /vhc/share/[jobNumber]/[linkCode]
+
+7. /presentation/customer/vhc-customer-jobNumber-linkCode/6
+Route: /vhc/customer/[jobNumber]/[linkCode]
 
 
 ====================================================
@@ -303,3 +331,21 @@ Route: /parts/goods-in
 
 9. /presentation/workshop-manager/tracking/8 !!!!!!!!!!!!!!!!!!!!!!
 Route: /tracking
+
+10. /presentation/workshop-manager/job-cards/9
+Route: /job-cards
+
+11. /presentation/workshop-manager/job-cards-create/10
+Route: /job-cards/create
+
+12. /presentation/workshop-manager/job-cards-archive/11
+Route: /job-cards/archive
+
+13. /presentation/workshop-manager/job-cards-appointments/12
+Route: /job-cards/appointments
+
+14. /presentation/workshop-manager/customers-customerSlug/13
+Route: /customers/[customerSlug]
+
+15. /presentation/workshop-manager/appointments/14
+Route: /appointments

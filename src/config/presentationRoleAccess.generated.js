@@ -12,7 +12,8 @@ export const PRESENTATION_ROLES = [
       "/newsfeed",
       "/profile",
       "/profile?tab=personal",
-      "/login"
+      "/login",
+      "/password-reset/new"
     ]
   },
   {
@@ -44,7 +45,16 @@ export const PRESENTATION_ROLES = [
     "routes": [
       "/dashboard/admin",
       "/admin/users",
-      "/admin/profiles/[user]"
+      "/admin/profiles/[user]",
+      "/admin/compliance",
+      "/admin/compliance/breaches",
+      "/admin/compliance/dpias",
+      "/admin/compliance/retention",
+      "/admin/compliance/ropa",
+      "/admin/compliance/sars",
+      "/profile/privacy",
+      "/account/security",
+      "/staff/website-manager"
     ]
   },
   {
@@ -53,15 +63,13 @@ export const PRESENTATION_ROLES = [
     "label": "Customer",
     "demoName": "Demo Customer",
     "routes": [
-      "/customer",
-      "/customer/messages",
-      "/customer/parts",
-      "/customer/payments",
-      "/customer/vehicles",
-      "/customer/vhc",
+      "/website",
+      "/website/login",
+      "/website/profile",
       "/vhc/customer-preview/[jobNumber]",
       "/vhc/customer-view/[jobNumber]",
-      "/vhc/share/[jobNumber]/[linkCode]"
+      "/vhc/share/[jobNumber]/[linkCode]",
+      "/vhc/customer/[jobNumber]/[linkCode]"
     ]
   },
   {
@@ -175,7 +183,13 @@ export const PRESENTATION_ROLES = [
       "/clocking",
       "/clocking/[technicianSlug]",
       "/parts/goods-in",
-      "/tracking"
+      "/tracking",
+      "/job-cards",
+      "/job-cards/create",
+      "/job-cards/archive",
+      "/job-cards/appointments",
+      "/customers/[customerSlug]",
+      "/appointments"
     ]
   }
 ];

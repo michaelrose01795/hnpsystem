@@ -1080,19 +1080,20 @@ html.staff-scope .app-hover-tooltip[data-tooltip]::after {
   top: calc(100% + var(--space-sm));
   transform: translate(-50%, 4px);
   z-index: var(--hover-surface-z);
-  max-width: min(260px, 80vw);
+  max-width: min(300px, 80vw);
   width: max-content;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  min-height: var(--control-height-xs);
+  padding: var(--control-padding-xs);
+  border-radius: var(--control-radius-xs);
+  background: var(--control-bg-hover);
   color: var(--text-1);
-  box-shadow: var(--dropdown-menu-shadow);
+  box-shadow: var(--dropdown-menu-shadow), 0 12px 28px rgba(0, 0, 0, 0.18);
   opacity: 0;
   pointer-events: none;
   white-space: normal;
   text-align: center;
-  line-height: 1.25;
-  font-size: var(--text-caption);
+  line-height: 1.2;
+  font-size: var(--control-font-size);
   font-weight: 700;
   transition: opacity 0.16s ease, transform 0.16s ease;
 }

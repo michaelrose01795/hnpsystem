@@ -1,3 +1,43 @@
+- /website/profile (CHECK)
+check global.css style
+have it detect if the reg numbers already on the system
+
+UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht dropdown, tab section etc
+add a see preview button which when pressed opens a new webbrowser tab and shows what the changes are making from the /staff/website-manager page in real time etc. delete image but still showing fix this as well
+
+- /website (CHECK)
+add a link which the staff uers can add delete uploa change etc anything within the /website page from a website page accessed within the "/login" section
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 DO it so customer books job thorugh, see if it updates the stuff section. 
 
 have it os the appoinment page is updated within the /website/profile page

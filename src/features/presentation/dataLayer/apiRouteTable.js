@@ -731,6 +731,176 @@ const buildConsumableLogsResponse = (rows = []) => {
   };
 };
 
+// /api/job-cards/<jobNumber>/share-link — GET returns the customer VHC bundle
+// the public share / customer pages render; non-GET returns a fresh share URL.
+const shareLinkResponse = (rows, _q, _parsed, ctx = {}) => {
+  if (ctx.method && ctx.method !== "GET") {
+    return { success: true, data: { url: "https://demo.invalid/share/ABCD" } };
+  }
+  const job = rows[0] || {};
+  const customer = job.vehicle?.customer || {};
+  return {
+    success: true,
+    jobData: {
+      ...job,
+      customer: {
+        firstname: customer.firstname || "Demo",
+        lastname: customer.lastname || "Customer",
+        email: customer.email || "customer@demo.invalid",
+        mobile: customer.mobile || "07700 900000",
+      },
+      job_files: [],
+    },
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+  };
+};
+
+// /api/privacy/me — profile + consent + data-rights summary for /profile/privacy.
+const buildWebsiteProfileResponse = () => {
+  const customers = getMockRows("customers") || [];
+  const customerRow = customers[0] || {};
+  const customerId = customerRow.id || "demo-cust-001";
+  const vehicles = (getMockRows("vehicles") || [])
+    .filter((row) => row.customer_id === customerId)
+    .map((row) => ({
+      ...row,
+      vehicle_id: row.vehicle_id || row.id,
+      reg_number: row.reg_number || row.registration || row.reg,
+      registration: row.registration || row.reg_number || row.reg,
+      make_model: row.make_model || [row.make, row.model].filter(Boolean).join(" "),
+      mileage: row.mileage || 41280,
+    }));
+  const vehicleIds = new Set(vehicles.map((row) => row.vehicle_id || row.id));
+  const jobs = (getMockRows("jobs") || [])
+    .filter((row) => row.customer_id === customerId || vehicleIds.has(row.vehicle_id))
+    .map((row) => ({
+      ...row,
+      vehicle: vehicles.find((vehicle) => vehicle.vehicle_id === row.vehicle_id) || vehicles[0] || null,
+      vhc_required: row.vhc_required ?? true,
+      vhc_completed_at: row.vhc_completed_at || row.completed_at || row.updated_at,
+      vhc_sent_at: row.vhc_sent_at || row.updated_at,
+      vehicle_reg: row.vehicle_reg || row.reg,
+      vehicle_make_model: row.vehicle_make_model || [row.make, row.model].filter(Boolean).join(" "),
+    }));
+  const invoices = (getMockRows("invoices") || [])
+    .filter((row) => row.customer_id === customerId)
+    .map((row) => ({
+      ...row,
+      paid: String(row.payment_status || row.status || "").toLowerCase() === "paid",
+      invoice_total: toNumber(row.invoice_total ?? row.grand_total ?? row.total),
+    }));
+  const appointments = (getMockRows("appointments") || []).filter((row) => row.customer_id === customerId);
+  const activity = [
+    {
+      event_id: "demo-activity-service",
+      activity_type: "service_update",
+      activity_source: "presentation",
+      activity_payload: { summary: "Service booking updated by the workshop team." },
+      occurred_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+      event_id: "demo-activity-vhc",
+      activity_type: "vhc_sent",
+      activity_source: "presentation",
+      activity_payload: { summary: "Vehicle health check sent for review." },
+      occurred_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    },
+  ];
+  const vhcReports = getMockRows("vhc_reports") || [];
+  const vhcByJob = Object.fromEntries(
+    jobs.flatMap((job) => {
+      const summary = {
+        red: 1,
+        amber: 3,
+        green: 12,
+        status: "Awaiting approval",
+        updated_at: job.vhc_sent_at || job.updated_at,
+      };
+      return [
+        [job.id, summary],
+        [job.job_number, summary],
+      ].filter(([key]) => key != null);
+    })
+  );
+  const vhcShareLinks = jobs.map((job, index) => {
+    const report = vhcReports.find((row) => row.job_number === job.job_number) || vhcReports[index] || {};
+    return {
+      id: `demo-share-${job.id || job.job_number || index}`,
+      job_id: job.id,
+      job_number: job.job_number,
+      link_code: report.link_code || "DEMO-LINK",
+      created_at: job.vhc_sent_at || job.updated_at || new Date().toISOString(),
+      viewed_at: null,
+    };
+  });
+
+  return {
+    success: true,
+    customer: {
+      id: customerId,
+      firstname: customerRow.firstname || customerRow.first_name || "Alex",
+      lastname: customerRow.lastname || customerRow.last_name || "Morgan",
+      email: customerRow.email || "alex.morgan@demo.invalid",
+      mobile: customerRow.mobile || customerRow.phone || "07700 900001",
+      telephone: customerRow.telephone || customerRow.phone || "",
+      address: customerRow.address || "12 High Street, Exeter",
+      postcode: customerRow.postcode || "EX1 1AA",
+      contact_preference: customerRow.contact_preference || "email",
+    },
+    vehicles,
+    jobs,
+    invoices,
+    appointments,
+    accounts: getMockRows("accounts") || [],
+    paymentMethods: [{ id: "pm-demo-001", brand: "Visa", last4: "4242", expiry: "12/29" }],
+    bookingRequests: appointments,
+    jobHistory: jobs,
+    vhcByJob,
+    vhcDeclinations: [],
+    vhcMedia: [],
+    vhcShareLinks,
+    transactions: invoices.map((invoice) => ({
+      id: `txn-${invoice.invoice_number}`,
+      invoice_number: invoice.invoice_number,
+      amount: invoice.invoice_total,
+      transaction_type: invoice.paid ? "payment" : "invoice",
+      created_at: invoice.invoice_date || invoice.created_at,
+    })),
+    jobStatusHistory: activity,
+    invoicePayments: [],
+    vhcSendHistory: vhcReports.map((row) => ({
+      ...row,
+      sent_at: row.completed_at || new Date().toISOString(),
+    })),
+    activity,
+    messages: getMockRows("messages") || [],
+  };
+};
+
+const buildPrivacyMeResponse = () => {
+  const user = (getMockRows("users") || [])[0] || {};
+  const employee = (getMockRows("hr_employees") || [])[0] || {};
+  return {
+    success: true,
+    profile: {
+      first_name: user.first_name || "Demo",
+      last_name: user.last_name || "User",
+      email: user.email || "demo.user@hnp.example",
+      phone: employee.phone || "07700 800001",
+      role: user.role || "Demo Role",
+      job_title: employee.job_title || "Demo Role",
+      department: user.department || employee.department || "Demo",
+      employment_type: "Full time",
+      start_date: employee.start_date || "2022-04-04",
+      home_address: "1 Demo Street, Exeter, EX1 1AA",
+      created_at: user.created_at || "2024-01-15T09:00:00.000Z",
+      password_updated_at: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    consents: { purposes: {}, effective: {} },
+    requests: getMockRows("subject_requests"),
+  };
+};
+
 export const API_ROUTE_TABLE = [
   // Accounts / invoices / company-accounts
   { pattern: /^\/api\/accounts\/?$/, table: "accounts", transform: (rows, q) => (
@@ -755,7 +925,20 @@ export const API_ROUTE_TABLE = [
   },
   { pattern: /^\/api\/accounts\/[^/]+\/transactions\/?$/, table: "invoices", transform: accountTransactionsList() },
   { pattern: /^\/api\/accounts\/[^/]+\/?$/, table: "accounts", transform: accountSingle() },
-  { pattern: /^\/api\/account\/recent-activity\/?$/, table: "activity_logs", transform: passthroughList() },
+  {
+    pattern: /^\/api\/account\/recent-activity\/?$/,
+    table: "activity_logs",
+    transform: (rows) => ({
+      success: true,
+      events: rows.map((row) => ({
+        id: row.id,
+        occurredAt: row.occurred_at,
+        action: row.details || row.action,
+        ip: "192.0.2.10",
+        userAgent: "Chrome on Windows",
+      })),
+    }),
+  },
   { pattern: /^\/api\/invoices\/by-job\//, table: "invoices", transform: invoiceDetailByPath() },
   { pattern: /^\/api\/invoices\/by-order\//, table: "invoices", transform: invoiceDetailByPath() },
   { pattern: /^\/api\/invoices\/create\/?$/, table: "invoices", transform: passthroughSingle() },
@@ -824,7 +1007,7 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/jobcards\/[^/]+\/?$/, table: "jobs", transform: jobCardSingle() },
   { pattern: /^\/api\/job-cards\/[^/]+\/booking-request\/?$/, table: "jobs", transform: () => ({ success: true }) },
   { pattern: /^\/api\/job-cards\/[^/]+\/send-vhc\/?$/, table: "vhc_reports", transform: () => ({ success: true }) },
-  { pattern: /^\/api\/job-cards\/[^/]+\/share-link\/?$/, table: "vhc_reports", transform: () => ({ success: true, data: { url: "https://demo.invalid/share/ABCD" } }) },
+  { pattern: /^\/api\/job-cards\/[^/]+\/share-link\/?$/, table: "jobs", transform: shareLinkResponse },
   { pattern: /^\/api\/job-requests\/presets\//, table: "jobs", transform: () => ({ success: true, data: [] }) },
 
   // Customers / vehicles / bookings
@@ -839,6 +1022,11 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/customer\/payment-methods\/?$/, table: "accounts", transform: () => ({ success: true, data: [{ id: "pm-demo-001", brand: "Visa", last4: "4242", expiry: "12/29" }] }) },
   { pattern: /^\/api\/customer\/profile\/?$/, table: "customers", transform: passthroughSingle() },
   { pattern: /^\/api\/customer\/widgets\/?$/, table: "customers", transform: () => ({ success: true, data: { upcoming: getMockRows("appointments"), invoices: getMockRows("invoices") } }) },
+  { pattern: /^\/api\/website\/profile\/?$/, table: "customers", transform: buildWebsiteProfileResponse },
+  { pattern: /^\/api\/website\/auth\/me\/?$/, table: "customers", transform: () => ({ authenticated: false, customer: null }) },
+  { pattern: /^\/api\/website\/auth\/dev-list\/?$/, table: "customers", transform: (rows) => ({ success: true, customers: rows }) },
+  { pattern: /^\/api\/website\/auth\/(email-check|login|signup|set-password|update-profile|change-password|change-email|notification-prefs|logout|dev-login)\/?$/, table: "customers", transform: () => ({ success: true }) },
+  { pattern: /^\/api\/website\/actions(\/.*)?\/?$/, table: "customer_activity_events", transform: () => ({ success: true }) },
 
   // Messages / notifications
   { pattern: /^\/api\/messages\/unread-count\/?$/, table: "messages", transform: (rows) => ({ success: true, count: rows.filter((row) => row.read === false).length }) },
@@ -902,6 +1090,11 @@ export const API_ROUTE_TABLE = [
 
   // Admin / compliance / settings / welcome-quote / dev-showcase
   { pattern: /^\/api\/admin\/users\/?$/, table: "users", transform: passthroughList() },
+  { pattern: /^\/api\/admin\/compliance\/breaches\/?$/, table: "breach_records", transform: (rows) => ({ success: true, breaches: rows }) },
+  { pattern: /^\/api\/admin\/compliance\/dpias\/?$/, table: "dpia_records", transform: (rows) => ({ success: true, dpias: rows }) },
+  { pattern: /^\/api\/admin\/compliance\/retention\/?$/, table: "retention_policies", transform: (rows) => ({ success: true, policies: rows, recentRuns: getMockRows("retention_runs") }) },
+  { pattern: /^\/api\/admin\/compliance\/ropa\/?$/, table: "processing_activities", transform: (rows) => ({ success: true, activities: rows }) },
+  { pattern: /^\/api\/admin\/compliance\/sars\/?$/, table: "subject_requests", transform: (rows) => ({ success: true, requests: rows }) },
   { pattern: /^\/api\/admin\/compliance\//, table: "activity_logs", transform: passthroughList() },
   {
     pattern: /^\/api\/settings\/company-profile\/?$/,
@@ -937,6 +1130,7 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/email-api\/?/, table: "users", transform: () => ({ success: true }) },
   { pattern: /^\/api\/location\//, table: "users", transform: () => ({ success: true, data: { minutes: 12 } }) },
   { pattern: /^\/api\/profile\/me\/?$/, table: "users", transform: buildProfileResponse },
+  { pattern: /^\/api\/privacy\/me\/?$/, table: "users", transform: buildPrivacyMeResponse },
   // Personal dashboard (passcode-locked /profile tab).
   { pattern: /^\/api\/personal\/security\/?$/, table: "users", transform: personalSecurityResponse },
   { pattern: /^\/api\/personal\/state\/?$/, table: "users", transform: () => ({ success: true, data: buildPresentationPersonalState() }) },

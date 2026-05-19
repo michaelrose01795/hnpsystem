@@ -1856,7 +1856,7 @@ export default function CustomerProfilePage() {
                   <DigitalServiceHistoryCard jobs={jobs} jobHistory={jobHistory} invoices={invoices} vhcByJob={vhcByJob} />
                   <MotHistoryCard vehicles={vehicles} />
                   <RecallCheckerCard vehicles={vehicles} />
-                  <VhcEnhancementsCard jobs={jobs} vhcByJob={vhcByJob} vhcDeclinations={vhcDeclinations} vhcMedia={vhcMedia} />
+                  <VhcEnhancementsCard jobs={jobs} vhcByJob={vhcByJob} vhcDeclinations={vhcDeclinations} vhcMedia={vhcMedia} vhcShareLinks={data?.vhcShareLinks || []} />
                   <InvoicesPaymentsExtrasCard invoicePayments={invoicePayments} paymentPlans={paymentPlans} transactions={transactions} />
                   <DocumentsCentreCard invoices={invoices} vhcMedia={vhcMedia} />
                   <SalesShowroomCard />

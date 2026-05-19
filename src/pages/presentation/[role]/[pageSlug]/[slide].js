@@ -23,12 +23,30 @@ import { setPresentationMode } from "@/features/presentation/runtime/presentatio
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
 
+function isCustomerFacingTemplate(template) {
+  return (
+    template === "/website" ||
+    String(template || "").startsWith("/website/") ||
+    String(template || "").startsWith("/vhc/customer") ||
+    String(template || "").startsWith("/vhc/share")
+  );
+}
+
+function isStandaloneTemplate(template) {
+  return isCustomerFacingTemplate(template) || template === "/login";
+}
+
+function resolveFromQuery(query = {}) {
+  const role = typeof query.role === "string" ? query.role : null;
+  const pageSlug = typeof query.pageSlug === "string" ? query.pageSlug : null;
+  const slideParam = query.slide;
+  const slideIndex = Number.parseInt(Array.isArray(slideParam) ? slideParam[0] : slideParam, 10);
+  return resolvePresentationRoute(role, slideIndex, pageSlug);
+}
+
 function PresentationContent() {
   const router = useRouter();
-  const role = typeof router.query.role === "string" ? router.query.role : null;
-  const pageSlug = typeof router.query.pageSlug === "string" ? router.query.pageSlug : null;
-  const slideParam = router.query.slide;
-  const slideIndex = Number.parseInt(Array.isArray(slideParam) ? slideParam[0] : slideParam, 10);
+  const { role: roleQuery, pageSlug: pageSlugQuery, slide: slideQuery } = router.query;
 
   // Set the runtime flag synchronously the moment this component evaluates so
   // any module-scope code that reads it (e.g. supabase queries inside the
@@ -36,8 +54,8 @@ function PresentationContent() {
   setPresentationMode(true);
 
   const resolved = useMemo(
-    () => resolvePresentationRoute(role, slideIndex, pageSlug),
-    [role, slideIndex, pageSlug]
+    () => resolveFromQuery({ role: roleQuery, pageSlug: pageSlugQuery, slide: slideQuery }),
+    [roleQuery, pageSlugQuery, slideQuery]
   );
   const [Page, setPage] = useState(null);
 
@@ -111,7 +129,14 @@ function PresentationContent() {
 }
 
 export default function PresentationDeepLinkPage() {
+  const router = useRouter();
+  const { role: roleQuery, pageSlug: pageSlugQuery, slide: slideQuery } = router.query;
   const { setTemporaryOverride } = useTheme();
+  const resolved = useMemo(
+    () => resolveFromQuery({ role: roleQuery, pageSlug: pageSlugQuery, slide: slideQuery }),
+    [roleQuery, pageSlugQuery, slideQuery]
+  );
+  const standalonePage = isStandaloneTemplate(resolved?.template);
 
   // Lock the demo to the brand red accent regardless of the presenter's
   // own theme preference, matching the behaviour of /presentation/index.js.
@@ -120,15 +145,19 @@ export default function PresentationDeepLinkPage() {
     return () => setTemporaryOverride(null);
   }, [setTemporaryOverride]);
 
-  return (
+  const content = (
     <PresentationProvider>
       <PresentationContent />
     </PresentationProvider>
   );
+
+  if (standalonePage) return content;
+
+  return (
+    <Layout presentationShell disableContentCardHover>
+      {content}
+    </Layout>
+  );
 }
 
-PresentationDeepLinkPage.getLayout = (page) => (
-  <Layout presentationShell disableContentCardHover>
-    {page}
-  </Layout>
-);
+PresentationDeepLinkPage.getLayout = (page) => page;

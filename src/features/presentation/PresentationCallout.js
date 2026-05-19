@@ -11,8 +11,9 @@ const KIND_LABEL = {
 const PAGE_FILE_BY_ROUTE = {
   "/accounts/invoices": "src/pages/accounts/invoices/index.js",
   "/appointments": "src/pages/appointments/index.js",
-  "/customer": "src/pages/customer/index.js",
-  "/customer/vhc": "src/pages/customer/vhc.js",
+  "/website": "src/pages/website.js",
+  "/website/login": "src/pages/website/login.js",
+  "/website/profile": "src/pages/website/profile.js",
   "/dashboard": "src/pages/dashboard.js",
   "/hr": "src/pages/hr/index.js",
   "/job-cards/DEMO-1042": "src/pages/job-cards/[jobNumber].js",

@@ -23,6 +23,13 @@ const ROUTE_TO_MODULE = {
   "/dashboard/admin": () => import("@/pages/dashboard/admin/index"),
   "/admin/users": () => import("@/pages/admin/users/index"),
   "/admin/profiles/[user]": () => import("@/pages/admin/profiles/[user]"),
+  "/admin/compliance": () => import("@/pages/admin/compliance/index"),
+  "/admin/compliance/breaches": () => import("@/pages/admin/compliance/breaches"),
+  "/admin/compliance/dpias": () => import("@/pages/admin/compliance/dpias"),
+  "/admin/compliance/retention": () => import("@/pages/admin/compliance/retention"),
+  "/admin/compliance/ropa": () => import("@/pages/admin/compliance/ropa"),
+  "/admin/compliance/sars": () => import("@/pages/admin/compliance/sars"),
+  "/staff/website-manager": () => import("@/pages/staff/website-manager"),
 
   // Dashboards
   "/dashboard": () => import("@/pages/dashboard"),
@@ -49,10 +56,13 @@ const ROUTE_TO_MODULE = {
   "/hr/training": () => import("@/pages/hr/training"),
 
   // Job cards
+  "/job-cards": () => import("@/pages/job-cards/index"),
   "/job-cards/waiting/nextjobs": () => import("@/pages/job-cards/waiting/nextjobs"),
   "/job-cards/view": () => import("@/pages/job-cards/view/index"),
   "/job-cards/[jobNumber]": () => import("@/pages/job-cards/[jobNumber]"),
   "/job-cards/create": () => import("@/pages/job-cards/create/index"),
+  "/job-cards/archive": () => import("@/pages/job-cards/archive/index"),
+  "/job-cards/appointments": () => import("@/pages/job-cards/appointments"),
   "/job-cards/myjobs": () => import("@/pages/job-cards/myjobs/index"),
   "/job-cards/myjobs/[jobNumber]": () => import("@/pages/job-cards/myjobs/[jobNumber]"),
   "/job-cards/valet/[jobnumber]": () => import("@/pages/job-cards/valet/[jobnumber]"),
@@ -82,19 +92,19 @@ const ROUTE_TO_MODULE = {
   "/vhc": () => import("@/pages/vhc/index"),
   "/vhc/customer-preview/[jobNumber]": () => import("@/pages/vhc/customer-preview/[jobNumber]"),
   "/vhc/customer-view/[jobNumber]": () => import("@/pages/vhc/customer-view/[jobNumber]"),
-  "/vhc/share/[jobNumber]/[linkCode]": () => import("@/pages/vhc/share/[jobNumber]/[linkCode]"),
+  "/vhc/share/[jobNumber]/[linkCode]": () => import("@/pages/vhc/customer/[jobNumber]/[linkCode]"),
+  "/vhc/customer/[jobNumber]/[linkCode]": () => import("@/pages/vhc/customer/[jobNumber]/[linkCode]"),
+
+  // Public website / customer-facing routes
+  "/website": () => import("@/pages/website"),
+  "/website/login": () => import("@/pages/website/login"),
+  "/website/profile": () => import("@/pages/website/profile"),
 
   // Workshop / valet
   "/workshop/consumables-tracker": () => import("@/pages/workshop/consumables-tracker"),
   "/valet": () => import("@/pages/valet/index"),
 
-  // Customers
-  "/customer": () => import("@/pages/customers/[customerSlug]"),
-  "/customer/messages": () => import("@/pages/customers/[customerSlug]"),
-  "/customer/parts": () => import("@/pages/customers/[customerSlug]"),
-  "/customer/payments": () => import("@/pages/customers/[customerSlug]"),
-  "/customer/vehicles": () => import("@/pages/customers/[customerSlug]"),
-  "/customer/vhc": () => import("@/pages/customers/[customerSlug]"),
+  // Staff-side customers
   "/customers": () => import("@/pages/customers/index"),
   "/customers/[customerSlug]": () => import("@/pages/customers/[customerSlug]"),
 
@@ -108,7 +118,10 @@ const ROUTE_TO_MODULE = {
   "/messages": () => import("@/pages/messages/index"),
   "/newsfeed": () => import("@/pages/newsfeed"),
   "/profile": () => import("@/pages/profile/index"),
+  "/profile/privacy": () => import("@/pages/profile/privacy"),
+  "/account/security": () => import("@/pages/account/security"),
   "/login": () => import("@/pages/login"),
+  "/password-reset/new": () => import("@/pages/password-reset/new"),
 };
 
 function normalizeTemplate(template) {

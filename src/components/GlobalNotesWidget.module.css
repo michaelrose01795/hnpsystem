@@ -198,22 +198,15 @@
 }
 
 .tabBar {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-sm);
   min-width: max-content;
 }
 
 .tab {
-  border-radius: var(--radius-pill);
-  padding: var(--control-padding-xs);
-  font-size: var(--text-caption);
+  width: max-content;
+  max-width: none;
+  min-width: 0;
   white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  min-width: 88px;
-  max-width: 190px;
   position: relative;
   z-index: 1;
   transition: background-color 0.14s ease, color 0.14s ease;
@@ -223,11 +216,6 @@
 .tab:focus-visible {
   z-index: var(--hover-surface-z, 80);
   transform: translateY(-1px);
-}
-
-.tabActive {
-  background: var(--primary) !important;
-  color: var(--onAccentText) !important;
 }
 
 .tabAdd {
@@ -245,27 +233,36 @@
 }
 
 .tabTitle {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 
-.tabBadge {
-  font-size: var(--text-caption);
-  border-radius: var(--radius-pill);
-  padding: 2px 6px;
-  background: var(--theme);
-  color: var(--text-1);
+.tabClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  padding: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: currentColor;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background-color 0.14s ease, color 0.14s ease;
 }
 
-.tabClose {
-  min-width: 24px;
-  min-height: 24px;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  font-size: 15px;
-  line-height: 1;
+.tabClose:hover,
+.tabClose:focus-visible {
+  background: rgba(var(--surface-rgb), 0.24);
+  outline: none;
 }
 
 .body {
@@ -457,7 +454,10 @@
   background: rgba(var(--primary-rgb), 0.18);
 }
 
-/* When the AI tab is active it inherits .tabActive — no extra rule needed */
+.tabAi:global(.is-active) {
+  background: var(--primary) !important;
+  color: var(--onAccentText) !important;
+}
 
 .shareButton {
   color: var(--accentText) !important;

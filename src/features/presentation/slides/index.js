@@ -16,7 +16,6 @@ import { valetSlide } from "./definitions/valet";
 import { messagesSlide } from "./definitions/messages";
 import { accountsInvoicesSlide } from "./definitions/accountsInvoices";
 import { hrDashboardSlide } from "./definitions/hrDashboard";
-import { customerPortalSlide } from "./definitions/customerPortal";
 import { archiveSlide } from "./definitions/archive";
 
 // Dashboard variants
@@ -61,11 +60,11 @@ import { hrSettingsSlide } from "./definitions/hrSettings";
 import { hrTrainingSlide } from "./definitions/hrTraining";
 
 // Customer & VHC
-import { customerMessagesSlide } from "./definitions/customerMessages";
-import { customerPartsSlide } from "./definitions/customerParts";
-import { customerPaymentsSlide } from "./definitions/customerPayments";
-import { customerVehiclesSlide } from "./definitions/customerVehicles";
-import { customerVhcSlide } from "./definitions/customerVhc";
+import {
+  websiteHomeSlide,
+  websiteLoginSlide,
+  websiteProfileSlide,
+} from "./definitions/websiteCustomer";
 import { customersSlide } from "./definitions/customers";
 import { customerDetailSlide } from "./definitions/customerDetail";
 import { vhcCustomerPreviewSlide } from "./definitions/vhcCustomerPreview";
@@ -106,6 +105,24 @@ import { loginSlide } from "./definitions/login";
 import { unauthorizedSlide } from "./definitions/unauthorized";
 import { passwordResetRevertedSlide } from "./definitions/passwordResetReverted";
 
+// New pages — compliance, account/privacy, website manager, vhc customer, job-cards extras
+import {
+  adminComplianceSlide,
+  adminComplianceBreachesSlide,
+  adminComplianceDpiasSlide,
+  adminComplianceRetentionSlide,
+  adminComplianceRopaSlide,
+  adminComplianceSarsSlide,
+} from "./definitions/adminCompliance";
+import {
+  profilePrivacySlide,
+  accountSecuritySlide,
+  passwordResetNewSlide,
+} from "./definitions/accountAndPrivacy";
+import { staffWebsiteManagerSlide } from "./definitions/staffWebsiteManager";
+import { vhcCustomerSlide } from "./definitions/vhcCustomer";
+import { jobCardsIndexSlide, jobCardsAppointmentsSlide } from "./definitions/jobCardsExtras";
+
 export const ALL_SLIDES = [
   dashboardSlide,
   jobCardsListSlide,
@@ -121,7 +138,6 @@ export const ALL_SLIDES = [
   messagesSlide,
   accountsInvoicesSlide,
   hrDashboardSlide,
-  customerPortalSlide,
   archiveSlide,
 
   dashboardWorkshopSlide,
@@ -161,11 +177,9 @@ export const ALL_SLIDES = [
   hrSettingsSlide,
   hrTrainingSlide,
 
-  customerMessagesSlide,
-  customerPartsSlide,
-  customerPaymentsSlide,
-  customerVehiclesSlide,
-  customerVhcSlide,
+  websiteHomeSlide,
+  websiteLoginSlide,
+  websiteProfileSlide,
   customersSlide,
   customerDetailSlide,
   vhcCustomerPreviewSlide,
@@ -201,6 +215,20 @@ export const ALL_SLIDES = [
   loginSlide,
   unauthorizedSlide,
   passwordResetRevertedSlide,
+
+  adminComplianceSlide,
+  adminComplianceBreachesSlide,
+  adminComplianceDpiasSlide,
+  adminComplianceRetentionSlide,
+  adminComplianceRopaSlide,
+  adminComplianceSarsSlide,
+  profilePrivacySlide,
+  accountSecuritySlide,
+  passwordResetNewSlide,
+  staffWebsiteManagerSlide,
+  vhcCustomerSlide,
+  jobCardsIndexSlide,
+  jobCardsAppointmentsSlide,
 ];
 
 if (typeof process !== "undefined" && process.env.NODE_ENV !== "production") {

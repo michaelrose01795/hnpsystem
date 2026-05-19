@@ -25,7 +25,7 @@ const PENDING_LOGOUT_STORAGE_KEY = "hnp-pending-logout";
 const LOGIN_SHELL_LOADING_EVENT = "hnp:login-shell-loading";
 const LOGIN_SHELL_LOADING_STORAGE_KEY = "hnp-login-shell-loading";
 const DEFAULT_STAFF_POST_LOGIN_ROUTE = "/newsfeed";
-const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/customer";
+const DEFAULT_CUSTOMER_POST_LOGIN_ROUTE = "/website/profile";
 const STAFF_DEV_LOGIN_HIDDEN_CATEGORIES = new Set(["customers"]);
 const hasActiveLogoutBarrier = () => {
   if (typeof window === "undefined") return false;
@@ -329,10 +329,12 @@ export default function LoginPage() {
       // screen is showing, so the next page boots straight into it instead of
       // changing colour again once /newsfeed has mounted.
       await commitUserTheme(numericId);
-      // Hard navigation forces NextAuth to read the freshly-issued JWT cookie
-      // and rebuilds the user/role context from the new session.
-      trace("login", "devLogin: hard navigation (window.location.assign)", target);
-      window.location.assign(target);
+      // Client-side navigation keeps the app shell + providers mounted — no
+      // full document reload. signIn() above already issued the JWT cookie and
+      // broadcast a session update, so NextAuth's useSession picks up the new
+      // user without a hard reload (same path as the email/password login).
+      trace("login", "devLogin: router.replace", target);
+      await router.replace(target);
       return;
     }
 

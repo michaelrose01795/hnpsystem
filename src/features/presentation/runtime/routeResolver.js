@@ -24,14 +24,7 @@ const PARAM_SOURCES = {
   linkCode: { table: "vhc_reports", column: "link_code" },
 };
 
-const ROUTE_PARAM_OVERRIDES = {
-  "/customer": () => ({ customerSlug: fillParam("customerSlug"), tab: "insights" }),
-  "/customer/messages": () => ({ customerSlug: fillParam("customerSlug"), tab: "messages" }),
-  "/customer/parts": () => ({ customerSlug: fillParam("customerSlug"), tab: "history" }),
-  "/customer/payments": () => ({ customerSlug: fillParam("customerSlug"), tab: "payment" }),
-  "/customer/vehicles": () => ({ customerSlug: fillParam("customerSlug"), tab: "insights" }),
-  "/customer/vhc": () => ({ customerSlug: fillParam("customerSlug"), tab: "history" }),
-};
+const ROUTE_PARAM_OVERRIDES = {};
 
 function fillParam(name) {
   const source = PARAM_SOURCES[name];

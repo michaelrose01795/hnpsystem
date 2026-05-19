@@ -148,7 +148,8 @@
       "PowerShell(npx eslint src/utils/loadTrace.js src/utils/quietConsole.js src/pages/_app.js src/styles/themeProvider.js src/pages/login.js src/pages/newsfeed.js src/components/Layout.js src/context/UserContext.js 2>&1)",
       "PowerShell(npx eslint src/utils/loadTrace.js 2>&1)",
       "PowerShell(npx eslint src/styles/themeProvider.js src/components/BrandLogo.js 2>&1)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(node --input-type=module -e \"import\\('./src/features/presentation/mockData/compliance.js'\\).then\\(m=>console.log\\('compliance ok:',Object.keys\\(m\\)\\)\\).catch\\(e=>console.log\\('ERR',e.message\\)\\)\")"
     ],
     "deny": [],
     "ask": [],

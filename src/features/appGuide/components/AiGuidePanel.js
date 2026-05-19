@@ -179,7 +179,7 @@ async function fetchSessions() {
   const res = await fetch("/api/ai/guide-sessions");
   if (!res.ok) throw new Error("Failed to load sessions");
   const json = await res.json();
-  return { sessions: json.data || [], tableNotFound: json.tableNotFound || false };
+  return { sessions: Array.isArray(json.data) ? json.data : [], tableNotFound: json.tableNotFound || false };
 }
 
 async function createNewSession(title = "New Chat") {
