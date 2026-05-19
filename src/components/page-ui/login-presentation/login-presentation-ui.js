@@ -1,4 +1,5 @@
-import Link from "next/link";import LayerSurface from "@/components/ui/LayerSurface";
+import Link from "next/link";
+import LayerSurface from "@/components/ui/LayerSurface";
 import BrandLogo from "@/components/BrandLogo";
 import { PRESENTATION_ROLES } from "@/config/presentationRoleAccess";
 
@@ -28,102 +29,117 @@ function firstSlideHref(role) {
   return `/presentation/${role.key}/${routeToSlug(firstRoute)}/0`;
 }
 
-export default function LoginPresentationPageUi() {
-  return (
-    <div className="login-page-wrapper">
-      <div
-        className="login-center-stage"
-        style={{
-          width: "100%",
-          maxWidth: 1080,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "var(--page-stack-gap)",
-          padding: "32px 16px"
-        }}>
+export default function LoginPresentationPageUi(props = {}) {
+  const { view = "section2", PageSkeleton, onSelectRole } = props;
 
-        <div className="login-brand">
-          <BrandLogo alt="HP Automotive" className="login-logo" />
-        </div>
+  switch (view) {
+    // Shown the instant a deck is chosen — mirrors the login page so the
+    // transition into /presentation/* uses the shared skeleton instead of
+    // freezing on the role grid while the deck code-splits in.
+    case "section1":
+      return PageSkeleton ? <PageSkeleton /> : null;
 
-        <LayerSurface as="div"
-
-        style={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--layout-card-gap)",
-          padding: "var(--section-card-padding)"
-        }}>
-
-          <div style={{ textAlign: "center" }}>
-            <h1
-              style={{
-                margin: 0,
-                color: "var(--primary)",
-                fontSize: "1.4rem",
-                fontWeight: 700
-              }}>
-
-              Presentation Mode
-            </h1>
-          </div>
-
+    case "section2":
+      return (
+        <div className="login-page-wrapper">
           <div
+            className="login-center-stage"
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: "12px"
+              width: "100%",
+              maxWidth: 1080,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "var(--page-stack-gap)",
+              padding: "32px 16px"
             }}>
 
-            {PRESENTATION_ROLES.map((role) =>
-            <Link
-              key={role.key}
-              href={firstSlideHref(role)}
-              className="app-btn app-btn--secondary"
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: "4px",
-                padding: "14px 16px",
-                textAlign: "left",
-                minHeight: 72
-              }}>
+            <div className="login-brand">
+              <BrandLogo alt="HP Automotive" className="login-logo" />
+            </div>
 
-                <span
+            <LayerSurface as="div"
+
+            style={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--layout-card-gap)",
+              padding: "var(--section-card-padding)"
+            }}>
+
+              <div style={{ textAlign: "center" }}>
+                <h1
+                  style={{
+                    margin: 0,
+                    color: "var(--primary)",
+                    fontSize: "1.4rem",
+                    fontWeight: 700
+                  }}>
+
+                  Presentation Mode
+                </h1>
+              </div>
+
+              <div
                 style={{
-                  fontWeight: 700,
-                  color: "var(--primary)",
-                  fontSize: "0.95rem"
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: "12px"
                 }}>
 
-                  {role.label}
-                </span>
-                <span
-                style={{
-                  fontSize: "0.78rem",
-                  color: "var(--text-1)"
-                }}>
+                {PRESENTATION_ROLES.map((role) =>
+                <Link
+                  key={role.key}
+                  href={firstSlideHref(role)}
+                  prefetch
+                  onClick={(event) => onSelectRole?.(event, role)}
+                  className="app-btn app-btn--secondary"
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    gap: "4px",
+                    padding: "14px 16px",
+                    textAlign: "left",
+                    minHeight: 72
+                  }}>
 
-                  {role.demoName} · {role.routes.length} pages
-                </span>
-              </Link>
-            )}
+                    <span
+                    style={{
+                      fontWeight: 700,
+                      color: "var(--primary)",
+                      fontSize: "0.95rem"
+                    }}>
+
+                      {role.label}
+                    </span>
+                    <span
+                    style={{
+                      fontSize: "0.78rem",
+                      color: "var(--text-1)"
+                    }}>
+
+                      {role.demoName} · {role.routes.length} pages
+                    </span>
+                  </Link>
+                )}
+              </div>
+
+              <div style={{ textAlign: "center" }}>
+                <Link
+                  href="/login"
+                  className="app-btn app-btn--ghost"
+                  style={{ marginTop: "8px" }}>
+
+                  Back to staff login
+                </Link>
+              </div>
+            </LayerSurface>
           </div>
+        </div>);
 
-          <div style={{ textAlign: "center" }}>
-            <Link
-              href="/login"
-              className="app-btn app-btn--ghost"
-              style={{ marginTop: "8px" }}>
-
-              Back to staff login
-            </Link>
-          </div>
-        </LayerSurface>
-      </div>
-    </div>);
-
+    default:
+      return null;
+  }
 }

@@ -4,16 +4,16 @@ UI THEME / SURFACE REVIEW — SIDEBAR PAGES PER USER
 RETAIL
 ====================================================
 
-- /login (DONE
+- /login
 
 
 ----------------------------------------------------
 Valet Service
 ----------------------------------------------------
 
-- /valet (DONE
+- /valet
 
-- /dashboard/valeting (DONE
+- /dashboard/valeting
 
 
 ====================================================
@@ -24,52 +24,92 @@ SALES
 Admin Manager
 ----------------------------------------------------
 
-- /admin/compliance (DONE
+- /admin/compliance
 
-- /dashboard/admin (DONE
+- /dashboard/admin
 
 
 ----------------------------------------------------
 Accounts Manager
 ----------------------------------------------------
 
-- /accounts (DONE
+- /accounts
 
-- /company-accounts (DONE
+- /company-accounts (TODO)
+make sure the tab section follows the staffglobal.css tab style
 
-- /accounts/invoices (DONE
+- /company-accounts/[accountNumber] (TODO)
+have it so the whole page follows the staffglobal.css and the layout is better to fit all screen sizes as well as adding "--theme" background cards.
 
-- /accounts/invoices/INV-2026-00001 (DONE
+- /accounts/invoices (TODO)
+move the filter intop the top section to fill the gap
 
-- /accounts/reports (DONE
 
-- /accounts/payslips (DONE
+- /accounts/invoices/INV-2026-00001
 
-- /dashboard/accounts (DONE
+- /accounts/reports (TODO)
+make the seach bar smaller to fit everything wihtin one row with different size screens
+
+- /accounts/payslips
+
+- /dashboard/accounts
+
+- /accounts/view/[accountId] (TODO)
+fix the spacing along the edge
+
+- /accounts/transactions/[accountId] (TODO)
+add "--theme" backgorund cards
+
 
 ----------------------------------------------------
 Owner
 ----------------------------------------------------
 
-- /hr/manager (DONE
+- /hr/manager
 
+
+----------------------------------------------------
+ADMIN
+----------------------------------------------------
+
+- admin/users (TODO)
+have it so this page follows the staffglobal.css style, and the cards within this page follows the "--theme" colour background and gaps of the page adjsuted with the dev overlay improved.
+
+- admin/profiles/[user] (TODO)
+remove this page
 
 ----------------------------------------------------
 Painters
 ----------------------------------------------------
 
-- /dashboard/painting (DONE
+
+- /dashboard/painting
 
 ====================================================
 CUSTOMER
 ====================================================
 
+- Presentaiton mode (TODO)
+have it so within this apge the user can see exactylw hwat the customer will see wihtin all of the /website pages. not "Customer
+Customer / Messages
+Customer / Parts
+Customer / Payments
+Customer / Vehicles
+Customer / Vhc " pages
+
+(TODO) LINK THESE TO THE "/website/profile" page so the user can view from there. have it so these pages follow the custglobal.css style.
+"Vhc / Customer Preview / JobNumber
+Vhc / Customer View / JobNumber
+Vhc / Share / JobNumber / LinkCode"
+
+
+
 - /website/profile (CHECK)
 check global.css style
-have it detect if the reg numbers already on the system 
+have it detect if the reg numbers already on the system
 
 UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht dropdown, tab section etc
-add a see preview button which when pressed opens a new webbrowser tab and shows what the changes are making from the /staff/website-manager page in real time etc. delete image but still showing fix this as well 
+add a see preview button which when pressed opens a new webbrowser tab and shows what the changes are making from the /staff/website-manager page in real time etc. delete image but still showing fix this as well
 
 - /website (CHECK)
 add a link which the staff uers can add delete uploa change etc anything within the /website page from a website page accessed within the "/login" section
@@ -89,11 +129,19 @@ DONE
 GENERAL  (shared across roles — review once)
 ====================================================
 
-- /messages (DONE
+- /login (TODO)
+make sure the "login" page within the presentation follows the login style as the actual /login page but doesnt show the dev login section, have everything else the same.
 
-- /tracking (DONE
+- /messages
 
-- /profile (DONE
+- /tracking
+
+- /profile (TODO)
+add more mock data within all sections wihtin this page.
+
+add more mock data into the "profile?tab=personal" page as well
+
+- Floating notes (TODO)
 
 
 ====================================================
@@ -104,72 +152,72 @@ RETAIL
 Techs
 ----------------------------------------------------
 
-- /job-cards/myjobs (DONE
+- /job-cards/myjobs
 
-- /tech/consumables-request (DONE
+- /tech/consumables-request
 
-- /tech/efficiency (DONE
+- /tech/efficiency
 
-- /tech/dashboard (DONE
+- /tech/dashboard
 
 
 ----------------------------------------------------
 Mobile Technician
 ----------------------------------------------------
 
-- /mobile/dashboard (DONE
+- /mobile/dashboard
 
-- /tech/consumables-request (DONE
+- /tech/consumables-request
 
-- /appointments (DONE
+- /appointments
 
 
 ----------------------------------------------------
 Parts Manager
 ----------------------------------------------------
 
-- /stock-catalogue (DONE
+- /stock-catalogue
 
-- /parts/deliveries (DONE
+- /parts/deliveries
 
-- /parts/manager (DONE
+- /parts/manager
 
-- /dashboard/parts (DONE
+- /dashboard/parts
 
 
 ----------------------------------------------------
 MOT Tester
 ----------------------------------------------------
 
-- /dashboard/mot (DONE
+- /dashboard/mot
 
 
 ----------------------------------------------------
 Service Manager
 ----------------------------------------------------
 
-- /job-cards/waiting/nextjobs (DONE
+- /job-cards/waiting/nextjobs
 
-- /job-cards/view (DONE
+- /job-cards/view
 
-- /job-cards/view?division=retail (DONE
+- /job-cards/view?division=retail
 
-- /job-cards/archive (DONE
+- /job-cards/archive
 
-- /parts/goods-in (DONE
+- /parts/goods-in
 
-- /mobile/appointments (DONE CHECK NEW PAGE
+- /mobile/appointments CHECK NEW PAGE
 
-- /mobile/create (DONE CHECK NEW PAGE
+- /mobile/create CHECK NEW PAGE
 
-- /dashboard/service (DONE
+- /dashboard/service
 
--/customers/[fisrtlastname] (DONE
+-/customers/[fisrtlastname]
 
 ----------------------------------------------------
 Workshop Manager
 ----------------------------------------------------
 
-- /clocking (DONE
+- /clocking
 
-- /workshop/consumables-tracker (DONE
+- /workshop/consumables-tracker
