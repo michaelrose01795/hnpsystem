@@ -29,6 +29,14 @@ export default function CompanyAccountDetailPageUi(props) {
     setMode,
   } = props; // receive page logic props.
 
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/company-accounts");
+  };
+
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
       return <ProtectedRoute allowedRoles={ALLOWED_ROLES}>
@@ -49,37 +57,45 @@ export default function CompanyAccountDetailPageUi(props) {
             parentKey="company-account-detail-shell"
             sectionType="toolbar">
             <div style={{
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr)",
               alignItems: "center",
               gap: "12px",
-              flexWrap: "wrap"
+              width: "100%"
             }}>
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => router.push("/company-accounts")}
-                style={{ flexShrink: 0 }}>
-                All company accounts
+                onClick={handleBack}
+                style={{ justifySelf: "start" }}>
+                Back
               </Button>
 
               {account && mode !== "edit" &&
                 <div style={{
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  gap: "10px",
-                  flexWrap: "wrap",
-                  minWidth: 0
+                  justifySelf: "center",
+                  gap: "4px",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  textAlign: "center"
                 }}>
                   <h1 style={{
                     margin: 0,
                     color: "var(--text-1)",
-                    fontSize: "clamp(1.1rem, 2.2vw, 1.5rem)"
+                    fontSize: "clamp(1.1rem, 2.2vw, 1.5rem)",
+                    overflowWrap: "anywhere"
                   }}>
                     {account.company_name}
                   </h1>
                   {account.trading_name &&
-                    <span style={{ color: "var(--surfaceTextMuted)" }}>{account.trading_name}</span>}
+                    <span style={{
+                      color: "var(--surfaceTextMuted)",
+                      overflowWrap: "anywhere"
+                    }}>{account.trading_name}</span>}
                   <span className="app-badge app-badge--accent-soft app-badge--control">
                     #{account.account_number}
                   </span>
@@ -91,7 +107,8 @@ export default function CompanyAccountDetailPageUi(props) {
                   display: "flex",
                   gap: "10px",
                   flexWrap: "wrap",
-                  marginLeft: "auto"
+                  justifyContent: "flex-end",
+                  justifySelf: "end"
                 }}>
                   <Button type="button" variant="secondary" onClick={() => setMode("edit")}>
                     Edit

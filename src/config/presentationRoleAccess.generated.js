@@ -45,13 +45,12 @@ export const PRESENTATION_ROLES = [
     "routes": [
       "/dashboard/admin",
       "/admin/users",
-      "/admin/profiles/[user]",
       "/admin/compliance",
+      "/admin/compliance/sars",
       "/admin/compliance/breaches",
       "/admin/compliance/dpias",
-      "/admin/compliance/retention",
       "/admin/compliance/ropa",
-      "/admin/compliance/sars",
+      "/admin/compliance/retention",
       "/profile/privacy",
       "/account/security",
       "/staff/website-manager"

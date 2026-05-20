@@ -88,8 +88,6 @@ Accounts Manager
 Admin Manager
 
 
-/admin/profiles/[user]
-
 /admin/users
 
 /dashboard/admin

@@ -1,3 +1,4 @@
+
 ====================================================
 STAFFGLOBAL.CSS
 ====================================================
@@ -40,8 +41,8 @@ Accounts Manager
 - /dashboard/accounts (DONE
 
 
-- /accounts (TODO)
-wihtin the "/accounts :: 1.2.1.1.1.2.1 (accounts-ledger-table-card) — “17 records Account ID Customer Type Status Balance Credit L…”" section remove the "17 records" text section. 
+- /accounts (DONE
+
 
 - /accounts/create (DONE
 
@@ -74,21 +75,24 @@ wihtin the "/accounts :: 1.2.1.1.1.2.1 (accounts-ledger-table-card) — “17 re
 
 
 - /company-accounts/CA3771 (CHECK)
-mvoe "A2 Tyres Ltd A2 Tyres #CA3771" within the same row as the "← All company accounts" button remove the "←" as well from the button. also change the tab section so the background only goes the width of the last button. move the "Edit Delete" buttons wtihin the same row as the "All company accounts" button as well. 
+change "All company accounts" button to "back", also have it so the company name etc for example "Devon Couriers Ltd
+Devon Couriers Ltd
+#CO-2001" is within the middle of that top section. 
+
+
 
 ====================================================
 Admin Manager
 ====================================================
+(CHECK)
+Change the loading state from the /loginpresnention to the first page to show a loading page which shows "laoding presentation" and a loading animation, this is to show the user that the presentation is loading and doesnt show the 3 section full page skelton loader as this doesnt link well for this section. fix this 
+
 
 - /dashboard/admin
 
 
 - /admin/users
 have it so this page follows the staffglobal.css style, and the cards within this page follows the "--theme" colour background and gaps of the page adjsuted with the dev overlay improved.
-
-
-- /admin/profiles/[user]
-remove this page
 
 
 - /admin/compliance

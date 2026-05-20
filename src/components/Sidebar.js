@@ -94,6 +94,16 @@ function buildPresentationHref(href, allowedRoutes, roleKey) {
 }
 
 function routeToLabel(route) {
+  const PRESENTATION_ROUTE_LABELS = {
+    "/admin/compliance": "Admin / Compliance / Dashboard",
+    "/admin/compliance/sars": "Admin / Compliance / Subject Requests",
+    "/admin/compliance/breaches": "Admin / Compliance / Breaches",
+    "/admin/compliance/dpias": "Admin / Compliance / DPIAs",
+    "/admin/compliance/ropa": "Admin / Compliance / ROPA",
+    "/admin/compliance/retention": "Admin / Compliance / Retention",
+  };
+  if (PRESENTATION_ROUTE_LABELS[route]) return PRESENTATION_ROUTE_LABELS[route];
+
   const [path, query = ""] = String(route || "").split("?");
   const label = (path.replace(/^\//, "") || "home")
     .split("/")

@@ -84,6 +84,12 @@ const showAppShellLoading = () => {
   window.dispatchEvent(new Event(LOGIN_SHELL_LOADING_EVENT));
 };
 
+const clearAppShellLoading = () => {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(LOGIN_SHELL_LOADING_STORAGE_KEY);
+  window.dispatchEvent(new Event(LOGIN_SHELL_LOADING_EVENT));
+};
+
 const LoginCard = ({
   title,
   subtitle,
@@ -185,6 +191,10 @@ export default function LoginPage() {
   useTraceMount("LoginPage");
   useTraceValue("login.isRedirecting", isRedirecting);
   useTraceValue("login.sessionStatus", sessionStatus);
+
+  useEffect(() => {
+    clearAppShellLoading();
+  }, []);
 
   useEffect(() => {
     setTemporaryOverride({ mode: "system", accent: "red" });

@@ -157,7 +157,11 @@
       "Bash(sed -n '55,80p' /c/hnpsystem/src/proxy.js)",
       "Bash(sed -n '10,30p' /c/hnpsystem/src/features/presentation/PresentationCallout.js)",
       "Bash(sed -n '68,85p' /c/hnpsystem/src/components/page-ui/tech/tech-consumables-request-ui.js)",
-      "Bash(sed -n '173,190p' /c/hnpsystem/src/components/page-ui/workshop/workshop-consumables-tracker-ui.js)"
+      "Bash(sed -n '173,190p' /c/hnpsystem/src/components/page-ui/workshop/workshop-consumables-tracker-ui.js)",
+      "Bash(findstr /C:\"login-presentation\" /C:\"realPageLoader\" /C:\"loginPresentation\" /C:\"slide.js\")",
+      "Bash(findstr /V \"staffglobal.css custglobal.css\")",
+      "Bash(findstr /R \"presentation login-presentation realPageLoader loginPresentation\")",
+      "Bash(Select-String -Pattern \"presentation|login-presentation|realPageLoader|loginPresentation\")"
     ],
     "deny": [],
     "ask": [],

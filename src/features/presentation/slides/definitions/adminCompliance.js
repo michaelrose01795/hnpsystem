@@ -31,7 +31,7 @@ export const adminComplianceBreachesSlide = {
   route: "/admin/compliance/breaches",
   title: "Compliance - Breach Register",
   roles: COMPLIANCE_ROLES,
-  workflowIndex: 131,
+  workflowIndex: 132,
   steps: [
     {
       kind: "main",
@@ -53,7 +53,7 @@ export const adminComplianceDpiasSlide = {
   route: "/admin/compliance/dpias",
   title: "Compliance - DPIA Register",
   roles: COMPLIANCE_ROLES,
-  workflowIndex: 132,
+  workflowIndex: 133,
   steps: [
     {
       kind: "main",
@@ -75,7 +75,7 @@ export const adminComplianceRetentionSlide = {
   route: "/admin/compliance/retention",
   title: "Compliance - Retention",
   roles: COMPLIANCE_ROLES,
-  workflowIndex: 133,
+  workflowIndex: 135,
   steps: [
     {
       kind: "main",
@@ -119,7 +119,7 @@ export const adminComplianceSarsSlide = {
   route: "/admin/compliance/sars",
   title: "Compliance - Subject Requests",
   roles: COMPLIANCE_ROLES,
-  workflowIndex: 135,
+  workflowIndex: 131,
   steps: [
     {
       kind: "main",

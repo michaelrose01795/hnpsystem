@@ -22,7 +22,6 @@ const ROUTE_TO_MODULE = {
   // Admin
   "/dashboard/admin": () => import("@/pages/dashboard/admin/index"),
   "/admin/users": () => import("@/pages/admin/users/index"),
-  "/admin/profiles/[user]": () => import("@/pages/admin/profiles/[user]"),
   "/admin/compliance": () => import("@/pages/admin/compliance/index"),
   "/admin/compliance/breaches": () => import("@/pages/admin/compliance/breaches"),
   "/admin/compliance/dpias": () => import("@/pages/admin/compliance/dpias"),
@@ -127,26 +126,53 @@ function normalizeTemplate(template) {
   return String(template || "").split("?")[0].split("#")[0];
 }
 
+// Resolved-module cache keyed by template — lets the deep-link page swap pages
+// synchronously between slides instead of paying a microtask round-trip for
+// an already-loaded dynamic import (which causes a one-frame loading flash).
+const LOADED_MODULES = new Map();
+// In-flight load promises so concurrent callers share one import() per template.
+const PENDING_LOADS = new Map();
+
+function toPageRecord(mod) {
+  if (!mod) return null;
+  return { Page: mod.default, getLayout: mod.default?.getLayout || mod.getLayout || null };
+}
+
 export function hasRealPage(template) {
   return Object.prototype.hasOwnProperty.call(ROUTE_TO_MODULE, normalizeTemplate(template));
 }
 
+// Synchronous getter — returns the resolved page module if it has already
+// been preloaded, or null. Used by the deep-link page to skip the loading
+// placeholder when navigating between slides whose modules are already warm.
+export function getLoadedPage(template) {
+  return LOADED_MODULES.get(normalizeTemplate(template)) || null;
+}
+
 export async function loadRealPage(template) {
-  const factory = ROUTE_TO_MODULE[normalizeTemplate(template)];
+  const key = normalizeTemplate(template);
+  const cached = LOADED_MODULES.get(key);
+  if (cached) return cached;
+  const factory = ROUTE_TO_MODULE[key];
   if (!factory) return null;
-  const mod = await factory();
-  return { Page: mod.default, getLayout: mod.default?.getLayout || mod.getLayout || null };
+  if (PENDING_LOADS.has(key)) return PENDING_LOADS.get(key);
+  const promise = factory().then((mod) => {
+    const record = toPageRecord(mod);
+    if (record) LOADED_MODULES.set(key, record);
+    PENDING_LOADS.delete(key);
+    return record;
+  }).catch((err) => {
+    PENDING_LOADS.delete(key);
+    throw err;
+  });
+  PENDING_LOADS.set(key, promise);
+  return promise;
 }
 
 export function preloadRealPages(templates = []) {
   const uniqueTemplates = Array.from(new Set(templates.filter(Boolean).map(normalizeTemplate)));
   return Promise.allSettled(
-    uniqueTemplates.map(async (template) => {
-      const factory = ROUTE_TO_MODULE[template];
-      if (!factory) return null;
-      await factory();
-      return template;
-    })
+    uniqueTemplates.map((template) => loadRealPage(template))
   );
 }
 

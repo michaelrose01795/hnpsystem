@@ -17,7 +17,7 @@ import PresentationOverlay from "@/features/presentation/PresentationOverlay";
 import PresentationDevOverlay from "@/features/presentation/PresentationDevOverlay";
 import useKeyboardNav from "@/features/presentation/useKeyboardNav";
 import { resolvePresentationRoute } from "@/features/presentation/runtime/routeResolver";
-import { loadRealPage, hasRealPage, preloadRealPages } from "@/features/presentation/runtime/realPageLoader";
+import { loadRealPage, hasRealPage, preloadRealPages, getLoadedPage } from "@/features/presentation/runtime/realPageLoader";
 import RouterParamsOverride from "@/features/presentation/runtime/RouterParamsOverride";
 import { setPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import LayerSurface from "@/components/ui/LayerSurface";
@@ -57,7 +57,11 @@ function PresentationContent() {
     () => resolveFromQuery({ role: roleQuery, pageSlug: pageSlugQuery, slide: slideQuery }),
     [roleQuery, pageSlugQuery, slideQuery]
   );
-  const [Page, setPage] = useState(null);
+  const resolvedTemplate = resolved?.template || null;
+  // Seed lazily from the synchronous cache so a slide change to a module that
+  // was already preloaded by the deck-wide warm-up renders without a one-frame
+  // "Loading real page…" flash from the async import() microtask.
+  const [Page, setPage] = useState(() => getLoadedPage(resolvedTemplate)?.Page || null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -71,12 +75,25 @@ function PresentationContent() {
     preloadRealPages(resolved.role.routes);
   }, [resolved?.role?.routes]);
 
-  const resolvedTemplate = resolved?.template || null;
   useEffect(() => {
     let cancelled = false;
+    if (!resolvedTemplate) {
+      setPage(null);
+      return;
+    }
+    if (!hasRealPage(resolvedTemplate)) {
+      setPage(null);
+      return;
+    }
+    // Cache hit → swap synchronously, no loading flash between slides.
+    const cached = getLoadedPage(resolvedTemplate);
+    if (cached?.Page) {
+      setPage(() => cached.Page);
+      return;
+    }
+    // Cache miss → only clear the previous Page if the new module really has
+    // to be fetched (first visit before the deck-wide preload completes).
     setPage(null);
-    if (!resolvedTemplate) return;
-    if (!hasRealPage(resolvedTemplate)) return;
     loadRealPage(resolvedTemplate).then((mod) => {
       if (!cancelled && mod?.Page) setPage(() => mod.Page);
     });

@@ -34,7 +34,6 @@ Format to edit:
 - /job-cards/view
 - /job-cards/[jobNumber]
 - /admin/users
-- /admin/profiles/[user]
 - /accounts/payslips
 - /hr/manager
 
@@ -109,7 +108,6 @@ Format to edit:
 - /dashboard/managers
 - /hr/manager
 - /admin/users
-- /admin/profiles/[user]
 - /accounts/payslips
 
 ## Painters

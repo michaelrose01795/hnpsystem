@@ -86,11 +86,11 @@ Route: /dashboard/admin
 2. /presentation/admin-manager/admin-users/1
 Route: /admin/users
 
-3. /presentation/admin-manager/admin-profiles-user/2
-Route: /admin/profiles/[user]
-
-4. /presentation/admin-manager/admin-compliance/3
+3. /presentation/admin-manager/admin-compliance/2
 Route: /admin/compliance
+
+4. /presentation/admin-manager/admin-compliance-sars/3
+Route: /admin/compliance/sars
 
 5. /presentation/admin-manager/admin-compliance-breaches/4
 Route: /admin/compliance/breaches
@@ -98,22 +98,19 @@ Route: /admin/compliance/breaches
 6. /presentation/admin-manager/admin-compliance-dpias/5
 Route: /admin/compliance/dpias
 
-7. /presentation/admin-manager/admin-compliance-retention/6
-Route: /admin/compliance/retention
-
-8. /presentation/admin-manager/admin-compliance-ropa/7
+7. /presentation/admin-manager/admin-compliance-ropa/6
 Route: /admin/compliance/ropa
 
-9. /presentation/admin-manager/admin-compliance-sars/8
-Route: /admin/compliance/sars
+8. /presentation/admin-manager/admin-compliance-retention/7
+Route: /admin/compliance/retention
 
-10. /presentation/admin-manager/profile-privacy/9
+9. /presentation/admin-manager/profile-privacy/8
 Route: /profile/privacy
 
-11. /presentation/admin-manager/account-security/10
+10. /presentation/admin-manager/account-security/9
 Route: /account/security
 
-12. /presentation/admin-manager/staff-website-manager/11
+11. /presentation/admin-manager/staff-website-manager/10
 Route: /staff/website-manager
 
 

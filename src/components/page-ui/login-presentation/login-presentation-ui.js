@@ -2,6 +2,16 @@ import Link from "next/link";
 import LayerSurface from "@/components/ui/LayerSurface";
 import BrandLogo from "@/components/BrandLogo";
 import { PRESENTATION_ROLES } from "@/config/presentationRoleAccess";
+import { preloadRealPages } from "@/features/presentation/runtime/realPageLoader";
+
+// Warms the JS modules behind every page in the role's deck the moment the
+// user shows intent on a tile (hover / focus / touch). By the time they
+// actually click, the first slide and every subsequent slide they navigate
+// to should already be in the webpack module cache — no loading flash.
+function preloadRoleDeck(role) {
+  if (!role?.routes?.length) return;
+  preloadRealPages(role.routes);
+}
 
 // Convert a Next.js route template (e.g. "/accounts/edit/[accountId]") into
 // the human-readable slug segment used in the presentation deep-link form
@@ -30,14 +40,75 @@ function firstSlideHref(role) {
 }
 
 export default function LoginPresentationPageUi(props = {}) {
-  const { view = "section2", PageSkeleton, onSelectRole } = props;
+  const { view = "section2", onSelectRole } = props;
 
   switch (view) {
-    // Shown the instant a deck is chosen — mirrors the login page so the
-    // transition into /presentation/* uses the shared skeleton instead of
-    // freezing on the role grid while the deck code-splits in.
+    // Shown the instant a deck is chosen — a centred "Loading presentation"
+    // splash with a spinner, instead of the full-page 3-section skeleton
+    // which doesn't match the presentation deck shape it transitions into.
     case "section1":
-      return PageSkeleton ? <PageSkeleton /> : null;
+      return (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-label="Loading presentation"
+          className="login-page-wrapper"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "60vh",
+            width: "100%"
+          }}>
+
+          <style>{`@keyframes presentation-spin{to{transform:rotate(360deg)}}`}</style>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "16px"
+            }}>
+
+            <svg
+              aria-hidden="true"
+              width="44"
+              height="44"
+              viewBox="0 0 44 44"
+              style={{
+                animation: "presentation-spin 0.9s linear infinite",
+                display: "block"
+              }}>
+
+              <circle
+                cx="22"
+                cy="22"
+                r="18"
+                fill="none"
+                stroke="var(--surface)"
+                strokeWidth="3" />
+
+              <path
+                d="M22 4 a18 18 0 0 1 18 18"
+                fill="none"
+                stroke="var(--accentMain)"
+                strokeWidth="3"
+                strokeLinecap="round" />
+
+            </svg>
+
+            <span
+              style={{
+                color: "var(--primary)",
+                fontWeight: 600,
+                fontSize: "1rem"
+              }}>
+
+              Loading presentation
+            </span>
+          </div>
+        </div>);
 
     case "section2":
       return (
@@ -93,7 +164,13 @@ export default function LoginPresentationPageUi(props = {}) {
                   key={role.key}
                   href={firstSlideHref(role)}
                   prefetch
-                  onClick={(event) => onSelectRole?.(event, role)}
+                  onMouseEnter={() => preloadRoleDeck(role)}
+                  onFocus={() => preloadRoleDeck(role)}
+                  onTouchStart={() => preloadRoleDeck(role)}
+                  onClick={(event) => {
+                    preloadRoleDeck(role);
+                    onSelectRole?.(event, role);
+                  }}
                   className="app-btn app-btn--secondary"
                   style={{
                     display: "flex",

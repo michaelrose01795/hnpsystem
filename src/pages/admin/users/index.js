@@ -1,9 +1,7 @@
 // file location: src/pages/admin/users/index.js
-// ✅ Imports converted to use absolute alias "@/"
 import React, { useEffect, useMemo, useState } from "react";
 import AdminUserForm from "@/components/Admin/AdminUserForm";
-import { SectionCard } from "@/components/Section"; // section card layout — ghost chain removed
-import { StatusTag } from "@/components/HR/MetricCard"; // status badge component
+import { StatusTag } from "@/components/HR/MetricCard";
 import { useRoster } from "@/context/RosterContext";
 import { useConfirmation } from "@/context/ConfirmationContext";
 import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
@@ -11,9 +9,9 @@ import {
   SkeletonBlock,
   SkeletonKeyframes,
   SkeletonTableRow,
-  InlineLoading } from
-"@/components/ui/LoadingSkeleton";
-import AdminUserManagementUi from "@/components/page-ui/admin/users/admin-users-ui"; // Extracted presentation layer.
+  InlineLoading,
+} from "@/components/ui/LoadingSkeleton";
+import AdminUserManagementUi from "@/components/page-ui/admin/users/admin-users-ui";
 
 const defaultCompanyProfile = {
   company_name: "",
@@ -28,11 +26,11 @@ const defaultCompanyProfile = {
   sort_code: "",
   account_number: "",
   account_name: "",
-  payment_reference_hint: ""
+  payment_reference_hint: "",
 };
 
 export default function AdminUserManagement() {
-  const { usersByRole, usersByRoleDetailed, allUsers, isLoading: rosterLoading } = useRoster();
+  const { usersByRoleDetailed, allUsers, isLoading: rosterLoading } = useRoster();
   const { confirm } = useConfirmation();
   const [activeUser, setActiveUser] = useState(null);
   const [dbUsers, setDbUsers] = useState([]);
@@ -50,8 +48,6 @@ export default function AdminUserManagement() {
   const [directory, setDirectory] = useState([]);
   const [directoryLoading, setDirectoryLoading] = useState(true);
   const [directoryError, setDirectoryError] = useState(null);
-  // ⚠️ Mock data found — replacing with Supabase query
-  // ✅ Mock data replaced with Supabase integration (see seed-test-data.js for initial inserts)
 
   const departmentList = useMemo(() => {
     const grouped = directory.reduce((acc, employee) => {
@@ -61,32 +57,31 @@ export default function AdminUserManagement() {
       return acc;
     }, {});
 
-    return Object.entries(grouped).
-    map(([department, names]) => ({
-      department,
-      names: names.sort((a, b) => a.localeCompare(b))
-    })).
-    sort((a, b) => a.department.localeCompare(b.department));
+    return Object.entries(grouped)
+      .map(([department, names]) => ({
+        department,
+        names: names.sort((a, b) => a.localeCompare(b)),
+      }))
+      .sort((a, b) => a.department.localeCompare(b.department));
   }, [directory]);
 
   const roleList = useMemo(() => {
-    return Object.entries(usersByRoleDetailed || {}).
-    map(([role, entries]) => ({
-      role,
-      members: (entries || []).
-      map((member) => ({
-        ...member,
-        displayName: member.name || member.email || "Unknown user",
-        departments: member.departments || []
-      })).
-      sort((a, b) => {
-        const nameCompare = (a.displayName || "").localeCompare(b.displayName || "");
-        if (nameCompare !== 0) return nameCompare;
-        // Add stable secondary sort by id to prevent users with same name from switching
-        return (a.id || 0) - (b.id || 0);
-      })
-    })).
-    sort((a, b) => a.role.localeCompare(b.role));
+    return Object.entries(usersByRoleDetailed || {})
+      .map(([role, entries]) => ({
+        role,
+        members: (entries || [])
+          .map((member) => ({
+            ...member,
+            displayName: member.name || member.email || "Unknown user",
+            departments: member.departments || [],
+          }))
+          .sort((a, b) => {
+            const nameCompare = (a.displayName || "").localeCompare(b.displayName || "");
+            if (nameCompare !== 0) return nameCompare;
+            return (a.id || 0) - (b.id || 0);
+          }),
+      }))
+      .sort((a, b) => a.role.localeCompare(b.role));
   }, [usersByRoleDetailed]);
 
   const userCount = allUsers.length;
@@ -193,7 +188,7 @@ export default function AdminUserManagement() {
       const response = await fetch("/api/settings/company-profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(companyProfile)
+        body: JSON.stringify(companyProfile),
       });
       const payload = await response.json();
       if (!response.ok) {
@@ -208,6 +203,7 @@ export default function AdminUserManagement() {
       setCompanySaving(false);
     }
   };
+
   const handleProfileView = (member) => {
     if (!member) return;
     setActiveUser(member.displayName);
@@ -215,425 +211,52 @@ export default function AdminUserManagement() {
     setShowModal(true);
   };
 
-  return <AdminUserManagementUi view="section1" activeUser={activeUser} AdminUserForm={AdminUserForm} companyLoading={companyLoading} companyMessage={companyMessage} companyProfile={companyProfile} companySaving={companySaving} dangerButtonStyle={dangerButtonStyle} dbError={dbError} dbLoading={dbLoading} dbUsers={dbUsers} departmentList={departmentList} directoryError={directoryError} directoryLoading={directoryLoading} fetchDbUsers={fetchDbUsers} handleCompanyInputChange={handleCompanyInputChange} handleCompanySave={handleCompanySave} handleProfileView={handleProfileView} handleUserCreated={handleUserCreated} handleUserDelete={handleUserDelete} InlineLoading={InlineLoading} modalCloseButtonStyle={modalCloseButtonStyle} modalContentStyle={modalContentStyle} modalOverlayStyle={modalOverlayStyle} previewMember={previewMember} primaryActionButtonStyle={primaryActionButtonStyle} refreshButtonStyle={refreshButtonStyle} roleList={roleList} rosterLoading={rosterLoading} secondaryButtonStyle={secondaryButtonStyle} SectionCard={SectionCard} setActiveUser={setActiveUser} setShowAddForm={setShowAddForm} setShowModal={setShowModal} showAddForm={showAddForm} showModal={showModal} SkeletonBlock={SkeletonBlock} SkeletonKeyframes={SkeletonKeyframes} SkeletonTableRow={SkeletonTableRow} StatusTag={StatusTag} userCount={userCount} />;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return (
+    <AdminUserManagementUi
+      view="section1"
+      activeUser={activeUser}
+      AdminUserForm={AdminUserForm}
+      companyLoading={companyLoading}
+      companyMessage={companyMessage}
+      companyProfile={companyProfile}
+      companySaving={companySaving}
+      dbError={dbError}
+      dbLoading={dbLoading}
+      dbUsers={dbUsers}
+      departmentList={departmentList}
+      directoryError={directoryError}
+      directoryLoading={directoryLoading}
+      fetchDbUsers={fetchDbUsers}
+      handleCompanyInputChange={handleCompanyInputChange}
+      handleCompanySave={handleCompanySave}
+      handleProfileView={handleProfileView}
+      handleUserCreated={handleUserCreated}
+      handleUserDelete={handleUserDelete}
+      InlineLoading={InlineLoading}
+      modalCloseButtonStyle={modalCloseButtonStyle}
+      modalContentStyle={modalContentStyle}
+      modalOverlayStyle={modalOverlayStyle}
+      previewMember={previewMember}
+      roleList={roleList}
+      rosterLoading={rosterLoading}
+      setActiveUser={setActiveUser}
+      setShowAddForm={setShowAddForm}
+      setShowModal={setShowModal}
+      showAddForm={showAddForm}
+      showModal={showModal}
+      SkeletonBlock={SkeletonBlock}
+      SkeletonKeyframes={SkeletonKeyframes}
+      SkeletonTableRow={SkeletonTableRow}
+      StatusTag={StatusTag}
+      userCount={userCount}
+    />
+  );
 }
-
-const refreshButtonStyle = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  background: "var(--surface)",
-  color: "var(--accent-purple)",
-  fontWeight: 600,
-  cursor: "pointer"
-};
-
-const dangerButtonStyle = {
-  padding: "6px 12px",
-  borderRadius: "var(--radius-xs)",
-  border: "none",
-  background: "var(--danger-surface)",
-  color: "var(--danger)",
-  fontWeight: 600,
-  cursor: "pointer"
-};
 
 const modalOverlayStyle = {
   ...popupOverlayStyles,
   zIndex: 1500,
-  padding: "20px"
+  padding: "20px",
 };
 
 const modalContentStyle = {
@@ -642,7 +265,7 @@ const modalContentStyle = {
   display: "flex",
   flexDirection: "column",
   gap: "12px",
-  padding: "var(--page-card-padding)"
+  padding: "var(--page-card-padding)",
 };
 
 const modalCloseButtonStyle = {
@@ -650,26 +273,5 @@ const modalCloseButtonStyle = {
   background: "transparent",
   fontSize: "1.25rem",
   cursor: "pointer",
-  color: "var(--info)"
-};
-
-const secondaryButtonStyle = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--radius-sm)",
-  border: "1px solid var(--ghostbutton-ring)",
-  background: "var(--surface)",
-  color: "var(--info-dark)",
-  fontWeight: 600,
-  cursor: "not-allowed",
-  opacity: 0.6
-};
-
-const primaryActionButtonStyle = {
-  padding: "var(--control-padding)",
-  borderRadius: "var(--radius-sm)",
-  border: "none",
-  background: "var(--accent-purple)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer"
+  color: "var(--info)",
 };

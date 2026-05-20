@@ -1,5 +1,6 @@
 // file location: src/components/Admin/AdminUserForm.js
 import React, { useState } from "react";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const defaultForm = {
   firstName: "",
@@ -19,7 +20,11 @@ const roles = [
 
 const departments = ["Workshop", "Service", "Sales", "Valet", "Parts", "Admin"];
 
-export default function AdminUserForm({ onCreated }) {
+export default function AdminUserForm({
+  onCreated,
+  parentSectionKey = "admin-users-page-stack",
+  sectionKey = "admin-users-create-user-card",
+}) {
   const [form, setForm] = useState(defaultForm);
   const [message, setMessage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -67,16 +72,13 @@ export default function AdminUserForm({ onCreated }) {
   };
 
   return (
-    <div
-      style={{
-        background: "var(--surface)",
-        borderRadius: "var(--radius-md)",
-        padding: "24px",
-        boxShadow: "none",
-        display: "flex",
-        flexDirection: "column",
-        gap: "18px",
-      }}
+    <LayerTheme
+      className="app-section-card"
+      sectionKey={sectionKey}
+      parentKey={parentSectionKey}
+      sectionType="content-card"
+      padding="var(--section-card-padding)"
+      gap="var(--layout-card-gap)"
     >
       <div>
         <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 700, color: "var(--accent-purple)" }}>
@@ -92,20 +94,20 @@ export default function AdminUserForm({ onCreated }) {
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "16px",
+          gap: "var(--layout-card-gap)",
         }}
       >
         <Field label="First name">
-          <input name="firstName" type="text" value={form.firstName} onChange={handleChange} style={inputStyle} required />
+          <input className="app-input" name="firstName" type="text" value={form.firstName} onChange={handleChange} required />
         </Field>
         <Field label="Last name">
-          <input name="lastName" type="text" value={form.lastName} onChange={handleChange} style={inputStyle} required />
+          <input className="app-input" name="lastName" type="text" value={form.lastName} onChange={handleChange} required />
         </Field>
         <Field label="Email">
-          <input name="email" type="email" value={form.email} onChange={handleChange} style={inputStyle} required />
+          <input className="app-input" name="email" type="email" value={form.email} onChange={handleChange} required />
         </Field>
         <Field label="Department">
-          <select name="department" value={form.department} onChange={handleChange} style={inputStyle}>
+          <select className="app-input" name="department" value={form.department} onChange={handleChange}>
             <option value="">Select department (optional)</option>
             {departments.map((dept) => (
               <option key={dept} value={dept}>
@@ -115,7 +117,7 @@ export default function AdminUserForm({ onCreated }) {
           </select>
         </Field>
         <Field label="Role">
-          <select name="role" value={form.role} onChange={handleChange} style={inputStyle}>
+          <select className="app-input" name="role" value={form.role} onChange={handleChange}>
             {roles.map((role) => (
               <option key={role.value} value={role.value}>
                 {role.label}
@@ -125,19 +127,19 @@ export default function AdminUserForm({ onCreated }) {
         </Field>
         <Field label="Phone">
           <input
+            className="app-input"
             name="phone"
             type="tel"
             value={form.phone || ""}
             onChange={handleChange}
-            style={inputStyle}
           />
         </Field>
 
-        <div style={{ gridColumn: "1 / -1", display: "flex", gap: "12px" }}>
-          <button type="submit" style={primaryButtonStyle}>
-            {submitting ? "Creating…" : "Create user"}
+        <div style={{ gridColumn: "1 / -1", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <button type="submit" className="app-btn app-btn--primary">
+            {submitting ? "Creating..." : "Create user"}
           </button>
-          <button type="button" onClick={handleReset} style={secondaryButtonStyle}>
+          <button type="button" onClick={handleReset} className="app-btn app-btn--secondary">
             Reset form
           </button>
         </div>
@@ -150,23 +152,23 @@ export default function AdminUserForm({ onCreated }) {
               message.type === "error"
                 ? "rgba(var(--primary-rgb), 0.1)"
                 : message.type === "success"
-                ? "rgba(var(--info-rgb), 0.12)"
-                : "rgba(var(--accent-purple-rgb), 0.1)",
+                  ? "rgba(var(--info-rgb), 0.12)"
+                  : "rgba(var(--accent-purple-rgb), 0.1)",
             borderRadius: "var(--radius-sm)",
             padding: "12px",
             color:
               message.type === "error"
                 ? "var(--danger)"
                 : message.type === "success"
-                ? "var(--info-dark)"
-                : "var(--accent-purple)",
+                  ? "var(--info-dark)"
+                  : "var(--accent-purple)",
             fontWeight: 600,
           }}
         >
           {message.text}
         </div>
       )}
-    </div>
+    </LayerTheme>
   );
 }
 
@@ -186,33 +188,4 @@ const labelStyle = {
   fontSize: "0.85rem",
   color: "var(--info-dark)",
   fontWeight: 600,
-};
-
-const inputStyle = {
-  borderRadius: "var(--control-radius-xs)",
-  border: "1px solid var(--input-ring)",
-  padding: "10px 12px",
-  fontWeight: 500,
-  color: "var(--accent-purple)",
-  background: "var(--surface)",
-};
-
-const primaryButtonStyle = {
-  padding: "10px 16px",
-  borderRadius: "var(--control-radius-xs)",
-  border: "none",
-  background: "var(--accent-purple)",
-  color: "white",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const secondaryButtonStyle = {
-  padding: "10px 16px",
-  borderRadius: "var(--control-radius-xs)",
-  border: "1px solid var(--ghostbutton-ring)",
-  background: "var(--surface)",
-  color: "var(--accent-purple)",
-  fontWeight: 600,
-  cursor: "pointer",
 };

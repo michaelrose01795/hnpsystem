@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import LoginPresentationPageUi from "@/components/page-ui/login-presentation/login-presentation-ui";
-import { PageSkeleton } from "@/components/ui/LoadingSkeleton";
 import { useTheme } from "@/styles/themeProvider";
 
 export default function LoginPresentationPage() {
@@ -35,10 +34,11 @@ export default function LoginPresentationPage() {
     };
   }, [setTemporaryOverride]);
 
-  // Swap in the shared PageSkeleton the instant a deck is chosen — the same
-  // loading behaviour the /login page uses on its post-login redirect — so the
-  // jump into /presentation/* is smooth instead of freezing on the role grid
-  // while the deck page code-splits in.
+  // Swap in the centred "Loading presentation" splash the instant a deck is
+  // chosen, so the jump into /presentation/* is smooth instead of freezing on
+  // the role grid while the deck page code-splits in. We avoid the shared
+  // PageSkeleton here — its 3-section card shape doesn't match the
+  // presentation deck layout it transitions into.
   useEffect(() => {
     const handleStart = (url) => {
       if (typeof url === "string" && url.startsWith("/presentation/")) {
@@ -57,7 +57,7 @@ export default function LoginPresentationPage() {
   }, [router.events]);
 
   if (isEntering) {
-    return <LoginPresentationPageUi view="section1" PageSkeleton={PageSkeleton} />;
+    return <LoginPresentationPageUi view="section1" />;
   }
 
   return <LoginPresentationPageUi view="section2" onSelectRole={handleSelectRole} />;

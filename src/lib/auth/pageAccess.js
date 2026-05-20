@@ -123,7 +123,6 @@ const DYNAMIC_DETAIL_EXTENDS = {
   "/accounts/settings": ["/accounts"],
   "/accounts/create": ["/accounts"],
   "/accounts": ["/accounts"],
-  "/admin/profiles/[user]": ["/admin/users"],
   "/admin/compliance/breaches": ["/admin/compliance"],
   "/admin/compliance/dpias": ["/admin/compliance"],
   "/admin/compliance/retention": ["/admin/compliance"],
