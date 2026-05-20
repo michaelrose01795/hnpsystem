@@ -1,13 +1,13 @@
 // file location: src/components/page-ui/admin/users/admin-users-ui.js
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { roleCategories } from "@/config/users";
 
 const PAGE_SECTION_KEY = "admin-users-page-shell";
 
 function ThemedSection({ sectionKey, title, subtitle, action, children }) {
   return (
     <LayerTheme
-      className="app-section-card"
       sectionKey={sectionKey}
       parentKey={PAGE_SECTION_KEY}
       sectionType="content-card"
@@ -31,9 +31,9 @@ function ThemedSection({ sectionKey, title, subtitle, action, children }) {
               </h2>
             )}
             {subtitle && (
-              <p style={{ margin: "var(--space-xs) 0 0", color: "var(--surfaceTextMuted)" }}>
+              <div style={{ margin: "var(--space-xs) 0 0", color: "var(--surfaceTextMuted)" }}>
                 {subtitle}
-              </p>
+              </div>
             )}
           </div>
           {action && <div style={{ flex: "0 0 auto" }}>{action}</div>}
@@ -42,6 +42,93 @@ function ThemedSection({ sectionKey, title, subtitle, action, children }) {
       {children}
     </LayerTheme>
   );
+}
+
+const MOCK_COMPANY_PROFILE = {
+  company_name: "Humphries & Parks",
+  address_line1: "Mock Service Centre",
+  address_line2: "Station Road",
+  city: "West Malling",
+  postcode: "ME19 6QR",
+  phone_service: "01732 000 101",
+  phone_parts: "01732 000 202",
+  website: "https://www.humphriesandparks.co.uk",
+  bank_name: "HNP Business Banking",
+  sort_code: "20-00-00",
+  account_number: "12345678",
+  account_name: "Humphries & Parks Ltd",
+  payment_reference_hint: "Use invoice number and vehicle registration as the payment reference.",
+};
+
+const MOCK_DB_USERS = [
+  {
+    id: "mock-admin-manager",
+    firstName: "Amelia",
+    lastName: "Hart",
+    email: "amelia.hart@example.test",
+    role: roleCategories.Sales.find((role) => role === "Admin Manager") || roleCategories.Sales[5],
+    phone: "01732 000 301",
+    createdAt: "2026-05-01T09:00:00.000Z",
+    isMock: true,
+  },
+  {
+    id: "mock-service-manager",
+    firstName: "Owen",
+    lastName: "Reed",
+    email: "owen.reed@example.test",
+    role: roleCategories.Retail.find((role) => role === "Service Manager") || roleCategories.Retail[1],
+    phone: "01732 000 302",
+    createdAt: "2026-05-03T10:30:00.000Z",
+    isMock: true,
+  },
+  {
+    id: "mock-accounts-manager",
+    firstName: "Priya",
+    lastName: "Shah",
+    email: "priya.shah@example.test",
+    role: roleCategories.Sales.find((role) => role === "Accounts Manager") || roleCategories.Sales[6],
+    phone: "01732 000 303",
+    createdAt: "2026-05-06T08:45:00.000Z",
+    isMock: true,
+  },
+];
+
+const MOCK_DEPARTMENT_LIST = [
+  { department: "Accounts", names: ["Priya Shah", "Daniel Brooks"] },
+  { department: "Service", names: ["Owen Reed", "Maya Collins"] },
+  { department: "Workshop", names: ["Noah Turner", "Ella Morgan"] },
+  { department: "Parts", names: ["Samira Khan", "George Miller"] },
+];
+
+const MOCK_ROLE_LIST = [
+  {
+    role: roleCategories.Sales.find((role) => role === "Admin Manager") || roleCategories.Sales[5],
+    members: [
+      { id: "mock-admin-manager", displayName: "Amelia Hart", key: "amelia-hart", isMock: true },
+      { id: "mock-owner", displayName: "James Humphries", key: "james-humphries", isMock: true },
+    ],
+  },
+  {
+    role: roleCategories.Retail.find((role) => role === "Service Manager") || roleCategories.Retail[1],
+    members: [
+      { id: "mock-service-manager", displayName: "Owen Reed", key: "owen-reed", isMock: true },
+      { id: "mock-workshop-manager", displayName: "Maya Collins", key: "maya-collins", isMock: true },
+    ],
+  },
+  {
+    role: roleCategories.Sales.find((role) => role === "Accounts Manager") || roleCategories.Sales[6],
+    members: [{ id: "mock-accounts-manager", displayName: "Priya Shah", key: "priya-shah", isMock: true }],
+  },
+];
+
+function hasAnyProfileValue(profile = {}) {
+  return Object.values(profile || {}).some((value) => String(value || "").trim());
+}
+
+function valueOrMock(profile, field) {
+  const liveValue = profile?.[field];
+  if (String(liveValue || "").trim()) return liveValue;
+  return MOCK_COMPANY_PROFILE[field];
 }
 
 export default function AdminUserManagementUi(props) {
@@ -83,6 +170,18 @@ export default function AdminUserManagementUi(props) {
     userCount,
   } = props;
 
+  const companyHasValues = hasAnyProfileValue(companyProfile);
+  const companyPreview = companyHasValues
+    ? Object.fromEntries(Object.keys(MOCK_COMPANY_PROFILE).map((field) => [field, valueOrMock(companyProfile, field)]))
+    : MOCK_COMPANY_PROFILE;
+  const visibleDbUsers = dbUsers.length > 0 ? dbUsers : MOCK_DB_USERS;
+  const visibleDepartmentList = departmentList.length > 0 ? departmentList : MOCK_DEPARTMENT_LIST;
+  const visibleRoleList = roleList.length > 0 ? roleList : MOCK_ROLE_LIST;
+  const visibleUserCount = userCount || MOCK_DB_USERS.length;
+  const usingMockDbUsers = dbUsers.length === 0;
+  const usingMockDepartments = departmentList.length === 0;
+  const usingMockRoles = roleList.length === 0;
+
   switch (props.view) {
     case "section1":
       return (
@@ -101,14 +200,13 @@ export default function AdminUserManagementUi(props) {
             sectionType="toolbar"
           >
             <p style={{ color: "var(--surfaceTextMuted)", margin: 0 }}>
-              Provision platform accounts and review department ownership. These records are driven by the shared Supabase roster for consistent testing.
+              Provision platform accounts and review department ownership with populated preview data available in every section.
             </p>
           </DevLayoutSection>
 
           <ThemedSection
             sectionKey="admin-users-company-bank-card"
             title="Company & Bank Details"
-            subtitle="Invoice headers and payment instructions shared across all invoice screens."
             action={
               <button
                 type="button"
@@ -146,33 +244,55 @@ export default function AdminUserManagementUi(props) {
                 ))}
               </div>
             ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "var(--layout-card-gap)",
-                }}
-              >
-                <input value={companyProfile.company_name} onChange={(event) => handleCompanyInputChange("company_name", event.target.value)} placeholder="Company name" className="app-input" />
-                <input value={companyProfile.address_line1} onChange={(event) => handleCompanyInputChange("address_line1", event.target.value)} placeholder="Address line 1" className="app-input" />
-                <input value={companyProfile.address_line2} onChange={(event) => handleCompanyInputChange("address_line2", event.target.value)} placeholder="Address line 2" className="app-input" />
-                <input value={companyProfile.city} onChange={(event) => handleCompanyInputChange("city", event.target.value)} placeholder="City" className="app-input" />
-                <input value={companyProfile.postcode} onChange={(event) => handleCompanyInputChange("postcode", event.target.value)} placeholder="Postcode" className="app-input" />
-                <input value={companyProfile.phone_service} onChange={(event) => handleCompanyInputChange("phone_service", event.target.value)} placeholder="Service phone" className="app-input" />
-                <input value={companyProfile.phone_parts} onChange={(event) => handleCompanyInputChange("phone_parts", event.target.value)} placeholder="Parts phone" className="app-input" />
-                <input value={companyProfile.website} onChange={(event) => handleCompanyInputChange("website", event.target.value)} placeholder="Website" className="app-input" />
-                <input value={companyProfile.bank_name} onChange={(event) => handleCompanyInputChange("bank_name", event.target.value)} placeholder="Bank name" className="app-input" />
-                <input value={companyProfile.sort_code} onChange={(event) => handleCompanyInputChange("sort_code", event.target.value)} placeholder="Sort code" className="app-input" />
-                <input value={companyProfile.account_number} onChange={(event) => handleCompanyInputChange("account_number", event.target.value)} placeholder="Account number" className="app-input" />
-                <input value={companyProfile.account_name} onChange={(event) => handleCompanyInputChange("account_name", event.target.value)} placeholder="Account name" className="app-input" />
-                <textarea
-                  value={companyProfile.payment_reference_hint}
-                  onChange={(event) => handleCompanyInputChange("payment_reference_hint", event.target.value)}
-                  placeholder="Payment reference hint"
-                  rows={3}
-                  className="app-input"
-                  style={{ gridColumn: "1 / -1", resize: "vertical" }}
-                />
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--layout-card-gap)" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: "var(--layout-card-gap)",
+                  }}
+                >
+                  <input value={companyProfile.company_name} onChange={(event) => handleCompanyInputChange("company_name", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.company_name} className="app-input" />
+                  <input value={companyProfile.address_line1} onChange={(event) => handleCompanyInputChange("address_line1", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.address_line1} className="app-input" />
+                  <input value={companyProfile.address_line2} onChange={(event) => handleCompanyInputChange("address_line2", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.address_line2} className="app-input" />
+                  <input value={companyProfile.city} onChange={(event) => handleCompanyInputChange("city", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.city} className="app-input" />
+                  <input value={companyProfile.postcode} onChange={(event) => handleCompanyInputChange("postcode", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.postcode} className="app-input" />
+                  <input value={companyProfile.phone_service} onChange={(event) => handleCompanyInputChange("phone_service", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.phone_service} className="app-input" />
+                  <input value={companyProfile.phone_parts} onChange={(event) => handleCompanyInputChange("phone_parts", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.phone_parts} className="app-input" />
+                  <input value={companyProfile.website} onChange={(event) => handleCompanyInputChange("website", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.website} className="app-input" />
+                  <input value={companyProfile.bank_name} onChange={(event) => handleCompanyInputChange("bank_name", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.bank_name} className="app-input" />
+                  <input value={companyProfile.sort_code} onChange={(event) => handleCompanyInputChange("sort_code", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.sort_code} className="app-input" />
+                  <input value={companyProfile.account_number} onChange={(event) => handleCompanyInputChange("account_number", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.account_number} className="app-input" />
+                  <input value={companyProfile.account_name} onChange={(event) => handleCompanyInputChange("account_name", event.target.value)} placeholder={MOCK_COMPANY_PROFILE.account_name} className="app-input" />
+                  <textarea
+                    value={companyProfile.payment_reference_hint}
+                    onChange={(event) => handleCompanyInputChange("payment_reference_hint", event.target.value)}
+                    placeholder={MOCK_COMPANY_PROFILE.payment_reference_hint}
+                    rows={3}
+                    className="app-input"
+                    style={{ gridColumn: "1 / -1", resize: "vertical" }}
+                  />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--layout-card-gap)" }}>
+                  <div>
+                    <strong style={{ display: "block", color: "var(--surfaceText)" }}>{companyPreview.company_name}</strong>
+                    <span style={{ display: "block", color: "var(--surfaceTextMuted)", marginTop: "4px" }}>
+                      {[companyPreview.address_line1, companyPreview.address_line2, companyPreview.city, companyPreview.postcode].filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                  <div>
+                    <strong style={{ display: "block", color: "var(--surfaceText)" }}>{companyPreview.bank_name}</strong>
+                    <span style={{ display: "block", color: "var(--surfaceTextMuted)", marginTop: "4px" }}>
+                      {companyPreview.sort_code} / {companyPreview.account_number}
+                    </span>
+                  </div>
+                  <div>
+                    <strong style={{ display: "block", color: "var(--surfaceText)" }}>Payment note</strong>
+                    <span style={{ display: "block", color: "var(--surfaceTextMuted)", marginTop: "4px" }}>
+                      {companyPreview.payment_reference_hint}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
           </ThemedSection>
@@ -188,7 +308,7 @@ export default function AdminUserManagementUi(props) {
           <ThemedSection
             sectionKey="admin-users-live-platform-users-card"
             title="Live Platform Users"
-            subtitle={dbLoading ? <InlineLoading width={160} label="Loading user roster" /> : "Manage accounts stored in Supabase"}
+            subtitle={dbLoading ? <InlineLoading width={160} label="Loading user roster" /> : null}
             action={
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <button type="button" onClick={() => setShowAddForm((prev) => !prev)} className="app-btn app-btn--primary">
@@ -211,10 +331,6 @@ export default function AdminUserManagementUi(props) {
               </div>
             ) : (
               <div style={{ overflowX: "auto" }}>
-                <p style={{ color: "var(--surfaceTextMuted)", margin: "0 0 var(--layout-card-gap)" }}>
-                  This table reflects the live <code>users</code> table in Supabase. Any additions or deletions
-                  performed here instantly update the database and associated activity logs.
-                </p>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
                     <tr style={{ color: "var(--surfaceTextMuted)", fontSize: "0.8rem" }}>
@@ -227,30 +343,31 @@ export default function AdminUserManagementUi(props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {dbUsers.map((account) => (
-                      <tr key={account.id} style={{ borderTop: "var(--separating-line)" }}>
-                        <td style={{ padding: "12px 0", fontWeight: 600 }}>
+                    {visibleDbUsers.map((account) => (
+                      <tr key={account.id}>
+                        <td style={{ padding: "12px 0", fontWeight: 600, borderBottom: "1px solid var(--separating-line)" }}>
                           {account.firstName} {account.lastName}
                         </td>
-                        <td>{account.email}</td>
-                        <td>{account.role}</td>
-                        <td>{account.phone || "-"}</td>
-                        <td>{new Date(account.createdAt).toLocaleDateString()}</td>
-                        <td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>{account.email}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>{account.role}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>{account.phone || "-"}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>{new Date(account.createdAt).toLocaleDateString()}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>
                           <button
                             type="button"
+                            disabled={account.isMock}
                             onClick={() => handleUserDelete(account.id, `${account.firstName} ${account.lastName}`.trim())}
-                            className="app-btn app-btn--danger"
+                            className={`app-btn ${account.isMock ? "app-btn--secondary" : "app-btn--danger"}`}
                           >
-                            Remove
+                            {account.isMock ? "Preview" : "Remove"}
                           </button>
                         </td>
                       </tr>
                     ))}
-                    {dbUsers.length === 0 && (
+                    {usingMockDbUsers && (
                       <tr>
                         <td colSpan={6} style={{ padding: "14px", textAlign: "center", color: "var(--surfaceTextMuted)" }}>
-                          No platform users available.
+                          Preview users shown while no platform users are available.
                         </td>
                       </tr>
                     )}
@@ -263,8 +380,7 @@ export default function AdminUserManagementUi(props) {
           <ThemedSection
             sectionKey="admin-users-directory-snapshot-card"
             title="User Directory Snapshot"
-            subtitle="Live roster pulled from Supabase users & HR employee profiles"
-            action={<StatusTag label={`${userCount} people`} tone="default" />}
+            action={<StatusTag label={`${visibleUserCount} people`} tone="default" />}
           >
             {directoryError && (
               <div className="app-status-message app-status-message--danger" style={{ margin: 0 }}>
@@ -302,7 +418,7 @@ export default function AdminUserManagementUi(props) {
                   gap: "var(--layout-card-gap)",
                 }}
               >
-                {departmentList.map(({ department, names }) => (
+                {visibleDepartmentList.map(({ department, names }) => (
                   <div key={department} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                     <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, color: "var(--accent-purple)" }}>
                       {department}
@@ -314,7 +430,7 @@ export default function AdminUserManagementUi(props) {
                     </ul>
                   </div>
                 ))}
-                {departmentList.length === 0 && <div style={{ color: "var(--surfaceTextMuted)" }}>No departments available.</div>}
+                {usingMockDepartments && <div style={{ color: "var(--surfaceTextMuted)" }}>Preview departments shown while no directory data is available.</div>}
               </div>
             )}
           </ThemedSection>
@@ -322,7 +438,6 @@ export default function AdminUserManagementUi(props) {
           <ThemedSection
             sectionKey="admin-users-roles-members-card"
             title="Roles & Members"
-            subtitle="Cross-reference roles with associated team members"
           >
             {rosterLoading ? (
               <div style={{ overflowX: "auto" }} role="status" aria-live="polite" aria-label="Loading roster">
@@ -351,17 +466,18 @@ export default function AdminUserManagementUi(props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {roleList.map(({ role, members }) => (
-                      <tr key={role} style={{ borderTop: "var(--separating-line)" }}>
-                        <td style={{ padding: "12px 0", fontWeight: 600 }}>{role}</td>
-                        <td>
+                    {visibleRoleList.map(({ role, members }) => (
+                      <tr key={role}>
+                        <td style={{ padding: "12px 0", fontWeight: 600, borderBottom: "1px solid var(--separating-line)" }}>{role}</td>
+                        <td style={{ borderBottom: "1px solid var(--separating-line)" }}>
                           {members.length > 0 ? (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                               {members.map((member) => (
                                 <button
                                   key={`${role}-${member.id || member.displayName}`}
                                   type="button"
-                                  onClick={() => handleProfileView(member)}
+                                  disabled={member.isMock}
+                                  onClick={() => !member.isMock && handleProfileView(member)}
                                   className={`app-btn ${activeUser === member.displayName ? "app-btn--primary" : "app-btn--secondary"}`}
                                 >
                                   {member.displayName}
@@ -374,6 +490,13 @@ export default function AdminUserManagementUi(props) {
                         </td>
                       </tr>
                     ))}
+                    {usingMockRoles && (
+                      <tr>
+                        <td colSpan={2} style={{ padding: "14px", textAlign: "center", color: "var(--surfaceTextMuted)" }}>
+                          Preview role memberships shown while no roster data is available.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

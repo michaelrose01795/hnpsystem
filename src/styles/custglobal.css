@@ -2807,3 +2807,420 @@ html.website-scope .ws-footer-copy {
   }
 }
 
+/* ════════════════════════════════════════════════════════════════════════
+   PUBLIC SHOP  (/website#shop, /website/shop/cart, /website/shop/checkout)
+
+   Inherits the .ws-* token system (--ws-card, --ws-line, --ws-radius,
+   --txt-bright/soft/mute, --accentMain, --accentText). Same data-website-theme
+   light/dark flip applies automatically.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+html.website-scope .ws-shop-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+html.website-scope .ws-shop-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+html.website-scope .ws-shop-filter {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ws-card);
+  color: var(--txt-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+html.website-scope .ws-shop-filter--active {
+  background: var(--accentMain);
+  color: #fff;
+}
+html.website-scope .ws-shop-cartbutton {
+  position: relative;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--accentMain);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+html.website-scope .ws-shop-cartbutton-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 0.78rem;
+}
+
+/* ── Product grid ─────────────────────────────────────────────────────── */
+html.website-scope .ws-grid--shop {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+html.website-scope .ws-product {
+  display: flex;
+  flex-direction: column;
+  background: var(--ws-card);
+  border-radius: var(--ws-radius);
+  overflow: hidden;
+  transition: transform 160ms, box-shadow 160ms;
+}
+html.website-scope .ws-product:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ws-shadow);
+}
+html.website-scope .ws-product-media {
+  aspect-ratio: 4 / 3;
+  background: var(--ws-tint);
+  overflow: hidden;
+}
+html.website-scope .ws-product-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+html.website-scope .ws-product-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+html.website-scope .ws-product-name {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--txt-bright);
+  margin: 0;
+}
+html.website-scope .ws-product-meta {
+  font-size: 0.78rem;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-product-price {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--accentText);
+  margin: 4px 0 0;
+}
+html.website-scope .ws-product-stock {
+  font-size: 0.76rem;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-product-stock--low {
+  color: #d97706;
+}
+html.website-scope .ws-product-stock--out {
+  color: #b91c1c;
+}
+html.website-scope .ws-product-add {
+  margin-top: auto;
+}
+html.website-scope .ws-product-add .ws-btn {
+  width: 100%;
+}
+
+/* ── Cart drawer ──────────────────────────────────────────────────────── */
+html.website-scope .ws-cart-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(420px, 96vw);
+  background: var(--ws-card);
+  box-shadow: -18px 0 44px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  z-index: 9000;
+  transform: translateX(100%);
+  transition: transform 220ms ease;
+}
+html.website-scope .ws-cart-drawer--open {
+  transform: translateX(0);
+}
+html.website-scope .ws-cart-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms;
+  z-index: 8999;
+}
+html.website-scope .ws-cart-backdrop--open {
+  opacity: 1;
+  pointer-events: auto;
+}
+html.website-scope .ws-cart-head {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+html.website-scope .ws-cart-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--txt-bright);
+}
+html.website-scope .ws-cart-close {
+  background: transparent;
+  color: var(--txt-soft);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 10px;
+}
+html.website-scope .ws-cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+html.website-scope .ws-cart-item {
+  display: grid;
+  grid-template-columns: 64px 1fr auto;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: var(--separating-line);
+}
+html.website-scope .ws-cart-item:last-child {
+  border-bottom: none;
+}
+html.website-scope .ws-cart-item-media {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: var(--ws-tint);
+  overflow: hidden;
+}
+html.website-scope .ws-cart-item-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+html.website-scope .ws-cart-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+html.website-scope .ws-cart-item-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--txt-bright);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+html.website-scope .ws-cart-item-meta {
+  font-size: 0.78rem;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-cart-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+html.website-scope .ws-cart-qty {
+  background: var(--ws-tint);
+  color: var(--txt-bright);
+  font-weight: 700;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+html.website-scope .ws-cart-item-remove {
+  background: transparent;
+  color: var(--txt-mute);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+html.website-scope .ws-cart-empty {
+  padding: 30px 20px;
+  text-align: center;
+  color: var(--txt-mute);
+}
+html.website-scope .ws-cart-foot {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+html.website-scope .ws-cart-totals {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-cart-totals--total {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--txt-bright);
+}
+
+/* ── Cart + checkout pages ───────────────────────────────────────────── */
+html.website-scope .ws-checkout-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  html.website-scope .ws-checkout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+html.website-scope .ws-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+html.website-scope .ws-form-row label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--txt-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+html.website-scope .ws-form-row input,
+html.website-scope .ws-form-row textarea {
+  background: var(--ws-tint);
+  color: var(--txt-bright);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  outline: none;
+}
+html.website-scope .ws-form-row input:focus,
+html.website-scope .ws-form-row textarea:focus {
+  box-shadow: 0 0 0 2px var(--accentMain);
+}
+html.website-scope .ws-form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 540px) {
+  html.website-scope .ws-form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+html.website-scope .ws-order-summary {
+  background: var(--ws-card);
+  border-radius: var(--ws-radius);
+  padding: 20px;
+  position: sticky;
+  top: 24px;
+}
+html.website-scope .ws-order-line {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.88rem;
+  color: var(--txt-soft);
+}
+html.website-scope .ws-order-line--strong {
+  font-weight: 700;
+  color: var(--txt-bright);
+  padding-top: 10px;
+  margin-top: 6px;
+  border-top: var(--separating-line);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   LIVE PREVIEW EDITOR  (only when /website is loaded with ?preview=editor)
+
+   Adds hover + selected outlines around every editable region of the
+   marketing page so staff can click-to-edit from the staff Live Preview tab.
+   These styles only matter inside the editor iframe; on the public site no
+   .ws-preview-* class is ever rendered, so nothing changes.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+html.website-scope .ws-preview-target {
+  position: relative;
+  cursor: pointer;
+  outline: 2px dashed transparent;
+  outline-offset: -2px;
+  transition: outline-color 120ms ease, background 120ms ease;
+}
+html.website-scope .ws-preview-target:hover {
+  outline-color: rgba(220, 38, 38, 0.55);
+  background: rgba(220, 38, 38, 0.04);
+}
+html.website-scope .ws-preview-target--selected {
+  outline: 2px solid var(--accentMain, #dc2626);
+  background: rgba(220, 38, 38, 0.06);
+}
+html.website-scope .ws-preview-target-label {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 50;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--accentMain, #dc2626);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+html.website-scope .ws-preview-target:hover > .ws-preview-target-label,
+html.website-scope .ws-preview-target--selected > .ws-preview-target-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Suppress nested labels - only show the outermost label that's actually
+   hovered so the chips don't stack. */
+html.website-scope .ws-preview-target .ws-preview-target:hover ~ * .ws-preview-target-label {
+  opacity: 0;
+}
+
+/* ── Staff-side: editor split layout (left pane + iframe pane) ────────── */
+/* These rules sit OUTSIDE html.website-scope because the editor itself
+   renders in the staff app, not in the public marketing scope. */
+.ws-editor-split {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .ws-editor-split {
+    grid-template-columns: 1fr;
+  }
+}
+.ws-editor-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.ws-editor-preview iframe {
+  width: 100%;
+  border-radius: 8px;
+  background: var(--theme);
+}
+

@@ -1,12 +1,27 @@
 // file location: src/features/websiteManager/panels/PageContentPanel.js
-// Per-page content management: add / edit / delete / reorder / publish content
-// blocks for any public website page (Homepage, New Cars, Used Cars, Offers,
-// Sell Your Car, Service & Parts, Motability, About Us, Blog, Contact Us).
-import React, { useEffect, useMemo, useState } from "react";
+//
+// Phase 2 rewrite. Drives every page's content through the typed editors in
+// ../editors. For each selected page we list the sections that belong to it,
+// load their current rows from /api/website/sections/:section, and let the
+// user open a SectionEditor that patches the right table.
+//
+// Singletons: one row, edit in place.
+// Collections: row list with Edit + Delete + "+ Add" + reorder.
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Section from "@/components/Section";
-import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
-import { BLOCK_TYPES } from "../websiteData";
+import LayerTheme from "@/components/ui/LayerTheme";
+import { SECTION_SCHEMAS, SECTIONS_BY_PAGE } from "../editors/sectionSchemas";
+import SectionEditor from "../editors/SectionEditor";
+import {
+  fetchSection,
+  patchSingleton,
+  createRow,
+  patchRow,
+  deleteRowApi,
+  reorderSection,
+} from "../websiteApi";
 import {
   StatusBadge,
   EmptyState,
@@ -15,112 +30,24 @@ import {
   headCellStyle,
 } from "../helpers";
 
-const EMPTY_DRAFT = {
-  title: "",
-  type: BLOCK_TYPES[0],
-  summary: "",
-  status: "draft",
-};
-
 export default function PageContentPanel({
   pages,
-  content,
   initialPageKey,
-  onAddBlock,
-  onUpdateBlock,
-  onDeleteBlock,
-  onMoveBlock,
-  onToggleBlock,
   onTogglePageStatus,
 }) {
-  const [selectedPageKey, setSelectedPageKey] = useState(
-    initialPageKey || pages[0]?.key || ""
-  );
-  const [query, setQuery] = useState("");
-  // editor.mode: null (closed) | "add" | "edit"
-  const [editor, setEditor] = useState({ mode: null, blockId: null, draft: EMPTY_DRAFT });
-
-  // Honour the "Manage" jump from the Overview tab.
+  const [pageKey, setPageKey] = useState(initialPageKey || pages[0]?.key || "home");
   useEffect(() => {
-    if (initialPageKey) setSelectedPageKey(initialPageKey);
+    if (initialPageKey) setPageKey(initialPageKey);
   }, [initialPageKey]);
 
-  const selectedPage = pages.find((p) => p.key === selectedPageKey);
-  const blocks = useMemo(
-    () => content[selectedPageKey] || [],
-    [content, selectedPageKey]
-  );
-
-  const filteredBlocks = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return blocks;
-    return blocks.filter(
-      (b) =>
-        b.title.toLowerCase().includes(q) ||
-        b.type.toLowerCase().includes(q) ||
-        b.summary.toLowerCase().includes(q)
-    );
-  }, [blocks, query]);
-
-  const closeEditor = () =>
-    setEditor({ mode: null, blockId: null, draft: EMPTY_DRAFT });
-
-  const openAdd = () =>
-    setEditor({ mode: "add", blockId: null, draft: EMPTY_DRAFT });
-
-  const openEdit = (block) =>
-    setEditor({
-      mode: "edit",
-      blockId: block.id,
-      draft: {
-        title: block.title,
-        type: block.type,
-        summary: block.summary,
-        status: block.status,
-      },
-    });
-
-  const setDraft = (patch) =>
-    setEditor((prev) => ({ ...prev, draft: { ...prev.draft, ...patch } }));
-
-  const handleSave = () => {
-    const draft = {
-      title: editor.draft.title.trim(),
-      type: editor.draft.type,
-      summary: editor.draft.summary.trim(),
-      status: editor.draft.status,
-    };
-    if (!draft.title) {
-      window.alert("Please enter a title for this content block.");
-      return;
-    }
-    if (editor.mode === "add") {
-      onAddBlock(selectedPageKey, draft);
-    } else if (editor.mode === "edit") {
-      onUpdateBlock(selectedPageKey, editor.blockId, draft);
-    }
-    closeEditor();
-  };
-
-  const handleDelete = (block) => {
-    if (
-      window.confirm(
-        `Delete the content block "${block.title}"? This cannot be undone.`
-      )
-    ) {
-      onDeleteBlock(selectedPageKey, block.id);
-      if (editor.blockId === block.id) closeEditor();
-    }
-  };
-
-  // Map the (possibly filtered) row back to its true index for reorder bounds.
-  const trueIndex = (blockId) => blocks.findIndex((b) => b.id === blockId);
+  const sections = SECTIONS_BY_PAGE[pageKey] || [];
+  const selectedPage = pages.find((p) => p.key === pageKey);
 
   return (
     <>
       <Section
         title="Page Content"
-        subtitle="Choose a page, then add, edit, reorder, publish or remove its content blocks."
+        subtitle="Pick a page, then edit the sections that make up that page."
       >
         <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 240px" }}>
@@ -137,11 +64,8 @@ export default function PageContentPanel({
             </span>
             <select
               className="app-input"
-              value={selectedPageKey}
-              onChange={(e) => {
-                setSelectedPageKey(e.target.value);
-                closeEditor();
-              }}
+              value={pageKey}
+              onChange={(e) => setPageKey(e.target.value)}
             >
               {pages.map((p) => (
                 <option key={p.key} value={p.key}>
@@ -150,7 +74,6 @@ export default function PageContentPanel({
               ))}
             </select>
           </label>
-
           {selectedPage && (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <StatusBadge status={selectedPage.status} />
@@ -167,164 +90,206 @@ export default function PageContentPanel({
             </div>
           )}
         </div>
-
         {selectedPage && (
           <div style={{ fontSize: "0.82rem", color: "var(--text-1)" }}>
-            Route <span style={{ fontFamily: "monospace" }}>{selectedPage.route}</span>{" "}
-            · {blocks.length} content block{blocks.length === 1 ? "" : "s"} ·{" "}
+            Route <span style={{ fontFamily: "monospace" }}>{selectedPage.route}</span>
             {selectedPage.lastEditedAt
-              ? `last edited by ${selectedPage.lastEditedBy} on ${formatDateTime(
-                  selectedPage.lastEditedAt
-                )}`
-              : "live website content — not yet edited here"}
+              ? ` · last edited by ${selectedPage.lastEditedBy} on ${formatDateTime(selectedPage.lastEditedAt)}`
+              : ""}
           </div>
         )}
       </Section>
 
-      <Section title={`Content Blocks${selectedPage ? ` — ${selectedPage.name}` : ""}`}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          <input
-            className="app-input"
-            type="search"
-            placeholder="Search content blocks…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            style={{ flex: "1 1 220px", minWidth: 200 }}
-          />
-          <Button type="button" variant="primary" onClick={openAdd}>
-            + Add content block
-          </Button>
-        </div>
+      {sections.length === 0 ? (
+        <Section title="Sections">
+          <EmptyState message="No editable sections are mapped to this page yet." />
+        </Section>
+      ) : (
+        sections.map((sectionKey) => (
+          <SectionPanel key={sectionKey} sectionKey={sectionKey} />
+        ))
+      )}
+    </>
+  );
+}
 
-        {/* Inline add / edit editor */}
-        {editor.mode && (
-          <LayerTheme padding="16px" gap="12px">
-            <div style={{ fontWeight: 700, color: "var(--accentText)" }}>
-              {editor.mode === "add" ? "New content block" : "Edit content block"}
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: "2 1 260px" }}>
-                <span style={{ fontSize: "0.72rem", color: "var(--text-1)", fontWeight: 600 }}>
-                  Title
-                </span>
-                <input
-                  className="app-input"
-                  value={editor.draft.title}
-                  onChange={(e) => setDraft({ title: e.target.value })}
-                  placeholder="e.g. Spring Service Promo"
-                />
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 180px" }}>
-                <span style={{ fontSize: "0.72rem", color: "var(--text-1)", fontWeight: 600 }}>
-                  Block type
-                </span>
-                <select
-                  className="app-input"
-                  value={editor.draft.type}
-                  onChange={(e) => setDraft({ type: e.target.value })}
-                >
-                  {BLOCK_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, flex: "1 1 160px" }}>
-                <span style={{ fontSize: "0.72rem", color: "var(--text-1)", fontWeight: 600 }}>
-                  Status
-                </span>
-                <select
-                  className="app-input"
-                  value={editor.draft.status}
-                  onChange={(e) => setDraft({ status: e.target.value })}
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                </select>
-              </label>
-            </div>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ fontSize: "0.72rem", color: "var(--text-1)", fontWeight: 600 }}>
-                Summary / content notes
-              </span>
-              <textarea
-                className="app-input"
-                rows={3}
-                value={editor.draft.summary}
-                onChange={(e) => setDraft({ summary: e.target.value })}
-                placeholder="Describe what this block shows on the page."
-                style={{ resize: "vertical" }}
-              />
-            </label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <Button type="button" variant="primary" onClick={handleSave}>
-                {editor.mode === "add" ? "Add block" : "Save changes"}
-              </Button>
-              <Button type="button" variant="secondary" onClick={closeEditor}>
-                Cancel
-              </Button>
-            </div>
-          </LayerTheme>
-        )}
+/* ---------------------------------------------------------------- */
+/* Singleton + collection panel shells                              */
+/* ---------------------------------------------------------------- */
 
-        {filteredBlocks.length === 0 ? (
-          <EmptyState
-            message={
-              blocks.length === 0
-                ? "This page has no content blocks yet. Use “Add content block” to create one."
-                : "No content blocks match your search."
-            }
-          />
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}
+function SectionPanel({ sectionKey }) {
+  const schema = SECTION_SCHEMAS[sectionKey];
+  if (!schema) return null;
+  return schema.kind === "singleton" ? (
+    <SingletonPanel sectionKey={sectionKey} schema={schema} />
+  ) : (
+    <CollectionPanel sectionKey={sectionKey} schema={schema} />
+  );
+}
+
+function useSectionData(sectionKey) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await fetchSection(sectionKey);
+      setData(result);
+    } finally {
+      setLoading(false);
+    }
+  }, [sectionKey]);
+  useEffect(() => {
+    reload();
+  }, [reload]);
+  return { data, loading, setData, reload };
+}
+
+function SingletonPanel({ sectionKey, schema }) {
+  const { data, loading, setData } = useSectionData(sectionKey);
+  const [editing, setEditing] = useState(false);
+
+  const handleSave = async (draft) => {
+    const saved = await patchSingleton(sectionKey, draft);
+    setData(saved);
+    setEditing(false);
+  };
+
+  return (
+    <Section title={schema.label} subtitle={`/api/website/sections/${sectionKey}`}>
+      {loading && <div style={{ color: "var(--text-1)" }}>Loading…</div>}
+      {!loading && !editing && (
+        <>
+          <Summary data={data || {}} fields={schema.fields} />
+          <div>
+            <Button type="button" variant="primary" onClick={() => setEditing(true)}>
+              Edit {schema.label.toLowerCase()}
+            </Button>
+          </div>
+        </>
+      )}
+      {!loading && editing && (
+        <SectionEditor
+          schema={schema}
+          initialValue={data || {}}
+          onSave={handleSave}
+          onCancel={() => setEditing(false)}
+        />
+      )}
+    </Section>
+  );
+}
+
+function CollectionPanel({ sectionKey, schema }) {
+  const { data, loading, setData, reload } = useSectionData(sectionKey);
+  // editing.mode: null | "add" | "edit"; editing.row: row in edit mode
+  const [editing, setEditing] = useState({ mode: null, row: null });
+  const rows = data || [];
+
+  const handleSave = async (draft) => {
+    if (editing.mode === "add") {
+      await createRow(sectionKey, draft);
+    } else {
+      await patchRow(sectionKey, editing.row.id, draft);
+    }
+    setEditing({ mode: null, row: null });
+    await reload();
+  };
+
+  const handleDelete = async () => {
+    if (!editing.row) return;
+    if (
+      !window.confirm(
+        `Delete "${schema.rowLabel?.(editing.row) || editing.row.id}"? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    await deleteRowApi(sectionKey, editing.row.id);
+    setEditing({ mode: null, row: null });
+    await reload();
+  };
+
+  const move = async (idx, dir) => {
+    const target = idx + dir;
+    if (target < 0 || target >= rows.length) return;
+    const next = [...rows];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    setData(next);
+    try {
+      await reorderSection(
+        sectionKey,
+        next.map((r) => r.id)
+      );
+    } catch {
+      // Revert if reorder failed.
+      reload();
+    }
+  };
+
+  return (
+    <Section title={schema.label} subtitle={`/api/website/sections/${sectionKey}`}>
+      {loading && <div style={{ color: "var(--text-1)" }}>Loading…</div>}
+      {!loading && (
+        <>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => setEditing({ mode: "add", row: { status: "published" } })}
             >
-              <thead>
-                <tr>
-                  <th style={{ ...headCellStyle, width: 48 }}>#</th>
-                  <th style={headCellStyle}>Title</th>
-                  <th style={headCellStyle}>Type</th>
-                  <th style={headCellStyle}>Summary</th>
-                  <th style={headCellStyle}>Status</th>
-                  <th style={headCellStyle}>Last edited</th>
-                  <th style={headCellStyle}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBlocks.map((b) => {
-                  const idx = trueIndex(b.id);
-                  return (
-                    <tr key={b.id}>
+              + Add {schema.label.replace(/s$/i, "").toLowerCase()}
+            </Button>
+          </div>
+
+          {editing.mode && (
+            <SectionEditor
+              schema={schema}
+              initialValue={editing.row || {}}
+              onSave={handleSave}
+              onCancel={() => setEditing({ mode: null, row: null })}
+              onDelete={editing.mode === "edit" ? handleDelete : null}
+            />
+          )}
+
+          {rows.length === 0 ? (
+            <EmptyState message={`No ${schema.label.toLowerCase()} yet.`} />
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...headCellStyle, width: 36 }}>#</th>
+                    <th style={headCellStyle}>Item</th>
+                    {schema.fields.some((f) => f.name === "status") && (
+                      <th style={headCellStyle}>Status</th>
+                    )}
+                    <th style={headCellStyle}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, idx) => (
+                    <tr key={row.id}>
                       <td style={{ ...cellStyle, color: "var(--text-1)" }}>{idx + 1}</td>
-                      <td style={{ ...cellStyle, fontWeight: 600 }}>{b.title}</td>
-                      <td style={{ ...cellStyle, color: "var(--text-1)" }}>{b.type}</td>
-                      <td style={{ ...cellStyle, color: "var(--text-1)", maxWidth: 320 }}>
-                        {b.summary || "—"}
-                      </td>
                       <td style={cellStyle}>
-                        <StatusBadge status={b.status} />
+                        <span style={{ fontWeight: 600 }}>
+                          {schema.rowLabel ? schema.rowLabel(row) : row.id}
+                        </span>
                       </td>
-                      <td style={{ ...cellStyle, color: "var(--text-1)" }}>
-                        {b.lastEditedAt ? (
-                          <>
-                            {formatDateTime(b.lastEditedAt)}
-                            <div style={{ fontSize: "0.74rem" }}>by {b.lastEditedBy}</div>
-                          </>
-                        ) : (
-                          "Live content"
-                        )}
-                      </td>
+                      {schema.fields.some((f) => f.name === "status") && (
+                        <td style={cellStyle}>
+                          <StatusBadge status={row.status} />
+                        </td>
+                      )}
                       <td style={cellStyle}>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                           <Button
                             type="button"
                             variant="secondary"
                             size="xs"
-                            disabled={idx <= 0}
-                            onClick={() => onMoveBlock(selectedPageKey, b.id, -1)}
-                            aria-label="Move up"
+                            disabled={idx === 0}
+                            onClick={() => move(idx, -1)}
                           >
                             ↑
                           </Button>
@@ -332,9 +297,8 @@ export default function PageContentPanel({
                             type="button"
                             variant="secondary"
                             size="xs"
-                            disabled={idx >= blocks.length - 1}
-                            onClick={() => onMoveBlock(selectedPageKey, b.id, 1)}
-                            aria-label="Move down"
+                            disabled={idx === rows.length - 1}
+                            onClick={() => move(idx, 1)}
                           >
                             ↓
                           </Button>
@@ -342,36 +306,50 @@ export default function PageContentPanel({
                             type="button"
                             variant="secondary"
                             size="xs"
-                            onClick={() => openEdit(b)}
+                            onClick={() => setEditing({ mode: "edit", row })}
                           >
                             Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="xs"
-                            onClick={() => onToggleBlock(selectedPageKey, b.id)}
-                          >
-                            {b.status === "published" ? "Unpublish" : "Publish"}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="danger"
-                            size="xs"
-                            onClick={() => handleDelete(b)}
-                          >
-                            Delete
                           </Button>
                         </div>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Section>
-    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </Section>
   );
+}
+
+/* ---------------------------------------------------------------- */
+/* Read-only summary for a singleton before "Edit" is clicked       */
+/* ---------------------------------------------------------------- */
+function Summary({ data, fields }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {fields.slice(0, 4).map((f) => {
+        const v = data[f.name];
+        return (
+          <div key={f.name} style={{ display: "flex", gap: 8, fontSize: "0.88rem" }}>
+            <span style={{ color: "var(--text-1)", minWidth: 130 }}>{f.label}:</span>
+            <span>{formatValue(v)}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatValue(v) {
+  if (v == null) return "—";
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "—";
+    if (typeof v[0] === "string") return v.join(" · ");
+    return `${v.length} item${v.length === 1 ? "" : "s"}`;
+  }
+  if (typeof v === "object") return JSON.stringify(v).slice(0, 80) + "…";
+  return String(v);
 }

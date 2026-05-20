@@ -84,18 +84,18 @@ Devon Couriers Ltd
 ====================================================
 Admin Manager
 ====================================================
-(CHECK)
-Change the loading state from the /loginpresnention to the first page to show a loading page which shows "laoding presentation" and a loading animation, this is to show the user that the presentation is loading and doesnt show the 3 section full page skelton loader as this doesnt link well for this section. fix this 
-
-
 - /dashboard/admin
 
 
-- /admin/users
-have it so this page follows the staffglobal.css style, and the cards within this page follows the "--theme" colour background and gaps of the page adjsuted with the dev overlay improved.
+- /admin/users (CHECK)
+remove "Invoice headers and payment instructions shared across all invoice screens." text and "Manage accounts stored in Supabase" and "This table reflects the live users table in Supabase. Any additions or deletions performed here instantly update the database and associated activity logs." "Live roster pulled from Supabase users & HR employee profiles and "Cross-reference roles with associated team members" make sure every card section within this page "/admin/users" has mock data within it. 
 
 
-- /admin/compliance
+- /admin/profiles/[user] (CHECK)
+
+
+
+- /admin/compliance 
 
 
 - /admin/compliance/breaches
@@ -113,14 +113,16 @@ have it so this page follows the staffglobal.css style, and the cards within thi
 - /admin/compliance/sars
 
 
-- /profile/privacy
+- /profile/privacy (TODO)
+/profile/privacy make sure this page follows the staffglobal.css style. and has background "--theme" colour cards and improve the dev overlay within this page. 
 
 
-- /account/security
+- /account/security (TOCO)
+/account/security make sure this page follows the staffglobal.css style. and has background "--theme" colour cards and improve the dev overlay within this page. 
 
 
-- /staff/website-manager
-
+- /staff/website-manager (CHECK)
+within the "staff/website-manager" page, have it so the tabs have the data readings for the /website pages etc, but then have it so wihtin this page the user can edit and add section with an in app /website eiditer style, so the editor is hard corded, but the /website content isnt hard codes and can be edited whenever to update users pictures, information, check stock vechiles are being added, parts are being added into the shop section (create a shop section within the /website pages which follows the custglobal.css style) etc. the /staff/website-mager page is everything to do with the content and data recived from the /website pages. 
 
 ====================================================
 Customer

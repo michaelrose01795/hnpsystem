@@ -1,24 +1,30 @@
 // file location: src/components/Admin/AdminUserForm.js
 import React, { useState } from "react";
 import LayerTheme from "@/components/ui/LayerTheme";
+import { roleCategories } from "@/config/users";
+
+const roles = Array.from(
+  new Set([...roleCategories.Retail, ...roleCategories.Sales, ...roleCategories.Mobile])
+).map((role) => ({ value: role.toLowerCase(), label: role }));
+
+const departments = Object.keys(roleCategories);
+const defaultRole = roles[0]?.value || "";
 
 const defaultForm = {
   firstName: "",
   lastName: "",
   email: "",
   department: "",
-  role: "employee",
+  role: defaultRole,
   phone: "",
 };
 
-const roles = [
-  { value: "employee", label: "Employee" },
-  { value: "manager", label: "Manager" },
-  { value: "hr manager", label: "HR Manager" },
-  { value: "admin manager", label: "Admin Manager" },
-];
-
-const departments = ["Workshop", "Service", "Sales", "Valet", "Parts", "Admin"];
+const MOCK_USER_PLACEHOLDERS = {
+  firstName: "Amelia",
+  lastName: "Hart",
+  email: "amelia.hart@example.test",
+  phone: "01732 000 301",
+};
 
 export default function AdminUserForm({
   onCreated,
@@ -73,7 +79,6 @@ export default function AdminUserForm({
 
   return (
     <LayerTheme
-      className="app-section-card"
       sectionKey={sectionKey}
       parentKey={parentSectionKey}
       sectionType="content-card"
@@ -85,7 +90,7 @@ export default function AdminUserForm({
           Create Platform User
         </h2>
         <p style={{ margin: "4px 0 0", color: "var(--info)" }}>
-          Provision employees with access to the DMS. Uses the admin API to insert directly into Supabase.
+          Provision employees with access to the DMS.
         </p>
       </div>
 
@@ -98,13 +103,13 @@ export default function AdminUserForm({
         }}
       >
         <Field label="First name">
-          <input className="app-input" name="firstName" type="text" value={form.firstName} onChange={handleChange} required />
+          <input className="app-input" name="firstName" type="text" value={form.firstName} onChange={handleChange} placeholder={MOCK_USER_PLACEHOLDERS.firstName} required />
         </Field>
         <Field label="Last name">
-          <input className="app-input" name="lastName" type="text" value={form.lastName} onChange={handleChange} required />
+          <input className="app-input" name="lastName" type="text" value={form.lastName} onChange={handleChange} placeholder={MOCK_USER_PLACEHOLDERS.lastName} required />
         </Field>
         <Field label="Email">
-          <input className="app-input" name="email" type="email" value={form.email} onChange={handleChange} required />
+          <input className="app-input" name="email" type="email" value={form.email} onChange={handleChange} placeholder={MOCK_USER_PLACEHOLDERS.email} required />
         </Field>
         <Field label="Department">
           <select className="app-input" name="department" value={form.department} onChange={handleChange}>
@@ -132,6 +137,7 @@ export default function AdminUserForm({
             type="tel"
             value={form.phone || ""}
             onChange={handleChange}
+            placeholder={MOCK_USER_PLACEHOLDERS.phone}
           />
         </Field>
 
@@ -147,23 +153,8 @@ export default function AdminUserForm({
 
       {message && (
         <div
-          style={{
-            background:
-              message.type === "error"
-                ? "rgba(var(--primary-rgb), 0.1)"
-                : message.type === "success"
-                  ? "rgba(var(--info-rgb), 0.12)"
-                  : "rgba(var(--accent-purple-rgb), 0.1)",
-            borderRadius: "var(--radius-sm)",
-            padding: "12px",
-            color:
-              message.type === "error"
-                ? "var(--danger)"
-                : message.type === "success"
-                  ? "var(--info-dark)"
-                  : "var(--accent-purple)",
-            fontWeight: 600,
-          }}
+          className={`app-status-message ${message.type === "error" ? "app-status-message--danger" : "app-status-message--success"}`}
+          style={{ margin: 0 }}
         >
           {message.text}
         </div>

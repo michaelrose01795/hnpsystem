@@ -2049,3 +2049,375 @@ CREATE TABLE public.workshop_consumables (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT workshop_consumables_pkey PRIMARY KEY (id)
 );
+
+-- ============================================================================
+-- WEBSITE CONTENT + SHOP (migration 20260520120000_add_website_content_and_shop)
+-- ============================================================================
+-- Backs the public /website single-scroll marketing page, the staff
+-- /staff/website-manager CMS, and the new /website/shop e-commerce flow.
+-- See supabase/migrations/20260520120000_add_website_content_and_shop.sql for
+-- the executable version (includes triggers + RLS policies).
+
+CREATE TABLE public.website_brand (
+  id text NOT NULL DEFAULT 'default',
+  name text NOT NULL,
+  logo_url text,
+  logo_white_url text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_brand_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_hero (
+  id text NOT NULL DEFAULT 'default',
+  eyebrow text,
+  headline text NOT NULL,
+  subhead text,
+  background_url text,
+  ctas jsonb NOT NULL DEFAULT '[]'::jsonb,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_hero_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_about (
+  id text NOT NULL DEFAULT 'default',
+  eyebrow text,
+  title text NOT NULL,
+  body jsonb NOT NULL DEFAULT '[]'::jsonb,
+  image_url text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_about_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_sell_your_car (
+  id text NOT NULL DEFAULT 'default',
+  eyebrow text,
+  title text NOT NULL,
+  steps jsonb NOT NULL DEFAULT '[]'::jsonb,
+  benefits jsonb NOT NULL DEFAULT '[]'::jsonb,
+  cta_label text,
+  cta_href text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_sell_your_car_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_service_parts (
+  id text NOT NULL DEFAULT 'default',
+  eyebrow text,
+  title text NOT NULL,
+  body jsonb NOT NULL DEFAULT '[]'::jsonb,
+  hours jsonb NOT NULL DEFAULT '[]'::jsonb,
+  image_url text,
+  cta_label text,
+  cta_href text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_service_parts_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_motability (
+  id text NOT NULL DEFAULT 'default',
+  eyebrow text,
+  title text NOT NULL,
+  body jsonb NOT NULL DEFAULT '[]'::jsonb,
+  payments text,
+  range_brands jsonb NOT NULL DEFAULT '[]'::jsonb,
+  cta_label text,
+  cta_href text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_motability_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_parts_content (
+  id text NOT NULL DEFAULT 'default',
+  eyebrow text,
+  title text NOT NULL,
+  body jsonb NOT NULL DEFAULT '[]'::jsonb,
+  brands jsonb NOT NULL DEFAULT '[]'::jsonb,
+  cta_label text,
+  cta_href text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_parts_content_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_contact (
+  id text NOT NULL DEFAULT 'default',
+  eyebrow text,
+  title text NOT NULL,
+  phone text,
+  phone_href text,
+  address jsonb NOT NULL DEFAULT '[]'::jsonb,
+  sales_hours jsonb NOT NULL DEFAULT '[]'::jsonb,
+  service_hours jsonb NOT NULL DEFAULT '[]'::jsonb,
+  socials jsonb NOT NULL DEFAULT '[]'::jsonb,
+  map_embed text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_contact_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_footer (
+  id text NOT NULL DEFAULT 'default',
+  legal_links jsonb NOT NULL DEFAULT '[]'::jsonb,
+  fca_reg text,
+  credit_disclosure text,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_footer_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_trust_points (
+  id text NOT NULL,
+  value text NOT NULL,
+  label text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft')),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_trust_points_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_partner_brands (
+  id text NOT NULL,
+  name text NOT NULL,
+  logo_url text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft')),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_partner_brands_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_ratings (
+  id text NOT NULL,
+  source text NOT NULL,
+  score text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft')),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_ratings_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_vehicles (
+  id text NOT NULL,
+  vehicle_type text NOT NULL CHECK (vehicle_type IN ('new', 'used')),
+  brand text NOT NULL,
+  model text NOT NULL,
+  year integer,
+  price_text text,
+  miles text,
+  badge text,
+  image_url text,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft')),
+  sort_order integer NOT NULL DEFAULT 0,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_vehicles_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_offers (
+  id text NOT NULL,
+  title text NOT NULL,
+  headline text NOT NULL,
+  body text,
+  image_url text,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft')),
+  sort_order integer NOT NULL DEFAULT 0,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_offers_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_reviews (
+  id text NOT NULL,
+  customer_name text NOT NULL,
+  rating integer NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  source text NOT NULL,
+  review_date text,
+  quote text NOT NULL,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft')),
+  sort_order integer NOT NULL DEFAULT 0,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_reviews_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_team_departments (
+  id text NOT NULL,
+  label text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_team_departments_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_team_members (
+  id text NOT NULL,
+  name text NOT NULL,
+  role text,
+  department_id text,
+  photo_url text,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft')),
+  sort_order integer NOT NULL DEFAULT 0,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_team_members_pkey PRIMARY KEY (id),
+  CONSTRAINT website_team_members_dept_fkey FOREIGN KEY (department_id)
+    REFERENCES public.website_team_departments(id) ON DELETE SET NULL
+);
+CREATE TABLE public.website_timeline (
+  id text NOT NULL,
+  year text NOT NULL,
+  title text NOT NULL,
+  body text,
+  sort_order integer NOT NULL DEFAULT 0,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_timeline_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_blog_posts (
+  id text NOT NULL,
+  title text NOT NULL,
+  post_date text,
+  excerpt text,
+  body text,
+  image_url text,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft')),
+  sort_order integer NOT NULL DEFAULT 0,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_blog_posts_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_seo (
+  page_key text NOT NULL,
+  meta_title text NOT NULL,
+  meta_description text,
+  slug text,
+  canonical text,
+  og_image text,
+  indexed boolean NOT NULL DEFAULT true,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT website_seo_pkey PRIMARY KEY (page_key)
+);
+CREATE TABLE public.website_pages (
+  page_key text NOT NULL,
+  name text NOT NULL,
+  route text NOT NULL,
+  status text NOT NULL DEFAULT 'published' CHECK (status IN ('published', 'draft')),
+  last_edited_by text,
+  last_edited_at timestamp with time zone,
+  CONSTRAINT website_pages_pkey PRIMARY KEY (page_key)
+);
+CREATE TABLE public.website_activity (
+  id bigint GENERATED ALWAYS AS IDENTITY,
+  occurred_at timestamp with time zone NOT NULL DEFAULT now(),
+  actor text,
+  action text NOT NULL,
+  target text NOT NULL,
+  page_key text,
+  CONSTRAINT website_activity_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.website_media (
+  id text NOT NULL,
+  name text NOT NULL,
+  url text NOT NULL,
+  media_type text NOT NULL DEFAULT 'image' CHECK (media_type IN ('image', 'video')),
+  size_kb integer,
+  storage_path text,
+  used_on text,
+  uploaded_by text,
+  uploaded_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT website_media_pkey PRIMARY KEY (id)
+);
+
+-- Shop catalog + cart + orders ------------------------------------------------
+
+CREATE TABLE public.shop_categories (
+  id text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  name text NOT NULL,
+  description text,
+  sort_order integer NOT NULL DEFAULT 0,
+  status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT shop_categories_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.shop_products (
+  id text NOT NULL,
+  category_id text,
+  sku text UNIQUE,
+  name text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  description text,
+  price_pence integer NOT NULL CHECK (price_pence >= 0),
+  compare_at_price_pence integer,
+  image_url text,
+  gallery jsonb NOT NULL DEFAULT '[]'::jsonb,
+  stock_qty integer NOT NULL DEFAULT 0,
+  fit_brands jsonb NOT NULL DEFAULT '[]'::jsonb,
+  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT shop_products_pkey PRIMARY KEY (id),
+  CONSTRAINT shop_products_category_fkey FOREIGN KEY (category_id)
+    REFERENCES public.shop_categories(id) ON DELETE SET NULL
+);
+CREATE TABLE public.shop_carts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  customer_id uuid,
+  guest_token text UNIQUE,
+  status text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'converted', 'abandoned')),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT shop_carts_pkey PRIMARY KEY (id),
+  CONSTRAINT shop_carts_customer_fkey FOREIGN KEY (customer_id)
+    REFERENCES public.customers(id) ON DELETE SET NULL
+);
+CREATE TABLE public.shop_cart_items (
+  id bigint GENERATED ALWAYS AS IDENTITY,
+  cart_id uuid NOT NULL,
+  product_id text NOT NULL,
+  qty integer NOT NULL CHECK (qty > 0),
+  unit_price_pence integer NOT NULL,
+  added_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT shop_cart_items_pkey PRIMARY KEY (id),
+  CONSTRAINT shop_cart_items_cart_fkey FOREIGN KEY (cart_id)
+    REFERENCES public.shop_carts(id) ON DELETE CASCADE,
+  CONSTRAINT shop_cart_items_product_fkey FOREIGN KEY (product_id)
+    REFERENCES public.shop_products(id) ON DELETE RESTRICT,
+  CONSTRAINT shop_cart_items_unique UNIQUE (cart_id, product_id)
+);
+CREATE TABLE public.shop_orders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  order_number text NOT NULL UNIQUE,
+  customer_id uuid,
+  contact_email text NOT NULL,
+  contact_phone text,
+  shipping_address jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status text NOT NULL DEFAULT 'pending_payment' CHECK (status IN (
+    'pending_payment','paid','fulfilling','shipped','completed','cancelled','refunded'
+  )),
+  subtotal_pence integer NOT NULL,
+  shipping_pence integer NOT NULL DEFAULT 0,
+  tax_pence integer NOT NULL DEFAULT 0,
+  total_pence integer NOT NULL,
+  currency text NOT NULL DEFAULT 'GBP',
+  stripe_session_id text UNIQUE,
+  stripe_payment_intent text UNIQUE,
+  notes text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by text,
+  CONSTRAINT shop_orders_pkey PRIMARY KEY (id),
+  CONSTRAINT shop_orders_customer_fkey FOREIGN KEY (customer_id)
+    REFERENCES public.customers(id) ON DELETE SET NULL
+);
+CREATE TABLE public.shop_order_items (
+  id bigint GENERATED ALWAYS AS IDENTITY,
+  order_id uuid NOT NULL,
+  product_id text,
+  sku text,
+  name text NOT NULL,
+  qty integer NOT NULL CHECK (qty > 0),
+  unit_price_pence integer NOT NULL,
+  line_total_pence integer NOT NULL,
+  CONSTRAINT shop_order_items_pkey PRIMARY KEY (id),
+  CONSTRAINT shop_order_items_order_fkey FOREIGN KEY (order_id)
+    REFERENCES public.shop_orders(id) ON DELETE CASCADE,
+  CONSTRAINT shop_order_items_product_fkey FOREIGN KEY (product_id)
+    REFERENCES public.shop_products(id) ON DELETE SET NULL
+);

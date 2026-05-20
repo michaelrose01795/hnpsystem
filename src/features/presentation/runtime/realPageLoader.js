@@ -97,6 +97,10 @@ const ROUTE_TO_MODULE = {
   "/website": () => import("@/pages/website"),
   "/website/login": () => import("@/pages/website/login"),
   "/website/profile": () => import("@/pages/website/profile"),
+  "/website/shop/cart": () => import("@/pages/website/shop/cart"),
+  "/website/shop/checkout": () => import("@/pages/website/shop/checkout"),
+  "/website/shop/success": () => import("@/pages/website/shop/success"),
+  "/website/shop/cancel": () => import("@/pages/website/shop/cancel"),
 
   // Workshop / valet
   "/workshop/consumables-tracker": () => import("@/pages/workshop/consumables-tracker"),

@@ -13,15 +13,10 @@ import Head from "next/head";
 
 import useWebsiteScope from "./hooks/useWebsiteScope";
 import useWebsiteTheme from "./hooks/useWebsiteTheme";
-
-import { siteContent } from "./data/siteContent";
-import { vehicles } from "./data/vehicles";
-import { offers } from "./data/offers";
-import { reviews } from "./data/reviews";
-import { team, teamDepartments } from "./data/team";
-import { timeline } from "./data/timeline";
-import { brands } from "./data/brands";
-import { blogPosts } from "./data/blogPosts";
+import useWebsiteContent from "./hooks/useWebsiteContent";
+import useWebsitePreviewMode from "./hooks/useWebsitePreviewMode";
+import PreviewClickTarget from "./components/PreviewClickTarget";
+import ShopSection from "./components/ShopSection";
 
 // Primary navigation. "New" / "Used" jump to the cars section and also set
 // the vehicle filter; the rest are plain anchor jumps.
@@ -29,6 +24,7 @@ const NAV_LINKS = [
   { label: "New", href: "#cars", filter: "new" },
   { label: "Used", href: "#cars", filter: "used" },
   { label: "Offers", href: "#offers" },
+  { label: "Shop", href: "#shop" },
   { label: "Sell Your Car", href: "#sell" },
   { label: "Service & Parts", href: "#service" },
   { label: "Motability", href: "#motability" },
@@ -39,7 +35,7 @@ const NAV_LINKS = [
 
 // Section ids tracked by the scroll-spy so the nav can highlight the
 // chapter currently in view.
-const SPY_IDS = ["top", "cars", "offers", "sell", "service", "motability", "about", "blog", "contact"];
+const SPY_IDS = ["top", "cars", "offers", "shop", "sell", "service", "motability", "about", "blog", "contact"];
 
 /* ------------------------------------------------------------------ */
 /* Small presentational helpers                                        */
@@ -101,6 +97,23 @@ export default function WebsitePage() {
   useWebsiteScope();
   useWebsiteTheme();
 
+  // Source of truth: starts as the static modules, swaps to the live DB
+  // content (via /api/website/content) once the fetch resolves. Edits made
+  // in /staff/website-manager appear here after the page is re-loaded.
+  // When ?preview=editor is set we are inside the staff Live Preview iframe;
+  // useWebsiteContent additionally accepts postMessage patches so staff edits
+  // appear instantly as they type.
+  const { content } = useWebsiteContent();
+  const { isPreview, highlightedSection } = useWebsitePreviewMode();
+  const click = (sectionKey, sectionLabel, rowId, as) => ({
+    isPreview,
+    isHighlighted: highlightedSection === sectionKey,
+    sectionKey,
+    sectionLabel,
+    rowId,
+    as,
+  });
+  const { siteContent, vehicles, offers, reviews, team, teamDepartments, timeline, brands, blogPosts } = content;
   const { brand, hero, trustPoints, ratings, about, serviceAndParts, motability, sellYourCar, contact, footer } =
     siteContent;
 
@@ -110,12 +123,12 @@ export default function WebsitePage() {
 
   const departments = useMemo(
     () => teamDepartments.map((d) => ({ ...d, members: team.filter((m) => m.department === d.id) })),
-    [],
+    [team, teamDepartments],
   );
 
   const shownVehicles = useMemo(
     () => (carFilter === "all" ? vehicles : vehicles.filter((v) => v.type === carFilter)),
-    [carFilter],
+    [carFilter, vehicles],
   );
 
   // Scroll-spy — highlight the nav entry for the section in view.
@@ -194,56 +207,63 @@ export default function WebsitePage() {
 
         <main>
           {/* ---------------- Hero ---------------- */}
-          <section id="top" className="ws-hero">
-            <div className="ws-container ws-hero-inner">
-              <div className="ws-hero-text">
-                <span className="ws-eyebrow">{hero.eyebrow}</span>
-                <h1 className="ws-h1">{hero.headline}</h1>
-                <p className="ws-lead">{hero.subhead}</p>
-                <div className="ws-hero-ctas">
-                  {hero.ctas.map((cta) => (
-                    <a
-                      key={cta.label}
-                      href={cta.href}
-                      className={cta.variant === "primary" ? "ws-btn ws-btn--primary" : "ws-btn ws-btn--ghost"}
-                    >
-                      {cta.label}
-                    </a>
-                  ))}
+          <PreviewClickTarget {...click("hero", "Hero banner")}>
+            <section id="top" className="ws-hero">
+              <div className="ws-container ws-hero-inner">
+                <div className="ws-hero-text">
+                  <span className="ws-eyebrow">{hero.eyebrow}</span>
+                  <h1 className="ws-h1">{hero.headline}</h1>
+                  <p className="ws-lead">{hero.subhead}</p>
+                  <div className="ws-hero-ctas">
+                    {hero.ctas.map((cta) => (
+                      <a
+                        key={cta.label}
+                        href={cta.href}
+                        className={cta.variant === "primary" ? "ws-btn ws-btn--primary" : "ws-btn ws-btn--ghost"}
+                      >
+                        {cta.label}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+                <div className="ws-hero-media">
+                  <img src={hero.backgroundUrl} alt="Humphries & Parks showroom" loading="eager" />
                 </div>
               </div>
-              <div className="ws-hero-media">
-                <img src={hero.backgroundUrl} alt="Humphries & Parks showroom" loading="eager" />
-              </div>
-            </div>
 
-            <div className="ws-container">
-              <ul className="ws-trust">
-                {trustPoints.map((t) => (
-                  <li key={t.label} className="ws-trust-item">
-                    <span className="ws-trust-value">{t.value}</span>
-                    <span className="ws-trust-label">{t.label}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
+              <PreviewClickTarget {...click("trust-points", "Trust highlights")}>
+                <div className="ws-container">
+                  <ul className="ws-trust">
+                    {trustPoints.map((t) => (
+                      <li key={t.label} className="ws-trust-item">
+                        <span className="ws-trust-value">{t.value}</span>
+                        <span className="ws-trust-label">{t.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </PreviewClickTarget>
+            </section>
+          </PreviewClickTarget>
 
           {/* ---------------- Brands ---------------- */}
-          <section className="ws-section ws-section--tint ws-brands">
-            <div className="ws-container ws-brands-inner">
-              <span className="ws-brands-label">Authorised retailer for</span>
-              <ul className="ws-brands-list">
-                {brands.map((b) => (
-                  <li key={b.name}>
-                    <img src={b.logo} alt={b.name} loading="lazy" />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </section>
+          <PreviewClickTarget {...click("partner-brands", "Partner brand strip")}>
+            <section className="ws-section ws-section--tint ws-brands">
+              <div className="ws-container ws-brands-inner">
+                <span className="ws-brands-label">Authorised retailer for</span>
+                <ul className="ws-brands-list">
+                  {brands.map((b) => (
+                    <li key={b.name}>
+                      <img src={b.logo} alt={b.name} loading="lazy" />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          </PreviewClickTarget>
 
           {/* ---------------- Vehicles ---------------- */}
+          <PreviewClickTarget {...click("vehicles", "Featured vehicles")}>
           <Section id="cars">
             <SectionHead
               eyebrow="Our Cars"
@@ -286,8 +306,10 @@ export default function WebsitePage() {
               ))}
             </div>
           </Section>
+          </PreviewClickTarget>
 
           {/* ---------------- Offers ---------------- */}
+          <PreviewClickTarget {...click("offers", "Manufacturer offers")}>
           <Section id="offers" tint>
             <SectionHead
               eyebrow="Latest Offers"
@@ -309,8 +331,20 @@ export default function WebsitePage() {
               ))}
             </div>
           </Section>
+          </PreviewClickTarget>
+
+          {/* ---------------- Shop ---------------- */}
+          <Section id="shop" tint>
+            <SectionHead
+              eyebrow="Shop"
+              title="Parts & accessories"
+              lead="Genuine Suzuki, KGM and Mitsubishi parts and accessories — shipped UK-wide. Add to cart and checkout in minutes."
+            />
+            <ShopSection />
+          </Section>
 
           {/* ---------------- Sell your car ---------------- */}
+          <PreviewClickTarget {...click("sell-your-car", "Sell Your Car")}>
           <Section id="sell">
             <SectionHead
               eyebrow={sellYourCar.eyebrow}
@@ -337,8 +371,10 @@ export default function WebsitePage() {
               </a>
             </div>
           </Section>
+          </PreviewClickTarget>
 
           {/* ---------------- Service & parts ---------------- */}
+          <PreviewClickTarget {...click("service-parts", "Service & Parts")}>
           <Section id="service" tint>
             <div className="ws-split">
               <div className="ws-split-media">
@@ -355,8 +391,10 @@ export default function WebsitePage() {
               </div>
             </div>
           </Section>
+          </PreviewClickTarget>
 
           {/* ---------------- Motability ---------------- */}
+          <PreviewClickTarget {...click("motability", "Motability")}>
           <Section id="motability">
             <div className="ws-split ws-split--reverse">
               <div className="ws-split-text">
@@ -387,8 +425,10 @@ export default function WebsitePage() {
               </div>
             </div>
           </Section>
+          </PreviewClickTarget>
 
           {/* ---------------- About ---------------- */}
+          <PreviewClickTarget {...click("about", "About Us")}>
           <Section id="about" tint>
             <div className="ws-split">
               <div className="ws-split-text">
@@ -404,21 +444,25 @@ export default function WebsitePage() {
               </div>
             </div>
 
-            <div className="ws-subhead">
-              <h3 className="ws-h3">Our story since 1947</h3>
-            </div>
-            <ol className="ws-timeline">
-              {timeline.map((t) => (
-                <li key={t.year} className="ws-card ws-milestone">
-                  <span className="ws-milestone-year">{t.year}</span>
-                  <h4 className="ws-card-title">{t.title}</h4>
-                  <p className="ws-muted">{t.body}</p>
-                </li>
-              ))}
-            </ol>
+            <PreviewClickTarget {...click("timeline", "Timeline")}>
+              <div className="ws-subhead">
+                <h3 className="ws-h3">Our story since 1947</h3>
+              </div>
+              <ol className="ws-timeline">
+                {timeline.map((t) => (
+                  <li key={t.year} className="ws-card ws-milestone">
+                    <span className="ws-milestone-year">{t.year}</span>
+                    <h4 className="ws-card-title">{t.title}</h4>
+                    <p className="ws-muted">{t.body}</p>
+                  </li>
+                ))}
+              </ol>
+            </PreviewClickTarget>
           </Section>
+          </PreviewClickTarget>
 
           {/* ---------------- Reviews ---------------- */}
+          <PreviewClickTarget {...click("reviews", "Customer reviews")}>
           <Section id="reviews">
             <SectionHead
               eyebrow="Reviews"
@@ -426,14 +470,16 @@ export default function WebsitePage() {
               lead="Independently verified reviews from AutoTrader, JudgeService, Google and Trustpilot."
               center
             />
-            <ul className="ws-ratings">
-              {ratings.map((r) => (
-                <li key={r.source} className="ws-rating">
-                  <span className="ws-rating-score">{r.score}</span>
-                  <span className="ws-muted">{r.source}</span>
-                </li>
-              ))}
-            </ul>
+            <PreviewClickTarget {...click("ratings", "Review ratings")}>
+              <ul className="ws-ratings">
+                {ratings.map((r) => (
+                  <li key={r.source} className="ws-rating">
+                    <span className="ws-rating-score">{r.score}</span>
+                    <span className="ws-muted">{r.source}</span>
+                  </li>
+                ))}
+              </ul>
+            </PreviewClickTarget>
             <div className="ws-grid ws-grid--reviews">
               {reviews.map((rv) => (
                 <article key={rv.id} className="ws-card ws-review">
@@ -449,8 +495,10 @@ export default function WebsitePage() {
               ))}
             </div>
           </Section>
+          </PreviewClickTarget>
 
           {/* ---------------- Team ---------------- */}
+          <PreviewClickTarget {...click("team-members", "Team members")}>
           <Section id="team" tint>
             <SectionHead
               eyebrow="Meet the Team"
@@ -477,8 +525,10 @@ export default function WebsitePage() {
               </div>
             ))}
           </Section>
+          </PreviewClickTarget>
 
           {/* ---------------- Blog ---------------- */}
+          <PreviewClickTarget {...click("blog-posts", "Blog posts")}>
           <Section id="blog">
             <SectionHead
               eyebrow="Blog"
@@ -500,8 +550,10 @@ export default function WebsitePage() {
               ))}
             </div>
           </Section>
+          </PreviewClickTarget>
 
           {/* ---------------- Contact ---------------- */}
+          <PreviewClickTarget {...click("contact", "Contact details")}>
           <Section id="contact" tint>
             <SectionHead eyebrow={contact.eyebrow} title={contact.title} center />
             <div className="ws-contact">
@@ -542,9 +594,11 @@ export default function WebsitePage() {
               </div>
             </div>
           </Section>
+          </PreviewClickTarget>
         </main>
 
         {/* ---------------- Footer ---------------- */}
+        <PreviewClickTarget {...click("footer", "Footer", null, "div")}>
         <footer className="ws-footer">
           <div className="ws-container ws-footer-inner">
             <div className="ws-footer-top">
@@ -565,6 +619,7 @@ export default function WebsitePage() {
             </p>
           </div>
         </footer>
+        </PreviewClickTarget>
       </div>
     </>
   );

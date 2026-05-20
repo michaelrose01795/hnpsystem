@@ -118,6 +118,15 @@ import {
   passwordResetNewSlide,
 } from "./definitions/accountAndPrivacy";
 import { staffWebsiteManagerSlide } from "./definitions/staffWebsiteManager";
+import {
+  websiteShopSlide,
+  websiteShopCartSlide,
+  websiteShopCheckoutSlide,
+  websiteShopSuccessSlide,
+  websiteShopCancelSlide,
+  staffWebsiteLivePreviewSlide,
+  staffWebsiteShopSlide,
+} from "./definitions/websiteShop";
 import { vhcCustomerSlide } from "./definitions/vhcCustomer";
 import { jobCardsIndexSlide, jobCardsAppointmentsSlide } from "./definitions/jobCardsExtras";
 
@@ -222,6 +231,13 @@ export const ALL_SLIDES = [
   accountSecuritySlide,
   passwordResetNewSlide,
   staffWebsiteManagerSlide,
+  staffWebsiteLivePreviewSlide,
+  staffWebsiteShopSlide,
+  websiteShopSlide,
+  websiteShopCartSlide,
+  websiteShopCheckoutSlide,
+  websiteShopSuccessSlide,
+  websiteShopCancelSlide,
   vhcCustomerSlide,
   jobCardsIndexSlide,
   jobCardsAppointmentsSlide,

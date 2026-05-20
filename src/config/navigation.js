@@ -79,6 +79,25 @@ export const sidebarSections = [
         href: "/staff/website-manager",
         roles: ["owner", "admin", "admin manager", "general manager", "sales"],
       },
+      {
+        // Deep-link into the Live Preview tab inside the Website Manager
+        // (sidebar reads ?tab=preview on first render — see WebsiteManager.js).
+        label: "Website Preview",
+        href: "/staff/website-manager?tab=preview",
+        roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+      },
+      {
+        // Deep-link into the Shop tab (products / categories / orders).
+        label: "Website Shop",
+        href: "/staff/website-manager?tab=shop",
+        roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+      },
+      {
+        // Quick jump to the public-facing shop section as customers see it.
+        label: "Public Shop (live)",
+        href: "/website#shop",
+        roles: ["owner", "admin", "admin manager", "general manager", "sales"],
+      },
     ],
   },
   {

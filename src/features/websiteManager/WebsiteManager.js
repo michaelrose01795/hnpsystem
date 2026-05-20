@@ -2,72 +2,161 @@
 // Staff-side Website Manager — single source of truth for the public /website
 // content, managed from inside the logged-in staff app.
 //
-// This component owns ALL website-content state and the mutation handlers.
-// Each tab is a thin presentational panel under ./panels that receives the
-// slice of state it needs plus the handlers it can call.
-//
-// The initial state is REAL content — sourced from the live /website data
-// modules via ./websiteData (which adapts src/singlescroll/data/*). Mutations
-// below update local React state only; each leaves a TODO marking the write
-// path / API call that should persist it. The real /website pages are never
-// touched by this tool.
-import React, { useCallback, useMemo, useState } from "react";
+// Page status / SEO / media writes persist via /api/website/*. Per-section
+// content writes are handled directly by PageContentPanel (which loads from
+// /api/website/sections/* on demand). The Live Preview tab embeds /website
+// itself in an iframe with click-to-edit overlays. The Shop tab manages the
+// e-commerce catalog (Phase 4).
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import { useUser } from "@/context/UserContext";
 import Section from "@/components/Section";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
-import {
-  WEBSITE_PAGES,
-  PAGE_CONTENT,
-  MEDIA_ASSETS,
-  SEO_ENTRIES,
-  INITIAL_ACTIVITY,
-} from "./websiteData";
+import { WEBSITE_PAGES, MEDIA_ASSETS, SEO_ENTRIES, INITIAL_ACTIVITY } from "./websiteData";
 import { makeId } from "./helpers";
+import {
+  setPageStatusApi,
+  updateSeoApi,
+  saveMedia,
+  deleteMediaApi,
+  fetchPages,
+  fetchSeo,
+  fetchMedia,
+  fetchActivity,
+} from "./websiteApi";
 import OverviewPanel from "./panels/OverviewPanel";
 import PageContentPanel from "./panels/PageContentPanel";
 import MediaPanel from "./panels/MediaPanel";
 import SeoPanel from "./panels/SeoPanel";
 import ActivityPanel from "./panels/ActivityPanel";
 import AnalyticsPanel from "./panels/AnalyticsPanel";
+import LivePreviewPanel from "./panels/LivePreviewPanel";
+import ShopPanel from "./panels/ShopPanel";
 
 const TABS = [
   { value: "overview", label: "Pages Overview" },
   { value: "content", label: "Page Content" },
+  { value: "preview", label: "Live Preview" },
+  { value: "shop", label: "Shop" },
   { value: "media", label: "Media Library" },
   { value: "seo", label: "SEO & Meta" },
   { value: "analytics", label: "Analytics" },
   { value: "activity", label: "Activity Log" },
 ];
 
-// Deep-ish clone of the seed maps so editing never mutates the imported module.
-const clonePages = () => WEBSITE_PAGES.map((p) => ({ ...p }));
-const cloneContent = () =>
-  Object.fromEntries(
-    Object.entries(PAGE_CONTENT).map(([k, blocks]) => [k, blocks.map((b) => ({ ...b }))])
-  );
-const cloneSeo = () =>
+// Initial fallback data when the API is unreachable. Once the migration is
+// applied and the seed is run, useEffect below replaces these with live rows.
+const seedPages = () => WEBSITE_PAGES.map((p) => ({ ...p }));
+const seedSeo = () =>
   Object.fromEntries(Object.entries(SEO_ENTRIES).map(([k, v]) => [k, { ...v }]));
+
+const VALID_TABS = TABS.map((t) => t.value);
 
 export default function WebsiteManager() {
   const { user } = useUser();
+  const router = useRouter();
   const currentUserName =
     (typeof user?.username === "string" && user.username.trim()) || "Staff User";
 
-  const [activeTab, setActiveTab] = useState("overview");
-  // When the user clicks "Manage" on a page in the Overview tab, this carries
-  // the chosen page key across to the Page Content tab as its initial selection.
+  // Initial tab honours ?tab=... so the sidebar / presentation can deep-link
+  // directly to a sub-section ("/staff/website-manager?tab=shop" jumps
+  // straight to the Shop tab on first render).
+  const initialTabFromQuery =
+    typeof router.query?.tab === "string" && VALID_TABS.includes(router.query.tab)
+      ? router.query.tab
+      : "overview";
+  const [activeTab, setActiveTab] = useState(initialTabFromQuery);
+  useEffect(() => {
+    if (
+      typeof router.query?.tab === "string" &&
+      VALID_TABS.includes(router.query.tab) &&
+      router.query.tab !== activeTab
+    ) {
+      setActiveTab(router.query.tab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.query?.tab]);
   const [initialContentPage, setInitialContentPage] = useState(null);
 
-  // ---- Website-content state (mock) -------------------------------------
-  const [pages, setPages] = useState(clonePages);
-  const [content, setContent] = useState(cloneContent);
+  // Live state, primed with the seed fallback so the panel renders instantly.
+  const [pages, setPages] = useState(seedPages);
   const [media, setMedia] = useState(() => MEDIA_ASSETS.map((m) => ({ ...m })));
-  const [seo, setSeo] = useState(cloneSeo);
+  const [seo, setSeo] = useState(seedSeo);
   const [activity, setActivity] = useState(() => INITIAL_ACTIVITY.map((a) => ({ ...a })));
+
+  // Load real data from the API on mount.
+  useEffect(() => {
+    (async () => {
+      try {
+        const [livePages, liveSeo, liveMedia, liveActivity] = await Promise.all([
+          fetchPages().catch(() => null),
+          fetchSeo().catch(() => null),
+          fetchMedia().catch(() => null),
+          fetchActivity().catch(() => null),
+        ]);
+        if (Array.isArray(livePages) && livePages.length) {
+          setPages(
+            livePages.map((p) => ({
+              key: p.page_key,
+              name: p.name,
+              route: p.route,
+              status: p.status,
+              lastEditedBy: p.last_edited_by,
+              lastEditedAt: p.last_edited_at,
+            }))
+          );
+        }
+        if (Array.isArray(liveSeo) && liveSeo.length) {
+          setSeo(
+            Object.fromEntries(
+              liveSeo.map((row) => [
+                row.page_key,
+                {
+                  metaTitle: row.meta_title,
+                  metaDescription: row.meta_description,
+                  slug: row.slug,
+                  canonical: row.canonical,
+                  ogImage: row.og_image,
+                  indexed: row.indexed,
+                },
+              ])
+            )
+          );
+        }
+        if (Array.isArray(liveMedia)) {
+          setMedia(
+            liveMedia.map((m) => ({
+              id: m.id,
+              name: m.name,
+              url: m.url,
+              type: m.media_type,
+              sizeKb: m.size_kb,
+              uploadedBy: m.uploaded_by,
+              uploadedAt: m.uploaded_at,
+              usedOn: m.used_on,
+            }))
+          );
+        }
+        if (Array.isArray(liveActivity)) {
+          setActivity(
+            liveActivity.map((a) => ({
+              id: String(a.id),
+              action: a.action,
+              target: a.target,
+              page: a.page_key || "—",
+              user: a.actor || "Staff",
+              at: a.occurred_at,
+            }))
+          );
+        }
+      } catch {
+        // Silent: the seed-fallback state already populated everything.
+      }
+    })();
+  }, []);
 
   const nowIso = () => new Date().toISOString();
 
-  // Prepend an entry to the activity log. Called by every mutation handler.
   const logActivity = useCallback(
     (action, target, pageName) => {
       setActivity((prev) => [
@@ -85,7 +174,6 @@ export default function WebsiteManager() {
     [currentUserName]
   );
 
-  // Stamp a record with the current editor + timestamp.
   const stamp = useCallback(
     () => ({ lastEditedBy: currentUserName, lastEditedAt: nowIso() }),
     [currentUserName]
@@ -96,120 +184,27 @@ export default function WebsiteManager() {
     [pages]
   );
 
-  // Touch a page's "last edited" stamp whenever its content/SEO changes.
-  const touchPage = useCallback(
-    (pageKey) => {
-      setPages((prev) =>
-        prev.map((p) => (p.key === pageKey ? { ...p, ...stamp() } : p))
-      );
-    },
-    [stamp]
-  );
-
   // ---- Page status -------------------------------------------------------
   const togglePageStatus = useCallback(
     (pageKey) => {
+      const current = pages.find((x) => x.key === pageKey);
+      const nextStatus = current?.status === "published" ? "draft" : "published";
       setPages((prev) =>
-        prev.map((p) => {
-          if (p.key !== pageKey) return p;
-          const next = p.status === "published" ? "draft" : "published";
-          return { ...p, status: next, ...stamp() };
-        })
+        prev.map((p) =>
+          p.key === pageKey ? { ...p, status: nextStatus, ...stamp() } : p
+        )
       );
-      const p = pages.find((x) => x.key === pageKey);
-      const next = p?.status === "published" ? "Draft" : "Published";
-      logActivity(`Set page status to ${next}`, p?.name || pageKey, p?.name);
-      // TODO: PATCH /api/website/pages/:key { status }
+      logActivity(
+        `Set page status to ${nextStatus === "published" ? "Published" : "Draft"}`,
+        current?.name || pageKey,
+        current?.name
+      );
+      setPageStatusApi(pageKey, nextStatus).catch(() => {
+        // eslint-disable-next-line no-console
+        console.warn("[WebsiteManager] page status save failed");
+      });
     },
     [pages, stamp, logActivity]
-  );
-
-  // ---- Content blocks ----------------------------------------------------
-  const addBlock = useCallback(
-    (pageKey, draft) => {
-      const block = { id: makeId("blk"), ...draft, ...stamp() };
-      setContent((prev) => ({
-        ...prev,
-        [pageKey]: [...(prev[pageKey] || []), block],
-      }));
-      touchPage(pageKey);
-      logActivity("Created content", draft.title, pageName(pageKey));
-      // TODO: POST /api/website/pages/:key/blocks
-    },
-    [stamp, touchPage, logActivity, pageName]
-  );
-
-  const updateBlock = useCallback(
-    (pageKey, blockId, draft) => {
-      setContent((prev) => ({
-        ...prev,
-        [pageKey]: (prev[pageKey] || []).map((b) =>
-          b.id === blockId ? { ...b, ...draft, ...stamp() } : b
-        ),
-      }));
-      touchPage(pageKey);
-      logActivity("Edited content", draft.title, pageName(pageKey));
-      // TODO: PATCH /api/website/blocks/:id
-    },
-    [stamp, touchPage, logActivity, pageName]
-  );
-
-  const deleteBlock = useCallback(
-    (pageKey, blockId) => {
-      const removed = (content[pageKey] || []).find((b) => b.id === blockId);
-      setContent((prev) => ({
-        ...prev,
-        [pageKey]: (prev[pageKey] || []).filter((b) => b.id !== blockId),
-      }));
-      touchPage(pageKey);
-      logActivity("Deleted content", removed?.title || "Content block", pageName(pageKey));
-      // TODO: DELETE /api/website/blocks/:id
-    },
-    [content, touchPage, logActivity, pageName]
-  );
-
-  const toggleBlockStatus = useCallback(
-    (pageKey, blockId) => {
-      let nextLabel = "";
-      let title = "";
-      setContent((prev) => ({
-        ...prev,
-        [pageKey]: (prev[pageKey] || []).map((b) => {
-          if (b.id !== blockId) return b;
-          const next = b.status === "published" ? "draft" : "published";
-          nextLabel = next === "published" ? "Published" : "Draft";
-          title = b.title;
-          return { ...b, status: next, ...stamp() };
-        }),
-      }));
-      touchPage(pageKey);
-      logActivity(`Set status to ${nextLabel}`, title, pageName(pageKey));
-      // TODO: PATCH /api/website/blocks/:id { status }
-    },
-    [stamp, touchPage, logActivity, pageName]
-  );
-
-  // Reorder a block within its page. dir: -1 = up, +1 = down.
-  const moveBlock = useCallback(
-    (pageKey, blockId, dir) => {
-      setContent((prev) => {
-        const list = [...(prev[pageKey] || [])];
-        const idx = list.findIndex((b) => b.id === blockId);
-        const target = idx + dir;
-        if (idx < 0 || target < 0 || target >= list.length) return prev;
-        [list[idx], list[target]] = [list[target], list[idx]];
-        return { ...prev, [pageKey]: list };
-      });
-      touchPage(pageKey);
-      const moved = (content[pageKey] || []).find((b) => b.id === blockId);
-      logActivity(
-        `Reordered content (${dir < 0 ? "up" : "down"})`,
-        moved?.title || "Content block",
-        pageName(pageKey)
-      );
-      // TODO: PATCH /api/website/pages/:key/block-order
-    },
-    [content, touchPage, logActivity, pageName]
   );
 
   // ---- Media -------------------------------------------------------------
@@ -224,28 +219,44 @@ export default function WebsiteManager() {
       };
       setMedia((prev) => [record, ...prev]);
       logActivity("Uploaded media", record.name, record.usedOn);
-      // TODO: POST /api/website/media (multipart upload to storage bucket)
+      saveMedia({
+        id: record.id,
+        name: record.name,
+        url: record.url,
+        media_type: record.type || "image",
+        size_kb: record.sizeKb || null,
+        used_on: record.usedOn,
+      }).catch(() => {});
     },
     [currentUserName, logActivity]
   );
 
   const replaceMedia = useCallback(
     (mediaId, asset) => {
-      let name = "";
+      let snapshot = null;
       setMedia((prev) =>
         prev.map((m) => {
           if (m.id !== mediaId) return m;
-          name = asset.name || m.name;
-          return {
+          snapshot = {
             ...m,
             ...asset,
             uploadedBy: currentUserName,
             uploadedAt: nowIso(),
           };
+          return snapshot;
         })
       );
-      logActivity("Replaced media", name, "Media Library");
-      // TODO: PUT /api/website/media/:id
+      logActivity("Replaced media", snapshot?.name || "Media asset", "Media Library");
+      if (snapshot) {
+        saveMedia({
+          id: snapshot.id,
+          name: snapshot.name,
+          url: snapshot.url,
+          media_type: snapshot.type || "image",
+          size_kb: snapshot.sizeKb || null,
+          used_on: snapshot.usedOn,
+        }).catch(() => {});
+      }
     },
     [currentUserName, logActivity]
   );
@@ -255,7 +266,7 @@ export default function WebsiteManager() {
       const removed = media.find((m) => m.id === mediaId);
       setMedia((prev) => prev.filter((m) => m.id !== mediaId));
       logActivity("Deleted media", removed?.name || "Media asset", "Media Library");
-      // TODO: DELETE /api/website/media/:id
+      deleteMediaApi(mediaId).catch(() => {});
     },
     [media, logActivity]
   );
@@ -264,20 +275,24 @@ export default function WebsiteManager() {
   const updateSeo = useCallback(
     (pageKey, patch) => {
       setSeo((prev) => ({ ...prev, [pageKey]: { ...prev[pageKey], ...patch } }));
-      touchPage(pageKey);
+      setPages((prev) =>
+        prev.map((p) => (p.key === pageKey ? { ...p, ...stamp() } : p))
+      );
       logActivity("Updated SEO", `${pageName(pageKey)} meta details`, pageName(pageKey));
-      // TODO: PATCH /api/website/pages/:key/seo
+      const apiPatch = {
+        meta_title: patch.metaTitle,
+        meta_description: patch.metaDescription,
+        slug: patch.slug,
+        canonical: patch.canonical,
+        og_image: patch.ogImage,
+        indexed: patch.indexed,
+      };
+      Object.keys(apiPatch).forEach(
+        (k) => apiPatch[k] === undefined && delete apiPatch[k]
+      );
+      updateSeoApi(pageKey, apiPatch).catch(() => {});
     },
-    [touchPage, logActivity, pageName]
-  );
-
-  // Block counts per page, derived for the overview panel.
-  const blockCounts = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(content).map(([k, blocks]) => [k, blocks.length])
-      ),
-    [content]
+    [stamp, logActivity, pageName]
   );
 
   return (
@@ -299,13 +314,11 @@ export default function WebsiteManager() {
         <OverviewPanel
           pages={pages}
           seo={seo}
-          blockCounts={blockCounts}
           media={media}
           activity={activity}
           onTogglePageStatus={togglePageStatus}
           onOpenPage={(pageKey) => {
             setActiveTab("content");
-            // PageContentPanel reads ?page intent via the prop below.
             setInitialContentPage(pageKey);
           }}
         />
@@ -314,16 +327,14 @@ export default function WebsiteManager() {
       {activeTab === "content" && (
         <PageContentPanel
           pages={pages}
-          content={content}
           initialPageKey={initialContentPage}
-          onAddBlock={addBlock}
-          onUpdateBlock={updateBlock}
-          onDeleteBlock={deleteBlock}
-          onMoveBlock={moveBlock}
-          onToggleBlock={toggleBlockStatus}
           onTogglePageStatus={togglePageStatus}
         />
       )}
+
+      {activeTab === "preview" && <LivePreviewPanel />}
+
+      {activeTab === "shop" && <ShopPanel />}
 
       {activeTab === "media" && (
         <MediaPanel
@@ -338,8 +349,6 @@ export default function WebsiteManager() {
         <SeoPanel pages={pages} seo={seo} onUpdateSeo={updateSeo} />
       )}
 
-      {/* Analytics is read-only and self-contained — it owns its own mock
-          data and sub-tabs, so it takes no props from the content state. */}
       {activeTab === "analytics" && <AnalyticsPanel />}
 
       {activeTab === "activity" && <ActivityPanel activity={activity} />}
