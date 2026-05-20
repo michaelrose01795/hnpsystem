@@ -1,0 +1,1471 @@
+/* file location: src/features/roleTreeDemo/styles/roleTreeDemo.module.css
+ * Self-contained styles for /vision/role-tree-demo. Card and panel surfaces
+ * render through LayerSurface / LayerTheme; this file adds composition,
+ * motion, depth and presentation-specific illustration only.
+ */
+
+.shell {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: linear-gradient(180deg, var(--theme), var(--surface));
+  perspective: 1800px;
+  perspective-origin: 50% 40%;
+  font-family: var(--font-family, var(--font-inter, system-ui));
+  color: var(--surfaceText);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.chrome {
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: 0 12px 24px -22px rgba(0, 0, 0, 0.28);
+  z-index: 3;
+}
+
+.chromeTitle {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+
+.chromeKicker,
+.chapter,
+.cardKicker,
+.dashboardCardLabel,
+.phaseLabel,
+.hubCoreLabel {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--accentText);
+}
+
+.chromeHeading {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--surfaceText);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chromeProgress {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+}
+
+.progressDot {
+  min-height: 44px;
+  flex: 0 0 44px;
+  width: 44px;
+  display: grid;
+  gap: 2px;
+  align-content: center;
+  justify-items: center;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--accentMainRgb), 0.08);
+  color: var(--surfaceTextMuted);
+  cursor: pointer;
+  transition: background 220ms ease, color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+}
+
+.progressDot:hover {
+  background: rgba(var(--accentMainRgb), 0.14);
+  color: var(--surfaceText);
+}
+
+.progressDotDone {
+  color: var(--surfaceText);
+  background: rgba(var(--accentMainRgb), 0.12);
+}
+
+.progressDotActive {
+  color: var(--accentText);
+  background: rgba(var(--accentMainRgb), 0.18);
+  box-shadow: 0 0 0 2px rgba(var(--accentMainRgb), 0.28);
+  transform: translateY(-1px);
+}
+
+.progressDotChapter {
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.progressDotLabel {
+  display: none;
+}
+
+.chromeControls,
+.footerControls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.stage {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transform-style: preserve-3d;
+  padding: clamp(20px, 3vw, 36px) clamp(16px, 4vw, 56px) clamp(28px, 4vw, 52px);
+  scroll-behavior: smooth;
+}
+
+.section {
+  display: none;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  transform-style: preserve-3d;
+  animation: sectionIn 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.sectionActive {
+  display: block;
+}
+
+@keyframes sectionIn {
+  from { opacity: 0; transform: translateY(14px) translateZ(-24px); }
+  to { opacity: 1; transform: translateY(0) translateZ(0); }
+}
+
+.sectionFlow {
+  display: grid;
+  gap: var(--page-stack-gap);
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  max-width: 840px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 2.25rem;
+  font-weight: 850;
+  color: var(--surfaceText);
+  letter-spacing: 0;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.subtitle {
+  font-size: 1.05rem;
+  color: var(--surfaceTextMuted);
+  margin: 0;
+  line-height: 1.55;
+  max-width: 720px;
+}
+
+.glassCard,
+.openingBrief,
+.departmentDetail,
+.problemDeepDive,
+.demoCallout,
+.demoInsight,
+.outcomePanel,
+.rolloutAssurance,
+.finalScene {
+  box-shadow:
+    0 1px 0 rgba(var(--surface-rgb), 0.62) inset,
+    0 18px 44px -30px rgba(0, 0, 0, 0.42);
+  transform-style: preserve-3d;
+  transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 300ms ease, opacity 300ms ease;
+}
+
+.glassCard[data-clickable="true"] {
+  cursor: pointer;
+}
+
+.glassCard[data-clickable="true"]:hover {
+  transform: translateY(-4px) translateZ(14px);
+  box-shadow:
+    0 1px 0 rgba(var(--surface-rgb), 0.7) inset,
+    0 24px 52px -28px rgba(var(--accentMainRgb), 0.34);
+}
+
+.glassCardActive {
+  transform: translateY(-5px) translateZ(22px);
+  box-shadow:
+    0 0 0 2px rgba(var(--accentMainRgb), 0.38),
+    0 28px 60px -26px rgba(var(--accentMainRgb), 0.44);
+}
+
+.cardTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--surfaceText);
+  line-height: 1.25;
+}
+
+.cardBody {
+  font-size: 0.94rem;
+  color: var(--surfaceTextMuted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.cardList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.cardList li {
+  position: relative;
+  padding-left: 18px;
+  color: var(--surfaceText);
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.cardList li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accentText);
+  box-shadow: 0 0 0 3px rgba(var(--accentMainRgb), 0.16);
+}
+
+.detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--layout-card-gap);
+}
+
+.detailPill,
+.stackBadge,
+.connectedChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accentMainRgb), 0.12);
+  color: var(--accentText);
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.stackBadge {
+  align-self: flex-start;
+}
+
+.openingLayout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(300px, 1fr);
+  gap: var(--page-stack-gap);
+  align-items: center;
+}
+
+.openingScene {
+  position: relative;
+  justify-self: center;
+  width: min(480px, 82vw);
+  height: min(480px, 82vw);
+  transform-style: preserve-3d;
+}
+
+.openingRings {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.openingRing {
+  position: absolute;
+  inset: 12%;
+  border-radius: var(--radius-full);
+  box-shadow: inset 0 0 0 1px rgba(var(--accentMainRgb), 0.18);
+  transform-style: preserve-3d;
+}
+
+.openingRing--outer {
+  inset: 0;
+}
+
+.openingRing--inner {
+  inset: 22%;
+  box-shadow: inset 0 0 0 1px rgba(var(--accentMainRgb), 0.28);
+}
+
+.openingCore {
+  position: absolute;
+  inset: 36%;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--accentText), rgba(var(--accentMainRgb), 0.58));
+  color: var(--onAccentText);
+  box-shadow:
+    0 0 0 8px rgba(var(--accentMainRgb), 0.12),
+    0 24px 60px -10px rgba(var(--accentMainRgb), 0.48);
+  transform: translateZ(64px);
+  text-align: center;
+  padding: 12px;
+}
+
+.openingCoreLabel {
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.openingSignalBeam {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44%;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, rgba(var(--accentMainRgb), 0), rgba(var(--accentMainRgb), 0.45), rgba(var(--accentMainRgb), 0));
+  transform-origin: left center;
+  transform: rotate(22deg);
+  animation: signalSweep 4.8s ease-in-out infinite;
+}
+
+.openingSignalBeamAlt {
+  transform: rotate(138deg);
+  animation-delay: -2.4s;
+}
+
+@keyframes signalSweep {
+  0%, 100% { opacity: 0.2; scale: 0.72 1; }
+  50% { opacity: 0.9; scale: 1.05 1; }
+}
+
+.openingPlanet {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 132px;
+  height: 56px;
+  margin: -28px 0 0 -66px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--surfaceText);
+  font-weight: 800;
+  font-size: 0.88rem;
+  box-shadow:
+    0 12px 28px -10px rgba(var(--accentMainRgb), 0.32),
+    0 1px 0 rgba(var(--surface-rgb), 0.68) inset;
+  transform:
+    rotate(var(--angle))
+    translateX(var(--radius, 36%))
+    rotate(calc(var(--angle) * -1));
+  animation: planetBob 7s ease-in-out infinite alternate;
+}
+
+@keyframes planetBob {
+  from { translate: 0 -4px; }
+  to { translate: 0 6px; }
+}
+
+.signalGrid,
+.departmentDeepDiveGrid,
+.improvementGrid,
+.principleList,
+.outcomeGrid,
+.finalProofGrid,
+.technicianWorkflow {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.signalCard,
+.stackLayer,
+.dashboardCard {
+  color: var(--surfaceText);
+  box-shadow: 0 12px 28px -24px rgba(0, 0, 0, 0.35);
+}
+
+.topStack {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.topStackCard {
+  min-height: 154px;
+}
+
+.roleTreeLiveScene {
+  position: relative;
+  min-height: 230px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(var(--surface-rgb), 0.65) inset,
+    0 24px 60px -36px rgba(var(--accentMainRgb), 0.46);
+  transform-style: preserve-3d;
+  perspective: 1100px;
+}
+
+.roleTreeLiveScene::before {
+  content: "";
+  position: absolute;
+  inset: 18px 18px auto;
+  height: 110px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, rgba(var(--accentMainRgb), 0.08), rgba(var(--accentMainRgb), 0), rgba(var(--accentMainRgb), 0.08));
+  transform: rotateX(66deg) translateY(48px) translateZ(-20px);
+  pointer-events: none;
+}
+
+.roleTreeSceneHeader {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--layout-card-gap);
+  align-items: center;
+}
+
+.roleTreeSceneHeader span:first-child {
+  color: var(--accentText);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.roleTreeSceneHeader span:last-child {
+  color: var(--surfaceTextMuted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.roleTreeSceneGrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.95fr) minmax(90px, 0.25fr) minmax(260px, 1fr);
+  gap: var(--layout-card-gap);
+  align-items: center;
+  transform-style: preserve-3d;
+}
+
+.roleTreeColumn {
+  display: grid;
+  gap: 10px;
+  transform: translateX(34px) rotateX(34deg) rotateZ(-1deg) translateZ(18px);
+  transform-style: preserve-3d;
+}
+
+.roleTreeColumn span,
+.roleTreeMetrics span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--surfaceText);
+  font-size: 0.92rem;
+  font-weight: 800;
+  padding: 0 14px;
+  box-shadow:
+    0 0 0 1px rgba(var(--accentMainRgb), 0.08),
+    0 16px 34px -22px rgba(var(--accentMainRgb), 0.46);
+  animation: layerLift 5.4s ease-in-out infinite;
+}
+
+.roleTreeColumn small {
+  color: var(--accentText);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.roleTreeColumn strong {
+  font-size: 0.98rem;
+  font-weight: 900;
+  color: var(--surfaceText);
+}
+
+.roleTreeColumn span:nth-child(2) { animation-delay: -0.8s; }
+.roleTreeColumn span:nth-child(3) { animation-delay: -1.6s; }
+.roleTreeColumn span:nth-child(4) { animation-delay: -2.4s; }
+.roleTreeColumn span:nth-child(5) { animation-delay: -3.2s; }
+
+@keyframes layerLift {
+  0%, 100% { transform: translateZ(0) translateY(0); }
+  50% { transform: translateZ(34px) translateY(-4px); }
+}
+
+.roleTreePulseRail {
+  position: relative;
+  height: 130px;
+  display: grid;
+  place-items: center;
+}
+
+.roleTreePulseRail::before {
+  content: "";
+  width: 12px;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0.08), rgba(var(--accentMainRgb), 0.34), rgba(var(--accentMainRgb), 0.08));
+  box-shadow: 0 0 24px rgba(var(--accentMainRgb), 0.22);
+}
+
+.roleTreePulseRail span {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: var(--accentText);
+  box-shadow:
+    0 0 0 8px rgba(var(--accentMainRgb), 0.12),
+    0 16px 26px -12px rgba(var(--accentMainRgb), 0.64);
+  animation: pulseDown 3.4s linear infinite;
+}
+
+.roleTreePulseRail span:nth-child(2) { animation-delay: -1.1s; }
+.roleTreePulseRail span:nth-child(3) { animation-delay: -2.2s; }
+
+@keyframes pulseDown {
+  from { transform: translateY(-58px) scale(0.75); opacity: 0; }
+  16% { opacity: 1; }
+  84% { opacity: 1; }
+  to { transform: translateY(58px) scale(1.05); opacity: 0; }
+}
+
+.roleTreeMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(110px, 1fr));
+  gap: 12px;
+  transform: rotateY(-8deg) translateZ(12px);
+  transform-style: preserve-3d;
+}
+
+.roleTreeMetrics span {
+  justify-content: center;
+  min-height: 70px;
+  color: var(--accentText);
+  background: var(--theme);
+  animation: metricBreathe 4.2s ease-in-out infinite;
+}
+
+.roleTreeMetrics span:nth-child(2) { animation-delay: -1s; }
+.roleTreeMetrics span:nth-child(3) { animation-delay: -2s; }
+.roleTreeMetrics span:nth-child(4) { animation-delay: -3s; }
+
+@keyframes metricBreathe {
+  0%, 100% { transform: translateZ(0) scale(1); }
+  50% { transform: translateZ(28px) scale(1.03); }
+}
+
+.topDetailGrid {
+  display: grid;
+  gap: var(--layout-card-gap);
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.9fr);
+  align-items: start;
+}
+
+.roleViewStack {
+  display: grid;
+  gap: 10px;
+}
+
+.dashboardGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.dashboardCard {
+  font-size: 0.88rem;
+  transition: transform 260ms ease, box-shadow 260ms ease;
+}
+
+.dashboardCard:hover {
+  transform: translateZ(8px) translateY(-2px);
+  box-shadow: 0 16px 34px -26px rgba(var(--accentMainRgb), 0.42);
+}
+
+.departmentScene {
+  position: relative;
+  padding: 12px;
+}
+
+.departmentSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.departmentLine {
+  fill: none;
+  stroke: rgba(var(--accentMainRgb), 0.5);
+  stroke-width: 1.4;
+  stroke-dasharray: 6 8;
+  animation: dashFlow 4s linear infinite;
+  opacity: 0.72;
+}
+
+@keyframes dashFlow {
+  to { stroke-dashoffset: -56; }
+}
+
+.departmentGrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.departmentSignalDeck {
+  position: absolute;
+  inset: 8px;
+  z-index: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.departmentSignalDeck span {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, rgba(var(--accentMainRgb), 0), rgba(var(--accentMainRgb), 0.28), rgba(var(--accentMainRgb), 0));
+  opacity: 0;
+  transform: translateY(var(--line-y, 0)) translateZ(var(--line-z, 0)) rotateX(62deg);
+  animation: flowBand 5.8s linear infinite;
+}
+
+.departmentSignalDeck span:nth-child(1) { --line-y: 18px; --line-z: 8px; }
+.departmentSignalDeck span:nth-child(2) { --line-y: 62px; --line-z: 20px; animation-delay: -1.4s; }
+.departmentSignalDeck span:nth-child(3) { --line-y: 112px; --line-z: 32px; animation-delay: -2.8s; }
+.departmentSignalDeck span:nth-child(4) { --line-y: 158px; --line-z: 44px; animation-delay: -4.2s; }
+
+@keyframes flowBand {
+  0% { opacity: 0; clip-path: inset(0 100% 0 0); }
+  18% { opacity: 0.55; }
+  72% { opacity: 0.55; clip-path: inset(0 0 0 0); }
+  100% { opacity: 0; clip-path: inset(0 0 0 100%); }
+}
+
+.departmentCard {
+  min-height: 116px;
+}
+
+.connectedChips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.problemsScene {
+  position: relative;
+}
+
+.problemScanner {
+  position: absolute;
+  inset: -8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.75;
+}
+
+.problemScanner span {
+  min-height: 100%;
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0), rgba(var(--accentMainRgb), 0.16), rgba(var(--accentMainRgb), 0));
+  transform: rotateX(62deg) translateZ(-18px);
+  animation: scannerRise 4.8s ease-in-out infinite;
+}
+
+.problemScanner span:nth-child(2) { animation-delay: -1.6s; }
+.problemScanner span:nth-child(3) { animation-delay: -3.2s; }
+
+@keyframes scannerRise {
+  0%, 100% { opacity: 0.12; transform: rotateX(62deg) translateZ(-18px) translateY(20px); }
+  50% { opacity: 0.75; transform: rotateX(62deg) translateZ(18px) translateY(-10px); }
+}
+
+.problemsGrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.problemCard {
+  min-height: 144px;
+  box-shadow:
+    0 14px 28px -18px rgba(0, 0, 0, 0.34),
+    0 1px 0 rgba(var(--surface-rgb), 0.62) inset;
+  transform: translateZ(0);
+  animation: float 8s ease-in-out infinite;
+  transition: transform 320ms ease, opacity 320ms ease, filter 320ms ease;
+}
+
+.problemCard:nth-child(2) { animation-delay: -1.3s; }
+.problemCard:nth-child(3) { animation-delay: -2.6s; }
+.problemCard:nth-child(4) { animation-delay: -3.9s; }
+.problemCard:nth-child(5) { animation-delay: -5.2s; }
+.problemCard:nth-child(6) { animation-delay: -6.5s; }
+
+.problemsResolved .problemCard {
+  transform: translateY(8px) translateZ(-10px) scale(0.97);
+  opacity: 0.42;
+  filter: grayscale(0.45);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateZ(0) translateY(0); }
+  50% { transform: translateZ(12px) translateY(-6px); }
+}
+
+.problemToggleRow {
+  display: flex;
+  justify-content: center;
+}
+
+.technicianScene {
+  display: grid;
+  gap: 22px;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.technicianPedestal {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 26px 60px -34px rgba(var(--accentMainRgb), 0.46),
+    0 1px 0 rgba(var(--surface-rgb), 0.62) inset;
+}
+
+.technicianLiveRig {
+  position: absolute;
+  inset: 18px;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.technicianLiveRig span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 46%;
+  border-radius: var(--radius-lg);
+  background: rgba(var(--accentMainRgb), 0.08);
+  box-shadow: 0 14px 34px -24px rgba(var(--accentMainRgb), 0.42);
+  transform: translate(-50%, -50%) rotateX(66deg) rotateZ(var(--rig-angle, 0deg)) translateZ(var(--rig-z, 0));
+  animation: rigOrbit 6s ease-in-out infinite;
+}
+
+.technicianLiveRig span:nth-child(1) { --rig-angle: 0deg; --rig-z: 8px; }
+.technicianLiveRig span:nth-child(2) { --rig-angle: 60deg; --rig-z: 20px; animation-delay: -2s; }
+.technicianLiveRig span:nth-child(3) { --rig-angle: 120deg; --rig-z: 32px; animation-delay: -4s; }
+
+@keyframes rigOrbit {
+  0%, 100% { opacity: 0.2; scale: 0.82; }
+  50% { opacity: 0.75; scale: 1.08; }
+}
+
+.technicianAvatar {
+  position: relative;
+  z-index: 1;
+  width: 110px;
+  height: 110px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--accentText), rgba(var(--accentMainRgb), 0.56));
+  display: grid;
+  place-items: center;
+  color: var(--onAccentText);
+  font-weight: 900;
+  font-size: 1.8rem;
+  letter-spacing: 0;
+  box-shadow: 0 14px 28px -10px rgba(var(--accentMainRgb), 0.5);
+  transform: translateZ(20px);
+}
+
+.technicianLabel {
+  position: relative;
+  z-index: 1;
+  font-weight: 850;
+  font-size: 1.15rem;
+}
+
+.technicianSub {
+  position: relative;
+  z-index: 1;
+  font-size: 0.92rem;
+  color: var(--surfaceTextMuted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.technicianWorkflow {
+  position: relative;
+  z-index: 1;
+  grid-template-columns: 1fr;
+  text-align: left;
+  width: 100%;
+}
+
+.technicianTools {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.technicianFootnote {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-weight: 700;
+  color: var(--surfaceText);
+  box-shadow: 0 16px 34px -26px rgba(var(--accentMainRgb), 0.36);
+}
+
+.demoStage {
+  display: grid;
+  gap: 18px;
+}
+
+.demoExperience {
+  display: grid;
+  gap: 14px;
+}
+
+.demoTrack {
+  position: relative;
+  height: clamp(220px, 28vh, 280px);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, rgba(var(--accentMainRgb), 0.14), rgba(var(--surface-rgb), 0.5)),
+    var(--theme);
+  overflow: hidden;
+  transform-style: preserve-3d;
+  perspective: 1200px;
+  box-shadow: 0 24px 60px -34px rgba(var(--accentMainRgb), 0.36);
+}
+
+.demoDataStream {
+  position: absolute;
+  inset: 18px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  pointer-events: none;
+  transform: rotateX(58deg) translateY(58px);
+  transform-origin: center bottom;
+}
+
+.demoDataStream span {
+  min-height: 150px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, rgba(var(--accentMainRgb), 0), rgba(var(--accentMainRgb), 0.32));
+  opacity: 0.25;
+  animation: dataStreamRise 3.8s ease-in-out infinite;
+}
+
+.demoDataStream span:nth-child(2) { animation-delay: -0.7s; }
+.demoDataStream span:nth-child(3) { animation-delay: -1.4s; }
+.demoDataStream span:nth-child(4) { animation-delay: -2.1s; }
+.demoDataStream span:nth-child(5) { animation-delay: -2.8s; }
+
+@keyframes dataStreamRise {
+  0%, 100% { transform: translateY(28px) scaleY(0.65); opacity: 0.14; }
+  50% { transform: translateY(-18px) scaleY(1.08); opacity: 0.52; }
+}
+
+.demoCameraTrack {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 56px;
+  padding: 0 calc(50% - 110px);
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: 1;
+}
+
+.demoLevel {
+  position: relative;
+  flex: 0 0 220px;
+  height: 144px;
+  text-align: center;
+  color: var(--surfaceText);
+  font-weight: 800;
+  box-shadow:
+    0 18px 40px -24px rgba(var(--accentMainRgb), 0.35),
+    0 1px 0 rgba(var(--surface-rgb), 0.62) inset;
+  transition: transform 600ms ease, box-shadow 600ms ease, opacity 600ms ease;
+  opacity: 0.58;
+}
+
+.demoLevelActive {
+  transform: translateZ(44px) scale(1.05);
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px rgba(var(--accentMainRgb), 0.5),
+    0 30px 60px -24px rgba(var(--accentMainRgb), 0.45);
+}
+
+.demoCallout {
+  text-align: center;
+  font-size: 1.05rem;
+  color: var(--surfaceText);
+  min-height: 64px;
+  display: grid;
+  place-items: center;
+  max-width: 840px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.demoInsight {
+  max-width: 880px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.demoControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.demoFinal {
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--accentText);
+  padding: 4px;
+}
+
+.hubScene {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px) minmax(0, 1fr);
+  gap: 22px;
+  align-items: stretch;
+}
+
+.hubCore {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  justify-content: center;
+  box-shadow:
+    0 0 0 2px rgba(var(--accentMainRgb), 0.32),
+    0 30px 80px -34px rgba(var(--accentMainRgb), 0.48);
+  transform: translateZ(34px);
+}
+
+.hubOrbitScene {
+  position: absolute;
+  inset: 14px;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.hubOrbitScene span {
+  position: absolute;
+  inset: 12%;
+  border-radius: var(--radius-full);
+  background: conic-gradient(from 0deg, rgba(var(--accentMainRgb), 0), rgba(var(--accentMainRgb), 0.22), rgba(var(--accentMainRgb), 0));
+  opacity: 0.42;
+  animation: hubOrbit 8s linear infinite;
+}
+
+.hubOrbitScene span:nth-child(2) {
+  inset: 22%;
+  animation-duration: 6.4s;
+  animation-direction: reverse;
+}
+
+.hubOrbitScene span:nth-child(3) {
+  inset: 34%;
+  animation-duration: 4.8s;
+}
+
+@keyframes hubOrbit {
+  to { transform: rotate(360deg); }
+}
+
+.hubCoreLabel,
+.hubCoreTitle,
+.hubCoreLine {
+  position: relative;
+  z-index: 1;
+}
+
+.hubCoreTitle {
+  font-size: 1.75rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  margin: 0;
+  color: var(--accentText);
+}
+
+.hubCoreLine {
+  font-size: 0.95rem;
+  color: var(--surfaceTextMuted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.hubColumn {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.hubFeature {
+  color: var(--surfaceText);
+  box-shadow:
+    0 14px 30px -22px rgba(var(--accentMainRgb), 0.32),
+    0 1px 0 rgba(var(--surface-rgb), 0.62) inset;
+  transform: translateZ(0);
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+
+.hubFeature:hover {
+  transform: translateZ(14px) translateY(-2px);
+  box-shadow:
+    0 18px 40px -22px rgba(var(--accentMainRgb), 0.45),
+    0 1px 0 rgba(var(--surface-rgb), 0.7) inset;
+}
+
+.hubFeatureTitle {
+  font-weight: 850;
+  font-size: 0.95rem;
+}
+
+.hubFeatureLine {
+  font-size: 0.86rem;
+  color: var(--surfaceTextMuted);
+  line-height: 1.45;
+}
+
+.rolloutScene {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.rolloutLivePath {
+  position: relative;
+  min-height: 86px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  perspective: 900px;
+}
+
+.rolloutLivePath::before {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, rgba(var(--accentMainRgb), 0.12), rgba(var(--accentMainRgb), 0.36), rgba(var(--accentMainRgb), 0.12));
+  transform: translateY(-50%) rotateX(68deg);
+  transform-origin: center;
+}
+
+.rolloutLivePath span {
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow:
+    0 0 0 8px rgba(var(--accentMainRgb), 0.08),
+    0 16px 34px -22px rgba(var(--accentMainRgb), 0.48);
+  transform: rotateX(58deg) translateZ(calc(var(--step) * 5px));
+  animation: rolloutStep 4.6s ease-in-out infinite;
+  animation-delay: calc(var(--step) * -0.45s);
+}
+
+@keyframes rolloutStep {
+  0%, 100% { scale: 0.86; background: var(--surface); }
+  50% { scale: 1.08; background: var(--theme); }
+}
+
+.phaseCard {
+  min-height: 150px;
+  box-shadow:
+    0 14px 30px -22px rgba(var(--accentMainRgb), 0.32),
+    0 1px 0 rgba(var(--surface-rgb), 0.62) inset;
+  transform-style: preserve-3d;
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+
+.phaseCard:hover {
+  transform: translateZ(14px) translateY(-3px);
+  box-shadow:
+    0 20px 42px -24px rgba(var(--accentMainRgb), 0.42),
+    0 1px 0 rgba(var(--surface-rgb), 0.7) inset;
+}
+
+.phaseTitle {
+  font-weight: 850;
+  color: var(--surfaceText);
+  font-size: 1rem;
+}
+
+.phaseLine {
+  font-size: 0.88rem;
+  color: var(--surfaceTextMuted);
+  line-height: 1.5;
+}
+
+.finalScene {
+  position: relative;
+  overflow: hidden;
+  max-width: 880px;
+  margin: 10px auto 0;
+  text-align: center;
+  align-items: center;
+  transform: translateZ(20px);
+}
+
+.finalConstellation {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+
+.finalConstellation::before,
+.finalConstellation::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  top: 50%;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, rgba(var(--accentMainRgb), 0), rgba(var(--accentMainRgb), 0.24), rgba(var(--accentMainRgb), 0));
+  transform: rotate(12deg);
+}
+
+.finalConstellation::after {
+  transform: rotate(-14deg);
+}
+
+.finalConstellation span {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--accentText);
+  box-shadow: 0 0 0 8px rgba(var(--accentMainRgb), 0.1);
+  animation: constellationPulse 4s ease-in-out infinite;
+}
+
+.finalConstellation span:nth-child(1) { left: 14%; top: 34%; }
+.finalConstellation span:nth-child(2) { left: 30%; top: 64%; animation-delay: -0.8s; }
+.finalConstellation span:nth-child(3) { left: 50%; top: 28%; animation-delay: -1.6s; }
+.finalConstellation span:nth-child(4) { right: 28%; top: 62%; animation-delay: -2.4s; }
+.finalConstellation span:nth-child(5) { right: 14%; top: 38%; animation-delay: -3.2s; }
+
+@keyframes constellationPulse {
+  0%, 100% { transform: translateZ(0) scale(0.75); opacity: 0.26; }
+  50% { transform: translateZ(28px) scale(1); opacity: 0.72; }
+}
+
+.finalHeadline,
+.finalSupporting,
+.finalProofGrid {
+  position: relative;
+  z-index: 1;
+}
+
+.finalHeadline {
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: var(--surfaceText);
+  letter-spacing: 0;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.finalSupporting {
+  font-size: 1.05rem;
+  color: var(--surfaceTextMuted);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 720px;
+}
+
+.finalProofGrid {
+  width: 100%;
+}
+
+.footer {
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: 0 -12px 24px -24px rgba(0, 0, 0, 0.28);
+  z-index: 3;
+}
+
+.footerLabel {
+  font-size: 0.86rem;
+  color: var(--surfaceTextMuted);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.motionToggle {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accentMainRgb), 0.08);
+  font-size: 0.85rem;
+  color: var(--surfaceText);
+  cursor: pointer;
+  user-select: none;
+}
+
+.motionToggle input {
+  accent-color: var(--accentText);
+}
+
+@media (max-width: 980px) {
+  .openingLayout,
+  .topDetailGrid,
+  .roleTreeSceneGrid,
+  .technicianScene,
+  .hubScene {
+    grid-template-columns: 1fr;
+  }
+
+  .roleTreeLiveScene {
+    min-height: 0;
+  }
+
+  .roleTreeColumn {
+    transform: translateX(18px) rotateX(26deg) rotateZ(-1deg) translateZ(12px);
+  }
+
+  .roleTreePulseRail {
+    height: 76px;
+    transform: rotateZ(90deg);
+  }
+
+  .roleTreeMetrics {
+    transform: none;
+  }
+
+  .openingScene {
+    width: min(440px, 86vw);
+    height: min(440px, 86vw);
+  }
+
+  .chromeControls,
+  .footerControls {
+    justify-content: center;
+  }
+
+  .footerLabel {
+    text-align: center;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 700px) {
+  .stage {
+    padding: 18px 12px 28px;
+  }
+
+  .title {
+    font-size: 1.65rem;
+  }
+
+  .subtitle {
+    font-size: 0.98rem;
+  }
+
+  .chromeProgress {
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 2px;
+  }
+
+  .progressDot {
+    min-width: 78px;
+  }
+
+  .progressDotLabel {
+    display: none;
+  }
+
+  .openingScene {
+    width: min(340px, 88vw);
+    height: min(340px, 88vw);
+  }
+
+  .openingPlanet {
+    width: 92px;
+    height: 44px;
+    margin: -22px 0 0 -46px;
+    font-size: 0.74rem;
+  }
+
+  .rolloutLivePath {
+    display: none;
+  }
+
+  .roleTreeLiveScene {
+    padding: 14px;
+  }
+
+  .roleTreeSceneHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .roleTreeColumn {
+    transform: none;
+  }
+
+  .roleTreeColumn span {
+    min-height: 40px;
+  }
+
+  .roleTreePulseRail {
+    display: none;
+  }
+
+  .roleTreeMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .roleTreeMetrics span {
+    min-height: 52px;
+    font-size: 0.82rem;
+  }
+
+  .departmentSignalDeck,
+  .problemScanner,
+  .demoDataStream {
+    opacity: 0.45;
+  }
+
+  .detailHeader {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .openingScene,
+  .openingSignalBeam,
+  .openingPlanet,
+  .roleTreeColumn span,
+  .roleTreePulseRail span,
+  .roleTreeMetrics span,
+  .departmentSignalDeck span,
+  .problemCard,
+  .problemScanner span,
+  .technicianLiveRig span,
+  .departmentLine,
+  .glassCard,
+  .dashboardCard,
+  .demoDataStream span,
+  .demoLevel,
+  .demoCameraTrack,
+  .hubOrbitScene span,
+  .rolloutLivePath span,
+  .finalConstellation span,
+  .hubFeature,
+  .phaseCard,
+  .technicianAvatar,
+  .section {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .openingScene {
+    transform: none;
+  }
+}
+
+.reducedMotion .openingScene,
+.reducedMotion .openingSignalBeam,
+.reducedMotion .openingPlanet,
+.reducedMotion .roleTreeColumn span,
+.reducedMotion .roleTreePulseRail span,
+.reducedMotion .roleTreeMetrics span,
+.reducedMotion .departmentSignalDeck span,
+.reducedMotion .problemCard,
+.reducedMotion .problemScanner span,
+.reducedMotion .technicianLiveRig span,
+.reducedMotion .departmentLine,
+.reducedMotion .demoDataStream span,
+.reducedMotion .demoLevel,
+.reducedMotion .demoCameraTrack,
+.reducedMotion .hubOrbitScene span,
+.reducedMotion .rolloutLivePath span,
+.reducedMotion .finalConstellation span,
+.reducedMotion .section {
+  animation: none !important;
+  transition: none !important;
+}
+
+.reducedMotion .openingScene {
+  transform: none;
+}
+
+.reducedMotion .glassCard[data-clickable="true"]:hover {
+  transform: none;
+}

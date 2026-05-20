@@ -9,6 +9,8 @@ const DEFAULT_DEV_LOGIN_CATEGORY = "retail";
 const DEFAULT_DEV_LOGIN_DEPARTMENT = "workshop";
 const DEFAULT_DEV_LOGIN_USER = "michael";
 const PRESENTATION_CATEGORY_VALUE = "__presentation__";
+const ROLE_TREE_DEMO_VALUE = "__role-tree-demo__";
+const ROLE_TREE_DEMO_HREF = "/vision/role-tree-demo";
 
 const normalizeValue = (value) =>
   String(value || "")
@@ -272,6 +274,11 @@ export default function LoginDropdown({
         value: PRESENTATION_CATEGORY_VALUE,
         label: "Presentation",
       },
+      {
+        key: ROLE_TREE_DEMO_VALUE,
+        value: ROLE_TREE_DEMO_VALUE,
+        label: "Role Tree Demo",
+      },
     ],
     [roleCategories]
   );
@@ -329,6 +336,12 @@ export default function LoginDropdown({
             (typeof raw === "string" && raw) || raw?.value || raw?.label || "";
           if (nextCategory === PRESENTATION_CATEGORY_VALUE) {
             onPresentationSelect?.();
+            return;
+          }
+          if (nextCategory === ROLE_TREE_DEMO_VALUE) {
+            if (typeof window !== "undefined") {
+              window.location.href = ROLE_TREE_DEMO_HREF;
+            }
             return;
           }
           setSelectedCategory(nextCategory);
