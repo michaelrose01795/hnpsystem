@@ -3,10 +3,10 @@
 // customers see in the staff preview so /website/profile and presentations
 // show the customer surface, not the staff VHC panel.
 
-import CustomerPreviewPage from "@/pages/vhc/customer-preview/[jobNumber]";
+import { VhcDirectCustomerPage } from "@/pages/vhc/customer-preview/[jobNumber]";
 
 export default function VhcCustomerViewPage() {
-  return <CustomerPreviewPage />;
+  return <VhcDirectCustomerPage accessMode="customer" />;
 }
 
 VhcCustomerViewPage.getLayout = (page) => page;

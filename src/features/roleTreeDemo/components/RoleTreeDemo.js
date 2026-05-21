@@ -1,7 +1,6 @@
 // file location: src/features/roleTreeDemo/components/RoleTreeDemo.js
 // Full-screen shell for the /vision/role-tree-demo presentation. Owns section
-// state, sticky chrome (kicker + heading + progress dots + Back / Next / Exit),
-// sticky footer (section label + manual reduce-motion toggle + Back / Next) and
+// state, sticky chrome (kicker + heading + progress dots + Back / Next / Exit) and
 // keyboard navigation. Bypasses the persistent app <Layout>, so there is no
 // sidebar, no topbar and no auth chrome. Mock data only.
 
@@ -37,9 +36,8 @@ const SECTION_COMPONENTS = {
 export default function RoleTreeDemo() {
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [manualReducedMotion, setManualReducedMotion] = useState(false);
   const systemReducedMotion = useReducedMotionPreference();
-  const reducedMotion = systemReducedMotion || manualReducedMotion;
+  const reducedMotion = systemReducedMotion;
 
   const activeSection = presentationSections[activeIndex];
 
@@ -197,49 +195,6 @@ export default function RoleTreeDemo() {
         ))}
       </main>
 
-      <LayerSurface
-        as="footer"
-        className={styles.footer}
-        radius="0"
-        padding="12px clamp(16px, 3vw, 32px)"
-        gap="12px"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
-          alignItems: "center",
-        }}
-      >
-        <span className={styles.footerLabel}>
-          Scene {activeSection.chapter} &middot; {activeSection.label} ({activeIndex + 1} of {presentationSections.length})
-        </span>
-        <div className={styles.footerControls}>
-          <label className={styles.motionToggle}>
-            <input
-              type="checkbox"
-              checked={manualReducedMotion}
-              onChange={(event) => setManualReducedMotion(event.target.checked)}
-              aria-label="Reduce motion"
-            />
-            <span>Reduce motion</span>
-          </label>
-          <button
-            type="button"
-            className="app-btn app-btn--secondary"
-            onClick={goPrev}
-            disabled={activeIndex === 0}
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            className="app-btn app-btn--primary"
-            onClick={goNext}
-            disabled={activeIndex >= presentationSections.length - 1}
-          >
-            Next
-          </button>
-        </div>
-      </LayerSurface>
     </div>
   );
 }

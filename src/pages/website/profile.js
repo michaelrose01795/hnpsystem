@@ -27,22 +27,7 @@ import { siteContent } from "@/singlescroll/data/siteContent";
 import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
 import WebsiteNativeSelect from "@/singlescroll/components/WebsiteNativeSelect";
 import WebsiteNativeDateTimeInput from "@/singlescroll/components/WebsiteNativeDateTimeInput";
-import OwnershipDashboardCard from "@/features/customerPortal/components/sections/OwnershipDashboardCard";
-import DigitalServiceHistoryCard from "@/features/customerPortal/components/sections/DigitalServiceHistoryCard";
-import MotHistoryCard from "@/features/customerPortal/components/sections/MotHistoryCard";
-import RecallCheckerCard from "@/features/customerPortal/components/sections/RecallCheckerCard";
-import RepairApprovalTimelineCard from "@/features/customerPortal/components/sections/RepairApprovalTimelineCard";
-import VhcEnhancementsCard from "@/features/customerPortal/components/sections/VhcEnhancementsCard";
-import LiveProgressTrackerCard from "@/features/customerPortal/components/sections/LiveProgressTrackerCard";
-import DocumentsCentreCard from "@/features/customerPortal/components/sections/DocumentsCentreCard";
-import InvoicesPaymentsExtrasCard from "@/features/customerPortal/components/sections/InvoicesPaymentsExtrasCard";
-import SalesShowroomCard from "@/features/customerPortal/components/sections/SalesShowroomCard";
-import PartsPortalExtrasCard from "@/features/customerPortal/components/sections/PartsPortalExtrasCard";
-import SmartRepairCard from "@/features/customerPortal/components/sections/SmartRepairCard";
-import ValetDetailingCard from "@/features/customerPortal/components/sections/ValetDetailingCard";
-import FamilyGarageCard from "@/features/customerPortal/components/sections/FamilyGarageCard";
-import SelfServiceToolsCard from "@/features/customerPortal/components/sections/SelfServiceToolsCard";
-import AiAssistantCard from "@/features/customerPortal/components/sections/AiAssistantCard";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 const formatDate = (value) => {
   if (!value) return "—";
@@ -565,6 +550,1117 @@ const toggleKnobStyle = (checked) => ({
   background: "#fff",
   transition: "left 0.2s ease",
 });
+
+const PORTAL_DONE_STATUSES = ["delivered", "closed", "completed", "collected", "invoiced"];
+const REPAIR_TIMELINE_STAGES = [
+  { key: "booked", label: "Booked" },
+  { key: "checked_in", label: "Checked in" },
+  { key: "workshop", label: "Workshop" },
+  { key: "vhc", label: "VHC" },
+  { key: "wash", label: "Wash" },
+  { key: "ready", label: "Ready" },
+];
+const VHC_PRESENTATION_LINKS = {
+  preview: "/presentation/customer/vhc-customer-preview-jobNumber/3",
+  customerView: "/presentation/customer/vhc-customer-view-jobNumber/4",
+  share: "/presentation/customer/vhc-share-jobNumber-linkCode/5",
+  customer: "/presentation/customer/vhc-customer-jobNumber-linkCode/6",
+};
+const ASSISTANT_SUGGESTIONS = [
+  "When is my car next due?",
+  "How much did my last service cost?",
+  "What were my last VHC advisories?",
+  "Book me a valet for Saturday morning.",
+];
+
+const portalSubHeaderStyle = {
+  margin: 0,
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+  color: "var(--accentText)",
+};
+const portalTileStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+  padding: "12px 14px",
+  borderRadius: 12,
+  background: "var(--website-elev-2)",
+};
+const portalTodoStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  padding: "10px 12px",
+  borderRadius: 12,
+  background: "var(--website-elev-2)",
+};
+const portalTodoTitleStyle = {
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: 0.6,
+  textTransform: "uppercase",
+  color: "var(--accentText)",
+};
+const portalActionRowStyle = { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" };
+const portalProgressStyle = {
+  height: 8,
+  borderRadius: 999,
+  background: "var(--website-elev-4)",
+  overflow: "hidden",
+};
+const portalProgressFillStyle = (pct) => ({
+  height: "100%",
+  width: `${Math.max(0, Math.min(100, pct))}%`,
+  background: "linear-gradient(90deg, rgba(var(--accentMainRgb), 0.7), var(--accentText))",
+});
+const portalScoreRingStyle = (score) => ({
+  width: 78,
+  height: 78,
+  borderRadius: "50%",
+  background: `conic-gradient(var(--accentText) ${score * 3.6}deg, var(--website-elev-4) 0deg)`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+});
+const portalScoreInnerStyle = {
+  width: 62,
+  height: 62,
+  borderRadius: "50%",
+  background: "var(--website-elev-1)",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+};
+const portalUploadPlaceholderStyle = {
+  height: 110,
+  borderRadius: 12,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center",
+  padding: "0 8px",
+  fontSize: 11,
+  color: "var(--txt-mute)",
+  background: "var(--website-elev-3)",
+};
+const portalMediaThumbStyle = {
+  height: 72,
+  width: 96,
+  borderRadius: 10,
+  overflow: "hidden",
+  background: "var(--website-elev-3)",
+  flexShrink: 0,
+};
+
+const portalIsOpenJob = (job) => {
+  const status = String(job.status || job.completion_status || "").toLowerCase();
+  return !PORTAL_DONE_STATUSES.some((token) => status.includes(token)) && !job.completed_at;
+};
+
+const portalIsCompletedJob = (job) => {
+  const status = String(job.status || job.completion_status || "").toLowerCase();
+  return PORTAL_DONE_STATUSES.some((token) => status.includes(token)) || Boolean(job.completed_at);
+};
+
+const portalVehicleTitle = (vehicle) =>
+  vehicle.make_model ||
+  vehicle.makeModel ||
+  [vehicle.make, vehicle.model].filter(Boolean).join(" ") ||
+  "Vehicle";
+
+const portalVehicleReg = (vehicle) =>
+  vehicle.reg_number || vehicle.reg || vehicle.registration || "Registration TBC";
+
+const getHealthScore = (vehicle) => {
+  let score = 100;
+  const motDue = vehicle.mot_due || vehicle.motDue;
+  if (motDue) {
+    const days = daysUntil(motDue);
+    if (Number.isFinite(days) && days < 0) score -= 35;
+    else if (Number.isFinite(days) && days <= 30) score -= 20;
+    else if (Number.isFinite(days) && days <= 60) score -= 10;
+  }
+  if (!vehicle.mileage) score -= 5;
+  if (!vehicle.service_history && !vehicle.service_plan_type) score -= 8;
+  return Math.max(0, Math.min(100, score));
+};
+
+const getProgressPct = (job) => {
+  const checks = [
+    job.created_at,
+    job.checked_in_at,
+    job.workshop_started_at,
+    job.vhc_required ? job.vhc_completed_at : true,
+    job.wash_started_at || job.wash_completed_by,
+    job.completed_at,
+  ];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+};
+
+const partTitle = (item) =>
+  item.part_name_snapshot ||
+  item.row_description ||
+  item.description ||
+  item.part?.name ||
+  item.part?.part_number ||
+  "Part";
+
+const isBodyshopRequest = (request) =>
+  /body|smart|paint|scratch|dent|repair/i.test(
+    `${request.description || ""} ${request.confirmation_notes || ""}`,
+  );
+
+const isValetRequest = (request) =>
+  /valet|detail|clean|wash/i.test(`${request.description || ""} ${request.confirmation_notes || ""}`);
+
+function PortalCard({ id, eyebrow, title, count, action, todo, wide = false, children }) {
+  return (
+    <section id={id} style={wide ? cardWideStyle : cardStyle}>
+      <div style={cardHeaderStyle}>
+        <div>
+          {eyebrow ? <div style={headerEyebrowStyle}>{eyebrow}</div> : null}
+          <h2 style={cardTitleStyle}>{title}</h2>
+        </div>
+        <div style={portalActionRowStyle}>
+          {count ? <span style={cardCountStyle}>{count}</span> : null}
+          {action}
+        </div>
+      </div>
+      {todo ? (
+        <div style={portalTodoStyle}>
+          <span style={portalTodoTitleStyle}>TODO · {todo.label}</span>
+          {todo.detail ? <p style={emptyStyle}>{todo.detail}</p> : null}
+        </div>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+function PortalButtonLink({ href, children, style }) {
+  return (
+    <a className="app-btn" href={href} style={style}>
+      {children}
+    </a>
+  );
+}
+
+function ScoreRing({ score = 0 }) {
+  return (
+    <div style={portalScoreRingStyle(score)}>
+      <div style={portalScoreInnerStyle}>
+        <span style={{ fontSize: 18, fontWeight: 800, color: "var(--txt-bright)" }}>{score}</span>
+        <span style={{ fontSize: 9, color: "var(--txt-mute)", letterSpacing: 0.4, textTransform: "uppercase" }}>
+          health
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DetailFieldGrid({ children }) {
+  return <div style={detailGridStyle}>{children}</div>;
+}
+
+function NotificationDot({ enabled, label }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 12,
+        color: enabled ? "var(--txt-bright)" : "var(--txt-mute)",
+      }}
+    >
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: enabled ? "var(--accentText)" : "var(--website-elev-4)",
+        }}
+      />
+      {label}
+    </span>
+  );
+}
+
+function MediaThumb({ item }) {
+  const type = String(item.mime_type || item.media_type || "");
+  const isVideo = type.startsWith("video") || type === "video";
+  const url = item.public_url;
+  return (
+    <div style={portalMediaThumbStyle}>
+      {url && isVideo ? (
+        <video src={url} muted playsInline loop style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : null}
+    </div>
+  );
+}
+
+function OwnershipDashboardCard({ vehicles = [] }) {
+  return (
+    <PortalCard
+      id="ownership"
+      eyebrow="Ownership hub"
+      title="Vehicle health overview"
+      count={`${vehicles.length} vehicle${vehicles.length === 1 ? "" : "s"}`}
+      todo={{
+        label: "Recall API, tyre status and battery telemetry not linked yet",
+        detail:
+          "MOT, warranty, service plan and mileage are live. Recall, tyre and battery connections still require third-party APIs.",
+      }}
+    >
+      {vehicles.length === 0 ? <p style={emptyStyle}>No vehicles are linked to this account yet.</p> : null}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {vehicles.map((vehicle) => (
+          <div key={vehicle.vehicle_id || vehicle.id || portalVehicleReg(vehicle)} style={portalTileStyle}>
+            <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+              <ScoreRing score={getHealthScore(vehicle)} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={itemTitleStyle}>{portalVehicleTitle(vehicle)}</span>
+                <span style={badgeStyle}>{portalVehicleReg(vehicle)}</span>
+              </div>
+            </div>
+            <DetailFieldGrid>
+              <DetailField label="MOT due" value={formatDate(vehicle.mot_due || vehicle.motDue)} />
+              <DetailField
+                label="Warranty"
+                value={[vehicle.warranty_type, formatDate(vehicle.warranty_expiry)].filter(Boolean).join(" · ")}
+              />
+              <DetailField
+                label="Service plan"
+                value={[vehicle.service_plan_supplier, vehicle.service_plan_type, formatDate(vehicle.service_plan_expiry)]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
+              <DetailField label="Fuel / gearbox" value={[vehicle.fuel_type, vehicle.transmission].filter(Boolean).join(" · ")} />
+              <DetailField label="Mileage" value={vehicle.mileage ? `${vehicle.mileage} miles` : null} />
+            </DetailFieldGrid>
+            <div>
+              <h3 style={portalSubHeaderStyle}>Service notes</h3>
+              <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--txt-bright)" }}>
+                {vehicle.service_history || "No service-history note has been stored for this vehicle yet."}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </PortalCard>
+  );
+}
+
+function LiveProgressTrackerCard({ jobs = [], customer }) {
+  const active = (jobs || []).find(portalIsOpenJob);
+  const contactPreference = String(customer?.contact_preference || "").toLowerCase();
+  const smsEnabled = ["sms", "text", "phone"].includes(contactPreference) || Boolean(customer?.mobile);
+  const emailEnabled = contactPreference === "email" || Boolean(customer?.email);
+
+  return (
+    <PortalCard id="tracker" eyebrow="Tracker" title="Live progress">
+      {!active ? (
+        <p style={emptyStyle}>No active workshop job is currently linked to this account.</p>
+      ) : (
+        <div style={portalTileStyle}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+            <span style={itemTitleStyle}>{active.job_number || active.id}</span>
+            <span style={badgeOpenStyle}>{active.status || "Booked"}</span>
+            {active.service_mode === "mobile" ? <span style={badgePaidStyle}>Mobile service</span> : null}
+            {String(active.status || "").toLowerCase().includes("ready") ? <span style={badgePaidStyle}>Ready for collection</span> : null}
+          </div>
+          <div style={portalProgressStyle}>
+            <div style={portalProgressFillStyle(getProgressPct(active))} />
+          </div>
+          <DetailFieldGrid>
+            <DetailField label="Vehicle" value={active.vehicle_reg || active.vehicle_make_model} />
+            <DetailField label="Job type" value={active.type || active.description} />
+            <DetailField label="Service postcode" value={active.service_postcode} />
+          </DetailFieldGrid>
+          <div>
+            <h3 style={portalSubHeaderStyle}>Notifications</h3>
+            <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>
+              <NotificationDot enabled={smsEnabled} label="SMS" />
+              <NotificationDot enabled={emailEnabled} label="Email" />
+              <NotificationDot enabled={false} label="Push" />
+            </div>
+          </div>
+        </div>
+      )}
+    </PortalCard>
+  );
+}
+
+function RepairApprovalTimelineCard({ jobs = [], jobStatusHistory = [] }) {
+  const job = jobs.find(portalIsOpenJob) || jobs[0];
+  const history = job ? jobStatusHistory.filter((row) => row.job_id === job.id) : [];
+  const events = {
+    booked: job?.created_at,
+    checked_in: job?.checked_in_at,
+    workshop: job?.workshop_started_at,
+    vhc: job?.vhc_completed_at,
+    wash: job?.wash_started_at || job?.wash_completed_by,
+    ready: job?.completed_at,
+  };
+  const activeIndex = Math.max(
+    0,
+    REPAIR_TIMELINE_STAGES.reduce((last, stage, index) => (events[stage.key] ? index : last), 0),
+  );
+
+  return (
+    <PortalCard id="tracker-timeline" eyebrow="Live repair" title="Repair approval timeline">
+      {!job ? (
+        <p style={emptyStyle}>No job timeline is available for this account yet.</p>
+      ) : (
+        <div style={portalTileStyle}>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+            <span style={itemTitleStyle}>{job.job_number}</span>
+            <span style={itemMetaStyle}>{[job.vehicle_make_model, job.vehicle_reg].filter(Boolean).join(" · ")}</span>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${REPAIR_TIMELINE_STAGES.length}, 1fr)`,
+              gap: 12,
+            }}
+          >
+            {REPAIR_TIMELINE_STAGES.map((stage, idx) => {
+              const state = idx < activeIndex ? "done" : idx === activeIndex && events[stage.key] ? "active" : "todo";
+              return (
+                <div key={stage.key} style={trackerStepStyle(state)}>
+                  <span style={trackerDotStyle(state)} />
+                  <span>{stage.label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <ul style={itemListStyle}>
+            {REPAIR_TIMELINE_STAGES.map((stage) => {
+              const matchingHistory = history.find((row) =>
+                String(row.to_status || "").toLowerCase().includes(stage.key.replace("_", " ")),
+              );
+              return (
+                <li key={stage.key} style={itemRowStyle}>
+                  <div>
+                    <div style={itemTitleStyle}>{stage.label}</div>
+                    {matchingHistory?.reason ? <div style={itemMetaStyle}>{matchingHistory.reason}</div> : null}
+                  </div>
+                  <span style={timelineWhenStyle}>{formatDateTime(events[stage.key] || matchingHistory?.changed_at) || "Pending"}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </PortalCard>
+  );
+}
+
+function DigitalServiceHistoryCard({ jobs = [], jobHistory = [], invoices = [], vhcByJob = {} }) {
+  const invoiceByJobNumber = new Map(invoices.map((invoice) => [String(invoice.job_number || ""), invoice]));
+  const history = jobHistory.length
+    ? jobHistory.map((row) => {
+        const invoice = invoiceByJobNumber.get(String(row.job_number || ""));
+        const vhc = vhcByJob?.[row.job_id] || {};
+        return {
+          id: row.history_id || row.job_id || row.job_number,
+          date: row.recorded_at,
+          mileage: row.mileage_at_service,
+          type: row.status_snapshot || row.vehicle_make_model || "Workshop visit",
+          invoice: invoice?.invoice_number || invoice?.invoice_id || "—",
+          red: vhc.red || 0,
+          amber: vhc.amber || 0,
+          note: row.vehicle_reg ? `${row.vehicle_reg} · ${row.vehicle_make_model || "vehicle"}` : null,
+        };
+      })
+    : jobs.filter(portalIsCompletedJob).map((job) => {
+        const invoice = invoiceByJobNumber.get(String(job.job_number || ""));
+        const vhc = vhcByJob?.[job.id] || {};
+        return {
+          id: job.id || job.job_number,
+          date: job.completed_at || job.updated_at || job.created_at,
+          mileage: null,
+          type: job.description || job.type || "Workshop visit",
+          invoice: invoice?.invoice_number || invoice?.invoice_id || "—",
+          red: vhc.red || 0,
+          amber: vhc.amber || 0,
+          note: job.vehicle_reg ? `${job.vehicle_reg} · ${job.vehicle_make_model || "vehicle"}` : null,
+        };
+      });
+
+  return (
+    <PortalCard
+      id="history"
+      eyebrow="Service log"
+      title="Digital service history"
+      count={`${history.length} visit${history.length === 1 ? "" : "s"}`}
+      action={<PortalButtonLink href="#messages">Request PDF</PortalButtonLink>}
+    >
+      {history.length === 0 ? (
+        <p style={emptyStyle}>No completed service history has been recorded for this account yet.</p>
+      ) : (
+        <ul style={itemListStyle}>
+          {history.map((visit) => (
+            <li key={visit.id} style={itemRowStyle}>
+              <div>
+                <div style={itemTitleStyle}>{visit.type}</div>
+                <div style={itemMetaStyle}>
+                  {formatDate(visit.date)} · {visit.mileage ? `${visit.mileage} miles` : "mileage not recorded"} · {visit.invoice}
+                </div>
+                {visit.note ? <div style={{ ...itemMetaStyle, marginTop: 6 }}>{visit.note}</div> : null}
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {visit.red > 0 ? <span style={badgeOpenStyle}>{visit.red} red</span> : null}
+                {visit.amber > 0 ? <span style={badgeStyle}>{visit.amber} amber</span> : null}
+                {visit.red === 0 && visit.amber === 0 ? <span style={badgePaidStyle}>No red/amber</span> : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </PortalCard>
+  );
+}
+
+function MotHistoryCard({ vehicles = [] }) {
+  return (
+    <PortalCard
+      id="mot"
+      eyebrow="MOT record"
+      title="MOT history"
+      todo={{
+        label: "DVLA MOT History API not linked yet",
+        detail: "Stored MOT due dates are live. Full test history, advisories and failures still require the DVLA MOT History connection.",
+      }}
+    >
+      {vehicles.length === 0 ? <p style={emptyStyle}>No vehicles are linked to this account yet.</p> : null}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {vehicles.map((vehicle) => {
+          const days = daysUntil(vehicle.mot_due);
+          const status = days == null ? "Unknown" : days < 0 ? "Overdue" : days <= 30 ? "Due soon" : "Current";
+          return (
+            <div key={vehicle.vehicle_id || vehicle.reg_number} style={portalTileStyle}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={itemTitleStyle}>{portalVehicleTitle(vehicle)}</span>
+                <span style={badgeStyle}>{portalVehicleReg(vehicle)}</span>
+              </div>
+              <ul style={itemListStyle}>
+                <li style={itemRowStyle}>
+                  <div>
+                    <div style={itemTitleStyle}>Current MOT due date</div>
+                    <div style={itemMetaStyle}>{formatDate(vehicle.mot_due) || "Not recorded"}</div>
+                  </div>
+                  <span style={status === "Current" ? badgePaidStyle : badgeOpenStyle}>{status}</span>
+                </li>
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </PortalCard>
+  );
+}
+
+function RecallCheckerCard({ vehicles = [] }) {
+  return (
+    <PortalCard
+      id="recalls"
+      eyebrow="Manufacturer alerts"
+      title="Recall checker"
+      todo={{ label: "Manufacturer / DVSA recall API not linked yet" }}
+    >
+      {vehicles.length === 0 ? <p style={emptyStyle}>No vehicles are linked to this account yet.</p> : null}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {vehicles.map((vehicle) => (
+          <div key={vehicle.vehicle_id || vehicle.reg_number} style={portalTileStyle}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={itemTitleStyle}>{portalVehicleTitle(vehicle)}</span>
+              <span style={badgeStyle}>{portalVehicleReg(vehicle)}</span>
+              {vehicle.vin ? <span style={itemMetaStyle}>VIN {vehicle.vin}</span> : null}
+            </div>
+            <p style={emptyStyle}>Recall status will appear here once the manufacturer / DVSA API connection is in place.</p>
+          </div>
+        ))}
+      </div>
+    </PortalCard>
+  );
+}
+
+function VhcEnhancementsCard({ jobs = [], vhcByJob = {}, vhcDeclinations = [], vhcMedia = [], vhcShareLinks = [] }) {
+  const [presentationMode, setPresentationMode] = useState(false);
+
+  useEffect(() => {
+    setPresentationMode(isPresentationMode());
+  }, []);
+
+  const getVhcSummary = (job) => vhcByJob[job.id] || vhcByJob[job.job_number];
+  const jobsWithVhc = jobs.filter((job) => getVhcSummary(job));
+  const latestJob = jobsWithVhc[0];
+  const latestSummary = latestJob ? getVhcSummary(latestJob) : null;
+  const latestShareLink = latestJob
+    ? vhcShareLinks.find(
+        (link) =>
+          String(link.job_id || "") === String(latestJob.id || "") ||
+          String(link.job_number || "") === String(latestJob.job_number || ""),
+      )
+    : null;
+  const encodedJobNumber = encodeURIComponent(latestJob?.job_number || "");
+  const encodedLinkCode = encodeURIComponent(latestShareLink?.link_code || "");
+  const getRouteHref = (kind, liveHref) => (presentationMode ? VHC_PRESENTATION_LINKS[kind] : liveHref);
+  const latestMedia = latestJob
+    ? vhcMedia.filter((item) => item.job_number === latestJob.job_number).slice(0, 6)
+    : vhcMedia.slice(0, 6);
+  const declined = latestJob ? vhcDeclinations.filter((row) => row.job_id === latestJob.id) : vhcDeclinations;
+
+  return (
+    <PortalCard
+      id="vhc-extras"
+      eyebrow="Inspection"
+      title="VHC hub"
+      action={
+        latestJob ? (
+          <div style={portalActionRowStyle}>
+            <PortalButtonLink href={getRouteHref("preview", `/vhc/customer-preview/${encodedJobNumber}`)}>Preview</PortalButtonLink>
+            <PortalButtonLink href={getRouteHref("customerView", `/vhc/customer-view/${encodedJobNumber}`)}>Customer view</PortalButtonLink>
+            {encodedLinkCode ? (
+              <>
+                <PortalButtonLink href={getRouteHref("share", `/vhc/share/${encodedJobNumber}/${encodedLinkCode}`)}>Share link</PortalButtonLink>
+                <PortalButtonLink href={getRouteHref("customer", `/vhc/customer/${encodedJobNumber}/${encodedLinkCode}`)}>Customer link</PortalButtonLink>
+              </>
+            ) : null}
+          </div>
+        ) : null
+      }
+    >
+      {!latestSummary ? (
+        <p style={emptyStyle}>No live VHC is linked to this account yet.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={gridSplitStyle}>
+            <div style={portalTileStyle}>
+              <div style={balanceHeroStyle}>
+                <span style={detailLabelStyle}>Authorised total this visit</span>
+                <span style={balanceFigureStyle}>{formatCurrency(latestJob.vhc_authorized_total || 0)}</span>
+              </div>
+              <span style={itemMetaStyle}>
+                {latestSummary.green || 0} green · {latestSummary.amber || 0} amber · {latestSummary.red || 0} red.
+              </span>
+            </div>
+            <div style={portalTileStyle}>
+              <h3 style={portalSubHeaderStyle}>Declined items to revisit</h3>
+              {declined.length === 0 ? (
+                <p style={emptyStyle}>Nothing declined on the linked VHC.</p>
+              ) : (
+                <ul style={itemListStyle}>
+                  {declined.map((item) => (
+                    <li key={item.vhc_id || `${item.job_id}-${item.issue_title}`} style={itemRowStyle}>
+                      <div>
+                        <div style={itemTitleStyle}>{item.issue_title || item.section || "VHC item"}</div>
+                        {item.issue_description ? <div style={itemMetaStyle}>{item.issue_description}</div> : null}
+                      </div>
+                      <span style={badgeOpenStyle}>{item.display_status || item.approval_status || "Declined"}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Ask us to re-quote</PortalButtonLink>
+            </div>
+          </div>
+          <div style={portalTileStyle}>
+            <h3 style={portalSubHeaderStyle}>Inspection media</h3>
+            {latestMedia.length ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {latestMedia.map((item) => <MediaThumb key={item.id} item={item} />)}
+              </div>
+            ) : (
+              <p style={emptyStyle}>Media will appear once the technician uploads customer-visible VHC photos or video.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </PortalCard>
+  );
+}
+
+function InvoicesPaymentsExtrasCard({ invoicePayments = [], paymentPlans = [], transactions = [] }) {
+  return (
+    <PortalCard
+      id="payments-extras"
+      eyebrow="Account"
+      title="Payments, finance & signatures"
+      todo={{
+        label: "Signature ledger not wired yet",
+        detail:
+          "Payment history, payment plans and account transactions are live where records exist. Digital signature capture still needs a customer-facing workflow.",
+      }}
+    >
+      <div style={portalTileStyle}>
+        <h3 style={portalSubHeaderStyle}>Payment history</h3>
+        {invoicePayments.length === 0 ? (
+          <p style={emptyStyle}>No invoice payments have been recorded for this account yet.</p>
+        ) : (
+          <ul style={itemListStyle}>
+            {invoicePayments.map((payment) => (
+              <li key={payment.payment_id} style={itemRowStyle}>
+                <div>
+                  <div style={itemTitleStyle}>{formatCurrency(payment.amount)} · {payment.payment_method || "Payment"}</div>
+                  <div style={itemMetaStyle}>{formatDate(payment.payment_date)} · {payment.reference || "No reference"}</div>
+                </div>
+                <span style={badgePaidStyle}>Paid</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div style={gridSplitStyle}>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Payment plans</h3>
+          {paymentPlans.length === 0 ? (
+            <p style={emptyStyle}>No active payment plans are linked to this account.</p>
+          ) : (
+            <ul style={itemListStyle}>
+              {paymentPlans.map((plan) => (
+                <li key={plan.plan_id} style={itemRowStyle}>
+                  <div>
+                    <div style={itemTitleStyle}>{plan.name || plan.description || "Payment plan"}</div>
+                    <div style={itemMetaStyle}>{formatCurrency(plan.balance_due)} balance · next {formatDate(plan.next_payment_date)}</div>
+                  </div>
+                  <span style={String(plan.status).toLowerCase() === "active" ? badgePaidStyle : badgeStyle}>{plan.status}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Digital signatures</h3>
+          <p style={emptyStyle}>Digital signature records will appear once the signature ledger is connected.</p>
+        </div>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Account statement</h3>
+          {transactions.length === 0 ? (
+            <p style={emptyStyle}>No account transactions are linked to this account.</p>
+          ) : (
+            <ul style={itemListStyle}>
+              {transactions.slice(0, 5).map((transaction) => (
+                <li key={transaction.transaction_id} style={itemRowStyle}>
+                  <div>
+                    <div style={itemTitleStyle}>{transaction.description || transaction.type}</div>
+                    <div style={itemMetaStyle}>{formatDate(transaction.transaction_date)} · {transaction.job_number || "Account"}</div>
+                  </div>
+                  <span style={badgeStyle}>{formatCurrency(transaction.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Request full statement</PortalButtonLink>
+        </div>
+      </div>
+    </PortalCard>
+  );
+}
+
+function DocumentsCentreCard({ invoices = [], vhcMedia = [] }) {
+  const docs = [
+    ...invoices.map((invoice) => ({
+      id: `invoice-${invoice.invoice_id || invoice.id}`,
+      name: invoice.invoice_number || invoice.invoice_id || "Invoice",
+      meta: `Invoice · ${formatDate(invoice.created_at)} · ${invoice.payment_status || "Draft"}`,
+      href: invoice.invoice_id ? `/accounts/invoices/${invoice.invoice_id}` : null,
+    })),
+    ...vhcMedia.map((item) => ({
+      id: `media-${item.id}`,
+      name: item.context_label || `${item.media_type || "VHC"} media`,
+      meta: `Inspection media · ${formatDate(item.created_at)}`,
+      href: item.public_url,
+    })),
+  ];
+
+  return (
+    <PortalCard
+      id="documents"
+      eyebrow="Files"
+      title="Documents centre"
+      action={<PortalButtonLink href="#messages">Request upload</PortalButtonLink>}
+      todo={{
+        label: "Customer documents API + upload endpoint not wired yet",
+        detail: "Invoices and VHC media are live. Customer-uploaded documents still need a customer-scoped index and upload route.",
+      }}
+    >
+      <div style={portalTileStyle}>
+        {docs.length === 0 ? (
+          <p style={emptyStyle}>No invoice or VHC media documents are linked to this account yet.</p>
+        ) : (
+          <ul style={itemListStyle}>
+            {docs.map((doc) => (
+              <li key={doc.id} style={itemRowStyle}>
+                <div>
+                  <div style={itemTitleStyle}>{doc.name}</div>
+                  <div style={itemMetaStyle}>{doc.meta}</div>
+                </div>
+                {doc.href ? <PortalButtonLink href={doc.href}>Open</PortalButtonLink> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div style={portalTileStyle}>
+        <h3 style={portalSubHeaderStyle}>Upload zone</h3>
+        <div style={{ ...portalUploadPlaceholderStyle, height: "auto", minHeight: 88 }}>
+          Customer uploads will appear here once the upload endpoint is connected.
+        </div>
+      </div>
+    </PortalCard>
+  );
+}
+
+function SalesShowroomCard() {
+  return (
+    <PortalCard
+      id="sales-hub"
+      eyebrow="Sales"
+      title="Showroom & orders"
+      todo={{ label: "Customer-side sales tables for watchlists, reservations, PX and orders not built yet" }}
+    >
+      <div style={gridSplitStyle}>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Saved cars & price alerts</h3>
+          <p style={emptyStyle}>Saved cars will appear here once the customer watchlist table is connected.</p>
+          <PortalButtonLink href="/website#cars" style={{ alignSelf: "flex-start" }}>Browse cars</PortalButtonLink>
+        </div>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Reservations and orders</h3>
+          <p style={emptyStyle}>Reservations, vehicle orders and delivery countdowns will appear once customer sales records are available.</p>
+        </div>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Part-exchange offers</h3>
+          <p style={emptyStyle}>Part-exchange valuations will appear once the sales enquiry workflow is linked to the portal.</p>
+        </div>
+      </div>
+    </PortalCard>
+  );
+}
+
+function PartsPortalExtrasCard({ partsJobItems = [], partsRequests = [], partsOrderCards = [] }) {
+  return (
+    <PortalCard
+      id="parts-hub"
+      eyebrow="Parts"
+      title="Parts portal"
+      todo={{
+        label: "VIN-driven parts catalogue and accessory upsell API not wired yet",
+        detail: "Job parts, parts requests and order cards are live where records exist. VIN fitment and accessory recommendations still require a catalogue API.",
+      }}
+    >
+      <div style={portalTileStyle}>
+        <h3 style={portalSubHeaderStyle}>VIN lookup</h3>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <input type="text" placeholder="Enter VIN or registration" disabled style={{ flex: "1 1 220px", minWidth: 0 }} />
+          <button type="button">Find parts</button>
+        </div>
+      </div>
+      <div style={gridSplitStyle}>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Job parts</h3>
+          {partsJobItems.length === 0 ? (
+            <p style={emptyStyle}>No job parts are currently linked to this account.</p>
+          ) : (
+            <ul style={itemListStyle}>
+              {partsJobItems.slice(0, 8).map((item) => (
+                <li key={item.id} style={itemRowStyle}>
+                  <div>
+                    <div style={itemTitleStyle}>{partTitle(item)}</div>
+                    <div style={itemMetaStyle}>Qty {item.quantity_requested || 1} · ETA {formatDate(item.eta_date) || "TBC"}</div>
+                  </div>
+                  <span style={String(item.status).includes("fitted") ? badgePaidStyle : badgeOpenStyle}>{item.status || "Pending"}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Parts requests</h3>
+          {partsRequests.length === 0 ? (
+            <p style={emptyStyle}>No parts requests are awaiting action.</p>
+          ) : (
+            <ul style={itemListStyle}>
+              {partsRequests.slice(0, 8).map((request) => (
+                <li key={request.request_id} style={itemRowStyle}>
+                  <div>
+                    <div style={itemTitleStyle}>{partTitle(request)}</div>
+                    <div style={itemMetaStyle}>Qty {request.quantity || 1} · {formatDate(request.updated_at || request.created_at) || "TBC"}</div>
+                  </div>
+                  <span style={String(request.status).includes("approved") ? badgePaidStyle : badgeOpenStyle}>{request.status || "Pending"}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      <div style={portalTileStyle}>
+        <h3 style={portalSubHeaderStyle}>Order tracking</h3>
+        {partsOrderCards.length === 0 ? (
+          <p style={emptyStyle}>No customer parts orders are linked to this account.</p>
+        ) : (
+          <ul style={itemListStyle}>
+            {partsOrderCards.slice(0, 8).map((order) => (
+              <li key={order.id} style={itemRowStyle}>
+                <div>
+                  <div style={itemTitleStyle}>{order.order_number || "Parts order"}</div>
+                  <div style={itemMetaStyle}>
+                    {order.vehicle_reg || "Vehicle TBC"} · ETA {formatDate(order.delivery_eta) || "TBC"}
+                    {order.delivery_window ? ` · ${order.delivery_window}` : ""}
+                  </div>
+                </div>
+                <span style={String(order.delivery_status).includes("delivered") ? badgePaidStyle : badgeOpenStyle}>
+                  {order.delivery_status || order.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </PortalCard>
+  );
+}
+
+function SmartRepairCard({ bookingRequests = [] }) {
+  const requests = bookingRequests.filter(isBodyshopRequest);
+  return (
+    <PortalCard
+      id="bodyshop"
+      eyebrow="Bodyshop"
+      title="SMART repair & estimates"
+      todo={{ label: "Bodyshop estimate workflow and before/after media bucket not wired yet" }}
+    >
+      <div style={portalTileStyle}>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--txt-soft)" }}>
+          Send us photos of scuffs, scratches or dents and we'll respond from the workshop workflow.
+        </p>
+        <div style={gridSplitStyle}>
+          <div style={portalUploadPlaceholderStyle}>Upload connection required</div>
+          <div style={portalUploadPlaceholderStyle}>Upload connection required</div>
+          <div style={portalUploadPlaceholderStyle}>Upload connection required</div>
+        </div>
+        <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Request estimate</PortalButtonLink>
+      </div>
+      <div style={portalTileStyle}>
+        <h3 style={portalSubHeaderStyle}>Repair requests</h3>
+        {requests.length === 0 ? (
+          <p style={emptyStyle}>No bodyshop or SMART repair requests are currently linked to this account.</p>
+        ) : (
+          <ul style={itemListStyle}>
+            {requests.map((request) => (
+              <li key={request.request_id} style={itemRowStyle}>
+                <div>
+                  <div style={itemTitleStyle}>{request.description || "Repair request"}</div>
+                  <div style={itemMetaStyle}>{formatDate(request.submitted_at)}</div>
+                </div>
+                <span style={badgeOpenStyle}>{request.status || "Pending"}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </PortalCard>
+  );
+}
+
+function ValetDetailingCard({ bookingRequests = [] }) {
+  const requests = bookingRequests.filter(isValetRequest);
+  return (
+    <PortalCard
+      id="valet"
+      eyebrow="Valeting"
+      title="Valet & detailing"
+      todo={{ label: "Valet packages and subscription model not in schema yet" }}
+    >
+      <div style={portalTileStyle}>
+        <h3 style={portalSubHeaderStyle}>Your subscription</h3>
+        <p style={emptyStyle}>No valet subscription is linked to this account.</p>
+      </div>
+      <div style={portalTileStyle}>
+        <h3 style={portalSubHeaderStyle}>Valet requests</h3>
+        {requests.length === 0 ? (
+          <p style={emptyStyle}>No valet or detailing requests are currently linked to this account.</p>
+        ) : (
+          <ul style={itemListStyle}>
+            {requests.map((request) => (
+              <li key={request.request_id} style={itemRowStyle}>
+                <div>
+                  <div style={itemTitleStyle}>{request.description || "Valet request"}</div>
+                  <div style={itemMetaStyle}>{formatDate(request.submitted_at)}</div>
+                </div>
+                <span style={badgeOpenStyle}>{request.status || "Pending"}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <PortalButtonLink href="#messages" style={{ alignSelf: "flex-start" }}>Ask about valet options</PortalButtonLink>
+      </div>
+    </PortalCard>
+  );
+}
+
+function FamilyGarageCard({ customer, vehicles = [] }) {
+  const customerName =
+    [customer?.firstname, customer?.lastname].filter(Boolean).join(" ") ||
+    customer?.name ||
+    customer?.email ||
+    "Account holder";
+
+  return (
+    <PortalCard
+      id="family"
+      eyebrow="Household"
+      title="Family & shared garage"
+      action={<PortalButtonLink href="#messages">Request shared access</PortalButtonLink>}
+      todo={{ label: "Shared accounts / household schema not built yet" }}
+    >
+      <div style={portalTileStyle}>
+        <h3 style={portalSubHeaderStyle}>Members</h3>
+        <ul style={itemListStyle}>
+          <li style={itemRowStyle}>
+            <div>
+              <div style={itemTitleStyle}>{customerName}</div>
+              <div style={itemMetaStyle}>
+                {customer?.email || "No email stored"} · {vehicles.length} vehicle{vehicles.length === 1 ? "" : "s"}
+              </div>
+            </div>
+            <span style={badgePaidStyle}>Owner</span>
+          </li>
+        </ul>
+      </div>
+      <div style={portalTileStyle}>
+        <h3 style={portalSubHeaderStyle}>Shared vehicles</h3>
+        {vehicles.length === 0 ? (
+          <p style={emptyStyle}>No vehicles are linked to this account yet.</p>
+        ) : (
+          <ul style={itemListStyle}>
+            {vehicles.map((vehicle) => (
+              <li key={vehicle.vehicle_id || vehicle.reg_number} style={itemRowStyle}>
+                <div>
+                  <div style={itemTitleStyle}>{portalVehicleReg(vehicle)}</div>
+                  <div style={itemMetaStyle}>{portalVehicleTitle(vehicle)}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </PortalCard>
+  );
+}
+
+function SelfServiceToolsCard({ vehicles = [], vhcDeclinations = [] }) {
+  const servicePlans = vehicles.filter(
+    (vehicle) => vehicle.service_plan_supplier || vehicle.service_plan_type || vehicle.service_plan_expiry,
+  );
+
+  return (
+    <PortalCard
+      id="self-service"
+      eyebrow="Self service"
+      title="Reminders, plans & loyalty"
+      todo={{
+        label: "Seasonal reminders and loyalty programme not in schema yet",
+        detail:
+          "Service-plan fields and VHC advisory reminders are live where records exist. Seasonal reminder automation and loyalty still require tables/workflows.",
+      }}
+    >
+      <div style={gridSplitStyle}>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Seasonal reminders</h3>
+          <p style={emptyStyle}>Seasonal reminders will appear once reminder rules are connected.</p>
+        </div>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Service plans</h3>
+          {servicePlans.length === 0 ? (
+            <p style={emptyStyle}>No service plan is linked to your vehicles.</p>
+          ) : (
+            <ul style={itemListStyle}>
+              {servicePlans.map((vehicle) => (
+                <li key={vehicle.vehicle_id || vehicle.reg_number} style={itemRowStyle}>
+                  <div>
+                    <div style={itemTitleStyle}>
+                      {[vehicle.service_plan_supplier, vehicle.service_plan_type].filter(Boolean).join(" · ") || "Service plan"}
+                    </div>
+                    <div style={itemMetaStyle}>{portalVehicleReg(vehicle)} · expires {formatDate(vehicle.service_plan_expiry) || "Not recorded"}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Loyalty & referral</h3>
+          <p style={emptyStyle}>Loyalty points and referral rewards will appear once the programme schema is connected.</p>
+          <PortalButtonLink href="#settings" style={{ alignSelf: "flex-start" }}>Refer a friend</PortalButtonLink>
+        </div>
+        <div style={portalTileStyle}>
+          <h3 style={portalSubHeaderStyle}>Advisory reminders</h3>
+          {vhcDeclinations.length === 0 ? (
+            <p style={emptyStyle}>No declined VHC advisories are waiting to be revisited.</p>
+          ) : (
+            <ul style={itemListStyle}>
+              {vhcDeclinations.slice(0, 5).map((item) => (
+                <li key={item.vhc_id || `${item.job_id}-${item.issue_title}`} style={itemRowStyle}>
+                  <div>
+                    <div style={itemTitleStyle}>{item.issue_title || item.section || "VHC advisory"}</div>
+                    <div style={itemMetaStyle}>{item.issue_description || item.customer_description}</div>
+                  </div>
+                  <span style={badgeOpenStyle}>Revisit</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </PortalCard>
+  );
+}
+
+function AiAssistantCard() {
+  const [draft, setDraft] = useState("");
+  return (
+    <PortalCard
+      id="assistant"
+      eyebrow="Help"
+      title="Ownership assistant"
+      todo={{ label: "Customer-facing AI assistant endpoint not wired yet" }}
+    >
+      <div style={portalTileStyle}>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--txt-soft)" }}>
+          Ask anything about your vehicle, history or upcoming visits. The assistant will be wired up to live data soon.
+        </p>
+        <div style={portalActionRowStyle}>
+          {ASSISTANT_SUGGESTIONS.map((suggestion) => (
+            <button key={suggestion} type="button" onClick={() => setDraft(suggestion)}>
+              {suggestion}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <input
+            type="text"
+            placeholder="Type a question..."
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            style={{ flex: "1 1 220px", minWidth: 0 }}
+          />
+          <button type="button">Ask</button>
+        </div>
+      </div>
+    </PortalCard>
+  );
+}
 
 export default function CustomerProfilePage() {
   const router = useRouter();

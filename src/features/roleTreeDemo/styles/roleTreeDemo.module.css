@@ -9,7 +9,7 @@
   inset: 0;
   z-index: 9000;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   background: linear-gradient(180deg, var(--theme), var(--surface));
   perspective: 1800px;
   perspective-origin: 50% 40%;
@@ -107,8 +107,7 @@
   display: none;
 }
 
-.chromeControls,
-.footerControls {
+.chromeControls {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -1247,40 +1246,6 @@
   width: 100%;
 }
 
-.footer {
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  box-shadow: 0 -12px 24px -24px rgba(0, 0, 0, 0.28);
-  z-index: 3;
-}
-
-.footerLabel {
-  font-size: 0.86rem;
-  color: var(--surfaceTextMuted);
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.motionToggle {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: var(--radius-pill);
-  background: rgba(var(--accentMainRgb), 0.08);
-  font-size: 0.85rem;
-  color: var(--surfaceText);
-  cursor: pointer;
-  user-select: none;
-}
-
-.motionToggle input {
-  accent-color: var(--accentText);
-}
-
 @media (max-width: 980px) {
   .openingLayout,
   .topDetailGrid,
@@ -1312,14 +1277,8 @@
     height: min(440px, 86vw);
   }
 
-  .chromeControls,
-  .footerControls {
+  .chromeControls {
     justify-content: center;
-  }
-
-  .footerLabel {
-    text-align: center;
-    white-space: normal;
   }
 }
 

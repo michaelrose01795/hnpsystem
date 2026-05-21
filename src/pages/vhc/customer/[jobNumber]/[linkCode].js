@@ -18,7 +18,7 @@ import useWebsiteTheme from "@/singlescroll/hooks/useWebsiteTheme";
 
 const LABOUR_RATE = 85;
 
-export default function CustomerLinkPage() {
+export function VhcLinkedCustomerPage({ accessMode = "customer" }) {
   const router = useRouter();
   const { jobNumber, linkCode } = router.query;
   useWebsiteScope();
@@ -210,9 +210,12 @@ export default function CustomerLinkPage() {
     });
   }, [jobFiles]);
 
+  const isReadOnlyShare = accessMode === "share";
+
   // Customer-side authorise/decline → public API
   const updateEntryStatus = useCallback(
     async (itemId, newStatus) => {
+      if (isReadOnlyShare) return;
       if (!itemId || !jobNumber || !linkCode) return;
       setUpdatingStatus((prev) => new Set(prev).add(itemId));
       try {
@@ -244,7 +247,7 @@ export default function CustomerLinkPage() {
         });
       }
     },
-    [jobNumber, linkCode]
+    [isReadOnlyShare, jobNumber, linkCode]
   );
 
   const customerPageStyle = {
@@ -259,11 +262,12 @@ export default function CustomerLinkPage() {
   // can detect this page.
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
-    document.body.classList.add("vhc-customer-link-page");
+    document.body.classList.add(accessMode === "share" ? "vhc-share-link-page" : "vhc-customer-link-page");
     return () => {
+      document.body.classList.remove("vhc-share-link-page");
       document.body.classList.remove("vhc-customer-link-page");
     };
-  }, []);
+  }, [accessMode]);
 
   if (loading) {
     return (
@@ -321,13 +325,18 @@ export default function CustomerLinkPage() {
         videoFiles={videoFiles}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        interactive={true}
+        interactive={!isReadOnlyShare}
         onUpdateStatus={updateEntryStatus}
         updatingIds={updatingStatus}
         expiresAt={expiresAt}
+        accessMode={accessMode}
       />
     </div>
   );
+}
+
+export default function CustomerLinkPage() {
+  return <VhcLinkedCustomerPage accessMode="customer" />;
 }
 
 // Bypass the global app shell: customers landing on this link should see only

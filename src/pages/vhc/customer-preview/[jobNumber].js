@@ -136,7 +136,7 @@ const getWearColor = (wornPercent) => {
   return "var(--success)";
 };
 
-export default function CustomerPreviewPage() {
+export function VhcDirectCustomerPage({ accessMode = "preview" }) {
   const router = useRouter();
   const { jobNumber } = router.query;
   useWebsiteScope();
@@ -1459,22 +1459,6 @@ export default function CustomerPreviewPage() {
   const vehicleInfo = job?.vehicle;
   const customerInfo = job?.customer;
 
-  const previewBanner = (
-    <div
-      style={{
-        background: "rgba(var(--accentMainRgb), 0.22)",
-        color: "var(--accentText)",
-        padding: "6px 14px",
-        fontSize: 12,
-        fontWeight: 600,
-        letterSpacing: "0.04em",
-        textAlign: "center"
-      }}
-    >
-      STAFF PREVIEW · This is exactly what the customer sees
-    </div>
-  );
-
   return (
     <VhcCustomerView
       jobNumber={jobNumber}
@@ -1489,8 +1473,9 @@ export default function CustomerPreviewPage() {
       interactive={true}
       onUpdateStatus={updateEntryStatus}
       updatingIds={updatingStatus}
-      previewBanner={previewBanner}
-      onBack={handleBack}
+      previewBanner={null}
+      onBack={accessMode === "preview" ? handleBack : null}
+      accessMode={accessMode}
     />
   );
 
@@ -1635,6 +1620,10 @@ export default function CustomerPreviewPage() {
 
 
 
+}
+
+export default function CustomerPreviewPage() {
+  return <VhcDirectCustomerPage accessMode="preview" />;
 }
 
 CustomerPreviewPage.getLayout = (page) => page;

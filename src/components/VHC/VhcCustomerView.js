@@ -6,6 +6,8 @@
 import React, { useMemo } from "react";
 import Head from "next/head";
 import BrandLogo from "@/components/BrandLogo";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 
 const formatCurrency = (value) => {
   const num = Number(value);
@@ -243,30 +245,75 @@ function TotalsGrid({ totals }) {
     { label: "Declined", value: totals.declined, color: "var(--txt-soft)" }
   ];
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(2, 1fr)",
-        gap: 8,
-        marginBottom: 14
-      }}
+    <LayerSurface
+      radius="var(--radius-md)"
+      padding="14px"
+      gap="10px"
+      style={{ marginBottom: 14 }}
     >
-      {items.map((it) => (
-        <div
-          key={it.label}
-          style={{
-            padding: 12,
-            borderRadius: "var(--radius-sm)",
-            background: `${it.color}11`
-          }}
-        >
-          <div style={{ fontSize: 11, color: "var(--txt-mute)", marginBottom: 4 }}>{it.label}</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: it.color }}>
-            {formatCurrency(it.value)}
-          </div>
-        </div>
-      ))}
-    </div>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: "var(--txt-mute)"
+        }}
+      >
+        Work Summary
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          gap: 8
+        }}
+      >
+        {items.map((it) => (
+          <LayerTheme
+            key={it.label}
+            radius="var(--radius-sm)"
+            padding="12px"
+            gap="4px"
+            style={{ minHeight: 72 }}
+          >
+            <div style={{ fontSize: 11, color: "var(--txt-mute)" }}>{it.label}</div>
+            <div
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: it.color,
+                lineHeight: 1.2
+              }}
+            >
+              {formatCurrency(it.value)}
+            </div>
+          </LayerTheme>
+        ))}
+      </div>
+    </LayerSurface>
+  );
+}
+
+function AccessNotice({ accessMode }) {
+  if (accessMode !== "share") return null;
+  return (
+    <LayerSurface radius="var(--radius-md)" padding="12px 14px" gap="4px" style={{ marginBottom: 14 }}>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: "var(--txt-mute)"
+        }}
+      >
+        Read-only share
+      </div>
+      <div style={{ fontSize: 13, color: "var(--txt-soft)" }}>
+        This shared link can view the report, photos and videos. Authorising or declining work is only available from the customer view.
+      </div>
+    </LayerSurface>
   );
 }
 
@@ -417,7 +464,8 @@ export default function VhcCustomerView({
   updatingIds,
   previewBanner = null,
   expiresAt = null,
-  onBack = null
+  onBack = null,
+  accessMode = "customer"
 }) {
   const tabs = useMemo(() => {
     const list = [{ id: "summary", label: "Summary" }];
@@ -556,6 +604,7 @@ export default function VhcCustomerView({
         >
           {activeTab === "summary" && (
             <>
+              <AccessNotice accessMode={accessMode} />
               <TotalsGrid totals={totals} />
 
               {severityLists.red?.length > 0 && (
