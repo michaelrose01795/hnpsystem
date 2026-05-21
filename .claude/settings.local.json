@@ -161,7 +161,12 @@
       "Bash(findstr /C:\"login-presentation\" /C:\"realPageLoader\" /C:\"loginPresentation\" /C:\"slide.js\")",
       "Bash(findstr /V \"staffglobal.css custglobal.css\")",
       "Bash(findstr /R \"presentation login-presentation realPageLoader loginPresentation\")",
-      "Bash(Select-String -Pattern \"presentation|login-presentation|realPageLoader|loginPresentation\")"
+      "Bash(Select-String -Pattern \"presentation|login-presentation|realPageLoader|loginPresentation\")",
+      "PowerShell($dev = Get-ItemProperty -Path \"HKLM:\\\\SOFTWARE\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\AppModelUnlock\" -Name \"AllowDevelopmentWithoutDevLicense\" -ErrorAction SilentlyContinue; if \\($dev\\) { Write-Output \"DeveloperMode=$\\($dev.AllowDevelopmentWithoutDevLicense\\)\" } else { Write-Output \"DeveloperMode=not-set\" }; try { New-Item -ItemType SymbolicLink -Path \"$env:TEMP\\\\hnp-symlink-test\" -Target \"$env:TEMP\" -ErrorAction Stop | Out-Null; Write-Output \"SymlinkTest=PASS\"; Remove-Item \"$env:TEMP\\\\hnp-symlink-test\" -Force } catch { Write-Output \"SymlinkTest=FAIL: $\\($_.Exception.Message\\)\" })",
+      "Bash(ls \"/c/Users/micha/AppData/Local/electron-builder/Cache/winCodeSign/\" 2>&1 | head)",
+      "Read(//c/Users/micha/AppData/Local/electron-builder/Cache/winCodeSign//**)",
+      "PowerShell($cacheDir = \"$env:LOCALAPPDATA\\\\electron-builder\\\\Cache\\\\winCodeSign\"; $target = Join-Path $cacheDir \"winCodeSign-2.6.0\"; if \\(-not \\(Test-Path $target\\)\\) { Move-Item -Path \\(Join-Path $cacheDir \"969379151\"\\) -Destination $target; Write-Output \"Renamed to winCodeSign-2.6.0\" } else { Write-Output \"Already exists\" }; Remove-Item \\(Join-Path $cacheDir \"390587795\"\\) -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item \\(Join-Path $cacheDir \"415310827\"\\) -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item \\(Join-Path $cacheDir \"849292999\"\\) -Recurse -Force -ErrorAction SilentlyContinue; Get-ChildItem $cacheDir | Select-Object Name | Format-Table -HideTableHeaders)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:52526/downloads/H-P-System-Setup.exe\" -Method Head -UseBasicParsing -ErrorAction Stop; Write-Output \\(\"Status: \" + $r.StatusCode\\); Write-Output \\(\"Content-Length: \" + $r.Headers[\"Content-Length\"]\\); Write-Output \\(\"Last-Modified: \" + $r.Headers[\"Last-Modified\"]\\); Write-Output \\(\"Content-Type: \" + $r.Headers[\"Content-Type\"]\\) } catch { Write-Output \\(\"FAIL: \" + $_.Exception.Message\\) })"
     ],
     "deny": [],
     "ask": [],

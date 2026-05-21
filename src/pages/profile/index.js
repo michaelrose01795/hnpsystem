@@ -11,6 +11,7 @@ import ProfilePageWrapperUi from "@/components/page-ui/profile/profile-ui"; // E
 import PopupModal from "@/components/popups/popupStyleApi";
 import { SecurityPanel } from "@/pages/account/security";
 import { PrivacyPanel } from "@/pages/profile/privacy";
+import { DesktopAppPanel } from "@/components/profile/DesktopAppCard"; // Desktop installer download popup
 
 export function ProfilePage({
   forcedUserName = null,
@@ -103,6 +104,14 @@ export function ProfilePage({
                 >
                   Privacy
                 </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setOpenPanel("desktop-app")}
+                >
+                  Desktop App
+                </Button>
               </div>
             </DevLayoutSection>
           ) : null}
@@ -148,6 +157,13 @@ export function ProfilePage({
         ariaLabel="Privacy settings"
       >
         <PrivacyPanel />
+      </PopupModal>
+      <PopupModal
+        isOpen={openPanel === "desktop-app"}
+        onClose={() => setOpenPanel(null)}
+        ariaLabel="Desktop app download"
+      >
+        <DesktopAppPanel />
       </PopupModal>
     </div>;
 

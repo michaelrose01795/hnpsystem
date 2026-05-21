@@ -1,0 +1,83 @@
+{
+  "//": "file location: desktop/package.json — Electron shell for the H&P System DMS. This package is intentionally isolated from the root Next.js package.json so the web app remains untouched.",
+  "//TODO:branding": "Replace assets/logo.png with a square 512x512 PNG, and ideally drop a multi-resolution build/icon.ico for crisp 16/32/48/256px taskbar/installer icons. electron-builder picks build/icon.ico up automatically. Needs design assets supplied — cannot be generated from inside this repo.",
+  "//TODO:codesign": "No Windows code-signing certificate is configured. Without one, users see SmartScreen 'Windows protected your PC' warnings on first install. To enable: buy an EV/OV cert (DigiCert, Sectigo, SSL.com), then add 'certificateFile' and 'certificatePassword' (via env var) under build.win. Requires purchased credentials — cannot be done from inside this repo.",
+  "name": "hnpsystem-desktop",
+  "productName": "H&P System",
+  "version": "1.0.0",
+  "description": "H&P System desktop shell — wraps the hosted Humphries & Parks DMS in a dedicated Windows application window.",
+  "author": {
+    "name": "Humphries & Parks",
+    "email": "support@humphriesandparks.co.uk"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "//dev": "Run Electron pointing at the local Next.js dev server. Override DMS_APP_URL to target a deployed URL instead.",
+    "dev": "cross-env DMS_APP_URL=http://localhost:3000 NODE_ENV=development electron .",
+    "//start": "Run the desktop shell against the configured production DMS URL (DMS_APP_URL env or the fallback in src/config.js).",
+    "start": "electron .",
+    "//build:win": "Build a Windows .exe installer (NSIS) into desktop/dist. No code signing — see README for cert setup.",
+    "build:win": "electron-builder --win --x64",
+    "//build:win:portable": "Optional portable build (no installer) for ad-hoc engineer use.",
+    "build:win:portable": "electron-builder --win portable --x64",
+    "//clean": "Wipe build output without removing node_modules.",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "rimraf": "^6.0.1"
+  },
+  "build": {
+    "appId": "uk.co.humphriesandparks.hnpsystem",
+    "productName": "H&P System",
+    "copyright": "Copyright © 2026 Humphries & Parks",
+    "asar": true,
+    "compression": "maximum",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json",
+      "!**/*.map",
+      "!**/.DS_Store"
+    ],
+    "extraMetadata": {
+      "main": "src/main.js"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "HNPSystem-Setup-${version}.${ext}",
+      "executableName": "H&P System",
+      "publisherName": "Humphries & Parks",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "H&P System",
+      "uninstallDisplayName": "H&P System",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
+    }
+  }
+}

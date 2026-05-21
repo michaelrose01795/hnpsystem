@@ -1,0 +1,12 @@
+# file location: desktop/.gitignore
+# Build artefacts and local-only files for the Electron shell.
+
+node_modules/
+dist/
+out/
+.cache/
+.electron-builder-cache/
+*.log
+.DS_Store
+.env
+.env.local

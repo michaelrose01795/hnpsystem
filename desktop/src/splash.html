@@ -1,0 +1,143 @@
+<!-- file location: desktop/src/splash.html -->
+<!-- Lightweight splash screen shown while the remote DMS is loading.
+     Stays static / offline so it can render before any network call.
+     The main process closes this window once the BrowserWindow finishes loading,
+     or swaps to an offline-error state if the network is unreachable. -->
+<!DOCTYPE html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <title>H&amp;P System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      /* Brand-neutral splash styling — kept self-contained so we never
+         depend on the web app being reachable in order to render it.    */
+      :root {
+        --accent: #c0102f;   /* H&P red — matches the web app theme */
+        --bg: #111418;       /* Deep neutral background */
+        --fg: #f5f5f5;       /* Primary text colour */
+        --muted: #9aa1a8;    /* Subtitle / secondary text */
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        overflow: hidden;
+        user-select: none;          /* Splash text should not be selectable */
+        -webkit-user-select: none;
+      }
+      .wrap {
+        height: 100%;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        gap: 24px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        padding: 32px;
+      }
+      .logo {
+        width: 220px;
+        max-width: 60vw;
+        height: auto;
+        opacity: 0.95;
+      }
+      .title {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+      }
+      .subtitle {
+        font-size: 13px;
+        color: var(--muted);
+        letter-spacing: 0.4px;
+      }
+      /* Indeterminate progress bar — pure CSS so it never blocks on JS */
+      .bar {
+        position: relative;
+        width: 220px;
+        height: 3px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .bar::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        width: 40%;
+        background: var(--accent);
+        border-radius: 999px;
+        animation: slide 1.4s ease-in-out infinite;
+      }
+      @keyframes slide {
+        0%   { transform: translateX(-100%); }
+        50%  { transform: translateX(180%); }
+        100% { transform: translateX(-100%); }
+      }
+      /* Offline / error panel — main.js toggles the .is-error class */
+      .error {
+        display: none;
+        max-width: 360px;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      body.is-error .bar { display: none; }
+      body.is-error .error { display: block; }
+      body.is-error .subtitle { color: var(--accent); }
+      .retry {
+        margin-top: 14px;
+        display: inline-block;
+        padding: 8px 16px;
+        background: var(--accent);
+        color: white;
+        border: 0;
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .retry:hover { filter: brightness(1.1); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="stack">
+        <!-- Logo path is resolved relative to this file at runtime -->
+        <img class="logo" src="../assets/logo.png" alt="H&amp;P System" />
+        <div class="title">H&amp;P System</div>
+        <div class="subtitle" id="subtitle">Loading dealership system…</div>
+        <div class="bar" aria-hidden="true"></div>
+        <div class="error" id="errorPanel">
+          We couldn't reach the H&amp;P System server.
+          Check your internet connection and try again.
+          <br />
+          <button class="retry" id="retryBtn" type="button">Retry connection</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      // The renderer doesn't have Node access (contextIsolation is on for the
+      // main window). The splash does not use a preload, so it relies solely on
+      // a simple postMessage-style protocol via window.location reloads driven
+      // by the main process. Below we wire up the retry button to trigger a
+      // reload — the main process listens for the location hash change and
+      // re-attempts loading the DMS URL.
+      const retry = document.getElementById("retryBtn");
+      if (retry) {
+        retry.addEventListener("click", () => {
+          // Updating the hash signals main.js (via 'will-navigate') to retry
+          window.location.hash = "retry-" + Date.now();
+        });
+      }
+    </script>
+  </body>
+</html>
