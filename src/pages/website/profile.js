@@ -561,10 +561,10 @@ const REPAIR_TIMELINE_STAGES = [
   { key: "ready", label: "Ready" },
 ];
 const VHC_PRESENTATION_LINKS = {
-  preview: "/presentation/customer/vhc-customer-preview-jobNumber/3",
-  customerView: "/presentation/customer/vhc-customer-view-jobNumber/4",
-  share: "/presentation/customer/vhc-share-jobNumber-linkCode/5",
-  customer: "/presentation/customer/vhc-customer-jobNumber-linkCode/6",
+  preview: "/presentation/customer/vhc-customer-preview-jobNumber/8",
+  customerView: "/presentation/customer/vhc-customer-view-jobNumber/9",
+  share: "/presentation/customer/vhc-share-jobNumber-linkCode/10",
+  customer: "/presentation/customer/vhc-customer-jobNumber-linkCode/11",
 };
 const ASSISTANT_SUGGESTIONS = [
   "When is my car next due?",
@@ -718,19 +718,25 @@ const isBodyshopRequest = (request) =>
 const isValetRequest = (request) =>
   /valet|detail|clean|wash/i.test(`${request.description || ""} ${request.confirmation_notes || ""}`);
 
+function PortalCardHeader({ eyebrow, title, count, action }) {
+  return (
+    <div style={cardHeaderStyle}>
+      <div>
+        {eyebrow ? <div style={headerEyebrowStyle}>{eyebrow}</div> : null}
+        <h2 style={cardTitleStyle}>{title}</h2>
+      </div>
+      <div style={portalActionRowStyle}>
+        {count !== undefined && count !== null ? <span style={cardCountStyle}>{count}</span> : null}
+        {action}
+      </div>
+    </div>
+  );
+}
+
 function PortalCard({ id, eyebrow, title, count, action, todo, wide = false, children }) {
   return (
     <section id={id} style={wide ? cardWideStyle : cardStyle}>
-      <div style={cardHeaderStyle}>
-        <div>
-          {eyebrow ? <div style={headerEyebrowStyle}>{eyebrow}</div> : null}
-          <h2 style={cardTitleStyle}>{title}</h2>
-        </div>
-        <div style={portalActionRowStyle}>
-          {count ? <span style={cardCountStyle}>{count}</span> : null}
-          {action}
-        </div>
-      </div>
+      <PortalCardHeader eyebrow={eyebrow} title={title} count={count} action={action} />
       {todo ? (
         <div style={portalTodoStyle}>
           <span style={portalTodoTitleStyle}>TODO · {todo.label}</span>
@@ -2106,13 +2112,12 @@ export default function CustomerProfilePage() {
 
                     {/* Live job tracker */}
                     {activeJob ? (
-                      <section style={cardWideStyle}>
-                        <div style={cardHeaderStyle}>
-                          <h2 style={cardTitleStyle}>
-                            Live status — {activeJob.job_number || `Job #${activeJob.id}`}
-                          </h2>
-                          <span style={badgeStyle}>{activeJob.status || "—"}</span>
-                        </div>
+                      <PortalCard
+                        eyebrow="Live job"
+                        title={`Live status - ${activeJob.job_number || `Job #${activeJob.id}`}`}
+                        action={<span style={badgeStyle}>{activeJob.status || "-"}</span>}
+                        wide
+                      >
                         <p style={{ ...itemMetaStyle, margin: 0 }}>
                           {[activeJob.vehicle_reg, activeJob.vehicle_make_model]
                             .filter(Boolean)
@@ -2158,20 +2163,21 @@ export default function CustomerProfilePage() {
                             </div>
                           );
                         })()}
-                      </section>
+                      </PortalCard>
                     ) : null}
                   </div>
 
                   {/* ───────── Personal details ───────── */}
                   <section style={cardWideStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Personal details</h2>
-                      {!editing ? (
+                    <PortalCardHeader
+                      eyebrow="Account"
+                      title="Personal details"
+                      action={!editing ? (
                         <button type="button" onClick={() => setEditing(true)}>
                           Edit
                         </button>
                       ) : null}
-                    </div>
+                    />
 
                     {editing ? (
                       <form style={formStyle} onSubmit={handleSaveProfile}>
@@ -2265,10 +2271,7 @@ export default function CustomerProfilePage() {
 
                   {/* ───────── Vehicles ───────── */}
                   <section id="vehicles" style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Your vehicles</h2>
-                      <span style={cardCountStyle}>{vehicles.length}</span>
-                    </div>
+                    <PortalCardHeader eyebrow="Garage" title="Your vehicles" count={vehicles.length} />
                     {vehicles.length === 0 ? (
                       <p style={emptyStyle}>
                         No vehicles linked to your account yet. Get in touch and we'll
@@ -2319,9 +2322,7 @@ export default function CustomerProfilePage() {
 
                   {/* Add vehicle + update mileage */}
                   <section style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Update your vehicles</h2>
-                    </div>
+                    <PortalCardHeader eyebrow="Garage tools" title="Update your vehicles" />
                     <UpdateMileageRow
                       vehicles={vehicles}
                       onSaved={() => {
@@ -2358,9 +2359,7 @@ export default function CustomerProfilePage() {
                   {/* Mileage history */}
                   {mileageRows.length > 0 ? (
                     <section style={cardStyle}>
-                      <div style={cardHeaderStyle}>
-                        <h2 style={cardTitleStyle}>Mileage history</h2>
-                      </div>
+                      <PortalCardHeader eyebrow="Mileage" title="Mileage history" />
                       <div style={mileageListStyle}>
                         {mileageRows.map((row) => (
                           <div key={row.history_id} style={mileageRowStyle}>
@@ -2379,10 +2378,7 @@ export default function CustomerProfilePage() {
 
                   {/* ───────── Jobs + VHC ───────── */}
                   <section id="jobs" style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Jobs &amp; service history</h2>
-                      <span style={cardCountStyle}>{jobs.length}</span>
-                    </div>
+                    <PortalCardHeader eyebrow="Workshop" title="Jobs & service history" count={jobs.length} />
                     {jobs.length === 0 ? (
                       <p style={emptyStyle}>No jobs on file yet.</p>
                     ) : (
@@ -2440,10 +2436,7 @@ export default function CustomerProfilePage() {
 
                   {appointments.length > 0 ? (
                     <section style={cardStyle}>
-                      <div style={cardHeaderStyle}>
-                        <h2 style={cardTitleStyle}>Appointments</h2>
-                        <span style={cardCountStyle}>{appointments.length}</span>
-                      </div>
+                      <PortalCardHeader eyebrow="Bookings" title="Appointments" count={appointments.length} />
                       <ul style={itemListStyle}>
                         {appointments.map((a) => (
                           <li key={a.appointment_id} style={itemRowStyle}>
@@ -2466,10 +2459,7 @@ export default function CustomerProfilePage() {
                   {(data.vhcMedia?.length || 0) > 0 ||
                   (data.vhcDeclinations?.length || 0) > 0 ? (
                     <section id="inspections" style={cardStyle}>
-                      <div style={cardHeaderStyle}>
-                        <h2 style={cardTitleStyle}>Inspection photos &amp; video</h2>
-                        <span style={cardCountStyle}>{data.vhcMedia?.length || 0}</span>
-                      </div>
+                      <PortalCardHeader eyebrow="Inspection" title="Inspection photos & video" count={data.vhcMedia?.length || 0} />
                       {(data.vhcMedia?.length || 0) === 0 ? (
                         <p style={emptyStyle}>
                           No media yet — uploaded inspection photos will appear here.
@@ -2558,12 +2548,11 @@ export default function CustomerProfilePage() {
                     {accounts.length > 0
                       ? accounts.map((a) => (
                           <section key={a.account_id} style={cardStyle}>
-                            <div style={cardHeaderStyle}>
-                              <h2 style={cardTitleStyle}>
-                                {a.account_type || "Account"} #{a.account_id}
-                              </h2>
-                              <span style={badgeStyle}>{a.status || "Active"}</span>
-                            </div>
+                            <PortalCardHeader
+                              eyebrow="Account"
+                              title={`${a.account_type || "Account"} #${a.account_id}`}
+                              action={<span style={badgeStyle}>{a.status || "Active"}</span>}
+                            />
                             <div style={balanceHeroStyle}>
                               <span style={balanceFigureStyle}>
                                 {formatCurrency(a.balance)}
@@ -2598,10 +2587,7 @@ export default function CustomerProfilePage() {
                       : null}
 
                     <section style={cardStyle}>
-                      <div style={cardHeaderStyle}>
-                        <h2 style={cardTitleStyle}>Invoices</h2>
-                        <span style={cardCountStyle}>{invoices.length}</span>
-                      </div>
+                      <PortalCardHeader eyebrow="Billing" title="Invoices" count={invoices.length} />
                       <div style={balanceHeroStyle}>
                         <span style={balanceFigureStyle}>
                           {formatCurrency(outstandingTotal)}
@@ -2676,10 +2662,7 @@ export default function CustomerProfilePage() {
                     </section>
 
                     <section style={cardStyle}>
-                      <div style={cardHeaderStyle}>
-                        <h2 style={cardTitleStyle}>Saved payment methods</h2>
-                        <span style={cardCountStyle}>{paymentMethods.length}</span>
-                      </div>
+                      <PortalCardHeader eyebrow="Payments" title="Saved payment methods" count={paymentMethods.length} />
                       {paymentMethods.length === 0 ? (
                         <p style={emptyStyle}>No saved cards on file.</p>
                       ) : (
@@ -2707,10 +2690,7 @@ export default function CustomerProfilePage() {
                   {/* Account statement (transactions) */}
                   {(data.transactions?.length || 0) > 0 ? (
                     <section style={cardStyle}>
-                      <div style={cardHeaderStyle}>
-                        <h2 style={cardTitleStyle}>Account statement</h2>
-                        <span style={cardCountStyle}>{data.transactions.length}</span>
-                      </div>
+                      <PortalCardHeader eyebrow="Ledger" title="Account statement" count={data.transactions.length} />
                       <div
                         style={{
                           display: "flex",
@@ -2759,10 +2739,7 @@ export default function CustomerProfilePage() {
 
                   {/* ───────── Messages ───────── */}
                   <section id="messages" style={cardWideStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Messages</h2>
-                      <span style={cardCountStyle}>{messages.length}</span>
-                    </div>
+                    <PortalCardHeader eyebrow="Inbox" title="Messages" count={messages.length} />
                     <div
                       style={{
                         display: "flex",
@@ -2809,9 +2786,7 @@ export default function CustomerProfilePage() {
 
                   {/* ───────── Book a service ───────── */}
                   <section id="book" style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Book a service</h2>
-                    </div>
+                    <PortalCardHeader eyebrow="Workshop" title="Book a service" />
                     <BookServiceForm
                       vehicles={vehicles}
                       onSubmit={(payload) =>
@@ -2851,9 +2826,7 @@ export default function CustomerProfilePage() {
 
                   {/* ───────── Our services ───────── */}
                   <section id="services" style={cardWideStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Our services</h2>
-                    </div>
+                    <PortalCardHeader eyebrow="Requests" title="Our services" />
                     <p style={settingsHintStyle}>
                       Anything we do — pick what you need and we'll come back to you
                       with a quote or callback.
@@ -2869,9 +2842,7 @@ export default function CustomerProfilePage() {
 
                   {/* ───────── Sell your car ───────── */}
                   <section id="sell" style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Sell your car</h2>
-                    </div>
+                    <PortalCardHeader eyebrow="Valuation" title="Sell your car" />
                     <p style={settingsHintStyle}>
                       Any age, any mileage, any make or model. Free valuation, no
                       obligation.
@@ -2891,9 +2862,7 @@ export default function CustomerProfilePage() {
 
                   {/* ───────── Showroom / callback ───────── */}
                   <section id="showroom" style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Showroom</h2>
-                    </div>
+                    <PortalCardHeader eyebrow="Sales" title="Showroom" />
                     <p style={settingsHintStyle}>
                       See something you like? Tell us which car and we'll arrange a
                       callback or test drive.
@@ -2916,10 +2885,7 @@ export default function CustomerProfilePage() {
 
                   {/* ───────── Activity timeline ───────── */}
                   <section id="activity" style={cardStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Activity</h2>
-                      <span style={cardCountStyle}>{timeline.length}</span>
-                    </div>
+                    <PortalCardHeader eyebrow="Timeline" title="Activity" count={timeline.length} />
                     {timeline.length === 0 ? (
                       <p style={emptyStyle}>
                         Once you've booked in or had work done, your activity will
@@ -2965,9 +2931,7 @@ export default function CustomerProfilePage() {
 
                   {/* ───────── Settings / security ───────── */}
                   <section id="settings" style={cardWideStyle}>
-                    <div style={cardHeaderStyle}>
-                      <h2 style={cardTitleStyle}>Account &amp; security</h2>
-                    </div>
+                    <PortalCardHeader eyebrow="Security" title="Account & security" />
                     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                       <ChangePasswordRow
                         onSuccess={() => flash("pw", "Password updated.")}

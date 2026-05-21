@@ -5,8 +5,12 @@ import { Button, InputField, LayerTheme } from "@/components/ui"; // LayerTheme:
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import HrSettingsPoliciesUi from "@/components/page-ui/hr/hr-settings-ui"; // Extracted presentation layer.
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
 
 function SettingsContent() {
+  const showPresentationMock = isPresentationMode();
+
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <header>
@@ -66,6 +70,30 @@ function SettingsContent() {
             
             TODO: Wire upload to Supabase Storage. Persist policy metadata (title, category, file URL) in the policies table.
           </p>
+          {showPresentationMock ? (
+            <div style={{ marginTop: "var(--space-md)", overflowX: "auto" }}>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Policy</th>
+                    <th>Category</th>
+                    <th>Updated</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hrPresentationData.policyDocuments.map((policy) => (
+                    <tr key={policy.id}>
+                      <td style={{ fontWeight: 600 }}>{policy.title}</td>
+                      <td>{policy.category}</td>
+                      <td>{new Date(policy.updatedAt).toLocaleDateString()}</td>
+                      <td>{policy.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </SectionCard>
 
         <SectionCard
@@ -109,9 +137,32 @@ function SettingsContent() {
         title="Role-Based Access"
         subtitle="Control which roles can access HR functionality.">
         
-        <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-          TODO: Fetch role permissions from Supabase policy tables. Display editable access matrix with roles (HR Manager, Admin, Manager, Employee) and toggles for each HR module (Dashboard, Records, Payroll, Leave, Recruitment).
-        </p>
+        {showPresentationMock ? (
+          <div style={{ overflowX: "auto" }}>
+            <table className="app-data-table">
+              <thead>
+                <tr>
+                  <th>Role</th>
+                  <th>Modules</th>
+                  <th>Access</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hrPresentationData.accessMatrix.map((row) => (
+                  <tr key={row.id}>
+                    <td style={{ fontWeight: 600 }}>{row.role}</td>
+                    <td>{row.modules}</td>
+                    <td>{row.access}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
+            TODO: Fetch role permissions from Supabase policy tables. Display editable access matrix with roles (HR Manager, Admin, Manager, Employee) and toggles for each HR module (Dashboard, Records, Payroll, Leave, Recruitment).
+          </p>
+        )}
       </SectionCard>
 
       <SectionCard
@@ -142,7 +193,7 @@ function SettingsContent() {
 
 }
 
-export default function HrSettingsPolicies({ embedded = false } = {}) {
+export default function HrSettingsPolicies() {
   return <HrSettingsPoliciesUi view="section1" SettingsContent={SettingsContent} />;
 }
 

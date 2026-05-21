@@ -2201,6 +2201,48 @@ html.website-scope .ws-nav-phone {
 html.website-scope .ws-nav-phone:hover {
   background: var(--primary-hover);
 }
+html.website-scope .ws-nav-account {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-left: 4px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt-bright);
+  background: var(--ws-card);
+  box-shadow: inset 0 0 0 1px var(--ws-line);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+html.website-scope .ws-nav-account:hover {
+  color: var(--txt-bright);
+  background: var(--ws-tint);
+}
+html.website-scope .ws-nav-account--profile {
+  color: var(--onAccentText);
+  background: var(--accentMain);
+  box-shadow: none;
+}
+html.website-scope .ws-nav-account--profile:hover {
+  background: var(--primary-hover);
+}
+html.website-scope .ws-nav-account-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+}
 html.website-scope button.ws-nav-toggle {
   display: none;
   appearance: none;
@@ -2249,6 +2291,9 @@ html.website-scope button.ws-nav-toggle {
   html.website-scope .ws-nav-links--open .ws-nav-phone {
     margin: 8px 0 0;
     text-align: center;
+  }
+  html.website-scope .ws-nav-links--open .ws-nav-account {
+    margin: 8px 0 0;
   }
 }
 

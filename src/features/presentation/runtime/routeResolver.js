@@ -34,17 +34,21 @@ function fillParam(name) {
 }
 
 export function routeToSlug(route) {
-  const [path, query = ""] = String(route || "").split("?");
+  const [pathWithHash, query = ""] = String(route || "").split("?");
+  const [path, hash = ""] = pathWithHash.split("#");
   const base = path
     .replace(/^\//, "")
     .replace(/\//g, "-")
     .replace(/\[/g, "")
     .replace(/\]/g, "")
     || "home";
+  const hashSuffix = hash
+    ? `-${hash.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+    : "";
   const querySuffix = query
     ? `-${query.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
     : "";
-  return `${base}${querySuffix}`;
+  return `${base}${hashSuffix}${querySuffix}`;
 }
 
 export function resolvePresentationRoute(roleKey, slideIndex, pageSlug = null) {
@@ -58,7 +62,8 @@ export function resolvePresentationRoute(roleKey, slideIndex, pageSlug = null) {
   const expectedSlug = routeToSlug(template);
   if (pageSlug && pageSlug !== expectedSlug) return null;
 
-  const [pageTemplate, queryString = ""] = String(template).split("?");
+  const [pageTemplateWithHash, queryString = ""] = String(template).split("?");
+  const [pageTemplate, hash = ""] = pageTemplateWithHash.split("#");
   const params = {};
   if (queryString) {
     const searchParams = new URLSearchParams(queryString);
@@ -66,11 +71,12 @@ export function resolvePresentationRoute(roleKey, slideIndex, pageSlug = null) {
       params[key] = value;
     });
   }
-  const realRoute = pageTemplate.replace(/\[([^\]]+)\]/g, (_match, name) => {
+  const realPath = pageTemplate.replace(/\[([^\]]+)\]/g, (_match, name) => {
     const value = fillParam(name);
     params[name] = value;
     return value;
   });
+  const realRoute = hash ? `${realPath}#${hash}` : realPath;
   Object.assign(params, ROUTE_PARAM_OVERRIDES[template]?.() || ROUTE_PARAM_OVERRIDES[pageTemplate]?.());
 
   return {

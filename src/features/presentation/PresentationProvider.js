@@ -29,17 +29,21 @@ function parseHash(hash) {
 }
 
 function routeToSlug(route) {
-  const [path, query = ""] = String(route || "").split("?");
+  const [pathWithHash, query = ""] = String(route || "").split("?");
+  const [path, hash = ""] = pathWithHash.split("#");
   const base = path
     .replace(/^\//, "")
     .replace(/\//g, "-")
     .replace(/\[/g, "")
     .replace(/\]/g, "")
     || "home";
+  const hashSuffix = hash
+    ? `-${hash.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+    : "";
   const querySuffix = query
     ? `-${query.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
     : "";
-  return `${base}${querySuffix}`;
+  return `${base}${hashSuffix}${querySuffix}`;
 }
 
 function getQuerySlide(querySlide) {
@@ -64,9 +68,11 @@ function routeToLabel(route) {
 }
 
 function routeMatches(template, candidate) {
-  const [templatePath, templateQuery = ""] = String(template || "").split("#")[0].split("?");
-  const [candidatePath, candidateQuery = ""] = String(candidate || "").split("#")[0].split("?");
-  if (templateQuery !== candidateQuery) return false;
+  const [templatePathWithHash, templateQuery = ""] = String(template || "").split("?");
+  const [candidatePathWithHash, candidateQuery = ""] = String(candidate || "").split("?");
+  const [templatePath, templateHash = ""] = templatePathWithHash.split("#");
+  const [candidatePath, candidateHash = ""] = candidatePathWithHash.split("#");
+  if (templateQuery !== candidateQuery || templateHash !== candidateHash) return false;
   if (!templatePath.includes("[")) return templatePath === candidatePath;
   const pattern = new RegExp(
     "^" + templatePath.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"

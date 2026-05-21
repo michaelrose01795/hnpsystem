@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/router";
 import { RouterContext } from "next/dist/shared/lib/router-context.shared-runtime";
 
-export default function RouterParamsOverride({ params = {}, pathname, children }) {
+export default function RouterParamsOverride({ params = {}, pathname, asPath, children }) {
   const router = useRouter();
   const value = useMemo(() => {
     const mergedQuery = { ...router.query, ...params };
@@ -14,9 +14,9 @@ export default function RouterParamsOverride({ params = {}, pathname, children }
       ...router,
       query: mergedQuery,
       pathname: pathname || router.pathname,
-      asPath: pathname || router.asPath,
+      asPath: asPath || pathname || router.asPath,
     };
-  }, [router, params, pathname]);
+  }, [router, params, pathname, asPath]);
 
   return <RouterContext.Provider value={value}>{children}</RouterContext.Provider>;
 }

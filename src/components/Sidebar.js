@@ -43,41 +43,56 @@ function buildRouteAllowedChecker(allowedRoutes) {
   if (!Array.isArray(allowedRoutes) || allowedRoutes.length === 0) return null;
   const matchers = allowedRoutes.map((template) => {
     if (!template) return () => false;
+    const [templatePathWithHash, templateQuery = ""] = String(template).split("?");
+    const [templatePath, templateHash = ""] = templatePathWithHash.split("#");
     if (!template.includes("[")) {
-      return (candidate) => candidate === template;
+      return (candidate) => {
+        const [candidatePathWithHash, candidateQuery = ""] = String(candidate || "").split("?");
+        const [candidatePath, candidateHash = ""] = candidatePathWithHash.split("#");
+        return candidatePath === templatePath && candidateHash === templateHash && candidateQuery === templateQuery;
+      };
     }
     const pattern = new RegExp(
-      "^" + template.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"
+      "^" + templatePath.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"
     );
-    return (candidate) => pattern.test(candidate);
+    return (candidate) => {
+      const [candidatePathWithHash, candidateQuery = ""] = String(candidate || "").split("?");
+      const [candidatePath, candidateHash = ""] = candidatePathWithHash.split("#");
+      return pattern.test(candidatePath) && candidateHash === templateHash && candidateQuery === templateQuery;
+    };
   });
   return (href) => {
     if (!href) return false;
-    const stripped = String(href).split("?")[0].split("#")[0];
-    return matchers.some((m) => m(stripped));
+    return matchers.some((m) => m(href));
   };
 }
 
 function routeToSlug(route) {
-  const [path, query = ""] = String(route || "").split("?");
+  const [pathWithHash, query = ""] = String(route || "").split("?");
+  const [path, hash = ""] = pathWithHash.split("#");
   const base = path
     .replace(/^\//, "")
     .replace(/\//g, "-")
     .replace(/\[/g, "")
     .replace(/\]/g, "")
     || "home";
+  const hashSuffix = hash
+    ? `-${hash.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+    : "";
   const querySuffix = query
     ? `-${query.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
     : "";
-  return `${base}${querySuffix}`;
+  return `${base}${hashSuffix}${querySuffix}`;
 }
 
 function buildPresentationHref(href, allowedRoutes, roleKey) {
   if (!roleKey || !Array.isArray(allowedRoutes)) return href;
-  const cleanHref = String(href || "").split("#")[0];
+  const cleanHref = String(href || "");
   const targetIndex = allowedRoutes.findIndex((template) => {
-    const [templatePath, templateQuery = ""] = String(template || "").split("?");
-    const [hrefPath, hrefQuery = ""] = cleanHref.split("?");
+    const [templatePathWithHash, templateQuery = ""] = String(template || "").split("?");
+    const [templatePath, templateHash = ""] = templatePathWithHash.split("#");
+    const [hrefPathWithHash, hrefQuery = ""] = cleanHref.split("?");
+    const [hrefPath, hrefHash = ""] = hrefPathWithHash.split("#");
     if (templatePath.includes("[")) {
       const pattern = new RegExp(
         "^" + templatePath.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"
@@ -86,6 +101,7 @@ function buildPresentationHref(href, allowedRoutes, roleKey) {
     } else if (hrefPath !== templatePath) {
       return false;
     }
+    if (templateHash && templateHash !== hrefHash) return false;
     return templateQuery ? templateQuery === hrefQuery : true;
   });
   if (targetIndex < 0) return href;

@@ -8,6 +8,11 @@
 // with a console.warn so gaps surface during demo walkthroughs.
 
 import { getMockRows } from "../mockData";
+import {
+  buildHrAttendanceMock,
+  buildHrOperationsMock,
+  getPresentationEmployeeRows,
+} from "../mockData/hr_operations";
 import { buildPresentationPersonalState } from "../mockData/personal";
 import {
   threads as messageThreads,
@@ -15,6 +20,21 @@ import {
   directory as messageDirectory,
   customerRequests as messageCustomerRequests,
 } from "../mockData/messages";
+import {
+  WEBSITE_PAGES,
+  PAGE_CONTENT,
+  MEDIA_ASSETS,
+  SEO_ENTRIES,
+  INITIAL_ACTIVITY,
+} from "@/features/websiteManager/websiteData";
+import { siteContent } from "@/singlescroll/data/siteContent";
+import { vehicles as websiteVehicles } from "@/singlescroll/data/vehicles";
+import { offers as websiteOffers } from "@/singlescroll/data/offers";
+import { reviews as websiteReviews } from "@/singlescroll/data/reviews";
+import { team as websiteTeam, teamDepartments as websiteTeamDepartments } from "@/singlescroll/data/team";
+import { timeline as websiteTimeline } from "@/singlescroll/data/timeline";
+import { brands as websiteBrands } from "@/singlescroll/data/brands";
+import { blogPosts as websiteBlogPosts } from "@/singlescroll/data/blogPosts";
 
 // In-memory lock status for the demo /profile → Personal tab. The presenter
 // enters the (pre-filled) passcode to flip this to unlocked; it survives the
@@ -584,39 +604,9 @@ const invoiceDetailByPath = () => (rows, _q, parsed) => {
   return { success: true, data: buildInvoiceDetailPayload(invoice, parsed) };
 };
 
-const buildHrOperationsResponse = () => {
-  const today = new Date().toISOString().slice(0, 10);
-  const employees = getMockRows("hr_employees").map((employee, index) => ({
-    ...employee,
-    userId: index + 1,
-    name: employee.full_name,
-    emergencyContact: "Demo Contact, 07700 800099, Family",
-    hourlyRate: 18.5,
-    overtimeRate: 27.75,
-  }));
-  return {
-    success: true,
-    data: {
-      hrDashboardMetrics: { headcount: employees.length, active: employees.length, leaveToday: 1, trainingDue: 2 },
-      upcomingAbsences: getMockRows("hr_leave"),
-      activeWarnings: [],
-      departmentPerformance: [],
-      trainingRenewals: getMockRows("hr_training"),
-      employeeDirectory: employees,
-      attendanceLogs: employees.flatMap((employee) => [
-        { id: `${employee.id}-att-1`, employeeId: employee.id, userId: employee.userId, date: today, clockIn: `${today}T08:00:00.000Z`, clockOut: `${today}T16:30:00.000Z`, totalHours: 8, status: "On Time", type: "Weekday" },
-        { id: `${employee.id}-att-2`, employeeId: employee.id, userId: employee.userId, date: today, clockIn: `${today}T17:00:00.000Z`, clockOut: `${today}T19:00:00.000Z`, totalHours: 2, status: "Overtime", type: "Overtime" },
-      ]),
-      absenceRecords: getMockRows("hr_leave"),
-      overtimeSummaries: employees.map((employee) => ({ id: employee.userId, userId: employee.userId, overtimeRate: 27.75, bonus: 0, status: "In Progress" })),
-      payRateHistory: [],
-      leaveRequests: getMockRows("hr_leave"),
-      leaveBalances: employees.map((employee) => ({ employeeId: employee.id, remaining: 18, used: 7, taken: 7, entitlement: 25 })),
-      performanceReviews: [],
-      staffVehicles: getMockRows("staff_vehicles"),
-    },
-  };
-};
+const buildHrOperationsResponse = () => ({ success: true, data: buildHrOperationsMock() });
+const buildHrAttendanceResponse = () => ({ success: true, data: buildHrAttendanceMock() });
+const buildHrEmployeesResponse = () => ({ success: true, data: getPresentationEmployeeRows() });
 
 const partsOrdersList = () => (rows, q) => {
   const page = paginate(rows, q);
@@ -1133,6 +1123,118 @@ const buildWebsiteProfileResponse = () => {
   };
 };
 
+const buildWebsiteContentResponse = () => ({
+  success: true,
+  data: {
+    siteContent,
+    vehicles: websiteVehicles,
+    offers: websiteOffers,
+    reviews: websiteReviews,
+    timeline: websiteTimeline,
+    blogPosts: websiteBlogPosts,
+    brands: websiteBrands,
+    team: websiteTeam,
+    teamDepartments: websiteTeamDepartments,
+  },
+});
+
+const websitePagesResponse = () => ({
+  success: true,
+  data: WEBSITE_PAGES.map((page) => ({
+    page_key: page.key,
+    name: page.name,
+    route: page.route,
+    status: page.status || "published",
+    last_edited_by: page.lastEditedBy || "Presentation",
+    last_edited_at: page.lastEditedAt || new Date().toISOString(),
+  })),
+});
+
+const websiteSeoResponse = () => ({
+  success: true,
+  data: Object.entries(SEO_ENTRIES).map(([pageKey, entry]) => ({
+    page_key: pageKey,
+    meta_title: entry.metaTitle,
+    meta_description: entry.metaDescription,
+    slug: entry.slug,
+    canonical: entry.canonical,
+    og_image: entry.ogImage,
+    indexed: entry.indexed,
+    updated_by: "Presentation",
+    updated_at: new Date().toISOString(),
+  })),
+});
+
+const websiteMediaResponse = () => ({
+  success: true,
+  data: MEDIA_ASSETS.map((asset) => ({
+    id: asset.id,
+    name: asset.name,
+    url: asset.url,
+    media_type: asset.type || "image",
+    size_kb: asset.sizeKb || null,
+    used_on: asset.usedOn || "",
+    uploaded_by: asset.uploadedBy || "Presentation",
+    uploaded_at: asset.uploadedAt || new Date().toISOString(),
+  })),
+});
+
+const websiteActivityResponse = () => ({
+  success: true,
+  data: INITIAL_ACTIVITY.length
+    ? INITIAL_ACTIVITY
+    : [
+        {
+          id: 1,
+          occurred_at: new Date().toISOString(),
+          actor: "Presentation",
+          action: "Loaded website manager demo",
+          target: "Public website content",
+          page_key: "home",
+        },
+      ],
+});
+
+const websiteSectionResponse = (_rows, _q, parsed) => {
+  const parts = parsed?.pathname?.split("/").filter(Boolean) || [];
+  const section = parts[parts.indexOf("sections") + 1];
+  return { success: true, data: PAGE_CONTENT[section] || [] };
+};
+
+const shopProductsResponse = (rows, _q, parsed) => {
+  const parts = parsed?.pathname?.split("/").filter(Boolean) || [];
+  const requestedId = parts[parts.length - 1];
+  const sorted = rows.slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  if (requestedId && requestedId !== "products") {
+    return { success: true, data: sorted.find((row) => row.id === requestedId) || sorted[0] || null };
+  }
+  const publicOnly = !parsed?.pathname?.includes("/admin/");
+  const data = publicOnly ? sorted.filter((row) => row.status === "published") : sorted;
+  return { success: true, data };
+};
+
+const shopCategoriesResponse = (rows, _q, parsed) => {
+  const sorted = rows.slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  const publicOnly = !parsed?.pathname?.includes("/admin/");
+  const data = publicOnly ? sorted.filter((row) => row.status === "active") : sorted;
+  return { success: true, data };
+};
+
+const shopOrdersResponse = (rows, _q, parsed) => {
+  const parts = parsed?.pathname?.split("/").filter(Boolean) || [];
+  const requestedId = parts[parts.length - 1];
+  if (requestedId && requestedId !== "orders") {
+    return { success: true, data: rows.find((row) => row.id === requestedId || row.order_number === requestedId) || rows[0] || null };
+  }
+  return { success: true, data: rows };
+};
+
+const shopCheckoutResponse = () => ({
+  success: true,
+  url: "/website/shop/success?order=HNP-2026-DEMO01&presentation=1",
+  order_number: "HNP-2026-DEMO01",
+});
+
 const buildPrivacyMeResponse = () => {
   const user = (getMockRows("users") || [])[0] || {};
   const employee = (getMockRows("hr_employees") || [])[0] || {};
@@ -1232,11 +1334,11 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/payslips\/?/, table: "payslips", transform: passthroughList() },
 
   // HR
-  { pattern: /^\/api\/hr\/dashboard\/?$/, table: "hr_employees", transform: (rows) => ({ success: true, data: { employees: rows, attendance: getMockRows("hr_attendance"), leave: getMockRows("hr_leave"), training: getMockRows("hr_training") } }) },
+  { pattern: /^\/api\/hr\/dashboard\/?$/, table: "hr_employees", transform: buildHrOperationsResponse },
   { pattern: /^\/api\/hr\/operations\/?$/, table: "hr_employees", transform: buildHrOperationsResponse },
-  { pattern: /^\/api\/hr\/employees\/?$/, table: "hr_employees", transform: passthroughList() },
+  { pattern: /^\/api\/hr\/employees\/?$/, table: "hr_employees", transform: buildHrEmployeesResponse },
   { pattern: /^\/api\/hr\/employees\/[^/]+\/?$/, table: "hr_employees", transform: passthroughSingle() },
-  { pattern: /^\/api\/hr\/attendance\/?/, table: "hr_attendance", transform: passthroughList() },
+  { pattern: /^\/api\/hr\/attendance\/?/, table: "hr_attendance", transform: buildHrAttendanceResponse },
   { pattern: /^\/api\/hr\/leave-requests\/[^/]+\/decision\/?$/, table: "hr_leave", transform: () => ({ success: true }) },
   { pattern: /^\/api\/hr\/leave\/?/, table: "hr_leave", transform: passthroughList() },
   { pattern: /^\/api\/hr\/training-courses\/?$/, table: "hr_training", transform: passthroughList() },
@@ -1298,11 +1400,25 @@ export const API_ROUTE_TABLE = [
   { pattern: /^\/api\/customer\/payment-methods\/?$/, table: "accounts", transform: () => ({ success: true, data: [{ id: "pm-demo-001", brand: "Visa", last4: "4242", expiry: "12/29" }] }) },
   { pattern: /^\/api\/customer\/profile\/?$/, table: "customers", transform: passthroughSingle() },
   { pattern: /^\/api\/customer\/widgets\/?$/, table: "customers", transform: () => ({ success: true, data: { upcoming: getMockRows("appointments"), invoices: getMockRows("invoices") } }) },
+  { pattern: /^\/api\/website\/content\/?$/, table: "customers", transform: buildWebsiteContentResponse },
+  { pattern: /^\/api\/website\/pages\/?$/, table: "customers", transform: websitePagesResponse },
+  { pattern: /^\/api\/website\/pages\/[^/]+\/?$/, table: "customers", transform: (_rows, _q, parsed) => ({ success: true, data: websitePagesResponse().data.find((page) => page.page_key === decodeURIComponent(parsed.pathname.split("/").pop())) || websitePagesResponse().data[0] }) },
+  { pattern: /^\/api\/website\/seo\/?$/, table: "customers", transform: websiteSeoResponse },
+  { pattern: /^\/api\/website\/seo\/[^/]+\/?$/, table: "customers", transform: (_rows, _q, parsed) => ({ success: true, data: websiteSeoResponse().data.find((entry) => entry.page_key === decodeURIComponent(parsed.pathname.split("/").pop())) || websiteSeoResponse().data[0] }) },
+  { pattern: /^\/api\/website\/media(\/.*)?\/?$/, table: "customers", transform: websiteMediaResponse },
+  { pattern: /^\/api\/website\/activity\/?$/, table: "customers", transform: websiteActivityResponse },
+  { pattern: /^\/api\/website\/sections\/[^/]+(\/.*)?\/?$/, table: "customers", transform: websiteSectionResponse },
   { pattern: /^\/api\/website\/profile\/?$/, table: "customers", transform: buildWebsiteProfileResponse },
   { pattern: /^\/api\/website\/auth\/me\/?$/, table: "customers", transform: () => ({ authenticated: false, customer: null }) },
   { pattern: /^\/api\/website\/auth\/dev-list\/?$/, table: "customers", transform: (rows) => ({ success: true, customers: rows }) },
   { pattern: /^\/api\/website\/auth\/(email-check|login|signup|set-password|update-profile|change-password|change-email|notification-prefs|logout|dev-login)\/?$/, table: "customers", transform: () => ({ success: true }) },
   { pattern: /^\/api\/website\/actions(\/.*)?\/?$/, table: "customer_activity_events", transform: () => ({ success: true }) },
+  { pattern: /^\/api\/shop\/products\/?$/, table: "shop_products", transform: shopProductsResponse },
+  { pattern: /^\/api\/shop\/categories\/?$/, table: "shop_categories", transform: shopCategoriesResponse },
+  { pattern: /^\/api\/shop\/checkout-session\/?$/, table: "shop_orders", transform: shopCheckoutResponse },
+  { pattern: /^\/api\/shop\/admin\/products(\/.*)?\/?$/, table: "shop_products", transform: shopProductsResponse },
+  { pattern: /^\/api\/shop\/admin\/categories(\/.*)?\/?$/, table: "shop_categories", transform: shopCategoriesResponse },
+  { pattern: /^\/api\/shop\/admin\/orders(\/.*)?\/?$/, table: "shop_orders", transform: shopOrdersResponse },
 
   // Messages / notifications
   { pattern: /^\/api\/messages\/unread-count\/?$/, table: "messages", transform: () => ({ success: true, count: messageThreads.filter((thread) => thread.hasUnread).length }) },

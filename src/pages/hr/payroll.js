@@ -5,6 +5,8 @@ import { SectionCard } from "@/components/Section";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { Button, LayerTheme, StatusMessage } from "@/components/ui"; // LayerTheme: canonical layer primitive (see CLAUDE.md §3.0)
 import { SkeletonBlock, SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
 
 // Structured skeleton bodies that sit inside each SectionCard while payroll
 // data loads — outer page shell (header, section grids, card chrome) stays
@@ -44,6 +46,7 @@ function PayrollContent() {
   const employeeDirectory = data?.employeeDirectory ?? [];
   const overtimeSummaries = data?.overtimeSummaries ?? [];
   const payRateHistory = data?.payRateHistory ?? [];
+  const showPresentationMock = isPresentationMode();
 
   if (error) {
     return (
@@ -124,9 +127,34 @@ function PayrollContent() {
 
         <SectionCard
           sectionKey="hr-payroll-card-3" parentKey="hr-payroll-row-1" title="Pay Rise Requests" subtitle="Approval workflow: Employee → Manager → HR">
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch pay rise requests from Supabase. Display employee name, current/requested rate, approver, status, and approve/reject actions.
-          </p>
+          {showPresentationMock ? (
+            <div style={{ overflowX: "auto" }}>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Current</th>
+                    <th>Requested</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hrPresentationData.payRiseRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td style={{ fontWeight: 600 }}>{request.employee}</td>
+                      <td>£{Number(request.currentRate).toFixed(2)}</td>
+                      <td>£{Number(request.requestedRate).toFixed(2)}</td>
+                      <td>{request.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
+              TODO: Fetch pay rise requests from Supabase. Display employee name, current/requested rate, approver, status, and approve/reject actions.
+            </p>
+          )}
         </SectionCard>
       </DevLayoutSection>
 
@@ -235,6 +263,6 @@ function PayrollContent() {
 
 }
 
-export default function HrPayroll({ embedded = false } = {}) {
+export default function HrPayroll() {
   return <HrPayrollUi view="section1" PayrollContent={PayrollContent} />;
 }

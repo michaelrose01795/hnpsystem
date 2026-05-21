@@ -35,6 +35,7 @@ import { rows as appointments } from "./appointments";
 import { rows as activityLogs } from "./activity_logs";
 import { rows as parts } from "./parts";
 import { rows as newsUpdates } from "./news_updates";
+import { categories as shopCategories, products as shopProducts, orders as shopOrders } from "./shop";
 import {
   breachRecords,
   dpiaRecords,
@@ -111,6 +112,10 @@ const TABLES = {
   appointments,
   activity_logs: activityLogs,
   news_updates: newsUpdates,
+  shop_categories: shopCategories,
+  shop_products: shopProducts,
+  shop_orders: shopOrders,
+  shop_order_items: shopOrders.flatMap((order) => order.items || []),
   breach_records: breachRecords,
   dpia_records: dpiaRecords,
   retention_policies: retentionPolicies,

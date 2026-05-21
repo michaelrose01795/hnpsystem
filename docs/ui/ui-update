@@ -148,11 +148,11 @@ have it so within this apge the user can see exactylw hwat the customer will see
 
 LINK the following TO THE "/website/profile" page so the user can view from there. have it so these pages follow the custglobal.css style."
 
-- /vhc/customer-preview/[jobNumber]
+- /vhc/customer-preview/[jobNumber] (CHECK)
 have it so "ed Work £0.00 Amber Work £105.20 Authorised £105.20 Declined £0.00" section has background cards within that section to show differnt areas. make this change to the "- /vhc/customer-view/[jobNumber]" page as well so it matches the only difference is this page is a preview, and the "- /vhc/customer-view/[jobNumber]" page is actually what the user will see. lets change it so "- /vhc/customer-view/[jobNumber]" page "/vhc/share/[jobNumber]/[linkCode]" and "/vhc/customer-preview/[jobNumber]" pages all use the same file, ui file, but depending on the direction they have come be clicking view, loading up from cust link or copied link depends on what access and secitons the user sees. fromt he "/vhc/customer-preview/[jobNumber]" this is staff checking the detils are correct, from "/vhc/customer-view/[jobNumber]" is the customer viewing and being able to accept or decline work as well as view videos and photos. and "/vhc/share/[jobNumber]/[linkCode]" is a link being sent to an external person to only view the content, they cannon accept, decline or change anything except from view videso and photos etc. 
 
 
-- /vhc/customer-view/[jobNumber]
+- /vhc/customer-view/[jobNumber] (CHECK)
 change it so it doesnt show the "STAFF PREVIEW · This is exactly what the customer sees" seciton wihtin this page
 
 
@@ -167,7 +167,8 @@ have it so these pages are then shown within the presentation as the customer wo
 HR Manager
 ====================================================
 
-- /hr
+- /hr 
+HWAT IS THSI PAGE???
 
 
 - /hr/manager

@@ -57,8 +57,13 @@ const ROUTE_CATALOG = [
   "/parts/goods-in",
   "/tracking",
   "/website",
+  "/website#shop",
   "/website/login",
   "/website/profile",
+  "/website/shop/cart",
+  "/website/shop/checkout",
+  "/website/shop/success",
+  "/website/shop/cancel",
   "/vhc/customer-preview/[jobNumber]",
   "/vhc/customer-view/[jobNumber]",
   "/vhc/share/[jobNumber]/[linkCode]",
@@ -110,17 +115,21 @@ const ROUTE_CATALOG = [
 ];
 
 function routeToSlug(route) {
-  const [routePath, query = ""] = String(route || "").split("?");
+  const [routePathWithHash, query = ""] = String(route || "").split("?");
+  const [routePath, hash = ""] = routePathWithHash.split("#");
   const base =
     routePath
       .replace(/^\//, "")
       .replace(/\//g, "-")
       .replace(/\[/g, "")
       .replace(/\]/g, "") || "home";
+  const hashSuffix = hash
+    ? `-${hash.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+    : "";
   const suffix = query
     ? `-${query.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
     : "";
-  return `${base}${suffix}`;
+  return `${base}${hashSuffix}${suffix}`;
 }
 
 const ROUTE_BY_SLUG = new Map(ROUTE_CATALOG.map((route) => [routeToSlug(route), route]));

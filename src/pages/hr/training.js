@@ -8,6 +8,8 @@ import { DropdownField } from "@/components/ui/dropdownAPI";
 import { StatusTag } from "@/components/HR/MetricCard";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { SkeletonTableRow, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
 
 // Skeleton rows shown inside the Upcoming Expiries table while training data
 // loads. Keeps the outer page shell + header + assign-training form mounted so
@@ -26,6 +28,7 @@ function TrainingContent() {
   const { data, isLoading, error } = useHrOperationsData();
   const trainingRenewals = data?.trainingRenewals ?? [];
   const employeeDirectory = data?.employeeDirectory ?? [];
+  const showPresentationMock = isPresentationMode();
 
   if (error) {
     return (
@@ -113,9 +116,34 @@ function TrainingContent() {
           title="Training Catalogue"
           subtitle="Courses available to assign">
           
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch course catalogue from LMS/Supabase. Display course name, duration, mandatory flag, and an "Add course" action.
-          </p>
+          {showPresentationMock ? (
+            <div style={{ overflowX: "auto" }}>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Course</th>
+                    <th>Duration</th>
+                    <th>Mandatory For</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hrPresentationData.trainingCatalogue.map((course) => (
+                    <tr key={course.id}>
+                      <td style={{ fontWeight: 600 }}>{course.title}</td>
+                      <td>{course.duration}</td>
+                      <td>{course.mandatory}</td>
+                      <td>{course.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
+              TODO: Fetch course catalogue from LMS/Supabase. Display course name, duration, mandatory flag, and an "Add course" action.
+            </p>
+          )}
         </SectionCard>
       </DevLayoutSection>
 
@@ -166,15 +194,38 @@ function TrainingContent() {
 
       <SectionCard
         sectionKey="hr-training-card-5" parentKey="hr-manager-tab-training" title="Training Compliance Snapshot" subtitle="High-level view of overall compliance rates.">
-        <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-          TODO: Calculate compliance percentages per department from Supabase training records. Show percentage cards for each department with on-track/behind status.
-        </p>
+        {showPresentationMock ? (
+          <div style={{ overflowX: "auto" }}>
+            <table className="app-data-table">
+              <thead>
+                <tr>
+                  <th>Department</th>
+                  <th>Compliance</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hrPresentationData.trainingCompliance.map((row) => (
+                  <tr key={row.id}>
+                    <td style={{ fontWeight: 600 }}>{row.department}</td>
+                    <td>{row.compliance}%</td>
+                    <td>{row.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
+            TODO: Calculate compliance percentages per department from Supabase training records. Show percentage cards for each department with on-track/behind status.
+          </p>
+        )}
       </SectionCard>
     </div>);
 
 }
 
-export default function HrTrainingQualifications({ embedded = false } = {}) {
+export default function HrTrainingQualifications() {
   return <HrTrainingQualificationsUi view="section1" TrainingContent={TrainingContent} />;
 }
 

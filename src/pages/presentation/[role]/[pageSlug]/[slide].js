@@ -100,6 +100,16 @@ function PresentationContent() {
     return () => { cancelled = true; };
   }, [resolvedTemplate]);
 
+  useEffect(() => {
+    if (!Page || !resolved?.realRoute?.includes("#")) return undefined;
+    const targetId = resolved.realRoute.split("#")[1]?.split("?")[0];
+    if (!targetId) return undefined;
+    const timer = window.setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({ block: "start" });
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [Page, resolved?.realRoute]);
+
   useKeyboardNav();
 
   if (!router.isReady) return null;
@@ -122,7 +132,7 @@ function PresentationContent() {
   return (
     <>
       {Page ? (
-        <RouterParamsOverride params={resolved.params} pathname={resolved.template}>
+        <RouterParamsOverride params={resolved.params} pathname={resolved.template} asPath={resolved.realRoute}>
           <Page />
         </RouterParamsOverride>
       ) : (

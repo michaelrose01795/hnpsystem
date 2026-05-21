@@ -21,17 +21,21 @@ function preloadRoleDeck(role) {
 // from role.routes[slide] — but matching the doc's slugs keeps copy/paste
 // from the doc working.
 function routeToSlug(route) {
-  const [path, query = ""] = String(route || "").split("?");
+  const [pathWithHash, query = ""] = String(route || "").split("?");
+  const [path, hash = ""] = pathWithHash.split("#");
   const base = path
     .replace(/^\//, "")
     .replace(/\//g, "-")
     .replace(/\[/g, "")
     .replace(/\]/g, "")
     || "home";
+  const hashSuffix = hash
+    ? `-${hash.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+    : "";
   const querySuffix = query
     ? `-${query.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
     : "";
-  return `${base}${querySuffix}`;
+  return `${base}${hashSuffix}${querySuffix}`;
 }
 
 function firstSlideHref(role) {

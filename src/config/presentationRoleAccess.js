@@ -11,29 +11,31 @@ export function getPresentationRoleByKey(key) {
 // Convert a route template like "/job-cards/[jobNumber]" into a regex matcher.
 function buildRouteMatcher(template) {
   if (!template) return null;
-  const [templatePath, templateQuery = ""] = String(template).split("#")[0].split("?");
+  const [templatePathWithHash, templateQuery = ""] = String(template).split("?");
+  const [templatePath, templateHash = ""] = templatePathWithHash.split("#");
   if (!templatePath.includes("[")) {
     return (candidate) => {
-      const [candidatePath, candidateQuery = ""] = String(candidate || "").split("#")[0].split("?");
-      return candidatePath === templatePath && candidateQuery === templateQuery;
+      const [candidatePathWithHash, candidateQuery = ""] = String(candidate || "").split("?");
+      const [candidatePath, candidateHash = ""] = candidatePathWithHash.split("#");
+      return candidatePath === templatePath && candidateHash === templateHash && candidateQuery === templateQuery;
     };
   }
   const pattern = new RegExp(
     "^" + templatePath.replace(/\//g, "\\/").replace(/\[[^\]]+\]/g, "[^/]+") + "$"
   );
   return (candidate) => {
-    const [candidatePath, candidateQuery = ""] = String(candidate || "").split("#")[0].split("?");
-    return pattern.test(candidatePath) && candidateQuery === templateQuery;
+    const [candidatePathWithHash, candidateQuery = ""] = String(candidate || "").split("?");
+    const [candidatePath, candidateHash = ""] = candidatePathWithHash.split("#");
+    return pattern.test(candidatePath) && candidateHash === templateHash && candidateQuery === templateQuery;
   };
 }
 
 // True if the given concrete route belongs to this role's allowed list.
 export function routeAllowedForRole(role, route) {
   if (!role || !route) return false;
-  const stripped = String(route).split("#")[0];
   return role.routes.some((template) => {
     const match = buildRouteMatcher(template);
-    return match ? match(stripped) : false;
+    return match ? match(route) : false;
   });
 }
 

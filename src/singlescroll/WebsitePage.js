@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
+import Link from "next/link";
 
 import useWebsiteScope from "./hooks/useWebsiteScope";
 import useWebsiteTheme from "./hooks/useWebsiteTheme";
@@ -120,6 +121,10 @@ export default function WebsitePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [carFilter, setCarFilter] = useState("all");
   const [activeId, setActiveId] = useState("top");
+  const [authState, setAuthState] = useState({
+    loading: true,
+    customer: null,
+  });
 
   const departments = useMemo(
     () => teamDepartments.map((d) => ({ ...d, members: team.filter((m) => m.department === d.id) })),
@@ -148,12 +153,37 @@ export default function WebsitePage() {
     return () => observer.disconnect();
   }, []);
 
+  // Customer auth status drives the header Login/Profile pill.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/website/auth/me", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setAuthState({
+          loading: false,
+          customer: data?.customer || null,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setAuthState({ loading: false, customer: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const closeMenu = () => setMenuOpen(false);
 
   const handleNavClick = (link) => () => {
     if (link.filter) setCarFilter(link.filter);
     closeMenu();
   };
+
+  const customerFirstName =
+    (authState.customer?.firstname || "").trim() ||
+    (authState.customer?.name || "").trim().split(" ")[0] ||
+    "Account";
 
   const year = new Date().getFullYear();
 
@@ -191,6 +221,18 @@ export default function WebsitePage() {
               <a href={contact.phoneHref} className="ws-nav-phone" onClick={closeMenu}>
                 {contact.phone}
               </a>
+              {authState.loading ? null : authState.customer ? (
+                <Link href="/website/profile" className="ws-nav-account ws-nav-account--profile" onClick={closeMenu}>
+                  <span className="ws-nav-account-avatar" aria-hidden="true">
+                    {(customerFirstName[0] || "A").toUpperCase()}
+                  </span>
+                  <span>{customerFirstName}</span>
+                </Link>
+              ) : (
+                <Link href="/website/login" className="ws-nav-account" onClick={closeMenu}>
+                  Login
+                </Link>
+              )}
             </nav>
 
             <button

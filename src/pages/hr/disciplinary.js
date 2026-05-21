@@ -6,8 +6,14 @@ import { Button, InputField } from "@/components/ui";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import HrDisciplinaryIncidentsUi from "@/components/page-ui/hr/hr-disciplinary-ui"; // Extracted presentation layer.
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import { hrPresentationData } from "@/features/presentation/mockData/hr_operations";
 
 function DisciplinaryContent() {
+  const showPresentationMock = isPresentationMode();
+  const activeWarnings = showPresentationMock ? hrPresentationData.activeWarnings : [];
+  const incidentLog = showPresentationMock ? hrPresentationData.incidentLog : [];
+
   return (
     <div className="app-page-stack" style={{ padding: "8px 8px 32px" }}>
       <header>
@@ -33,9 +39,36 @@ function DisciplinaryContent() {
           title="Active Warnings"
           subtitle="Warnings that still require follow-up or monitoring.">
           
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch active warnings from Supabase disciplinary table. Display employee name, department, warning level, reported date, status, and notes for each open case.
-          </p>
+          {showPresentationMock ? (
+            <div style={{ overflowX: "auto" }}>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th>Warning</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeWarnings.map((warning) => (
+                    <tr key={warning.id}>
+                      <td style={{ fontWeight: 600 }}>{warning.employee}</td>
+                      <td>{warning.department}</td>
+                      <td>{warning.warningLevel}</td>
+                      <td>{warning.status}</td>
+                      <td>{warning.notes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
+              TODO: Fetch active warnings from Supabase disciplinary table. Display employee name, department, warning level, reported date, status, and notes for each open case.
+            </p>
+          )}
         </SectionCard>
 
         <SectionCard
@@ -43,9 +76,34 @@ function DisciplinaryContent() {
           title="Incident Log"
           subtitle="Recent case entries and their current outcome.">
           
-          <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
-            TODO: Fetch incident log from Supabase. Display incident type, job number, recorded by, outcome status, and export functionality.
-          </p>
+          {showPresentationMock ? (
+            <div style={{ overflowX: "auto" }}>
+              <table className="app-data-table">
+                <thead>
+                  <tr>
+                    <th>Incident</th>
+                    <th>Job</th>
+                    <th>Recorded By</th>
+                    <th>Outcome</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {incidentLog.map((incident) => (
+                    <tr key={incident.id}>
+                      <td style={{ fontWeight: 600 }}>{incident.incidentType}</td>
+                      <td>{incident.jobNumber}</td>
+                      <td>{incident.recordedBy}</td>
+                      <td>{incident.outcome}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p style={{ fontSize: "var(--text-caption)", color: "var(--text-1)", fontStyle: "italic", margin: 0 }}>
+              TODO: Fetch incident log from Supabase. Display incident type, job number, recorded by, outcome status, and export functionality.
+            </p>
+          )}
         </SectionCard>
       </DevLayoutSection>
 
@@ -108,7 +166,7 @@ function DisciplinaryContent() {
 
 }
 
-export default function HrDisciplinaryIncidents({ embedded = false } = {}) {
+export default function HrDisciplinaryIncidents() {
   return <HrDisciplinaryIncidentsUi view="section1" DisciplinaryContent={DisciplinaryContent} />;
 }
 

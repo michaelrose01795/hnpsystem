@@ -127,16 +127,31 @@ Route: /website/login
 3. /presentation/customer/website-profile/2
 Route: /website/profile
 
-4. /presentation/customer/vhc-customer-preview-jobNumber/3
+4. /presentation/customer/website-shop/3
+Route: /website#shop
+
+5. /presentation/customer/website-shop-cart/4
+Route: /website/shop/cart
+
+6. /presentation/customer/website-shop-checkout/5
+Route: /website/shop/checkout
+
+7. /presentation/customer/website-shop-success/6
+Route: /website/shop/success
+
+8. /presentation/customer/website-shop-cancel/7
+Route: /website/shop/cancel
+
+9. /presentation/customer/vhc-customer-preview-jobNumber/8
 Route: /vhc/customer-preview/[jobNumber]
 
-5. /presentation/customer/vhc-customer-view-jobNumber/4
+10. /presentation/customer/vhc-customer-view-jobNumber/9
 Route: /vhc/customer-view/[jobNumber]
 
-6. /presentation/customer/vhc-share-jobNumber-linkCode/5
+11. /presentation/customer/vhc-share-jobNumber-linkCode/10
 Route: /vhc/share/[jobNumber]/[linkCode]
 
-7. /presentation/customer/vhc-customer-jobNumber-linkCode/6
+12. /presentation/customer/vhc-customer-jobNumber-linkCode/11
 Route: /vhc/customer/[jobNumber]/[linkCode]
 
 
