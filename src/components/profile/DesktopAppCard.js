@@ -19,16 +19,16 @@
 // This means dropping the .exe into /public/downloads/ later is the only
 // step needed to switch it on — no code change required.
 //
-// TODO (publish prerequisites — outside this repo):
-//   1. Windows code-signing certificate. No certificate is configured.
-//      Without one, end users will see a SmartScreen "Windows protected
-//      your PC" warning on first install. Buy an EV or OV certificate and
-//      wire it into electron-builder (win.certificateFile +
-//      win.certificatePassword).
-//   2. Branding asset upgrade. The shell currently uses public/logo.png
-//      (881×270). For crisp installer/taskbar icons at 16/32/48/256 px
-//      we need a square 512×512 PNG, or ideally a multi-resolution
-//      desktop/build/icon.ico.
+// TODO (publish prerequisite — outside this repo):
+//   Windows code-signing certificate. No certificate is configured.
+//   Without one, end users will see a SmartScreen "Windows protected
+//   your PC" warning on first install. Buy an EV or OV certificate and
+//   wire it into electron-builder (win.certificateFile +
+//   win.certificatePassword).
+//
+// Branding: resolved — app/installer icons are built from the square
+// 1024×1024 desktop/assets/desktop.png, with a multi-resolution
+// desktop/build/icon.ico (16/24/32/48/64/128/256) derived from it.
 
 import React, { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";

@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/job-cards/create/job-cards-create-ui.js
+import { useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
@@ -99,6 +100,40 @@ export default function CreateJobCardPageUi(props) {
     waitingStatus,
     washRequired,
   } = props; // receive page logic props.
+
+  const [moreRequestIndex, setMoreRequestIndex] = useState(null);
+  const moreRequest = moreRequestIndex !== null ? requests?.[moreRequestIndex] : null;
+  const updateRequestField = (index, field, value) => {
+    const updated = [...requests];
+    updated[index] = { ...updated[index], [field]: value };
+    setRequests(updated);
+  };
+  const updateRequestPaymentType = (index, value) => {
+    handlePaymentTypeChange(index, value);
+    if (value === "Warranty") setJobSource("Warranty");
+  };
+  const moneyInputStyle = {
+    width: "118px",
+    flexShrink: 0
+  };
+  const moreFieldStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    minWidth: 0
+  };
+  const moreLabelStyle = {
+    fontSize: "12px",
+    // --text-1 = surface body-text tone; --text-2 is the on-accent tone and
+    // would render invisible against the popup's surface card.
+    color: "var(--text-1)",
+    fontWeight: 700
+  };
+  const moreGridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "12px"
+  };
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -697,7 +732,7 @@ export default function CreateJobCardPageUi(props) {
                   lineHeight: 1.45
                 }} onFocus={e => {
                   e.target.style.borderColor = "var(--primary)";
-                }} onBlur={e => {
+                }} onBlur={() => {
                   e.target.style.borderColor = "var(--surface)";
                 }} /> : input.type === "multi-select" ? <div style={{
                   display: "flex",
@@ -738,7 +773,7 @@ export default function CreateJobCardPageUi(props) {
                   color: input.type === "tel" ? "#000" : "inherit"
                 }} onFocus={e => {
                   e.target.style.borderColor = "var(--primary)";
-                }} onBlur={e => {
+                }} onBlur={() => {
                   e.target.style.borderColor = "var(--surface)";
                 }} />}
                         </div>)}
@@ -1017,7 +1052,7 @@ export default function CreateJobCardPageUi(props) {
                       <input type="number" min="0.00" step="0.01" value={req.time || ""} onChange={e => handleTimeChange(i, e.target.value)} placeholder="" className="app-input" style={{
                   width: "72px",
                   paddingRight: "24px"
-                }} onBlur={e => {
+                }} onBlur={() => {
                   const updated = [...requests];
                   updated[i].time = normalizeHoursToTwoDecimals(updated[i]?.time);
                   setRequests(updated);
@@ -1037,7 +1072,7 @@ export default function CreateJobCardPageUi(props) {
                         h
                       </span>
                     </div>
-                    <DropdownField value={req.paymentType || "Customer"} onChange={e => handlePaymentTypeChange(i, e.target.value)} options={PAYMENT_TYPE_OPTIONS} className="job-request-payment-dropdown" />
+                    <input type="number" min="0" step="0.01" value={req.setPrice ?? req.price ?? ""} onChange={e => updateRequestField(i, "setPrice", e.target.value)} placeholder="Price" className="app-input" style={moneyInputStyle} />
                     {/* Open the Question Prompts helper for this specific
                         request row. Disabled when the request text is empty
                         so advisors don't hit it by mistake — an empty
@@ -1046,8 +1081,8 @@ export default function CreateJobCardPageUi(props) {
                     <button type="button" onClick={() => setQuestionPromptsIndex(i)} className="app-btn app-btn--secondary app-btn--sm" disabled={!String(req.text || "").trim()} title="Show suggested questions to ask the customer">
                       Question Prompts
                     </button>
-                    <button type="button" onClick={() => handleRemoveRequest(i)} className="app-btn app-btn--danger app-btn--sm">
-                      Remove
+                    <button type="button" onClick={() => setMoreRequestIndex(i)} className="app-btn app-btn--secondary app-btn--sm">
+                      More
                     </button>
                   </div>
                 </LayerSurface>)}
@@ -1204,6 +1239,75 @@ export default function CreateJobCardPageUi(props) {
         {/* Question Prompts popup — rendered once per page, opens for the
             request row whose index is stored in questionPromptsIndex. */}
         <QuestionPromptsPopup open={questionPromptsIndex !== null} onClose={() => setQuestionPromptsIndex(null)} requestText={questionPromptsIndex !== null ? String(requests?.[questionPromptsIndex]?.text || "") : ""} requestIndex={questionPromptsIndex} />
+        {moreRequestIndex !== null && moreRequest && <div style={{ ...popupOverlayStyles, zIndex: 1250 }} onClick={event => {
+      if (event.target === event.currentTarget) setMoreRequestIndex(null);
+    }}>
+            <div style={{
+        ...popupCardStyles,
+        width: "100%",
+        maxWidth: "760px",
+        maxHeight: "88vh",
+        overflowY: "auto",
+        border: "none"
+      }} onClick={event => event.stopPropagation()}>
+              <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+                  <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-1)" }}>Request {moreRequestIndex + 1} Details</h3>
+                  <button type="button" onClick={() => setMoreRequestIndex(null)} className="app-btn app-btn--secondary app-btn--sm">Close</button>
+                </div>
+                <div style={moreFieldStyle}>
+                  <label style={moreLabelStyle}>Request Description</label>
+                  <textarea value={moreRequest.text || ""} onChange={e => handleRequestChange(moreRequestIndex, e.target.value)} className="app-input" style={{ minHeight: "96px", resize: "vertical" }} />
+                </div>
+                <div style={moreGridStyle}>
+                  <div style={moreFieldStyle}>
+                    <label style={moreLabelStyle}>Labour Time</label>
+                    <input type="number" min="0" step="0.01" value={moreRequest.time || ""} onChange={e => handleTimeChange(moreRequestIndex, e.target.value)} onBlur={() => {
+                const updated = [...requests];
+                updated[moreRequestIndex].time = normalizeHoursToTwoDecimals(updated[moreRequestIndex]?.time);
+                setRequests(updated);
+                persistPresetDefaultHours(updated[moreRequestIndex]);
+              }} className="app-input" />
+                  </div>
+                  <div style={moreFieldStyle}>
+                    <label style={moreLabelStyle}>Labour Price</label>
+                    <input type="number" min="0" step="0.01" value={moreRequest.labourPrice || ""} onChange={e => updateRequestField(moreRequestIndex, "labourPrice", e.target.value)} className="app-input" />
+                  </div>
+                  <div style={moreFieldStyle}>
+                    <label style={moreLabelStyle}>Menu Price</label>
+                    <input type="number" min="0" step="0.01" value={moreRequest.menuPrice || ""} onChange={e => updateRequestField(moreRequestIndex, "menuPrice", e.target.value)} className="app-input" />
+                  </div>
+                  <div style={moreFieldStyle}>
+                    <label style={moreLabelStyle}>Set Price</label>
+                    <input type="number" min="0" step="0.01" value={moreRequest.setPrice || ""} onChange={e => updateRequestField(moreRequestIndex, "setPrice", e.target.value)} className="app-input" />
+                  </div>
+                  <div style={moreFieldStyle}>
+                    <label style={moreLabelStyle}>Discount</label>
+                    <input type="number" min="0" step="0.01" value={moreRequest.discount || ""} onChange={e => updateRequestField(moreRequestIndex, "discount", e.target.value)} className="app-input" />
+                  </div>
+                  <div style={moreFieldStyle}>
+                    <label style={moreLabelStyle}>Account Type</label>
+                    <DropdownField value={moreRequest.paymentType || "Customer"} onChange={e => updateRequestPaymentType(moreRequestIndex, e.target.value)} options={PAYMENT_TYPE_OPTIONS} className="job-request-payment-dropdown" />
+                  </div>
+                </div>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "44px", color: "var(--text-1)", fontWeight: 700 }}>
+                  <input type="checkbox" checked={Boolean(moreRequest.specialRate)} onChange={e => updateRequestField(moreRequestIndex, "specialRate", e.target.checked)} />
+                  Special labour rate
+                </label>
+                <div style={moreFieldStyle}>
+                  <label style={moreLabelStyle}>Internal Notes</label>
+                  <textarea value={moreRequest.noteText || ""} onChange={e => updateRequestField(moreRequestIndex, "noteText", e.target.value)} className="app-input" style={{ minHeight: "72px", resize: "vertical" }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => {
+                handleRemoveRequest(moreRequestIndex);
+                setMoreRequestIndex(null);
+              }} className="app-btn app-btn--danger">Remove Request</button>
+                  <button type="button" onClick={() => setMoreRequestIndex(null)} className="app-btn app-btn--primary">Done</button>
+                </div>
+              </div>
+            </div>
+          </div>}
         {showDetectedRequestsPopup && <div style={popupOverlayStyles} onClick={event => {
       if (event.target === event.currentTarget) {
         setShowDetectedRequestsPopup(false);

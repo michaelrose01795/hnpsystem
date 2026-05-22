@@ -141,6 +141,20 @@ export default function CreateJobCardPage() {
   const [vehicleNotification, setVehicleNotification] = useState(null); // { type: 'success' | 'error', message: '' }
 
   // ✅ Multi-tab job state - each tab represents a separate job card
+  const createDefaultRequest = (overrides = {}) => ({
+    text: "",
+    time: "",
+    paymentType: "Customer",
+    presetId: null,
+    labourPrice: "",
+    menuPrice: "",
+    setPrice: "",
+    discount: "",
+    specialRate: false,
+    noteText: "",
+    ...overrides
+  });
+
   const createDefaultJobTab = (tabId = 1) => ({
     id: tabId,
     waitingStatus: "Neither",
@@ -148,7 +162,7 @@ export default function CreateJobCardPage() {
     jobDivision: "Retail",
     jobCategories: [],
     jobDetections: [],
-    requests: [{ text: "", time: "", paymentType: "Customer", presetId: null }],
+    requests: [createDefaultRequest()],
     uploadedFiles: []
   });
 
@@ -568,7 +582,7 @@ export default function CreateJobCardPage() {
           setRequests((prev) => {
             const next = [...(prev || [])];
             if (next.length === 0) {
-              next.push({ text: description, time: "", paymentType: "Customer", presetId: null });
+              next.push(createDefaultRequest({ text: description }));
             } else {
               next[0] = { ...next[0], text: description };
             }
@@ -686,7 +700,7 @@ export default function CreateJobCardPage() {
 
   // add a new empty request to the list
   const handleAddRequest = () => {
-    const nextRequests = [...requests, { text: "", time: "", paymentType: "Customer", presetId: null }];
+    const nextRequests = [...requests, createDefaultRequest()];
     const detections = detectJobTypesForRequests(nextRequests);
     setRequests(nextRequests);
     setJobDetections(detections);

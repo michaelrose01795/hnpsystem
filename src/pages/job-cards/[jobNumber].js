@@ -2985,6 +2985,11 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
         paymentType: entry.paymentType ?? entry.jobType ?? "Customer",
         noteText: entry.noteText ?? entry.note_text ?? null,
         prePickLocation: entry.prePickLocation ?? entry.pre_pick_location ?? null,
+        labourPrice: entry.labourPrice ?? "",
+        menuPrice: entry.menuPrice ?? "",
+        setPrice: entry.setPrice ?? entry.price ?? "",
+        discount: entry.discount ?? "",
+        specialRate: Boolean(entry.specialRate),
         sortOrder: index + 1
       }));
 
@@ -3092,7 +3097,13 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
       const requestPayload = normalized.map((entry) => ({
         text: entry.text,
         time: entry.time,
-        paymentType: entry.paymentType
+        paymentType: entry.paymentType,
+        labourPrice: entry.labourPrice,
+        menuPrice: entry.menuPrice,
+        setPrice: entry.setPrice,
+        discount: entry.discount,
+        specialRate: entry.specialRate,
+        noteText: entry.noteText
       }));
 
       const result = await updateJob(jobData.id, {
@@ -4730,7 +4741,9 @@ function CustomerRequestsTab({
     jobData.job_requests :
     [];
     if (source.length > 0) {
-      return source.map((row) => ({
+      const legacyDetails = normalizeRequests(jobData.requests);
+      return source.map((row, index) => ({
+        ...(legacyDetails[row.sortOrder ? Number(row.sortOrder) - 1 : index] || {}),
         requestId: row.requestId ?? row.request_id ?? null,
         presetId: row.presetId ?? row.job_request_preset_id ?? null,
         text: row.description ?? row.text ?? "",
@@ -4746,12 +4759,18 @@ function CustomerRequestsTab({
       time: req?.time ?? req?.hours ?? "",
       paymentType: req?.paymentType || req?.jobType || "Customer",
       noteText: "",
-      prePickLocation: null
+      prePickLocation: null,
+      labourPrice: req?.labourPrice ?? "",
+      menuPrice: req?.menuPrice ?? "",
+      setPrice: req?.setPrice ?? req?.price ?? "",
+      discount: req?.discount ?? "",
+      specialRate: Boolean(req?.specialRate)
     }));
   }, [jobData]);
   const [requests, setRequests] = useState(buildEditRequests);
   const [editableAuthorisedRows, setEditableAuthorisedRows] = useState([]);
   const [editing, setEditing] = useState(false);
+  const [moreEditRequestIndex, setMoreEditRequestIndex] = useState(null);
   const [savingRequestPrePickId, setSavingRequestPrePickId] = useState(null);
   const smallPrintStyle = { fontSize: "11px", color: "var(--info)" };
   const indentedNoteStyle = {
@@ -4818,6 +4837,38 @@ function CustomerRequestsTab({
   const requestFullWidthValueStyle = {
     width: "100%"
   };
+  const requestMoneyInputStyle = {
+    width: "118px",
+    flexShrink: 0
+  };
+  const requestDetailsFieldStyle = {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+    minWidth: 0
+  };
+  const requestDetailsLabelStyle = {
+    fontSize: "12px",
+    // --text-1 = surface body-text tone; --text-2 is the on-accent tone and
+    // would render invisible against the popup's surface card.
+    color: "var(--text-1)",
+    fontWeight: 700
+  };
+  const requestDetailsGridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "12px"
+  };
+  const paymentTypeOptions = [
+    { value: "Customer", label: "Customer" },
+    { value: "Warranty", label: "Warranty" },
+    { value: "Sales Goodwill", label: "Sales Goodwill" },
+    { value: "Service Goodwill", label: "Service Goodwill" },
+    { value: "Internal", label: "Internal" },
+    { value: "Insurance", label: "Insurance" },
+    { value: "Lease Company", label: "Lease Company" },
+    { value: "Staff", label: "Staff" }
+  ];
   const getPaymentTypePillStyle = useCallback((paymentType = "") => {
     const normalizedType = String(paymentType || "").trim().toLowerCase();
     const isCustomer = normalizedType === "customer";
@@ -5506,8 +5557,12 @@ function CustomerRequestsTab({
   }, [authorisedRows]);
 
   const buildEditableRequests = useCallback(
-    (rows) =>
-    (Array.isArray(rows) ? rows : []).map((row, index) => ({
+    (rows) => {
+      const legacyDetails = normalizeRequests(jobData.requests);
+      return (Array.isArray(rows) ? rows : []).map((row, index) => {
+        const legacy = legacyDetails[row.sortOrder ? Number(row.sortOrder) - 1 : index] || {};
+        return {
+      ...legacy,
       requestId: row.requestId ?? null,
       presetId: row.presetId ?? row.job_request_preset_id ?? null,
       text: row.description || "",
@@ -5515,9 +5570,16 @@ function CustomerRequestsTab({
       paymentType: row.jobType || "Customer",
       noteText: row.noteText || "",
       prePickLocation: row.prePickLocation ?? null,
-      sortOrder: row.sortOrder ?? index + 1
-    })),
-    []
+      sortOrder: row.sortOrder ?? index + 1,
+      labourPrice: legacy.labourPrice ?? "",
+      menuPrice: legacy.menuPrice ?? "",
+      setPrice: legacy.setPrice ?? legacy.price ?? "",
+      discount: legacy.discount ?? "",
+      specialRate: Boolean(legacy.specialRate)
+    };
+      });
+    },
+    [jobData.requests]
   );
 
   const buildEditableAuthorisedRows = useCallback(
@@ -5555,7 +5617,7 @@ function CustomerRequestsTab({
   const handleAddRequest = () => {
     setRequests([
     ...requests,
-    { text: "", time: "", paymentType: "Customer", noteText: "", prePickLocation: null, presetId: null }]
+    { text: "", time: "", paymentType: "Customer", noteText: "", prePickLocation: null, presetId: null, labourPrice: "", menuPrice: "", setPrice: "", discount: "", specialRate: false }]
     );
   };
 
@@ -5830,36 +5892,38 @@ function CustomerRequestsTab({
 
               </div>
 
-              <div style={{ width: "170px", flexShrink: 0 }}>
+              <div style={requestMoneyInputStyle}>
                 <label style={{ fontSize: "12px", color: "var(--grey-accent)", display: "block", marginBottom: "4px" }}>
-                  Payment Type
+                  Price
                 </label>
-                <DropdownField
-              value={req.paymentType}
-              onChange={(e) => handleUpdateRequest(index, "paymentType", e.target.value)}
-              options={[
-              { value: "Customer", label: "Customer" },
-              { value: "Warranty", label: "Warranty" },
-              { value: "Sales Goodwill", label: "Sales Goodwill" },
-              { value: "Service Goodwill", label: "Service Goodwill" },
-              { value: "Internal", label: "Internal" },
-              { value: "Insurance", label: "Insurance" },
-              { value: "Lease Company", label: "Lease Company" },
-              { value: "Staff", label: "Staff" }]
-              }
-              className="edit-requests-payment-dropdown" />
-
+                <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={req.setPrice ?? req.price ?? ""}
+              onChange={(e) => handleUpdateRequest(index, "setPrice", e.target.value)}
+              className="edit-requests-price-input"
+              style={{
+                width: "100%",
+                height: "var(--control-height-sm)",
+                padding: "8px 10px",
+                border: "none",
+                borderRadius: "var(--control-radius)",
+                fontSize: "14px",
+                backgroundColor: "var(--surface)",
+                color: "var(--text-1)"
+              }} />
               </div>
 
               <button
-            onClick={() => handleRemoveRequest(index)}
+            onClick={() => setMoreEditRequestIndex(index)}
             style={{
               marginLeft: "auto",
               minHeight: "var(--control-height)",
               minWidth: "86px",
               padding: "var(--control-padding)",
-              backgroundColor: "var(--danger)",
-              color: "var(--text-2)",
+              backgroundColor: "var(--control-bg)",
+              color: "var(--accentText)",
               border: "none",
               borderRadius: "var(--control-radius)",
               cursor: "pointer",
@@ -5868,10 +5932,76 @@ function CustomerRequestsTab({
               alignSelf: "flex-end"
             }}>
 
-                Remove
+                More
               </button>
             </div>
         )}
+          {moreEditRequestIndex !== null && requests[moreEditRequestIndex] &&
+        <div style={{ ...popupOverlayStyles, zIndex: 1250 }} onClick={(event) => {
+          if (event.target === event.currentTarget) setMoreEditRequestIndex(null);
+        }}>
+              <div style={{
+            ...popupCardStyles,
+            width: "100%",
+            maxWidth: "760px",
+            maxHeight: "88vh",
+            overflowY: "auto",
+            border: "none"
+          }} onClick={(event) => event.stopPropagation()}>
+                <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center" }}>
+                    <h3 style={{ margin: 0, fontSize: "18px", color: "var(--text-1)" }}>Request {moreEditRequestIndex + 1} Details</h3>
+                    <button type="button" onClick={() => setMoreEditRequestIndex(null)} className="app-btn app-btn--secondary app-btn--sm">Close</button>
+                  </div>
+                  <div style={requestDetailsFieldStyle}>
+                    <label style={requestDetailsLabelStyle}>Request Description</label>
+                    <textarea value={requests[moreEditRequestIndex].text || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "text", e.target.value)} className="app-input" style={{ minHeight: "96px", resize: "vertical" }} />
+                  </div>
+                  <div style={requestDetailsGridStyle}>
+                    <div style={requestDetailsFieldStyle}>
+                      <label style={requestDetailsLabelStyle}>Labour Time</label>
+                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].time || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "time", e.target.value)} onBlur={() => persistPresetHoursFromRow(requests[moreEditRequestIndex])} className="app-input" />
+                    </div>
+                    <div style={requestDetailsFieldStyle}>
+                      <label style={requestDetailsLabelStyle}>Labour Price</label>
+                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].labourPrice || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "labourPrice", e.target.value)} className="app-input" />
+                    </div>
+                    <div style={requestDetailsFieldStyle}>
+                      <label style={requestDetailsLabelStyle}>Menu Price</label>
+                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].menuPrice || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "menuPrice", e.target.value)} className="app-input" />
+                    </div>
+                    <div style={requestDetailsFieldStyle}>
+                      <label style={requestDetailsLabelStyle}>Set Price</label>
+                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].setPrice || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "setPrice", e.target.value)} className="app-input" />
+                    </div>
+                    <div style={requestDetailsFieldStyle}>
+                      <label style={requestDetailsLabelStyle}>Discount</label>
+                      <input type="number" min="0" step="0.01" value={requests[moreEditRequestIndex].discount || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "discount", e.target.value)} className="app-input" />
+                    </div>
+                    <div style={requestDetailsFieldStyle}>
+                      <label style={requestDetailsLabelStyle}>Account Type</label>
+                      <DropdownField value={requests[moreEditRequestIndex].paymentType || "Customer"} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "paymentType", e.target.value)} options={paymentTypeOptions} className="edit-requests-payment-dropdown" />
+                    </div>
+                  </div>
+                  <label style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "44px", color: "var(--text-1)", fontWeight: 700 }}>
+                    <input type="checkbox" checked={Boolean(requests[moreEditRequestIndex].specialRate)} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "specialRate", e.target.checked)} />
+                    Special labour rate
+                  </label>
+                  <div style={requestDetailsFieldStyle}>
+                    <label style={requestDetailsLabelStyle}>Internal Notes</label>
+                    <textarea value={requests[moreEditRequestIndex].noteText || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "noteText", e.target.value)} className="app-input" style={{ minHeight: "72px", resize: "vertical" }} />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                    <button type="button" onClick={() => {
+                  handleRemoveRequest(moreEditRequestIndex);
+                  setMoreEditRequestIndex(null);
+                }} className="app-btn app-btn--danger">Remove Request</button>
+                    <button type="button" onClick={() => setMoreEditRequestIndex(null)} className="app-btn app-btn--primary">Done</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+        }
           <button
           onClick={handleAddRequest}
           style={{
@@ -6027,6 +6157,9 @@ function CustomerRequestsTab({
               effectiveRowStatus,
               "inprogress"
             );
+            const legacyDetails = normalizeRequests(jobData.requests)[req.sortOrder ? Number(req.sortOrder) - 1 : index] || {};
+            const setPriceValue = legacyDetails.setPrice ?? legacyDetails.price ?? "";
+            const labourPriceValue = legacyDetails.labourPrice ?? "";
             return (
               <div key={index} style={requestRowButtonStyle}>
                 <div
@@ -6051,6 +6184,18 @@ function CustomerRequestsTab({
                         Note - {linkedText}
                       </div>
                     )}
+                    {(setPriceValue || labourPriceValue || legacyDetails.menuPrice || legacyDetails.discount || legacyDetails.specialRate) &&
+                    <span style={indentedNoteStyle}>
+                        {[
+                        setPriceValue ? `Set: Â£${Number(setPriceValue).toFixed(2)}` : "",
+                        labourPriceValue ? `Labour: Â£${Number(labourPriceValue).toFixed(2)}` : "",
+                        legacyDetails.menuPrice ? `Menu: Â£${Number(legacyDetails.menuPrice).toFixed(2)}` : "",
+                        legacyDetails.discount ? `Discount: Â£${Number(legacyDetails.discount).toFixed(2)}` : "",
+                        legacyDetails.specialRate ? "Special rate" : ""]
+                        .filter(Boolean)
+                        .join(" | ")}
+                      </span>
+                    }
                   </div>
                   <div style={requestValueColumnStyle}>
                     {prePickRowKey ?

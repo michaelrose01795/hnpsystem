@@ -1,6 +1,6 @@
 {
   "//": "file location: desktop/package.json — Electron shell for the H&P System DMS. This package is intentionally isolated from the root Next.js package.json so the web app remains untouched.",
-  "//TODO:branding": "Replace assets/logo.png with a square 512x512 PNG, and ideally drop a multi-resolution build/icon.ico for crisp 16/32/48/256px taskbar/installer icons. electron-builder picks build/icon.ico up automatically. Needs design assets supplied — cannot be generated from inside this repo.",
+  "//branding": "App/installer icons are generated from desktop/assets/desktop.png (square 1024x1024). build/icon.ico is a multi-resolution icon (16/24/32/48/64/128/256) derived from it — regenerate it if desktop.png changes.",
   "//TODO:codesign": "No Windows code-signing certificate is configured. Without one, users see SmartScreen 'Windows protected your PC' warnings on first install. To enable: buy an EV/OV cert (DigiCert, Sectigo, SSL.com), then add 'certificateFile' and 'certificatePassword' (via env var) under build.win. Requires purchased credentials — cannot be done from inside this repo.",
   "name": "hnpsystem-desktop",
   "productName": "H&P System",

@@ -46,16 +46,11 @@ let splashWindow = null; // Splash BrowserWindow shown during loading
 let isRetrying = false;  // Guards against overlapping retry attempts
 
 // ---------------------------------------------------------------------------
-// Resolve the application icon. We use the PNG from /desktop/assets/logo.png.
-// On Windows the installer (electron-builder) prefers a .ico, but Electron
-// itself happily uses the PNG for the in-app window icon and dock tile.
-//
-// TODO(branding): replace desktop/assets/logo.png with a square 512×512 PNG
-//   (current file is 881×270 — fine for splash, fuzzy at small icon sizes),
-//   and ideally drop a proper multi-resolution Windows icon at
-//   desktop/build/icon.ico so the installer/taskbar icon is crisp at
-//   16/32/48/256 px. electron-builder picks build/icon.ico up automatically.
-//   Cannot be done from inside this repo — needs design assets supplied.
+// Resolve the application icon. We use the square 1024×1024 PNG from
+// /desktop/assets/desktop.png for the runtime window/taskbar icon (Electron
+// rasterises it as needed). The installer / .exe icon is built separately by
+// electron-builder from the multi-resolution desktop/build/icon.ico, which is
+// generated from the same desktop.png source.
 //
 // TODO(codesign): no Windows code-signing certificate is configured.
 //   Without one, end users see a SmartScreen "Windows protected your PC"
@@ -69,7 +64,7 @@ let isRetrying = false;  // Guards against overlapping retry attempts
 //     3. Re-run `npm run build:win` — electron-builder signs automatically.
 //   Cannot be done from inside this repo — requires purchased credentials.
 // ---------------------------------------------------------------------------
-const iconPath = path.join(__dirname, "..", "assets", "logo.png"); // Resolve absolute icon path
+const iconPath = path.join(__dirname, "..", "assets", "desktop.png"); // Resolve absolute icon path
 const appIcon = nativeImage.createFromPath(iconPath);              // Build the nativeImage once
 
 // Override the productName so dialogs and the About panel use it consistently

@@ -142,22 +142,22 @@ out to the browser.
 
 ## Branding assets
 
-The shell uses `desktop/assets/logo.png` for:
+Branding is driven by one square source image:
 
-* The application window icon
-* The splash screen
-* The Windows installer / taskbar icon (electron-builder converts PNG → ICO automatically)
+* `desktop/assets/desktop.png` — square 1024×1024 PNG. Used for the
+  application window icon and the splash screen.
+* `desktop/build/icon.ico` — multi-resolution Windows icon
+  (16/24/32/48/64/128/256 px) generated from `desktop.png`. Used by
+  electron-builder for the installer and the `.exe` / taskbar icon.
 
 To replace branding later:
 
-1. Drop the new PNG at `desktop/assets/logo.png` (square 512×512 is ideal for installers).
-2. Optionally provide a Windows `.ico` at `desktop/build/icon.ico` for a
-   sharper installer icon — electron-builder will pick it up automatically.
+1. Replace `desktop/assets/desktop.png` with a new square PNG
+   (1024×1024 recommended; 512×512 minimum).
+2. Regenerate `desktop/build/icon.ico` from it. Any PNG→ICO tool works;
+   the project was built with a PowerShell + `System.Drawing` script that
+   resizes the source to each target size and writes a multi-image ICO.
 3. Rebuild: `npm run build:win`.
-
-> The current logo is `881×270` — fine for the splash but not square enough
-> for crisp installer icons at small sizes. Supplying a square 512×512 PNG
-> (or a multi-resolution `.ico`) is recommended before final distribution.
 
 ---
 

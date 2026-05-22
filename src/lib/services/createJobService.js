@@ -43,6 +43,7 @@ export const saveJobRequests = async (jobId, jobRequestEntries) => {
         hours: safeHours, // store parsed hours or null
         job_request_preset_id: entry.presetId || null, // link to preset when chosen
         job_type: (entry.paymentType || "Customer").trim() || "Customer", // persist job type label
+        note_text: entry.noteText ? String(entry.noteText).trim() : null, // store optional advisor/internal note
         sort_order: index + 1, // keep order for UI grouping
         created_at: timestamp, // assign creation timestamp
         updated_at: timestamp, // assign update timestamp
