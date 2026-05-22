@@ -1082,7 +1082,8 @@ html.staff-scope .app-hover-tooltip[data-tooltip]::after {
   z-index: var(--hover-surface-z);
   max-width: min(300px, 80vw);
   width: max-content;
-  min-height: var(--control-height-xs);
+  /* 44px floor (= --control-height); grows taller as longer text wraps. */
+  min-height: var(--control-height);
   padding: var(--control-padding-xs);
   border-radius: var(--control-radius-xs);
   background: var(--primary-hover);
@@ -1090,6 +1091,10 @@ html.staff-scope .app-hover-tooltip[data-tooltip]::after {
   box-shadow: var(--dropdown-menu-shadow), 0 12px 28px rgba(0, 0, 0, 0.18);
   opacity: 0;
   pointer-events: none;
+  /* Flex-centre so the text sits in the vertical middle at any height. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   white-space: normal;
   text-align: center;
   line-height: 1.2;

@@ -370,9 +370,16 @@ const buildTechAvailabilityMap = (records = []) => {
 
 export default function Appointments() {
   const router = useRouter();
-  const jobQueryParam = Array.isArray(router.query.jobNumber) ?
-  router.query.jobNumber[0] :
-  router.query.jobNumber;
+  const rawJobQueryParam = router.query.jobNumber ?? router.query.job;
+  const jobQueryParam = Array.isArray(rawJobQueryParam) ?
+  rawJobQueryParam[0] :
+  rawJobQueryParam;
+  const dateQueryParam = Array.isArray(router.query.date) ?
+  router.query.date[0] :
+  router.query.date;
+  const timeQueryParam = Array.isArray(router.query.time) ?
+  router.query.time[0] :
+  router.query.time;
   const { user, dbUserId } = useUser();
   const { triggerNextAction } = useNextAction();
   const { confirm } = useConfirmation();
@@ -671,13 +678,22 @@ export default function Appointments() {
     const jobParam = typeof jobQueryParam === "string" ? jobQueryParam : "";
     if (jobParam.trim().length > 0) {
       setJobNumber(jobParam);
+      if (typeof dateQueryParam === "string" && dateQueryParam) {
+        const targetDate = new Date(`${dateQueryParam}T00:00:00`);
+        if (!Number.isNaN(targetDate.getTime())) {
+          setSelectedDay(targetDate);
+        }
+      }
+      if (typeof timeQueryParam === "string" && timeQueryParam) {
+        setTime(timeQueryParam);
+      }
       const existingJob = jobs.find((j) => j.jobNumber.toString() === jobParam || j.id.toString() === jobParam);
-      if (existingJob && existingJob.appointment) {
+      if (existingJob && existingJob.appointment && !dateQueryParam && !timeQueryParam) {
         setSelectedDay(new Date(existingJob.appointment.date));
         setTime(existingJob.appointment.time);
       }
     }
-  }, [router.isReady, jobParamActive, jobQueryParam, jobs]);
+  }, [router.isReady, jobParamActive, jobQueryParam, dateQueryParam, timeQueryParam, jobs]);
 
   // ---------------- Notes ----------------
   const handleAddNote = (date) => {

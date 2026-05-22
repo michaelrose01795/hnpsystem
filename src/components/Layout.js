@@ -28,6 +28,7 @@ import { sidebarSections } from "@/config/navigation";
 import { useRoster } from "@/context/RosterContext";
 import HrTabsBar from "@/components/HR/HrTabsBar";
 import { useMessagesBadge } from "@/hooks/useMessagesBadge";
+import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
 import { roleCategories } from "@/config/users";
 import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
 import { DropdownField } from "@/components/ui/dropdownAPI";
@@ -102,6 +103,9 @@ export default function Layout({
   const [viewportWidth, setViewportWidth] = useState(1440);
   const [viewportHeight, setViewportHeight] = useState(900);
   useMessagesBadge(dbUserId);
+  // Replace native browser title= tooltips on buttons app-wide with the
+  // staffglobal styled tooltip (.app-hover-tooltip). Mounted once here.
+  useNativeTitleTooltips();
 
   const isTablet = viewportWidth <= 1024;
   const isMobile = viewportWidth <= 640; // phone view cutoff

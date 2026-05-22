@@ -2624,13 +2624,35 @@ export default function VhcDetailsPanel({
     const map = new Map();
     const tyres = vhcData?.wheelsTyres;
     if (!tyres || typeof tyres !== "object") return map;
+
+    // Tally tyre makes across every wheel position so we can flag any wheel
+    // whose make is the odd one out — a make fitted to fewer wheels than the
+    // most common make on the vehicle (e.g. 3 Michelin + 1 Pirelli → Pirelli).
+    const normaliseTyreMake = (value) => String(value || "").trim().toLowerCase();
+    const makeCounts = new Map();
+    WHEEL_POSITION_KEYS.forEach((key) => {
+      const make = normaliseTyreMake(tyres[key]?.manufacturer);
+      if (!make) return;
+      makeCounts.set(make, (makeCounts.get(make) || 0) + 1);
+    });
+    const maxMakeCount = makeCounts.size > 0 ? Math.max(...makeCounts.values()) : 0;
+
     WHEEL_POSITION_KEYS.forEach((key) => {
       const entry = tyres[key];
       if (!entry || typeof entry !== "object") return;
       const depthSummary = formatTreadDepthSummary(entry.tread);
       const status = normaliseColour(entry.status) || normaliseColour(entry.treadStatus);
       const spec = buildTyreSpecLines(entry);
-      if (!depthSummary && spec.length === 0 && !status) return;
+      const tyreMake = entry.manufacturer ? String(entry.manufacturer).trim() : "";
+      const normalisedMake = normaliseTyreMake(entry.manufacturer);
+      // Odd make = at least two distinct makes exist and this wheel's make is
+      // fitted to strictly fewer wheels than the most common make. A 2/2 split
+      // or all-different set has no clear odd one, so nothing is flagged.
+      const isOddMake =
+        Boolean(normalisedMake) &&
+        makeCounts.size > 1 &&
+        (makeCounts.get(normalisedMake) || 0) < maxMakeCount;
+      if (!depthSummary && spec.length === 0 && !status && !isOddMake) return;
       map.set(key.toUpperCase(), {
         id: `tyre-${key}`,
         label: `${key} Tyre`,
@@ -2638,6 +2660,8 @@ export default function VhcDetailsPanel({
         status,
         hideLabel: true,
         spec,
+        isOddMake,
+        tyreMake,
       });
     });
     return map;
@@ -5094,6 +5118,27 @@ export default function VhcDetailsPanel({
                                   </span>
                                 ) : null}
                                 {entry.note ? <span style={{ color: "var(--text-1)" }}>{entry.note}</span> : null}
+                                {entry.isOddMake ? (
+                                  <span
+                                    title={
+                                      entry.tyreMake
+                                        ? `${entry.tyreMake} differs from the make fitted to the other tyres on this vehicle`
+                                        : "Tyre make differs from the other tyres on this vehicle"
+                                    }
+                                    style={{
+                                      padding: "2px 10px",
+                                      borderRadius: "var(--radius-pill)",
+                                      fontSize: "11px",
+                                      fontWeight: 600,
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.08em",
+                                      background: "var(--warning-surface)",
+                                      color: "var(--warning)",
+                                    }}
+                                  >
+                                    ⚠ Odd tyre make
+                                  </span>
+                                ) : null}
                                 {Array.isArray(entry.spec) && entry.spec.length > 0 ? (
                                   <div style={{ display: "flex", flexDirection: "column", gap: "2px", width: "100%" }}>
                                     {entry.spec.map((line) => (

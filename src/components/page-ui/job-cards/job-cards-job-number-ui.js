@@ -49,6 +49,7 @@ export default function JobCardDetailPageUi(props) {
     fetchJobData,
     formatCurrency,
     generalReadOnlyLockDescription,
+    handleAppointmentRebook,
     handleAppointmentSave,
     handleBookingApproval,
     handleBookingFlowSave,
@@ -139,6 +140,8 @@ export default function JobCardDetailPageUi(props) {
     user,
     vehicleJobHistory,
     vehicleMileageInput,
+    vhcCustomerStatusMeta,
+    reloadVhcCustomerStatus,
     vhcFinancialTotals,
     vhcSummaryCounts,
     vhcTabAmberReadyInstant,
@@ -486,6 +489,25 @@ export default function JobCardDetailPageUi(props) {
               {jobData.customerPhone || jobData.customerEmail || "No contact info"}
             </div>
           </div>
+          {vhcCustomerStatusMeta ? (
+          <div style={{ marginTop: "8px" }}>
+            <span
+            title={vhcCustomerStatusMeta.detail}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "6px 10px",
+              borderRadius: "var(--control-radius)",
+              backgroundColor: vhcCustomerStatusMeta.background, // status chip tint — non-surface, per CLAUDE.md §3.0 rule 5
+              color: vhcCustomerStatusMeta.color,
+              fontSize: "12px",
+              fontWeight: 700,
+              textTransform: "uppercase"
+            }}>
+              Customer VHC: {vhcCustomerStatusMeta.label}
+            </span>
+          </div>
+          ) : null}
           </LayerSurface>
 
           <LayerSurface sectionKey="jobcard-summary-vhc-financials" sectionType="stat-card" parentKey="jobcard-summary-shell" radius="var(--radius-sm)" padding="12px 14px" style={{
@@ -740,7 +762,7 @@ export default function JobCardDetailPageUi(props) {
                 <strong>Locked: Scheduling</strong>
                 <span>{generalReadOnlyLockDescription}</span>
               </div>}
-            <SchedulingTab jobData={jobData} canEdit={canEdit} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} bookingRequest={jobData?.bookingRequest} onBookingFlowSave={handleBookingFlowSave} bookingFlowSaving={bookingFlowSaving} onBookingApproval={handleBookingApproval} bookingApprovalSaving={bookingApprovalSaving} onAppointmentSave={handleAppointmentSave} appointmentSaving={appointmentSaving} />
+            <SchedulingTab jobData={jobData} canEdit={canEdit} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} bookingRequest={jobData?.bookingRequest} onBookingFlowSave={handleBookingFlowSave} bookingFlowSaving={bookingFlowSaving} onBookingApproval={handleBookingApproval} bookingApprovalSaving={bookingApprovalSaving} onAppointmentSave={handleAppointmentSave} onAppointmentRebook={handleAppointmentRebook} appointmentSaving={appointmentSaving} />
           </div>
 
           <div className="app-page-stack" style={{
@@ -802,7 +824,7 @@ export default function JobCardDetailPageUi(props) {
             <VHCTab jobNumber={jobNumber} jobData={jobData} canEdit={canEditPartsWriteUpVhc} canShowCustomerActions={vhcTabAmberReadyInstant} actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} actingUserName={user?.name || user?.email || ""} onFinancialTotalsChange={setVhcFinancialTotalsFromPanel} onJobDataRefresh={() => fetchJobData({
             silent: true,
             force: true
-          })} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} />
+          })} onVhcCustomerStatusReload={reloadVhcCustomerStatus} onUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} />
           </div>
 
           <div className="app-page-stack" style={{

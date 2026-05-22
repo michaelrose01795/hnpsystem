@@ -780,6 +780,15 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
   });
   const [showDocumentsPopup, setShowDocumentsPopup] = useState(false);
   const [vhcFinancialTotalsFromPanel, setVhcFinancialTotalsFromPanel] = useState(null);
+  // Customer-facing VHC delivery status (Pending / Sent / Viewed). Lifted out of
+  // VHCTab so the badge can render in the job-card customer summary card.
+  const [vhcCustomerStatus, setVhcCustomerStatus] = useState({
+    status: "pending",
+    label: "Pending",
+    sentAt: null,
+    viewedAt: null,
+    readyAt: null,
+  });
   const [checkingIn, setCheckingIn] = useState(false);
   const [trackerEntry, setTrackerEntry] = useState(null);
   const [trackerQuickModalOpen, setTrackerQuickModalOpen] = useState(false);
@@ -2252,6 +2261,70 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     [canEdit, jobData, fetchJobData]
   );
 
+  const handleAppointmentRebook = useCallback(
+    async (appointmentDetails) => {
+      if (!canEdit || !jobData?.id) return { success: false };
+
+      if (!appointmentDetails.date || !appointmentDetails.time) {
+        alert("Please provide both date and time before rebooking.");
+        return { success: false };
+      }
+
+      const result = await handleAppointmentSave({
+        ...appointmentDetails,
+        status: appointmentDetails.status || "booked"
+      });
+
+      if (!result?.success) {
+        return result;
+      }
+
+      const noteText = [
+        `Rebooked job as a new appointment for ${appointmentDetails.date} at ${appointmentDetails.time}.`,
+        jobData.appointment?.date && jobData.appointment?.time
+          ? `Previous appointment was ${jobData.appointment.date} at ${jobData.appointment.time}.`
+          : null,
+        "Created from the Scheduling appointment panel."
+      ].filter(Boolean).join(" ");
+
+      const noteResult = await createJobNote({
+        job_id: jobData.id,
+        user_id: dbUserId || user?.user_id || user?.id || null,
+        note_text: noteText,
+        hidden_from_customer: true
+      });
+
+      if (!noteResult?.success) {
+        alert(noteResult?.error?.message || "Appointment booked, but the rebook note could not be saved.");
+      } else {
+        await refreshSharedNote(jobData.id);
+        handleNoteAdded(noteResult.data?.note_id);
+      }
+
+      const query = new URLSearchParams({
+        jobNumber: String(jobData.jobNumber || jobNumber),
+        date: appointmentDetails.date,
+        time: appointmentDetails.time,
+        rebook: "1"
+      });
+
+      router.push(`/appointments?${query.toString()}`);
+      return { success: true };
+    },
+    [
+      canEdit,
+      dbUserId,
+      handleAppointmentSave,
+      handleNoteAdded,
+      jobData,
+      jobNumber,
+      refreshSharedNote,
+      router,
+      user?.id,
+      user?.user_id
+    ]
+  );
+
   const handleBookingFlowSave = useCallback(
     async ({ vehicleId, description, waitingStatus }) => {
       if (!canEdit || !jobData?.id) return { success: false };
@@ -3403,6 +3476,65 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     return { authorized: 0, declined: 0 };
   }, [jobData, vhcFinancialTotalsFromPanel]);
 
+  // ✅ Customer VHC delivery status — fetched + polled here so both the VHC tab
+  // (Send action) and the customer summary card badge share one source of truth.
+  const loadVhcCustomerStatus = useCallback(async () => {
+    if (!jobNumber) return;
+    try {
+      const response = await fetch(
+        `/api/job-cards/${encodeURIComponent(jobNumber)}/vhc-customer-status`
+      );
+      const payload = await response.json();
+      if (response.ok && payload?.success) {
+        setVhcCustomerStatus({
+          status: payload.status || "pending",
+          label: payload.label || "Pending",
+          sentAt: payload.sentAt || null,
+          viewedAt: payload.viewedAt || null,
+          readyAt: payload.readyAt || null,
+        });
+      }
+    } catch (statusError) {
+      console.error("Failed to load VHC customer status:", statusError);
+    }
+  }, [jobNumber]);
+
+  useEffect(() => {
+    loadVhcCustomerStatus();
+    const interval = setInterval(loadVhcCustomerStatus, 15000);
+    return () => clearInterval(interval);
+  }, [loadVhcCustomerStatus]);
+
+  const vhcCustomerStatusMeta = useMemo(() => {
+    const status = String(vhcCustomerStatus?.status || "pending").toLowerCase();
+    if (status === "viewed") {
+      return {
+        label: "Viewed",
+        detail: vhcCustomerStatus?.viewedAt
+          ? `Viewed ${new Date(vhcCustomerStatus.viewedAt).toLocaleString("en-GB", { hour12: false })}`
+          : "Customer opened the VHC link",
+        background: "var(--success-surface)",
+        color: "var(--success-dark)",
+      };
+    }
+    if (status === "sent") {
+      return {
+        label: "Sent",
+        detail: vhcCustomerStatus?.sentAt
+          ? `Sent ${new Date(vhcCustomerStatus.sentAt).toLocaleString("en-GB", { hour12: false })}`
+          : "VHC sent to customer",
+        background: "var(--theme)",
+        color: "var(--accent-purple)",
+      };
+    }
+    return {
+      label: "Pending",
+      detail: vhcCustomerStatus?.readyAt ? "Ready to send" : "Not sent to customer",
+      background: "var(--warning-surface)",
+      color: "var(--warning)",
+    };
+  }, [vhcCustomerStatus]);
+
   const formatCurrency = (value) => {
     // Show N/A only when value is null or undefined (jobData not loaded)
     if (value === null || value === undefined) {
@@ -3635,7 +3767,7 @@ export default function JobCardDetailPage({ forcedJobNumber = null, valetMode = 
     };
 
     // ✅ Main Render
-    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} WarrantyTab={WarrantyTab} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
+    return <JobCardDetailPageUi view="section3" actingUserId={actingUserId} actingUserNumericId={actingUserNumericId} activeTab={activeTab} alert={alert} appointmentSaving={appointmentSaving} bookingApprovalSaving={bookingApprovalSaving} bookingFlowSaving={bookingFlowSaving} canEdit={canEdit} canEditPartsWriteUpVhc={canEditPartsWriteUpVhc} canEditTrackingLocations={canEditTrackingLocations} canManageDocuments={canManageDocuments} canViewPartsTab={canViewPartsTab} CAR_LOCATIONS={CAR_LOCATIONS} checkingIn={checkingIn} clockingLockDescription={clockingLockDescription} ClockingTab={ClockingTab} ContactTab={ContactTab} createCustomerDisplaySlug={createCustomerDisplaySlug} creatingInvoice={creatingInvoice} CustomerRequestsTab={CustomerRequestsTab} customerSaving={customerSaving} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} dbUserId={dbUserId} DocumentsTab={DocumentsTab} DocumentsUploadPopup={DocumentsUploadPopup} emptyTrackingForm={emptyTrackingForm} fetchDocuments={fetchDocuments} fetchJobData={fetchJobData} formatCurrency={formatCurrency} generalReadOnlyLockDescription={generalReadOnlyLockDescription} handleAppointmentRebook={handleAppointmentRebook} handleAppointmentSave={handleAppointmentSave} handleBookingApproval={handleBookingApproval} handleBookingFlowSave={handleBookingFlowSave} handleCheckIn={handleCheckIn} handleCreateInvoice={handleCreateInvoice} handleCustomerDetailsSave={handleCustomerDetailsSave} handleDeleteDocument={handleDeleteDocument} handleDocumentFileUploaded={handleDocumentFileUploaded} handleInvoicePaymentCompleted={handleInvoicePaymentCompleted} handleLinkJob={handleLinkJob} handleNoteAdded={handleNoteAdded} handleNotesChange={handleNotesChange} handleReleaseJob={handleReleaseJob} handleArchiveJob={handleArchiveJob} jobReleased={jobReleased} handleRenameDocument={handleRenameDocument} handleReplaceDocument={handleReplaceDocument} handleTabClick={handleTabClick} handleTabsDragEnd={handleTabsDragEnd} handleTabsDragMove={handleTabsDragMove} handleTabsDragStart={handleTabsDragStart} handleToggleVhcRequired={handleToggleVhcRequired} handleTrackerSave={handleTrackerSave} handleUpdateRequestPrePickLocation={handleUpdateRequestPrePickLocation} handleUpdateRequests={handleUpdateRequests} handleWriteUpCompletionChange={handleWriteUpCompletionChange} handleWriteUpRequestStatusesChange={handleWriteUpRequestStatusesChange} handleWriteUpSaveSuccess={handleWriteUpSaveSuccess} handleWriteUpTasksSnapshotChange={handleWriteUpTasksSnapshotChange} highlightedNoteIds={highlightedNoteIds} invoiceBlockingReasons={invoiceBlockingReasons} invoicePrerequisitesMet={invoicePrerequisitesMet} InvoiceSection={InvoiceSection} isArchiveMode={isArchiveMode} isBookedStatus={isBookedStatus} isOpenStatus={isOpenStatus} isCheckedIn={isCheckedIn} isClockingLockedByStatus={isClockingLockedByStatus} isInPrimeGroup={isInPrimeGroup} isInvoiceOrBeyondReadOnly={isInvoiceOrBeyondReadOnly} isLinking={isLinking} isLinkPopupOpen={isLinkPopupOpen} isPartsWriteUpVhcLockedByStatus={isPartsWriteUpVhcLockedByStatus} isValetMode={isValetMode} JobCardErrorBoundary={JobCardErrorBoundary} jobData={jobData} jobDivisionLabel={jobDivisionLabel} jobDivisionLower={jobDivisionLower} jobDocuments={jobDocuments} jobNotes={jobNotes} jobNumber={jobNumber} jobVhcChecks={jobVhcChecks} KEY_LOCATIONS={KEY_LOCATIONS} linkError={linkError} linkJobInput={linkJobInput} LocationUpdateModal={LocationUpdateModal} lockAlertStyle={lockAlertStyle} lockedTabIds={lockedTabIds} MessagesTab={MessagesTab} mileageInputDirtyRef={mileageInputDirtyRef} normalizeKeyLocationLabel={normalizeKeyLocationLabel} NotesTabNew={NotesTabNew} overallStatusId={overallStatusId} overallStatusLabel={overallStatusLabel} pageStackStyle={pageStackStyle} partsTabCompleteInstant={partsTabCompleteInstant} PartsTabNew={PartsTabNew} partsWriteUpVhcLockDescription={partsWriteUpVhcLockDescription} popupCardStyles={popupCardStyles} popupOverlayStyles={popupOverlayStyles} relatedJobs={relatedJobs} relatedJobsLoading={relatedJobsLoading} router={router} SchedulingTab={SchedulingTab} ServiceHistoryTab={ServiceHistoryTab} setInvoiceViewState={setInvoiceViewState} setIsLinkPopupOpen={setIsLinkPopupOpen} setLinkError={setLinkError} setLinkJobInput={setLinkJobInput} setShowDocumentsPopup={setShowDocumentsPopup} setTrackerQuickModalOpen={setTrackerQuickModalOpen} setVehicleMileageInput={setVehicleMileageInput} setVhcFinancialTotalsFromPanel={setVhcFinancialTotalsFromPanel} sharedJobCardShellBackground={sharedJobCardShellBackground} showCreateInvoiceButton={showCreateInvoiceButton} showDocumentsPopup={showDocumentsPopup} showProformaCompleteSection={showProformaCompleteSection} showReleaseButton={showReleaseButton} summaryPrimaryTextStyle={summaryPrimaryTextStyle} summarySecondaryTextStyle={summarySecondaryTextStyle} tabs={tabs} tabsOverflowing={tabsOverflowing} tabsScrollRef={tabsScrollRef} trackerEntry={trackerEntry} trackerQuickModalOpen={trackerQuickModalOpen} user={user} vehicleJobHistory={vehicleJobHistory} vehicleMileageInput={vehicleMileageInput} vhcCustomerStatusMeta={vhcCustomerStatusMeta} reloadVhcCustomerStatus={loadVhcCustomerStatus} vhcFinancialTotals={vhcFinancialTotals} vhcSummaryCounts={vhcSummaryCounts} VHCTab={VHCTab} vhcTabAmberReadyInstant={vhcTabAmberReadyInstant} vhcTabCompleteInstant={vhcTabCompleteInstant} WarrantyTab={WarrantyTab} writeUpCompleteInstant={writeUpCompleteInstant} WriteUpForm={WriteUpForm} writeUpTabMounted={writeUpTabMounted} />;
 
 
 
@@ -7123,6 +7255,7 @@ function SchedulingTab({
   onBookingApproval = () => {},
   bookingApprovalSaving = false,
   onAppointmentSave = () => {},
+  onAppointmentRebook = () => {},
   appointmentSaving = false
 }) {
   const router = useRouter();
@@ -7274,6 +7407,16 @@ function SchedulingTab({
     }
   };
 
+  const handleAppointmentRebook = async () => {
+    if (!canEdit || appointmentSaving) return;
+    const result = await onAppointmentRebook(appointmentForm);
+    if (result?.success) {
+      setAppointmentDirty(false);
+      setAppointmentMessage("Appointment rebooked");
+      setTimeout(() => setAppointmentMessage(""), 3000);
+    }
+  };
+
   const handleBookingDescriptionChange = (value) => {
     setBookingDescription(
       value ? formatBookingDescriptionInput(value) : ""
@@ -7363,6 +7506,11 @@ function SchedulingTab({
   !approvalForm.priceEstimate.trim() ||
   !approvalForm.etaDate ||
   !approvalForm.etaTime;
+  const rebookButtonDisabled =
+  !canEdit ||
+  appointmentSaving ||
+  !appointmentForm.date ||
+  !appointmentForm.time;
 
   const appointmentCreatedAt = jobData.appointment?.createdAt ?
   new Date(jobData.appointment.createdAt).toLocaleString() :
@@ -7649,26 +7797,54 @@ function SchedulingTab({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "16px"
+            gap: "12px",
+            marginBottom: "16px",
+            flexWrap: "wrap"
           }}>
             <h3 style={cardTitleStyle}>Appointment Information</h3>
-            <button
-              onClick={() => router.push(`/appointments?job=${jobData.jobNumber}`)}
-              style={{
-                padding: "var(--control-padding)",
-                borderRadius: "var(--control-radius)",
-                border: "none",
-                backgroundColor: "rgba(var(--primary-rgb), 0.08)",
-                color: "var(--primary-selected)",
-                fontSize: "var(--control-font-size)",
-                fontWeight: "600",
-                minHeight: "var(--control-height)",
-                cursor: "pointer",
-                whiteSpace: "nowrap"
-              }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => router.push(`/appointments?jobNumber=${encodeURIComponent(jobData.jobNumber || "")}`)}
+                style={{
+                  padding: "var(--control-padding)",
+                  borderRadius: "var(--control-radius)",
+                  border: "none",
+                  backgroundColor: "rgba(var(--primary-rgb), 0.08)",
+                  color: "var(--primary-selected)",
+                  fontSize: "var(--control-font-size)",
+                  fontWeight: "600",
+                  minHeight: "var(--control-height)",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap"
+                }}>
 
-              Open Appointment Calendar
-            </button>
+                Open Appointment Calendar
+              </button>
+              <button
+                onClick={handleAppointmentRebook}
+                disabled={rebookButtonDisabled}
+                title={
+                !appointmentForm.date || !appointmentForm.time ?
+                "Choose a date and time first" :
+                undefined
+                }
+                style={{
+                  padding: "var(--control-padding)",
+                  borderRadius: "var(--control-radius)",
+                  border: "none",
+                  backgroundColor: rebookButtonDisabled ? "rgba(var(--primary-rgb), 0.04)" : "rgba(var(--primary-rgb), 0.12)",
+                  color: rebookButtonDisabled ? "var(--text-1)" : "var(--primary-selected)",
+                  fontSize: "var(--control-font-size)",
+                  fontWeight: "600",
+                  minHeight: "var(--control-height)",
+                  cursor: rebookButtonDisabled ? "not-allowed" : "pointer",
+                  opacity: rebookButtonDisabled ? 0.6 : 1,
+                  whiteSpace: "nowrap"
+                }}>
+
+                {appointmentSaving ? "Rebooking..." : "Reschedule as New Appointment"}
+              </button>
+            </div>
           </div>
 
           {/* ✅ Linked job cards appointment note */}
@@ -9048,6 +9224,7 @@ function VHCTab({
   actingUserName = "",
   onFinancialTotalsChange,
   onJobDataRefresh,
+  onVhcCustomerStatusReload = async () => {},
   onUpdateRequestPrePickLocation = async () => {}
 }) {
   const [copied, setCopied] = useState(false);
@@ -9055,13 +9232,6 @@ function VHCTab({
   const [previewOpened, setPreviewOpened] = useState(false);
   const [sendingVhc, setSendingVhc] = useState(false);
   const [sendVhcMessage, setSendVhcMessage] = useState("");
-  const [vhcCustomerStatus, setVhcCustomerStatus] = useState({
-    status: "pending",
-    label: "Pending",
-    sentAt: null,
-    viewedAt: null,
-    readyAt: null,
-  });
 
   // Enable actions only when all Summary tab tickboxes are complete.
   const [allCheckboxesComplete, setAllCheckboxesComplete] = useState(false);
@@ -9097,63 +9267,6 @@ function VHCTab({
     if (typeof window === "undefined") return "";
     return `${window.location.origin}/vhc/customer-preview/${jobNumber}`;
   }, [jobNumber]);
-
-  const loadVhcCustomerStatus = useCallback(async () => {
-    if (!jobNumber) return;
-    try {
-      const response = await fetch(
-        `/api/job-cards/${encodeURIComponent(jobNumber)}/vhc-customer-status`
-      );
-      const payload = await response.json();
-      if (response.ok && payload?.success) {
-        setVhcCustomerStatus({
-          status: payload.status || "pending",
-          label: payload.label || "Pending",
-          sentAt: payload.sentAt || null,
-          viewedAt: payload.viewedAt || null,
-          readyAt: payload.readyAt || null,
-        });
-      }
-    } catch (statusError) {
-      console.error("Failed to load VHC customer status:", statusError);
-    }
-  }, [jobNumber]);
-
-  useEffect(() => {
-    loadVhcCustomerStatus();
-    const interval = setInterval(loadVhcCustomerStatus, 15000);
-    return () => clearInterval(interval);
-  }, [loadVhcCustomerStatus]);
-
-  const vhcCustomerStatusMeta = useMemo(() => {
-    const status = String(vhcCustomerStatus?.status || "pending").toLowerCase();
-    if (status === "viewed") {
-      return {
-        label: "Viewed",
-        detail: vhcCustomerStatus?.viewedAt
-          ? `Viewed ${new Date(vhcCustomerStatus.viewedAt).toLocaleString("en-GB", { hour12: false })}`
-          : "Customer opened the VHC link",
-        background: "var(--success-surface)",
-        color: "var(--success-dark)",
-      };
-    }
-    if (status === "sent") {
-      return {
-        label: "Sent",
-        detail: vhcCustomerStatus?.sentAt
-          ? `Sent ${new Date(vhcCustomerStatus.sentAt).toLocaleString("en-GB", { hour12: false })}`
-          : "VHC sent to customer",
-        background: "var(--theme)",
-        color: "var(--accent-purple)",
-      };
-    }
-    return {
-      label: "Pending",
-      detail: vhcCustomerStatus?.readyAt ? "Ready to send" : "Not sent to customer",
-      background: "var(--warning-surface)",
-      color: "var(--warning)",
-    };
-  }, [vhcCustomerStatus]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !jobNumber) return;
@@ -9232,7 +9345,7 @@ function VHCTab({
       }
 
       setSendVhcMessage("VHC sent");
-      await loadVhcCustomerStatus();
+      await onVhcCustomerStatusReload();
       if (typeof onJobDataRefresh === "function") {
         onJobDataRefresh();
       }
@@ -9246,21 +9359,8 @@ function VHCTab({
 
   const customActions =
   <>
-      <span
-      title={vhcCustomerStatusMeta.detail}
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "6px 10px",
-        borderRadius: "var(--control-radius)",
-        backgroundColor: vhcCustomerStatusMeta.background,
-        color: vhcCustomerStatusMeta.color,
-        fontSize: "12px",
-        fontWeight: 700,
-        textTransform: "uppercase"
-      }}>
-        Customer VHC: {vhcCustomerStatusMeta.label}
-      </span>
+      {/* "Customer VHC: <status>" badge now lives in the job-card customer */}
+      {/* summary card — see JobCardDetailPageUi jobcard-summary-customer. */}
       <button
       type="button"
       className="app-btn app-btn--primary app-btn--sm"
