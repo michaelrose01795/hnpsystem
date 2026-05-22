@@ -1257,7 +1257,7 @@ export default function CreateJobCardPageUi(props) {
                 </div>
                 <div style={moreFieldStyle}>
                   <label style={moreLabelStyle}>Request Description</label>
-                  <textarea value={moreRequest.text || ""} onChange={e => handleRequestChange(moreRequestIndex, e.target.value)} className="app-input" style={{ minHeight: "96px", resize: "vertical" }} />
+                  <textarea value={moreRequest.text || ""} onChange={e => handleRequestChange(moreRequestIndex, e.target.value)} className="app-input app-input--textarea" />
                 </div>
                 <div style={moreGridStyle}>
                   <div style={moreFieldStyle}>
@@ -1296,7 +1296,7 @@ export default function CreateJobCardPageUi(props) {
                 </label>
                 <div style={moreFieldStyle}>
                   <label style={moreLabelStyle}>Internal Notes</label>
-                  <textarea value={moreRequest.noteText || ""} onChange={e => updateRequestField(moreRequestIndex, "noteText", e.target.value)} className="app-input" style={{ minHeight: "72px", resize: "vertical" }} />
+                  <textarea value={moreRequest.noteText || ""} onChange={e => updateRequestField(moreRequestIndex, "noteText", e.target.value)} className="app-input app-input--textarea" />
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
                   <button type="button" onClick={() => {

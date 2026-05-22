@@ -66,10 +66,12 @@ export default function ThreeDWebsitePage() {
   const scrollRef = useRef({ progress: 0, stageFloat: 0 });
   const scrollerRef = useRef(null);
   const progressFillRef = useRef(null);
+  const canvasHolderRef = useRef(null);
 
   const [activeStage, setActiveStage] = useState(0);
   const [hasScrolled, setHasScrolled] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [sceneActive, setSceneActive] = useState(true);
 
   // Respect the OS "reduce motion" preference.
   useEffect(() => {
@@ -79,6 +81,41 @@ export default function ThreeDWebsitePage() {
     apply();
     mq.addEventListener?.("change", apply);
     return () => mq.removeEventListener?.("change", apply);
+  }, []);
+
+  // Pause the 3D render loop whenever the canvas is off-screen or the browser
+  // tab is hidden. The scene stays mounted — so it is always loaded and ready
+  // the instant it returns into view — but consumes no GPU/CPU while paused.
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    let onScreen = true;
+    let tabVisible = !document.hidden;
+    const sync = () => setSceneActive(onScreen && tabVisible);
+
+    const onVisibility = () => {
+      tabVisible = !document.hidden;
+      sync();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    let observer;
+    const holder = canvasHolderRef.current;
+    if (holder && "IntersectionObserver" in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          onScreen = entries.some((entry) => entry.isIntersecting);
+          sync();
+        },
+        // rootMargin resumes the loop shortly before the canvas scrolls in.
+        { rootMargin: "240px" },
+      );
+      observer.observe(holder);
+    }
+    sync();
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (observer) observer.disconnect();
+    };
   }, []);
 
   // Single rAF-throttled scroll listener.
@@ -140,9 +177,13 @@ export default function ThreeDWebsitePage() {
       <div className={styles.track} style={{ height: `${STAGE_COUNT * 100}dvh` }}>
         <div className={styles.sticky}>
           {/* 3D layer */}
-          <div className={styles.canvasHolder}>
+          <div ref={canvasHolderRef} className={styles.canvasHolder}>
             <CanvasBoundary fallback={<SceneFallback />}>
-              <ThreeDScene scrollRef={scrollRef} reducedMotion={reducedMotion} />
+              <ThreeDScene
+                scrollRef={scrollRef}
+                reducedMotion={reducedMotion}
+                frameloop={sceneActive ? "always" : "never"}
+              />
             </CanvasBoundary>
           </div>
           <div className={styles.vignette} aria-hidden="true" />

@@ -11,12 +11,13 @@ import CutawayBuilding from "./CutawayBuilding";
 import RoomContent from "./three/RoomFixtures";
 import { BUILDING, PALETTE, getRoomCenterX, STAGES } from "@/features/3Dwebsite/data/threeDWebsiteMockData";
 
-function ThreeDScene({ scrollRef, reducedMotion = false }) {
+function ThreeDScene({ scrollRef, reducedMotion = false, frameloop = "always" }) {
   const start = STAGES[0].cam;
 
   return (
     <Canvas
       shadows
+      frameloop={frameloop}
       dpr={[1, 1.8]}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       camera={{ position: [start.pos[0], start.pos[1], start.pos[2]], fov: 42, near: 0.5, far: 240 }}

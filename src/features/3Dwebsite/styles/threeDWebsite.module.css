@@ -2,7 +2,10 @@
    Scoped styles for the standalone /3Dwebsite showcase. Self-contained: this
    page does NOT consume the DMS theme. Palette is page-local (red/black/white).
    Border-free by design (CLAUDE.md §3.0a) — edges use box-shadow, focus uses
-   outline. All colours live as CSS variables on .root so they are easy to edit. */
+   outline. All colours live as CSS variables on .root so they are easy to edit.
+
+   The "Stage" panel is a full-width frosted bar docked to the TOP of the page;
+   the 3D scene fills the area below it. */
 
 .root {
   --hp-red: #d61f2b;
@@ -13,9 +16,9 @@
   --hp-ink: #1d1e24;
   --hp-mute: #696d77;
   --hp-white: #ffffff;
-  --hp-panel: rgba(255, 255, 255, 0.9);
+  --hp-bar: #f4f4f7;
   --hp-bg: #e6e7eb;
-  --hp-shadow: 0 18px 40px -16px rgba(21, 22, 27, 0.5), 0 3px 10px rgba(21, 22, 27, 0.12);
+  --hp-shadow: 0 16px 34px -16px rgba(21, 22, 27, 0.46), 0 2px 8px rgba(21, 22, 27, 0.1);
 
   position: fixed;
   inset: 0;
@@ -48,20 +51,21 @@
 }
 
 .canvasHolder { position: absolute; inset: 0; }
-.canvasHolder canvas { display: block; touch-action: none; }
+/* touch-action: pan-y keeps vertical drag scrolling the page over the canvas. */
+.canvasHolder canvas { display: block; touch-action: pan-y; }
 
 /* Graceful backdrop if WebGL is unavailable — overlays still readable on top. */
 .sceneFallback {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(120% 90% at 78% 12%, rgba(214, 31, 43, 0.32), transparent 60%),
+    radial-gradient(120% 90% at 78% 18%, rgba(214, 31, 43, 0.32), transparent 60%),
     linear-gradient(160deg, #2a2c34 0%, #15161b 60%, #0d0e12 100%);
 }
 .sceneFallbackNote {
   position: absolute;
   left: 50%;
-  top: 38%;
+  top: 60%;
   transform: translateX(-50%);
   color: rgba(255, 255, 255, 0.7);
   font-size: 13px;
@@ -69,21 +73,20 @@
   text-transform: uppercase;
 }
 
-/* Soft framing vignette over the 3D for depth + card legibility. */
+/* Soft framing vignette over the 3D for depth + legibility. */
 .vignette {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    radial-gradient(130% 80% at 30% 30%, transparent 55%, rgba(21, 22, 27, 0.28) 100%),
-    linear-gradient(180deg, rgba(21, 22, 27, 0.16) 0%, transparent 22%);
+  background: radial-gradient(135% 95% at 50% 42%, transparent 56%, rgba(21, 22, 27, 0.28) 100%);
 }
 
-/* --- Brand mark (top-left) ------------------------------------------------ */
+/* --- Brand mark (sits at the top-left of the stage bar) ------------------- */
 .brand {
   position: absolute;
-  top: 22px;
-  left: 24px;
+  top: 17px;
+  left: clamp(18px, 3vw, 40px);
+  z-index: 7;
   display: flex;
   align-items: center;
   gap: 11px;
@@ -93,30 +96,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
   background: var(--hp-red);
   color: #fff;
   font-weight: 800;
   font-size: 15px;
   letter-spacing: -0.02em;
-  box-shadow: 0 8px 18px -6px rgba(214, 31, 43, 0.7);
+  box-shadow: 0 10px 20px -7px rgba(214, 31, 43, 0.7);
 }
-.brandText { display: flex; flex-direction: column; line-height: 1.22; }
+.brandText { display: flex; flex-direction: column; line-height: 1.2; }
 .brandName {
   font-weight: 800;
   font-size: 15px;
   letter-spacing: -0.01em;
-  color: #fff;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+  color: var(--hp-black);
 }
 .brandSub {
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.55);
+  color: var(--hp-mute);
 }
 
 /* --- Top progress bar ----------------------------------------------------- */
@@ -126,8 +127,8 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: rgba(21, 22, 27, 0.22);
-  z-index: 6;
+  background: rgba(21, 22, 27, 0.16);
+  z-index: 8;
 }
 .progressFill {
   height: 100%;
@@ -139,141 +140,167 @@
   transition: transform 0.12s linear;
 }
 
-/* --- Stage rail (jump navigation) ---------------------------------------- */
+/* --- Stage rail (jump navigation) — dark glass capsule over the 3D ------- */
 .rail {
   position: absolute;
-  left: 24px;
-  top: 50%;
+  left: 18px;
+  top: 56%;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  padding: 7px 6px;
+  border-radius: 999px;
+  background: rgba(21, 22, 27, 0.46);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+  box-shadow: 0 12px 26px -12px rgba(21, 22, 27, 0.6);
   z-index: 6;
 }
 .railBtn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 9px;
+  gap: 9px;
+  padding: 6px 8px;
   background: transparent;
   border: 0;
   border-radius: 999px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.86);
   font-family: inherit;
   transition: background 0.25s ease;
 }
-.railBtn:hover { background: rgba(21, 22, 27, 0.38); }
+.railBtn:hover { background: rgba(255, 255, 255, 0.12); }
 .railBtn:focus-visible { outline: 2px solid var(--hp-red-bright); outline-offset: 2px; }
 .railDot {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.45);
-  box-shadow: 0 0 0 4px rgba(21, 22, 27, 0.32);
+  background: rgba(255, 255, 255, 0.5);
   transition: background 0.25s ease, transform 0.25s ease;
   flex: none;
 }
 .railLabel {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.01em;
   white-space: nowrap;
   max-width: 0;
   opacity: 0;
   overflow: hidden;
   transition: max-width 0.3s ease, opacity 0.3s ease;
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
 }
 .railBtn:hover .railLabel,
-.railBtnActive .railLabel { max-width: 150px; opacity: 1; }
-.railBtnActive { background: rgba(21, 22, 27, 0.46); }
+.railBtnActive .railLabel { max-width: 160px; opacity: 1; }
+.railBtnActive { background: var(--hp-red); }
 .railBtnActive .railDot {
-  background: var(--hp-red-bright);
-  transform: scale(1.25);
-  box-shadow: 0 0 0 4px rgba(214, 31, 43, 0.35), 0 0 12px rgba(255, 65, 78, 0.9);
+  background: #fff;
+  transform: scale(1.18);
 }
 
-/* --- Scroll hint ---------------------------------------------------------- */
+/* --- Scroll hint — dark glass pill --------------------------------------- */
 .hint {
   position: absolute;
   left: 50%;
-  bottom: 26px;
+  bottom: 24px;
   transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  color: rgba(255, 255, 255, 0.88);
+  gap: 10px;
+  padding: 8px 9px 8px 16px;
+  border-radius: 999px;
+  background: rgba(21, 22, 27, 0.5);
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+  color: #fff;
   pointer-events: none;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.5s ease, transform 0.5s ease;
   z-index: 5;
 }
-.hintHidden { opacity: 0; }
+.hintHidden { opacity: 0; transform: translate(-50%, 12px); }
 .hintText {
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  font-weight: 600;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  font-weight: 700;
 }
 .hintChevron {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(214, 31, 43, 0.92);
-  box-shadow: 0 6px 16px -4px rgba(214, 31, 43, 0.8);
+  background: var(--hp-red);
+  font-size: 13px;
   animation: hpBob 1.7s ease-in-out infinite;
 }
 @keyframes hpBob {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(6px); }
+  50% { transform: translateY(5px); }
 }
 
-/* --- Overlay layer -------------------------------------------------------- */
+/* ======================================================================== */
+/*  Stage bar — full-width frosted panel docked to the top                   */
+/* ======================================================================== */
 .overlays { position: absolute; inset: 0; pointer-events: none; }
 
 .overlay {
   position: absolute;
   top: 0;
+  left: 0;
   right: 0;
-  bottom: 0;
-  width: clamp(360px, 33vw, 460px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 84px 30px 40px 56px;
+  padding: 16px clamp(18px, 3vw, 40px) 24px;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(18px);
-  transition: opacity 0.55s ease, transform 0.55s ease, visibility 0s linear 0.55s;
+  transform: translateY(-22px);
+  transition: opacity 0.5s ease, transform 0.5s ease, visibility 0s linear 0.5s;
   pointer-events: none;
-  background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(248, 248, 250, 0.78) 34%, rgba(248, 248, 250, 0.95) 100%);
-  -webkit-backdrop-filter: blur(7px);
-  backdrop-filter: blur(7px);
+  background: linear-gradient(
+    180deg,
+    rgba(244, 244, 247, 0.98) 0%,
+    rgba(244, 244, 247, 0.95) 54%,
+    rgba(244, 244, 247, 0.74) 80%,
+    rgba(244, 244, 247, 0) 100%
+  );
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
 }
 .overlayActive {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-  transition: opacity 0.55s ease, transform 0.55s ease, visibility 0s linear 0s;
-  pointer-events: auto;
+  transition: opacity 0.5s ease, transform 0.5s ease, visibility 0s linear 0s;
 }
-.overlayInner {
-  max-height: 100%;
-  overflow-y: auto;
-  padding-right: 4px;
-  scrollbar-width: thin;
+.overlayInner { display: flex; flex-direction: column; gap: 14px; }
+
+/* Header row: title block (left, clears the brand) + lede/note (right). */
+.overlayHead {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(18px, 3vw, 44px);
+  padding-left: 190px; /* clears the brand mark on the left */
+}
+.overlayHeadMain { flex: 0 1 auto; min-width: 0; }
+.overlayHeadAside {
+  flex: 1 1 360px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-top: 3px;
 }
 
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
 .badge {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--hp-mute);
 }
@@ -281,110 +308,119 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--hp-red);
 }
 .kicker::before {
   content: "";
-  width: 22px;
+  width: 16px;
   height: 3px;
   border-radius: 2px;
   background: var(--hp-red);
 }
 .heading {
-  margin: 8px 0 0;
-  font-size: clamp(22px, 2.4vw, 30px);
+  margin: 7px 0 0;
+  font-size: clamp(21px, 2.5vw, 31px);
   font-weight: 800;
-  line-height: 1.14;
-  letter-spacing: -0.02em;
+  line-height: 1.1;
+  letter-spacing: -0.022em;
   color: var(--hp-black);
 }
 .lede {
-  margin: 12px 0 0;
-  font-size: 14px;
-  line-height: 1.55;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
   color: var(--hp-mute);
+  max-width: 60ch;
 }
 
-/* Small contextual line shown above a section's card grid. */
-.featureNote {
-  margin-top: 16px;
-  display: flex;
+/* Compact contextual chip in the header (per-section "note"). */
+.note {
+  display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 9px 12px;
-  border-radius: 11px;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 7px 11px;
+  border-radius: 9px;
   background: rgba(21, 22, 27, 0.055);
-  font-size: 12.5px;
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 1.35;
   color: var(--hp-ink);
 }
-.featureNoteAlert { background: rgba(255, 65, 78, 0.13); color: var(--hp-red-dark); }
-.featureNoteIcon { font-size: 15px; flex: none; }
-.featureNoteStrong { font-weight: 800; }
+.noteAlert { background: rgba(255, 65, 78, 0.13); color: var(--hp-red-dark); }
+.noteIcon { font-size: 14px; flex: none; }
+.noteStrong { font-weight: 800; }
 
-/* --- Card area ------------------------------------------------------------ */
-.cardArea { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
-.cardGrid {
-  margin-top: 16px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 11px;
+/* Body: a horizontal row of cards (scrolls if it overflows). */
+.overlayBody { display: flex; flex-direction: column; gap: 12px; }
+.cardTrack {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  pointer-events: auto;
+  touch-action: pan-x;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px 2px 6px;
 }
+.cardTrack::-webkit-scrollbar { display: none; }
+
+/* Staggered entrance for everything in the card row. */
+.cardTrack > * {
+  opacity: 0;
+  transform: translateY(15px) scale(0.985);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+}
+.overlayActive .cardTrack > * { opacity: 1; transform: translateY(0) scale(1); }
+.overlayActive .cardTrack > *:nth-child(1) { transition-delay: 0.06s; }
+.overlayActive .cardTrack > *:nth-child(2) { transition-delay: 0.12s; }
+.overlayActive .cardTrack > *:nth-child(3) { transition-delay: 0.18s; }
+.overlayActive .cardTrack > *:nth-child(4) { transition-delay: 0.24s; }
+.overlayActive .cardTrack > *:nth-child(5) { transition-delay: 0.30s; }
 
 /* --- Floating DMS card ---------------------------------------------------- */
 .card {
-  position: relative;
-  padding: 14px 15px;
+  flex: 0 0 clamp(182px, 15.5vw, 212px);
+  display: flex;
+  flex-direction: column;
+  padding: 13px 14px;
   border-radius: 15px;
   background: var(--hp-white);
-  box-shadow:
-    inset 3px 0 0 0 var(--card-accent, var(--hp-red)),
-    var(--hp-shadow);
-  opacity: 0;
-  transform: translateY(16px) scale(0.985);
-  transition: opacity 0.5s ease, transform 0.5s ease;
+  box-shadow: inset 3px 0 0 0 var(--card-accent, var(--hp-red)), var(--hp-shadow);
 }
-.overlayActive .card { opacity: 1; transform: translateY(0) scale(1); }
-.overlayActive .card:nth-child(1) { transition-delay: 0.08s; }
-.overlayActive .card:nth-child(2) { transition-delay: 0.15s; }
-.overlayActive .card:nth-child(3) { transition-delay: 0.22s; }
-.overlayActive .card:nth-child(4) { transition-delay: 0.29s; }
-.overlayActive .card:nth-child(5) { transition-delay: 0.36s; }
 
 .cardHead { display: flex; align-items: flex-start; gap: 10px; }
 .cardIcon {
   flex: none;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 19px;
+  font-size: 18px;
   border-radius: 10px;
   background: rgba(214, 31, 43, 0.1);
 }
 .cardHeadText { min-width: 0; flex: 1; }
 .cardTitle {
   margin: 0;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--hp-black);
 }
-.cardSub { margin: 2px 0 0; font-size: 12px; color: var(--hp-mute); }
+.cardSub { margin: 2px 0 0; font-size: 11.5px; color: var(--hp-mute); }
 
-.cardRows { margin-top: 11px; display: flex; flex-direction: column; gap: 6px; }
+.cardRows { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
 .cardRow {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 12.5px;
+  gap: 10px;
+  font-size: 12px;
 }
 .cardRowLabel { color: var(--hp-mute); }
 .cardRowValue {
@@ -394,40 +430,38 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Status pill — tones map: done=black · active=red · queued=grey · alert=bright red */
+/* Status pill — done=black · active=red · queued=grey · alert=bright red.
+   margin-top:auto keeps pills aligned at the bottom of every card. */
 .pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 11px;
+  align-self: flex-start;
+  margin-top: auto;
   padding: 5px 10px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+.cardRows + .pill { margin-top: 11px; }
 .pillDot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .toneDone { background: rgba(21, 22, 27, 0.92); color: #fff; }
 .toneActive { background: var(--hp-red); color: #fff; }
 .toneQueued { background: rgba(21, 22, 27, 0.08); color: var(--hp-mute); }
-.toneAlert {
-  background: rgba(255, 65, 78, 0.14);
-  color: var(--hp-red-dark);
-}
+.toneAlert { background: rgba(255, 65, 78, 0.15); color: var(--hp-red-dark); }
 
-/* --- Entry choices -------------------------------------------------------- */
-.choices { margin-top: 18px; display: flex; flex-direction: column; gap: 11px; }
-.choicePrompt { font-size: 13px; color: var(--hp-mute); margin: 0 0 2px; }
+/* --- Entry choice buttons (sit in the card row) -------------------------- */
 .choice {
+  flex: 0 0 clamp(198px, 17vw, 226px);
   display: flex;
-  align-items: center;
-  gap: 13px;
-  width: 100%;
+  flex-direction: column;
+  gap: 7px;
   padding: 14px 15px;
   border-radius: 15px;
   background: var(--hp-white);
-  box-shadow: var(--hp-shadow);
+  box-shadow: inset 3px 0 0 0 var(--hp-red), var(--hp-shadow);
   cursor: pointer;
   text-align: left;
   font-family: inherit;
@@ -435,87 +469,111 @@
   transition: transform 0.22s ease, box-shadow 0.22s ease;
 }
 .choice:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 24px 46px -16px rgba(21, 22, 27, 0.55), 0 0 0 2px rgba(214, 31, 43, 0.18);
+  transform: translateY(-3px);
+  box-shadow: inset 3px 0 0 0 var(--hp-red), 0 24px 44px -16px rgba(21, 22, 27, 0.5);
 }
 .choice:focus-visible { outline: 2px solid var(--hp-red); outline-offset: 2px; }
 .choiceIcon {
-  flex: none;
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 23px;
-  border-radius: 12px;
+  font-size: 21px;
+  border-radius: 11px;
   background: rgba(214, 31, 43, 0.12);
 }
-.choiceBody { flex: 1; min-width: 0; }
-.choiceLabel { font-size: 15px; font-weight: 800; color: var(--hp-black); }
-.choiceNote { font-size: 12px; color: var(--hp-mute); margin-top: 1px; }
+.choiceLabel { font-size: 14.5px; font-weight: 800; color: var(--hp-black); }
+.choiceNote { font-size: 11.5px; color: var(--hp-mute); }
 .choiceGo {
-  flex: none;
-  font-size: 18px;
-  color: var(--hp-red);
-  transition: transform 0.22s ease;
-}
-.choice:hover .choiceGo { transform: translateX(3px); }
-
-/* --- Collection dashboard ------------------------------------------------- */
-.dashHead {
-  margin: 18px 0 8px;
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hp-red);
+}
+.choiceGo span { transition: transform 0.22s ease; }
+.choice:hover .choiceGo span { transform: translateX(4px); }
+
+/* --- Collection dashboard — horizontal strip ----------------------------- */
+.dashWrap { display: flex; flex-direction: column; gap: 7px; }
+.dashHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: var(--hp-mute);
 }
-.dashGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 13px;
-  border-radius: 15px;
-  background: var(--hp-white);
-  box-shadow: var(--hp-shadow);
+.dashHead::before {
+  content: "";
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--hp-red);
 }
-.dashItem { display: flex; align-items: center; gap: 9px; padding: 6px 4px; }
+.dashStrip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  pointer-events: auto;
+  padding-bottom: 2px;
+}
+.dashStrip::-webkit-scrollbar { display: none; }
+.dashItem {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 13px;
+  border-radius: 11px;
+  background: var(--hp-white);
+  box-shadow: 0 8px 20px -13px rgba(21, 22, 27, 0.5);
+}
 .dashDot {
   flex: none;
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--hp-black);
   box-shadow: 0 0 0 3px rgba(21, 22, 27, 0.1);
 }
-.dashText { min-width: 0; }
+.dashText { min-width: 0; display: flex; flex-direction: column; }
 .dashLabel {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--hp-mute);
 }
 .dashValue {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--hp-ink);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* --- Reduced-motion notice ----------------------------------------------- */
 .reducedBadge {
   position: absolute;
-  right: 20px;
+  right: 18px;
   bottom: 18px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.78);
   background: rgba(21, 22, 27, 0.5);
-  padding: 6px 11px;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  padding: 6px 12px;
   border-radius: 999px;
   pointer-events: none;
   z-index: 5;
@@ -583,48 +641,40 @@
 }
 
 /* --- Tablet --------------------------------------------------------------- */
-@media (max-width: 1100px) {
-  .overlay { width: clamp(330px, 42vw, 420px); padding: 80px 24px 36px 40px; }
+@media (max-width: 1080px) {
+  .overlayHead { padding-left: 154px; gap: 22px; }
+  .overlayHeadAside { flex-basis: 280px; }
 }
 
 /* --- Mobile --------------------------------------------------------------- */
 @media (max-width: 760px) {
-  .overlay {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: auto;
-    justify-content: flex-end;
-    padding: 22px 16px calc(20px + env(safe-area-inset-bottom, 0px));
-    max-height: 66dvh;
-    background: linear-gradient(180deg, rgba(248, 248, 250, 0) 0%, rgba(248, 248, 250, 0.92) 26%, rgba(248, 248, 250, 0.98) 100%);
-    transform: translateY(28px);
+  .overlay { padding: 60px 14px 20px; }
+  .overlayHead {
+    flex-direction: column;
+    gap: 9px;
+    padding-left: 0;
   }
-  .overlayActive { transform: translateY(0); }
-  .overlayInner { max-height: calc(66dvh - 44px); }
-  .heading { font-size: clamp(20px, 6vw, 25px); }
-  .lede { font-size: 13px; }
-  .cardGrid { grid-template-columns: 1fr 1fr; }
-  .rail {
-    left: 50%;
-    top: 12px;
-    transform: translateX(-50%);
-    flex-direction: row;
-    gap: 4px;
+  .overlayHeadAside { flex-basis: auto; padding-top: 0; }
+  .heading { font-size: clamp(20px, 6vw, 26px); }
+  .lede {
+    font-size: 12.5px;
+    max-width: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
+  .brand { top: 13px; }
+  .brandChip { width: 40px; height: 40px; font-size: 13px; }
+  .brandText { display: none; }
+  .rail { left: 12px; gap: 2px; padding: 6px 5px; }
   .railLabel { display: none; }
-  .railBtn { padding: 8px; }
-  .brand { top: 16px; left: 16px; }
-  .brandChip { width: 38px; height: 38px; font-size: 13px; }
-  .hint { bottom: 70dvh; }
-  .reducedBadge { bottom: auto; top: 56px; right: 12px; }
+  .hint { bottom: 18px; }
 }
 
 @media (max-width: 420px) {
-  .cardGrid { grid-template-columns: 1fr; }
-  .dashGrid { grid-template-columns: 1fr; }
-  .brandText { display: none; }
+  .card { flex-basis: 76vw; }
+  .choice { flex-basis: 76vw; }
 }
 
 /* --- Reduced motion: drop every transition / animation on this page ------ */

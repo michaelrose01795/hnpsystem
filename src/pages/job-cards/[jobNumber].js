@@ -5955,7 +5955,7 @@ function CustomerRequestsTab({
                   </div>
                   <div style={requestDetailsFieldStyle}>
                     <label style={requestDetailsLabelStyle}>Request Description</label>
-                    <textarea value={requests[moreEditRequestIndex].text || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "text", e.target.value)} className="app-input" style={{ minHeight: "96px", resize: "vertical" }} />
+                    <textarea value={requests[moreEditRequestIndex].text || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "text", e.target.value)} className="app-input app-input--textarea" />
                   </div>
                   <div style={requestDetailsGridStyle}>
                     <div style={requestDetailsFieldStyle}>
@@ -5989,7 +5989,7 @@ function CustomerRequestsTab({
                   </label>
                   <div style={requestDetailsFieldStyle}>
                     <label style={requestDetailsLabelStyle}>Internal Notes</label>
-                    <textarea value={requests[moreEditRequestIndex].noteText || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "noteText", e.target.value)} className="app-input" style={{ minHeight: "72px", resize: "vertical" }} />
+                    <textarea value={requests[moreEditRequestIndex].noteText || ""} onChange={(e) => handleUpdateRequest(moreEditRequestIndex, "noteText", e.target.value)} className="app-input app-input--textarea" />
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
                     <button type="button" onClick={() => {

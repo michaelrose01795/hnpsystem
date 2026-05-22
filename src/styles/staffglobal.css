@@ -3685,7 +3685,11 @@ html.staff-scope button.timepicker-api__option.is-selected:focus-visible {
 /* ========================================================= */
 
 html.staff-scope textarea {
-  resize: vertical;
+  /* Manual drag-resize is disabled app-wide — textareas size themselves.
+     Form / notes fields (.app-input--textarea) auto-grow line-by-line via
+     field-sizing; see src/styles/families/inputs.css. !important locks this
+     over any legacy inline `resize` values still present in page files. */
+  resize: none !important;
 }
 
 html.staff-scope input[type="search"]::-webkit-search-decoration,

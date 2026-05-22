@@ -67,16 +67,14 @@ export default function CameraScrollController({ scrollRef, reducedMotion = fals
     scratch.look.lerpVectors(a.look, b.look, frac);
     const roomCenterX = THREE.MathUtils.lerp(a.centerX, b.centerX, frac);
 
-    // Pan the framing so the room clears the overlay panel on wide screens.
+    // The "Stage" bar spans the top of the page, so frame the room in the
+    // lower part of the view: translate the camera up (the room then renders
+    // lower on screen) while keeping the same dollhouse downward angle.
     const w = state.size.width;
-    const panX = w >= 1100 ? 5.4 : w >= 760 ? 3.0 : 0;
-    scratch.look.x += panX;
-    if (w < 760) {
-      // Narrow screens: lift + pull back so the room reads above the sheet.
-      scratch.pos.y += 1.0;
-      scratch.pos.z += 2.2;
-      scratch.look.y += 0.5;
-    }
+    const drop = w >= 1080 ? 2.2 : w >= 760 ? 1.9 : 1.6;
+    scratch.pos.y += drop;
+    scratch.look.y += drop;
+    if (w < 760) scratch.pos.z += 2.0; // pull back a touch on small screens
 
     const camera = state.camera;
     if (firstFrame.current) {
