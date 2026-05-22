@@ -12,12 +12,12 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { siteContent } from "@/singlescroll/data/siteContent";
+import { siteContent } from "@/features/website/data/siteContent";
 import { canShowDevLogin } from "@/lib/dev-tools/config";
-import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
-import useWebsiteTheme from "@/singlescroll/hooks/useWebsiteTheme";
-import WebsiteNativeSelect from "@/singlescroll/components/WebsiteNativeSelect";
-import styles from "@/singlescroll/styles/singlescroll.module.css";
+import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
+import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
+import useWebsiteTheme from "@/features/website/hooks/useWebsiteTheme";
+import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
 
 const STEP_EMAIL = "email";
 const STEP_SIGNIN = "signin";
@@ -47,7 +47,7 @@ export default function CustomerLoginPage() {
   const [matchedName, setMatchedName] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const devEnabled = useMemo(() => canShowDevLogin(), []);
+  const devEnabled = useMemo(() => !isPresentationMode() && canShowDevLogin(), []);
   const [devCustomers, setDevCustomers] = useState([]);
   const [devCustomerId, setDevCustomerId] = useState("");
   const [devLoading, setDevLoading] = useState(false);
@@ -295,15 +295,15 @@ export default function CustomerLoginPage() {
       <Head>
         <title>{pageTitle}</title>
       </Head>
-      <div className={styles.authShell}>
-        <main className={styles.authMain}>
-          <div className={styles.authCard}>
-            <div className={styles.authTopRow}>
-              <Link href="/website" className={styles.authBackLink}>
+      <div className={"authShell"} data-presentation="website-login">
+        <main className={"authMain"}>
+          <div className={"authCard"} data-presentation="website-login-card">
+            <div className={"authTopRow"}>
+              <Link href="/website" className={"authBackLink"}>
                 Back to website
               </Link>
 
-              <div className={styles.authBrand}>
+              <div className={"authBrand"}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={siteContent.brand.logoUrl}
@@ -314,15 +314,15 @@ export default function CustomerLoginPage() {
 
             {step === STEP_EMAIL ? (
               <>
-                <h1 className={styles.authTitle}>Sign in or create account</h1>
-                <p className={styles.authSubtitle}>
+                <h1 className={"authTitle"}>Sign in or create account</h1>
+                <p className={"authSubtitle"}>
                   Enter your email to continue. We'll find your existing
                   account or set you up with a new one.
                 </p>
-                {error ? <p className={styles.authError}>{error}</p> : null}
-                <form className={styles.authForm} onSubmit={handleEmailContinue}>
-                  <div className={styles.authField}>
-                    <label className={styles.authLabel} htmlFor="email">
+                {error ? <p className={"authError"}>{error}</p> : null}
+                <form className={"authForm"} onSubmit={handleEmailContinue}>
+                  <div className={"authField"}>
+                    <label className={"authLabel"} htmlFor="email">
                       Email
                     </label>
                     <input
@@ -331,14 +331,14 @@ export default function CustomerLoginPage() {
                       autoComplete="email"
                       required
                       autoFocus
-                      className={styles.authInput}
+                      className={"authInput"}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
                   <button
                     type="submit"
-                    className={`app-btn ${styles.authSubmit}`}
+                    className={`app-btn authSubmit`}
                     disabled={submitting}
                   >
                     {submitting ? "Checking…" : "Continue"}
@@ -349,15 +349,15 @@ export default function CustomerLoginPage() {
 
             {step === STEP_SIGNIN ? (
               <>
-                <h1 className={styles.authTitle}>Welcome back</h1>
-                <p className={styles.authSubtitle}>
+                <h1 className={"authTitle"}>Welcome back</h1>
+                <p className={"authSubtitle"}>
                   We found your account. Enter your password to sign in as{" "}
                   <strong>{email}</strong>.
                 </p>
-                {error ? <p className={styles.authError}>{error}</p> : null}
-                <form className={styles.authForm} onSubmit={handleSignIn}>
-                  <div className={styles.authField}>
-                    <label className={styles.authLabel} htmlFor="password">
+                {error ? <p className={"authError"}>{error}</p> : null}
+                <form className={"authForm"} onSubmit={handleSignIn}>
+                  <div className={"authField"}>
+                    <label className={"authLabel"} htmlFor="password">
                       Password
                     </label>
                     <input
@@ -366,21 +366,21 @@ export default function CustomerLoginPage() {
                       autoComplete="current-password"
                       required
                       autoFocus
-                      className={styles.authInput}
+                      className={"authInput"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
                   <button
                     type="submit"
-                    className={`app-btn ${styles.authSubmit}`}
+                    className={`app-btn authSubmit`}
                     disabled={submitting}
                   >
                     {submitting ? "Signing in…" : "Sign in"}
                   </button>
                   <button
                     type="button"
-                    className={`app-btn ${styles.profileGhostBtn}`}
+                    className={`app-btn profileGhostBtn`}
                     onClick={resetToEmailStep}
                   >
                     Use a different email
@@ -391,20 +391,20 @@ export default function CustomerLoginPage() {
 
             {step === STEP_SET_PASSWORD ? (
               <>
-                <h1 className={styles.authTitle}>
+                <h1 className={"authTitle"}>
                   {matchedName?.firstname
                     ? `Welcome, ${matchedName.firstname}`
                     : "We found your record"}
                 </h1>
-                <p className={styles.authSubtitle}>
+                <p className={"authSubtitle"}>
                   Your email is on file with us. Set a password to claim your
                   customer portal account — your vehicles, jobs and invoices
                   will be linked automatically.
                 </p>
-                {error ? <p className={styles.authError}>{error}</p> : null}
-                <form className={styles.authForm} onSubmit={handleSetPassword}>
-                  <div className={styles.authField}>
-                    <label className={styles.authLabel} htmlFor="set-password">
+                {error ? <p className={"authError"}>{error}</p> : null}
+                <form className={"authForm"} onSubmit={handleSetPassword}>
+                  <div className={"authField"}>
+                    <label className={"authLabel"} htmlFor="set-password">
                       Create a password (min. 12 characters)
                     </label>
                     <input
@@ -414,21 +414,21 @@ export default function CustomerLoginPage() {
                       minLength={12}
                       required
                       autoFocus
-                      className={styles.authInput}
+                      className={"authInput"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
                   <button
                     type="submit"
-                    className={`app-btn ${styles.authSubmit}`}
+                    className={`app-btn authSubmit`}
                     disabled={submitting}
                   >
                     {submitting ? "Setting up…" : "Set password & sign in"}
                   </button>
                   <button
                     type="button"
-                    className={`app-btn ${styles.profileGhostBtn}`}
+                    className={`app-btn profileGhostBtn`}
                     onClick={resetToEmailStep}
                   >
                     Use a different email
@@ -439,92 +439,92 @@ export default function CustomerLoginPage() {
 
             {step === STEP_SIGNUP ? (
               <>
-                <div className={styles.signupHeader}>
-                  <span className={styles.signupEyebrow}>New customer</span>
-                  <h1 className={styles.authTitle}>Create your account</h1>
-                  <p className={styles.authSubtitle}>
+                <div className={"signupHeader"}>
+                  <span className={"signupEyebrow"}>New customer</span>
+                  <h1 className={"authTitle"}>Create your account</h1>
+                  <p className={"authSubtitle"}>
                     We don't have you on file yet. Add your details and we'll
                     open your customer portal.
                   </p>
-                  <div className={styles.signupEmailSummary}>
+                  <div className={"signupEmailSummary"}>
                     <span>Email</span>
                     <strong>{email}</strong>
                   </div>
                 </div>
-                {error ? <p className={styles.authError}>{error}</p> : null}
+                {error ? <p className={"authError"}>{error}</p> : null}
                 <form
-                  className={`${styles.authForm} ${styles.signupForm}`}
+                  className={`authForm signupForm`}
                   onSubmit={handleSignup}
                 >
-                  <div className={styles.signupPanel}>
-                    <div className={styles.authRow}>
-                      <div className={styles.authField}>
-                        <label className={styles.authLabel}>
-                          First name <span className={styles.requiredMark}>*</span>
+                  <div className={"signupPanel"}>
+                    <div className={"authRow"}>
+                      <div className={"authField"}>
+                        <label className={"authLabel"}>
+                          First name <span className={"requiredMark"}>*</span>
                         </label>
                         <input
                           type="text"
                           autoComplete="given-name"
                           required
                           autoFocus
-                          className={styles.authInput}
+                          className={"authInput"}
                           value={signupExtras.firstname}
                           onChange={(e) => updateSignupField("firstname", e.target.value)}
                         />
                       </div>
-                      <div className={styles.authField}>
-                        <label className={styles.authLabel}>
-                          Second name <span className={styles.requiredMark}>*</span>
+                      <div className={"authField"}>
+                        <label className={"authLabel"}>
+                          Second name <span className={"requiredMark"}>*</span>
                         </label>
                         <input
                           type="text"
                           autoComplete="family-name"
                           required
-                          className={styles.authInput}
+                          className={"authInput"}
                           value={signupExtras.lastname}
                           onChange={(e) => updateSignupField("lastname", e.target.value)}
                         />
                       </div>
                     </div>
-                    <div className={styles.authField}>
-                      <label className={styles.authLabel}>
-                        Mobile <span className={styles.requiredMark}>*</span>
+                    <div className={"authField"}>
+                      <label className={"authLabel"}>
+                        Mobile <span className={"requiredMark"}>*</span>
                       </label>
                       <input
                         type="tel"
                         autoComplete="tel"
                         required
-                        className={styles.authInput}
+                        className={"authInput"}
                         value={signupExtras.mobile}
                         onChange={(e) => updateSignupField("mobile", e.target.value)}
                       />
                     </div>
-                    <div className={styles.authField}>
-                      <label className={styles.authLabel}>Telephone</label>
+                    <div className={"authField"}>
+                      <label className={"authLabel"}>Telephone</label>
                       <input
                         type="tel"
                         autoComplete="tel-national"
-                        className={styles.authInput}
+                        className={"authInput"}
                         value={signupExtras.telephone}
                         onChange={(e) => updateSignupField("telephone", e.target.value)}
                       />
                     </div>
-                    <div className={styles.authField}>
-                      <label className={styles.authLabel}>
-                        Postcode <span className={styles.requiredMark}>*</span>
+                    <div className={"authField"}>
+                      <label className={"authLabel"}>
+                        Postcode <span className={"requiredMark"}>*</span>
                       </label>
-                      <div className={styles.postcodeLookupRow}>
+                      <div className={"postcodeLookupRow"}>
                         <input
                           type="text"
                           autoComplete="postal-code"
                           required
-                          className={styles.authInput}
+                          className={"authInput"}
                           value={signupExtras.postcode}
                           onChange={(e) => updateSignupField("postcode", e.target.value.toUpperCase())}
                         />
                         <button
                           type="button"
-                          className={`app-btn ${styles.postcodeLookupButton}`}
+                          className={`app-btn postcodeLookupButton`}
                           onClick={handleAddressLookup}
                           disabled={addressLookupLoading}
                         >
@@ -532,12 +532,12 @@ export default function CustomerLoginPage() {
                         </button>
                       </div>
                       {addressLookupMessage ? (
-                        <span className={styles.signupHint}>{addressLookupMessage}</span>
+                        <span className={"signupHint"}>{addressLookupMessage}</span>
                       ) : null}
                     </div>
                     {addressSuggestions.length > 0 ? (
-                      <div className={styles.authField}>
-                        <label className={styles.authLabel}>Select address</label>
+                      <div className={"authField"}>
+                        <label className={"authLabel"}>Select address</label>
                         <WebsiteNativeSelect
                           value={addressSuggestionId}
                           onChange={handleAddressSuggestion}
@@ -549,14 +549,14 @@ export default function CustomerLoginPage() {
                         />
                       </div>
                     ) : null}
-                    <div className={styles.authField}>
-                      <div className={styles.addressFieldHeader}>
-                        <label className={styles.authLabel}>
-                          Full address <span className={styles.requiredMark}>*</span>
+                    <div className={"authField"}>
+                      <div className={"addressFieldHeader"}>
+                        <label className={"authLabel"}>
+                          Full address <span className={"requiredMark"}>*</span>
                         </label>
                         <button
                           type="button"
-                          className={styles.addressManualButton}
+                          className={"addressManualButton"}
                           onClick={() => setAddressManual((current) => !current)}
                         >
                           {addressManual ? "Use lookup" : "Enter manually"}
@@ -566,39 +566,39 @@ export default function CustomerLoginPage() {
                         autoComplete="street-address"
                         required
                         readOnly={!addressManual && addressSuggestions.length > 0}
-                        className={`${styles.authInput} ${styles.authTextarea}`}
+                        className={`authInput authTextarea`}
                         value={signupExtras.address}
                         onChange={(e) => updateSignupField("address", e.target.value)}
                       />
                     </div>
-                    <div className={styles.authField}>
-                      <label className={styles.authLabel}>
-                        Password <span className={styles.requiredMark}>*</span>
+                    <div className={"authField"}>
+                      <label className={"authLabel"}>
+                        Password <span className={"requiredMark"}>*</span>
                       </label>
                       <input
                         type="password"
                         autoComplete="new-password"
                         minLength={12}
                         required
-                        className={styles.authInput}
+                        className={"authInput"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
-                      <span className={styles.signupHint}>
+                      <span className={"signupHint"}>
                         Use at least 12 characters.
                       </span>
                     </div>
                   </div>
                   <button
                     type="submit"
-                    className={`app-btn ${styles.authSubmit}`}
+                    className={`app-btn authSubmit`}
                     disabled={submitting}
                   >
                     {submitting ? "Creating account…" : "Create account"}
                   </button>
                   <button
                     type="button"
-                    className={`app-btn ${styles.profileGhostBtn}`}
+                    className={`app-btn profileGhostBtn`}
                     onClick={resetToEmailStep}
                   >
                     Use a different email
@@ -607,23 +607,23 @@ export default function CustomerLoginPage() {
               </>
             ) : null}
 
-            <p className={styles.authFootnote}>
+            <p className={"authFootnote"}>
               By continuing you agree to {siteContent.brand.name}'s privacy and
               data policy.
             </p>
           </div>
 
           {devEnabled ? (
-            <div className={`${styles.authCard} ${styles.authDevCard}`}>
-              <span className={styles.authDevTag}>Dev tools</span>
-              <h2 className={styles.authDevTitle}>Impersonate customer</h2>
-              <p className={styles.authSubtitle}>
+            <div className={`authCard authDevCard`}>
+              <span className={"authDevTag"}>Dev tools</span>
+              <h2 className={"authDevTitle"}>Impersonate customer</h2>
+              <p className={"authSubtitle"}>
                 Test mode only. Pick any customer and you'll sign in as them
                 — exactly the same view they would see.
               </p>
-              <form className={styles.authForm} onSubmit={handleDevLogin}>
-                <div className={styles.authField}>
-                  <label className={styles.authLabel}>Customer</label>
+              <form className={"authForm"} onSubmit={handleDevLogin}>
+                <div className={"authField"}>
+                  <label className={"authLabel"}>Customer</label>
                   <WebsiteNativeSelect
                     value={devCustomerId}
                     onChange={setDevCustomerId}
@@ -645,7 +645,7 @@ export default function CustomerLoginPage() {
                 </div>
                 <button
                   type="submit"
-                  className={`app-btn ${styles.authSubmit}`}
+                  className={`app-btn authSubmit`}
                   disabled={submitting || !devCustomerId}
                 >
                   {submitting ? "Logging in…" : "Log in as customer"}

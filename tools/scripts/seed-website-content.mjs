@@ -1,6 +1,6 @@
 // file location: tools/scripts/seed-website-content.mjs
 //
-// One-shot seed: copies the existing static content under src/singlescroll/data/*
+// One-shot seed: copies the existing static content under src/features/website/data/*
 // into the website_* tables created by migration 20260520120000.
 //
 // Idempotent: every write is an upsert keyed on the row's stable `id` (or
@@ -24,15 +24,15 @@ import dotenv from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { siteContent } from "../../src/singlescroll/data/siteContent.js";
-import { vehicles } from "../../src/singlescroll/data/vehicles.js";
-import { offers } from "../../src/singlescroll/data/offers.js";
-import { reviews } from "../../src/singlescroll/data/reviews.js";
-import { team, teamDepartments } from "../../src/singlescroll/data/team.js";
-import { timeline } from "../../src/singlescroll/data/timeline.js";
-import { brands } from "../../src/singlescroll/data/brands.js";
-import { blogPosts } from "../../src/singlescroll/data/blogPosts.js";
-import { partsContent } from "../../src/singlescroll/data/partsContent.js";
+import { siteContent } from "../../src/features/website/data/siteContent.js";
+import { vehicles } from "../../src/features/website/data/vehicles.js";
+import { offers } from "../../src/features/website/data/offers.js";
+import { reviews } from "../../src/features/website/data/reviews.js";
+import { team, teamDepartments } from "../../src/features/website/data/team.js";
+import { timeline } from "../../src/features/website/data/timeline.js";
+import { brands } from "../../src/features/website/data/brands.js";
+import { blogPosts } from "../../src/features/website/data/blogPosts.js";
+import { partsContent } from "../../src/features/website/data/partsContent.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -423,7 +423,7 @@ async function seedPagesAndSeo() {
 }
 
 async function main() {
-  console.log(`Seeding website content from src/singlescroll/data/* into ${supabaseUrl}`);
+  console.log(`Seeding website content from src/features/website/data/* into ${supabaseUrl}`);
   await seedSingletons();
   await seedCollections();
   await seedPagesAndSeo();

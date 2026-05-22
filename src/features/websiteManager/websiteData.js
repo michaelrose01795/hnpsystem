@@ -3,17 +3,17 @@
 //
 // This is NOT mock data. Every page, content block, media asset and SEO entry
 // below is derived directly from the live content that the public /website
-// single-scroll page actually renders — the data modules in
-// src/singlescroll/data/* (the same modules imported by
-// src/singlescroll/WebsitePage.js).
+// customer website page actually renders — the data modules in
+// src/features/website/data/* (the same modules imported by
+// src/features/website/WebsitePage.js).
 //
-// The public site is a single-scroll page, so its "pages" are really the nav
+// The public site is a customer website page, so its "pages" are really the nav
 // chapters (#cars, #offers, #about, …). This adapter maps each chapter to a
 // manageable "page" and turns each real content record into an editable block.
 //
 // Edits made in the Website Manager currently update in-memory React state
 // only — there is no write-back yet.
-//   TODO: persist edits by writing back to the src/singlescroll/data modules
+//   TODO: persist edits by writing back to the src/features/website/data modules
 //         (or, preferably, move that content into Supabase tables behind
 //         /api/website/* and have both WebsitePage.js and this tool read it).
 //
@@ -21,15 +21,15 @@
 // draft state, file sizes, an audit trail) are intentionally left null/empty
 // rather than invented — they populate for real once a backend exists.
 
-import { siteContent } from "@/singlescroll/data/siteContent";
-import { vehicles } from "@/singlescroll/data/vehicles";
-import { offers } from "@/singlescroll/data/offers";
-import { reviews } from "@/singlescroll/data/reviews";
-import { team, teamDepartments } from "@/singlescroll/data/team";
-import { timeline } from "@/singlescroll/data/timeline";
-import { brands } from "@/singlescroll/data/brands";
-import { blogPosts } from "@/singlescroll/data/blogPosts";
-import { partsContent } from "@/singlescroll/data/partsContent";
+import { siteContent } from "@/features/website/data/siteContent";
+import { vehicles } from "@/features/website/data/vehicles";
+import { offers } from "@/features/website/data/offers";
+import { reviews } from "@/features/website/data/reviews";
+import { team, teamDepartments } from "@/features/website/data/team";
+import { timeline } from "@/features/website/data/timeline";
+import { brands } from "@/features/website/data/brands";
+import { blogPosts } from "@/features/website/data/blogPosts";
+import { partsContent } from "@/features/website/data/partsContent";
 
 const { brand, hero, trustPoints, ratings, about, serviceAndParts, motability, sellYourCar, contact } =
   siteContent;
@@ -306,8 +306,8 @@ export const MEDIA_ASSETS = collectMedia();
 /* ------------------------------------------------------------------ */
 /* SEO / meta                                                          */
 /* ------------------------------------------------------------------ */
-// The Homepage entry is the live <Head> from src/singlescroll/WebsitePage.js.
-// /website is a single-scroll page, so the other chapters have no separate
+// The Homepage entry is the live <Head> from src/features/website/WebsitePage.js.
+// /website is a customer website page, so the other chapters have no separate
 // <head> on the live site — their entries below are derived from real section
 // content (real anchors, real copy) so the panel stays useful and editable.
 

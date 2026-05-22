@@ -12,8 +12,8 @@ import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import VhcCustomerView from "@/components/VHC/VhcCustomerView";
 import LayerSurface from "@/components/ui/LayerSurface";
-import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
-import useWebsiteTheme from "@/singlescroll/hooks/useWebsiteTheme";
+import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
+import useWebsiteTheme from "@/features/website/hooks/useWebsiteTheme";
 
 const formatCurrency = (value) => {
   const num = Number(value);

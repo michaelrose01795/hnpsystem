@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const SuccessPage = dynamic(() => import("@/singlescroll/shop/SuccessPage"), {
+const SuccessPage = dynamic(() => import("@/features/website/shop/SuccessPage"), {
   ssr: false,
 });
 

@@ -5,31 +5,32 @@
 
 import useWebsiteScope from "../hooks/useWebsiteScope";
 import useWebsiteTheme from "../hooks/useWebsiteTheme";
+import Link from "next/link";
 
 export default function ShopShell({ title, children }) {
   useWebsiteScope();
   useWebsiteTheme();
   return (
-    <div className="ws-page">
-      <header className="ws-nav">
+    <div className="ws-page" data-presentation="website-shop-page">
+      <header className="ws-nav" data-presentation="website-shop-nav">
         <div className="ws-nav-inner">
-          <a href="/website" className="ws-brand">
+          <Link href="/website" className="ws-brand">
             <span className="ws-h3" style={{ margin: 0 }}>
               Humphries &amp; Parks
             </span>
-          </a>
+          </Link>
           <nav className="ws-nav-links" aria-label="Shop nav">
-            <a href="/website#shop" className="ws-nav-link">
+            <Link href="/website#shop" className="ws-nav-link">
               Continue shopping
-            </a>
-            <a href="/website/shop/cart" className="ws-nav-link">
+            </Link>
+            <Link href="/website/shop/cart" className="ws-nav-link">
               Cart
-            </a>
+            </Link>
           </nav>
         </div>
       </header>
       <main>
-        <section className="ws-section">
+        <section className="ws-section" data-presentation="website-shop-content">
           <div className="ws-container">
             <header className="ws-head">
               <span className="ws-eyebrow">Shop</span>

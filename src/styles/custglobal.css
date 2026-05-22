@@ -107,7 +107,7 @@ html.website-scope body {
   overflow-x: clip;
 
   /* Customer surface — mirrors the .profileShell background in
-     src/singlescroll/styles/singlescroll.module.css. Two red glows
+     src/features/website/styles/singlescroll.module.css. Two red glows
      anchored to top-right + bottom-left, plus two soft cool-grey
      glows in the opposite corners (top-left + bottom-right) so the
      dark corners aren't pure #07070b — they lift to a faint grey
@@ -1973,7 +1973,7 @@ html.website-scope[data-website-theme="light"] .website-dev-wash-preview {
 /* ═══════════════════════════════════════════════════════════════════════
    PUBLIC MARKETING PAGE  (/website)
 
-   Full stylesheet for src/singlescroll/WebsitePage.js — the `.ws-*` class
+   Full stylesheet for src/features/website/WebsitePage.js — the `.ws-*` class
    family. Everything the customer marketing page needs lives here; the
    page component carries no styling of its own.
 
@@ -2151,16 +2151,17 @@ html.website-scope .ws-nav {
   box-shadow: 0 1px 0 var(--ws-line);
 }
 html.website-scope .ws-nav-inner {
+  box-sizing: border-box;
   position: relative;
   width: 100%;
-  max-width: var(--ws-maxw);
+  max-width: none;
   margin: 0 auto;
-  padding: 0 clamp(18px, 4vw, 40px);
+  padding: 0 clamp(12px, 2vw, 28px);
   min-height: var(--ws-nav-h);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: center;
+  gap: 10px;
 }
 html.website-scope .ws-brand {
   display: inline-flex;
@@ -2170,16 +2171,34 @@ html.website-scope .ws-brand {
 html.website-scope .ws-nav-links {
   display: flex;
   align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: center;
+  gap: 3px;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: visible;
+}
+@media (min-width: 1280px) {
+  html.website-scope .ws-brand {
+    position: absolute;
+    left: clamp(12px, 2vw, 28px);
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  html.website-scope .ws-nav-links {
+    flex: 0 1 auto;
+  }
 }
 html.website-scope .ws-nav-link {
-  padding: 8px 12px;
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  padding: 8px clamp(6px, 0.65vw, 12px);
   border-radius: 10px;
-  font-size: 14px;
+  font-size: clamp(11px, 0.82vw, 14px);
   font-weight: 600;
+  line-height: 1;
   color: var(--txt-soft);
+  white-space: nowrap;
   transition: color 0.18s ease, background 0.18s ease;
 }
 html.website-scope .ws-nav-link:hover {
@@ -2190,28 +2209,36 @@ html.website-scope .ws-nav-link--active {
   color: var(--accentText);
 }
 html.website-scope .ws-nav-phone {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  min-height: 38px;
   margin-left: 8px;
-  padding: 9px 16px;
+  padding: 9px clamp(10px, 0.9vw, 16px);
   border-radius: 999px;
-  font-size: 14px;
+  font-size: clamp(11px, 0.82vw, 14px);
   font-weight: 700;
+  line-height: 1;
   color: var(--onAccentText);
   background: var(--accentMain);
+  white-space: nowrap;
 }
 html.website-scope .ws-nav-phone:hover {
   background: var(--primary-hover);
 }
 html.website-scope .ws-nav-account {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
   gap: 8px;
   min-height: 44px;
   margin-left: 4px;
-  padding: 9px 16px;
+  padding: 9px clamp(10px, 0.9vw, 16px);
   border-radius: 999px;
-  font-size: 13px;
+  font-size: clamp(11px, 0.78vw, 13px);
   font-weight: 800;
+  line-height: 1;
   color: var(--txt-bright);
   background: var(--ws-card);
   box-shadow: inset 0 0 0 1px var(--ws-line);
@@ -2260,16 +2287,41 @@ html.website-scope button.ws-nav-toggle {
   cursor: pointer;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1279px) and (min-width: 641px) {
+  html.website-scope .ws-nav-inner {
+    justify-content: flex-start;
+  }
+  html.website-scope .ws-nav-links {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  html.website-scope .ws-nav-links::-webkit-scrollbar {
+    height: 4px;
+  }
+  html.website-scope .ws-nav-links::-webkit-scrollbar-thumb {
+    background: var(--ws-line);
+    border-radius: 999px;
+  }
+}
+
+@media (max-width: 640px) {
   html.website-scope button.ws-nav-toggle {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    margin-left: auto;
   }
   html.website-scope .ws-nav-links {
     display: none;
+    overflow: visible;
   }
   html.website-scope .ws-nav-links--open {
+    box-sizing: border-box;
     display: flex;
+    width: 100%;
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
@@ -2285,14 +2337,18 @@ html.website-scope button.ws-nav-toggle {
     box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
   }
   html.website-scope .ws-nav-links--open .ws-nav-link {
+    width: 100%;
     padding: 12px;
     font-size: 15px;
+    line-height: 1.2;
   }
   html.website-scope .ws-nav-links--open .ws-nav-phone {
+    width: 100%;
     margin: 8px 0 0;
     text-align: center;
   }
   html.website-scope .ws-nav-links--open .ws-nav-account {
+    width: 100%;
     margin: 8px 0 0;
   }
 }
@@ -3269,3 +3325,216 @@ html.website-scope .ws-preview-target .ws-preview-target:hover ~ * .ws-preview-t
   background: var(--theme);
 }
 
+/* /website/login layout. These classes replace the old page-scoped module
+   so the login experience is styled by custglobal.css like every other
+   customer-facing route. */
+html.website-scope .authShell {
+  min-height: 100vh;
+  padding: clamp(16px, 4vw, 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--txt-bright);
+}
+
+html.website-scope .authMain {
+  width: min(100%, 980px);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(16px, 3vw, 28px);
+}
+
+html.website-scope .authCard {
+  width: min(100%, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: clamp(20px, 4vw, 34px);
+  border-radius: 24px;
+  background: var(--website-elev-2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+}
+
+html.website-scope .authMain > .authCard {
+  flex: 1 1 420px;
+}
+
+html.website-scope .authTopRow,
+html.website-scope .addressFieldHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+html.website-scope .authBackLink,
+html.website-scope .addressManualButton {
+  color: var(--txt-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+html.website-scope .authBrand img {
+  display: block;
+  max-width: 170px;
+  max-height: 58px;
+  object-fit: contain;
+}
+
+html.website-scope .authTitle,
+html.website-scope .authDevTitle {
+  margin: 0;
+  color: var(--txt-bright);
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.05;
+}
+
+html.website-scope .authDevTitle {
+  font-size: clamp(20px, 3vw, 28px);
+}
+
+html.website-scope .authSubtitle,
+html.website-scope .authFootnote,
+html.website-scope .signupHint {
+  margin: 0;
+  color: var(--txt-soft);
+  line-height: 1.55;
+  font-size: 14px;
+}
+
+html.website-scope .authFootnote,
+html.website-scope .signupHint {
+  font-size: 12px;
+  color: var(--txt-mute);
+}
+
+html.website-scope .authError {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: var(--txt-bright);
+  background: rgba(185, 28, 28, 0.22);
+  font-weight: 700;
+}
+
+html.website-scope .authForm,
+html.website-scope .authField,
+html.website-scope .signupPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--website-field-gap);
+}
+
+html.website-scope .signupPanel {
+  gap: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--website-elev-1);
+}
+
+html.website-scope .authRow,
+html.website-scope .postcodeLookupRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--website-field-gap);
+}
+
+html.website-scope .postcodeLookupRow {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+html.website-scope .authLabel {
+  font-size: 12px;
+  color: var(--txt-soft);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+html.website-scope .authInput,
+html.website-scope .authTextarea {
+  width: 100%;
+}
+
+html.website-scope .authTextarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+html.website-scope .authSubmit,
+html.website-scope .profileGhostBtn,
+html.website-scope .postcodeLookupButton {
+  width: 100%;
+}
+
+html.website-scope .postcodeLookupButton {
+  width: auto;
+  min-width: 104px;
+}
+
+html.website-scope .signupHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+html.website-scope .signupEyebrow,
+html.website-scope .authDevTag {
+  width: fit-content;
+  color: var(--accentText);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+html.website-scope .signupEmailSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--website-elev-1);
+}
+
+html.website-scope .signupEmailSummary span {
+  color: var(--txt-mute);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+html.website-scope .signupEmailSummary strong,
+html.website-scope .requiredMark {
+  color: var(--accentText);
+}
+
+html.website-scope .authDevCard {
+  flex: 0 1 360px;
+  background: var(--website-elev-1);
+}
+
+@media (max-width: 760px) {
+  html.website-scope .authShell {
+    align-items: flex-start;
+    padding: 16px;
+  }
+
+  html.website-scope .authMain,
+  html.website-scope .authTopRow,
+  html.website-scope .addressFieldHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  html.website-scope .postcodeLookupRow {
+    grid-template-columns: 1fr;
+  }
+
+  html.website-scope .postcodeLookupButton {
+    width: 100%;
+  }
+}

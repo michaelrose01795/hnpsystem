@@ -3,7 +3,7 @@
 
 import dynamic from "next/dynamic";
 
-const CartPage = dynamic(() => import("@/singlescroll/shop/CartPage"), {
+const CartPage = dynamic(() => import("@/features/website/shop/CartPage"), {
   ssr: false,
 });
 

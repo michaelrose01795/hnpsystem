@@ -13,9 +13,9 @@ function readBorderRadius(el) {
   return null;
 }
 
-// Thick brand-accent border around the highlighted feature, with an inverse
+// Slim brand-accent ring around the highlighted feature, with an inverse
 // box-shadow that dims everything else without touching the highlight itself.
-// Padding around the rect (10px) keeps the border off the content.
+// Padding around the rect keeps the ring off the content.
 export default function PresentationHighlight({ anchor }) {
   const [state, setState] = useState({ rect: null, radius: null });
 
@@ -62,7 +62,7 @@ export default function PresentationHighlight({ anchor }) {
   const { rect, radius } = state;
   if (!rect) return null;
 
-  const PAD = 10;
+  const PAD = 8;
   // Match the highlighted element's own corner radius if it has one, otherwise
   // fall back to the canonical card radius so the highlight feels native.
   const borderRadius = radius || "var(--radius-card, 24px)";
@@ -89,7 +89,7 @@ export default function PresentationHighlight({ anchor }) {
             "top 0.18s ease, left 0.18s ease, width 0.18s ease, height 0.18s ease",
         }}
       />
-      {/* Border ring: thick brand-accent outline sits on top of the scrim so
+      {/* Border ring: brand-accent outline sits on top of the scrim so
           the highlighted feature is unmistakable. */}
       <div
         aria-hidden="true"
@@ -101,7 +101,7 @@ export default function PresentationHighlight({ anchor }) {
           width: rect.width + PAD * 2,
           height: rect.height + PAD * 2,
           borderRadius,
-          border: "4px solid var(--accentMain, var(--primary))",
+          border: "2px solid var(--accentMain, var(--primary))",
           boxShadow:
             "0 0 0 1px rgba(255,255,255,0.18) inset, 0 12px 36px rgba(0,0,0,0.28)",
           pointerEvents: "none",

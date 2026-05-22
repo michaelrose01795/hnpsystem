@@ -11,12 +11,14 @@ export const websiteHomeSlide = {
   steps: [
     {
       kind: "main",
+      anchor: "[data-presentation=\"website-hero\"]",
       position: "center",
       title: "The public customer website",
       body: "This is the same customer-facing website visitors see before signing in: vehicles, offers, servicing, Motability, reviews and contact details.",
     },
     {
       kind: "feature",
+      anchor: "[data-presentation=\"website-nav\"]",
       position: "bottom-left",
       title: "No staff shell",
       body: "The presentation renders the public page directly so the customer experience is not mixed with internal navigation.",
@@ -33,6 +35,7 @@ export const websiteLoginSlide = {
   steps: [
     {
       kind: "main",
+      anchor: "[data-presentation=\"website-login-card\"]",
       position: "center",
       title: "Customer account entry",
       body: "Customers enter an email first, then either sign in, claim an existing record, or create a new website account.",
@@ -49,12 +52,14 @@ export const websiteProfileSlide = {
   steps: [
     {
       kind: "main",
+      anchor: "[data-presentation=\"website-profile-summary\"]",
       position: "center",
       title: "Signed-in customer portal",
       body: "This is the real /website/profile page with the customer dashboard, vehicles, jobs, invoices, documents, messages and self-service actions.",
     },
     {
       kind: "feature",
+      anchor: "[data-presentation=\"website-profile-nav\"]",
       position: "bottom-left",
       title: "Linked customer routes",
       body: "The VHC preview, customer view and signed share links stay in this deck so the customer can move from the website profile into the live health-check experience.",

@@ -44,7 +44,7 @@ const SPY_IDS = ["top", "cars", "offers", "shop", "sell", "service", "motability
 
 function Section({ id, tint, children }) {
   return (
-    <section id={id} className={tint ? "ws-section ws-section--tint" : "ws-section"}>
+    <section id={id} data-presentation={`website-${id}`} className={tint ? "ws-section ws-section--tint" : "ws-section"}>
       <div className="ws-container">{children}</div>
     </section>
   );
@@ -198,9 +198,9 @@ export default function WebsitePage() {
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
 
-      <div className="ws-page">
+      <div className="ws-page" data-presentation="website-home">
         {/* ---------------- Top navigation ---------------- */}
-        <header className="ws-nav">
+        <header className="ws-nav" data-presentation="website-nav">
           <div className="ws-nav-inner">
             <a href="#top" className="ws-brand" onClick={closeMenu}>
               <img className="ws-logo ws-logo--dark" src={brand.logoWhiteUrl} alt={brand.name} />
@@ -250,7 +250,7 @@ export default function WebsitePage() {
         <main>
           {/* ---------------- Hero ---------------- */}
           <PreviewClickTarget {...click("hero", "Hero banner")}>
-            <section id="top" className="ws-hero">
+            <section id="top" data-presentation="website-hero" className="ws-hero">
               <div className="ws-container ws-hero-inner">
                 <div className="ws-hero-text">
                   <span className="ws-eyebrow">{hero.eyebrow}</span>

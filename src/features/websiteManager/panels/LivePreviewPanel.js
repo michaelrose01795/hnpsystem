@@ -4,7 +4,7 @@
 //
 //   - Renders /website in an iframe with `?preview=editor`, which puts the
 //     page into preview mode: every editable section becomes a clickable
-//     overlay (see src/singlescroll/components/PreviewClickTarget).
+//     overlay (see src/features/website/components/PreviewClickTarget).
 //   - When the user clicks a section in the iframe, the iframe posts a
 //     `hnp:section-selected` message back here; we load that section from
 //     /api/website/sections/:section and open a SectionEditor in the
@@ -19,7 +19,7 @@
 // All edits to /website content are intended to flow through this panel - the
 // classic Page Content tab is kept as a fallback for power users / bulk work.
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Section from "@/components/Section";
 import LayerTheme from "@/components/ui/LayerTheme";
 import Button from "@/components/ui/Button";
@@ -32,7 +32,7 @@ import {
   createRow,
   deleteRowApi,
 } from "../websiteApi";
-import { PREVIEW_MESSAGE_TYPES } from "@/singlescroll/hooks/useWebsitePreviewMode";
+import { PREVIEW_MESSAGE_TYPES } from "@/features/website/hooks/useWebsitePreviewMode";
 
 const PAGES = [
   { key: "home", name: "Homepage", hash: "" },

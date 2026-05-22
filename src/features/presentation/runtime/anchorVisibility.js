@@ -1,7 +1,29 @@
 const VIEWPORT_PAD = 32;
+const PAGE_HIGHLIGHT_PAD = 24;
+
+export const DEFAULT_PRESENTATION_HIGHLIGHT_ANCHOR = "__presentation_page_highlight__";
+
+function getViewportHighlightRect() {
+  if (typeof window === "undefined" || typeof document === "undefined") return null;
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  const pad = Math.min(PAGE_HIGHLIGHT_PAD, Math.floor(Math.min(viewportWidth, viewportHeight) / 8));
+  return {
+    top: pad,
+    left: pad,
+    right: viewportWidth - pad,
+    bottom: viewportHeight - pad,
+    width: Math.max(viewportWidth - pad * 2, 0),
+    height: Math.max(viewportHeight - pad * 2, 0),
+  };
+}
 
 export function getAnchorRect(anchor) {
   if (!anchor || typeof document === "undefined") return null;
+  if (anchor === DEFAULT_PRESENTATION_HIGHLIGHT_ANCHOR) {
+    const rect = getViewportHighlightRect();
+    return rect ? { rect, el: null } : null;
+  }
   const el = document.querySelector(anchor);
   if (!el) return null;
   const rect = el.getBoundingClientRect();
@@ -69,7 +91,7 @@ export function scrollAnchorIntoView(anchor) {
 
   const next = getAnchorRect(anchor);
   if (next && !isRectInViewport(next.rect)) {
-    next.el.scrollIntoView({
+    next.el?.scrollIntoView({
       behavior: "smooth",
       block: "center",
       inline: "nearest",

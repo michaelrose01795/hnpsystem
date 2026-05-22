@@ -262,7 +262,7 @@ export function PresentationProvider({ children }) {
       anchor: null,
       title: currentSlide?.title || "Full page",
       body:
-        "Full page view — no section is highlighted. Take a moment to review the whole screen, then press Next to continue.",
+        "Full page view — the page-level highlight keeps the presenter oriented while you review the whole screen, then press Next to continue.",
       // Default resting spot for the break popup; a slide may override it.
       defaultPosition: currentSlide?.breakPosition || "bottom-left",
     };

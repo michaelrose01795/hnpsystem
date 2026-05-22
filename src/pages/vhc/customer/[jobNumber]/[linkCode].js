@@ -13,8 +13,8 @@ import { normaliseDecisionStatus, resolveSeverityKey } from "@/features/vhc/vhcS
 import { buildVhcQuoteLinesModel } from "@/lib/vhc/quoteLines";
 import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import VhcCustomerView from "@/components/VHC/VhcCustomerView";
-import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
-import useWebsiteTheme from "@/singlescroll/hooks/useWebsiteTheme";
+import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
+import useWebsiteTheme from "@/features/website/hooks/useWebsiteTheme";
 
 const LABOUR_RATE = 85;
 

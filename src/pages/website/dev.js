@@ -38,9 +38,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import { canShowDevPages } from "@/lib/dev-tools/config";
-import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
-import WebsiteNativeSelect from "@/singlescroll/components/WebsiteNativeSelect";
-import WebsiteNativeDateTimeInput from "@/singlescroll/components/WebsiteNativeDateTimeInput";
+import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
+import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
+import WebsiteNativeDateTimeInput from "@/features/website/components/WebsiteNativeDateTimeInput";
 
 // /website light/dark/system theme cycle (mirrors src/pages/website/
 // profile.js). The choice is persisted to localStorage and applied by
@@ -640,7 +640,7 @@ export default function WebsiteDevShowcasePage() {
             <li>
               <code className="website-dev-code">WebsiteNativeSelect</code> —{" "}
               <code className="website-dev-code-mono">
-                src/singlescroll/components/WebsiteNativeSelect.js
+                src/features/website/components/WebsiteNativeSelect.js
               </code>
               <div className="website-dev-ref-note">
                 Keeps a hidden native select for forms and renders the custom dark list.
@@ -649,7 +649,7 @@ export default function WebsiteDevShowcasePage() {
             <li>
               <code className="website-dev-code">WebsiteNativeDateTimeInput</code> —{" "}
               <code className="website-dev-code-mono">
-                src/singlescroll/components/WebsiteNativeDateTimeInput.js
+                src/features/website/components/WebsiteNativeDateTimeInput.js
               </code>
               <div className="website-dev-ref-note">
                 Keeps hidden native date/time inputs and renders the custom calendar/time panels.
@@ -658,7 +658,7 @@ export default function WebsiteDevShowcasePage() {
             <li>
               <code className="website-dev-code">useWebsiteScope</code> —{" "}
               <code className="website-dev-code-mono">
-                src/singlescroll/hooks/useWebsiteScope.js
+                src/features/website/hooks/useWebsiteScope.js
               </code>
               <div className="website-dev-ref-note">
                 Adds <code className="website-dev-code">website-scope</code> to{" "}

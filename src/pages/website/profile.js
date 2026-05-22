@@ -23,10 +23,10 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useTheme } from "@/styles/themeProvider";
-import { siteContent } from "@/singlescroll/data/siteContent";
-import useWebsiteScope from "@/singlescroll/hooks/useWebsiteScope";
-import WebsiteNativeSelect from "@/singlescroll/components/WebsiteNativeSelect";
-import WebsiteNativeDateTimeInput from "@/singlescroll/components/WebsiteNativeDateTimeInput";
+import { siteContent } from "@/features/website/data/siteContent";
+import useWebsiteScope from "@/features/website/hooks/useWebsiteScope";
+import WebsiteNativeSelect from "@/features/website/components/WebsiteNativeSelect";
+import WebsiteNativeDateTimeInput from "@/features/website/components/WebsiteNativeDateTimeInput";
 import { isPresentationMode } from "@/features/presentation/runtime/presentationMode";
 
 const formatDate = (value) => {
@@ -1964,6 +1964,7 @@ export default function CustomerProfilePage() {
         />
       </Head>
       <div
+        data-presentation="website-profile"
         style={{
           minHeight: "100vh",
           padding: "clamp(16px, 3vw, 32px) clamp(16px, 4vw, 48px) 96px",
@@ -1985,7 +1986,7 @@ export default function CustomerProfilePage() {
             </p>
           ) : (
             <>
-              <header style={headerStyle}>
+              <header data-presentation="website-profile-header" style={headerStyle}>
                 <div>
                   <span style={headerEyebrowStyle}>Customer portal</span>
                   <h1 style={headerTitleStyle}>Hello, {fullName}</h1>
@@ -2012,7 +2013,7 @@ export default function CustomerProfilePage() {
               </header>
 
               <div style={layoutStyle}>
-                <aside style={sideNavStyle} aria-label="Sections">
+                <aside data-presentation="website-profile-nav" style={sideNavStyle} aria-label="Sections">
                   <span style={sideNavHeadingStyle}>Jump to</span>
                   {SECTIONS.map((s) => (
                     <a key={s.id} href={`#${s.id}`} style={sideNavLinkStyle}>
@@ -2023,7 +2024,7 @@ export default function CustomerProfilePage() {
 
                 <div style={contentStackStyle}>
                   {/* ───────── Summary banners ───────── */}
-                  <div id="summary" style={gridSplitStyle}>
+                  <div id="summary" data-presentation="website-profile-summary" style={gridSplitStyle}>
                     {motSoonest ? (
                       <section
                         className="website-banner"

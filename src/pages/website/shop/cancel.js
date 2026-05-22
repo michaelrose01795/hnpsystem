@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const CancelPage = dynamic(() => import("@/singlescroll/shop/CancelPage"), {
+const CancelPage = dynamic(() => import("@/features/website/shop/CancelPage"), {
   ssr: false,
 });
 

@@ -1,9 +1,9 @@
 // file location: src/pages/api/website/content/index.js
 //
 // PUBLIC endpoint. One round-trip bundle containing every published slice of
-// /website content. Consumed by src/singlescroll/WebsitePage.js (and any future
+// /website content. Consumed by src/features/website/WebsitePage.js (and any future
 // SSR/ISR caller). Returns the same tree shape the old static modules under
-// src/singlescroll/data/* exported, so call sites barely change.
+// src/features/website/data/* exported, so call sites barely change.
 //
 // No auth — published content is public. Writes go through
 // /api/website/sections/[section] which is role-guarded.

@@ -1,6 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePresentation } from "./PresentationProvider";
-import { isAnchorVisible, scrollAnchorIntoView } from "./runtime/anchorVisibility";
+import {
+  DEFAULT_PRESENTATION_HIGHLIGHT_ANCHOR,
+  getAnchorRect,
+  isAnchorVisible,
+  scrollAnchorIntoView,
+} from "./runtime/anchorVisibility";
 
 const KIND_LABEL = {
   main: "Overview",
@@ -29,7 +34,7 @@ const PAGE_FILE_BY_ROUTE = {
 
 const GAP = 16; // minimum gap between the callout and the highlighted rect
 const VIEWPORT_PAD = 12; // padding from the viewport edges
-const HIGHLIGHT_PAD = 10; // matches PresentationHighlight's PAD constant
+const HIGHLIGHT_PAD = 8; // matches PresentationHighlight's PAD constant
 
 function formatRouteLabel(route) {
   return String(route || "")
@@ -226,7 +231,7 @@ function pickPlacement(anchorRect, calloutSize, preferredSide) {
   return best;
 }
 
-export default function PresentationCallout({ step }) {
+export default function PresentationCallout({ step, anchor }) {
   const ref = useRef(null);
   const [anchorRect, setAnchorRect] = useState(null);
   const [calloutSize, setCalloutSize] = useState({ width: 380, height: 260 });
@@ -236,6 +241,7 @@ export default function PresentationCallout({ step }) {
   const [dragPos, setDragPos] = useState(null);
 
   const isBreak = Boolean(step?.isBreak);
+  const effectiveAnchor = anchor || step?.anchor || DEFAULT_PRESENTATION_HIGHLIGHT_ANCHOR;
 
   const {
     slides,
@@ -256,6 +262,8 @@ export default function PresentationCallout({ step }) {
   const primaryRole = (userRoles?.[0] || "viewer").toLowerCase();
   const pageRoute = formatRouteLabel(currentSlide?.route);
   const pageFile = getPageFile(currentSlide);
+  const isWebsiteSlide = String(currentSlide?.route || "").startsWith("/website");
+  const actionGridColumns = isWebsiteSlide ? "1fr 1fr" : "1fr 1fr auto";
 
   useLayoutEffect(() => {
     if (!ref.current) return;
@@ -267,20 +275,21 @@ export default function PresentationCallout({ step }) {
     let scrollAttempts = 0;
 
     function resolveAnchor() {
-      if (!step?.anchor) {
+      if (!effectiveAnchor) {
         setAnchorRect(null);
         return;
       }
-      const el = document.querySelector(step.anchor);
-      if (!el) {
+      const found = getAnchorRect(effectiveAnchor);
+      if (!found) {
         setAnchorRect(null);
         return;
       }
-      if (!isAnchorVisible(step.anchor) && scrollAttempts < 6) {
+      if (!isAnchorVisible(effectiveAnchor) && scrollAttempts < 6) {
         scrollAttempts += 1;
-        scrollAnchorIntoView(step.anchor);
+        scrollAnchorIntoView(effectiveAnchor);
       }
-      const rect = el.getBoundingClientRect();
+      const next = getAnchorRect(effectiveAnchor) || found;
+      const rect = next.rect;
       setAnchorRect(rect.width > 0 && rect.height > 0 ? rect : null);
     }
 
@@ -293,7 +302,7 @@ export default function PresentationCallout({ step }) {
       window.removeEventListener("resize", resolveAnchor);
       window.removeEventListener("scroll", resolveAnchor, true);
     };
-  }, [step?.anchor]);
+  }, [effectiveAnchor]);
 
   // `step.preferredSide` is the new authoring hint; `step.position` stays
   // honored as a legacy fallback for slides not yet migrated.
@@ -400,7 +409,7 @@ export default function PresentationCallout({ step }) {
         {step?.title}
       </div>
       <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--text-1)" }}>
-        {step?.body}
+        {step?.body || "Presentation note for this section."}
       </div>
       <div style={{ fontSize: 11, color: "var(--text-1)", marginTop: 2 }}>
         <strong style={{ color: "var(--text-1)" }}>{currentSlide?.title}</strong>
@@ -412,7 +421,7 @@ export default function PresentationCallout({ step }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr auto",
+          gridTemplateColumns: actionGridColumns,
           gap: 8,
           marginTop: 4,
           paddingTop: 10,
@@ -435,14 +444,16 @@ export default function PresentationCallout({ step }) {
         >
           {atEnd ? "Finish" : "Next"}
         </button>
-        <button
-          type="button"
-          className="app-btn app-btn--secondary app-btn--sm"
-          onClick={hideOverlay}
-          title="Hide the highlight ring and this popup. Use the 'Show overlay' button in the sidebar to bring it back."
-        >
-          Hide
-        </button>
+        {!isWebsiteSlide ? (
+          <button
+            type="button"
+            className="app-btn app-btn--secondary app-btn--sm"
+            onClick={hideOverlay}
+            title="Hide the highlight ring and this popup. Use the 'Show overlay' button in the sidebar to bring it back."
+          >
+            Hide
+          </button>
+        ) : null}
       </div>
 
       <div

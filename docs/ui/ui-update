@@ -9,7 +9,7 @@ global table, have it so the heading section is always shown and doesnt scroll a
 
 
 ====================================================
-General
+General(DONE
 ====================================================
 
 - /messages (DOONE
@@ -35,7 +35,7 @@ General
 
 
 ====================================================
-Accounts Manager
+Accounts Manager(DONE
 ====================================================
 
 - /dashboard/accounts (DONE
@@ -74,10 +74,7 @@ Accounts Manager
 - /company-accounts (DONE
 
 
-- /company-accounts/CA3771 (CHECK)
-change "All company accounts" button to "back", also have it so the company name etc for example "Devon Couriers Ltd
-Devon Couriers Ltd
-#CO-2001" is within the middle of that top section. 
+- /company-accounts/CA3771 (DONE
 
 
 
@@ -113,16 +110,14 @@ remove "Invoice headers and payment instructions shared across all invoice scree
 - /admin/compliance/sars
 
 
-- /profile/privacy (TODO)
-/profile/privacy make sure this page follows the staffglobal.css style. and has background "--theme" colour cards and improve the dev overlay within this page. 
+- /profile/privacy (DONE
 
 
-- /account/security (TOCO)
-/account/security make sure this page follows the staffglobal.css style. and has background "--theme" colour cards and improve the dev overlay within this page. 
+- /account/security (DONE
 
 
-- /staff/website-manager (CHECK)
-within the "staff/website-manager" page, have it so the tabs have the data readings for the /website pages etc, but then have it so wihtin this page the user can edit and add section with an in app /website eiditer style, so the editor is hard corded, but the /website content isnt hard codes and can be edited whenever to update users pictures, information, check stock vechiles are being added, parts are being added into the shop section (create a shop section within the /website pages which follows the custglobal.css style) etc. the /staff/website-mager page is everything to do with the content and data recived from the /website pages. 
+- /staff/website-manager (DONE
+
 
 ====================================================
 Customer

@@ -7,6 +7,7 @@
 // under the PUBLIC SHOP block.
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import useShopProducts from "../hooks/useShopProducts";
 import useShopCart, { formatGbp } from "../hooks/useShopCart";
 
@@ -23,7 +24,7 @@ export default function ShopSection() {
 
   return (
     <>
-      <div className="ws-shop-toolbar">
+      <div className="ws-shop-toolbar" data-presentation="website-shop-filters">
         <div className="ws-shop-filters">
           <button
             type="button"
@@ -72,7 +73,7 @@ export default function ShopSection() {
         </div>
       )}
 
-      <div className="ws-grid--shop">
+      <div className="ws-grid--shop" data-presentation="website-shop-products">
         {filtered.map((p) => (
           <ProductCard
             key={p.id}
@@ -165,6 +166,7 @@ function CartDrawer({ open, cart, onClose }) {
         onClick={onClose}
       />
       <aside
+        data-presentation="website-shop-cart-drawer"
         className={"ws-cart-drawer" + (open ? " ws-cart-drawer--open" : "")}
         aria-hidden={!open}
       >
@@ -235,12 +237,12 @@ function CartDrawer({ open, cart, onClose }) {
               <span>Subtotal</span>
               <span>{cart.totals.subtotal}</span>
             </div>
-            <a href="/website/shop/checkout" className="ws-btn ws-btn--primary">
+            <Link href="/website/shop/checkout" className="ws-btn ws-btn--primary">
               Checkout
-            </a>
-            <a href="/website/shop/cart" className="ws-btn ws-btn--ghost">
+            </Link>
+            <Link href="/website/shop/cart" className="ws-btn ws-btn--ghost">
               View cart
-            </a>
+            </Link>
           </div>
         )}
       </aside>

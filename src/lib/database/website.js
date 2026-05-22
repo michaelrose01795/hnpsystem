@@ -1,11 +1,11 @@
 // file location: src/lib/database/website.js
 //
-// Database helper for the public /website single-scroll marketing page AND the
+// Database helper for the public /website customer website marketing page AND the
 // staff /staff/website-manager CMS. Backs every website_* table defined in the
 // 20260520120000_add_website_content_and_shop migration.
 //
 // Shape contract:
-//   getWebsiteContent() returns a tree that matches what src/singlescroll/data/*
+//   getWebsiteContent() returns a tree that matches what src/features/website/data/*
 //   has historically exported. WebsitePage.js can switch between the static
 //   modules and this fetcher without changing how it reads fields.
 //
@@ -111,7 +111,7 @@ export const getTimeline = async () => orderedSelect("website_timeline");
    Full content tree — single round-trip bundle for WebsitePage
 ---------------------------------------------------------------------------- */
 //
-// Shape mirrors what src/singlescroll/data/* used to export so WebsitePage.js
+// Shape mirrors what src/features/website/data/* used to export so WebsitePage.js
 // can swap its imports for one call to this without changing field access.
 //
 //   siteContent : { brand, hero, trustPoints, ratings, about, serviceAndParts,

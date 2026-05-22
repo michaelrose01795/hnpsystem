@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-const CheckoutPage = dynamic(() => import("@/singlescroll/shop/CheckoutPage"), {
+const CheckoutPage = dynamic(() => import("@/features/website/shop/CheckoutPage"), {
   ssr: false,
 });
 
