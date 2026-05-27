@@ -431,6 +431,17 @@ const addMembersToThread = async (threadId, memberConfigs = []) => {
 
   const userIds = normalized.map((entry) => entry.userId);
 
+  const fetchExistingMembers = async () => {
+    const { data, error } = await dbClient
+      .from("message_thread_members")
+      .select("member_id, thread_id, user_id, joined_at, last_read_at, role")
+      .eq("thread_id", threadId)
+      .in("user_id", userIds);
+
+    if (error) throw error;
+    return data || [];
+  };
+
   const { data: existingRows, error: existingError } = await dbClient
     .from("message_thread_members")
     .select("user_id")
@@ -456,7 +467,15 @@ const addMembersToThread = async (threadId, memberConfigs = []) => {
     .insert(pending)
     .select("member_id, thread_id, user_id, joined_at, last_read_at, role");
 
-  if (error) throw error;
+  if (error) {
+    const duplicateMembership =
+      error.code === "23505" ||
+      String(error.message || "").includes("message_thread_members_unique");
+    if (duplicateMembership) {
+      return fetchExistingMembers();
+    }
+    throw error;
+  }
 
   return data;
 };

@@ -638,6 +638,11 @@ export default function JobCardDetailPageUi(props) {
       }}>
           <div data-presentation="job-detail-tabs" ref={tabsScrollRef} onMouseDown={tabsOverflowing ? handleTabsDragStart : undefined} onMouseMove={tabsOverflowing ? handleTabsDragMove : undefined} onMouseUp={tabsOverflowing ? handleTabsDragEnd : undefined} onMouseLeave={tabsOverflowing ? handleTabsDragEnd : undefined}>
           <LayerTheme
+            sectionKey="jobcard-tab-row"
+            sectionType="tab-row"
+            parentKey="jobcard-page-shell"
+            backgroundToken="theme"
+            data-dev-text-preview="Job card tab navigation"
             className={`tab-scroll-row${tabsOverflowing ? " is-overflowing" : ""}`}
             radius="var(--radius-sm)"
             padding="8px"
@@ -725,9 +730,7 @@ export default function JobCardDetailPageUi(props) {
         `}</style>
 
         {/* ✅ Tab Content */}
-        <LayerTheme as="section" sectionKey="jobcard-tab-content-shell" sectionType="section-shell" parentKey="jobcard-page-shell" shell radius="var(--radius-sm)" padding="8px" style={{
-        margin: 0
-      }}>
+        <LayerTheme as="section" className="app-layout-section-shell" sectionKey="jobcard-tab-content-shell" sectionType="section-shell" parentKey="jobcard-page-shell" shell radius="var(--section-card-radius)" padding="var(--section-card-padding)" gap="var(--space-4)" data-dev-text-preview={`Job card tab content shell. Active tab: ${tabs.find(tab => tab.id === activeTab)?.label || activeTab}.`} data-dev-active-tab={activeTab}>
           {/* Per-tab containers below use the canonical .app-page-stack class
               (CLAUDE.md §3.3) so the in-tab Locked alert and the tab body sit
               on a vertical flex stack with --page-stack-gap.
@@ -737,7 +740,7 @@ export default function JobCardDetailPageUi(props) {
           {/* Keep tabs mounted for state retention, but defer write-up mounting to idle/user intent. */}
           <div className="app-page-stack" style={{
           display: activeTab === "customer-requests" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-customer-requests" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-customer-requests" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Customer requests tab content">
             {isInvoiceOrBeyondReadOnly && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked: Customer Requests</strong>
                 <span>{generalReadOnlyLockDescription}</span>
@@ -747,7 +750,7 @@ export default function JobCardDetailPageUi(props) {
 
           <div className="app-page-stack" style={{
           display: activeTab === "contact" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-contact" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-contact" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Contact tab content">
             {isInvoiceOrBeyondReadOnly && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked: Contact</strong>
                 <span>{generalReadOnlyLockDescription}</span>
@@ -757,7 +760,7 @@ export default function JobCardDetailPageUi(props) {
 
           <div className="app-page-stack" style={{
           display: activeTab === "scheduling" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-scheduling" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-scheduling" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Scheduling tab content">
             {isInvoiceOrBeyondReadOnly && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked: Scheduling</strong>
                 <span>{generalReadOnlyLockDescription}</span>
@@ -767,13 +770,13 @@ export default function JobCardDetailPageUi(props) {
 
           <div className="app-page-stack" style={{
           display: activeTab === "service-history" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-service-history" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-service-history" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Service history tab content">
             <ServiceHistoryTab vehicleJobHistory={vehicleJobHistory} />
           </div>
 
           {canViewPartsTab && <div className="app-page-stack" style={{
           display: activeTab === "parts" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-parts" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-parts" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Parts tab content">
               {isPartsWriteUpVhcLockedByStatus && <div style={lockAlertStyle} role="status" aria-live="polite">
                   <strong>Locked: Parts</strong>
                   <span>{partsWriteUpVhcLockDescription}</span>
@@ -786,7 +789,7 @@ export default function JobCardDetailPageUi(props) {
 
           <div className="app-page-stack" style={{
           display: activeTab === "notes" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-notes" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-notes" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Notes tab content">
             {isInvoiceOrBeyondReadOnly && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked: Notes</strong>
                 <span>{generalReadOnlyLockDescription}</span>
@@ -799,7 +802,7 @@ export default function JobCardDetailPageUi(props) {
           <div className="app-page-stack" style={{
           display: activeTab === "write-up" ? undefined : "none",
           height: "100%"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-writeup" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-writeup" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Write-up tab content">
             <div style={{
             height: "100%",
             overflow: "hidden",
@@ -816,7 +819,7 @@ export default function JobCardDetailPageUi(props) {
 
           <div className="app-page-stack" style={{
           display: activeTab === "vhc" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-vhc" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-vhc" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="VHC tab content">
             {isPartsWriteUpVhcLockedByStatus && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked: VHC</strong>
                 <span>{partsWriteUpVhcLockDescription}</span>
@@ -829,7 +832,7 @@ export default function JobCardDetailPageUi(props) {
 
           <div className="app-page-stack" style={{
           display: activeTab === "warranty" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-warranty" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-warranty" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Warranty tab content">
             {isInvoiceOrBeyondReadOnly && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked: Warranty</strong>
                 <span>{generalReadOnlyLockDescription}</span>
@@ -856,6 +859,7 @@ export default function JobCardDetailPageUi(props) {
             sectionType="content-card"
             parentKey="jobcard-tab-content-shell"
             backgroundToken="surface"
+            data-dev-text-preview="Messages tab content"
             style={{
               display: activeTab === "messages" ? undefined : "none"
             }}>
@@ -864,7 +868,7 @@ export default function JobCardDetailPageUi(props) {
 
           <div className="app-page-stack" style={{
           display: activeTab === "documents" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-documents" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-documents" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Documents tab content">
             {isInvoiceOrBeyondReadOnly && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked: Documents</strong>
                 <span>{generalReadOnlyLockDescription}</span>
@@ -877,7 +881,7 @@ export default function JobCardDetailPageUi(props) {
 
           <div className="app-page-stack" data-invoice-print-area style={{
           display: activeTab === "invoice" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-invoice" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-invoice" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Invoice tab content">
             {showCreateInvoiceButton && <div style={{
             display: "flex",
             justifyContent: "flex-end",

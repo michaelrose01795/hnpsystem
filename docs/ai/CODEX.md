@@ -1,45 +1,52 @@
-# Codex UI Rules
+# CODEX.md — HNPSystem AI Entrypoint (Slim)
 
-Use the global semantic accent tokens only:
-- `--accent-base`
-- `--accent-surface`
-- `--accent-base-hover`
-- `--accent-surface-hover`
-- `--accent-strong`
+Same rules as [CLAUDE.md](CLAUDE.md). Codex agents follow the same router and the same token-saving discipline.
 
-Use status colors only through the semantic red/amber/green tokens already defined in the theme layer:
-- `--success*`
-- `--warning*`
-- `--danger*`
+---
 
-Treat these as deprecated marker tokens and replace them when you touch a page:
-- `--accent-purple*`
-- `--accent-blue*`
-- `--accent-orange*`
-- `--accent-layer-*`
-- `--info*`
+## Project Identity
+HNPSystem — Dealer Management System for Humphries & Parks. Next.js (Pages Router) + React + Supabase + NextAuth + Tailwind v4. Path alias `@/` → `src/`.
 
-Deprecated tokens are intentionally loud. If you see bright purple or bright red in the UI, replace the legacy token with a semantic accent token or a semantic status token.
+---
 
-Always prefer the shared page and control primitives in `src/styles/staffglobal.css` instead of custom one-off styling:
-- Layout: `.app-page-card`, `.app-section-card`, `.app-layout-section-shell`, `.app-layout-card`, `.app-layout-surface-subtle`, `.app-layout-surface-accent`, `.app-layout-stat-card`, `.app-layout-tab-row`, `.app-layout-toolbar-row`
-- Buttons and links: `.app-btn`, `.app-topbar-button`, `.app-topbar-link`, `.app-sidebar__link`
-- Fields: `.app-input`, `.dropdown-api`, `.multiselect-dropdown-api`, `.calendar-api`, `.timepicker-api`, `.searchbar-api`
+## Must-Follow Rules
 
-Do not hardcode button, dropdown, field, badge, or table accent colors. They must inherit from the global theme tokens so light mode, dark mode, and system-dark all stay aligned.
+1. `.js` only — no `.tsx`.
+2. Full paste-ready files when creating or replacing a file.
+3. `// file location: <path>` header on every new file.
+4. Features stay inside their own folder.
+5. Respect role-based access — import from `src/lib/auth/roles.js`.
+6. Do not break real app routes when editing presentation/demo flows.
+7. Ask before large refactors, global style changes, schema changes.
+8. Borders Law + Layer Primitives Law from root `CLAUDE.md` apply.
 
-For layout instrumentation, wrap every major page region with `DevLayoutSection` and give it:
-- a stable `sectionKey`
-- the correct `sectionType`
-- the correct `parentKey`
+---
 
-Minimum section coverage for new pages:
-- page shell
-- top toolbar
-- every section shell
-- every content card
-- every tab row
-- every data table
-- every stat/metric card
+## Token-Saving Discipline
 
-If a new page is missing overlay outlines, add `DevLayoutSection` coverage instead of hiding the problem with custom CSS.
+- Identify the smallest file set first.
+- Targeted reads only — no broad repo searches unless the target is unknown.
+- Do not open `docs/ai/rules/*.md` unless on-topic.
+- Do not re-read unchanged files.
+- Summarise before editing. Keep terminal output short.
+
+---
+
+## Routing
+
+| Task touches… | Read |
+|---|---|
+| Project identity, stack | [rules/project.md](rules/project.md) |
+| UI, tokens, `staffglobal.css` | [rules/ui.md](rules/ui.md) |
+| File placement | [rules/file-structure.md](rules/file-structure.md) |
+| Auth, roles, Keycloak | [rules/permissions.md](rules/permissions.md) |
+| Supabase, schema | [rules/database.md](rules/database.md) |
+| Presentation mode | [rules/presentation.md](rules/presentation.md) |
+| Build, lint, tests | [rules/testing.md](rules/testing.md) |
+| User prompt shortcuts | [rules/prompt-shortcuts.md](rules/prompt-shortcuts.md) |
+
+---
+
+## Output Format
+
+End every response with: files created, files changed, files reviewed, DB schema checked?, scope (local/shared/global).
