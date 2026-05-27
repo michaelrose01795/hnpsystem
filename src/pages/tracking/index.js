@@ -12,6 +12,7 @@ import { popupOverlayStyles, popupCardStyles } from "@/styles/appTheme";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { InlineLoading } from "@/components/ui/LoadingSkeleton";
+import { TrackingRouteSkeleton } from "@/components/ui/RouteSkeletons";
 import { SearchBar } from "@/components/ui/searchBarAPI";
 import { Button, InputField, StatusMessage } from "@/components/ui";
 import useBodyModalLock from "@/hooks/useBodyModalLock";
@@ -1339,7 +1340,7 @@ const LocationEntryModal = ({ context, entry, onClose, onSave, existingEntries =
 export default function TrackingDashboard() {
   const router = useRouter();
   const [entries, setEntries] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchModal, setSearchModal] = useState({ open: false, type: null });
   const [entryModal, setEntryModal] = useState({ open: false, type: null, entry: null });
@@ -2573,7 +2574,7 @@ export default function TrackingDashboard() {
     return renderTrackerContent();
   };
 
-  return <TrackingDashboardUi view="section1" activeTab={activeTab} Button={Button} CAR_LOCATIONS={CAR_LOCATIONS} closeEntryModal={closeEntryModal} closeSearchModal={closeSearchModal} DevLayoutSection={DevLayoutSection} DropdownField={DropdownField} entries={entries} entryModal={entryModal} equipmentLoading={equipmentLoading} equipmentModal={equipmentModal} EquipmentToolsModal={EquipmentToolsModal} error={error} handleDeleteEquipment={handleDeleteEquipment} handleDeleteOilStock={handleDeleteOilStock} handleLocationSelect={handleLocationSelect} handleSave={handleSave} handleSaveEquipment={handleSaveEquipment} handleSaveOilStock={handleSaveOilStock} InlineLoading={InlineLoading} isMobileView={isMobileView} KEY_LOCATIONS={KEY_LOCATIONS} loadEntries={loadEntries} loading={loading} LocationEntryModal={LocationEntryModal} LocationSearchModal={LocationSearchModal} oilLoading={oilLoading} oilStockModal={oilStockModal} OilStockModal={OilStockModal} openEntryModal={openEntryModal} renderActiveTabContent={renderActiveTabContent} SearchBar={SearchBar} searchModal={searchModal} setActiveTab={setActiveTab} setEquipmentModal={setEquipmentModal} setOilStockModal={setOilStockModal} setSimplifiedModal={setSimplifiedModal} setTrackerSearchTerm={setTrackerSearchTerm} setTrackerStatusFilter={setTrackerStatusFilter} setTrackerVehicleLocationFilter={setTrackerVehicleLocationFilter} simplifiedModal={simplifiedModal} SimplifiedTrackingModal={SimplifiedTrackingModal} StatusMessage={StatusMessage} TabGroup={TabGroup} tabs={tabs} TRACKING_FILTER_ALL={TRACKING_FILTER_ALL} trackerSearchTerm={trackerSearchTerm} trackerStatusFilter={trackerStatusFilter} trackerStatusFilterOptions={trackerStatusFilterOptions} trackerVehicleLocationFilter={trackerVehicleLocationFilter} trackerVehicleLocationFilterOptions={trackerVehicleLocationFilterOptions} />;
+  return <TrackingDashboardUi view="section1" activeTab={activeTab} Button={Button} CAR_LOCATIONS={CAR_LOCATIONS} closeEntryModal={closeEntryModal} closeSearchModal={closeSearchModal} DevLayoutSection={DevLayoutSection} DropdownField={DropdownField} entries={entries} entryModal={entryModal} equipmentLoading={equipmentLoading} equipmentModal={equipmentModal} EquipmentToolsModal={EquipmentToolsModal} error={error} handleDeleteEquipment={handleDeleteEquipment} handleDeleteOilStock={handleDeleteOilStock} handleLocationSelect={handleLocationSelect} handleSave={handleSave} handleSaveEquipment={handleSaveEquipment} handleSaveOilStock={handleSaveOilStock} InlineLoading={InlineLoading} isMobileView={isMobileView} KEY_LOCATIONS={KEY_LOCATIONS} loadEntries={loadEntries} loading={loading} LocationEntryModal={LocationEntryModal} LocationSearchModal={LocationSearchModal} oilLoading={oilLoading} oilStockModal={oilStockModal} OilStockModal={OilStockModal} openEntryModal={openEntryModal} renderActiveTabContent={renderActiveTabContent} SearchBar={SearchBar} searchModal={searchModal} setActiveTab={setActiveTab} setEquipmentModal={setEquipmentModal} setOilStockModal={setOilStockModal} setSimplifiedModal={setSimplifiedModal} setTrackerSearchTerm={setTrackerSearchTerm} setTrackerStatusFilter={setTrackerStatusFilter} setTrackerVehicleLocationFilter={setTrackerVehicleLocationFilter} simplifiedModal={simplifiedModal} SimplifiedTrackingModal={SimplifiedTrackingModal} StatusMessage={StatusMessage} TabGroup={TabGroup} tabs={tabs} TrackingRouteSkeleton={TrackingRouteSkeleton} TRACKING_FILTER_ALL={TRACKING_FILTER_ALL} trackerSearchTerm={trackerSearchTerm} trackerStatusFilter={trackerStatusFilter} trackerStatusFilterOptions={trackerStatusFilterOptions} trackerVehicleLocationFilter={trackerVehicleLocationFilter} trackerVehicleLocationFilterOptions={trackerVehicleLocationFilterOptions} />;
 
 
 

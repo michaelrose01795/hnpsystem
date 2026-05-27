@@ -557,6 +557,180 @@ export const ensureUserForCustomer = async (customerRow = {}) => {
   return inserted.user_id;
 };
 
+const buildJobCustomerThreadHash = (jobNumber) => {
+  const trimmed = String(jobNumber || "").trim();
+  return trimmed ? `job:${trimmed}` : null;
+};
+
+const buildCustomerDisplayName = (customerRow = {}) => {
+  const combined = [customerRow.firstname, customerRow.lastname].filter(Boolean).join(" ").trim();
+  return combined || customerRow.name || customerRow.email || "Customer";
+};
+
+const resolveJobCustomer = async ({
+  jobId = null,
+  jobNumber = "",
+  customerEmail = "",
+  customerName = "",
+} = {}) => {
+  let resolvedJobNumber = String(jobNumber || "").trim();
+  let customerId = null;
+  let jobCustomerName = String(customerName || "").trim();
+
+  let jobQuery = dbClient
+    .from("jobs")
+    .select("id, job_number, customer, customer_id")
+    .limit(1);
+
+  const numericJobId = normalizeUserId(jobId);
+  if (numericJobId) {
+    jobQuery = jobQuery.eq("id", numericJobId);
+  } else if (resolvedJobNumber) {
+    jobQuery = jobQuery.eq("job_number", resolvedJobNumber);
+  } else {
+    throw new Error("Job number is required to create a customer conversation.");
+  }
+
+  const { data: jobRows, error: jobError } = await jobQuery;
+  if (jobError) throw jobError;
+
+  const jobRow = jobRows?.[0] || null;
+  if (jobRow) {
+    resolvedJobNumber = resolvedJobNumber || jobRow.job_number || "";
+    customerId = jobRow.customer_id || null;
+    jobCustomerName = jobCustomerName || jobRow.customer || "";
+  }
+
+  let customerRow = null;
+  if (customerId) {
+    const { data, error } = await dbClient
+      .from("customers")
+      .select("id, firstname, lastname, email, mobile, telephone, name")
+      .eq("id", customerId)
+      .maybeSingle();
+    if (error && error.code !== "PGRST116") throw error;
+    customerRow = data || null;
+  }
+
+  const fallbackEmail = String(customerEmail || "").trim();
+  if (!customerRow && fallbackEmail) {
+    const { data, error } = await dbClient
+      .from("customers")
+      .select("id, firstname, lastname, email, mobile, telephone, name")
+      .ilike("email", fallbackEmail.toLowerCase())
+      .maybeSingle();
+    if (error && error.code !== "PGRST116") throw error;
+    customerRow = data || null;
+  }
+
+  if (!customerRow) {
+    customerRow = {
+      id: customerId,
+      name: jobCustomerName || fallbackEmail || "Customer",
+      email: fallbackEmail,
+      firstname: "",
+      lastname: "",
+      mobile: null,
+      telephone: null,
+    };
+  }
+
+  return {
+    jobNumber: resolvedJobNumber,
+    customer: customerRow,
+  };
+};
+
+export const ensureJobCustomerThread = async ({
+  jobId = null,
+  jobNumber = "",
+  actorId,
+  customerEmail = "",
+  customerName = "",
+} = {}) => {
+  assertMessagingWriteAccess();
+  const actorUserId = normalizeUserId(actorId);
+  if (!actorUserId) {
+    throw new Error("A signed-in staff user is required to message the customer.");
+  }
+
+  const { jobNumber: resolvedJobNumber, customer } = await resolveJobCustomer({
+    jobId,
+    jobNumber,
+    customerEmail,
+    customerName,
+  });
+  const hash = buildJobCustomerThreadHash(resolvedJobNumber);
+  if (!hash) {
+    throw new Error("Job number is required to create a customer conversation.");
+  }
+
+  const customerUserId = await ensureUserForCustomer(customer);
+  const customerLabel = buildCustomerDisplayName(customer);
+  const title = `Job #${resolvedJobNumber} · ${customerLabel}`;
+
+  const { data: existing, error: existingError } = await dbClient
+    .from("message_threads")
+    .select("thread_id")
+    .eq("unique_hash", hash)
+    .maybeSingle();
+
+  if (existingError && existingError.code !== "PGRST116") {
+    throw existingError;
+  }
+
+  let threadId = existing?.thread_id || null;
+  if (!threadId) {
+    const { data: inserted, error: insertError } = await dbClient
+      .from("message_threads")
+      .insert({
+        thread_type: "group",
+        title,
+        unique_hash: hash,
+        created_by: actorUserId,
+      })
+      .select("thread_id")
+      .single();
+
+    if (insertError) {
+      if (insertError.code !== "23505") throw insertError;
+      const { data: raceRow, error: raceError } = await dbClient
+        .from("message_threads")
+        .select("thread_id")
+        .eq("unique_hash", hash)
+        .maybeSingle();
+      if (raceError && raceError.code !== "PGRST116") throw raceError;
+      threadId = raceRow?.thread_id || null;
+    } else {
+      threadId = inserted.thread_id;
+    }
+  }
+
+  if (!threadId) {
+    throw new Error("Unable to create the job customer conversation.");
+  }
+
+  await addMembersToThread(threadId, [
+    { userId: actorUserId, role: "leader" },
+    { userId: customerUserId, role: "customer" },
+  ]);
+
+  const snapshot = await getThreadSnapshotForUser(threadId, actorUserId);
+  if (!snapshot) {
+    throw new Error("Unable to load the job customer conversation.");
+  }
+
+  return {
+    thread: snapshot,
+    customer: {
+      id: customer.id || null,
+      name: customerLabel,
+      email: customer.email || "",
+      userId: customerUserId,
+    },
+  };
+};
+
 export const searchDirectoryUsers = async (searchTerm = "", limit = 25) => {
   const query = dbClient
     .from("users")

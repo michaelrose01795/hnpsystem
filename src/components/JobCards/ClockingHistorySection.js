@@ -1,6 +1,8 @@
 // file location: src/components/JobCards/ClockingHistorySection.js
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import LayerSurface from "@/components/ui/LayerSurface";
+import LayerTheme from "@/components/ui/LayerTheme";
 import { supabase } from "@/lib/database/supabaseClient";
 import { clockOutFromJob } from "@/lib/database/jobClocking";
 
@@ -43,7 +45,8 @@ export default function ClockingHistorySection({
   refreshSignal = 0,
   enableRequestClick = false,
   onRequestClick,
-  title = "Clocking history"
+  title = "Clocking history",
+  backgroundLayer = "surface"
 }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -301,18 +304,14 @@ export default function ClockingHistorySection({
   const rowHeight = 48;
   const headerHeight = 44;
   const bodyMaxHeight = shouldScroll ? `${rowHeight * 5 + headerHeight}px` : "auto";
+  const WrapperLayer = backgroundLayer === "theme" ? LayerTheme : LayerSurface;
 
   return (
-    <section
-      style={{
-        padding: "32px",
-        borderRadius: "var(--radius-xl)",
-        border: "none",
-        backgroundColor: "var(--surface)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "24px"
-      }}
+    <WrapperLayer
+      as="section"
+      radius="var(--radius-xl)"
+      padding="32px"
+      gap="24px"
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
         <div>
@@ -602,6 +601,6 @@ export default function ClockingHistorySection({
         </div>,
         document.body
       ) : null}
-    </section>
+    </WrapperLayer>
   );
 }

@@ -53,6 +53,7 @@ export default function TrackingDashboardUi(props) {
     trackerStatusFilterOptions,
     trackerVehicleLocationFilter,
     trackerVehicleLocationFilterOptions,
+    TrackingRouteSkeleton,
   } = props; // receive page logic props.
 
   // Show the inline tracker filters in the toolbar only when the tab group is
@@ -192,7 +193,7 @@ export default function TrackingDashboardUi(props) {
           {error && <DevLayoutSection sectionKey="tracking-page-error" parentKey="tracking-page-body" sectionType="banner">
               <StatusMessage tone="danger">{error}</StatusMessage>
             </DevLayoutSection>}
-          {renderActiveTabContent()}
+          {loading && entries.length === 0 && TrackingRouteSkeleton ? <TrackingRouteSkeleton /> : renderActiveTabContent()}
         </DevLayoutSection>
       </DevLayoutSection>
 

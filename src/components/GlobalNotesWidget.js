@@ -155,6 +155,19 @@ const getDefaultPanelRect = () => {
   };
 };
 
+const getStoredPanelRect = (storageKey) => {
+  if (typeof window === "undefined") return PANEL_DEFAULT;
+  const savedPanel = window.localStorage.getItem(storageKey);
+  if (!savedPanel) return getDefaultPanelRect();
+
+  try {
+    const parsed = JSON.parse(savedPanel);
+    return clampPanelRect(parsed);
+  } catch {
+    return getDefaultPanelRect();
+  }
+};
+
 const hasOpenModal = () => {
   if (typeof document === "undefined") return false;
   return Boolean(
@@ -317,6 +330,14 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     window.localStorage.setItem(panelStorageKey, JSON.stringify(rect));
   };
 
+  const applyPanelRect = (rect, { persist = false } = {}) => {
+    const next = clampPanelRect(rect);
+    panelRectRef.current = next;
+    setPanelRect(next);
+    if (persist) persistPanelRect(next);
+    return next;
+  };
+
   const persistPanelOpen = (isOpen) => {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(panelOpenStorageKey, isOpen ? "1" : "0");
@@ -462,17 +483,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
       persistBubblePosition(defaultPosition);
     }
 
-    const savedPanel = window.localStorage.getItem(panelStorageKey);
-    if (savedPanel) {
-      try {
-        const parsed = JSON.parse(savedPanel);
-        setPanelRect(clampPanelRect(parsed));
-      } catch (_) {
-        setPanelRect(getDefaultPanelRect());
-      }
-    } else {
-      setPanelRect(getDefaultPanelRect());
-    }
+    applyPanelRect(getStoredPanelRect(panelStorageKey));
 
     if (window.localStorage.getItem(panelOpenStorageKey) === "1") {
       setIsPanelMounted(true);
@@ -514,6 +525,7 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         });
         setPanelRect((current) => {
           const next = clampPanelRect(current);
+          panelRectRef.current = next;
           persistPanelRect(next);
           return next;
         });
@@ -546,13 +558,14 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         event.preventDefault();
         const dx = event.clientX - panelDrag.startX;
         const dy = event.clientY - panelDrag.startY;
-        setPanelRect(
-          clampPanelRect({
+        applyPanelRect(
+          {
             x: panelDrag.initialX + dx,
             y: panelDrag.initialY + dy,
             width: panelDrag.initialWidth,
             height: panelDrag.initialHeight,
-          })
+          },
+          { persist: true }
         );
       }
 
@@ -564,13 +577,14 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
         // Top-right corner handle: width follows the cursor right, height
         // follows the cursor up (dragging up grows the panel), and the top
         // edge moves with the cursor while the bottom edge stays anchored.
-        setPanelRect(
-          clampPanelRect({
+        applyPanelRect(
+          {
             x: panelResize.initialX,
             y: panelResize.initialY + dy,
             width: panelResize.initialWidth + dx,
             height: panelResize.initialHeight - dy,
-          })
+          },
+          { persist: true }
         );
       }
     };
@@ -800,9 +814,10 @@ export default function GlobalNotesWidget({ presentationDemo = false } = {}) {
     const relativeTop = caretRect.top - editorRect.top;
     const relativeLeft = caretRect.left - editorRect.left;
     const nextTop = Math.max(12, editorOffsetTop + relativeTop + lineOffset);
+    const maxLeft = Math.max(editorOffsetLeft + 10, containerWidth - 200);
     const nextLeft = Math.max(
       editorOffsetLeft + 10,
-      Math.min(editorOffsetLeft + relativeLeft, containerWidth - 200)
+      Math.min(editorOffsetLeft + relativeLeft, maxLeft)
     );
     setCommandMenuPosition({ top: nextTop, left: nextLeft });
   };

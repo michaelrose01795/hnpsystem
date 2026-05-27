@@ -62,3 +62,9 @@ export const connectCustomerToThread = (payload) =>
     method: "POST",
     body: payload,
   });
+
+export const ensureJobCustomerThread = (payload) =>
+  apiRequest("/api/messages/job-customer-thread", {
+    method: "POST",
+    body: payload,
+  });

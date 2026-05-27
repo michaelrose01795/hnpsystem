@@ -491,20 +491,19 @@ export default function Layout({
   const viewRoles = ["manager", "service", "sales"];
 
   const colors = appShellTheme.light;
-  const [isRouteTransitioning, setIsRouteTransitioning] = useState(false);
-  // While the session or a client-side route transition is resolving, render a
-  // PageSkeleton in place of children. Only ONE skeleton is ever visible — no
-  // overlay, no stacking, no fade. Pages handle their own data-loading
-  // skeletons inside their own render once auth/routing is resolved.
+  // Only show the global skeleton while the session is still resolving on a
+  // gated route. Once routing is taking place, each page renders its own
+  // in-page loading skeleton — we no longer swap children for a generic
+  // PageSkeleton during route transitions (it masked the sidebar active state
+  // and looked the same on every route).
   const isPreAuthLoading = !publicRoute && !presentationShell && !hideSidebar && (userLoading || !user);
-  const showPageSkeleton = isPreAuthLoading || isRouteTransitioning;
+  const showPageSkeleton = isPreAuthLoading;
 
   // TEMP diagnostic: each of these flipping is a candidate for the page
   // "flicking off then coming back" — skeleton flags swap children for the
   // shared loading skeleton while keeping the layout shell mounted.
   useTraceValue("layout.route", router.pathname);
   useTraceValue("layout.isPreAuthLoading", isPreAuthLoading);
-  useTraceValue("layout.isRouteTransitioning", isRouteTransitioning);
   useTraceValue("layout.showLoginShellLoading", showLoginShellLoading);
   useTraceValue("layout.hideSidebar", hideSidebar);
 
@@ -526,36 +525,6 @@ export default function Layout({
     if (typeof window === "undefined" || isTablet) return;
     window.localStorage.setItem("sidebarOpen", isSidebarOpen ? "true" : "false");
   }, [isSidebarOpen, isTablet]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !router?.events) return undefined;
-
-    const routeWithoutHash = (value = "") => {
-      try {
-        const parsed = new URL(value, window.location.origin);
-        return `${parsed.pathname}${parsed.search}`;
-      } catch {
-        return String(value).split("#")[0] || "";
-      }
-    };
-
-    const handleRouteStart = (url, options = {}) => {
-      if (options?.shallow) return;
-      if (routeWithoutHash(url) === routeWithoutHash(router.asPath)) return;
-      setIsRouteTransitioning(true);
-    };
-    const handleRouteEnd = () => setIsRouteTransitioning(false);
-
-    router.events.on("routeChangeStart", handleRouteStart);
-    router.events.on("routeChangeComplete", handleRouteEnd);
-    router.events.on("routeChangeError", handleRouteEnd);
-
-    return () => {
-      router.events.off("routeChangeStart", handleRouteStart);
-      router.events.off("routeChangeComplete", handleRouteEnd);
-      router.events.off("routeChangeError", handleRouteEnd);
-    };
-  }, [router, router.asPath]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
@@ -1178,6 +1147,7 @@ export default function Layout({
                       {!presentationShell && currentJob?.jobNumber ? (
                         <Link
                           href={`/job-cards/myjobs/${currentJob.jobNumber}`}
+                          prefetch={false}
                           className="app-btn app-btn--primary"
                         >
                           {`Open Job ${currentJob.jobNumber}`}
@@ -1225,6 +1195,7 @@ export default function Layout({
                           <Link
                             key={action.href}
                             href={action.href}
+                            prefetch={false}
                             className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
                           >
                             {action.label}
@@ -1256,6 +1227,7 @@ export default function Layout({
                           <Link
                             key={action.href}
                             href={action.href}
+                            prefetch={false}
                             className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
                           >
                             {action.label}
@@ -1303,6 +1275,7 @@ export default function Layout({
                   {userRoles.includes("admin manager") && (
                     <Link
                       href="/admin/users"
+                      prefetch={false}
                       className="app-btn app-btn--primary"
                     >
                       Create User

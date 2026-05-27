@@ -6243,3 +6243,35 @@ html.staff-scope .app-notes-input:focus-visible {
   box-shadow: var(--control-ring);
   outline: none;
 }
+
+/* ========================================================= */
+/* === App-Wide Hidden Scrollbars                         === */
+/* ========================================================= */
+/* Keep every scroll container scrollable while removing the browser chrome.
+   This sits at the end of the staff stylesheet so older themed scrollbar
+   rules for tables, tab rails, dropdowns, pickers, modals, and textareas
+   cannot reintroduce visible tracks or thumbs. */
+html.staff-scope,
+html.staff-scope body,
+html.staff-scope * {
+  scrollbar-width: none !important;
+  scrollbar-color: transparent transparent !important;
+  -ms-overflow-style: none !important;
+}
+
+html.staff-scope::-webkit-scrollbar,
+html.staff-scope body::-webkit-scrollbar,
+html.staff-scope *::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+html.staff-scope::-webkit-scrollbar-track,
+html.staff-scope body::-webkit-scrollbar-track,
+html.staff-scope *::-webkit-scrollbar-track,
+html.staff-scope::-webkit-scrollbar-thumb,
+html.staff-scope body::-webkit-scrollbar-thumb,
+html.staff-scope *::-webkit-scrollbar-thumb {
+  background: transparent !important;
+}

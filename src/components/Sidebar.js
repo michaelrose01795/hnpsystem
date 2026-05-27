@@ -476,6 +476,7 @@ export default function Sidebar({
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={`${item.route}-${item.href}`}
                   href={item.href}
+                  prefetch={false}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction="true"
                 >
@@ -519,6 +520,7 @@ export default function Sidebar({
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={shortcut.href}
                   href={getNavHref(shortcut.href)}
+                  prefetch={false}
                   title={shortcut.description}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
@@ -544,6 +546,7 @@ export default function Sidebar({
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={getNavHref(item.href)}
+                  prefetch={false}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                 >
@@ -568,6 +571,7 @@ export default function Sidebar({
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={getNavHref(item.href)}
+                  prefetch={false}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                 >
@@ -629,6 +633,7 @@ export default function Sidebar({
                           <Link
                             className="app-btn app-btn--ghost"
                             href="/dev/user-diagnostic"
+                            prefetch={false}
                             style={{ flex: 1 }}
                             onClick={handleNavigationPress}
                           >
@@ -660,6 +665,7 @@ export default function Sidebar({
                           ...(inVisionRoute ? successGhostControlStyle : ghostControlStyle),
                         }}
                         href="/vision"
+                        prefetch={false}
                         aria-current={inVisionRoute ? "page" : undefined}
                         onClick={handleNavigationPress}
                       >
@@ -706,6 +712,7 @@ export default function Sidebar({
                     className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                     key={item.href}
                     href={getNavHref(item.href)}
+                    prefetch={false}
                     onClick={handleNavigationPress}
                     data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                     style={{

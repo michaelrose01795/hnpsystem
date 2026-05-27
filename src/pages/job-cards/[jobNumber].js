@@ -62,6 +62,11 @@ import { CalendarField } from "@/components/ui/calendarAPI";
 import { TimePickerField } from "@/components/ui/timePickerAPI";
 import ClockingHistorySection from "@/components/JobCards/ClockingHistorySection";
 import RequestPresetAutosuggestInput from "@/components/JobCards/RequestPresetAutosuggestInput";
+import {
+  ensureJobCustomerThread,
+  fetchThreadMessages,
+  sendThreadMessage,
+} from "@/lib/api/messages";
 import { buildApiUrl } from "@/utils/apiClient";
 import { popupCardStyles, popupOverlayStyles } from "@/styles/appTheme";
 import { isDiagnosticRequestText } from "@/lib/jobRequestPresets/constants";
@@ -9506,8 +9511,250 @@ const renderMessageContentWithLinks = (content) => {
   return parts.length > 0 ? parts : content;
 };
 
-function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
-  const router = useRouter();
+function MessagesTab({ thread, jobId, jobNumber, customerEmail, customerName, dbUserId }) {
+  const [activeCustomerThread, setActiveCustomerThread] = useState(thread || null);
+  const [chatMessages, setChatMessages] = useState(() => Array.isArray(thread?.messages) ? thread.messages : []);
+  const [messageDraft, setMessageDraft] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatSending, setChatSending] = useState(false);
+  const [chatError, setChatError] = useState("");
+  const customerScrollerRef = useRef(null);
+  const normalizedJobNumber = String(jobNumber || "").trim();
+
+  const loadCustomerConversation = useCallback(async () => {
+    if (!dbUserId || !normalizedJobNumber) return;
+    setChatLoading(true);
+    setChatError("");
+    try {
+      const threadPayload = await ensureJobCustomerThread({
+        jobId,
+        jobNumber: normalizedJobNumber,
+        actorId: dbUserId,
+        customerEmail,
+        customerName
+      });
+      const nextThread = threadPayload?.thread || threadPayload?.data || null;
+      if (!nextThread?.id) {
+        throw new Error("Customer conversation could not be loaded.");
+      }
+      setActiveCustomerThread(nextThread);
+      const messagesPayload = await fetchThreadMessages(nextThread.id, {
+        userId: dbUserId,
+        limit: 80
+      });
+      setChatMessages(messagesPayload?.data || messagesPayload?.messages || []);
+    } catch (err) {
+      console.error("Failed to load job customer conversation:", err);
+      setChatError(err?.message || "Unable to load the customer conversation.");
+    } finally {
+      setChatLoading(false);
+    }
+  }, [customerEmail, customerName, dbUserId, jobId, normalizedJobNumber]);
+
+  useEffect(() => {
+    loadCustomerConversation();
+  }, [loadCustomerConversation]);
+
+  useEffect(() => {
+    if (!customerScrollerRef.current) return;
+    customerScrollerRef.current.scrollTop = customerScrollerRef.current.scrollHeight;
+  }, [chatMessages.length, chatLoading]);
+
+  const handleSendCustomerMessage = useCallback(async (event) => {
+    event?.preventDefault();
+    const content = messageDraft.trim();
+    if (!content || !activeCustomerThread?.id || !dbUserId || chatSending) return;
+
+    setChatSending(true);
+    setChatError("");
+    try {
+      const payload = await sendThreadMessage(activeCustomerThread.id, {
+        senderId: dbUserId,
+        content,
+        metadata: {
+          audience: "customer",
+          customerVisible: true,
+          jobNumber: normalizedJobNumber
+        }
+      });
+      const nextMessage = payload?.data || payload?.message || null;
+      setMessageDraft("");
+      if (nextMessage) {
+        setChatMessages((prev) => [...prev, nextMessage]);
+      }
+      await loadCustomerConversation();
+    } catch (err) {
+      console.error("Failed to send job customer message:", err);
+      setChatError(err?.message || "Unable to send the message.");
+    } finally {
+      setChatSending(false);
+    }
+  }, [activeCustomerThread?.id, chatSending, dbUserId, loadCustomerConversation, messageDraft, normalizedJobNumber]);
+
+  return (
+    <DevLayoutSection
+      data-presentation="messages-conversation"
+      sectionKey="jobcard-customer-conversation-panel"
+      parentKey="jobcard-tab-messages"
+      sectionType="section-shell"
+      shell
+      backgroundToken="surface"
+      style={{
+        minHeight: "520px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "16px"
+      }}>
+
+      <DevLayoutSection
+        sectionKey="jobcard-customer-conversation-header"
+        parentKey="jobcard-customer-conversation-panel"
+        sectionType="section-header-row"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "16px",
+          flexWrap: "wrap"
+        }}>
+        <div>
+          <h3 style={{ margin: 0, color: "var(--accentText)", fontSize: "18px", fontWeight: 700 }}>
+            {activeCustomerThread?.title || `Job #${normalizedJobNumber} customer messages`}
+          </h3>
+          <p style={{ margin: "4px 0 0", color: "var(--grey-accent)", fontSize: "0.9rem" }}>
+            {customerEmail ? `Customer: ${customerEmail}` : "Customer email required before messages can be sent."}
+          </p>
+        </div>
+        {chatLoading &&
+        <span style={{ color: "var(--grey-accent)", fontSize: "0.85rem", fontWeight: 600 }}>
+            Loading...
+          </span>
+        }
+      </DevLayoutSection>
+
+      <DevLayoutSection
+        ref={customerScrollerRef}
+        sectionKey="jobcard-customer-conversation-feed"
+        parentKey="jobcard-customer-conversation-panel"
+        sectionType="section-shell"
+        shell
+        backgroundToken="theme"
+        style={{
+          flex: 1,
+          minHeight: "300px",
+          maxHeight: "min(58vh, 560px)",
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "14px",
+          padding: "18px 12px",
+          borderRadius: "var(--radius-md)",
+          background: "var(--theme)"
+        }}>
+        {chatLoading && chatMessages.length === 0 &&
+        <p style={{ margin: 0, color: "var(--grey-accent)", textAlign: "center" }}>
+            Loading messages...
+          </p>
+        }
+        {!chatLoading && chatMessages.length === 0 &&
+        <p style={{ margin: 0, color: "var(--grey-accent)", textAlign: "center" }}>
+            No messages yet.
+          </p>
+        }
+        {chatMessages.map((message) => {
+          const isMine = Number(message.senderId) === Number(dbUserId);
+          return (
+            <div
+              key={message.id || `${message.createdAt}-${message.content}`}
+              data-dev-section="1"
+              data-dev-section-key={`jobcard-customer-message-${message.id}`}
+              data-dev-section-type="content-card"
+              data-dev-section-parent="jobcard-customer-conversation-feed"
+              data-dev-background-token={isMine ? "messages-bubble-mine" : "messages-bubble-peer"}
+              style={{
+                display: "flex",
+                justifyContent: isMine ? "flex-end" : "flex-start"
+              }}>
+              <div
+                style={{
+                  maxWidth: "min(76%, 720px)",
+                  padding: "10px 14px",
+                  borderRadius: isMine ? "18px 18px 6px 18px" : "18px 18px 18px 6px",
+                  backgroundColor: isMine ? "rgba(var(--accent-purple-rgb), 0.14)" : "var(--surface)",
+                  color: "var(--text-1)",
+                  boxShadow: "var(--shadow-md)"
+                }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "14px", alignItems: "baseline" }}>
+                  <strong style={{ color: "var(--accentText)", fontSize: "0.86rem" }}>
+                    {message.sender?.name || "Team Member"}
+                  </strong>
+                  <span style={{ color: "var(--grey-accent)", fontSize: "0.72rem", whiteSpace: "nowrap" }}>
+                    {message.createdAt ? new Date(message.createdAt).toLocaleString("en-GB") : ""}
+                  </span>
+                </div>
+                <p style={{ margin: "6px 0 0", whiteSpace: "pre-wrap", lineHeight: 1.45, fontSize: "0.94rem" }}>
+                  {renderMessageContentWithLinks(message.content)}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </DevLayoutSection>
+
+      <DevLayoutSection
+        as="form"
+        sectionKey="jobcard-customer-conversation-composer"
+        parentKey="jobcard-customer-conversation-panel"
+        sectionType="toolbar"
+        onSubmit={handleSendCustomerMessage}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "10px"
+        }}>
+        <textarea
+          rows={3}
+          value={messageDraft}
+          onChange={(event) => setMessageDraft(event.target.value)}
+          placeholder="Write a message to the customer..."
+          disabled={!activeCustomerThread?.id || chatSending || chatLoading}
+          style={{
+            width: "100%",
+            borderRadius: "var(--control-radius)",
+            border: "none",
+            outline: "none",
+            padding: "12px 14px",
+            resize: "vertical",
+            minHeight: "92px",
+            backgroundColor: "var(--surface)",
+            color: "var(--text-1)"
+          }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ color: chatError ? "var(--danger)" : "var(--grey-accent)", fontSize: "0.85rem" }}>
+            {chatError}
+          </span>
+          <button
+            type="submit"
+            disabled={!messageDraft.trim() || !activeCustomerThread?.id || chatSending || chatLoading}
+            style={{
+              minHeight: "44px",
+              padding: "10px 18px",
+              borderRadius: "var(--control-radius)",
+              border: "none",
+              backgroundColor: "var(--primary)",
+              color: "var(--text-2)",
+              fontWeight: 700,
+              cursor: !messageDraft.trim() || !activeCustomerThread?.id || chatSending || chatLoading ? "not-allowed" : "pointer",
+              opacity: !messageDraft.trim() || !activeCustomerThread?.id || chatSending || chatLoading ? 0.65 : 1
+            }}>
+            {chatSending ? "Sending..." : "Send"}
+          </button>
+        </div>
+      </DevLayoutSection>
+    </DevLayoutSection>);
+
+  /* Legacy summary/CTA UI removed in favour of the embedded customer conversation panel.
   const participants = Array.isArray(thread?.participants) ? thread.participants : [];
   const normalizeRole = (value = "") => (value || "").toLowerCase().trim();
   const customerMember = participants.find((member) =>
@@ -9732,7 +9979,7 @@ function MessagesTab({ thread, jobNumber, customerEmail, customerName }) {
         </>
       }
     </div>);
-
+*/
 }
 
 function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
@@ -10669,7 +10916,8 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           jobAllocatedHours={jobData?.labour_hours || null}
           refreshSignal={refreshSignal}
           enableRequestClick={false}
-          title="Clocking history" />
+          title="Clocking history"
+          backgroundLayer="theme" />
 
         </DevLayoutSection>
       }

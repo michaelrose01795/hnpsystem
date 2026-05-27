@@ -850,11 +850,17 @@ export default function JobCardDetailPageUi(props) {
             <ClockingTab jobData={jobData} canEdit={canEdit && !isClockingLockedByStatus} disabledMessageOverride={isClockingLockedByStatus ? clockingLockDescription : ""} />
           </div>
 
-          <div className="app-page-stack" style={{
-          display: activeTab === "messages" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-messages" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
-            <MessagesTab thread={jobData?.messagingThread} jobNumber={jobData?.jobNumber || jobNumber} customerEmail={jobData?.customerEmail} customerName={jobData?.customer || ""} />
-          </div>
+          <LayerSurface
+            className="app-page-stack"
+            sectionKey="jobcard-tab-messages"
+            sectionType="content-card"
+            parentKey="jobcard-tab-content-shell"
+            backgroundToken="surface"
+            style={{
+              display: activeTab === "messages" ? undefined : "none"
+            }}>
+            <MessagesTab thread={jobData?.messagingThread} jobId={jobData?.id || null} jobNumber={jobData?.jobNumber || jobNumber} customerEmail={jobData?.customerEmail} customerName={jobData?.customer || ""} dbUserId={dbUserId} />
+          </LayerSurface>
 
           <div className="app-page-stack" style={{
           display: activeTab === "documents" ? undefined : "none"
