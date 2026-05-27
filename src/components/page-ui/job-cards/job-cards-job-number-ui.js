@@ -842,7 +842,7 @@ export default function JobCardDetailPageUi(props) {
 
           <div className="app-page-stack" style={{
           display: activeTab === "clocking" ? undefined : "none"
-        }} data-dev-section="1" data-dev-section-key="jobcard-tab-clocking" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell">
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-clocking" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Clocking tab">
             {isClockingLockedByStatus && <div style={lockAlertStyle} role="status" aria-live="polite">
                 <strong>Locked: Clocking</strong>
                 <span>{clockingLockDescription}</span>

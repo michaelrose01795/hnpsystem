@@ -6,7 +6,7 @@ import "@/styles/theme.css"; // register CSS variables before globals
 import "@/styles/staffglobal.css"; // staff/admin app global base styles
 import "@/styles/custglobal.css"; // /website customer overrides (gated by html.website-scope)
 import { Inter } from "next/font/google";
-import React, { useEffect, useState } from "react"; // import React helpers
+import React, { useEffect } from "react"; // import React helpers
 
 // Self-hosted Inter via next/font (no FOUT, no external request at runtime).
 // We need the resolved font-family string (next/font generates a hashed name
@@ -89,7 +89,6 @@ function AppWrapper({ Component, pageProps }) {
     isWebsiteRoute ||
     notesHiddenRoutes.has(pathname) ||
     notesHiddenRoutes.has(asPathWithoutQuery);
-  const [isRouteLoading, setIsRouteLoading] = useState(false);
 
   // Route-owned global style scopes. Next loads global CSS from _app only, so
   // the route decides which global family is active by toggling root classes:
@@ -169,15 +168,12 @@ function AppWrapper({ Component, pageProps }) {
 
     const handleRouteStart = (url) => {
       trace("route", "routeChangeStart", url);
-      setIsRouteLoading(true);
     };
     const handleRouteComplete = (url) => {
       trace("route", "routeChangeComplete", url);
-      setIsRouteLoading(false);
     };
     const handleRouteError = (err, url) => {
       trace("route", "routeChangeError", { url, error: String(err?.message || err) });
-      setIsRouteLoading(false);
     };
 
     router.events.on("routeChangeStart", handleRouteStart);
@@ -269,7 +265,6 @@ function AppWrapper({ Component, pageProps }) {
 
   return (
     <>
-      <RouteProgressBar isRouteLoading={isRouteLoading} />
       <GlobalDraftPersistence />
       <GlobalTableShells />
       <PageAccessGuard pathname={pathname} />
@@ -298,56 +293,6 @@ function PageAccessGuard({ pathname }) {
     router.replace("/newsfeed");
   }, [pathname, user, loading, router]);
   return null;
-}
-
-// Top-edge progress bar — drives off the same isRouteLoading flag as the global loader
-// so users get instant visual feedback that nav is happening even though the shell stays put.
-function RouteProgressBar({ isRouteLoading }) {
-  const [visible, setVisible] = useState(false);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    let trickle;
-    let hideTimer;
-    if (isRouteLoading) {
-      setVisible(true);
-      setProgress(20);
-      trickle = setInterval(() => {
-        setProgress((p) => (p < 85 ? p + (90 - p) * 0.1 : p));
-      }, 200);
-    } else if (visible) {
-      setProgress(100);
-      hideTimer = setTimeout(() => {
-        setVisible(false);
-        setProgress(0);
-      }, 220);
-    }
-    return () => {
-      if (trickle) clearInterval(trickle);
-      if (hideTimer) clearTimeout(hideTimer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRouteLoading]);
-
-  if (!visible) return null;
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        height: "2px",
-        width: `${progress}%`,
-        background: "var(--accent-base, #3b82f6)",
-        boxShadow: "0 0 8px var(--accent-base, #3b82f6)",
-        transition: "width 200ms ease-out, opacity 220ms ease-out",
-        opacity: progress === 100 ? 0 : 1,
-        zIndex: 9999,
-        pointerEvents: "none",
-      }}
-    />
-  );
 }
 
 // Main app entry with all providers composed

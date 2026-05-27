@@ -491,21 +491,22 @@ export default function Layout({
   const viewRoles = ["manager", "service", "sales"];
 
   const colors = appShellTheme.light;
-  const [contentKey, setContentKey] = useState(() => router.asPath || "initial");
-  // While the session is resolving on a protected route, render a PageSkeleton
-  // in place of children. Only ONE skeleton is ever visible — no overlay, no
-  // stacking, no fade. Pages handle their own data-loading skeletons inside
-  // their own render once auth is resolved.
+  const [isRouteTransitioning, setIsRouteTransitioning] = useState(false);
+  // While the session or a client-side route transition is resolving, render a
+  // PageSkeleton in place of children. Only ONE skeleton is ever visible — no
+  // overlay, no stacking, no fade. Pages handle their own data-loading
+  // skeletons inside their own render once auth/routing is resolved.
   const isPreAuthLoading = !publicRoute && !presentationShell && !hideSidebar && (userLoading || !user);
+  const showPageSkeleton = isPreAuthLoading || isRouteTransitioning;
 
   // TEMP diagnostic: each of these flipping is a candidate for the page
-  // "flicking off then coming back" — isPreAuthLoading swaps children for a
-  // skeleton, contentKey changes remount the whole page subtree.
+  // "flicking off then coming back" — skeleton flags swap children for the
+  // shared loading skeleton while keeping the layout shell mounted.
   useTraceValue("layout.route", router.pathname);
   useTraceValue("layout.isPreAuthLoading", isPreAuthLoading);
+  useTraceValue("layout.isRouteTransitioning", isRouteTransitioning);
   useTraceValue("layout.showLoginShellLoading", showLoginShellLoading);
   useTraceValue("layout.hideSidebar", hideSidebar);
-  useTraceValue("layout.contentKey", contentKey);
 
   useEffect(() => {
     if (isTablet) {
@@ -527,8 +528,34 @@ export default function Layout({
   }, [isSidebarOpen, isTablet]);
 
   useEffect(() => {
-    setContentKey(router.asPath || `${router.pathname}-${Date.now()}`);
-  }, [router.asPath, router.pathname]);
+    if (typeof window === "undefined" || !router?.events) return undefined;
+
+    const routeWithoutHash = (value = "") => {
+      try {
+        const parsed = new URL(value, window.location.origin);
+        return `${parsed.pathname}${parsed.search}`;
+      } catch {
+        return String(value).split("#")[0] || "";
+      }
+    };
+
+    const handleRouteStart = (url, options = {}) => {
+      if (options?.shallow) return;
+      if (routeWithoutHash(url) === routeWithoutHash(router.asPath)) return;
+      setIsRouteTransitioning(true);
+    };
+    const handleRouteEnd = () => setIsRouteTransitioning(false);
+
+    router.events.on("routeChangeStart", handleRouteStart);
+    router.events.on("routeChangeComplete", handleRouteEnd);
+    router.events.on("routeChangeError", handleRouteEnd);
+
+    return () => {
+      router.events.off("routeChangeStart", handleRouteStart);
+      router.events.off("routeChangeComplete", handleRouteEnd);
+      router.events.off("routeChangeError", handleRouteEnd);
+    };
+  }, [router, router.asPath]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
@@ -559,9 +586,10 @@ export default function Layout({
     };
   }, [router]);
 
-  // The full Layout (sidebar + topbar) always mounts. When the session is still
-  // resolving, the inner content area renders a <PageSkeleton /> in place of
-  // {children} — one skeleton, one transition, no overlay stacking.
+  // The full Layout (sidebar + topbar) always mounts. When the session or
+  // client-side routing is still resolving, the inner content area renders a
+  // <PageSkeleton /> in place of {children} — one skeleton, one transition, no
+  // overlay stacking.
 
   const accountsRoleCandidates = (roleCategories?.Sales || []).filter((roleName) =>
     roleName.toLowerCase().includes("accounts")
@@ -1304,7 +1332,6 @@ export default function Layout({
         >
           <div
             className="app-page-content"
-            key={contentKey}
             style={{
               maxWidth: hideSidebar ? "100%" : undefined,
               minHeight: isMessagesRoute && !hideSidebar ? 0 : "100%",
@@ -1345,7 +1372,7 @@ export default function Layout({
               <div style={{ width: "100%", minHeight: isMessagesRoute && !hideSidebar ? 0 : "100%", height: isMessagesRoute && !hideSidebar ? "100%" : undefined, position: "relative" }}>
                 <div className="app-page-stack" style={isMessagesRoute && !hideSidebar ? { height: "100%", minHeight: 0, overflow: "hidden" } : undefined}>
                   {showHrTabs && <HrTabsBar />}
-                  {isPreAuthLoading ? <PageSkeleton /> : children}
+                  {showPageSkeleton ? <PageSkeleton /> : children}
                 </div>
               </div>
             </DevLayoutSection>

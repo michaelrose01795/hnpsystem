@@ -10376,7 +10376,11 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
   "This job card is read-only. Clocking entries can only be added by staff with edit access.");
 
   return (
-    <div
+    <DevLayoutSection
+      sectionKey="jobcard-tab-clocking-panel"
+      sectionType="content-card"
+      parentKey="jobcard-tab-clocking"
+      data-dev-text-preview="Clocking entry form and history"
       style={{
         padding: "20px",
         borderRadius: "var(--radius-sm)",
@@ -10446,9 +10450,20 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         </div>
       }
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+      <DevLayoutSection
+        as="form"
+        sectionKey="jobcard-tab-clocking-form"
+        sectionType="content-card"
+        parentKey="jobcard-tab-clocking-panel"
+        data-dev-text-preview="Clocking entry form"
+        onSubmit={handleSubmit}
+        style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
         {/* Row 1: Clock-in date, Clock-out date, Clock-in time, Clock-out time */}
-        <div
+        <DevLayoutSection
+          sectionKey="jobcard-tab-clocking-date-time-fields"
+          sectionType="filter-row"
+          parentKey="jobcard-tab-clocking-form"
+          data-dev-text-preview="Clock-in and clock-out date/time fields"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
@@ -10493,10 +10508,14 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
             required
             disabled={!canEdit} />
 
-        </div>
+        </DevLayoutSection>
 
         {/* Row 2: Request selector, Tech selector */}
-        <div
+        <DevLayoutSection
+          sectionKey="jobcard-tab-clocking-assignment-fields"
+          sectionType="filter-row"
+          parentKey="jobcard-tab-clocking-form"
+          data-dev-text-preview="Job request and technician selectors"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(2, 1fr)",
@@ -10543,9 +10562,13 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               style={{ width: "100%" }} />
 
           </div>
-        </div>
+        </DevLayoutSection>
 
-        <div
+        <DevLayoutSection
+          sectionKey="jobcard-tab-clocking-actions"
+          sectionType="toolbar"
+          parentKey="jobcard-tab-clocking-form"
+          data-dev-text-preview="Clocking form actions and status badges"
           style={{
             display: "flex",
             flexWrap: "wrap",
@@ -10629,11 +10652,16 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
               </span> :
             null}
           </div>
-        </div>
-      </form>
+        </DevLayoutSection>
+      </DevLayoutSection>
 
       {jobId && normalizedJobNumber &&
-      <div id="clocking-history">
+      <DevLayoutSection
+        id="clocking-history"
+        sectionKey="jobcard-tab-clocking-history"
+        sectionType="content-card"
+        parentKey="jobcard-tab-clocking-panel"
+        data-dev-text-preview="Clocking history">
           <ClockingHistorySection
           jobId={jobId}
           jobNumber={normalizedJobNumber}
@@ -10643,7 +10671,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
           enableRequestClick={false}
           title="Clocking history" />
 
-        </div>
+        </DevLayoutSection>
       }
 
       {/* Techs / Staff Off popup — portal-rendered so it centers on the viewport, not the tab */}
@@ -10829,7 +10857,7 @@ function ClockingTab({ jobData, canEdit, disabledMessageOverride = "" }) {
         document.body
       )}
 
-    </div>);
+    </DevLayoutSection>);
 
 }
 
