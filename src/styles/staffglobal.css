@@ -4816,6 +4816,9 @@ html.staff-scope .app-table-shell-wrap {
 html.staff-scope .app-table-shell-scroll {
   border: none;
   background: var(--surface);
+  max-width: 100%;
+  overflow: auto;
+  position: relative;
 }
 
 html.staff-scope .app-table-shell {

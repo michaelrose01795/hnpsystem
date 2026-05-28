@@ -3,6 +3,84 @@ import { getDatabaseClient } from "@/lib/database/client"; // import supabase se
 
 const supabase = getDatabaseClient(); // create singleton client
 
+const normaliseDateKey = (value) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return String(value).slice(0, 10);
+  return parsed.toISOString().slice(0, 10);
+};
+
+const normalizeLoanCar = (row) => ({
+  id: row.loan_car_id,
+  loanCarId: row.loan_car_id,
+  reg: row.reg || "",
+  name: row.name || row.reg || "Loan car",
+  status: row.status || "active",
+  sortOrder: row.sort_order ?? 0,
+  notes: row.notes || "",
+});
+
+const normalizeLoanCarBooking = (row) => ({
+  id: row.booking_id,
+  bookingId: row.booking_id,
+  loanCarId: row.loan_car_id,
+  date: row.start_date,
+  startDate: row.start_date,
+  endDate: row.end_date,
+  jobId: row.job_id || null,
+  jobNumber: row.job_number || "",
+  customer: row.customer_name || "",
+  customerName: row.customer_name || "",
+  customerEmail: row.customer_email || "",
+  customerPhone: row.customer_phone || "",
+  customerAddress: row.customer_address || "",
+  customerPostcode: row.customer_postcode || "",
+  reg: row.vehicle_reg || "",
+  vehicleReg: row.vehicle_reg || "",
+  vehicleMakeModel: row.vehicle_make_model || "",
+  mileage: row.mileage || "",
+  insuranceProvider: row.insurance_provider || "",
+  insurancePolicyNumber: row.insurance_policy_number || "",
+  licenceNumber: row.licence_number || "",
+  dateOfBirth: row.date_of_birth || "",
+  notes: row.notes || "",
+});
+
+const loanCarPayload = (car) => ({
+  reg: String(car.reg || "").trim().toUpperCase(),
+  name: String(car.name || "").trim() || String(car.reg || "").trim().toUpperCase(),
+  status: car.status || "active",
+  sort_order: Number(car.sortOrder ?? car.sort_order ?? 0),
+  notes: car.notes || null,
+});
+
+const toNullableInteger = (value) => {
+  if (value === "" || value === null || value === undefined) return null;
+  const parsed = Number(String(value).replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? Math.round(parsed) : null;
+};
+
+const bookingPayload = (booking) => ({
+  loan_car_id: booking.loanCarId,
+  start_date: booking.startDate || booking.date,
+  end_date: booking.endDate || booking.startDate || booking.date,
+  job_id: booking.jobId || null,
+  job_number: booking.jobNumber || null,
+  customer_name: booking.customerName || booking.customer || null,
+  customer_email: booking.customerEmail || null,
+  customer_phone: booking.customerPhone || null,
+  customer_address: booking.customerAddress || null,
+  customer_postcode: booking.customerPostcode || null,
+  vehicle_reg: booking.vehicleReg || booking.reg || null,
+  vehicle_make_model: booking.vehicleMakeModel || null,
+  mileage: toNullableInteger(booking.mileage),
+  insurance_provider: booking.insuranceProvider || null,
+  insurance_policy_number: booking.insurancePolicyNumber || null,
+  licence_number: booking.licenceNumber || null,
+  date_of_birth: booking.dateOfBirth || null,
+  notes: booking.notes || null,
+});
+
 const statusLabelForAction = (actionType) => {
   if (actionType === "job_checked_in") return "Awaiting Workshop";
   if (actionType === "vhc_complete") return "Awaiting Advisor";
@@ -78,6 +156,158 @@ export const logNextActionEvents = async ({
       vehicleEvent,
     },
   };
+};
+
+export const getLoanCarScheduleBookings = async ({ startDate, endDate } = {}) => {
+  const { data, error } = await supabase
+    .from("tracking_loan_car_bookings")
+    .select("*")
+    .lte("start_date", endDate || normaliseDateKey(new Date()))
+    .gte("end_date", startDate || normaliseDateKey(new Date()))
+    .order("start_date", { ascending: true });
+
+  if (error) {
+    console.error("Failed to fetch loan car schedule bookings", error);
+    return [];
+  }
+
+  return (data || []).map(normalizeLoanCarBooking);
+};
+
+export const getLoanCars = async () => {
+  const { data, error } = await supabase
+    .from("tracking_loan_cars")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("reg", { ascending: true });
+
+  if (error) {
+    console.error("Failed to fetch loan cars", error);
+    return [];
+  }
+
+  return (data || []).map(normalizeLoanCar);
+};
+
+export const saveLoanCar = async (car) => {
+  const payload = loanCarPayload(car);
+  const query = car.loanCarId || car.id
+    ? supabase.from("tracking_loan_cars").update(payload).eq("loan_car_id", car.loanCarId || car.id)
+    : supabase.from("tracking_loan_cars").insert(payload);
+  const { data, error } = await query.select().single();
+
+  if (error) {
+    console.error("Failed to save loan car", error);
+    return { success: false, error };
+  }
+
+  return { success: true, data: normalizeLoanCar(data) };
+};
+
+export const deleteLoanCar = async (loanCarId) => {
+  const { error } = await supabase.from("tracking_loan_cars").delete().eq("loan_car_id", loanCarId);
+  if (error) {
+    console.error("Failed to delete loan car", error);
+    return { success: false, error };
+  }
+  return { success: true };
+};
+
+export const saveLoanCarBooking = async (booking) => {
+  const payload = bookingPayload(booking);
+  const query = booking.bookingId || booking.id
+    ? supabase.from("tracking_loan_car_bookings").update(payload).eq("booking_id", booking.bookingId || booking.id)
+    : supabase.from("tracking_loan_car_bookings").insert(payload);
+  const { data, error } = await query.select().single();
+
+  if (error) {
+    console.error("Failed to save loan car booking", error);
+    return { success: false, error };
+  }
+
+  return { success: true, data: normalizeLoanCarBooking(data) };
+};
+
+export const deleteLoanCarBooking = async (bookingId) => {
+  const { error } = await supabase.from("tracking_loan_car_bookings").delete().eq("booking_id", bookingId);
+  if (error) {
+    console.error("Failed to delete loan car booking", error);
+    return { success: false, error };
+  }
+  return { success: true };
+};
+
+export const searchLoanCarBookingTargets = async (searchTerm) => {
+  const term = String(searchTerm || "").trim();
+  if (term.length < 2) return [];
+
+  const escaped = term.replace(/[%_,()]/g, "");
+  const { data, error } = await supabase
+    .from("jobs")
+    .select(`
+      id,
+      job_number,
+      customer,
+      vehicle_reg,
+      vehicle_make_model,
+      milage,
+      waiting_status,
+      customer_ref:customer_id(
+        firstname,
+        lastname,
+        email,
+        mobile,
+        telephone,
+        address,
+        postcode
+      ),
+      vehicle:vehicle_id(
+        registration,
+        reg_number,
+        make,
+        model,
+        make_model,
+        mileage,
+        insurance_provider,
+        insurance_policy_number
+      )
+    `)
+    .or(`job_number.ilike.%${escaped}%,vehicle_reg.ilike.%${escaped}%,customer.ilike.%${escaped}%`)
+    .order("updated_at", { ascending: false })
+    .limit(12);
+
+  if (error) {
+    console.error("Failed to search loan car booking targets", error);
+    return [];
+  }
+
+  return (data || []).map((job) => {
+    const customer = job.customer_ref || {};
+    const vehicle = job.vehicle || {};
+    const customerName =
+      job.customer ||
+      [customer.firstname, customer.lastname].filter(Boolean).join(" ").trim() ||
+      "";
+    return {
+      jobId: job.id,
+      jobNumber: job.job_number || "",
+      customerName,
+      customerEmail: customer.email || "",
+      customerPhone: customer.mobile || customer.telephone || "",
+      customerAddress: customer.address || "",
+      customerPostcode: customer.postcode || "",
+      vehicleReg: job.vehicle_reg || vehicle.registration || vehicle.reg_number || "",
+      vehicleMakeModel:
+        job.vehicle_make_model ||
+        vehicle.make_model ||
+        [vehicle.make, vehicle.model].filter(Boolean).join(" ").trim() ||
+        "",
+      mileage: job.milage ?? vehicle.mileage ?? "",
+      insuranceProvider: vehicle.insurance_provider || "",
+      insurancePolicyNumber: vehicle.insurance_policy_number || "",
+      waitingStatus: job.waiting_status || "",
+    };
+  });
 };
 
 const fetchLatestEvent = async (table, idField, idValue, selectFields) => {

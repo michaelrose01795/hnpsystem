@@ -2575,8 +2575,6 @@ export default function TrackingDashboard() {
       return (
         <LoanCarSchedulePanel
           mode="tracking"
-          showApiTodo
-          bookings={[]}
         />
       );
     }

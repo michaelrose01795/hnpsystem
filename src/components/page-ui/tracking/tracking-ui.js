@@ -119,8 +119,9 @@ export default function TrackingDashboardUi(props) {
             placeholder="Search active jobs"
             ariaLabel="Search active jobs"
             style={{
-              flex: "1 1 320px",
-              minWidth: "220px"
+              flex: "0 1 clamp(150px, 18vw, 320px)",
+              minWidth: "150px",
+              maxWidth: "320px"
             }} />
 
                   <DropdownField
