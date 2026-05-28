@@ -148,6 +148,25 @@ export default function InteractiveDemoSection() {
           </div>
         </LayerSurface>
 
+        <div className={styles.demoStepRail} role="tablist" aria-label="Choose a role-tree level">
+          {demoSteps.map((step, index) => (
+            <button
+              key={step.id}
+              type="button"
+              className={`${styles.demoStepButton} ${index === activeIndex ? styles.demoStepButtonActive : ""}`}
+              onClick={() => {
+                setPlaying(false);
+                stepTo(index);
+              }}
+              role="tab"
+              aria-selected={index === activeIndex}
+            >
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <strong>{step.level}</strong>
+            </button>
+          ))}
+        </div>
+
         {finished ? (
           <div className={styles.demoFinal}>
             If these problems are visible from the apprentice level, they affect the whole business.

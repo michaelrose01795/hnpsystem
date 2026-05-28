@@ -1,4 +1,5 @@
 // file location: src/components/page-ui/job-cards/job-cards-job-number-ui.js
+import LoanCarSchedulePanel from "@/components/LoanCars/LoanCarSchedulePanel";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical layer primitive (CLAUDE.md §3.0)
 import LayerTheme from "@/components/ui/LayerTheme"; // canonical layer primitive (CLAUDE.md §3.0)
 
@@ -67,6 +68,7 @@ export default function JobCardDetailPageUi(props) {
     jobReleased,
     handleRenameDocument,
     handleReplaceDocument,
+    handleSchedulingLogisticsChange,
     handleTabClick,
     handleTabsDragEnd,
     handleTabsDragMove,
@@ -765,7 +767,17 @@ export default function JobCardDetailPageUi(props) {
                 <strong>Locked: Scheduling</strong>
                 <span>{generalReadOnlyLockDescription}</span>
               </div>}
-            <SchedulingTab jobData={jobData} canEdit={canEdit} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} bookingRequest={jobData?.bookingRequest} onBookingFlowSave={handleBookingFlowSave} bookingFlowSaving={bookingFlowSaving} onBookingApproval={handleBookingApproval} bookingApprovalSaving={bookingApprovalSaving} onAppointmentSave={handleAppointmentSave} onAppointmentRebook={handleAppointmentRebook} appointmentSaving={appointmentSaving} />
+            <SchedulingTab jobData={jobData} canEdit={canEdit} customerVehicles={customerVehicles} customerVehiclesLoading={customerVehiclesLoading} bookingRequest={jobData?.bookingRequest} onBookingFlowSave={handleBookingFlowSave} bookingFlowSaving={bookingFlowSaving} onBookingApproval={handleBookingApproval} bookingApprovalSaving={bookingApprovalSaving} onAppointmentSave={handleAppointmentSave} onAppointmentRebook={handleAppointmentRebook} appointmentSaving={appointmentSaving} onLogisticsSelectionChange={handleSchedulingLogisticsChange} />
+          </div>
+
+          <div className="app-page-stack" style={{
+          display: activeTab === "loan-car" ? undefined : "none"
+        }} data-dev-section="1" data-dev-section-key="jobcard-tab-loan-car" data-dev-section-type="content-card" data-dev-section-parent="jobcard-tab-content-shell" data-dev-text-preview="Loan car booking tab content">
+            {isInvoiceOrBeyondReadOnly && <div style={lockAlertStyle} role="status" aria-live="polite">
+                <strong>Locked: Loan Car</strong>
+                <span>{generalReadOnlyLockDescription}</span>
+              </div>}
+            <LoanCarSchedulePanel jobData={jobData} highlightedJobNumber={jobData?.jobNumber || jobNumber} highlightedReg={jobData?.reg || ""} />
           </div>
 
           <div className="app-page-stack" style={{

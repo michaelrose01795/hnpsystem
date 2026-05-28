@@ -8,6 +8,7 @@ export const MANAGER_SCOPED_ROLES = ["manager", "service manager", "workshop man
 export const HR_MANAGER_DASHBOARD_ROLES = ["owner", "admin manager"];
 export const MOBILE_TECH_ROLES = ["mobile technician"];
 export const MOBILE_TECH_ALLOW_UPPER = ["MOBILE TECHNICIAN"];
+export const WORKSHOP_CONTROLLER_ROLES = ["workshop manager", "workshop controller"];
 export const DEV_FULL_ACCESS_ROLES = Array.from(
   new Set(
     [

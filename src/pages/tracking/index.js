@@ -22,6 +22,8 @@ import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import LayerSurface from "@/components/ui/LayerSurface"; // canonical --surface inner-section primitive
 import TrackingDashboardUi from "@/components/page-ui/tracking/tracking-ui"; // Extracted presentation layer.
+import LoanCarSchedulePanel from "@/components/LoanCars/LoanCarSchedulePanel";
+import { WORKSHOP_CONTROLLER_ROLES, hasAnyRole } from "@/lib/auth/roles";
 
 const CAR_LOCATIONS = [
 { id: "na", label: "N/A" },
@@ -1349,12 +1351,16 @@ export default function TrackingDashboard() {
   const [equipmentModal, setEquipmentModal] = useState({ open: false, item: null });
   const [oilStockModal, setOilStockModal] = useState({ open: false, item: null });
   const { dbUserId, user } = useUser();
-  const userRoles = useMemo(() => (user?.roles || []).map((role) => role.toLowerCase()), [user]);
-  const isWorkshopManager = userRoles.includes("workshop manager");
+  const userRoles = useMemo(() => user?.roles || [], [user]);
+  const isWorkshopManager = hasAnyRole(userRoles, WORKSHOP_CONTROLLER_ROLES);
   const tabs = useMemo(() => {
     const base = [{ id: "tracker", label: "Key/Parking" }];
     if (isWorkshopManager) {
-      base.push({ id: "equipment", label: "Equipment/Tools" }, { id: "oil-stock", label: "Oil/Stock" });
+      base.push(
+        { id: "loan-cars", label: "Loan Cars" },
+        { id: "equipment", label: "Equipment/Tools" },
+        { id: "oil-stock", label: "Oil/Stock" }
+      );
     }
     return base;
   }, [isWorkshopManager]);
@@ -2565,6 +2571,15 @@ export default function TrackingDashboard() {
 
 
   const renderActiveTabContent = () => {
+    if (activeTab === "loan-cars") {
+      return (
+        <LoanCarSchedulePanel
+          mode="tracking"
+          showApiTodo
+          bookings={[]}
+        />
+      );
+    }
     if (activeTab === "equipment") {
       return renderEquipmentContent();
     }

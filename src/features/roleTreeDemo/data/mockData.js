@@ -3,15 +3,75 @@
 // and must never reference live DMS data, Supabase, or API helpers.
 
 export const presentationSections = [
-  { id: "opening", label: "Opening", chapter: "01" },
-  { id: "top-roles", label: "Top of the role tree", chapter: "02" },
-  { id: "departments", label: "Departments", chapter: "03" },
-  { id: "problems", label: "Daily workflow problems", chapter: "04" },
-  { id: "technicians", label: "Technician level", chapter: "05" },
-  { id: "interactive-demo", label: "Interactive demo", chapter: "06" },
-  { id: "connected-dms", label: "Connected DMS", chapter: "07" },
-  { id: "rollout", label: "Phased rollout", chapter: "08" },
-  { id: "final", label: "Final message", chapter: "09" },
+  {
+    id: "opening",
+    label: "Opening",
+    chapter: "01",
+    intent: "Frame the system as an operational walkthrough.",
+    takeaway: "Start with the floor, then lift the same truth upward.",
+  },
+  {
+    id: "top-roles",
+    label: "Top of the role tree",
+    chapter: "02",
+    intent: "Show how leadership views differ without splitting the data.",
+    takeaway: "One source of truth, tailored by responsibility.",
+  },
+  {
+    id: "departments",
+    label: "Departments",
+    chapter: "03",
+    intent: "Make department hand-offs visible.",
+    takeaway: "Every team moves the same job, not separate versions of it.",
+  },
+  {
+    id: "problems",
+    label: "Daily workflow problems",
+    chapter: "04",
+    intent: "Name the repeated friction the system should remove.",
+    takeaway: "The cost is the constant micro-chase between people.",
+  },
+  {
+    id: "technicians",
+    label: "Technician level",
+    chapter: "05",
+    intent: "Ground the vision in the bay-level workflow.",
+    takeaway: "The system only works if capturing the work feels simple.",
+  },
+  {
+    id: "interactive-demo",
+    label: "Interactive demo",
+    chapter: "06",
+    intent: "Walk the audience through the role tree in motion.",
+    takeaway: "Pressure flows upward and useful context flows back down.",
+  },
+  {
+    id: "connected-dms",
+    label: "Connected DMS",
+    chapter: "07",
+    intent: "Bring the modules back to one centre.",
+    takeaway: "The DMS becomes shared operational memory.",
+  },
+  {
+    id: "rollout",
+    label: "Phased rollout",
+    chapter: "08",
+    intent: "Reduce adoption risk with a controlled path.",
+    takeaway: "Expand only once each workflow earns trust.",
+  },
+  {
+    id: "final",
+    label: "Final message",
+    chapter: "09",
+    intent: "Close on why this belongs inside H&P.",
+    takeaway: "Build around the way H&P already works.",
+  },
+];
+
+export const presentationStats = [
+  { id: "roles", value: "5", label: "role levels" },
+  { id: "departments", value: "7", label: "departments" },
+  { id: "workflow", value: "1", label: "shared workflow" },
 ];
 
 export const orbitDepartments = [
@@ -47,6 +107,9 @@ export const topRoles = [
     id: "owner",
     title: "Owner",
     summary: "Sets direction, protects the business, owns the long view.",
+    signal: "Business health, exposure and direction.",
+    cadence: "Daily exception view with weekly trend confidence.",
+    risk: "Late visibility into pressure, margin leakage or customer risk.",
     needs: [
       "Confidence the business is running cleanly day to day",
       "A single place to see what is actually happening",
@@ -58,6 +121,9 @@ export const topRoles = [
     id: "directors",
     title: "Directors",
     summary: "Translate strategy into department-level outcomes.",
+    signal: "Cross-department performance and accountable ownership.",
+    cadence: "Live operating picture with month-on-month patterns.",
+    risk: "Departments optimising locally while the whole workflow slows.",
     needs: [
       "Department-level performance side by side",
       "Clear ownership of every workflow",
@@ -69,6 +135,9 @@ export const topRoles = [
     id: "managers",
     title: "Managers",
     summary: "Run the day, unblock staff, keep customers moving.",
+    signal: "Pressure, blockers, promised times and next best action.",
+    cadence: "Minute-by-minute control during the working day.",
+    risk: "Small delays becoming customer calls, idle bays or missed hand-offs.",
     needs: [
       "Live workshop loading and bottleneck signals",
       "Customer status without asking the floor",

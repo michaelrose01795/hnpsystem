@@ -8,7 +8,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import LayerSurface from "@/components/ui/LayerSurface";
 import styles from "../styles/roleTreeDemo.module.css";
-import { presentationSections } from "../data/mockData";
+import { presentationSections, presentationStats } from "../data/mockData";
 import useReducedMotionPreference from "../hooks/useReducedMotionPreference";
 
 import OpeningSection from "./sections/OpeningSection";
@@ -40,6 +40,8 @@ export default function RoleTreeDemo() {
   const reducedMotion = systemReducedMotion;
 
   const activeSection = presentationSections[activeIndex];
+  const sectionPosition = `${activeIndex + 1} / ${presentationSections.length}`;
+  const progressPercent = Math.round(((activeIndex + 1) / presentationSections.length) * 100);
 
   const goPrev = useCallback(() => {
     setActiveIndex((index) => Math.max(0, index - 1));
@@ -120,10 +122,17 @@ export default function RoleTreeDemo() {
       role="region"
       aria-label="Role tree presentation"
     >
+      <div className={styles.backdropGrid} aria-hidden="true" />
+      <div className={styles.backdropSignal} aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+
       <LayerSurface
         as="header"
         className={styles.chrome}
-        radius="0"
+        radius="var(--radius-xl)"
         padding="14px clamp(16px, 3vw, 32px)"
         gap="16px"
         style={{
@@ -133,8 +142,9 @@ export default function RoleTreeDemo() {
         }}
       >
         <div className={styles.chromeTitle}>
-          <span className={styles.chromeKicker}>HNP Vision &middot; Presentation</span>
+          <span className={styles.chromeKicker}>HNP Vision - Presentation</span>
           <span className={styles.chromeHeading}>Role Tree &amp; Connected DMS</span>
+          <span className={styles.chromeSubheading}>{activeSection.intent}</span>
         </div>
 
         <div className={styles.chromeProgress} role="tablist" aria-label="Presentation sections">
@@ -155,6 +165,9 @@ export default function RoleTreeDemo() {
         </div>
 
         <div className={styles.chromeControls}>
+          <span className={styles.chromeCounter} aria-label={`Section ${sectionPosition}`}>
+            {sectionPosition}
+          </span>
           <button
             type="button"
             className="app-btn app-btn--secondary"
@@ -182,16 +195,50 @@ export default function RoleTreeDemo() {
         </div>
       </LayerSurface>
 
+      <aside className={styles.roleSpine} aria-hidden="true">
+        <span className={styles.roleSpineChapter}>{activeSection.chapter}</span>
+        <span className={styles.roleSpineLabel}>{activeSection.label}</span>
+      </aside>
+
       <main className={styles.stage} ref={stageRef}>
+        <div className={styles.presenterStrip} aria-live="polite">
+          <LayerSurface className={styles.presenterMeta} radius="var(--radius-md)" padding="12px 14px" gap="4px">
+            <span className={styles.presenterChapter}>Chapter {activeSection.chapter}</span>
+            <span className={styles.presenterTitle}>{activeSection.label}</span>
+          </LayerSurface>
+          <LayerSurface className={styles.presenterTakeaway} radius="var(--radius-md)" padding="12px 16px">
+            {activeSection.takeaway}
+          </LayerSurface>
+          <LayerSurface
+            className={styles.presenterStats}
+            aria-label="Presentation scope"
+            radius="var(--radius-md)"
+            padding="10px"
+            gap="8px"
+            style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
+          >
+            {presentationStats.map((stat) => (
+              <span key={stat.id} className={styles.presenterStat}>
+                <strong>{stat.value}</strong>
+                <span>{stat.label}</span>
+              </span>
+            ))}
+          </LayerSurface>
+          <div className={styles.presenterProgress} aria-hidden="true">
+            <span style={{ width: `${progressPercent}%` }} />
+          </div>
+        </div>
+
         {presentationSections.map((section, index) => (
-          <section
+          <div
             key={section.id}
             id={`role-tree-demo-${section.id}`}
             className={`${styles.section} ${index === activeIndex ? styles.sectionActive : ""}`}
             aria-hidden={index !== activeIndex}
+            role="tabpanel"
           >
             {index === activeIndex ? <Component /> : null}
-          </section>
+          </div>
         ))}
       </main>
 

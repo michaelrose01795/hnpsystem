@@ -120,6 +120,21 @@ export default function TopRolesSection() {
           </div>
         </div>
 
+        <div className={styles.roleSignalGrid}>
+          <LayerTheme padding="14px" gap="4px">
+            <span className={styles.dashboardCardLabel}>Main signal</span>
+            <span>{focused.signal}</span>
+          </LayerTheme>
+          <LayerTheme padding="14px" gap="4px">
+            <span className={styles.dashboardCardLabel}>Decision rhythm</span>
+            <span>{focused.cadence}</span>
+          </LayerTheme>
+          <LayerTheme padding="14px" gap="4px">
+            <span className={styles.dashboardCardLabel}>Risk if hidden</span>
+            <span>{focused.risk}</span>
+          </LayerTheme>
+        </div>
+
         <div className={styles.dashboardGrid}>
           {dashboardCards.map((card) => (
             <LayerTheme key={card.id} className={styles.dashboardCard} padding="14px 16px" gap="6px">

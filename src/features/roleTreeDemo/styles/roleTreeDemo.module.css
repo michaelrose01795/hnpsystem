@@ -10,20 +10,70 @@
   z-index: 9000;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  background: linear-gradient(180deg, var(--theme), var(--surface));
+  background:
+    radial-gradient(circle at 18% 18%, rgba(var(--accentMainRgb), 0.44), transparent 28%),
+    radial-gradient(circle at 82% 8%, rgba(var(--surface-rgb), 0.16), transparent 22%),
+    radial-gradient(circle at 76% 82%, rgba(var(--accentMainRgb), 0.32), transparent 30%),
+    linear-gradient(135deg, var(--surfaceText), var(--surfaceText));
   perspective: 1800px;
   perspective-origin: 50% 40%;
   font-family: var(--font-family, var(--font-inter, system-ui));
-  color: var(--surfaceText);
+  color: var(--surface);
   overflow: hidden;
   isolation: isolate;
+}
+
+.backdropGrid {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.18;
+  background:
+    linear-gradient(rgba(var(--surface-rgb), 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--surface-rgb), 0.18) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(circle at 50% 35%, black, transparent 72%);
+}
+
+.backdropSignal {
+  position: absolute;
+  inset: auto -12% 4% 34%;
+  z-index: -1;
+  height: 42%;
+  pointer-events: none;
+  transform: rotate(-7deg);
+  opacity: 0.9;
+}
+
+.backdropSignal span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, transparent, rgba(var(--accentMainRgb), 0.5), transparent);
+  transform: translateY(var(--signal-y, 0)) scaleX(var(--signal-scale, 1));
+  animation: signalDrift 8s cubic-bezier(0.32, 0.72, 0, 1) infinite;
+}
+
+.backdropSignal span:nth-child(1) { --signal-y: 0; --signal-scale: 0.82; }
+.backdropSignal span:nth-child(2) { --signal-y: 72px; --signal-scale: 1; animation-delay: -2.6s; }
+.backdropSignal span:nth-child(3) { --signal-y: 144px; --signal-scale: 0.66; animation-delay: -5.2s; }
+
+@keyframes signalDrift {
+  0%, 100% { opacity: 0.16; transform: translateY(var(--signal-y, 0)) translateX(-8%) scaleX(var(--signal-scale, 1)); }
+  50% { opacity: 0.78; transform: translateY(var(--signal-y, 0)) translateX(8%) scaleX(calc(var(--signal-scale, 1) + 0.08)); }
 }
 
 .chrome {
   backdrop-filter: blur(18px) saturate(150%);
   -webkit-backdrop-filter: blur(18px) saturate(150%);
-  box-shadow: 0 12px 24px -22px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 1px 0 rgba(var(--surface-rgb), 0.24) inset,
+    0 22px 70px -34px rgba(var(--accentMainRgb), 0.56);
   z-index: 3;
+  margin: 16px clamp(12px, 2vw, 28px) 0;
 }
 
 .chromeTitle {
@@ -31,6 +81,7 @@
   flex-direction: column;
   line-height: 1.2;
   min-width: 0;
+  gap: 3px;
 }
 
 .chromeKicker,
@@ -47,12 +98,21 @@
 }
 
 .chromeHeading {
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: clamp(1.05rem, 1.4vw, 1.35rem);
+  font-weight: 950;
   color: var(--surfaceText);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.chromeSubheading {
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--surfaceTextMuted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chromeProgress {
@@ -65,8 +125,8 @@
 
 .progressDot {
   min-height: 44px;
-  flex: 0 0 44px;
-  width: 44px;
+  flex: 0 0 52px;
+  width: 52px;
   display: grid;
   gap: 2px;
   align-content: center;
@@ -74,11 +134,11 @@
   min-width: 0;
   padding: 0;
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: rgba(var(--accentMainRgb), 0.08);
   color: var(--surfaceTextMuted);
   cursor: pointer;
-  transition: background 220ms ease, color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+  transition: background 520ms cubic-bezier(0.32, 0.72, 0, 1), color 520ms cubic-bezier(0.32, 0.72, 0, 1), transform 520ms cubic-bezier(0.32, 0.72, 0, 1), box-shadow 520ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .progressDot:hover {
@@ -92,10 +152,12 @@
 }
 
 .progressDotActive {
-  color: var(--accentText);
-  background: rgba(var(--accentMainRgb), 0.18);
-  box-shadow: 0 0 0 2px rgba(var(--accentMainRgb), 0.28);
-  transform: translateY(-1px);
+  color: var(--onAccentText);
+  background: var(--accentText);
+  box-shadow:
+    0 0 0 8px rgba(var(--accentMainRgb), 0.12),
+    0 20px 36px -18px rgba(var(--accentMainRgb), 0.72);
+  transform: translateY(-3px) scale(1.08);
 }
 
 .progressDotChapter {
@@ -115,22 +177,176 @@
   flex-wrap: wrap;
 }
 
+.chromeCounter {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accentMainRgb), 0.1);
+  color: var(--accentText);
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.roleSpine {
+  position: absolute;
+  left: clamp(16px, 2vw, 28px);
+  top: 132px;
+  bottom: 28px;
+  z-index: 1;
+  width: clamp(76px, 7vw, 112px);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.roleSpine::before {
+  content: "";
+  position: absolute;
+  top: 112px;
+  bottom: 0;
+  width: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(180deg, var(--accentText), rgba(var(--accentMainRgb), 0.08));
+  box-shadow: 0 0 36px rgba(var(--accentMainRgb), 0.44);
+}
+
+.roleSpineChapter {
+  font-size: clamp(3.8rem, 8vw, 7rem);
+  font-weight: 950;
+  line-height: 0.82;
+  color: rgba(var(--surface-rgb), 0.9);
+  text-shadow: 0 18px 44px rgba(var(--accentMainRgb), 0.42);
+}
+
+.roleSpineLabel {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  margin-top: 22px;
+  color: rgba(var(--surface-rgb), 0.72);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .stage {
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
   transform-style: preserve-3d;
-  padding: clamp(20px, 3vw, 36px) clamp(16px, 4vw, 56px) clamp(28px, 4vw, 52px);
+  padding: clamp(28px, 4vw, 48px) clamp(18px, 4vw, 64px) clamp(34px, 5vw, 64px) clamp(116px, 11vw, 180px);
   scroll-behavior: smooth;
+}
+
+.shell .stage {
+  padding: clamp(28px, 4vw, 48px) clamp(18px, 4vw, 64px) clamp(34px, 5vw, 64px) clamp(116px, 11vw, 180px);
+}
+
+.presenterStrip {
+  width: min(1320px, 100%);
+  margin: 0 auto clamp(22px, 3vw, 38px);
+  display: grid;
+  grid-template-columns: minmax(190px, 0.7fr) minmax(240px, 1.2fr) minmax(220px, 0.8fr);
+  gap: 14px;
+  align-items: stretch;
+  color: var(--surfaceText);
+}
+
+.presenterMeta,
+.presenterTakeaway,
+.presenterStats {
+  border-radius: var(--radius-xl);
+  box-shadow:
+    0 1px 0 rgba(var(--surface-rgb), 0.42) inset,
+    0 26px 70px -38px rgba(0, 0, 0, 0.72);
+}
+
+.presenterMeta {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+}
+
+.presenterChapter {
+  color: var(--accentText);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.presenterTitle {
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.presenterTakeaway {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: var(--surfaceTextMuted);
+  font-size: clamp(1rem, 1.2vw, 1.2rem);
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.presenterStats {
+  min-width: 0;
+}
+
+.presenterStat {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 2px;
+  min-height: 64px;
+  border-radius: var(--radius-lg);
+  background: rgba(var(--accentMainRgb), 0.08);
+}
+
+.presenterStat strong {
+  color: var(--accentText);
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  font-weight: 950;
+}
+
+.presenterStat span {
+  color: var(--surfaceTextMuted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.presenterProgress {
+  grid-column: 1 / -1;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(var(--accentMainRgb), 0.1);
+  overflow: hidden;
+}
+
+.presenterProgress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accentText);
+  transition: width 320ms ease;
 }
 
 .section {
   display: none;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1320px;
   margin: 0 auto;
   transform-style: preserve-3d;
-  animation: sectionIn 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: sectionIn 760ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.shell .section {
+  max-width: 1320px;
 }
 
 .sectionActive {
@@ -138,40 +354,41 @@
 }
 
 @keyframes sectionIn {
-  from { opacity: 0; transform: translateY(14px) translateZ(-24px); }
-  to { opacity: 1; transform: translateY(0) translateZ(0); }
+  from { opacity: 0; transform: translateY(28px) translateZ(-44px) rotateX(3deg); filter: blur(10px); }
+  to { opacity: 1; transform: translateY(0) translateZ(0) rotateX(0); filter: blur(0); }
 }
 
 .sectionFlow {
   display: grid;
-  gap: var(--page-stack-gap);
+  gap: clamp(22px, 3vw, 36px);
 }
 
 .heading {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-  max-width: 840px;
-  margin: 0 auto;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  max-width: 980px;
+  margin: 0;
 }
 
 .title {
-  font-size: 2.25rem;
-  font-weight: 850;
-  color: var(--surfaceText);
+  font-size: clamp(2.8rem, 6vw, 6.6rem);
+  font-weight: 950;
+  color: var(--surface);
   letter-spacing: 0;
   margin: 0;
-  line-height: 1.1;
+  line-height: 0.92;
+  max-width: 980px;
 }
 
 .subtitle {
-  font-size: 1.05rem;
-  color: var(--surfaceTextMuted);
+  font-size: clamp(1.05rem, 1.4vw, 1.32rem);
+  color: rgba(var(--surface-rgb), 0.78);
   margin: 0;
   line-height: 1.55;
-  max-width: 720px;
+  max-width: 740px;
 }
 
 .glassCard,
@@ -185,9 +402,10 @@
 .finalScene {
   box-shadow:
     0 1px 0 rgba(var(--surface-rgb), 0.62) inset,
-    0 18px 44px -30px rgba(0, 0, 0, 0.42);
+    0 28px 80px -42px rgba(0, 0, 0, 0.72),
+    0 18px 54px -42px rgba(var(--accentMainRgb), 0.6);
   transform-style: preserve-3d;
-  transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 300ms ease, opacity 300ms ease;
+  transition: transform 620ms cubic-bezier(0.32, 0.72, 0, 1), box-shadow 620ms cubic-bezier(0.32, 0.72, 0, 1), opacity 620ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .glassCard[data-clickable="true"] {
@@ -278,17 +496,18 @@
 
 .openingLayout {
   display: grid;
-  grid-template-columns: minmax(320px, 0.95fr) minmax(300px, 1fr);
-  gap: var(--page-stack-gap);
+  grid-template-columns: minmax(420px, 1.08fr) minmax(340px, 0.92fr);
+  gap: clamp(24px, 4vw, 56px);
   align-items: center;
 }
 
 .openingScene {
   position: relative;
   justify-self: center;
-  width: min(480px, 82vw);
-  height: min(480px, 82vw);
+  width: min(620px, 82vw);
+  height: min(620px, 82vw);
   transform-style: preserve-3d;
+  filter: drop-shadow(0 28px 50px rgba(var(--accentMainRgb), 0.3));
 }
 
 .openingRings {
@@ -316,15 +535,15 @@
 
 .openingCore {
   position: absolute;
-  inset: 36%;
+  inset: 34%;
   display: grid;
   place-items: center;
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--accentText), rgba(var(--accentMainRgb), 0.58));
   color: var(--onAccentText);
   box-shadow:
-    0 0 0 8px rgba(var(--accentMainRgb), 0.12),
-    0 24px 60px -10px rgba(var(--accentMainRgb), 0.48);
+    0 0 0 16px rgba(var(--accentMainRgb), 0.1),
+    0 34px 90px -12px rgba(var(--accentMainRgb), 0.62);
   transform: translateZ(64px);
   text-align: center;
   padding: 12px;
@@ -364,18 +583,18 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 132px;
-  height: 56px;
-  margin: -28px 0 0 -66px;
+  width: 154px;
+  height: 64px;
+  margin: -32px 0 0 -77px;
   display: grid;
   place-items: center;
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--surfaceText);
   font-weight: 800;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   box-shadow:
-    0 12px 28px -10px rgba(var(--accentMainRgb), 0.32),
+    0 18px 44px -18px rgba(var(--accentMainRgb), 0.58),
     0 1px 0 rgba(var(--surface-rgb), 0.68) inset;
   transform:
     rotate(var(--angle))
@@ -410,17 +629,27 @@
 
 .topStack {
   display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: clamp(14px, 2vw, 22px);
+  grid-template-columns: 1.2fr 0.9fr 1fr;
+  align-items: stretch;
 }
 
 .topStackCard {
-  min-height: 154px;
+  min-height: 190px;
+  justify-content: space-between;
+}
+
+.topStackCard:nth-child(2) {
+  transform: translateY(22px) rotate(-1deg);
+}
+
+.topStackCard:nth-child(3) {
+  transform: translateY(-10px) rotate(1deg);
 }
 
 .roleTreeLiveScene {
   position: relative;
-  min-height: 230px;
+  min-height: 330px;
   overflow: hidden;
   box-shadow:
     0 1px 0 rgba(var(--surface-rgb), 0.65) inset,
@@ -466,7 +695,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(260px, 0.95fr) minmax(90px, 0.25fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(320px, 0.9fr) minmax(90px, 0.25fr) minmax(320px, 1fr);
   gap: var(--layout-card-gap);
   align-items: center;
   transform-style: preserve-3d;
@@ -475,7 +704,7 @@
 .roleTreeColumn {
   display: grid;
   gap: 10px;
-  transform: translateX(34px) rotateX(34deg) rotateZ(-1deg) translateZ(18px);
+  transform: translateX(50px) rotateX(38deg) rotateZ(-2deg) translateZ(28px);
   transform-style: preserve-3d;
 }
 
@@ -489,7 +718,7 @@
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--surfaceText);
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 800;
   padding: 0 14px;
   box-shadow:
@@ -568,10 +797,11 @@
 
 .roleTreeMetrics span {
   justify-content: center;
-  min-height: 70px;
+  min-height: 92px;
   color: var(--accentText);
   background: var(--theme);
   animation: metricBreathe 4.2s ease-in-out infinite;
+  font-size: 1.05rem;
 }
 
 .roleTreeMetrics span:nth-child(2) { animation-delay: -1s; }
@@ -593,6 +823,12 @@
 .roleViewStack {
   display: grid;
   gap: 10px;
+}
+
+.roleSignalGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
 .dashboardGrid {
@@ -972,6 +1208,59 @@
   justify-content: center;
 }
 
+.demoStepRail {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.demoStepButton {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: rgba(var(--surface-rgb), 0.72);
+  color: var(--surfaceText);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 14px 30px -26px rgba(0, 0, 0, 0.32);
+  transition: transform 220ms ease, background 220ms ease, box-shadow 220ms ease;
+}
+
+.demoStepButton:hover {
+  transform: translateY(-2px);
+  background: rgba(var(--accentMainRgb), 0.1);
+  box-shadow: 0 18px 36px -26px rgba(var(--accentMainRgb), 0.38);
+}
+
+.demoStepButton span {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--accentMainRgb), 0.1);
+  color: var(--accentText);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.demoStepButton strong {
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.demoStepButtonActive {
+  background: rgba(var(--accentMainRgb), 0.16);
+  box-shadow: 0 0 0 2px rgba(var(--accentMainRgb), 0.28);
+}
+
 .demoFinal {
   text-align: center;
   font-weight: 800;
@@ -1259,6 +1548,15 @@
     min-height: 0;
   }
 
+  .topStack {
+    grid-template-columns: 1fr;
+  }
+
+  .topStackCard:nth-child(2),
+  .topStackCard:nth-child(3) {
+    transform: none;
+  }
+
   .roleTreeColumn {
     transform: translateX(18px) rotateX(26deg) rotateZ(-1deg) translateZ(12px);
   }
@@ -1280,6 +1578,10 @@
   .chromeControls {
     justify-content: center;
   }
+
+  .presenterStrip {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 700px) {
@@ -1287,8 +1589,28 @@
     padding: 18px 12px 28px;
   }
 
+  .shell .stage {
+    padding: 18px 12px 28px;
+  }
+
+  .roleSpine,
+  .backdropSignal {
+    display: none;
+  }
+
+  .chrome {
+    margin: 8px 8px 0;
+  }
+
+  .heading {
+    align-items: center;
+    text-align: center;
+    margin: 0 auto;
+  }
+
   .title {
-    font-size: 1.65rem;
+    font-size: 2.1rem;
+    line-height: 1;
   }
 
   .subtitle {
@@ -1299,6 +1621,10 @@
     overflow-x: auto;
     justify-content: flex-start;
     padding-bottom: 2px;
+  }
+
+  .chromeSubheading {
+    white-space: normal;
   }
 
   .progressDot {
@@ -1363,6 +1689,27 @@
 
   .detailHeader {
     flex-direction: column;
+  }
+
+  .presenterStrip {
+    gap: 10px;
+  }
+
+  .presenterStats {
+    grid-template-columns: 1fr !important;
+  }
+
+  .presenterStat {
+    min-height: 46px;
+    grid-template-columns: auto minmax(0, 1fr);
+    text-align: left;
+    place-items: center start;
+    column-gap: 8px;
+    padding: 0 12px;
+  }
+
+  .demoStepRail {
+    grid-template-columns: 1fr;
   }
 }
 
