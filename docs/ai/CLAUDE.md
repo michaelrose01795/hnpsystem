@@ -45,6 +45,7 @@ HNPSystem — Dealer Management System for Humphries & Parks. Next.js (Pages Rou
 | Supabase, schema, queries, DB helpers | [rules/database.md](rules/database.md) |
 | Presentation / demo mode | [rules/presentation.md](rules/presentation.md) |
 | Build, lint, border check, tests | [rules/testing.md](rules/testing.md) |
+| Installed agent skills, Codex/Claude skill loading, `.agents/skills` | [rules/skills.md](rules/skills.md) |
 | Reusable user prompts | [rules/prompt-shortcuts.md](rules/prompt-shortcuts.md) |
 
 If a task spans two areas, read both — nothing else.
