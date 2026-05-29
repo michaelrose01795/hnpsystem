@@ -1293,10 +1293,15 @@ html.staff-scope .app-tone-info-strong {
  * (rules queued to migrate during UI cleanup pass) */
 html.staff-scope .app-data-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--surface);
+}
+
+html.staff-scope .app-data-table:has(thead) {
+  overflow: visible;
 }
 
 html.staff-scope .app-data-table th,
@@ -1335,12 +1340,25 @@ html.staff-scope .app-data-table .app-badge {
 html.staff-scope .app-data-table thead th {
   position: sticky;
   top: 0;
-  z-index: 3;
+  z-index: 30;
   background: var(--secondary-pressed);
+  background-clip: padding-box;
   color: var(--text-1);
   font-size: var(--text-label);
   font-weight: 700;
   box-shadow: 0 1px 0 rgba(var(--accent-base-rgb), 0.14);
+}
+
+html.staff-scope .app-data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 29;
+  background: var(--secondary-pressed);
+}
+
+html.staff-scope .app-data-table tbody {
+  position: relative;
+  z-index: 0;
 }
 
 html.staff-scope .app-data-table tbody tr:last-child td {
@@ -4816,9 +4834,23 @@ html.staff-scope .app-table-shell-wrap {
 html.staff-scope .app-table-shell-scroll {
   border: none;
   background: var(--surface);
+  isolation: isolate;
   max-width: 100%;
   overflow: auto;
   position: relative;
+  --app-table-heading-mask-height: 44px;
+}
+
+html.staff-scope .app-table-shell-scroll:has(.app-table-shell--with-headings)::before {
+  content: "";
+  position: sticky;
+  top: 0;
+  display: block;
+  height: var(--app-table-heading-mask-height);
+  margin-bottom: calc(var(--app-table-heading-mask-height) * -1);
+  background: var(--secondary-pressed);
+  pointer-events: none;
+  z-index: 35;
 }
 
 html.staff-scope .app-table-shell {
@@ -4866,14 +4898,23 @@ html.staff-scope .app-table-shell tbody td:last-child {
 html.staff-scope .app-table-shell--with-headings {
   border-collapse: separate !important;
   border-spacing: 0 !important;
+  overflow: visible !important;
+}
+
+html.staff-scope .app-table-shell--with-headings thead {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--secondary-pressed);
 }
 
 html.staff-scope .app-table-shell--with-headings thead th {
   position: sticky;
   top: 0;
-  z-index: 4;
+  z-index: 41;
   background: var(--secondary-pressed) !important;
   background-image: none !important;
+  background-clip: padding-box;
   color: var(--text-1) !important;
   font-size: 0.72rem;
   font-weight: 700;
@@ -4897,6 +4938,8 @@ html.staff-scope .app-table-shell--with-headings thead th:last-child {
 }
 
 html.staff-scope .app-table-shell--with-headings tbody tr {
+  position: relative;
+  z-index: 0;
   background: var(--surface) !important;
   background-image: none !important;
 }

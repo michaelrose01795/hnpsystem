@@ -104,6 +104,23 @@ const buildJobBookingDraft = ({ jobData, highlightedJobNumber, highlightedReg })
   };
 };
 
+// `--secondary-pressed` and `--theme` are semi-transparent rgba tokens. On
+// sticky cells they let scrolling body rows bleed through. Layer the tint on
+// an opaque `--surface` base so the sticky surface fully masks content below.
+const stickyHeadingBg = {
+  backgroundColor: "var(--surface)",
+  backgroundImage: "linear-gradient(var(--secondary-pressed), var(--secondary-pressed))",
+};
+
+const stickyFirstColBg = {
+  backgroundColor: "var(--surface)",
+};
+
+const stickyFirstColTodayBg = {
+  backgroundColor: "var(--surface)",
+  backgroundImage: "linear-gradient(var(--theme), var(--theme))",
+};
+
 const inputStyle = {
   width: "100%",
   minHeight: "44px",
@@ -601,6 +618,8 @@ export default function LoanCarSchedulePanel({
           overflowX: "auto",
           overflowY: "auto",
           maxHeight: mode === "tracking" ? "calc(100dvh - 380px)" : "560px",
+          "--app-table-heading-mask-height": "0px", // thead is already opaque; suppress the shared sticky mask band
+
         }}>
         <table
           className="app-data-table app-table-shell app-table-shell--with-headings"
@@ -614,13 +633,18 @@ export default function LoanCarSchedulePanel({
               <col key={car.loanCarId || car.id} style={{ width: "200px" }} />
             ))}
           </colgroup>
-          <thead>
+          <thead
+            data-dev-section="1"
+            data-dev-section-key={`${mode}-loan-car-appointments-table-headings`}
+            data-dev-section-type="table-headings"
+            data-dev-section-parent={`${mode}-loan-car-appointments-table`}
+            style={{ position: "sticky", top: 0, zIndex: 120, ...stickyHeadingBg }}>
             <tr>
-              <th style={{ left: 0, position: "sticky", zIndex: 3, backgroundColor: "var(--surface)" }}>
+              <th style={{ left: 0, position: "sticky", top: 0, zIndex: 122, ...stickyHeadingBg }}>
                 Appointment Day
               </th>
               {cars.map((car) => (
-                <th key={car.loanCarId || car.id}>
+                <th key={car.loanCarId || car.id} style={{ position: "sticky", top: 0, zIndex: 121, ...stickyHeadingBg }}>
                   {car.reg}
                   <span style={{ display: "block", marginTop: "2px", fontSize: "11px", color: "var(--grey-accent)" }}>
                     {car.name}
@@ -643,7 +667,7 @@ export default function LoanCarSchedulePanel({
                     left: 0,
                     position: "sticky",
                     zIndex: 2,
-                    backgroundColor: day.isToday ? "var(--theme)" : "var(--surface)",
+                    ...(day.isToday ? stickyFirstColTodayBg : stickyFirstColBg),
                   }}>
                   <span
                     style={{
