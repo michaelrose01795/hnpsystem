@@ -17,5 +17,12 @@ export { default as StatusMessage } from "./StatusMessage";
 export { default as Button } from "./Button";
 export { default as InputField } from "./InputField";
 
+// Staff layout/UI building blocks (staffglobal.css class-driven)
+export { default as StaffPageHeader } from "./StaffPageHeader";
+export { default as StaffCard } from "./StaffCard";
+export { default as StaffCardGrid } from "./StaffCardGrid";
+export { default as StaffButton } from "./StaffButton";
+export { default as StaffTabs } from "./StaffTabs";
+
 // Shared layout architecture
 export * from "./layout-system";

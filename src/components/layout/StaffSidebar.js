@@ -1,5 +1,10 @@
-// file location: src/components/Sidebar.js
-// Edit: Responsive improvements - mobile close button smaller and edge-aligned
+// file location: src/components/layout/StaffSidebar.js
+// Staff app navigation rail. Renders the role-filtered navigation, message
+// badge, clock in/out + logout controls, and presentation-mode page links.
+//
+// Moved here from src/components/Sidebar.js during the layout cleanup
+// (src/components/Sidebar.js is now a thin re-export shim for back-compat).
+// Access filtering uses the shared nav config in src/config/navigation.js.
 "use client";
 
 import Link from "next/link";

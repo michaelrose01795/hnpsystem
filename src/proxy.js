@@ -7,6 +7,14 @@ import {
   MANAGER_SCOPED_ROLES,
   normalizeRoles,
 } from "@/lib/auth/roles";
+// Route lists are centralised in src/config/routeAccess.js (single source of
+// truth shared with pageAccess.js). proxy.js only needs the public/protected
+// classification + the HR manager-friendly path list.
+import {
+  HR_ALLOWED_PATHS_FOR_MANAGERS,
+  isProtectedPath,
+  isPublicPath,
+} from "@/config/routeAccess";
 
 const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
 const isVercelHost = (value = "") => /\.vercel\.app$/i.test(String(value));
@@ -31,71 +39,12 @@ const applyRuntimeNextAuthUrl = (req) => {
   }
 };
 
-const PUBLIC_FILE = /\.(?:avif|bmp|css|gif|ico|jpg|jpeg|js|json|map|png|svg|txt|webmanifest|webp|woff|woff2)$/i;
-const PUBLIC_PATHS = new Set([
-  "/",
-  "/favicon.ico",
-  "/login",
-  "/loginPresentation",
-  "/unauthorized",
-  "/website",
-  "/vision",
-  "/presentation",
-  "/slideshow",
-]);
-const PUBLIC_PREFIXES = [
-  "/_next",
-  "/api/auth",
-  "/api/cookies",
-  "/api/health",
-  "/api/website/auth",
-  "/images",
-  "/website",
-  "/vision",
-  "/presentation",
-  "/vhc/customer",
-  "/vhc/customer-preview",
-];
-const PROTECTED_PREFIXES = [
-  "/account",
-  "/accounts",
-  "/admin",
-  "/appointments",
-  "/clocking",
-  "/company-accounts",
-  "/customers",
-  "/dashboard",
-  "/dev",
-  "/hr",
-  "/job-cards",
-  "/messages",
-  "/mobile",
-  "/parts",
-  "/profile",
-  "/tech",
-  "/tracking",
-  "/valet",
-  "/vhc",
-  "/workshop",
-];
-const HR_ALLOWED_PATHS_FOR_MANAGERS = ["/hr/employees", "/hr/leave"];
 const RELAX_HR_ACCESS = process.env.NEXT_PUBLIC_RELAX_HR_ACCESS === "true";
 const isDevEnv = process.env.NODE_ENV !== "production";
 const logProxyCheck = (message, details = {}) => {
   if (!isDevEnv) return;
   console.info(`[proxy] ${message}`, details);
 };
-
-const startsWithPath = (pathname, prefix) =>
-  pathname === prefix || pathname.startsWith(`${prefix}/`);
-
-const isPublicPath = (pathname) =>
-  PUBLIC_PATHS.has(pathname) ||
-  PUBLIC_FILE.test(pathname) ||
-  PUBLIC_PREFIXES.some((prefix) => startsWithPath(pathname, prefix));
-
-const isProtectedPath = (pathname) =>
-  PROTECTED_PREFIXES.some((prefix) => startsWithPath(pathname, prefix));
 
 const redirectToLogin = (req, pathname) => {
   const loginUrl = new URL("/login", req.url);

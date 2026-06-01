@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import LayerSurface from "@/components/ui/LayerSurface";
 import LayerTheme from "@/components/ui/LayerTheme";
-import { Button } from "@/components/ui";
+import { Button, InputField } from "@/components/ui";
+import { CalendarField } from "@/components/ui/calendarAPI";
+import { DropdownField } from "@/components/ui/dropdownAPI";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import {
   deleteLoanCar,
   deleteLoanCarBooking,
@@ -121,17 +124,6 @@ const stickyFirstColTodayBg = {
   backgroundImage: "linear-gradient(var(--theme), var(--theme))",
 };
 
-const inputStyle = {
-  width: "100%",
-  minHeight: "44px",
-  border: 0,
-  borderRadius: "var(--control-radius)",
-  boxShadow: "inset 0 0 0 1px var(--input-ring)",
-  backgroundColor: "var(--surface)",
-  color: "var(--text-1)",
-  padding: "10px 12px",
-};
-
 const labelStyle = {
   display: "flex",
   flexDirection: "column",
@@ -147,12 +139,35 @@ const fieldGridStyle = {
   gap: "var(--layout-card-gap)",
 };
 
+const todayDateKey = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return toDateKey(today);
+};
+
 function Field({ label, value, onChange, type = "text", children }) {
+  if (children) {
+    return <div style={labelStyle}>{children}</div>;
+  }
+
+  if (type === "date") {
+    return (
+      <CalendarField
+        label={label}
+        value={value ?? ""}
+        onValueChange={onChange}
+        placeholder="Choose date"
+      />
+    );
+  }
+
   return (
-    <label style={labelStyle}>
-      {label}
-      {children || <input type={type} value={value || ""} onChange={(event) => onChange(event.target.value)} style={inputStyle} />}
-    </label>
+    <InputField
+      label={label}
+      type={type}
+      value={value ?? ""}
+      onChange={(event) => onChange(event.target.value)}
+    />
   );
 }
 
@@ -231,11 +246,173 @@ function BookingCell({ booking, onClick, highlightedJob, highlightedVehicle }) {
   );
 }
 
-function FleetManager({ cars, onSave, onDelete }) {
+const scrollTodayIntoView = (todayRowRef) => {
+  if (!todayRowRef.current) return;
+  todayRowRef.current.scrollIntoView({ block: "start", inline: "nearest" });
+};
+
+function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
+  const [form, setForm] = useState(() => ({
+    ...car,
+    reg: car?.reg || "",
+    name: car?.name || car?.reg || "",
+    sortOrder: car?.sortOrder ?? 0,
+    notes: car?.notes || "",
+  }));
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setForm({
+      ...car,
+      reg: car?.reg || "",
+      name: car?.name || car?.reg || "",
+      sortOrder: car?.sortOrder ?? 0,
+      notes: car?.notes || "",
+    });
+    setMessage("");
+  }, [car]);
+
+  if (!car) return null;
+
+  const update = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async (event) => {
+    event.preventDefault();
+    if (!form.reg.trim()) {
+      setMessage("Enter a registration before saving.");
+      return;
+    }
+    setSaving(true);
+    setMessage("");
+    const reg = form.reg.trim().toUpperCase();
+    const result = await onSave({
+      ...form,
+      reg,
+      name: reg,
+      loanCarId: car.loanCarId || car.id,
+      id: car.id || car.loanCarId,
+    });
+    setSaving(false);
+    if (!result?.success) {
+      setMessage(result?.error?.message || "Unable to save loan car.");
+      return;
+    }
+    onClose();
+  };
+
+  const handleDelete = async () => {
+    setSaving(true);
+    setMessage("");
+    const result = await onDelete(car.loanCarId || car.id);
+    setSaving(false);
+    if (result?.success === false) {
+      setMessage(result?.error?.message || "Unable to remove loan car.");
+      return;
+    }
+    onClose();
+  };
+
+  return (
+    <div
+      className="popup-backdrop"
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 240,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "16px",
+        backgroundColor: "rgba(0, 0, 0, 0.48)",
+      }}>
+      <LayerSurface
+        as="form"
+        onSubmit={handleSave}
+        sectionKey="loan-car-details-popup"
+        sectionType="modal"
+        radius="var(--radius-sm)"
+        padding="var(--section-card-padding)"
+        gap="var(--layout-card-gap)"
+        style={{ width: "min(560px, 100%)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
+          <div>
+            <h2 style={{ margin: 0, color: "var(--text-1)", fontSize: "20px" }}>{car.reg || "Loan car"}</h2>
+            <p style={{ margin: "4px 0 0", color: "var(--grey-accent)", fontSize: "13px" }}>
+              Edit this loan car or remove it from the fleet list.
+            </p>
+          </div>
+          <Button type="button" variant="ghost" size="sm" pill onClick={onClose} aria-label="Close loan car details">
+            X
+          </Button>
+        </div>
+
+        <div style={fieldGridStyle}>
+          <Field label="Loan car reg" value={form.reg} onChange={(value) => update("reg", value.toUpperCase())} />
+          <Field label="Order" type="number" value={form.sortOrder} onChange={(value) => update("sortOrder", value)} />
+        </div>
+
+        <label style={labelStyle}>
+          Notes
+          <textarea className="app-input app-input--textarea" value={form.notes || ""} onChange={(event) => update("notes", event.target.value)} rows={3} />
+        </label>
+
+        {message ? <p style={{ margin: 0, color: "var(--danger)", fontSize: "13px" }}>{message}</p> : null}
+
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+          <Button type="button" variant="danger" onClick={handleDelete} disabled={saving}>
+            Remove loan car
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" disabled={saving || !form.reg.trim()}>
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
+        </div>
+      </LayerSurface>
+    </div>
+  );
+}
+
+function FleetManager({ cars, onSave, onDelete, onBook }) {
+  const [activeTab, setActiveTab] = useState("book");
   const [draft, setDraft] = useState({ reg: "", name: "", sortOrder: 0, notes: "" });
   const [editingId, setEditingId] = useState("");
   const [editDraft, setEditDraft] = useState(null);
+  const [vehicleLookup, setVehicleLookup] = useState(null);
+  const [vehicleLookupLoading, setVehicleLookupLoading] = useState(false);
+  const [vehicleMessage, setVehicleMessage] = useState("");
+  const [bookingSearchTerm, setBookingSearchTerm] = useState("");
+  const [bookingMatches, setBookingMatches] = useState([]);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingMessage, setBookingMessage] = useState("");
+  const [bookingDraft, setBookingDraft] = useState(() => ({
+    ...EMPTY_BOOKING,
+    loanCarId: cars[0]?.loanCarId || cars[0]?.id || "",
+    startDate: todayDateKey(),
+    endDate: todayDateKey(),
+  }));
   const activeDraft = editDraft || draft;
+  const loanCarOptions = useMemo(
+    () => [
+      { value: "", label: "Choose loan car" },
+      ...cars.map((car) => ({
+        value: car.loanCarId || car.id,
+        label: car.reg,
+      })),
+    ],
+    [cars]
+  );
+
+  useEffect(() => {
+    if (bookingDraft.loanCarId || cars.length === 0) return;
+    setBookingDraft((prev) => ({ ...prev, loanCarId: cars[0]?.loanCarId || cars[0]?.id || "" }));
+  }, [bookingDraft.loanCarId, cars]);
 
   const updateDraft = (field, value) => {
     if (editDraft) {
@@ -245,9 +422,16 @@ function FleetManager({ cars, onSave, onDelete }) {
     setDraft((prev) => ({ ...prev, [field]: value }));
   };
 
+  const updateBookingDraft = (field, value) => {
+    setBookingDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
   const startEditing = (car) => {
+    setActiveTab("add-vehicle");
     setEditingId(car.loanCarId || car.id);
     setEditDraft(car);
+    setVehicleLookup(null);
+    setVehicleMessage("");
   };
 
   const stopEditing = () => {
@@ -255,16 +439,136 @@ function FleetManager({ cars, onSave, onDelete }) {
     setEditDraft(null);
   };
 
+  const lookupVehicle = async () => {
+    const reg = String(activeDraft.reg || "").trim().toUpperCase();
+    if (!reg) {
+      setVehicleMessage("Enter a registration before searching.");
+      return;
+    }
+
+    updateDraft("reg", reg);
+    setVehicleLookupLoading(true);
+    setVehicleMessage("");
+
+    try {
+      const response = await fetch("/api/vehicles/dvla", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registration: reg }),
+      });
+      const rawText = await response.text();
+      if (!response.ok) {
+        let payload = null;
+        try {
+          payload = JSON.parse(rawText);
+        } catch {
+          payload = null;
+        }
+        throw new Error(payload?.message || payload?.error || rawText || "Unable to fetch vehicle data.");
+      }
+      const data = rawText ? JSON.parse(rawText) : {};
+      if (!data || Object.keys(data).length === 0) {
+        throw new Error("No vehicle data returned for that registration.");
+      }
+      setVehicleLookup(data);
+      setVehicleMessage("Vehicle found. Add it to the loan car fleet when ready.");
+    } catch (error) {
+      setVehicleLookup(null);
+      setVehicleMessage(error.message || "Unable to fetch vehicle data.");
+    } finally {
+      setVehicleLookupLoading(false);
+    }
+  };
+
   const handleAdd = async () => {
     if (!draft.reg.trim()) return;
-    await onSave(draft);
-    setDraft({ reg: "", name: "", sortOrder: cars.length + 1, notes: "" });
+    const topSortOrder = Math.min(0, ...cars.map((car) => Number(car.sortOrder ?? 0))) - 1;
+    const reg = draft.reg.trim().toUpperCase();
+    await onSave({ ...draft, reg, name: reg, sortOrder: topSortOrder });
+    setDraft({ reg: "", name: "", sortOrder: topSortOrder - 1, notes: "" });
+    setVehicleLookup(null);
+    setVehicleMessage("Loan vehicle added to the table.");
   };
 
   const handleSaveEdit = async () => {
     if (!editDraft?.reg?.trim()) return;
-    await onSave(editDraft);
+    const reg = editDraft.reg.trim().toUpperCase();
+    await onSave({ ...editDraft, reg, name: reg });
     stopEditing();
+  };
+
+  const runBookingSearch = async () => {
+    const term = bookingSearchTerm.trim();
+    if (term.length < 2) {
+      setBookingMessage("Enter at least 2 characters to search.");
+      return;
+    }
+    setBookingLoading(true);
+    setBookingMessage("");
+    const rows = await searchLoanCarBookingTargets(term);
+    setBookingMatches(rows);
+    setBookingLoading(false);
+    if (rows.length === 0) {
+      setBookingMessage("No jobs found for that search.");
+    }
+  };
+
+  const applyBookingMatch = (match) => {
+    setBookingDraft((prev) => ({
+      ...prev,
+      ...match,
+      loanCarId: prev.loanCarId,
+      startDate: prev.startDate || todayDateKey(),
+      endDate: prev.endDate || prev.startDate || todayDateKey(),
+    }));
+    setBookingMatches([]);
+    setBookingSearchTerm(`${match.jobNumber || ""}${match.vehicleReg ? ` - ${match.vehicleReg}` : ""}`.trim());
+    setBookingMessage("Job loaded into the booking form.");
+  };
+
+  const handleBook = async () => {
+    if (!bookingDraft.loanCarId || !bookingDraft.startDate || !bookingDraft.endDate) {
+      setBookingMessage("Choose a loan car and booking dates first.");
+      return;
+    }
+    setBookingLoading(true);
+    setBookingMessage("");
+    const result = await onBook(bookingDraft);
+    setBookingLoading(false);
+    if (!result?.success) {
+      setBookingMessage(result?.error?.message || "Unable to save loan car booking.");
+      return;
+    }
+    setBookingMessage("Booking added to the table.");
+    setBookingDraft((prev) => ({
+      ...EMPTY_BOOKING,
+      loanCarId: prev.loanCarId,
+      startDate: todayDateKey(),
+      endDate: todayDateKey(),
+    }));
+    setBookingSearchTerm("");
+  };
+
+  const renderVehicleLookupSummary = () => {
+    if (!vehicleLookup) return null;
+    const rows = [
+      ["Make", vehicleLookup.make || vehicleLookup.vehicleMake],
+      ["Model", vehicleLookup.model || vehicleLookup.vehicleModel],
+      ["Colour", vehicleLookup.colour || vehicleLookup.vehicleColour || vehicleLookup.bodyColour],
+      ["Tax status", vehicleLookup.taxStatus],
+      ["MOT status", vehicleLookup.motStatus],
+    ].filter(([, value]) => value);
+    if (rows.length === 0) return null;
+    return (
+      <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
+        {rows.map(([label, value]) => (
+          <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: "12px", color: "var(--text-1)" }}>
+            <span style={{ color: "var(--grey-accent)" }}>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </LayerSurface>
+    );
   };
 
   return (
@@ -275,7 +579,18 @@ function FleetManager({ cars, onSave, onDelete }) {
       radius="var(--radius-sm)"
       padding="var(--section-card-padding)"
       gap="var(--layout-card-gap)">
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+      <TabGroup
+        items={[
+          { value: "book", label: "Book" },
+          { value: "add-vehicle", label: "Add vehicle" },
+        ]}
+        value={activeTab}
+        onChange={setActiveTab}
+        ariaLabel="Loan car manager tabs"
+        className="tab-api--inline"
+      />
+
+      {activeTab === "add-vehicle" ? <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
         <div>
           <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "16px" }}>Loan vehicles</h3>
           <p style={{ margin: "4px 0 0", color: "var(--grey-accent)", fontSize: "13px" }}>
@@ -287,48 +602,113 @@ function FleetManager({ cars, onSave, onDelete }) {
             Done editing
           </Button>
         ) : null}
-      </div>
+      </div> : null}
 
-      <div style={fieldGridStyle}>
-        <Field label="Loan vehicle reg" value={activeDraft.reg} onChange={(value) => updateDraft("reg", value)} />
-        <Field label="Display name" value={activeDraft.name} onChange={(value) => updateDraft("name", value)} />
-        <Field label="Order" type="number" value={activeDraft.sortOrder} onChange={(value) => updateDraft("sortOrder", value)} />
-        <Field label="Notes" value={activeDraft.notes} onChange={(value) => updateDraft("notes", value)} />
-      </div>
-      {!editDraft ? (
-        <Button type="button" variant="primary" size="sm" onClick={handleAdd} disabled={!draft.reg.trim()}>
-          Add loan vehicle
-        </Button>
-      ) : (
-        <Button type="button" variant="primary" size="sm" onClick={handleSaveEdit} disabled={!editDraft.reg.trim()}>
-          Save loan vehicle
-        </Button>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {cars.map((car) => (
-          <div
-            key={car.loanCarId || car.id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr) auto auto",
-              gap: "8px",
-              alignItems: "center",
-              minHeight: "44px",
-            }}>
-            <div style={{ minWidth: 0, color: "var(--text-1)" }}>
-              <strong>{car.reg}</strong>
-              <span style={{ color: "var(--grey-accent)" }}> - {car.name || "Loan vehicle"}</span>
-            </div>
-            <Button type="button" variant={editingId === (car.loanCarId || car.id) ? "primary" : "secondary"} size="xs" onClick={() => startEditing(car)}>
-              {editingId === (car.loanCarId || car.id) ? "Editing" : "Edit"}
+      {activeTab === "add-vehicle" ? (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(150px, 240px) auto auto", gap: "8px", alignItems: "end", maxWidth: "520px" }}>
+            <Field label="Reg search" value={activeDraft.reg} onChange={(value) => updateDraft("reg", value.toUpperCase())} />
+            <Button type="button" variant="secondary" onClick={lookupVehicle} disabled={vehicleLookupLoading || !activeDraft.reg.trim()}>
+              {vehicleLookupLoading ? "Searching..." : "Search"}
             </Button>
-            <Button type="button" variant="danger" size="xs" onClick={() => onDelete(car.loanCarId || car.id)}>
-              Delete
+            {!editDraft ? (
+              <Button type="button" variant="primary" size="sm" onClick={handleAdd} disabled={!draft.reg.trim()}>
+                Add loan vehicle
+              </Button>
+            ) : (
+              <Button type="button" variant="primary" size="sm" onClick={handleSaveEdit} disabled={!editDraft.reg.trim()}>
+                Save loan vehicle
+              </Button>
+            )}
+          </div>
+          {renderVehicleLookupSummary()}
+          {vehicleMessage ? <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>{vehicleMessage}</p> : null}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {cars.map((car) => (
+              <div
+                key={car.loanCarId || car.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto auto",
+                  gap: "8px",
+                  alignItems: "center",
+                  minHeight: "44px",
+                }}>
+                <div style={{ minWidth: 0, color: "var(--text-1)" }}>
+                  <strong>{car.reg}</strong>
+                  <span style={{ color: "var(--grey-accent)" }}> - {car.name || car.reg || "Loan vehicle"}</span>
+                </div>
+                <Button type="button" variant={editingId === (car.loanCarId || car.id) ? "primary" : "secondary"} size="xs" onClick={() => startEditing(car)}>
+                  {editingId === (car.loanCarId || car.id) ? "Editing" : "Edit"}
+                </Button>
+                <Button type="button" variant="danger" size="xs" onClick={() => onDelete(car.loanCarId || car.id)}>
+                  Delete
+                </Button>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={fieldGridStyle}>
+            <DropdownField
+              label="Loan car"
+              value={bookingDraft.loanCarId || ""}
+              onValueChange={(value) => updateBookingDraft("loanCarId", value)}
+              options={loanCarOptions}
+              placeholder="Choose loan car"
+            />
+            <Field label="From" type="date" value={bookingDraft.startDate} onChange={(value) => updateBookingDraft("startDate", value)} />
+            <Field label="To" type="date" value={bookingDraft.endDate} onChange={(value) => updateBookingDraft("endDate", value)} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "8px", alignItems: "end" }}>
+            <Field label="Search customer reg, name, or job number" value={bookingSearchTerm} onChange={setBookingSearchTerm} />
+            <Button type="button" variant="secondary" onClick={runBookingSearch} disabled={bookingLoading || bookingSearchTerm.trim().length < 2}>
+              {bookingLoading ? "Searching..." : "Search"}
             </Button>
           </div>
-        ))}
-      </div>
+
+          {bookingMatches.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {bookingMatches.map((match) => (
+                <button
+                  key={`${match.jobId}-${match.vehicleReg}`}
+                  type="button"
+                  onClick={() => applyBookingMatch(match)}
+                  style={{
+                    minHeight: "44px",
+                    border: 0,
+                    borderRadius: "var(--radius-sm)",
+                    backgroundColor: "var(--surface)",
+                    color: "var(--text-1)",
+                    padding: "10px 12px",
+                    textAlign: "left",
+                    cursor: "pointer",
+                  }}>
+                  <strong>#{match.jobNumber || "Job"} - {match.vehicleReg || "No reg"}</strong>
+                  <span style={{ display: "block", color: "var(--grey-accent)", fontSize: "12px" }}>
+                    {match.customerName || "Customer"} {match.vehicleMakeModel ? `- ${match.vehicleMakeModel}` : ""}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          <div style={fieldGridStyle}>
+            <Field label="Job number" value={bookingDraft.jobNumber} onChange={(value) => updateBookingDraft("jobNumber", value)} />
+            <Field label="Customer name" value={bookingDraft.customerName} onChange={(value) => updateBookingDraft("customerName", value)} />
+            <Field label="Customer vehicle reg" value={bookingDraft.vehicleReg} onChange={(value) => updateBookingDraft("vehicleReg", value.toUpperCase())} />
+            <Field label="Vehicle" value={bookingDraft.vehicleMakeModel} onChange={(value) => updateBookingDraft("vehicleMakeModel", value)} />
+          </div>
+
+          <Button type="button" variant="primary" size="sm" onClick={handleBook} disabled={bookingLoading || !bookingDraft.loanCarId || !bookingDraft.startDate || !bookingDraft.endDate}>
+            Save booking
+          </Button>
+          {bookingMessage ? <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>{bookingMessage}</p> : null}
+        </>
+      )}
     </LayerTheme>
   );
 }
@@ -346,6 +726,14 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
   const [matches, setMatches] = useState([]);
   const [saving, setSaving] = useState(false);
   const [copiedKey, setCopiedKey] = useState("");
+  const loanCarOptions = useMemo(
+    () =>
+      cars.map((car) => ({
+        value: car.loanCarId || car.id,
+        label: `${car.reg} - ${car.name}`,
+      })),
+    [cars]
+  );
 
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -479,15 +867,13 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
         </LayerTheme>
 
         <div style={fieldGridStyle}>
-          <Field label="Loan car" value={form.loanCarId} onChange={(value) => update("loanCarId", value)}>
-            <select value={form.loanCarId || ""} onChange={(event) => update("loanCarId", event.target.value)} style={inputStyle}>
-              {cars.map((car) => (
-                <option key={car.loanCarId || car.id} value={car.loanCarId || car.id}>
-                  {car.reg} - {car.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <DropdownField
+            label="Loan car"
+            value={form.loanCarId || ""}
+            onValueChange={(value) => update("loanCarId", value)}
+            options={loanCarOptions}
+            placeholder="Choose loan car"
+          />
           <Field label="From" type="date" value={form.startDate} onChange={(value) => update("startDate", value)} />
           <Field label="To" type="date" value={form.endDate} onChange={(value) => update("endDate", value)} />
           <Field label="Job number" value={form.jobNumber} onChange={(value) => update("jobNumber", value)} />
@@ -507,7 +893,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
 
         <label style={labelStyle}>
           Notes
-          <textarea value={form.notes || ""} onChange={(event) => update("notes", event.target.value)} rows={3} style={inputStyle} />
+          <textarea className="app-input app-input--textarea" value={form.notes || ""} onChange={(event) => update("notes", event.target.value)} rows={3} />
         </label>
 
         <LayerTheme
@@ -548,18 +934,53 @@ export default function LoanCarSchedulePanel({
   highlightedJobNumber = "",
   highlightedReg = "",
   mode = "job-card",
+  refreshKey = 0,
+  searchTerm = "",
+  showFleetManager = false,
 }) {
   const scrollRef = useRef(null);
   const todayRowRef = useRef(null);
   const [cars, setCars] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [selectedCell, setSelectedCell] = useState(null);
+  const [selectedLoanCar, setSelectedLoanCar] = useState(null);
   const [loading, setLoading] = useState(true);
   const dateRows = useMemo(() => buildDateRows(), []);
   const jobDraft = buildJobBookingDraft({ jobData, highlightedJobNumber, highlightedReg });
   const highlightedJob = String(highlightedJobNumber || jobData?.jobNumber || "").trim().toLowerCase();
   const highlightedVehicle = String(highlightedReg || jobData?.reg || "").trim().toLowerCase();
-  const tableMinWidth = Math.max(680, 180 + cars.length * 200);
+  const normalizedSearchTerm = String(searchTerm || "").trim().toLowerCase();
+  const visibleCars = useMemo(() => {
+    if (!normalizedSearchTerm) return cars;
+    const bookingMatches = new Set(
+      bookings
+        .filter((booking) =>
+          [
+            booking.jobNumber,
+            booking.customerName,
+            booking.customer,
+            booking.vehicleReg,
+            booking.reg,
+            booking.vehicleMakeModel,
+          ]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(normalizedSearchTerm))
+        )
+        .map((booking) => booking.loanCarId)
+    );
+    return cars.filter((car) => {
+      const carMatches = [car.reg, car.name, car.notes]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(normalizedSearchTerm));
+      return carMatches || bookingMatches.has(car.loanCarId || car.id);
+    });
+  }, [bookings, cars, normalizedSearchTerm]);
+  const visibleBookings = useMemo(() => {
+    if (!normalizedSearchTerm) return bookings;
+    const visibleCarIds = new Set(visibleCars.map((car) => car.loanCarId || car.id));
+    return bookings.filter((booking) => visibleCarIds.has(booking.loanCarId));
+  }, [bookings, normalizedSearchTerm, visibleCars]);
+  const tableMinWidth = Math.max(680, 180 + visibleCars.length * 200);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -576,21 +997,37 @@ export default function LoanCarSchedulePanel({
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, refreshKey]);
 
   useEffect(() => {
     if (!todayRowRef.current || !scrollRef.current) return;
-    todayRowRef.current.scrollIntoView({ block: "start" });
+    scrollTodayIntoView(todayRowRef);
   }, []);
 
   const handleSaveCar = async (car) => {
+    const isNewCar = !(car.loanCarId || car.id);
     const result = await saveLoanCar(car);
-    if (result.success) loadData();
+    if (result.success) {
+      await loadData();
+      if (isNewCar && scrollRef.current) {
+        scrollRef.current.scrollLeft = 0;
+      }
+    }
+    return result;
   };
 
   const handleDeleteCar = async (loanCarId) => {
     const result = await deleteLoanCar(loanCarId);
     if (result.success) loadData();
+    return result;
+  };
+
+  const handleSaveBooking = async (booking) => {
+    const result = await saveLoanCarBooking(booking);
+    if (result.success) {
+      await loadData();
+    }
+    return result;
   };
 
   const content = (
@@ -606,109 +1043,155 @@ export default function LoanCarSchedulePanel({
         </div>
       ) : null}
 
-      {mode === "tracking" ? <FleetManager cars={cars} onSave={handleSaveCar} onDelete={handleDeleteCar} /> : null}
+      {mode === "tracking" && showFleetManager ? <FleetManager cars={cars} onSave={handleSaveCar} onDelete={handleDeleteCar} onBook={handleSaveBooking} /> : null}
 
-      <div
-        ref={scrollRef}
-        className="app-table-shell-scroll"
-        data-dev-section="1"
-        data-dev-section-key={`${mode}-loan-car-appointments-table-scroll`}
-        data-dev-section-type="data-table"
-        style={{
-          overflowX: "auto",
-          overflowY: "auto",
-          maxHeight: mode === "tracking" ? "calc(100dvh - 380px)" : "560px",
-          "--app-table-heading-mask-height": "0px", // thead is already opaque; suppress the shared sticky mask band
-
-        }}>
-        <table
-          className="app-data-table app-table-shell app-table-shell--with-headings"
-          data-dev-section="1"
-          data-dev-section-key={`${mode}-loan-car-appointments-table`}
-          data-dev-section-type="data-table"
-          style={{ minWidth: "100%", width: `${tableMinWidth}px`, tableLayout: "fixed" }}>
-          <colgroup>
-            <col style={{ width: "180px" }} />
-            {cars.map((car) => (
-              <col key={car.loanCarId || car.id} style={{ width: "200px" }} />
-            ))}
-          </colgroup>
-          <thead
+      <LayerTheme
+        as="section"
+        sectionKey={`${mode}-loan-car-appointments-table-scroll`}
+        sectionType="data-table"
+        radius="var(--radius-sm)"
+        padding="var(--section-card-padding)"
+        gap="0">
+        <div
+          ref={scrollRef}
+          className="app-table-shell-scroll tabs-scroll-container-visible loan-car-appointments-table-scroll"
+          style={{
+            overflowX: "auto",
+            overflowY: "auto",
+            backgroundColor: "var(--theme)",
+            maxHeight: mode === "tracking" ? "calc(100dvh - 380px)" : "560px",
+            "--app-table-heading-mask-height": "0px", // thead is already opaque; suppress the shared sticky mask band
+          }}>
+          <table
+            className="app-data-table app-table-shell app-table-shell--with-headings"
+            id={`${mode}-loan-car-appointments-table`}
             data-dev-section="1"
-            data-dev-section-key={`${mode}-loan-car-appointments-table-headings`}
-            data-dev-section-type="table-headings"
-            data-dev-section-parent={`${mode}-loan-car-appointments-table`}
-            style={{ position: "sticky", top: 0, zIndex: 120, ...stickyHeadingBg }}>
-            <tr>
-              <th style={{ left: 0, position: "sticky", top: 0, zIndex: 122, ...stickyHeadingBg }}>
-                Appointment Day
-              </th>
-              {cars.map((car) => (
-                <th key={car.loanCarId || car.id} style={{ position: "sticky", top: 0, zIndex: 121, ...stickyHeadingBg }}>
-                  {car.reg}
-                  <span style={{ display: "block", marginTop: "2px", fontSize: "11px", color: "var(--grey-accent)" }}>
-                    {car.name}
+            data-dev-section-key={`${mode}-loan-car-appointments-table`}
+            data-dev-section-type="data-table"
+            style={{ minWidth: "100%", width: `${tableMinWidth}px`, tableLayout: "fixed" }}>
+            <colgroup>
+              <col style={{ width: "180px" }} />
+              {visibleCars.map((car) => (
+                <col key={car.loanCarId || car.id} style={{ width: "200px" }} />
+              ))}
+            </colgroup>
+            <thead
+              data-dev-section="1"
+              data-dev-section-key={`${mode}-loan-car-appointments-table-headings`}
+              data-dev-section-type="table-headings"
+              data-dev-section-parent={`${mode}-loan-car-appointments-table`}
+              style={{ position: "sticky", top: 0, zIndex: 120, ...stickyHeadingBg }}>
+              <tr>
+                <th style={{ left: 0, position: "sticky", top: 0, zIndex: 122, ...stickyHeadingBg }}>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => scrollTodayIntoView(todayRowRef)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        scrollTodayIntoView(todayRowRef);
+                      }
+                    }}
+                    style={{
+                      color: "inherit",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      display: "inline",
+                    }}>
+                    Appointment Day
                   </span>
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {dateRows.map((day) => (
-              <tr
-                key={day.key}
-                ref={day.isToday ? todayRowRef : null}
-                style={{ height: "44px", backgroundColor: day.isToday ? "var(--theme)" : undefined }}>
-                <td
-                  style={{
-                    height: "44px",
-                    padding: "0 12px",
-                    verticalAlign: "middle",
-                    left: 0,
-                    position: "sticky",
-                    zIndex: 2,
-                    ...(day.isToday ? stickyFirstColTodayBg : stickyFirstColBg),
-                  }}>
-                  <span
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "2px",
-                      color: day.isToday ? "var(--primary-selected)" : "var(--text-1)",
-                      fontWeight: day.isToday ? 800 : 700,
-                      lineHeight: 1.15,
-                    }}>
-                    <span>{day.label}</span>
-                    <span style={{ fontSize: "12px", color: day.isToday ? "var(--primary-selected)" : "var(--grey-accent)" }}>
-                      {day.isToday ? "Today" : day.dateLabel}
+                {visibleCars.map((car) => (
+                  <th key={car.loanCarId || car.id} style={{ position: "sticky", top: 0, zIndex: 121, ...stickyHeadingBg }}>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedLoanCar(car)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedLoanCar(car);
+                        }
+                      }}
+                      style={{
+                        color: "inherit",
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        display: "inline",
+                      }}>
+                      {car.reg}
                     </span>
-                  </span>
-                </td>
-                {cars.map((car) => {
-                  const booking = getBookingForCell(bookings, car.loanCarId || car.id, day.key);
-                  return (
+                    <span style={{ display: "block", marginTop: "2px", fontSize: "11px", color: "var(--grey-accent)" }}>
+                      {car.name}
+                    </span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dateRows.map((day) => (
+                <tr
+                  key={day.key}
+                  ref={day.isToday ? todayRowRef : null}
+                  className={day.isToday ? "loan-car-today-row" : undefined}
+                  style={{ height: "44px", backgroundColor: day.isToday ? "var(--theme)" : undefined }}>
+                  <td
+                    className={day.isToday ? "loan-car-today-cell" : undefined}
+                    style={{
+                      height: "44px",
+                      padding: "0 12px",
+                      verticalAlign: "middle",
+                      left: 0,
+                      position: "sticky",
+                      zIndex: 2,
+                      ...(day.isToday ? stickyFirstColTodayBg : stickyFirstColBg),
+                    }}>
+                    <span
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "2px",
+                        color: day.isToday ? "var(--primary-selected)" : "var(--text-1)",
+                        fontWeight: day.isToday ? 800 : 700,
+                        lineHeight: 1.15,
+                      }}>
+                      <span>{day.label}</span>
+                      <span style={{ fontSize: "12px", color: day.isToday ? "var(--primary-selected)" : "var(--grey-accent)" }}>
+                        {day.isToday ? "Today" : day.dateLabel}
+                      </span>
+                    </span>
+                  </td>
+                  {visibleCars.map((car) => {
+                    const booking = getBookingForCell(visibleBookings, car.loanCarId || car.id, day.key);
+                    return (
                     <td
                       key={`${day.key}-${car.loanCarId || car.id}`}
+                      className={[
+                        day.isToday ? "loan-car-today-cell" : "",
+                        booking ? "loan-car-booked-cell" : "",
+                      ].filter(Boolean).join(" ") || undefined}
                       style={{
                         height: "44px",
                         padding: "0 12px",
                         verticalAlign: "middle",
-                        backgroundColor: day.isToday ? "var(--theme)" : undefined,
+                        backgroundColor: booking ? "var(--warning-surface)" : day.isToday ? "var(--theme)" : undefined,
                       }}>
-                      <BookingCell
-                        booking={booking}
-                        highlightedJob={highlightedJob}
-                        highlightedVehicle={highlightedVehicle}
-                        onClick={() => setSelectedCell({ day, car, booking })}
-                      />
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                        <BookingCell
+                          booking={booking}
+                          highlightedJob={highlightedJob}
+                          highlightedVehicle={highlightedVehicle}
+                          onClick={() => setSelectedCell({ day, car, booking })}
+                        />
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </LayerTheme>
 
       {!loading && cars.length === 0 ? (
         <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>
@@ -723,6 +1206,15 @@ export default function LoanCarSchedulePanel({
           jobDraft={jobDraft}
           onClose={() => setSelectedCell(null)}
           onSaved={loadData}
+        />
+      ) : null}
+
+      {selectedLoanCar ? (
+        <LoanCarDetailsModal
+          car={selectedLoanCar}
+          onClose={() => setSelectedLoanCar(null)}
+          onSave={handleSaveCar}
+          onDelete={handleDeleteCar}
         />
       ) : null}
     </>

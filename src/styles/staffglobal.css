@@ -4841,6 +4841,10 @@ html.staff-scope .app-table-shell-scroll {
   --app-table-heading-mask-height: 44px;
 }
 
+html.staff-scope .loan-car-appointments-table-scroll .loan-car-today-row {
+  scroll-margin-top: 56px;
+}
+
 html.staff-scope .app-table-shell-scroll:has(.app-table-shell--with-headings)::before {
   content: "";
   position: sticky;
@@ -5006,6 +5010,22 @@ html.staff-scope [data-theme="dark"] .app-table-shell-scroll {
 html.staff-scope [data-theme="dark"] .app-table-shell--with-headings tbody tr:nth-child(even),
 html.staff-scope [data-theme="dark"] .app-table-shell--rows-only tbody tr:nth-child(even) {
   background: var(--surface) !important;
+}
+
+html.staff-scope .loan-car-appointments-table-scroll .app-table-shell--with-headings tbody tr.loan-car-today-row,
+html.staff-scope .loan-car-appointments-table-scroll .app-table-shell--with-headings tbody tr.loan-car-today-row:nth-child(even) {
+  background: var(--theme) !important;
+  background-image: none !important;
+}
+
+html.staff-scope .loan-car-appointments-table-scroll .app-table-shell--with-headings tbody td.loan-car-today-cell {
+  background: var(--theme) !important;
+  background-image: none !important;
+}
+
+html.staff-scope .loan-car-appointments-table-scroll .app-table-shell--with-headings tbody td.loan-car-booked-cell {
+  background: var(--warning-surface) !important;
+  background-image: none !important;
 }
 
 /* ---------- Mobile / vertical phone view ----------
@@ -6174,6 +6194,12 @@ html.staff-scope .appointments-calendar-table-scroll #appointments-auto-data-tab
   margin-right: calc(var(--appointments-scrollbar-overlay-width) * -1);
 }
 
+html.staff-scope .loan-car-appointments-table-scroll table[id$="-loan-car-appointments-table"] thead th {
+  background: var(--page-shell-bg) !important;
+  background-image: none !important;
+  color: var(--text-1) !important;
+}
+
 html.staff-scope #appointments-auto-data-table-2 thead th {
   background: var(--page-shell-bg) !important;
   color: var(--text-1) !important;
@@ -6320,4 +6346,103 @@ html.staff-scope::-webkit-scrollbar-thumb,
 html.staff-scope body::-webkit-scrollbar-thumb,
 html.staff-scope *::-webkit-scrollbar-thumb {
   background: transparent !important;
+}
+
+/* =====================================================================
+   Staff shared UI building blocks (layout cleanup, 2026-06-01)
+   Class-driven primitives for the components in src/components/ui:
+   StaffPageHeader, StaffCard(+Grid), StaffButton (reuses .app-btn),
+   StaffTabs, and PublicLayout. Scoped to html.staff-scope so none of
+   this leaks onto /website (custglobal.css / html.website-scope).
+   These classes add no outline of their own — they are surfaces and
+   containers, obeying the Border Sweep + Layer Sweep laws (card
+   backgrounds come from the LayerSurface/LayerTheme primitives).
+   ===================================================================== */
+
+/* Public shell (PublicLayout) — chrome-free centred container. */
+html.staff-scope .app-public-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Staff page header — title/subtitle left, actions right, wraps on mobile. */
+html.staff-scope .app-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--layout-card-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+html.staff-scope .app-page-header__text {
+  min-width: 0;
+}
+
+html.staff-scope .app-page-header__title {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--accentText);
+}
+
+html.staff-scope .app-page-header__subtitle {
+  margin: 4px 0 0;
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary, var(--text-1));
+}
+
+html.staff-scope .app-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  flex-shrink: 0;
+}
+
+/* Responsive card grid — spacing via CSS grid only (no spacer cards).
+   Min column width is overridable per-instance via --app-card-grid-min. */
+html.staff-scope .app-card-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(var(--app-card-grid-min, 260px), 100%), 1fr)
+  );
+  gap: var(--page-stack-gap);
+  width: 100%;
+  min-width: 0;
+}
+
+/* Staff card header (the body background comes from LayerSurface/LayerTheme). */
+html.staff-scope .app-staff-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+html.staff-scope .app-staff-card__title {
+  font-weight: 700;
+  font-size: var(--text-h3);
+  color: var(--accentText);
+}
+
+html.staff-scope .app-staff-card__subtitle {
+  margin-top: var(--space-xs);
+  font-size: var(--text-body-sm);
+  color: var(--text-secondary, var(--text-1));
+}
+
+/* Staff tab bar — horizontal row of .app-btn nav tabs, wraps on mobile. */
+html.staff-scope .app-staff-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  width: 100%;
+  min-width: 0;
 }

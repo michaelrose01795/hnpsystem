@@ -1,27 +1,28 @@
-// file location: src/components/Layout.js
-// Edit: Add status button next to navigation on phone view, make all top controls scroll with page
-// Edit: Responsive improvements - status button and sidebar toggle optimized for mobile/tablet
-//       - Status button sticks to far right edge with reduced size on mobile/tablet
-//       - Sidebar toggle button shrunk and edge-aligned on mobile/tablet
-//       - All page sections optimized for vertical phone mode
-// ✅ Imports converted to use absolute alias "@/"
+// file location: src/components/layout/StaffLayout.js
+// Persistent staff app shell: sidebar rail + topbar + status sidebar + main
+// content card. Mounted once by _app via getLayout so only the inner page
+// children swap on navigation.
+//
+// Moved here from src/components/Layout.js during the layout cleanup
+// (src/components/Layout.js is now a thin re-export shim for back-compat).
+// The desktop topbar JSX now lives in ./StaffTopbar; the navigation rail in
+// ./StaffSidebar. This file owns the shared layout state they consume.
 import React, { useCallback, useEffect, useMemo, useState } from "react"; // import React hooks
 import dynamic from "next/dynamic"; // code-split heavy Layout children out of the shell bundle
 import useSWR from "swr"; // SWR for deduped, cache-backed data fetching
 // usePolling removed — SWR + slot-keyed caching covers the welcome-quote refresh.
-import Link from "next/link"; // import Next.js link component
 import { useRouter } from "next/router"; // import router for navigation
 import { useUser } from "@/context/UserContext"; // import user context
-import GlobalSearch from "@/components/GlobalSearch"; // import global search component
+import GlobalSearch from "@/components/GlobalSearch"; // import global search component (mobile drawer)
 // Heavy, conditionally-rendered Layout children — dynamically imported so the initial
 // shell JS bundle stays small. The Layout itself is persistent (mounted once by _app),
 // so these only load when their gate conditions fire (tech role, status role, etc.).
 const JobCardModal = dynamic(() => import("@/components/JobCards/JobCardModal"), { ssr: false });
 const StatusSidebar = dynamic(() => import("@/components/StatusTracking/StatusSidebar"), { ssr: false });
 const JobTimeline = dynamic(() => import("@/components/Timeline/JobTimeline"), { ssr: false });
-import Sidebar from "@/components/Sidebar";
+import Sidebar from "@/components/layout/StaffSidebar";
+import StaffTopbar from "@/components/layout/StaffTopbar";
 import { SERVICE_ACTION_ROLE_SET as SERVICE_ACTION_ROLES } from "@/lib/auth/serviceActionRoles";
-import NextActionPrompt from "@/components/popups/NextActionPrompt";
 import TopbarAlerts from "@/components/TopbarAlerts";
 import { appShellTheme } from "@/styles/appTheme";
 import { sidebarSections } from "@/config/navigation";
@@ -31,7 +32,6 @@ import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { useNativeTitleTooltips } from "@/hooks/useNativeTitleTooltips";
 import { roleCategories } from "@/config/users";
 import { getUserActiveJobs, clockOutFromJob } from "@/lib/database/jobClocking";
-import { DropdownField } from "@/components/ui/dropdownAPI";
 import { getWelcomeQuoteSlotKey } from "@/lib/welcomeQuoteSlot";
 import BrandLogo from "@/components/BrandLogo";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
@@ -42,17 +42,6 @@ import { trace, useTraceValue } from "@/utils/loadTrace"; // TEMP diagnostic tra
 const PRESENTATION_ROLE_STORAGE_KEY = "presentation:activeRoleKey";
 
 const PARTS_NAV_ROLES = new Set(["parts", "parts manager"]);
-
-const SERVICE_ACTION_LINKS = [
-  { label: "Create Job Card", href: "/job-cards/create" },
-  { label: "Appointments", href: "/job-cards/appointments" },
-];
-
-const PARTS_ACTION_LINKS = [
-  { label: "Delivery/Collection Planner", href: "/parts/delivery-planner" },
-  { label: "Create Order", href: "/parts/create-order" },
-  { label: "Goods In", href: "/parts/goods-in" },
-];
 
 const MODE_STORAGE_KEY = "appModeSelection";
 const MODE_ROLE_MAP = {
@@ -997,294 +986,28 @@ export default function Layout({
         )}
 
         {!hideSidebar && (
-          <DevLayoutSection
-            as="section"
-            sectionKey="app-layout-topbar"
-            parentKey="app-layout-main-column"
-            sectionType="toolbar"
-            shell
-            backgroundToken="app-topbar-shell"
-            className="app-topbar-shell"
-            {...lockChromeInteraction}
-            style={{
-              background: "var(--surface)",
-              borderRadius: "var(--radius-md)",
-              border: "none",
-              boxShadow: "none",
-              padding: isMobile ? "10px 12px" : "0 16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: isMobile ? "8px" : "12px",
-              minHeight: isMobile ? "auto" : "75px",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: !isTablet ? "minmax(0, 1fr) auto minmax(0, 1fr)" : "1fr",
-                alignItems: "center",
-                gap: isMobile ? "10px" : "14px",
-                overflow: "visible",
-                width: "100%",
-              }}
-            >
-              {/* Hide Welcome back and mode section on tablet/mobile */}
-              {!isTablet && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    minWidth: "auto",
-                    flex: "0 0 auto",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      gap: "4px",
-                    }}
-                  >
-                    <h1
-                      style={{
-                        fontSize: "1.15rem",
-                        fontWeight: 700,
-                        margin: 0,
-                        color: colors.accent,
-                        lineHeight: 1.1,
-                      }}
-                    >
-                      Welcome {firstName}
-                    </h1>
-                    {availableModes.length > 0 && (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          fontSize: "0.65rem",
-                          fontWeight: 600,
-                        }}
-                      >
-                        <span style={{ color: colors.mutedText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                          Mode:
-                        </span>
-                        {availableModes.length > 1 ? (
-                          <DropdownField
-                            className="app-topbar-dropdown app-topbar-dropdown--mode"
-                            value={selectedMode || activeModeLabel || ""}
-                            onChange={(event) => handleModeSelect(event.target.value)}
-                          >
-                            {availableModes.map((mode) => (
-                              <option key={mode} value={mode}>
-                                {mode}
-                              </option>
-                            ))}
-                          </DropdownField>
-                        ) : (
-                          <span
-                            style={{
-                              color: colors.accent,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {activeModeLabel}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {(isTech || canUseServiceActions || hasPartsAccess) && (
-                <div
-                  className="app-topbar-action-scroll"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: isVerticalPhone ? "flex-start" : "center",
-                    gap: isMobile ? "8px" : "12px",
-                    whiteSpace: isVerticalPhone ? "nowrap" : isTablet ? "normal" : "nowrap",
-                    flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
-                    width: isTablet ? "100%" : undefined,
-                    minWidth: 0,
-                    maxWidth: "100%",
-                    zIndex: 2,
-                    justifySelf: "center",
-                    overflowX: isVerticalPhone ? "auto" : "hidden",
-                    overflowY: "hidden",
-                  }}
-                >
-                  {isTech && (
-                    <div
-                      className="app-topbar-action-group"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: isVerticalPhone ? "flex-start" : "center",
-                        gap: isMobile ? "8px" : "12px",
-                        flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
-                        width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
-                        minWidth: 0,
-                      }}
-                    >
-                      <DropdownField
-                        className="app-topbar-dropdown app-topbar-dropdown--status"
-                        value={presentationShell ? "Waiting for Job" : status}
-                        onChange={(e) => {
-                          if (presentationShell) return; // demo deck — don't mutate real session
-                          handleStatusChange(e.target.value);
-                        }}
-                      >
-                        <option>Waiting for Job</option>
-                        <option>In Progress</option>
-                        <option>Tea Break</option>
-                      </DropdownField>
-                      {!presentationShell && currentJob?.jobNumber ? (
-                        <Link
-                          href={`/job-cards/myjobs/${currentJob.jobNumber}`}
-                          prefetch={false}
-                          className="app-btn app-btn--primary"
-                        >
-                          {`Open Job ${currentJob.jobNumber}`}
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled
-                          className="app-btn app-btn--secondary"
-                        >
-                          No Current Job
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (presentationShell) return;
-                          setIsModalOpen(true);
-                        }}
-                        className="app-btn app-btn--secondary"
-                      >
-                        Start Job
-                      </button>
-                    </div>
-                  )}
-
-                  {canUseServiceActions && (
-                    <div
-                      className="app-topbar-action-group"
-                      style={{
-                        display: "flex",
-                        flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
-                        gap: isMobile ? "8px" : "12px",
-                        justifyContent: isVerticalPhone ? "flex-start" : "center",
-                        alignItems: "center",
-                        width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
-                        minWidth: 0,
-                      }}
-                    >
-                      {SERVICE_ACTION_LINKS.map((action) => {
-                        const active =
-                          router.pathname === action.href ||
-                          router.pathname.startsWith(`${action.href}/`);
-                        return (
-                          <Link
-                            key={action.href}
-                            href={action.href}
-                            prefetch={false}
-                            className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
-                          >
-                            {action.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {hasPartsAccess && (
-                    <div
-                      className="app-topbar-action-group"
-                      style={{
-                        display: "flex",
-                        flexWrap: isVerticalPhone ? "nowrap" : isTablet ? "wrap" : "nowrap",
-                        gap: isMobile ? "8px" : "12px",
-                        justifyContent: isVerticalPhone ? "flex-start" : "center",
-                        alignItems: "center",
-                        textAlign: "center",
-                        width: isVerticalPhone ? "max-content" : isTablet ? "100%" : undefined,
-                        minWidth: 0,
-                      }}
-                    >
-                      {PARTS_ACTION_LINKS.map((action) => {
-                        const active =
-                          router.pathname === action.href ||
-                          router.pathname.startsWith(`${action.href}/`);
-                        return (
-                          <Link
-                            key={action.href}
-                            href={action.href}
-                            prefetch={false}
-                            className={`app-btn app-btn--secondary${active ? " is-active" : ""}`}
-                          >
-                            {action.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Hide search section on tablet/mobile - shown below tab buttons instead */}
-              {!isTablet && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "24px",
-                    minWidth: 0,
-                    justifyContent: "flex-end",
-                    marginLeft: "auto",
-                    justifySelf: "end",
-                  }}
-                >
-                  <div
-                    style={{
-                      flex: "0 1 auto",
-                      minWidth: "22ch",
-                      width: "clamp(18rem, 20vw, 24rem)",
-                      maxWidth: "24rem",
-                      position: "relative",
-                    }}
-                  >
-                    <GlobalSearch accentColor={colors.accent} navigationItems={navigationItems} />
-                  </div>
-
-                  <div
-                    style={{
-                      flexShrink: 0,
-                    }}
-                  >
-                    <NextActionPrompt />
-                  </div>
-
-                  {userRoles.includes("admin manager") && (
-                    <Link
-                      href="/admin/users"
-                      prefetch={false}
-                      className="app-btn app-btn--primary"
-                    >
-                      Create User
-                    </Link>
-                  )}
-                </div>
-              )}
-            </div>
-          </DevLayoutSection>
+          <StaffTopbar
+            isMobile={isMobile}
+            isTablet={isTablet}
+            isVerticalPhone={isVerticalPhone}
+            lockChromeInteraction={lockChromeInteraction}
+            firstName={firstName}
+            availableModes={availableModes}
+            selectedMode={selectedMode}
+            activeModeLabel={activeModeLabel}
+            onModeSelect={handleModeSelect}
+            colors={colors}
+            isTech={isTech}
+            canUseServiceActions={canUseServiceActions}
+            hasPartsAccess={hasPartsAccess}
+            status={status}
+            presentationShell={presentationShell}
+            currentJob={currentJob}
+            onStartJob={() => setIsModalOpen(true)}
+            onStatusChange={handleStatusChange}
+            navigationItems={navigationItems}
+            userRoles={userRoles}
+          />
         )}
 
         <DevLayoutSection

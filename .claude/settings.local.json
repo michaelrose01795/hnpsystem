@@ -185,7 +185,9 @@
       "Bash(pip show *)",
       "Bash(py -m pip install git-filter-repo)",
       "PowerShell(npx eslint src/pages/_app.js src/components/Layout.js 2>&1)",
-      "PowerShell(npx eslint src/pages/_app.js 2>&1)"
+      "PowerShell(npx eslint src/pages/_app.js 2>&1)",
+      "Bash(node tools/scripts/check-layers.js)",
+      "Bash(echo \"=== eslint exit: $? ===\")"
     ],
     "deny": [],
     "ask": [],

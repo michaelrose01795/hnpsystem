@@ -1,6 +1,11 @@
 check loan car section 
 
 
+TODO
+UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht 
+
+
+
 
 
 
@@ -9,6 +14,7 @@ check global.css style
 have it detect if the reg numbers already on the system
 
 UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht dropdown, tab section etc
+
 add a see preview button which when pressed opens a new webbrowser tab and shows what the changes are making from the /staff/website-manager page in real time etc. delete image but still showing fix this as well
 
 - /website (CHECK)

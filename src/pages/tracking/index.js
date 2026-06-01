@@ -305,21 +305,6 @@ const nextDueFrom = (reference, intervalDays = 7) => {
 
 const cloneList = (list) => list.map((entry) => ({ ...entry }));
 
-const TRACKING_FILTER_ALL = "__all__";
-const TRACKING_FILTER_EMPTY = "__empty__";
-
-const getSectionStyle = (isMobileView) => ({
-  padding: isMobileView ?
-  "var(--section-card-padding-sm, 16px)" :
-  "var(--page-card-padding)",
-  borderRadius: "var(--radius-xl)",
-  background: "var(--section-card-bg)",
-  display: "flex",
-  flexDirection: "column",
-  gap: isMobileView ? "16px" : "18px",
-  minWidth: 0
-});
-
 const emptyForm = {
   id: null,
   jobNumber: "",
@@ -1374,12 +1359,11 @@ export default function TrackingDashboard() {
   const [isMobileView, setIsMobileView] = useState(false); // portrait phone layout toggle
   const [isWideTrackerView, setIsWideTrackerView] = useState(false);
   const [trackerSearchTerm, setTrackerSearchTerm] = useState("");
-  const [trackerStatusFilter, setTrackerStatusFilter] = useState(TRACKING_FILTER_ALL);
-  const [trackerVehicleLocationFilter, setTrackerVehicleLocationFilter] = useState(TRACKING_FILTER_ALL);
+  const [loanCarSearchTerm, setLoanCarSearchTerm] = useState("");
+  const [loanCarFleetManagerOpen, setLoanCarFleetManagerOpen] = useState(false);
+  const [loanCarRefreshKey, setLoanCarRefreshKey] = useState(0);
   const [equipmentSearchTerm, setEquipmentSearchTerm] = useState("");
-  const [equipmentDueFilter, setEquipmentDueFilter] = useState(TRACKING_FILTER_ALL);
   const [oilSearchTerm, setOilSearchTerm] = useState("");
-  const [oilDueFilter, setOilDueFilter] = useState(TRACKING_FILTER_ALL);
 
   // Match the portrait-phone behaviour used across the app shell.
   useEffect(() => {
@@ -1518,6 +1502,61 @@ export default function TrackingDashboard() {
     loadEquipmentChecks();
     loadOilChecks();
   }, [isWorkshopManager, loadEquipmentChecks, loadOilChecks]);
+
+  const loadActiveTab = useCallback(() => {
+    if (activeTab === "equipment") {
+      loadEquipmentChecks();
+      return;
+    }
+    if (activeTab === "oil-stock") {
+      loadOilChecks();
+      return;
+    }
+    if (activeTab === "loan-cars") {
+      setLoanCarRefreshKey((key) => key + 1);
+      return;
+    }
+    loadEntries();
+  }, [activeTab, loadEntries, loadEquipmentChecks, loadOilChecks]);
+
+  const sharedSearchValue = useMemo(() => {
+    if (activeTab === "equipment") return equipmentSearchTerm;
+    if (activeTab === "oil-stock") return oilSearchTerm;
+    if (activeTab === "loan-cars") return loanCarSearchTerm;
+    return trackerSearchTerm;
+  }, [activeTab, equipmentSearchTerm, loanCarSearchTerm, oilSearchTerm, trackerSearchTerm]);
+
+  const setSharedSearchValue = useCallback(
+    (value) => {
+      if (activeTab === "equipment") {
+        setEquipmentSearchTerm(value);
+        return;
+      }
+      if (activeTab === "oil-stock") {
+        setOilSearchTerm(value);
+        return;
+      }
+      if (activeTab === "loan-cars") {
+        setLoanCarSearchTerm(value);
+        return;
+      }
+      setTrackerSearchTerm(value);
+    },
+    [activeTab]
+  );
+
+  const sharedSearchPlaceholder = useMemo(() => {
+    if (activeTab === "equipment") return "Search equipment";
+    if (activeTab === "oil-stock") return "Search oil / stock";
+    if (activeTab === "loan-cars") return "Search loan cars";
+    return "Search active jobs";
+  }, [activeTab]);
+
+  const refreshLoading =
+    activeTab === "equipment" ? equipmentLoading :
+    activeTab === "oil-stock" ? oilLoading :
+    activeTab === "tracker" ? loading :
+    false;
 
   const handleEquipmentCheck = useCallback(
     async (id) => {
@@ -1817,49 +1856,6 @@ export default function TrackingDashboard() {
     });
   }, [entries, dbUserId]);
 
-  const trackerStatusFilterOptions = useMemo(() => {
-    const values = Array.from(
-      new Set(
-        activeEntries.
-        map((entry) => String(entry.status || "").trim()).
-        filter(Boolean)
-      )
-    ).sort((a, b) => a.localeCompare(b));
-
-    return [
-    { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All statuses" },
-    ...values.map((value) => ({
-      key: `status-${value.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-      value,
-      label: value
-    }))];
-
-  }, [activeEntries]);
-
-  const trackerVehicleLocationFilterOptions = useMemo(() => {
-    const values = Array.from(
-      new Set(
-        activeEntries.map((entry) => {
-          const location = String(entry.vehicleLocation || "").trim();
-          return location || TRACKING_FILTER_EMPTY;
-        })
-      )
-    ).sort((a, b) => {
-      if (a === TRACKING_FILTER_EMPTY) return 1;
-      if (b === TRACKING_FILTER_EMPTY) return -1;
-      return a.localeCompare(b);
-    });
-
-    return [
-    { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All car locations" },
-    ...values.map((value) => ({
-      key: `vehicle-location-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-      value,
-      label: value === TRACKING_FILTER_EMPTY ? "No car location" : value
-    }))];
-
-  }, [activeEntries]);
-
   const filteredActiveEntries = useMemo(() => {
     const query = trackerSearchTerm.trim().toLowerCase();
 
@@ -1884,22 +1880,9 @@ export default function TrackingDashboard() {
         return false;
       }
 
-      const entryStatus = String(entry.status || "").trim();
-      if (trackerStatusFilter !== TRACKING_FILTER_ALL && entryStatus !== trackerStatusFilter) {
-        return false;
-      }
-
-      const entryVehicleLocation = String(entry.vehicleLocation || "").trim() || TRACKING_FILTER_EMPTY;
-      if (
-      trackerVehicleLocationFilter !== TRACKING_FILTER_ALL &&
-      entryVehicleLocation !== trackerVehicleLocationFilter)
-      {
-        return false;
-      }
-
       return true;
     });
-  }, [activeEntries, trackerSearchTerm, trackerStatusFilter, trackerVehicleLocationFilter]);
+  }, [activeEntries, trackerSearchTerm]);
 
   const closeSearchModal = () => setSearchModal({ open: false, type: null });
 
@@ -1982,60 +1965,8 @@ export default function TrackingDashboard() {
     }
   };
 
-  // When the tab group is visible AND we're on a desktop/tablet width, the search bar
-  // and the two dropdowns are rendered inline inside the tab toolbar (in tracking-ui.js)
-  // between the tab group and the Refresh/Add location buttons. We only render them
-  // here when the tab group is hidden (tabs.length <= 1) or the viewport is the
-  // narrow portrait-phone layout — preserving the existing layout in those cases.
-  const renderTrackerToolbarInline = isMobileView || tabs.length <= 1;
-
   const renderTrackerContent = () =>
   <>
-      {renderTrackerToolbarInline &&
-    <DevLayoutSection
-      sectionKey="tracking-active-jobs-header"
-      parentKey="tracking-page-body"
-      sectionType="toolbar"
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "12px",
-        alignItems: "center"
-      }}>
-
-          <SearchBar
-        value={trackerSearchTerm}
-        onChange={(event) => setTrackerSearchTerm(event.target.value)}
-        onClear={() => setTrackerSearchTerm("")}
-        placeholder="Search active jobs"
-        ariaLabel="Search active jobs"
-        style={{
-          flex: "1 1 320px",
-          minWidth: "240px"
-        }} />
-
-          <DropdownField
-        options={trackerStatusFilterOptions}
-        value={trackerStatusFilter}
-        onValueChange={(value) => setTrackerStatusFilter(value || TRACKING_FILTER_ALL)}
-        size="md"
-        style={{
-          flex: "0 1 220px",
-          minWidth: "180px"
-        }} />
-
-          <DropdownField
-        options={trackerVehicleLocationFilterOptions}
-        value={trackerVehicleLocationFilter}
-        onValueChange={(value) => setTrackerVehicleLocationFilter(value || TRACKING_FILTER_ALL)}
-        size="md"
-        style={{
-          flex: "0 1 220px",
-          minWidth: "190px"
-        }} />
-
-        </DevLayoutSection>
-    }
       {entries.length === 0 &&
     <DevLayoutSection
       sectionKey="tracking-active-jobs-empty-state"
@@ -2133,43 +2064,6 @@ export default function TrackingDashboard() {
   const renderEquipmentContent = () =>
   <>
       <DevLayoutSection
-      sectionKey="tracking-equipment-header"
-      parentKey="tracking-page-body"
-      sectionType="toolbar"
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "12px",
-        alignItems: "center"
-      }}>
-
-        <SearchBar
-        value={equipmentSearchTerm}
-        onChange={(event) => setEquipmentSearchTerm(event.target.value)}
-        onClear={() => setEquipmentSearchTerm("")}
-        placeholder="Search equipment"
-        ariaLabel="Search equipment"
-        style={{
-          flex: "1 1 320px",
-          minWidth: "240px"
-        }} />
-
-        <DropdownField
-        options={[
-        { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
-        { key: "due", value: "due", label: "Due now" },
-        { key: "ok", value: "ok", label: "Not due" }]
-        }
-        value={equipmentDueFilter}
-        onValueChange={(value) => setEquipmentDueFilter(value || TRACKING_FILTER_ALL)}
-        size="md"
-        style={{
-          flex: "0 1 220px",
-          minWidth: "180px"
-        }} />
-
-      </DevLayoutSection>
-      <DevLayoutSection
       sectionKey="tracking-equipment-grid"
       parentKey="tracking-page-body"
       sectionType="grid"
@@ -2201,11 +2095,6 @@ export default function TrackingDashboard() {
         const term = equipmentSearchTerm.trim().toLowerCase();
         if (term && ![check.name, check.status].filter(Boolean).some((value) => value.toLowerCase().includes(term))) {
           return false;
-        }
-        if (equipmentDueFilter !== TRACKING_FILTER_ALL) {
-          const isDue = getDueLabel(check.nextDue) === "Due now" || (check.status || "").toLowerCase().includes("due");
-          if (equipmentDueFilter === "due" && !isDue) return false;
-          if (equipmentDueFilter === "ok" && isDue) return false;
         }
         return true;
       }).
@@ -2334,43 +2223,6 @@ export default function TrackingDashboard() {
   const renderOilContent = () =>
   <>
       <DevLayoutSection
-      sectionKey="tracking-oil-header"
-      parentKey="tracking-page-body"
-      sectionType="toolbar"
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "12px",
-        alignItems: "center"
-      }}>
-
-        <SearchBar
-        value={oilSearchTerm}
-        onChange={(event) => setOilSearchTerm(event.target.value)}
-        onClear={() => setOilSearchTerm("")}
-        placeholder="Search oil / stock"
-        ariaLabel="Search oil / stock"
-        style={{
-          flex: "1 1 320px",
-          minWidth: "240px"
-        }} />
-
-        <DropdownField
-        options={[
-        { key: TRACKING_FILTER_ALL, value: TRACKING_FILTER_ALL, label: "All items" },
-        { key: "due", value: "due", label: "Due now" },
-        { key: "ok", value: "ok", label: "Not due" }]
-        }
-        value={oilDueFilter}
-        onValueChange={(value) => setOilDueFilter(value || TRACKING_FILTER_ALL)}
-        size="md"
-        style={{
-          flex: "0 1 220px",
-          minWidth: "180px"
-        }} />
-
-      </DevLayoutSection>
-      <DevLayoutSection
       sectionKey="tracking-oil-grid"
       parentKey="tracking-page-body"
       sectionType="grid"
@@ -2402,11 +2254,6 @@ export default function TrackingDashboard() {
         const term = oilSearchTerm.trim().toLowerCase();
         if (term && ![item.title, item.stock].filter(Boolean).some((value) => String(value).toLowerCase().includes(term))) {
           return false;
-        }
-        if (oilDueFilter !== TRACKING_FILTER_ALL) {
-          const isDue = getDueLabel(item.nextCheck) === "Due now";
-          if (oilDueFilter === "due" && !isDue) return false;
-          if (oilDueFilter === "ok" && isDue) return false;
         }
         return true;
       }).
@@ -2575,6 +2422,9 @@ export default function TrackingDashboard() {
       return (
         <LoanCarSchedulePanel
           mode="tracking"
+          searchTerm={loanCarSearchTerm}
+          showFleetManager={loanCarFleetManagerOpen}
+          refreshKey={loanCarRefreshKey}
         />
       );
     }
@@ -2587,7 +2437,57 @@ export default function TrackingDashboard() {
     return renderTrackerContent();
   };
 
-  return <TrackingDashboardUi view="section1" activeTab={activeTab} Button={Button} CAR_LOCATIONS={CAR_LOCATIONS} closeEntryModal={closeEntryModal} closeSearchModal={closeSearchModal} DevLayoutSection={DevLayoutSection} DropdownField={DropdownField} entries={entries} entryModal={entryModal} equipmentLoading={equipmentLoading} equipmentModal={equipmentModal} EquipmentToolsModal={EquipmentToolsModal} error={error} handleDeleteEquipment={handleDeleteEquipment} handleDeleteOilStock={handleDeleteOilStock} handleLocationSelect={handleLocationSelect} handleSave={handleSave} handleSaveEquipment={handleSaveEquipment} handleSaveOilStock={handleSaveOilStock} InlineLoading={InlineLoading} isMobileView={isMobileView} KEY_LOCATIONS={KEY_LOCATIONS} loadEntries={loadEntries} loading={loading} LocationEntryModal={LocationEntryModal} LocationSearchModal={LocationSearchModal} oilLoading={oilLoading} oilStockModal={oilStockModal} OilStockModal={OilStockModal} openEntryModal={openEntryModal} renderActiveTabContent={renderActiveTabContent} SearchBar={SearchBar} searchModal={searchModal} setActiveTab={setActiveTab} setEquipmentModal={setEquipmentModal} setOilStockModal={setOilStockModal} setSimplifiedModal={setSimplifiedModal} setTrackerSearchTerm={setTrackerSearchTerm} setTrackerStatusFilter={setTrackerStatusFilter} setTrackerVehicleLocationFilter={setTrackerVehicleLocationFilter} simplifiedModal={simplifiedModal} SimplifiedTrackingModal={SimplifiedTrackingModal} StatusMessage={StatusMessage} TabGroup={TabGroup} tabs={tabs} TrackingRouteSkeleton={TrackingRouteSkeleton} TRACKING_FILTER_ALL={TRACKING_FILTER_ALL} trackerSearchTerm={trackerSearchTerm} trackerStatusFilter={trackerStatusFilter} trackerStatusFilterOptions={trackerStatusFilterOptions} trackerVehicleLocationFilter={trackerVehicleLocationFilter} trackerVehicleLocationFilterOptions={trackerVehicleLocationFilterOptions} />;
+  return (
+    <TrackingDashboardUi
+      view="section1"
+      activeTab={activeTab}
+      Button={Button}
+      CAR_LOCATIONS={CAR_LOCATIONS}
+      closeEntryModal={closeEntryModal}
+      closeSearchModal={closeSearchModal}
+      DevLayoutSection={DevLayoutSection}
+      entries={entries}
+      entryModal={entryModal}
+      equipmentModal={equipmentModal}
+      EquipmentToolsModal={EquipmentToolsModal}
+      error={error}
+      handleDeleteEquipment={handleDeleteEquipment}
+      handleDeleteOilStock={handleDeleteOilStock}
+      handleLocationSelect={handleLocationSelect}
+      handleSave={handleSave}
+      handleSaveEquipment={handleSaveEquipment}
+      handleSaveOilStock={handleSaveOilStock}
+      InlineLoading={InlineLoading}
+      isMobileView={isMobileView}
+      KEY_LOCATIONS={KEY_LOCATIONS}
+      loadActiveTab={loadActiveTab}
+      loading={loading}
+      loanCarFleetManagerOpen={loanCarFleetManagerOpen}
+      LocationEntryModal={LocationEntryModal}
+      LocationSearchModal={LocationSearchModal}
+      oilStockModal={oilStockModal}
+      OilStockModal={OilStockModal}
+      openEntryModal={openEntryModal}
+      refreshLoading={refreshLoading}
+      renderActiveTabContent={renderActiveTabContent}
+      SearchBar={SearchBar}
+      searchModal={searchModal}
+      setActiveTab={setActiveTab}
+      setEquipmentModal={setEquipmentModal}
+      setLoanCarFleetManagerOpen={setLoanCarFleetManagerOpen}
+      setOilStockModal={setOilStockModal}
+      setSimplifiedModal={setSimplifiedModal}
+      setSharedSearchValue={setSharedSearchValue}
+      sharedSearchPlaceholder={sharedSearchPlaceholder}
+      sharedSearchValue={sharedSearchValue}
+      simplifiedModal={simplifiedModal}
+      SimplifiedTrackingModal={SimplifiedTrackingModal}
+      StatusMessage={StatusMessage}
+      TabGroup={TabGroup}
+      tabs={tabs}
+      TrackingRouteSkeleton={TrackingRouteSkeleton}
+    />
+  );
 
 
 

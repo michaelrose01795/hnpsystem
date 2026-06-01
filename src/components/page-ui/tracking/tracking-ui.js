@@ -5,7 +5,6 @@ export default function TrackingDashboardUi(props) {
     Button,
     CAR_LOCATIONS,
     DevLayoutSection,
-    DropdownField,
     EquipmentToolsModal,
     InlineLoading,
     KEY_LOCATIONS,
@@ -16,13 +15,11 @@ export default function TrackingDashboardUi(props) {
     SimplifiedTrackingModal,
     StatusMessage,
     TabGroup,
-    TRACKING_FILTER_ALL,
     activeTab,
     closeEntryModal,
     closeSearchModal,
     entries,
     entryModal,
-    equipmentLoading,
     equipmentModal,
     error,
     handleDeleteEquipment,
@@ -32,36 +29,26 @@ export default function TrackingDashboardUi(props) {
     handleSaveEquipment,
     handleSaveOilStock,
     isMobileView,
-    loadEntries,
+    loadActiveTab,
     loading,
-    oilLoading,
+    loanCarFleetManagerOpen,
+    refreshLoading,
     oilStockModal,
     openEntryModal,
     renderActiveTabContent,
     searchModal,
     setActiveTab,
     setEquipmentModal,
+    setLoanCarFleetManagerOpen,
     setOilStockModal,
     setSimplifiedModal,
-    setTrackerSearchTerm,
-    setTrackerStatusFilter,
-    setTrackerVehicleLocationFilter,
+    setSharedSearchValue,
     simplifiedModal,
+    sharedSearchPlaceholder,
+    sharedSearchValue,
     tabs,
-    trackerSearchTerm,
-    trackerStatusFilter,
-    trackerStatusFilterOptions,
-    trackerVehicleLocationFilter,
-    trackerVehicleLocationFilterOptions,
     TrackingRouteSkeleton,
   } = props; // receive page logic props.
-
-  // Show the inline tracker filters in the toolbar only when the tab group is
-  // visible AND we're not on the narrow portrait-phone layout. When the tab
-  // group is hidden or we're on a small screen, the filters render inside
-  // renderTrackerContent (their original location) instead.
-  const showInlineTrackerFilters =
-    activeTab === "tracker" && !isMobileView && tabs.length > 1; // gate inline filter row.
 
   switch (props.view) { // choose the page section requested by logic.
     case "section1":
@@ -83,7 +70,7 @@ export default function TrackingDashboardUi(props) {
       maxWidth: "100%",
       minWidth: 0
     }}>
-          {tabs.length > 1 && <div style={{
+          <div style={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -91,6 +78,7 @@ export default function TrackingDashboardUi(props) {
         flexWrap: "wrap",
         width: "100%"
       }}>
+              {tabs.length > 1 && (
               <DevLayoutSection sectionKey="tracking-page-tabs" parentKey="tracking-page-body" sectionType="toolbar" style={{
           display: "inline-flex",
           width: "fit-content",
@@ -103,7 +91,8 @@ export default function TrackingDashboardUi(props) {
             value: tab.id
           }))} value={activeTab} onChange={setActiveTab} ariaLabel="Tracker tabs" className="tab-api--inline" />
               </DevLayoutSection>
-              {showInlineTrackerFilters && <div style={{
+              )}
+              <DevLayoutSection sectionKey="tracking-page-shared-search" parentKey="tracking-page-body" sectionType="toolbar" style={{
           display: "flex",
           gap: "var(--space-sm)",
           flexWrap: "wrap",
@@ -113,84 +102,56 @@ export default function TrackingDashboardUi(props) {
           justifyContent: "center"
         }}>
                   <SearchBar
-            value={trackerSearchTerm}
-            onChange={(event) => setTrackerSearchTerm(event.target.value)}
-            onClear={() => setTrackerSearchTerm("")}
-            placeholder="Search active jobs"
-            ariaLabel="Search active jobs"
+            value={sharedSearchValue}
+            onChange={(event) => setSharedSearchValue(event.target.value)}
+            onClear={() => setSharedSearchValue("")}
+            placeholder={sharedSearchPlaceholder}
+            ariaLabel={sharedSearchPlaceholder}
             style={{
-              flex: "0 1 clamp(150px, 18vw, 320px)",
-              minWidth: "150px",
-              maxWidth: "320px"
+              flex: "1 1 clamp(180px, 48vw, 720px)",
+              minWidth: isMobileView ? "100%" : "180px",
+              maxWidth: "720px"
             }} />
-
-                  <DropdownField
-            options={trackerStatusFilterOptions}
-            value={trackerStatusFilter}
-            onValueChange={(value) => setTrackerStatusFilter(value || TRACKING_FILTER_ALL)}
-            size="md"
-            style={{
-              flex: "0 1 150px",
-              minWidth: "130px"
-            }} />
-
-                  <DropdownField
-            options={trackerVehicleLocationFilterOptions}
-            value={trackerVehicleLocationFilter}
-            onValueChange={(value) => setTrackerVehicleLocationFilter(value || TRACKING_FILTER_ALL)}
-            size="md"
-            style={{
-              flex: "0 1 160px",
-              minWidth: "140px"
-            }} />
-
-                </div>}
-              {activeTab === "tracker" && <div style={{
+              </DevLayoutSection>
+              <div style={{
           display: "flex",
           gap: "var(--space-sm)",
           flexWrap: "wrap",
           alignItems: "center",
           marginLeft: "auto"
         }}>
-                  <Button variant="secondary" size="sm" onClick={loadEntries}>
+                  <Button variant="secondary" size="sm" onClick={loadActiveTab}>
                     Refresh
                   </Button>
-                  {loading && <InlineLoading width={100} label="Refreshing" />}
+                  {refreshLoading && <InlineLoading width={100} label="Refreshing" />}
+                  {activeTab === "tracker" && (
                   <Button variant="primary" size="sm" onClick={() => openEntryModal("car")}>
                     Add location
                   </Button>
-                </div>}
-              {activeTab === "equipment" && <div style={{
-          display: "flex",
-          gap: "var(--space-sm)",
-          flexWrap: "wrap",
-          alignItems: "center",
-          marginLeft: "auto"
-        }}>
-                  {equipmentLoading && <InlineLoading width={80} label="Loading" />}
+                  )}
+                  {activeTab === "loan-cars" && (
+                  <Button variant="primary" size="sm" onClick={() => setLoanCarFleetManagerOpen(!loanCarFleetManagerOpen)}>
+                    {loanCarFleetManagerOpen ? "Hide loan car" : "Add loan car"}
+                  </Button>
+                  )}
+                  {activeTab === "equipment" && (
                   <Button variant="primary" size="sm" onClick={() => setEquipmentModal({
             open: true,
             item: null
           })}>
                     Add Equipment/tools
                   </Button>
-                </div>}
-              {activeTab === "oil-stock" && <div style={{
-          display: "flex",
-          gap: "var(--space-sm)",
-          flexWrap: "wrap",
-          alignItems: "center",
-          marginLeft: "auto"
-        }}>
-                  {oilLoading && <InlineLoading width={80} label="Loading" />}
+                  )}
+                  {activeTab === "oil-stock" && (
                   <Button variant="primary" size="sm" onClick={() => setOilStockModal({
             open: true,
             item: null
           })}>
                     Add Oil / Stock
                   </Button>
-                </div>}
-            </div>}
+                  )}
+                </div>
+            </div>
           {error && <DevLayoutSection sectionKey="tracking-page-error" parentKey="tracking-page-body" sectionType="banner">
               <StatusMessage tone="danger">{error}</StatusMessage>
             </DevLayoutSection>}
