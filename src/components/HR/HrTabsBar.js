@@ -30,8 +30,6 @@ export default function HrTabsBar() {
       <TabLinkGroup
         items={hrTabs}
         ariaLabel="HR modules"
-        layout="grid"
-        stretch
         isActive={(tab) =>
         router.pathname === tab.href ||
         tab.href !== "/admin/users" && router.pathname.startsWith(tab.href)

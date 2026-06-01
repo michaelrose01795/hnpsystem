@@ -89,7 +89,7 @@ export default function TrackingDashboardUi(props) {
                 <TabGroup items={tabs.map(tab => ({
             label: tab.label,
             value: tab.id
-          }))} value={activeTab} onChange={setActiveTab} ariaLabel="Tracker tabs" className="tab-api--inline" />
+          }))} value={activeTab} onChange={setActiveTab} ariaLabel="Tracker tabs" className="tab-api--wrap" />
               </DevLayoutSection>
               )}
               <DevLayoutSection sectionKey="tracking-page-shared-search" parentKey="tracking-page-body" sectionType="toolbar" style={{

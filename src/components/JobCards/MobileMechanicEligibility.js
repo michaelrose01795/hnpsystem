@@ -251,7 +251,7 @@ export default function MobileMechanicEligibility({
           Send as Mobile Mechanic?
         </span>
         <div
-          className="tab-api tab-api--inline"
+          className="tab-api tab-api--wrap"
           style={toggleGroupStyle}
           aria-disabled={!verdict.eligible ? "true" : "false"}
         >

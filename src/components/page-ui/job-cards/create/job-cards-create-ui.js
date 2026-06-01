@@ -1110,7 +1110,7 @@ export default function CreateJobCardPageUi(props) {
             }}>
                   Cosmetic Damage
                 </h4>
-                <div className="tab-api tab-api--inline" style={binaryToggleGroupStyle}>
+                <div className="tab-api tab-api--wrap" style={binaryToggleGroupStyle}>
                   {[true, false].map(choice => <button key={choice ? "yes" : "no"} onClick={() => setCosmeticDamagePresent(choice)} type="button" aria-pressed={cosmeticDamagePresent === choice} data-tone="default" className={`tab-api__item${cosmeticDamagePresent === choice ? " is-active" : ""}`} style={getBinaryToggleButtonStyle(cosmeticDamagePresent === choice)}>
                       {choice ? "Yes" : "No"}
                     </button>)}
@@ -1152,7 +1152,7 @@ export default function CreateJobCardPageUi(props) {
             }}>
                   Wash
                 </h4>
-                <div className="tab-api tab-api--inline" style={binaryToggleGroupStyle}>
+                <div className="tab-api tab-api--wrap" style={binaryToggleGroupStyle}>
                   {[true, false].map(choice => <button key={`wash-${choice ? "yes" : "no"}`} type="button" onClick={() => setWashRequired(choice)} aria-pressed={washRequired === choice} data-tone="default" className={`tab-api__item${washRequired === choice ? " is-active" : ""}`} style={getBinaryToggleButtonStyle(washRequired === choice)}>
                       {choice ? "Yes" : "No"}
                     </button>)}
@@ -1174,7 +1174,7 @@ export default function CreateJobCardPageUi(props) {
             }}>
                   VHC Required?
                 </h4>
-                <div className="tab-api tab-api--inline" style={binaryToggleGroupStyle}>
+                <div className="tab-api tab-api--wrap" style={binaryToggleGroupStyle}>
                   {[true, false].map(choice => <button key={`vhc-${choice ? "yes" : "no"}`} type="button" onClick={() => setVhcRequired(choice)} aria-pressed={vhcRequired === choice} data-tone="default" className={`tab-api__item${vhcRequired === choice ? " is-active" : ""}`} style={getBinaryToggleButtonStyle(vhcRequired === choice)}>
                       {choice ? "Yes" : "No"}
                     </button>)}

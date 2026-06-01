@@ -228,7 +228,7 @@ export default function CustomerDetailWorkspaceUi(props) {
                 value={activeTab}
                 onChange={setActiveTab}
                 ariaLabel="Customer data tabs"
-                className="tab-api--inline"
+                className="tab-api--wrap"
                 devSectionKey="customer-profile-tab-group"
                 devSectionParent="customer-profile-tabs" />
 

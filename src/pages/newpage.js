@@ -2,8 +2,8 @@
 import React, { useMemo, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import DropdownField from "@/components/ui/dropdownAPI/DropdownField";
+import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
 import LayerTheme from "@/components/ui/LayerTheme";
-import StaffTabs from "@/components/ui/StaffTabs";
 import { WORKSHOP_CONTROLLER_ROLES } from "@/lib/auth/roles";
 
 const NEWPAGE_ALLOWED_ROLES = WORKSHOP_CONTROLLER_ROLES.map((role) => role.toUpperCase());
@@ -74,15 +74,13 @@ export default function NewPage() {
           parentKey="app-layout-page-card"
           gap="var(--layout-card-gap)"
         >
-          <StaffTabs
-            tabs={testTabs}
-            activeKey={activeTab}
+          <TabGroup
+            items={testTabs.map((tab) => ({ value: tab.key, label: tab.label }))}
+            value={activeTab}
             onChange={setActiveTab}
-            aria-label="Test tabs"
-            data-dev-section="1"
-            data-dev-section-key="newpage-test-tabs"
-            data-dev-section-type="tab-row"
-            data-dev-section-parent="newpage-controls"
+            ariaLabel="Test tabs"
+            devSectionKey="newpage-test-tabs"
+            devSectionParent="newpage-controls"
           />
 
           <p style={{ margin: 0, color: "var(--surfaceTextMuted)", fontSize: "var(--text-body-sm)" }}>
@@ -97,7 +95,6 @@ export default function NewPage() {
             onChange={(event) => setSelectedDepartment(event.target.value)}
             helperText="Filter the local mock rows below."
             searchable
-            style={{ maxWidth: 360, width: "100%" }}
           />
         </LayerTheme>
 

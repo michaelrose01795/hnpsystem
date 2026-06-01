@@ -52,7 +52,7 @@ export default function HRManagerDashboardUi(props) {
       <ContentWidth sectionKey="hr-manager-content" parentKey="hr-manager-shell" widthMode="full">
         <TabGroup
           ariaLabel="HR sections"
-          className="tab-scroll-row is-overflowing hr-manager-tabs-row"
+          className="tab-api--wrap hr-manager-tabs-row"
           items={HR_TABS.map(tab => ({
         value: tab.id,
         label: tab.label

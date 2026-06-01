@@ -28,7 +28,7 @@ export default function PartsWorkspaceTabs() {
   return (
     <TabLinkGroup
       ariaLabel="Parts workspace pages"
-      className="tab-api--inline"
+      className="tab-api--wrap"
       items={items}
       isActive={(item) => item.match?.(currentPath)}
     />

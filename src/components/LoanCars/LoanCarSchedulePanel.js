@@ -587,7 +587,7 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
         value={activeTab}
         onChange={setActiveTab}
         ariaLabel="Loan car manager tabs"
-        className="tab-api--inline"
+        className="tab-api--wrap"
       />
 
       {activeTab === "add-vehicle" ? <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>

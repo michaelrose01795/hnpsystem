@@ -233,7 +233,7 @@ export default function GoodsInPageUi(props) {
             {toast.message}
           </div>}
 
-        <TabGroup className="tab-api--inline" devSectionKey="goods-in-advanced-tabs" devSectionParent="app-layout-page-card" items={ADVANCED_TABS.map(tab => ({
+        <TabGroup className="tab-api--wrap" devSectionKey="goods-in-advanced-tabs" devSectionParent="app-layout-page-card" items={ADVANCED_TABS.map(tab => ({
       value: tab.id,
       label: tab.label
     }))} value={activeTab} onChange={value => {

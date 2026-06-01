@@ -244,6 +244,18 @@
   --control-height: 44px;
   --control-height-sm: 40px;
   --control-height-xs: 34px;
+  /* Control width floors, character-based so they scale with the font.
+     ── text boxes / search bars: ~15 characters wide minimum.
+     ── dropdown buttons: floor = the longest word in the trigger (min-content),
+        but never wider than ~15 chars, so a long option can't blow the row out.
+     ── calendar + time pickers: share ONE default+minimum width sized to hold a
+        full date (e.g. 01/01/2026) plus its icon — both pickers match.
+     A page that hard-codes width/min-width inline overrides these — leave those
+     pages as set. To widen one control globally-respecting, raise the token,
+     e.g. style={{ "--control-min-width": "20ch" }}. */
+  --control-min-width: 15ch;
+  --dropdown-min-width: min(min-content, 15ch);
+  --datetime-control-width: 12ch;
   --dropdown-trigger-height: var(--control-height);
   --dropdown-trigger-height-sm: var(--control-height);
   --control-radius: 14px;

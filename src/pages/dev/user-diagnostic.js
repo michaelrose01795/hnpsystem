@@ -1177,11 +1177,6 @@ const SHOWCASE_PRESET_OPTIONS = [
 const SHOWCASE_COUNT_OPTIONS = [3, 5, 10].map((count) => ({ value: String(count), label: `${count}` }));
 const SHOWCASE_TIME_STEP_OPTIONS = [5, 10, 15, 30].map((step) => ({ value: String(step), label: `${step} mins` }));
 const SHOWCASE_MAX_SELECTION_OPTIONS = [1, 2, 3, 5].map((count) => ({ value: String(count), label: `${count}` }));
-const SHOWCASE_TAB_LAYOUT_OPTIONS = [
-{ value: "wrap", label: "Wrap" },
-{ value: "stretch", label: "Stretch" },
-{ value: "grid", label: "Grid" }];
-
 const SHOWCASE_CALENDAR_TONE_OPTIONS = [
 { value: "both", label: "Amber + Red" },
 { value: "amber", label: "Amber" },
@@ -1482,39 +1477,34 @@ function getTabsShowcaseState(preset = "default") {
     return {
       preset,
       tabCount: 3,
-      activeTab: "tab-1",
-      layout: "stretch"
+      activeTab: "tab-1"
     };
   }
   if (preset === "error") {
     return {
       preset,
       tabCount: 5,
-      activeTab: "tab-5",
-      layout: "grid"
+      activeTab: "tab-5"
     };
   }
   if (preset === "filled") {
     return {
       preset,
       tabCount: 5,
-      activeTab: "tab-3",
-      layout: "wrap"
+      activeTab: "tab-3"
     };
   }
   if (preset === "edge") {
     return {
       preset,
       tabCount: 10,
-      activeTab: "tab-10",
-      layout: "grid"
+      activeTab: "tab-10"
     };
   }
   return {
     preset,
     tabCount: 3,
-    activeTab: "tab-1",
-    layout: "wrap"
+    activeTab: "tab-1"
   };
 }
 
@@ -1591,7 +1581,7 @@ const SHOWCASE_CATALOG = {
   // ── Search ──
   "searchbar-api": { category: "Search", scope: "global", terms: "search bar searchbar query filter clear loading" },
   // ── Tabs ──
-  "tab-api": { category: "Tabs", scope: "global", terms: "tab tabs tabgroup navigation switch panel wrap stretch grid" },
+  "tab-api": { category: "Tabs", scope: "global", terms: "tab tabs tabgroup navigation switch panel wrap" },
   // ── Badges & Labels ──
   "app-badge": { category: "Badges & Labels", scope: "global", terms: "badge label bubble pill tag status indicator app-badge tone modifier" },
   // ── Colours & Tokens ──
@@ -2304,8 +2294,7 @@ function GlobalUiShowcase() {
                 ariaLabel="Comparison tabs"
                 value={tabsState.activeTab}
                 onChange={(value) => setTabsState((current) => ({ ...current, activeTab: value }))}
-                items={tabItems.slice(0, 3)}
-                layout="wrap" />
+                items={tabItems.slice(0, 3)} />
             </div>
           </div>
         </div>
@@ -2953,14 +2942,6 @@ function GlobalUiShowcase() {
               placeholder="Choose tab" />
             
           </ShowcaseControlRow>
-          <ShowcaseControlRow label="Layout">
-            <DropdownField
-              value={tabsState.layout}
-              onValueChange={(value) => setTabsState((current) => ({ ...current, layout: value }))}
-              options={SHOWCASE_TAB_LAYOUT_OPTIONS}
-              placeholder="Layout" />
-            
-          </ShowcaseControlRow>
           <ShowcaseControlRow label="Reset">
             <Button type="button" size="xs" variant="ghost" onClick={() => setTabsState(getTabsShowcaseState())}>Reset</Button>
           </ShowcaseControlRow>
@@ -2969,9 +2950,7 @@ function GlobalUiShowcase() {
           ariaLabel="Showcase tabs"
           value={tabsState.activeTab}
           onChange={(value) => setTabsState((current) => ({ ...current, activeTab: value }))}
-          items={tabItems}
-          layout={tabsState.layout === "grid" ? "grid" : "wrap"}
-          stretch={tabsState.layout === "stretch"} />
+          items={tabItems} />
         
       </ShowcaseSection>
       }

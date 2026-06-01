@@ -36,7 +36,7 @@ export default function ComplianceLayout({ title, children }) {
           sectionKey="admin-compliance-tabs"
           parentKey="app-layout-page-card"
           sectionType="tab-row"
-          className="tab-api tab-api--inline"
+          className="tab-api tab-api--wrap"
           aria-label="Compliance sections"
         >
           {TABS.map((tab) => {

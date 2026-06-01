@@ -143,15 +143,13 @@ export default function CompanyAccountDetailPageUi(props) {
               padding="var(--page-card-padding)"
               gap="20px">
 
-              {/* Tabs — staffglobal .tab-api; tab-api--inline shrinks the
-                  background strip to the tabs' content width instead of
-                  spanning the full row. */}
+              {/* Tabs — staffglobal .tab-api wrap layout. */}
               <TabGroup
                 items={ACCOUNT_TABS.map((tab) => ({ value: tab.id, label: tab.label }))}
                 value={activeTab}
                 onChange={setActiveTab}
                 ariaLabel="Company account sections"
-                className="tab-api--inline"
+                className="tab-api--wrap"
                 devSectionKey="company-account-detail-tabs"
                 devSectionParent="company-account-detail-card" />
 

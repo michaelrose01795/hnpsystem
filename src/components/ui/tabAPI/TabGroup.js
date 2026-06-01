@@ -6,15 +6,12 @@ export function TabGroup({
   onChange,
   ariaLabel,
   className = "",
-  layout = "wrap",
-  stretch = false,
   devSectionKey = "",
   devSectionParent = "",
 }) {
   const wrapperClassName = [
     "tab-api",
-    layout === "grid" ? "tab-api--grid" : "tab-api--wrap",
-    stretch && "tab-api--stretch",
+    "tab-api--wrap",
     className,
   ]
     .filter(Boolean)
@@ -70,13 +67,10 @@ export function TabLinkGroup({
   isActive,
   ariaLabel,
   className = "",
-  layout = "wrap",
-  stretch = false,
 }) {
   const wrapperClassName = [
     "tab-api",
-    layout === "grid" ? "tab-api--grid" : "tab-api--wrap",
-    stretch && "tab-api--stretch",
+    "tab-api--wrap",
     className,
   ]
     .filter(Boolean)

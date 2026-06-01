@@ -1118,6 +1118,9 @@ html.staff-scope input[type="search"],
 html.staff-scope textarea,
 html.staff-scope select {
   width: 100%;
+  /* Default minimum width — also the control's resting width. Override larger
+     in page code via --control-min-width or an explicit width/min-width. */
+  min-width: var(--control-min-width);
   font-family: inherit;
   outline: none;
   position: relative;
@@ -1173,6 +1176,7 @@ html.staff-scope .employee-form textarea::placeholder {
 /* ========================================================= */
 html.staff-scope .app-input {
   width: 100%;
+  min-width: var(--control-min-width);
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--input-radius);
@@ -2515,13 +2519,32 @@ html.staff-scope .searchbar-api {
   gap: var(--control-gap);
 }
 
+/* Search-bar floor matches text boxes: ~15 characters. */
+html.staff-scope .searchbar-api {
+  min-width: var(--control-min-width);
+}
+
+/* Dropdown sizes to its content (longest word) instead of stretching full
+   width. Floor = the longest word, capped at ~15 chars so a long option keeps
+   the button on one row; it still grows up to the container for long labels. */
 html.staff-scope .dropdown-api__control {
   height: var(--dropdown-trigger-height);
   min-height: var(--dropdown-trigger-height);
   max-height: var(--dropdown-trigger-height);
+  width: fit-content;
+  min-width: var(--dropdown-min-width);
+  max-width: 100%;
   padding: var(--dropdown-trigger-padding);
   border-radius: var(--dropdown-trigger-radius);
   line-height: 1;
+}
+
+/* Calendar + time pickers share one default+minimum width that fits a whole
+   date/time. width is overridden off the shared 100% so they size to content. */
+html.staff-scope .calendar-api__control,
+html.staff-scope .timepicker-api__control {
+  width: var(--datetime-control-width);
+  min-width: var(--datetime-control-width);
 }
 
 html.staff-scope .dropdown-api__control,
@@ -3929,12 +3952,17 @@ html.staff-scope .tab-api {
   gap: 6px;
   padding: 4px;
   box-sizing: border-box;
-  height: 44px;
+  /* Shrink the strip to the width of its buttons so the background no longer
+     stretches across the whole section. */
+  width: fit-content;
+  max-width: 100%;
+  height: auto;
   min-height: 44px;
   align-items: center;
   border-radius: var(--control-radius);
   background: var(--tab-container-bg);
   border: none;
+  overflow: visible;
 }
 
 html.staff-scope .page-surface-plain {
@@ -3966,22 +3994,6 @@ html.staff-scope .tab-scroll-row.is-overflowing {
   justify-content: flex-start;
   padding-bottom: 6px;
   cursor: grab;
-}
-
-html.staff-scope .tab-api--grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-}
-
-html.staff-scope .tab-api--stretch .tab-api__item {
-  width: 100%;
-}
-
-html.staff-scope .tab-api--inline {
-  display: inline-flex;
-  width: fit-content;
-  max-width: 100%;
-  flex: 0 0 auto;
 }
 
 /* `button.` / `a.` prefix so the rule beats the global `button:not(.app-btn)`
@@ -4057,36 +4069,12 @@ html.staff-scope .hr-manager-shell {
 
 html.staff-scope .hr-manager-tabs-row {
   justify-content: flex-start;
-  padding: 0 2px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
 
-html.staff-scope .hr-manager-tabs-row::-webkit-scrollbar {
-  display: none;
-}
-
-html.staff-scope .hr-manager-tabs-row.is-overflowing {
-  justify-content: flex-start;
-  padding-bottom: 0;
-  cursor: default;
-}
-
-html.staff-scope .hr-manager-tabs-row .tab-api {
-  flex: 0 0 max-content;
-  flex-wrap: nowrap;
-  width: max-content;
-  max-width: none;
-}
-
 html.staff-scope .hr-manager-tabs-row .tab-api__item {
-  flex: 0 0 auto;
-  min-width: max-content;
   padding: 10px 8px;
   font-size: 0.78rem;
   line-height: 1;
