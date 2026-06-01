@@ -45,6 +45,7 @@ import DevLayoutOverlayRoot from "@/components/dev-layout-overlay/DevLayoutOverl
 import { SWRConfig } from "swr"; // global SWR cache and revalidation config
 import { swrConfig } from "@/lib/swr/config"; // HNP-tuned SWR defaults
 import Layout from "@/components/Layout"; // persistent app shell — mounted once via getLayout
+import RouteProgressBar from "@/components/layout/RouteProgressBar"; // instant top-bar feedback on route change
 import { setPresentationMode } from "@/features/presentation/runtime/presentationMode";
 import { installFetchInterceptor, restoreFetchInterceptor } from "@/features/presentation/dataLayer/fetchInterceptor";
 import { useUser } from "@/context/UserContext";
@@ -490,6 +491,7 @@ function AppWrapper({ Component, pageProps }) {
 
   return (
     <>
+      <RouteProgressBar />
       <GlobalDraftPersistence />
       <GlobalTableShells />
       <PageAccessGuard pathname={pathname} />

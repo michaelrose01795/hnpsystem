@@ -280,6 +280,21 @@ export function UserProvider({ children }) {
         return;
       }
 
+      // Fast path: a real (non-dev) NextAuth session already carries the
+      // Supabase users.user_id as user.id (set from session.user.id in the
+      // auth effect above). When that id is a trusted positive integer we can
+      // use it directly and skip the extra `select user_id … maybeSingle()`
+      // round-trip — this removes ~hundreds of ms from every authenticated load.
+      // Dev logins (synthetic ids), presentation, and Playwright are handled
+      // above / fall through to the lookup, so their behaviour is unchanged.
+      if (!user.isDevLogin) {
+        const numericUserId = Number(user.id);
+        if (Number.isInteger(numericUserId) && numericUserId > 0) {
+          setDbUserId(numericUserId);
+          return;
+        }
+      }
+
       try {
         const ensuredId = await withTimeout(
           ensureDevDbUserAndGetId(user),

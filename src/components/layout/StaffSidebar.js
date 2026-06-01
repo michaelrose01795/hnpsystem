@@ -15,6 +15,7 @@ import { useMessagesBadge } from "@/hooks/useMessagesBadge";
 import { sidebarSections } from "@/config/navigation";
 import { departmentDashboardShortcuts } from "@/config/departmentDashboards";
 import BrandLogo from "@/components/BrandLogo";
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton";
 import { useDevLayoutOverlay } from "@/context/DevLayoutOverlayContext";
 import DevLayoutSection from "@/components/dev-layout-overlay/DevLayoutSection";
 import { canShowDevPages, canShowDevSidebarItems } from "@/lib/dev-tools/config";
@@ -138,6 +139,26 @@ function routeToLabel(route) {
   return query ? `${label} (${query.replace(/=/g, ": ").replace(/&/g, ", ")})` : label;
 }
 
+// Safe nav scaffolding shown while the user/roles are still resolving. It does
+// NOT render any real route links (so no protected route is exposed before roles
+// are known) — just shimmer rows so the rail looks alive instead of empty/dead
+// on a hard refresh. Replaced by the real role-filtered nav once roles load.
+function SidebarNavSkeleton({ groups = 2, rowsPerGroup = 4 }) {
+  return (
+    <div aria-hidden="true" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <SkeletonKeyframes />
+      {Array.from({ length: groups }).map((_, g) => (
+        <div key={g} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <SkeletonBlock width="90px" height="12px" />
+          {Array.from({ length: rowsPerGroup }).map((__, r) => (
+            <SkeletonBlock key={r} width="100%" height="38px" borderRadius="var(--radius-md, 10px)" />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Sidebar({
   onToggle,
   onNavigate,
@@ -148,10 +169,26 @@ export default function Sidebar({
   allowedRoutes = null,
   presentationRoleKey = null,
   inPresentationMode = false,
+  pendingHref = null,
+  isAuthLoading = false,
 }) {
   void _modeLabel;
   const router = useRouter();
   const pathname = (router.asPath || router.pathname || "").split("?")[0];
+  // Optimistic active state: in the Pages Router router.asPath does not update
+  // until a navigation completes, so the clicked item would otherwise stay
+  // un-highlighted for the whole load. pendingHref (set on routeChangeStart by
+  // StaffLayout) lets the clicked item light up immediately. Real asPath still
+  // wins as the fallback once navigation completes.
+  const isItemActive = useCallback(
+    (href) => {
+      if (!href) return false;
+      const base = String(href).split("?")[0].split("#")[0];
+      if (pendingHref) return pendingHref === base;
+      return pathname === base;
+    },
+    [pathname, pendingHref]
+  );
   const { user, dbUserId } = useUser();
   const { canAccess: canUseDevOverlay, enabled: devOverlayEnabled, toggleEnabled: toggleDevOverlay } =
     useDevLayoutOverlay();
@@ -475,8 +512,9 @@ export default function Sidebar({
               Presentation Pages
             </div>
             {presentationPageLinks.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = isItemActive(item.href);
               return (
+                // presentation deck links — keep prefetch off (live-route blocking)
                 <Link
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={`${item.route}-${item.href}`}
@@ -518,14 +556,14 @@ export default function Sidebar({
             </div>
             {dashboardShortcuts.map((shortcut) => {
               const isActive =
-                pathname === shortcut.href ||
-                (pathname && pathname.startsWith(`${shortcut.href}/`));
+                isItemActive(shortcut.href) ||
+                (!pendingHref && pathname && pathname.startsWith(`${shortcut.href}/`));
               return (
                 <Link
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={shortcut.href}
                   href={getNavHref(shortcut.href)}
-                  prefetch={false}
+                  prefetch={inPresentationMode ? false : undefined}
                   title={shortcut.description}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
@@ -545,13 +583,13 @@ export default function Sidebar({
             </div>
             {generalSections.flatMap((section) => section.items).map((item) => {
               if (!item.href) return null;
-              const isActive = pathname === item.href;
+              const isActive = isItemActive(item.href);
               return (
                 <Link
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={getNavHref(item.href)}
-                  prefetch={false}
+                  prefetch={inPresentationMode ? false : undefined}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                 >
@@ -562,6 +600,14 @@ export default function Sidebar({
           </>
         )}
 
+        {/* While auth/roles resolve, show shimmer scaffolding (no real links)
+            so the department area looks alive rather than empty on hard load. */}
+        {!inPresentationMode && isAuthLoading && departmentSections.length === 0 && (
+          <div style={{ marginTop: "16px" }}>
+            <SidebarNavSkeleton />
+          </div>
+        )}
+
         {/* Department Sections - NO COLLAPSE, just headers */}
         {!inPresentationMode && departmentSections.map((section) => (
           <Fragment key={section.label}>
@@ -570,13 +616,13 @@ export default function Sidebar({
             </div>
             {section.items.map((item) => {
               if (!item.href) return null;
-              const isActive = pathname === item.href;
+              const isActive = isItemActive(item.href);
               return (
                 <Link
                   className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                   key={item.href}
                   href={getNavHref(item.href)}
-                  prefetch={false}
+                  prefetch={inPresentationMode ? false : undefined}
                   onClick={handleNavigationPress}
                   data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                 >
@@ -638,7 +684,7 @@ export default function Sidebar({
                           <Link
                             className="app-btn app-btn--ghost"
                             href="/dev/user-diagnostic"
-                            prefetch={false}
+                            prefetch={inPresentationMode ? false : undefined}
                             style={{ flex: 1 }}
                             onClick={handleNavigationPress}
                           >
@@ -670,7 +716,7 @@ export default function Sidebar({
                           ...(inVisionRoute ? successGhostControlStyle : ghostControlStyle),
                         }}
                         href="/vision"
-                        prefetch={false}
+                        prefetch={inPresentationMode ? false : undefined}
                         aria-current={inVisionRoute ? "page" : undefined}
                         onClick={handleNavigationPress}
                       >
@@ -711,13 +757,13 @@ export default function Sidebar({
 
               if (item.href) {
                 if (inPresentationMode) return null;
-                const isActive = pathname === item.href;
+                const isActive = isItemActive(item.href);
                 return (
                   <Link
                     className={`app-btn app-btn--secondary app-btn--nav${isActive ? " is-active" : ""}`}
                     key={item.href}
                     href={getNavHref(item.href)}
-                    prefetch={false}
+                    prefetch={inPresentationMode ? false : undefined}
                     onClick={handleNavigationPress}
                     data-presentation-allow-interaction={inPresentationMode ? "true" : undefined}
                     style={{

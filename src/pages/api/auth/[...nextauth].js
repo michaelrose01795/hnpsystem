@@ -11,20 +11,12 @@
 
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { supabase } from "@/lib/database/supabaseClient";
-import { isDevAuthAllowed, isCiTestAuthAllowed } from "@/lib/auth/devAuth";
-import {
-  checkRateLimit,
-  recordAttempt,
-  getClientIp,
-  getUserAgent,
-} from "@/lib/auth/rateLimit";
-import {
-  verifyPassword,
-  rehashAndPersist,
-  ALGO_BCRYPT,
-} from "@/lib/auth/passwords";
-import { writeAuditLog } from "@/lib/audit/auditLog";
+// NOTE: the heavy, login-only dependencies (Supabase client, bcrypt password
+// helpers, rate limiting, audit logging) are intentionally NOT imported at
+// module scope. They are dynamically imported inside `authorize` instead, so the
+// hot `/api/auth/session` path (which only runs the jwt/session callbacks, no
+// DB / bcrypt) doesn't pay their import/cold-start cost. The login flow is
+// unchanged — `authorize` awaits the same modules before using them.
 
 const isLocalhostUrl = (value = "") => /localhost|127\.0\.0\.1/i.test(String(value));
 const isVercelHost = (value = "") => /\.vercel\.app$/i.test(String(value));
@@ -61,6 +53,23 @@ const buildAuthOptions = (req) => ({
         userId: { label: "User ID", type: "text" },
       },
       async authorize(credentials) {
+        // Lazy-load login-only dependencies here (see module-top note). These
+        // imports run only on an actual credentials login attempt, never on the
+        // session GET path.
+        const [
+          { supabase },
+          { isDevAuthAllowed, isCiTestAuthAllowed },
+          { checkRateLimit, recordAttempt, getClientIp, getUserAgent },
+          { verifyPassword, rehashAndPersist, ALGO_BCRYPT },
+          { writeAuditLog },
+        ] = await Promise.all([
+          import("@/lib/database/supabaseClient"),
+          import("@/lib/auth/devAuth"),
+          import("@/lib/auth/rateLimit"),
+          import("@/lib/auth/passwords"),
+          import("@/lib/audit/auditLog"),
+        ]);
+
         const ip = getClientIp(req);
         const userAgent = getUserAgent(req);
 

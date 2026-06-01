@@ -80,6 +80,12 @@ export default function Layout({
   const { usersByRole } = useRoster();
   const router = useRouter();
   const [showLoginShellLoading, setShowLoginShellLoading] = useState(false);
+  // Route-transition state. Driven by router.events so the content area can show
+  // the existing PageSkeleton the instant a real navigation starts, and the
+  // sidebar can highlight the clicked item optimistically (pendingHref) before
+  // router.asPath catches up (Pages Router only updates asPath on completion).
+  const [isRouteChanging, setIsRouteChanging] = useState(false);
+  const [pendingHref, setPendingHref] = useState(null);
   const isCustomerRoute = (router.pathname || "").startsWith("/customer");
   const hideSidebar =
     (router.pathname === "/login" && !showLoginShellLoading) ||
@@ -486,7 +492,16 @@ export default function Layout({
   // PageSkeleton during route transitions (it masked the sidebar active state
   // and looked the same on every route).
   const isPreAuthLoading = !publicRoute && !presentationShell && !hideSidebar && (userLoading || !user);
-  const showPageSkeleton = isPreAuthLoading;
+  // Show the shared PageSkeleton while (a) the session is still resolving on a
+  // gated route (pre-auth), OR (b) a real client-side route change is in flight.
+  // Case (b) restores the route-transition skeleton: the destination's own
+  // shell appears instantly instead of the stale previous page lingering until
+  // the new bundle/data is ready. The destination page then renders its own
+  // page-level skeletons as before. Skip the transition skeleton on the login
+  // shell / presentation shell where the chrome handles its own loading.
+  const showRouteTransitionSkeleton =
+    isRouteChanging && !publicRoute && !presentationShell && !hideSidebar;
+  const showPageSkeleton = isPreAuthLoading || showRouteTransitionSkeleton;
 
   // TEMP diagnostic: each of these flipping is a candidate for the page
   // "flicking off then coming back" — skeleton flags swap children for the
@@ -514,6 +529,36 @@ export default function Layout({
     if (typeof window === "undefined" || isTablet) return;
     window.localStorage.setItem("sidebarOpen", isSidebarOpen ? "true" : "false");
   }, [isSidebarOpen, isTablet]);
+
+  // Route-transition skeleton + optimistic sidebar highlight. On routeChangeStart
+  // for a *real* navigation (not shallow, not hash/query-only) we flip the
+  // content area to the existing PageSkeleton and record the destination href so
+  // the clicked sidebar item lights up immediately. Cleared on complete/error.
+  useEffect(() => {
+    if (!router?.events) return undefined;
+
+    const pathOnly = (url = "") => String(url).split("#")[0].split("?")[0];
+
+    const handleStart = (url, { shallow } = {}) => {
+      if (shallow) return;
+      if (pathOnly(url) === pathOnly(router.asPath)) return; // hash/query-only — ignore
+      setPendingHref(pathOnly(url));
+      setIsRouteChanging(true);
+    };
+    const handleDone = () => {
+      setIsRouteChanging(false);
+      setPendingHref(null);
+    };
+
+    router.events.on("routeChangeStart", handleStart);
+    router.events.on("routeChangeComplete", handleDone);
+    router.events.on("routeChangeError", handleDone);
+    return () => {
+      router.events.off("routeChangeStart", handleStart);
+      router.events.off("routeChangeComplete", handleDone);
+      router.events.off("routeChangeError", handleDone);
+    };
+  }, [router]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !router?.events) return;
@@ -851,6 +896,8 @@ export default function Layout({
               allowedRoutes={presentationAllowedRoutes}
               presentationRoleKey={activePresentationRole?.key || null}
               inPresentationMode={presentationShell}
+              pendingHref={pendingHref}
+              isAuthLoading={isPreAuthLoading}
             />
           )}
         </DevLayoutSection>
@@ -978,6 +1025,8 @@ export default function Layout({
                     allowedRoutes={presentationAllowedRoutes}
                     presentationRoleKey={activePresentationRole?.key || null}
                     inPresentationMode={presentationShell}
+                    pendingHref={pendingHref}
+                    isAuthLoading={isPreAuthLoading}
                   />
                 </div>
               </div>
