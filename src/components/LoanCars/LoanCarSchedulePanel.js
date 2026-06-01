@@ -247,8 +247,23 @@ function BookingCell({ booking, onClick, highlightedJob, highlightedVehicle }) {
 }
 
 const scrollTodayIntoView = (todayRowRef) => {
-  if (!todayRowRef.current) return;
-  todayRowRef.current.scrollIntoView({ block: "start", inline: "nearest" });
+  const row = todayRowRef.current;
+  if (!row) return;
+  const scroller = row.closest(".app-table-shell-scroll");
+  const thead = scroller?.querySelector("thead");
+  if (!scroller || !thead) {
+    row.scrollIntoView({ block: "start", inline: "nearest" });
+    return;
+  }
+  // Align the today row's top flush with the bottom of the sticky heading so
+  // the row above it can't peek through. Measuring the live thead height keeps
+  // this exact even though the heading is two lines tall (reg + name).
+  const headingHeight = thead.getBoundingClientRect().height;
+  const delta =
+    row.getBoundingClientRect().top -
+    scroller.getBoundingClientRect().top -
+    headingHeight;
+  scroller.scrollTop += delta;
 };
 
 function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
@@ -484,7 +499,13 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
     if (!draft.reg.trim()) return;
     const topSortOrder = Math.min(0, ...cars.map((car) => Number(car.sortOrder ?? 0))) - 1;
     const reg = draft.reg.trim().toUpperCase();
-    await onSave({ ...draft, reg, name: reg, sortOrder: topSortOrder });
+    const result = await onSave({ ...draft, reg, name: reg, sortOrder: topSortOrder });
+    // Only treat it as added once the DB write actually succeeds — otherwise
+    // surface the real error instead of a misleading success message.
+    if (!result?.success) {
+      setVehicleMessage(result?.error?.message || "Unable to add loan vehicle.");
+      return;
+    }
     setDraft({ reg: "", name: "", sortOrder: topSortOrder - 1, notes: "" });
     setVehicleLookup(null);
     setVehicleMessage("Loan vehicle added to the table.");
@@ -493,7 +514,11 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
   const handleSaveEdit = async () => {
     if (!editDraft?.reg?.trim()) return;
     const reg = editDraft.reg.trim().toUpperCase();
-    await onSave({ ...editDraft, reg, name: reg });
+    const result = await onSave({ ...editDraft, reg, name: reg });
+    if (!result?.success) {
+      setVehicleMessage(result?.error?.message || "Unable to update loan vehicle.");
+      return;
+    }
     stopEditing();
   };
 

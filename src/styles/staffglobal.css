@@ -1118,9 +1118,6 @@ html.staff-scope input[type="search"],
 html.staff-scope textarea,
 html.staff-scope select {
   width: 100%;
-  /* Default minimum width — also the control's resting width. Override larger
-     in page code via --control-min-width or an explicit width/min-width. */
-  min-width: var(--control-min-width);
   font-family: inherit;
   outline: none;
   position: relative;
@@ -1176,7 +1173,6 @@ html.staff-scope .employee-form textarea::placeholder {
 /* ========================================================= */
 html.staff-scope .app-input {
   width: 100%;
-  min-width: var(--control-min-width);
   min-height: var(--control-height);
   padding: var(--control-padding);
   border-radius: var(--input-radius);
@@ -2519,38 +2515,54 @@ html.staff-scope .searchbar-api {
   gap: var(--control-gap);
 }
 
-/* Search-bar floor matches text boxes: ~15 characters. */
-html.staff-scope .searchbar-api {
-  min-width: var(--control-min-width);
-}
-
-/* Dropdown sizes to its content (longest word) instead of stretching full
-   width. Floor = the longest word, capped at ~15 chars so a long option keeps
-   the button on one row; it still grows up to the container for long labels. */
 html.staff-scope .dropdown-api__control {
   height: var(--dropdown-trigger-height);
   min-height: var(--dropdown-trigger-height);
   max-height: var(--dropdown-trigger-height);
-  width: fit-content;
-  min-width: var(--dropdown-min-width);
-  max-width: 100%;
   padding: var(--dropdown-trigger-padding);
   border-radius: var(--dropdown-trigger-radius);
   line-height: 1;
-}
-
-/* Calendar + time pickers share one default+minimum width that fits a whole
-   date/time. width is overridden off the shared 100% so they size to content. */
-html.staff-scope .calendar-api__control,
-html.staff-scope .timepicker-api__control {
-  width: var(--datetime-control-width);
-  min-width: var(--datetime-control-width);
 }
 
 html.staff-scope .dropdown-api__control,
 html.staff-scope .calendar-api__control,
 html.staff-scope .timepicker-api__control {
   cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   OPT-IN control sizing — for NEW controls only.
+   Existing controls keep their card/section (full) width. To give a newly
+   built control the character-based width floors, add the class
+   `app-autowidth` to the control element (native input / .app-input) or to the
+   wrapper of a component control (.dropdown-api, .calendar-api, etc.).
+     • text boxes / search bars → ~15 char minimum  (--control-min-width)
+     • dropdown buttons         → size to longest word, cap ~15 chars
+     • calendar + time pickers  → one shared width that fits a full date/time
+   A hard-coded width/min-width on the element still wins over these.
+   ───────────────────────────────────────────────────────────────────────── */
+html.staff-scope input.app-autowidth,
+html.staff-scope textarea.app-autowidth,
+html.staff-scope select.app-autowidth,
+html.staff-scope .app-input.app-autowidth,
+html.staff-scope .searchbar-api.app-autowidth,
+html.staff-scope .app-autowidth .searchbar-api {
+  min-width: var(--control-min-width);
+}
+
+html.staff-scope .dropdown-api__control.app-autowidth,
+html.staff-scope .app-autowidth .dropdown-api__control {
+  width: fit-content;
+  min-width: var(--dropdown-min-width);
+  max-width: 100%;
+}
+
+html.staff-scope .calendar-api__control.app-autowidth,
+html.staff-scope .timepicker-api__control.app-autowidth,
+html.staff-scope .app-autowidth .calendar-api__control,
+html.staff-scope .app-autowidth .timepicker-api__control {
+  width: var(--datetime-control-width);
+  min-width: var(--datetime-control-width);
 }
 
 html.staff-scope .dropdown-api__control:hover:not(:disabled),
@@ -4826,23 +4838,6 @@ html.staff-scope .app-table-shell-scroll {
   max-width: 100%;
   overflow: auto;
   position: relative;
-  --app-table-heading-mask-height: 44px;
-}
-
-html.staff-scope .loan-car-appointments-table-scroll .loan-car-today-row {
-  scroll-margin-top: 56px;
-}
-
-html.staff-scope .app-table-shell-scroll:has(.app-table-shell--with-headings)::before {
-  content: "";
-  position: sticky;
-  top: 0;
-  display: block;
-  height: var(--app-table-heading-mask-height);
-  margin-bottom: calc(var(--app-table-heading-mask-height) * -1);
-  background: var(--secondary-pressed);
-  pointer-events: none;
-  z-index: 35;
 }
 
 html.staff-scope .app-table-shell {

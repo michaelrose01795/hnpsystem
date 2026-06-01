@@ -95,6 +95,7 @@ export default function NewPage() {
             onChange={(event) => setSelectedDepartment(event.target.value)}
             helperText="Filter the local mock rows below."
             searchable
+            style={{ maxWidth: 360, width: "100%" }}
           />
         </LayerTheme>
 
