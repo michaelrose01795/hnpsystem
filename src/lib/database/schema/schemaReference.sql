@@ -1731,9 +1731,14 @@ CREATE TABLE public.tracking_loan_cars (
   loan_car_id uuid NOT NULL DEFAULT gen_random_uuid(),
   reg text NOT NULL UNIQUE,
   name text,
+  make_model text,
+  colour text,
+  mileage integer,
+  fuel_level integer NOT NULL DEFAULT 0 CHECK (fuel_level >= 0 AND fuel_level <= 8),
   status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'inactive'::text])),
   sort_order integer NOT NULL DEFAULT 0,
   notes text,
+  last_vehicle_update_at timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT tracking_loan_cars_pkey PRIMARY KEY (loan_car_id)
@@ -1764,6 +1769,20 @@ CREATE TABLE public.tracking_loan_car_bookings (
   CONSTRAINT tracking_loan_car_bookings_date_check CHECK (end_date >= start_date),
   CONSTRAINT tracking_loan_car_bookings_loan_car_id_fkey FOREIGN KEY (loan_car_id) REFERENCES public.tracking_loan_cars(loan_car_id) ON DELETE CASCADE,
   CONSTRAINT tracking_loan_car_bookings_job_id_fkey FOREIGN KEY (job_id) REFERENCES public.jobs(id)
+);
+-- Append-only log of loan-car fuel readings. Populated by the
+-- trg_log_loan_car_fuel_change trigger on tracking_loan_cars (logs on insert
+-- and whenever fuel_level changes). See migration 20260602130000.
+CREATE TABLE public.tracking_loan_car_fuel_history (
+  history_id uuid NOT NULL DEFAULT gen_random_uuid(),
+  loan_car_id uuid NOT NULL,
+  reg text NOT NULL,
+  fuel_level integer NOT NULL,
+  mileage integer,
+  recorded_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT tracking_loan_car_fuel_history_pkey PRIMARY KEY (history_id),
+  CONSTRAINT tracking_loan_car_fuel_history_fuel_level_check CHECK (fuel_level >= 0 AND fuel_level <= 8),
+  CONSTRAINT tracking_loan_car_fuel_history_loan_car_id_fkey FOREIGN KEY (loan_car_id) REFERENCES public.tracking_loan_cars(loan_car_id) ON DELETE CASCADE
 );
 CREATE TABLE public.tracking_equipment_tools (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

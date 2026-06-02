@@ -47,18 +47,18 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "gsap": "^3.15.0",
-    "jspdf": "^4.1.0",
+    "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "jwt-decode": "^4.0.0",
-    "next": "^16.2.6",
-    "next-auth": "^4.24.13",
-    "nodemailer": "^7.0.13",
+    "next": "^16.2.7",
+    "next-auth": "^4.24.14",
+    "nodemailer": "^8.0.10",
     "pdfjs-dist": "^5.4.394",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.15",
     "postprocessing": "^6.39.1",
     "react": "^19.2.1",
     "stripe": "^17.5.0",
-    "react-big-calendar": "^1.19.4",
+    "react-big-calendar": "^1.20.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.1",
     "react-pdf": "^10.2.0",
@@ -77,5 +77,31 @@
     "playwright": "^1.58.2",
     "typescript": "5.9.3",
     "vitest": "^4.1.5"
+  },
+  "overrides": {
+    "dompurify": "3.4.7",
+    "lodash": "4.18.1",
+    "lodash-es": "4.18.1",
+    "next": {
+      "postcss": "8.5.15"
+    },
+    "next-auth": {
+      "uuid": "11.1.1"
+    },
+    "micromatch": {
+      "picomatch": "2.3.2"
+    },
+    "minimatch@3": {
+      "brace-expansion": "1.1.14"
+    },
+    "minimatch@10": {
+      "brace-expansion": "5.0.6"
+    },
+    "@supabase/realtime-js": {
+      "ws": "8.21.0"
+    },
+    "vite": {
+      "yaml": "2.9.0"
+    }
   }
 }

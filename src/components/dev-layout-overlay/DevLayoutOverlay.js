@@ -935,7 +935,7 @@ export default function DevLayoutOverlay() {
                 <p className={styles.kicker}>Dev Layout Inspector</p>
                 <button
                   type="button"
-                  className={`${styles.iconBtn} ${styles.iconBtnSm}`.trim()}
+                  className="app-btn app-btn--ghost app-btn--xs"
                   onClick={() => setPanelOpen(false)}
                   aria-label="Minimise dev overlay panel"
                   title="Minimise"
@@ -1005,7 +1005,7 @@ export default function DevLayoutOverlay() {
                   <button
                     key={value}
                     type="button"
-                    className={`${styles.modeBtn} ${mode === value ? styles.modeBtnActive : ""}`.trim()}
+                    className={`app-btn app-btn--xs ${mode === value ? "is-active" : ""}`.trim()}
                     onClick={() => setMode(value)}
                     aria-pressed={mode === value}
                     disabled={!enabled}
@@ -1057,7 +1057,7 @@ export default function DevLayoutOverlay() {
               <div className={styles.bulkRow}>
                 <button
                   type="button"
-                  className={styles.bulkBtn}
+                  className="app-btn app-btn--secondary app-btn--xs"
                   onClick={() => setAllCategoryFilters(true)}
                   disabled={!enabled}
                 >
@@ -1065,7 +1065,7 @@ export default function DevLayoutOverlay() {
                 </button>
                 <button
                   type="button"
-                  className={styles.bulkBtn}
+                  className="app-btn app-btn--secondary app-btn--xs"
                   onClick={() => setAllCategoryFilters(false)}
                   disabled={!enabled}
                 >
@@ -1073,7 +1073,7 @@ export default function DevLayoutOverlay() {
                 </button>
                 <button
                   type="button"
-                  className={styles.bulkBtn}
+                  className="app-btn app-btn--secondary app-btn--xs"
                   onClick={resetCategoryFilters}
                   disabled={!enabled}
                   title="Reset to defaults"
@@ -1128,7 +1128,7 @@ export default function DevLayoutOverlay() {
                 <p className={styles.blockTitle}>Selected section</p>
                 <button
                   type="button"
-                  className={styles.ghostBtn}
+                  className="app-btn app-btn--ghost app-btn--xs"
                   onClick={() => setSelectedKey("")}
                 >
                   Clear
@@ -1170,113 +1170,88 @@ export default function DevLayoutOverlay() {
               </div>
 
               <div className={styles.row}>
-                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("reference", selectedPrompts.reference)}>Copy ref</button>
-                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("debug", selectedPrompts.debug)}>Copy debug</button>
-                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("codex", selectedPrompts.codex)}>Copy Codex prompt</button>
-                <button type="button" className={styles.copyBtn} onClick={() => handleCopy("claude", selectedPrompts.claude)}>Copy Claude prompt</button>
+                <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("reference", selectedPrompts.reference)}>Copy ref</button>
+                <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("debug", selectedPrompts.debug)}>Copy debug</button>
+                <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("codex", selectedPrompts.codex)}>Copy Codex prompt</button>
+                <button type="button" className="app-btn app-btn--secondary app-btn--xs" onClick={() => handleCopy("claude", selectedPrompts.claude)}>Copy Claude prompt</button>
               </div>
               <p className={styles.copyStatus}>
                 {copiedAction ? `Copied ${copiedAction}` : "Pick a copy action to export context for this section."}
               </p>
 
-              {/* Classification form — persists to localStorage via auditTags.js. */}
-              <div
-                style={{
-                  marginTop: 12,
-                  padding: 12,
-                  borderRadius: 10,
-                  background: "rgba(255,255,255,0.04)",
-                  display: "grid",
-                  gap: 8,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <strong style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    Classification
-                  </strong>
-                  <span style={{ fontSize: 10, opacity: 0.7 }}>
+              {/* Classification form — persists to localStorage via auditTags.js.
+                  Controls use the staffglobal .app-input / .app-btn families so
+                  the panel inherits the staff design system (no inline styling). */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.selectedHead}>
+                  <p className={styles.blockTitle}>Classification</p>
+                  <span className={styles.copyStatus}>
                     {auditSavedAt ? "Saved to localStorage" : "Edits save automatically"}
                   </span>
                 </div>
 
-                <label style={{ display: "grid", gap: 4 }}>
-                  <span style={{ fontSize: 10, opacity: 0.75 }}>Family</span>
+                <div className={styles.field}>
+                  <span>Family</span>
                   <select
+                    className="app-input app-input--select"
                     value={auditDraft.family}
                     onChange={(event) => applyAuditPatch({ family: event.target.value, variant: "" })}
-                    style={{ padding: "6px 8px", fontSize: 12, borderRadius: 6 }}
                   >
                     <option value="">—</option>
                     {UI_FAMILIES.map((fam) => (
                       <option key={fam.id} value={fam.id}>{fam.label}</option>
                     ))}
                   </select>
-                </label>
+                </div>
 
-                <label style={{ display: "grid", gap: 4 }}>
-                  <span style={{ fontSize: 10, opacity: 0.75 }}>Variant</span>
+                <div className={styles.field}>
+                  <span>Variant</span>
                   <select
+                    className="app-input app-input--select"
                     value={auditDraft.variant}
                     onChange={(event) => applyAuditPatch({ variant: event.target.value })}
                     disabled={!auditDraft.family}
-                    style={{ padding: "6px 8px", fontSize: 12, borderRadius: 6 }}
                   >
                     <option value="">—</option>
                     {(getFamilyById(auditDraft.family)?.variants || []).map((variant) => (
                       <option key={variant.id} value={variant.id}>{variant.id}</option>
                     ))}
                   </select>
-                </label>
+                </div>
 
-                <label style={{ display: "grid", gap: 4 }}>
-                  <span style={{ fontSize: 10, opacity: 0.75 }}>Status</span>
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                <div className={styles.field}>
+                  <span>Status</span>
+                  <div className={styles.row}>
                     {AUDIT_STATUS_OPTIONS.map((option) => (
                       <button
                         key={option.id}
                         type="button"
+                        className={`app-btn app-btn--secondary app-btn--xs ${auditDraft.status === option.id ? "is-active" : ""}`.trim()}
                         onClick={() => applyAuditPatch({ status: option.id })}
-                        style={{
-                          padding: "4px 8px",
-                          fontSize: 11,
-                          borderRadius: 999,
-                          border: "1px solid var(--ghostbutton-ring)",
-                          background: auditDraft.status === option.id ? "var(--primary)" : "transparent",
-                          color: auditDraft.status === option.id ? "var(--onAccentText)" : "inherit",
-                          cursor: "pointer",
-                        }}
                         title={option.description}
                       >
                         {option.label}
                       </button>
                     ))}
                   </div>
-                </label>
+                </div>
 
-                <label style={{ display: "grid", gap: 4 }}>
-                  <span style={{ fontSize: 10, opacity: 0.75 }}>Notes</span>
+                <div className={styles.field}>
+                  <span>Notes</span>
                   <textarea
+                    className="app-input app-input--textarea"
                     value={auditDraft.notes}
                     onChange={(event) => applyAuditPatch({ notes: event.target.value })}
                     placeholder="Optional review notes — what's off, what to keep custom, etc."
                     rows={2}
-                    style={{ padding: "6px 8px", fontSize: 12, borderRadius: 6, resize: "vertical" }}
                   />
-                </label>
+                </div>
 
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div className={`${styles.row} ${styles.fieldActions}`.trim()}>
                   <button
                     type="button"
+                    className="app-btn app-btn--ghost app-btn--xs"
                     onClick={handleClearAuditTag}
-                    style={{
-                      padding: "4px 10px",
-                      fontSize: 11,
-                      background: "transparent",
-                      color: "inherit",
-                      border: "1px solid var(--ghostbutton-ring)",
-                      borderRadius: 6,
-                      cursor: "pointer",
-                    }}
                   >
                     Clear tag
                   </button>

@@ -10,14 +10,43 @@ const normaliseDateKey = (value) => {
   return parsed.toISOString().slice(0, 10);
 };
 
+const toNullableInteger = (value) => {
+  if (value === "" || value === null || value === undefined) return null;
+  const parsed = Number(String(value).replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? Math.round(parsed) : null;
+};
+
+// Fuel is stored on a 0–8 scale (Empty … Full in eighths), matching the
+// eight-segment FuelGauge and the tracking_loan_cars_fuel_level_check constraint.
+const normalizeFuelLevel = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.min(8, Math.max(0, Math.round(parsed)));
+};
+
 const normalizeLoanCar = (row) => ({
   id: row.loan_car_id,
   loanCarId: row.loan_car_id,
   reg: row.reg || "",
   name: row.name || row.reg || "Loan car",
+  makeModel: row.make_model || "",
+  colour: row.colour || "",
+  mileage: row.mileage ?? "",
+  fuelLevel: normalizeFuelLevel(row.fuel_level),
   status: row.status || "active",
   sortOrder: row.sort_order ?? 0,
   notes: row.notes || "",
+  lastVehicleUpdateAt: row.last_vehicle_update_at || row.updated_at || "",
+});
+
+const normalizeLoanCarFuelHistory = (row) => ({
+  id: row.history_id,
+  historyId: row.history_id,
+  loanCarId: row.loan_car_id,
+  reg: row.reg || "",
+  fuelLevel: normalizeFuelLevel(row.fuel_level),
+  mileage: row.mileage ?? "",
+  recordedAt: row.recorded_at || "",
 });
 
 const normalizeLoanCarBooking = (row) => ({
@@ -49,16 +78,18 @@ const normalizeLoanCarBooking = (row) => ({
 const loanCarPayload = (car) => ({
   reg: String(car.reg || "").trim().toUpperCase(),
   name: String(car.name || "").trim() || String(car.reg || "").trim().toUpperCase(),
+  make_model: String(car.makeModel ?? car.make_model ?? "").trim() || null,
+  colour: String(car.colour ?? "").trim() || null,
+  mileage: toNullableInteger(car.mileage),
+  fuel_level: normalizeFuelLevel(car.fuelLevel ?? car.fuel_level),
+  last_vehicle_update_at:
+    car.updateVehicleState || car.mileage !== undefined || car.fuelLevel !== undefined || car.makeModel !== undefined || car.colour !== undefined
+      ? new Date().toISOString()
+      : car.lastVehicleUpdateAt || null,
   status: car.status || "active",
   sort_order: Number(car.sortOrder ?? car.sort_order ?? 0),
   notes: car.notes || null,
 });
-
-const toNullableInteger = (value) => {
-  if (value === "" || value === null || value === undefined) return null;
-  const parsed = Number(String(value).replace(/[^\d.-]/g, ""));
-  return Number.isFinite(parsed) ? Math.round(parsed) : null;
-};
 
 const bookingPayload = (booking) => ({
   loan_car_id: booking.loanCarId,
@@ -187,6 +218,23 @@ export const getLoanCars = async () => {
   }
 
   return (data || []).map(normalizeLoanCar);
+};
+
+export const getLoanCarFuelHistory = async (loanCarId, { limit = 50 } = {}) => {
+  if (!loanCarId) return [];
+  const { data, error } = await supabase
+    .from("tracking_loan_car_fuel_history")
+    .select("*")
+    .eq("loan_car_id", loanCarId)
+    .order("recorded_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("Failed to fetch loan car fuel history", error);
+    return [];
+  }
+
+  return (data || []).map(normalizeLoanCarFuelHistory);
 };
 
 export const saveLoanCar = async (car) => {

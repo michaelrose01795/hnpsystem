@@ -384,15 +384,33 @@ const ALLOWED_PERMISSIONS = new Set([
   "clipboard-sanitized-write", // navigator.clipboard.writeText (the copy path)
 ]);
 
+function isPermissionOriginAllowed(webContents, requestingOrigin) {
+  if (requestingOrigin) {
+    return isUrlAllowed(requestingOrigin);
+  }
+
+  const currentUrl = webContents && !webContents.isDestroyed() ? webContents.getURL() : "";
+  if (!currentUrl) {
+    return false;
+  }
+
+  try {
+    return isUrlAllowed(new URL(currentUrl).origin);
+  } catch {
+    return false;
+  }
+}
+
 function lockDownPermissions() {
   const { session } = require("electron"); // Lazy require — session is only ready after `ready`
   // Async permission prompts (e.g. first clipboard write in a session).
-  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
-    callback(ALLOWED_PERMISSIONS.has(permission)); // Allow clipboard, deny the rest
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details = {}) => {
+    const allowed = ALLOWED_PERMISSIONS.has(permission) && isPermissionOriginAllowed(webContents, details.requestingOrigin);
+    callback(allowed); // Allow app-origin clipboard access, deny the rest
   });
   // Synchronous permission checks (the Clipboard API consults this too).
-  session.defaultSession.setPermissionCheckHandler((_webContents, permission) => {
-    return ALLOWED_PERMISSIONS.has(permission); // Same allow-list, sync variant
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    return ALLOWED_PERMISSIONS.has(permission) && isPermissionOriginAllowed(webContents, requestingOrigin); // Same allow-list, sync variant
   });
 }
 

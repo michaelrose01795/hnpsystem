@@ -192,7 +192,9 @@
       "Bash(Select-Object -ExpandProperty FullName)",
       "Bash(Get-ChildItem -Path C:\\\\hnpsystem -Directory)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\desktop\" -Recurse -Directory | Where-Object { $_.Name -match \"build|assets\" } | Select-Object -ExpandProperty FullName)",
-      "PowerShell(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\desktop\" -File | Where-Object { $_.Name -match \"\\\\.env|electron|config\" } | Select-Object -ExpandProperty FullName)"
+      "PowerShell(Get-ChildItem -Path \"C:\\\\hnpsystem\\\\desktop\" -File | Where-Object { $_.Name -match \"\\\\.env|electron|config\" } | Select-Object -ExpandProperty FullName)",
+      "Bash(echo \"EXIT:$?\")",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Select-Object ProcessId, @{N='Cmd';E={$_.CommandLine.Substring\\(0,[Math]::Min\\(120,$_.CommandLine.Length\\)\\)}} | Format-Table -AutoSize -Wrap)"
     ],
     "deny": [],
     "ask": [],

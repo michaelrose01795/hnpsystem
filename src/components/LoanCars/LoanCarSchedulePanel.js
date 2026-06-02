@@ -5,9 +5,11 @@ import { Button, InputField } from "@/components/ui";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
+import FuelGauge, { fuelLevelLabel } from "@/components/LoanCars/FuelGauge";
 import {
   deleteLoanCar,
   deleteLoanCarBooking,
+  getLoanCarFuelHistory,
   getLoanCarScheduleBookings,
   getLoanCars,
   saveLoanCar,
@@ -142,6 +144,74 @@ const compactBookingFieldGridStyle = {
   gap: "var(--space-2)",
 };
 
+const managerPanelStyle = {
+  display: "grid",
+  gap: "var(--layout-card-gap)",
+};
+
+const bookingDateGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+  gap: "var(--layout-card-gap)",
+  alignItems: "end",
+};
+
+const bookingDetailsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+  gap: "8px",
+  alignItems: "end",
+};
+
+const bookingSubsectionTitleStyle = {
+  margin: 0,
+  color: "var(--text-1)",
+  fontSize: "14px",
+};
+
+const vehicleActionGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+  gap: "8px",
+  alignItems: "end",
+  flex: "1 1 520px",
+};
+
+const vehicleLookupGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+  gap: "8px",
+};
+
+const fleetRowGridStyle = {
+  display: "flex",
+  // LayerTheme defaults its inner flex to `flexDirection: column`; without an
+  // explicit `row` here every control stacks vertically instead of sitting in
+  // one line.
+  flexDirection: "row",
+  flexWrap: "nowrap",
+  alignItems: "center",
+  gap: "var(--space-2)",
+  minHeight: "44px",
+};
+
+const fleetVehicleIdentityStyle = {
+  display: "grid",
+  gridTemplateColumns: "minmax(80px, 0.7fr) minmax(130px, 1fr)",
+  gap: "var(--space-2)",
+  alignItems: "center",
+  flex: "1 1 260px",
+  minWidth: 0,
+  color: "var(--text-1)",
+};
+
+const fleetVehicleTextStyle = {
+  fontSize: "13px",
+  fontWeight: 700,
+  lineHeight: 1.2,
+  overflowWrap: "anywhere",
+};
+
 const todayDateKey = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -203,6 +273,105 @@ function CopyableField({ label, valueToCopy, copied, onCopy, children }) {
       <div style={{ minWidth: 0 }}>{children}</div>
       <CopyButton label={label} value={valueToCopy} onCopy={onCopy} copied={copied} />
     </div>
+  );
+}
+
+const formatLastVehicleUpdate = (value) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" });
+};
+
+const formatFuelHistoryTimestamp = (value) => {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const buildVehicleMakeModel = (vehicle) =>
+  [
+    vehicle?.make || vehicle?.vehicleMake,
+    vehicle?.model || vehicle?.vehicleModel,
+  ].filter(Boolean).join(" ").trim();
+
+const buildVehicleColour = (vehicle) =>
+  String(vehicle?.colour || vehicle?.vehicleColour || vehicle?.bodyColour || "").trim();
+
+function LoanCarFleetRow({ car, editingId, onStartEditing, onDelete, onSave }) {
+  const [mileage, setMileage] = useState(car.mileage ?? "");
+  const [saving, setSaving] = useState(false);
+  const carId = car.loanCarId || car.id;
+  const isEditing = editingId === carId;
+  const lastUpdateLabel = formatLastVehicleUpdate(car.lastVehicleUpdateAt);
+  const makeModel = car.makeModel || (car.name && car.name !== car.reg ? car.name : "");
+  const vehicleSubtitle = [makeModel, car.colour].filter(Boolean).join(" · ");
+
+  useEffect(() => {
+    setMileage(car.mileage ?? "");
+  }, [car.mileage]);
+
+  const saveVehicleState = async (updates) => {
+    setSaving(true);
+    const result = await onSave({
+      ...car,
+      ...updates,
+      reg: String(car.reg || "").trim().toUpperCase(),
+      name: car.reg,
+      updateVehicleState: true,
+    });
+    setSaving(false);
+    return result;
+  };
+
+  const handleMileageBlur = () => {
+    if (String(mileage ?? "") === String(car.mileage ?? "")) return;
+    saveVehicleState({ mileage });
+  };
+
+  const handleFuelChange = (fuelLevel) => {
+    saveVehicleState({ fuelLevel });
+  };
+
+  return (
+    <LayerTheme
+      radius="var(--radius-sm)"
+      padding="8px 10px"
+      style={fleetRowGridStyle}>
+      <div style={fleetVehicleIdentityStyle}>
+        <strong style={fleetVehicleTextStyle}>{car.reg}</strong>
+        {vehicleSubtitle ? <span style={{ ...fleetVehicleTextStyle, color: "var(--grey-accent)" }}>{vehicleSubtitle}</span> : null}
+      </div>
+      <div style={{ flex: "0 1 150px", display: "grid", gap: "2px", minWidth: 0 }}>
+        <InputField
+          label="Mileage"
+          type="number"
+          value={mileage ?? ""}
+          onChange={(event) => setMileage(event.target.value)}
+          onBlur={handleMileageBlur}
+          disabled={saving}
+        />
+        {lastUpdateLabel ? <span style={{ color: "var(--grey-accent)", fontSize: "11px" }}>Updated {lastUpdateLabel}</span> : null}
+      </div>
+      <div style={{ flex: "0 0 auto" }}>
+        <FuelGauge value={car.fuelLevel} onChange={handleFuelChange} disabled={saving} />
+      </div>
+      <div style={{ display: "flex", gap: "6px", flex: "0 0 auto", marginLeft: "auto" }}>
+        <Button type="button" variant={isEditing ? "primary" : "secondary"} size="xs" onClick={() => onStartEditing(car)} disabled={saving}>
+          {isEditing ? "Editing" : "Edit"}
+        </Button>
+        <Button type="button" variant="danger" size="xs" onClick={() => onDelete(carId)} disabled={saving}>
+          Delete
+        </Button>
+      </div>
+    </LayerTheme>
   );
 }
 
@@ -295,6 +464,8 @@ function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
   }));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [fuelHistory, setFuelHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     setForm({
@@ -305,6 +476,24 @@ function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
       notes: car?.notes || "",
     });
     setMessage("");
+  }, [car]);
+
+  useEffect(() => {
+    const loanCarId = car?.loanCarId || car?.id;
+    if (!loanCarId) {
+      setFuelHistory([]);
+      return undefined;
+    }
+    let active = true;
+    setHistoryLoading(true);
+    getLoanCarFuelHistory(loanCarId).then((rows) => {
+      if (!active) return;
+      setFuelHistory(rows);
+      setHistoryLoading(false);
+    });
+    return () => {
+      active = false;
+    };
   }, [car]);
 
   if (!car) return null;
@@ -394,6 +583,45 @@ function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
           Notes
           <textarea className="app-input app-input--textarea" value={form.notes || ""} onChange={(event) => update("notes", event.target.value)} rows={3} />
         </label>
+
+        <LayerTheme
+          as="section"
+          sectionKey="loan-car-fuel-history"
+          sectionType="section-shell"
+          radius="var(--radius-sm)"
+          padding="12px"
+          gap="8px">
+          <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "14px" }}>Fuel history</h3>
+          {historyLoading ? (
+            <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>Loading…</p>
+          ) : fuelHistory.length === 0 ? (
+            <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>No fuel readings recorded yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0", maxHeight: "220px", overflowY: "auto" }}>
+              {fuelHistory.map((entry, index) => (
+                <div
+                  key={entry.historyId}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    alignItems: "baseline",
+                    padding: "6px 0",
+                    // Row separator is the one sanctioned "line within a list" use-case.
+                    borderBottom: index === fuelHistory.length - 1 ? "none" : "var(--separating-line)",
+                  }}>
+                  <span style={{ color: "var(--text-1)", fontWeight: 700, fontSize: "13px" }}>
+                    {fuelLevelLabel(entry.fuelLevel)}
+                  </span>
+                  <span style={{ color: "var(--grey-accent)", fontSize: "12px", textAlign: "right" }}>
+                    {entry.mileage !== "" && entry.mileage != null ? `${entry.mileage} mi · ` : ""}
+                    {formatFuelHistoryTimestamp(entry.recordedAt)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </LayerTheme>
 
         {message ? <p style={{ margin: 0, color: "var(--danger)", fontSize: "13px" }}>{message}</p> : null}
 
@@ -505,7 +733,6 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
         throw new Error("No vehicle data returned for that registration.");
       }
       setVehicleLookup(data);
-      setVehicleMessage("Vehicle found. Add it to the loan car fleet when ready.");
     } catch (error) {
       setVehicleLookup(null);
       setVehicleMessage(error.message || "Unable to fetch vehicle data.");
@@ -516,9 +743,13 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
 
   const handleAdd = async () => {
     if (!draft.reg.trim()) return;
+    const makeModel = buildVehicleMakeModel(vehicleLookup);
+    const colour = buildVehicleColour(vehicleLookup);
+    setVehicleLookup(null);
+    setVehicleMessage("");
     const topSortOrder = Math.min(0, ...cars.map((car) => Number(car.sortOrder ?? 0))) - 1;
     const reg = draft.reg.trim().toUpperCase();
-    const result = await onSave({ ...draft, reg, name: reg, sortOrder: topSortOrder });
+    const result = await onSave({ ...draft, reg, name: reg, makeModel, colour, sortOrder: topSortOrder });
     // Only treat it as added once the DB write actually succeeds — otherwise
     // surface the real error instead of a misleading success message.
     if (!result?.success) {
@@ -526,7 +757,6 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
       return;
     }
     setDraft({ reg: "", name: "", sortOrder: topSortOrder - 1, notes: "" });
-    setVehicleLookup(null);
     setVehicleMessage("Loan vehicle added to the table.");
   };
 
@@ -567,7 +797,6 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
     }));
     setBookingMatches([]);
     setBookingSearchTerm(`${match.jobNumber || ""}${match.vehicleReg ? ` - ${match.vehicleReg}` : ""}`.trim());
-    setBookingMessage("Job loaded into the booking form.");
   };
 
   const handleBook = async () => {
@@ -604,14 +833,14 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
     ].filter(([, value]) => value);
     if (rows.length === 0) return null;
     return (
-      <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
+      <div style={vehicleLookupGridStyle}>
         {rows.map(([label, value]) => (
-          <div key={label} style={{ display: "flex", justifyContent: "space-between", gap: "12px", color: "var(--text-1)" }}>
-            <span style={{ color: "var(--grey-accent)" }}>{label}</span>
-            <strong>{value}</strong>
+          <div key={label} style={{ display: "grid", gap: "2px", minWidth: 0, color: "var(--text-1)" }}>
+            <span style={{ color: "var(--grey-accent)", fontSize: "12px" }}>{label}</span>
+            <strong style={{ overflowWrap: "anywhere" }}>{value}</strong>
           </div>
         ))}
-      </LayerSurface>
+      </div>
     );
   };
 
@@ -634,85 +863,78 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
         className="tab-api--wrap"
       />
 
-      {activeTab === "add-vehicle" ? <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
-        <div>
-          <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "16px" }}>Loan vehicles</h3>
-          <p style={{ margin: "4px 0 0", color: "var(--grey-accent)", fontSize: "13px" }}>
-            Add or edit the vehicle columns used by the booking table.
-          </p>
-        </div>
-        {editDraft ? (
-          <Button type="button" variant="secondary" size="sm" onClick={stopEditing}>
-            Done editing
-          </Button>
-        ) : null}
-      </div> : null}
-
       {activeTab === "add-vehicle" ? (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(150px, 240px) auto auto", gap: "8px", alignItems: "end", maxWidth: "520px" }}>
-            <Field label="Reg search" value={activeDraft.reg} onChange={(value) => updateDraft("reg", value.toUpperCase())} />
-            <Button type="button" variant="secondary" onClick={lookupVehicle} disabled={vehicleLookupLoading || !activeDraft.reg.trim()}>
-              {vehicleLookupLoading ? "Searching..." : "Search"}
-            </Button>
-            {!editDraft ? (
-              <Button type="button" variant="primary" size="sm" onClick={handleAdd} disabled={!draft.reg.trim()}>
-                Add loan vehicle
-              </Button>
-            ) : (
-              <Button type="button" variant="primary" size="sm" onClick={handleSaveEdit} disabled={!editDraft.reg.trim()}>
-                Save loan vehicle
-              </Button>
-            )}
-          </div>
-          {renderVehicleLookupSummary()}
-          {vehicleMessage ? <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>{vehicleMessage}</p> : null}
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {cars.map((car) => (
-              <div
-                key={car.loanCarId || car.id}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr) auto auto",
-                  gap: "8px",
-                  alignItems: "center",
-                  minHeight: "44px",
-                }}>
-                <div style={{ minWidth: 0, color: "var(--text-1)" }}>
-                  <strong>{car.reg}</strong>
-                  <span style={{ color: "var(--grey-accent)" }}> - {car.name || car.reg || "Loan vehicle"}</span>
-                </div>
-                <Button type="button" variant={editingId === (car.loanCarId || car.id) ? "primary" : "secondary"} size="xs" onClick={() => startEditing(car)}>
-                  {editingId === (car.loanCarId || car.id) ? "Editing" : "Edit"}
+          <LayerSurface radius="var(--radius-sm)" padding="12px" gap="var(--layout-card-gap)" style={managerPanelStyle}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", alignItems: "end" }}>
+              <div style={vehicleActionGridStyle}>
+                <Field label="Reg search" value={activeDraft.reg} onChange={(value) => updateDraft("reg", value.toUpperCase())} />
+                <Button type="button" variant="secondary" onClick={lookupVehicle} disabled={vehicleLookupLoading || !activeDraft.reg.trim()}>
+                  {vehicleLookupLoading ? "Searching..." : "Search"}
                 </Button>
-                <Button type="button" variant="danger" size="xs" onClick={() => onDelete(car.loanCarId || car.id)}>
-                  Delete
-                </Button>
+                {!editDraft ? (
+                  <Button type="button" variant="primary" size="sm" onClick={handleAdd} disabled={!draft.reg.trim()}>
+                    Add loan vehicle
+                  </Button>
+                ) : (
+                  <Button type="button" variant="primary" size="sm" onClick={handleSaveEdit} disabled={!editDraft.reg.trim()}>
+                    Save loan vehicle
+                  </Button>
+                )}
               </div>
+              {editDraft ? (
+                <Button type="button" variant="secondary" size="sm" onClick={stopEditing}>
+                  Done editing
+                </Button>
+              ) : null}
+            </div>
+            {renderVehicleLookupSummary()}
+            {vehicleMessage ? <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>{vehicleMessage}</p> : null}
+          </LayerSurface>
+
+          <LayerSurface radius="var(--radius-sm)" padding="12px" gap="8px">
+            {cars.map((car) => (
+              <LoanCarFleetRow
+                key={car.loanCarId || car.id}
+                car={car}
+                editingId={editingId}
+                onStartEditing={startEditing}
+                onDelete={onDelete}
+                onSave={onSave}
+              />
             ))}
-          </div>
+          </LayerSurface>
         </>
       ) : (
-        <>
-          <div style={fieldGridStyle}>
-            <DropdownField
-              label="Loan car"
-              value={bookingDraft.loanCarId || ""}
-              onValueChange={(value) => updateBookingDraft("loanCarId", value)}
-              options={loanCarOptions}
-              placeholder="Choose loan car"
-            />
-            <Field label="From" type="date" value={bookingDraft.startDate} onChange={(value) => updateBookingDraft("startDate", value)} />
-            <Field label="To" type="date" value={bookingDraft.endDate} onChange={(value) => updateBookingDraft("endDate", value)} />
-          </div>
+        <LayerSurface radius="var(--radius-sm)" padding="12px" gap="var(--layout-card-gap)" style={managerPanelStyle}>
+          <LayerTheme radius="var(--radius-sm)" padding="12px" gap="var(--layout-card-gap)">
+            <h4 style={bookingSubsectionTitleStyle}>Loan car</h4>
+            <div style={bookingDateGridStyle}>
+              <DropdownField
+                label="Reg"
+                value={bookingDraft.loanCarId || ""}
+                onValueChange={(value) => updateBookingDraft("loanCarId", value)}
+                options={loanCarOptions}
+                placeholder="Choose loan car"
+              />
+              <Field label="From" type="date" value={bookingDraft.startDate} onChange={(value) => updateBookingDraft("startDate", value)} />
+              <Field label="To" type="date" value={bookingDraft.endDate} onChange={(value) => updateBookingDraft("endDate", value)} />
+            </div>
+          </LayerTheme>
 
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "8px", alignItems: "end" }}>
-            <Field label="Search customer reg, name, or job number" value={bookingSearchTerm} onChange={setBookingSearchTerm} />
-            <Button type="button" variant="secondary" onClick={runBookingSearch} disabled={bookingLoading || bookingSearchTerm.trim().length < 2}>
-              {bookingLoading ? "Searching..." : "Search"}
-            </Button>
-          </div>
+          <LayerTheme radius="var(--radius-sm)" padding="12px" gap="var(--layout-card-gap)">
+            <h4 style={bookingSubsectionTitleStyle}>Customer</h4>
+            <div style={bookingDetailsGridStyle}>
+              <Field label="Job / reg / name" value={bookingSearchTerm} onChange={setBookingSearchTerm} />
+              <Button type="button" variant="secondary" onClick={runBookingSearch} disabled={bookingLoading || bookingSearchTerm.trim().length < 2}>
+                {bookingLoading ? "Searching..." : "Search"}
+              </Button>
+              <Field label="Job number" value={bookingDraft.jobNumber} onChange={(value) => updateBookingDraft("jobNumber", value)} />
+              <Field label="Name" value={bookingDraft.customerName} onChange={(value) => updateBookingDraft("customerName", value)} />
+              <Field label="Vehicle reg" value={bookingDraft.vehicleReg} onChange={(value) => updateBookingDraft("vehicleReg", value.toUpperCase())} />
+              <Field label="Vehicle" value={bookingDraft.vehicleMakeModel} onChange={(value) => updateBookingDraft("vehicleMakeModel", value)} />
+            </div>
+          </LayerTheme>
 
           {bookingMatches.length > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -725,7 +947,7 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
                     minHeight: "44px",
                     border: 0,
                     borderRadius: "var(--radius-sm)",
-                    backgroundColor: "var(--surface)",
+                    backgroundColor: "var(--theme)",
                     color: "var(--text-1)",
                     padding: "10px 12px",
                     textAlign: "left",
@@ -740,18 +962,13 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
             </div>
           ) : null}
 
-          <div style={fieldGridStyle}>
-            <Field label="Job number" value={bookingDraft.jobNumber} onChange={(value) => updateBookingDraft("jobNumber", value)} />
-            <Field label="Customer name" value={bookingDraft.customerName} onChange={(value) => updateBookingDraft("customerName", value)} />
-            <Field label="Customer vehicle reg" value={bookingDraft.vehicleReg} onChange={(value) => updateBookingDraft("vehicleReg", value.toUpperCase())} />
-            <Field label="Vehicle" value={bookingDraft.vehicleMakeModel} onChange={(value) => updateBookingDraft("vehicleMakeModel", value)} />
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <Button type="button" variant="primary" size="sm" onClick={handleBook} disabled={bookingLoading || !bookingDraft.loanCarId || !bookingDraft.startDate || !bookingDraft.endDate}>
+              Save booking
+            </Button>
           </div>
-
-          <Button type="button" variant="primary" size="sm" onClick={handleBook} disabled={bookingLoading || !bookingDraft.loanCarId || !bookingDraft.startDate || !bookingDraft.endDate}>
-            Save booking
-          </Button>
           {bookingMessage ? <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>{bookingMessage}</p> : null}
-        </>
+        </LayerSurface>
       )}
     </LayerTheme>
   );
@@ -1145,10 +1362,15 @@ export default function LoanCarSchedulePanel({
               width: tableWidth,
               tableLayout: "fixed",
               borderCollapse: "separate",
-              borderSpacing: isTrackingMode ? "1px 0" : 0,
-              backgroundColor: "var(--theme)",
+              borderSpacing: 0,
+              backgroundColor: isTrackingMode ? "var(--surface)" : "var(--theme)",
               borderRadius: "var(--radius-md)",
-              overflow: "hidden",
+              // In tracking mode the table carries no `--with-headings` class, so
+              // its inline overflow applies. `hidden` would make the table its own
+              // clip container and the sticky thead would stick to the (non-scrolling)
+              // table instead of the scroll div. `visible` matches the staffglobal
+              // `--with-headings` rule (overflow: visible) so the heading stays pinned.
+              overflow: isTrackingMode ? "visible" : "hidden",
             }}>
             <colgroup>
               <col style={{ width: `${dayColumnWidth}px` }} />
@@ -1174,8 +1396,8 @@ export default function LoanCarSchedulePanel({
                     minHeight: "44px",
                     maxHeight: "44px",
                     boxSizing: "border-box",
-                    padding: isTrackingMode ? "0 12px" : undefined,
-                    textAlign: "left",
+                    padding: isTrackingMode ? 0 : undefined,
+                    textAlign: "center",
                     lineHeight: 0,
                     overflow: "hidden",
                     ...stickyHeadingBg,
@@ -1199,8 +1421,9 @@ export default function LoanCarSchedulePanel({
                       lineHeight: "44px",
                       overflow: "hidden",
                       whiteSpace: "nowrap",
+                      textAlign: "center",
                     }}>
-                    data
+                    Date
                   </span>
                 </th>
                 {visibleCars.map((car) => (
@@ -1214,10 +1437,11 @@ export default function LoanCarSchedulePanel({
                       minHeight: "44px",
                       maxHeight: "44px",
                       boxSizing: "border-box",
-                      padding: isTrackingMode ? 0 : undefined,
+                      padding: isTrackingMode ? "0 0 0 1px" : undefined,
                       textAlign: "center",
                       lineHeight: 0,
                       overflow: "hidden",
+                      backgroundClip: isTrackingMode ? "content-box" : undefined,
                       ...stickyHeadingBg,
                     }}>
                     <span
@@ -1239,6 +1463,7 @@ export default function LoanCarSchedulePanel({
                         lineHeight: "44px",
                         overflow: "hidden",
                         whiteSpace: "nowrap",
+                        textAlign: "center",
                       }}>
                       {car.reg}
                     </span>
@@ -1255,9 +1480,10 @@ export default function LoanCarSchedulePanel({
                       minHeight: "44px",
                       maxHeight: "44px",
                       boxSizing: "border-box",
-                      padding: 0,
+                      padding: "0 0 0 1px",
                       lineHeight: 0,
                       overflow: "hidden",
+                      backgroundClip: "content-box",
                       ...stickyHeadingBg,
                     }}
                   />
@@ -1265,9 +1491,10 @@ export default function LoanCarSchedulePanel({
               </tr>
             </thead>
             <tbody>
-              {dateRows.map((day) => {
+              {dateRows.map((day, dayIndex) => {
                 const todayRowOverlay = day.isToday ? "linear-gradient(var(--theme), var(--theme))" : undefined;
                 const rowBackground = "var(--surface)";
+                const rowBottomRule = dayIndex === dateRows.length - 1 ? "none" : "var(--separating-line)";
                 return (
                 <tr
                   key={day.key}
@@ -1287,7 +1514,9 @@ export default function LoanCarSchedulePanel({
                       position: "sticky",
                       zIndex: 2,
                       lineHeight: 0,
+                      textAlign: "center",
                       overflow: "hidden",
+                      borderBottom: rowBottomRule,
                       ...stickyFirstColBg,
                       backgroundImage: todayRowOverlay,
                     }}>
@@ -1299,6 +1528,7 @@ export default function LoanCarSchedulePanel({
                         color: day.isToday ? "var(--primary-selected)" : "var(--text-1)",
                         fontWeight: day.isToday ? 800 : 700,
                         lineHeight: "44px",
+                        textAlign: "center",
                         overflow: "hidden",
                         whiteSpace: "nowrap",
                       }}>
@@ -1308,6 +1538,18 @@ export default function LoanCarSchedulePanel({
                   {visibleCars.map((car) => {
                     const booking = getBookingForCell(visibleBookings, car.loanCarId || car.id, day.key);
                     const cellBackground = booking ? "var(--warning-strong)" : rowBackground;
+                    // In tracking mode a booking is a vertical run of warning
+                    // cells from startDate to endDate. Curve the top corners on
+                    // the "from" row and the bottom corners on the "to" row, and
+                    // suppress the row rule between cells in the same booking so
+                    // the run reads as one rounded section rather than slices.
+                    const isBookingStart = booking && day.key === booking.startDate;
+                    const isBookingEnd = booking && day.key === booking.endDate;
+                    const bookedRadius =
+                      isTrackingMode && booking
+                        ? `${isBookingStart ? "var(--radius-sm)" : "0"} ${isBookingStart ? "var(--radius-sm)" : "0"} ${isBookingEnd ? "var(--radius-sm)" : "0"} ${isBookingEnd ? "var(--radius-sm)" : "0"}`
+                        : undefined;
+                    const cellBottomRule = isTrackingMode && booking && !isBookingEnd ? "none" : rowBottomRule;
                     return (
                     <td
                       key={`${day.key}-${car.loanCarId || car.id}`}
@@ -1320,10 +1562,13 @@ export default function LoanCarSchedulePanel({
                         minHeight: "44px",
                         maxHeight: "44px",
                         boxSizing: "border-box",
-                        padding: 0,
+                        padding: isTrackingMode ? "0 0 0 1px" : 0,
                         verticalAlign: "middle",
                         lineHeight: 0,
                         overflow: "hidden",
+                        borderBottom: cellBottomRule,
+                        borderRadius: bookedRadius,
+                        backgroundClip: isTrackingMode ? "content-box" : undefined,
                         backgroundColor: isTrackingMode ? cellBackground : booking ? "var(--warning-surface)" : day.isToday ? "var(--theme)" : undefined,
                         backgroundImage: isTrackingMode ? todayRowOverlay : undefined,
                       }}>
@@ -1345,10 +1590,12 @@ export default function LoanCarSchedulePanel({
                         minHeight: "44px",
                         maxHeight: "44px",
                         boxSizing: "border-box",
-                        padding: 0,
+                        padding: "0 0 0 1px",
                         verticalAlign: "middle",
                         lineHeight: 0,
                         overflow: "hidden",
+                        borderBottom: rowBottomRule,
+                        backgroundClip: "content-box",
                         backgroundColor: rowBackground,
                         backgroundImage: todayRowOverlay,
                       }}
