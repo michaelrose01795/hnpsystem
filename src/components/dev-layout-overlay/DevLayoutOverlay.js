@@ -686,6 +686,80 @@ const getViewportBounds = () => {
   };
 };
 
+// Self-inspect scanner. Walks ONLY the inspector panel's own cards (each tagged
+// with data-dev-section-key) and builds the same entry/number/issue data the
+// page scanner produces — so the panel can be audited the same way pages are.
+// Rects are kept in viewport coordinates; the self-overlay layer is a
+// full-viewport fixed layer rendered ABOVE the panel, so no bounds maths is
+// needed. The panel's own drawing layer is never inside the panel node, so it
+// can't be picked up here (no recursion).
+const scanSelfSections = (panelNode) => {
+  if (!panelNode) return [];
+
+  const nodes = [panelNode, ...Array.from(panelNode.querySelectorAll("[data-dev-section-key]"))];
+  const byKey = new Map();
+
+  nodes.forEach((node, index) => {
+    const key = sanitizeKey(node.getAttribute("data-dev-section-key") || "");
+    if (!key || byKey.has(key)) return;
+    const type = node.getAttribute("data-dev-section-type") || "section-shell";
+    const rect = node.getBoundingClientRect();
+    if (rect.width < 1 || rect.height < 1) return;
+    byKey.set(
+      key,
+      buildEntry({
+        key,
+        node,
+        route: "dev-inspector-panel",
+        order: index,
+        type,
+        isShell: type.includes("shell"),
+        source: "self",
+      })
+    );
+  });
+
+  const sections = Array.from(byKey.values());
+
+  sections.forEach((section) => {
+    let parentNode = section.node.parentElement;
+    while (parentNode) {
+      const parentKey = sanitizeKey(parentNode.getAttribute?.("data-dev-section-key") || "");
+      if (parentKey && parentKey !== section.key && byKey.has(parentKey)) {
+        section.parentKey = parentKey;
+        break;
+      }
+      parentNode = parentNode.parentElement;
+    }
+  });
+
+  sections.forEach((section) => {
+    if (!section.parentKey) return;
+    const parent = byKey.get(section.parentKey);
+    if (parent) parent.childKeys.push(section.key);
+  });
+
+  numberSections(sections);
+
+  sections.forEach((section) => {
+    const parent = section.parentKey ? byKey.get(section.parentKey) : null;
+    const siblings = sections
+      .filter((candidate) => candidate.parentKey === section.parentKey)
+      .sort((a, b) => a.order - b.order);
+    const index = siblings.findIndex((candidate) => candidate.key === section.key);
+    const previous = index > 0 ? siblings[index - 1] : null;
+    section.parentNumber = parent?.number || "";
+    section.childNumbers = section.childKeys.map((childKey) => byKey.get(childKey)?.number).filter(Boolean);
+    section.issueTags = inferIssueTags(section, parent || null, previous, byKey);
+  });
+
+  return sections.sort((a, b) => a.order - b.order);
+};
+
+// Strip the shared "dev-inspector-" prefix so self-inspect labels read as short
+// names (e.g. "controls", "categories") rather than the full storage key.
+const shortSelfKey = (key) => String(key || "").replace(/^dev-inspector-/, "") || "panel";
+
 export default function DevLayoutOverlay() {
   const router = useRouter();
   const { registeredSections, syncComputedSections } = useDevLayoutRegistry();
@@ -709,6 +783,8 @@ export default function DevLayoutOverlay() {
     isCategoryActive,
     panelOpen,
     setPanelOpen,
+    selfInspect,
+    setSelfInspect,
   } = useDevLayoutOverlay();
   const [sections, setSections] = useState([]);
   const [selectedKey, setSelectedKey] = useState("");
@@ -716,7 +792,10 @@ export default function DevLayoutOverlay() {
   const [auditDraft, setAuditDraft] = useState({ family: "", variant: "", status: "", notes: "" });
   const [auditKey, setAuditKeyState] = useState("");
   const [auditSavedAt, setAuditSavedAt] = useState(0);
+  const [selfSections, setSelfSections] = useState([]);
   const rafRef = useRef(null);
+  const selfRafRef = useRef(null);
+  const panelRef = useRef(null);
 
   // Stable set of active category ids for the scanner — rebuilt only when
   // filters change. Prevents scanning categories the user has turned off
@@ -779,6 +858,53 @@ export default function DevLayoutOverlay() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canAccess, enabled, router.asPath, router.pathname, registeredSections, syncComputedSections, activeCategorySignature]);
+
+  // Self-inspect scan loop — only runs while the panel is open and self-inspect
+  // is on. Re-scans on panel mutations (selecting a section changes the panel's
+  // own layout), resize, and scroll. The self-overlay is rendered outside the
+  // panel node so its own DOM never re-triggers this observer.
+  useEffect(() => {
+    if (!canAccess || !selfInspect || !panelOpen || typeof window === "undefined") {
+      setSelfSections([]);
+      return undefined;
+    }
+
+    const update = () => {
+      setSelfSections(scanSelfSections(panelRef.current));
+    };
+
+    const schedule = () => {
+      if (selfRafRef.current) return;
+      selfRafRef.current = window.requestAnimationFrame(() => {
+        selfRafRef.current = null;
+        update();
+      });
+    };
+
+    const observer = new MutationObserver(schedule);
+    if (panelRef.current) {
+      observer.observe(panelRef.current, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ["class", "style"],
+      });
+    }
+
+    update();
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
+      if (selfRafRef.current) {
+        window.cancelAnimationFrame(selfRafRef.current);
+        selfRafRef.current = null;
+      }
+    };
+  }, [canAccess, selfInspect, panelOpen]);
 
   const overlayBounds = useMemo(() => {
     if (fullScreen) {
@@ -918,18 +1044,56 @@ export default function DevLayoutOverlay() {
 
   const selectedPrompts = scopedSelected ? buildPrompts(scopedSelected) : null;
 
-  const renderUnifiedPanel = () => {
-    if (!panelOpen) return null;
+  // Self-inspect drawing layer. Sits at a higher z-index than the panel (the
+  // panel is above the page overlay, so this has to be above the panel) and is
+  // pointer-events:none throughout — the panel underneath stays fully
+  // interactive, so the ON/OFF control is never trapped behind a box.
+  const renderSelfOverlay = () => {
+    if (!selfInspect || !panelOpen || !selfSections.length) return null;
 
     return (
+      <div className={styles.selfRoot} data-dev-overlay-internal="1" aria-hidden="true">
+        {selfSections.map((section) => {
+          const rect = section.rect;
+          const gap = section.computedGapFromPrevious;
+          return (
+            <React.Fragment key={section.key}>
+              <div
+                className={`${styles.box} ${styles.selfBox}`}
+                style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height }}
+              />
+              <div
+                className={`${styles.label} ${styles.selfLabel}`}
+                style={{ left: rect.left + 6, top: Math.max(2, rect.top - 11) }}
+              >
+                {section.number} · {shortSelfKey(section.key)} · {Math.round(rect.width)}×{Math.round(rect.height)}
+                {gap != null ? ` · gap ${gap}px` : ""}
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderUnifiedPanel = () => {
+    if (!panelOpen) {
+      return renderSelfOverlay();
+    }
+
+    return (
+      <>
       <aside
+        ref={panelRef}
         className={`${styles.panel} ${isJobCardsCreateRoute ? styles.panelCreate : ""}`.trim()}
         data-dev-overlay-internal="1"
+        data-dev-section-key="dev-inspector-panel"
+        data-dev-section-type="page-shell"
         role="dialog"
         aria-label="Dev layout inspector"
       >
         <div className={styles.panelScroll}>
-          <div className={styles.panelHeader}>
+          <div className={styles.panelHeader} data-dev-section-key="dev-inspector-header" data-dev-section-type="section-shell">
             <div className={styles.panelTitleBlock}>
               <div className={styles.kickerRow}>
                 <p className={styles.kicker}>Dev Layout Inspector</p>
@@ -965,7 +1129,7 @@ export default function DevLayoutOverlay() {
           </div>
 
           {scopedSelected && (
-            <div className={styles.backgroundBlock}>
+            <div className={styles.backgroundBlock} data-dev-section-key="dev-inspector-background" data-dev-section-type="section-card">
               <p className={styles.blockTitle}>Background</p>
               <div className={styles.grid}>
                 <span className={styles.labelKey}>Name</span>
@@ -978,7 +1142,7 @@ export default function DevLayoutOverlay() {
             </div>
           )}
 
-          <div className={styles.controlsBlock}>
+          <div className={styles.controlsBlock} data-dev-section-key="dev-inspector-controls" data-dev-section-type="section-card">
             <div className={styles.controlRow}>
               <label className={styles.controlLabel}>
                 <span>Overlay enabled</span>
@@ -1047,9 +1211,34 @@ export default function DevLayoutOverlay() {
                 disabled={!enabled}
               />
             </div>
+
+            <div className={styles.controlRow}>
+              <span className={styles.controlLabel}>
+                <span>Inspect this panel</span>
+                <span className={styles.controlHint}>Draw overlay boxes over the inspector&apos;s own cards</span>
+              </span>
+              <div className={styles.onOffRow} role="group" aria-label="Toggle panel self-inspect">
+                <button
+                  type="button"
+                  className={`app-btn app-btn--xs ${selfInspect ? "is-active" : ""}`.trim()}
+                  onClick={() => setSelfInspect(true)}
+                  aria-pressed={selfInspect}
+                >
+                  ON
+                </button>
+                <button
+                  type="button"
+                  className={`app-btn app-btn--xs ${!selfInspect ? "is-active" : ""}`.trim()}
+                  onClick={() => setSelfInspect(false)}
+                  aria-pressed={!selfInspect}
+                >
+                  OFF
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className={styles.controlsBlock}>
+          <div className={styles.controlsBlock} data-dev-section-key="dev-inspector-categories" data-dev-section-type="section-card">
             <div className={styles.controlsHead}>
               <p className={styles.blockTitle}>
                 Categories <span className={styles.countChip}>{activeCategoryCount}/{categories.length}</span>
@@ -1123,7 +1312,7 @@ export default function DevLayoutOverlay() {
           </div>
 
           {scopedSelected && selectedPrompts && (
-            <div className={styles.selectedBlock}>
+            <div className={styles.selectedBlock} data-dev-section-key="dev-inspector-selected" data-dev-section-type="section-card">
               <div className={styles.selectedHead}>
                 <p className={styles.blockTitle}>Selected section</p>
                 <button
@@ -1182,7 +1371,7 @@ export default function DevLayoutOverlay() {
               {/* Classification form — persists to localStorage via auditTags.js.
                   Controls use the staffglobal .app-input / .app-btn families so
                   the panel inherits the staff design system (no inline styling). */}
-              <div className={styles.sectionBlock}>
+              <div className={styles.sectionBlock} data-dev-section-key="dev-inspector-classification" data-dev-section-type="section-card">
                 <div className={styles.selectedHead}>
                   <p className={styles.blockTitle}>Classification</p>
                   <span className={styles.copyStatus}>
@@ -1261,7 +1450,7 @@ export default function DevLayoutOverlay() {
           )}
         </div>
 
-        <p className={styles.footerHint}>
+        <p className={styles.footerHint} data-dev-section-key="dev-inspector-footer" data-dev-section-type="section-card">
           <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> toggle ·{" "}
           <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> cycle mode ·{" "}
           <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>T</kbd> trace mode ·{" "}
@@ -1269,6 +1458,8 @@ export default function DevLayoutOverlay() {
           <kbd>Shift</kbd>+click a category to solo it
         </p>
       </aside>
+      {renderSelfOverlay()}
+      </>
     );
   };
 

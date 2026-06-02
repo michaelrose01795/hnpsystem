@@ -1,5 +1,6 @@
 // file location: src/lib/database/tracking.js
 import { getDatabaseClient } from "@/lib/database/client"; // import supabase service client
+import { apiRequest } from "@/lib/api/client";
 
 const supabase = getDatabaseClient(); // create singleton client
 
@@ -16,6 +17,8 @@ const toNullableInteger = (value) => {
   return Number.isFinite(parsed) ? Math.round(parsed) : null;
 };
 
+const sameNullableInteger = (left, right) => toNullableInteger(left) === toNullableInteger(right);
+
 // Fuel is stored on a 0–8 scale (Empty … Full in eighths), matching the
 // eight-segment FuelGauge and the tracking_loan_cars_fuel_level_check constraint.
 const normalizeFuelLevel = (value) => {
@@ -23,6 +26,8 @@ const normalizeFuelLevel = (value) => {
   if (!Number.isFinite(parsed)) return 0;
   return Math.min(8, Math.max(0, Math.round(parsed)));
 };
+
+const hasOwn = (object, key) => Object.prototype.hasOwnProperty.call(object || {}, key);
 
 const normalizeLoanCar = (row) => ({
   id: row.loan_car_id,
@@ -110,6 +115,17 @@ const bookingPayload = (booking) => ({
   licence_number: booking.licenceNumber || null,
   date_of_birth: booking.dateOfBirth || null,
   notes: booking.notes || null,
+});
+
+const loanCarBookingOverlapError = (booking = {}) => ({
+  message: "This loan car already has a booking that overlaps those dates.",
+  code: "loan_car_booking_overlap",
+  conflictingBooking: booking,
+});
+
+const loanCarBookingDateError = () => ({
+  message: "The booking end date must be the same as or after the start date.",
+  code: "loan_car_booking_invalid_date_range",
 });
 
 const statusLabelForAction = (actionType) => {
@@ -237,16 +253,136 @@ export const getLoanCarFuelHistory = async (loanCarId, { limit = 50 } = {}) => {
   return (data || []).map(normalizeLoanCarFuelHistory);
 };
 
+// Append-only fuel/mileage change log. Every genuine fuel OR mileage change
+// inserts a NEW row — the row is never updated in place — so the History panel
+// shows the full trail of readings, not just the latest value.
+//
+// De-dup is anchored to the single most-recent row, never a wall-clock window:
+// we skip only when the latest row already holds this exact (fuel_level,
+// mileage) pair. That absorbs the row written by the DB trigger
+// (trg_log_loan_car_fuel_change, which fires on fuel_level changes) and any
+// exact no-op, while *never* dropping a real change the way a time-window guard
+// can when two edits land close together (e.g. 1/4 → 1/2 → 1/4).
+export const recordLoanCarFuelHistorySnapshot = async ({
+  loanCarId,
+  reg,
+  fuelLevel,
+  mileage,
+}) => {
+  if (!loanCarId) {
+    return { success: false, error: { message: "loanCarId is required" } };
+  }
+
+  const normalizedFuelLevel = normalizeFuelLevel(fuelLevel);
+  const normalizedMileage = toNullableInteger(mileage);
+
+  const { data: latestRows, error: latestError } = await supabase
+    .from("tracking_loan_car_fuel_history")
+    .select("fuel_level, mileage")
+    .eq("loan_car_id", loanCarId)
+    .order("recorded_at", { ascending: false })
+    .limit(1);
+
+  if (latestError) {
+    console.error("Failed to check latest loan car fuel history", latestError);
+    return { success: false, error: latestError };
+  }
+
+  const latest = latestRows?.[0];
+  if (
+    latest &&
+    normalizeFuelLevel(latest.fuel_level) === normalizedFuelLevel &&
+    sameNullableInteger(latest.mileage, normalizedMileage)
+  ) {
+    return { success: true, skipped: true };
+  }
+
+  const { error: historyError } = await supabase
+    .from("tracking_loan_car_fuel_history")
+    .insert({
+      loan_car_id: loanCarId,
+      reg,
+      fuel_level: normalizedFuelLevel,
+      mileage: normalizedMileage,
+    });
+
+  if (historyError) {
+    console.error("Failed to save loan car fuel history", historyError);
+    return { success: false, error: historyError };
+  }
+
+  return { success: true };
+};
+
 export const saveLoanCar = async (car) => {
   const payload = loanCarPayload(car);
-  const query = car.loanCarId || car.id
-    ? supabase.from("tracking_loan_cars").update(payload).eq("loan_car_id", car.loanCarId || car.id)
+  const loanCarId = car.loanCarId || car.id;
+  const hasFuelUpdate = hasOwn(car, "fuelLevel") || hasOwn(car, "fuel_level");
+  const hasMileageUpdate = hasOwn(car, "mileage");
+  const nextFuelLevel = normalizeFuelLevel(car.fuelLevel ?? car.fuel_level);
+  const nextMileage = toNullableInteger(car.mileage);
+  let previousFuelLevel = null;
+  let previousMileage = null;
+
+  if (loanCarId && (hasFuelUpdate || hasMileageUpdate)) {
+    const { data: existingCar, error: existingError } = await supabase
+      .from("tracking_loan_cars")
+      .select("fuel_level, mileage")
+      .eq("loan_car_id", loanCarId)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("Failed to check current loan car fuel level", existingError);
+      return { success: false, error: existingError };
+    }
+
+    previousFuelLevel = normalizeFuelLevel(existingCar?.fuel_level);
+    previousMileage = toNullableInteger(existingCar?.mileage);
+  }
+
+  const query = loanCarId
+    ? supabase.from("tracking_loan_cars").update(payload).eq("loan_car_id", loanCarId)
     : supabase.from("tracking_loan_cars").insert(payload);
   const { data, error } = await query.select().single();
 
   if (error) {
     console.error("Failed to save loan car", error);
     return { success: false, error };
+  }
+
+  const savedCarId = data?.loan_car_id;
+  const fuelChanged = hasFuelUpdate && (!loanCarId || previousFuelLevel !== nextFuelLevel);
+  const mileageChanged = hasMileageUpdate && (!loanCarId || previousMileage !== nextMileage);
+
+  if (savedCarId && (fuelChanged || mileageChanged)) {
+    const historyPayload = {
+      loanCarId: savedCarId,
+      reg: data.reg,
+      fuelLevel: nextFuelLevel,
+      mileage: data.mileage,
+    };
+
+    let historyResult;
+    try {
+      historyResult = typeof window === "undefined"
+        ? await recordLoanCarFuelHistorySnapshot(historyPayload)
+        : await apiRequest("/api/tracking/loan-car-fuel-history", {
+            method: "POST",
+            body: historyPayload,
+          });
+    } catch (historyError) {
+      return {
+        success: false,
+        error: { message: historyError.message || "Failed to save loan car fuel history." },
+      };
+    }
+
+    if (!historyResult?.success) {
+      return {
+        success: false,
+        error: historyResult?.error || { message: historyResult?.message || "Failed to save loan car fuel history." },
+      };
+    }
   }
 
   return { success: true, data: normalizeLoanCar(data) };
@@ -263,8 +399,42 @@ export const deleteLoanCar = async (loanCarId) => {
 
 export const saveLoanCarBooking = async (booking) => {
   const payload = bookingPayload(booking);
+  const bookingId = booking.bookingId || booking.id;
+  const startDate = normaliseDateKey(payload.start_date);
+  const endDate = normaliseDateKey(payload.end_date);
+
+  if (startDate && endDate && endDate < startDate) {
+    return { success: false, error: loanCarBookingDateError() };
+  }
+
+  let overlapQuery = supabase
+    .from("tracking_loan_car_bookings")
+    .select("booking_id, start_date, end_date, job_number, customer_name, vehicle_reg")
+    .eq("loan_car_id", payload.loan_car_id)
+    .lte("start_date", endDate)
+    .gte("end_date", startDate)
+    .limit(1);
+
+  if (bookingId) {
+    overlapQuery = overlapQuery.neq("booking_id", bookingId);
+  }
+
+  const { data: overlappingBookings, error: overlapError } = await overlapQuery;
+
+  if (overlapError) {
+    console.error("Failed to check loan car booking overlap", overlapError);
+    return { success: false, error: overlapError };
+  }
+
+  if ((overlappingBookings || []).length > 0) {
+    return {
+      success: false,
+      error: loanCarBookingOverlapError(normalizeLoanCarBooking(overlappingBookings[0])),
+    };
+  }
+
   const query = booking.bookingId || booking.id
-    ? supabase.from("tracking_loan_car_bookings").update(payload).eq("booking_id", booking.bookingId || booking.id)
+    ? supabase.from("tracking_loan_car_bookings").update(payload).eq("booking_id", bookingId)
     : supabase.from("tracking_loan_car_bookings").insert(payload);
   const { data, error } = await query.select().single();
 

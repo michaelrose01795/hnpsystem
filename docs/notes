@@ -1,11 +1,12 @@
 check loan car section 
 
-TODO
-have it so within the "/tracking :: 1.2.1.1.1.1.2 (tracking-loan-car-appointments-table-scroll)" the coloun and rows has the non availible warning section which the curve edges was added to haev it so the curve corner sections whihc have been made "--surface" colour or the sections which isnt in the warning colour is set to 100% transparent so the background behind the coloured section is visible. 
+CHECK overlay contreol panel
+CHECK loan car table style 
+CHECK HISTORY LOG
 
 
 TODO
-hover effect for the fuel gauge showing in app and browser hover style fix this 
+hover effect for the fuel gauge showing in app and browser hover style fix this as it should only ever use the inapp one. 
 
 
 TODO
@@ -13,7 +14,7 @@ UPDATE GLOBAL SETTINGS BASED ON THE /staff/website-manager PAGE OUTCOME wiht
 
 
 
-CHECK LOADING
+
 
 
 

@@ -2,7 +2,7 @@
 // Single-row segmented fuel indicator for loan-car rows, styled as a clean
 // dashboard gauge: fuel icon · "E" · eight clickable rounded segments · "F".
 // Stored fuel scale is 0–8 (nine levels): 0 = Empty, 8 = Full, each step an
-// eighth. Filled segments use the app accent; empty segments are transparent
+// eighth. Filled segments use the app success colour; empty segments are transparent
 // with a light grey ring. Clicking a segment sets that level; hovering shows
 // the fraction + percentage via tooltip.
 import { useState } from "react";
@@ -31,7 +31,9 @@ export const clampFuelLevel = (value) => {
 export const fuelLevelLabel = (value) => FUEL_LEVEL_LABELS[clampFuelLevel(value)];
 
 // Whole-number percent for the tooltip (0, 13, 25, 38, 50, 63, 75, 88, 100).
-const fuelLevelPercent = (level) => Math.round((clampFuelLevel(level) / FUEL_LEVEL_COUNT) * 100);
+export const fuelLevelPercent = (level) => Math.round((clampFuelLevel(level) / FUEL_LEVEL_COUNT) * 100);
+
+export const fuelLevelDisplayLabel = (level) => `${fuelLevelLabel(level)} · ${fuelLevelPercent(level)}%`;
 
 const containerStyle = {
   display: "flex",
@@ -84,7 +86,7 @@ export default function FuelGauge({ value, onChange, disabled = false }) {
   const level = clampFuelLevel(value);
   const [hovered, setHovered] = useState(null); // hovered segment level (1..8) or null
   const activeLevel = hovered ?? level;
-  const activeLabel = `${fuelLevelLabel(activeLevel)} · ${fuelLevelPercent(activeLevel)}%`;
+  const activeLabel = fuelLevelDisplayLabel(activeLevel);
 
   const handleSegment = (segmentLevel) => {
     if (disabled) return;
@@ -104,7 +106,7 @@ export default function FuelGauge({ value, onChange, disabled = false }) {
         {Array.from({ length: FUEL_LEVEL_COUNT }, (_, index) => {
           const segmentLevel = index + 1;
           const filled = segmentLevel <= level;
-          const segLabel = `${FUEL_LEVEL_LABELS[segmentLevel]} · ${fuelLevelPercent(segmentLevel)}%`;
+          const segLabel = fuelLevelDisplayLabel(segmentLevel);
           return (
             <button
               key={segmentLevel}
@@ -122,7 +124,7 @@ export default function FuelGauge({ value, onChange, disabled = false }) {
                 // it cannot go inside box-shadow. Use the underlying ring colour
                 // directly. Empty segments get a white surface fill so they read
                 // as distinct outlined cells (matching the dashboard reference).
-                backgroundColor: filled ? "var(--accentMain)" : "var(--surface)",
+                backgroundColor: filled ? "var(--success)" : "var(--surface)",
                 boxShadow: filled ? "none" : "inset 0 0 0 1px var(--secondary-hover)",
               }}
             />

@@ -3581,9 +3581,8 @@ html.staff-scope button.calendar-api__day:focus-visible:not(:disabled):not(.is-s
 }
 
 html.staff-scope button.calendar-api__day.is-selected {
-  /* Selected day wears the current Secondary-button look (stronger tint +
-     accent text) via dedicated tokens. */
-  background: var(--calendar-day-selected-bg);
+  /* Selected day is tinted with the warning token to mark the active pick. */
+  background: var(--warning);
   color: var(--calendar-day-selected-color);
   font-weight: 600;
 }
@@ -3602,9 +3601,9 @@ html.staff-scope a.tab-api__item.is-active:focus-visible {
 }
 
 html.staff-scope button.calendar-api__day.is-today:not(.is-selected) {
-  /* "Today" at rest has no border or special marker — it looks like any
-     other Primary-styled day. The Secondary treatment kicks in only when
-     the day is actually picked (.is-selected). */
+  /* "Today" is tinted with the success token so it stands out from other
+     days; the warning/selected treatment takes over once it's picked. */
+  background: var(--success);
   font-weight: 600;
 }
 

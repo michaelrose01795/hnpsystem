@@ -16,6 +16,7 @@ const STORAGE_FULL_SCREEN_KEY = "hnp-dev-layout-overlay-full-screen";
 const STORAGE_LEGACY_MARKERS_KEY = "hnp-dev-layout-overlay-legacy-markers";
 const STORAGE_CATEGORY_FILTERS_KEY = "hnp-dev-layout-overlay-category-filters";
 const STORAGE_PANEL_OPEN_KEY = "hnp-dev-layout-overlay-panel-open";
+const STORAGE_SELF_INSPECT_KEY = "hnp-dev-layout-overlay-self-inspect";
 
 const MODES = ["labels", "details", "inspect", "trace"];
 
@@ -31,6 +32,9 @@ const DevLayoutOverlayContext = createContext({
   categoryFilters: defaultFilters,
   categories: DEV_OVERLAY_CATEGORIES,
   panelOpen: false,
+  selfInspect: false,
+  setSelfInspect: () => {},
+  toggleSelfInspect: () => {},
   setEnabled: () => {},
   toggleEnabled: () => {},
   setMode: () => {},
@@ -78,6 +82,7 @@ export function DevLayoutOverlayProvider({ children }) {
   const [legacyMarkers, setLegacyMarkers] = useState(true);
   const [categoryFilters, setCategoryFilters] = useState(defaultFilters);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [selfInspect, setSelfInspectState] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -90,6 +95,7 @@ export function DevLayoutOverlayProvider({ children }) {
       setLegacyMarkers(true);
       setCategoryFilters(defaultFilters);
       setPanelOpen(false);
+      setSelfInspectState(false);
       setHydrated(true);
       return;
     }
@@ -100,6 +106,7 @@ export function DevLayoutOverlayProvider({ children }) {
     const storedLegacyMarkers = window.localStorage.getItem(STORAGE_LEGACY_MARKERS_KEY);
     const storedFilters = readJson(window.localStorage.getItem(STORAGE_CATEGORY_FILTERS_KEY));
     const storedPanelOpen = window.localStorage.getItem(STORAGE_PANEL_OPEN_KEY) === "1";
+    const storedSelfInspect = window.localStorage.getItem(STORAGE_SELF_INSPECT_KEY) === "1";
 
     setEnabledState(storedEnabled);
     if (MODES.includes(storedMode)) setModeState(storedMode);
@@ -107,6 +114,7 @@ export function DevLayoutOverlayProvider({ children }) {
     setLegacyMarkers(storedLegacyMarkers !== "0");
     setCategoryFilters(normalizeCategoryFilters(storedFilters));
     setPanelOpen(storedPanelOpen);
+    setSelfInspectState(storedSelfInspect);
     setHydrated(true);
   }, [canAccess]);
 
@@ -139,6 +147,11 @@ export function DevLayoutOverlayProvider({ children }) {
     if (typeof window === "undefined" || !canAccess || !hydrated) return;
     window.localStorage.setItem(STORAGE_PANEL_OPEN_KEY, panelOpen ? "1" : "0");
   }, [panelOpen, canAccess, hydrated]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !canAccess || !hydrated) return;
+    window.localStorage.setItem(STORAGE_SELF_INSPECT_KEY, selfInspect ? "1" : "0");
+  }, [selfInspect, canAccess, hydrated]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -253,6 +266,21 @@ export function DevLayoutOverlayProvider({ children }) {
     setPanelOpen((current) => !current);
   }, []);
 
+  // Self-inspect — draws the overlay's own boxes/labels over the inspector
+  // panel's internal cards so the panel UI can be audited the same way pages
+  // are. Opens the panel automatically when turned on so the target is visible.
+  const setSelfInspect = useCallback((value) => {
+    setSelfInspectState((current) => {
+      const next = typeof value === "function" ? Boolean(value(current)) : Boolean(value);
+      if (next) setPanelOpen(true);
+      return next;
+    });
+  }, []);
+
+  const toggleSelfInspect = useCallback(() => {
+    setSelfInspect((current) => !current);
+  }, [setSelfInspect]);
+
   const isCategoryActive = useCallback(
     (id) => {
       if (!id) return false;
@@ -307,6 +335,9 @@ export function DevLayoutOverlayProvider({ children }) {
       categoryFilters: canAccess ? categoryFilters : defaultFilters,
       categories: DEV_OVERLAY_CATEGORIES,
       panelOpen: canAccess ? panelOpen : false,
+      selfInspect: canAccess ? selfInspect : false,
+      setSelfInspect,
+      toggleSelfInspect,
       setEnabled,
       toggleEnabled,
       setMode,
@@ -332,6 +363,9 @@ export function DevLayoutOverlayProvider({ children }) {
       legacyMarkers,
       categoryFilters,
       panelOpen,
+      selfInspect,
+      setSelfInspect,
+      toggleSelfInspect,
       hydrated,
       toggleEnabled,
       setMode,

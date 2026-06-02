@@ -167,7 +167,10 @@
   max-height: min(82vh, 760px);
   overflow: hidden;
   box-sizing: border-box;
-  padding: 16px;
+  /* Single source of the outer inset: every inner card and the footer sit a
+     uniform 10px in from the panel edge (CLAUDE.md §3.5 — no arbitrary mixed
+     paddings). .panelScroll therefore carries no padding of its own. */
+  padding: 10px;
   border-radius: 18px;
   background: rgba(var(--surface-rgb), 0.96);
   color: var(--text-1);
@@ -177,7 +180,7 @@
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .launcherWrap {
@@ -349,6 +352,16 @@
   background: rgba(var(--text-1-rgb), 0.08);
 }
 
+.onOffRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  width: min(140px, 100%);
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(var(--text-1-rgb), 0.08);
+}
+
 .countChip {
   display: inline-block;
   padding: 3px 8px;
@@ -490,10 +503,12 @@
 
 .panelScroll {
   overflow-y: auto;
-  padding: 10px;
+  /* No padding here — the 10px outer inset comes from .panel. Inner cards are
+     spaced from each other by the same 10px for a consistent rhythm. */
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -733,6 +748,32 @@
   background: rgba(var(--text-1-rgb), 0.92);
   color: var(--text-2);
   pointer-events: none;
+}
+
+/* Self-inspect layer — sits ABOVE the panel (which is above the page overlay)
+   so its boxes/labels are visible over the inspector's own cards. Entirely
+   non-interactive so the panel underneath, including the ON/OFF control, stays
+   usable while the overlay is shown. */
+.selfRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 2960;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.selfBox {
+  /* Distinct colour (success/green) so a panel self-inspect box never reads as
+     a page-overlay (accent/red) box. Diagram primitive — overlay outline. */
+  border-color: rgba(var(--success-rgb), 0.85);
+  background: rgba(var(--success-rgb), 0.04);
+  box-shadow: inset 0 0 0 1px rgba(var(--surface-rgb), 0.5);
+}
+
+.selfLabel {
+  background: rgba(var(--success-rgb), 0.96);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(var(--success-rgb), 0.28);
 }
 
 @media (max-width: 900px) {

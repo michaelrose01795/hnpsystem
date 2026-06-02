@@ -5,7 +5,8 @@ import { Button, InputField } from "@/components/ui";
 import { CalendarField } from "@/components/ui/calendarAPI";
 import { DropdownField } from "@/components/ui/dropdownAPI";
 import { TabGroup } from "@/components/ui/tabAPI/TabGroup";
-import FuelGauge, { fuelLevelLabel } from "@/components/LoanCars/FuelGauge";
+import StatusMessage from "@/components/ui/StatusMessage";
+import FuelGauge, { fuelLevelDisplayLabel } from "@/components/LoanCars/FuelGauge";
 import {
   deleteLoanCar,
   deleteLoanCarBooking,
@@ -21,6 +22,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const LOOK_BACK_DAYS = 14;
 const LOOK_AHEAD_DAYS = 35;
 const LOAN_CAR_MODAL_Z_INDEX = 4000;
+const LOAN_CAR_STATUS_Z_INDEX = LOAN_CAR_MODAL_Z_INDEX + 1;
 
 const EMPTY_BOOKING = {
   bookingId: "",
@@ -149,6 +151,18 @@ const managerPanelStyle = {
   gap: "var(--layout-card-gap)",
 };
 
+const managerTabRowStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  gap: "var(--layout-card-gap)",
+  flexWrap: "wrap",
+};
+
+const managerTabActionStyle = {
+  marginLeft: "auto",
+};
+
 const bookingDateGridStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
@@ -191,25 +205,113 @@ const fleetRowGridStyle = {
   flexDirection: "row",
   flexWrap: "nowrap",
   alignItems: "center",
-  gap: "var(--space-2)",
+  gap: "var(--layout-card-gap)",
   minHeight: "44px",
 };
 
 const fleetVehicleIdentityStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(80px, 0.7fr) minmax(130px, 1fr)",
-  gap: "var(--space-2)",
+  display: "flex",
   alignItems: "center",
-  flex: "1 1 260px",
+  flex: "1 1 380px",
   minWidth: 0,
   color: "var(--text-1)",
 };
 
 const fleetVehicleTextStyle = {
-  fontSize: "13px",
-  fontWeight: 700,
-  lineHeight: 1.2,
+  fontSize: "18px",
+  fontWeight: 800,
+  lineHeight: 1.25,
   overflowWrap: "anywhere",
+};
+
+const mileageLabelRowStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "var(--space-2)",
+  color: "var(--text-1)",
+  fontSize: "var(--text-label)",
+  fontWeight: "var(--control-label-weight)",
+  textTransform: "uppercase",
+  letterSpacing: "var(--tracking-caps)",
+};
+
+const detailsModalStyle = {
+  width: "min(860px, calc(100vw - 32px))",
+  maxHeight: "calc(100dvh - 32px)",
+  overflowY: "auto",
+};
+
+const detailsTitleStyle = {
+  margin: 0,
+  color: "var(--text-1)",
+  fontSize: "26px",
+  lineHeight: 1.15,
+};
+
+const detailsStatsGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+  gap: "12px",
+};
+
+const detailsStatLabelStyle = {
+  color: "var(--grey-accent)",
+  fontSize: "14px",
+};
+
+const detailsStatValueStyle = {
+  color: "var(--text-1)",
+  fontSize: "17px",
+  overflowWrap: "anywhere",
+};
+
+const detailsWideStatStyle = {
+  gridColumn: "1 / -1",
+};
+
+const detailsWideStatValueStyle = {
+  ...detailsStatValueStyle,
+  whiteSpace: "nowrap",
+  overflowX: "auto",
+  overflowWrap: "normal",
+};
+
+const detailsHistoryTitleStyle = {
+  margin: 0,
+  color: "var(--text-1)",
+  fontSize: "18px",
+};
+
+const detailsHistoryListStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 0,
+  maxHeight: "168px",
+  overflowY: "auto",
+};
+
+const detailsHistoryRowStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "16px",
+  alignItems: "baseline",
+  minHeight: "56px",
+  padding: "10px 0",
+};
+
+const detailsHistoryPrimaryStyle = {
+  color: "var(--text-1)",
+  fontWeight: 800,
+  fontSize: "16px",
+  lineHeight: 1.25,
+};
+
+const detailsHistorySecondaryStyle = {
+  color: "var(--grey-accent)",
+  fontSize: "15px",
+  lineHeight: 1.25,
+  textAlign: "right",
 };
 
 const todayDateKey = () => {
@@ -217,6 +319,48 @@ const todayDateKey = () => {
   today.setHours(0, 0, 0, 0);
   return toDateKey(today);
 };
+
+const invalidBookingDateMessage = "The booking end date must be the same as or after the start date.";
+
+const getLoanCarBookingErrorMessage = (error) => {
+  const code = error?.code || "";
+  const message = error?.message || "";
+  const constraint = error?.details || "";
+
+  if (
+    code === "loan_car_booking_invalid_date_range" ||
+    (code === "23514" && (message.includes("tracking_loan_car_bookings_date_check") || constraint.includes("tracking_loan_car_bookings_date_check")))
+  ) {
+    return invalidBookingDateMessage;
+  }
+
+  if (code === "loan_car_booking_overlap") {
+    return message || "This loan car already has a booking that overlaps those dates.";
+  }
+
+  return message || "Unable to save loan car booking.";
+};
+
+const hasInvalidBookingDateRange = (booking) =>
+  Boolean(booking?.startDate && booking?.endDate && String(booking.endDate).slice(0, 10) < String(booking.startDate).slice(0, 10));
+
+function LoanCarStatusToast({ message, tone = "danger" }) {
+  if (!message) return null;
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: "var(--space-4)",
+        right: "var(--space-4)",
+        zIndex: LOAN_CAR_STATUS_Z_INDEX,
+        width: "min(360px, calc(100vw - (var(--space-4) * 2)))",
+      }}>
+      <StatusMessage tone={tone} style={{ margin: 0 }}>
+        {message}
+      </StatusMessage>
+    </div>
+  );
+}
 
 function Field({ label, value, onChange, type = "text", children }) {
   if (children) {
@@ -296,6 +440,28 @@ const formatFuelHistoryTimestamp = (value) => {
   });
 };
 
+const dateKeyToLocalDate = (value) => {
+  if (!value) return null;
+  const [year, month, day] = String(value).slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const date = new Date(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const countInclusiveDays = (startDate, endDate) => {
+  const start = dateKeyToLocalDate(startDate);
+  const end = dateKeyToLocalDate(endDate);
+  if (!start || !end || end < start) return 0;
+  return Math.round((end.getTime() - start.getTime()) / MS_PER_DAY) + 1;
+};
+
+const formatBookingDateRange = (booking) => {
+  if (!booking?.startDate) return "";
+  if (!booking.endDate || booking.startDate === booking.endDate) return booking.startDate;
+  return `${booking.startDate} to ${booking.endDate}`;
+};
+
 const buildVehicleMakeModel = (vehicle) =>
   [
     vehicle?.make || vehicle?.vehicleMake,
@@ -307,22 +473,43 @@ const buildVehicleColour = (vehicle) =>
 
 function LoanCarFleetRow({ car, editingId, onStartEditing, onDelete, onSave }) {
   const [mileage, setMileage] = useState(car.mileage ?? "");
+  const [fuelLevel, setFuelLevel] = useState(car.fuelLevel ?? 0);
   const [saving, setSaving] = useState(false);
+  const pendingUpdatesRef = useRef({});
+  const saveTimerRef = useRef(null);
   const carId = car.loanCarId || car.id;
   const isEditing = editingId === carId;
   const lastUpdateLabel = formatLastVehicleUpdate(car.lastVehicleUpdateAt);
   const makeModel = car.makeModel || (car.name && car.name !== car.reg ? car.name : "");
-  const vehicleSubtitle = [makeModel, car.colour].filter(Boolean).join(" · ");
+  const vehicleLabel = [car.reg, makeModel, car.colour].filter(Boolean).join(" · ");
+  const mileageInputId = `loan-car-mileage-${carId}`;
 
   useEffect(() => {
     setMileage(car.mileage ?? "");
   }, [car.mileage]);
 
-  const saveVehicleState = async (updates) => {
+  useEffect(() => {
+    setFuelLevel(car.fuelLevel ?? 0);
+  }, [car.fuelLevel]);
+
+  useEffect(() => () => {
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+  }, []);
+
+  const saveVehicleState = async (updates = pendingUpdatesRef.current) => {
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const nextUpdates = { ...updates };
+    pendingUpdatesRef.current = {};
+    if (Object.keys(nextUpdates).length === 0) return { success: true };
     setSaving(true);
     const result = await onSave({
       ...car,
-      ...updates,
+      ...nextUpdates,
       reg: String(car.reg || "").trim().toUpperCase(),
       name: car.reg,
       updateVehicleState: true,
@@ -331,13 +518,34 @@ function LoanCarFleetRow({ car, editingId, onStartEditing, onDelete, onSave }) {
     return result;
   };
 
+  const queueVehicleStateSave = (updates) => {
+    pendingUpdatesRef.current = {
+      ...pendingUpdatesRef.current,
+      ...updates,
+    };
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+    saveTimerRef.current = window.setTimeout(() => {
+      saveVehicleState();
+    }, 1000);
+  };
+
+  const handleMileageChange = (value) => {
+    setMileage(value);
+    if (String(value ?? "") === String(car.mileage ?? "")) return;
+    queueVehicleStateSave({ mileage: value });
+  };
+
   const handleMileageBlur = () => {
     if (String(mileage ?? "") === String(car.mileage ?? "")) return;
     saveVehicleState({ mileage });
   };
 
-  const handleFuelChange = (fuelLevel) => {
-    saveVehicleState({ fuelLevel });
+  const handleFuelChange = (nextFuelLevel) => {
+    setFuelLevel(nextFuelLevel);
+    if (Number(nextFuelLevel) === Number(car.fuelLevel ?? 0)) return;
+    queueVehicleStateSave({ fuelLevel: nextFuelLevel });
   };
 
   return (
@@ -346,22 +554,24 @@ function LoanCarFleetRow({ car, editingId, onStartEditing, onDelete, onSave }) {
       padding="8px 10px"
       style={fleetRowGridStyle}>
       <div style={fleetVehicleIdentityStyle}>
-        <strong style={fleetVehicleTextStyle}>{car.reg}</strong>
-        {vehicleSubtitle ? <span style={{ ...fleetVehicleTextStyle, color: "var(--grey-accent)" }}>{vehicleSubtitle}</span> : null}
+        <strong style={fleetVehicleTextStyle}>{vehicleLabel}</strong>
       </div>
-      <div style={{ flex: "0 1 150px", display: "grid", gap: "2px", minWidth: 0 }}>
+      <div style={{ flex: "0 0 170px", display: "grid", gap: "2px", minWidth: 0 }}>
+        <label htmlFor={mileageInputId} style={mileageLabelRowStyle}>
+          <span>Mileage</span>
+          {lastUpdateLabel ? <span style={{ color: "var(--grey-accent)" }}>{lastUpdateLabel}</span> : null}
+        </label>
         <InputField
-          label="Mileage"
+          id={mileageInputId}
           type="number"
           value={mileage ?? ""}
-          onChange={(event) => setMileage(event.target.value)}
+          onChange={(event) => handleMileageChange(event.target.value)}
           onBlur={handleMileageBlur}
           disabled={saving}
         />
-        {lastUpdateLabel ? <span style={{ color: "var(--grey-accent)", fontSize: "11px" }}>Updated {lastUpdateLabel}</span> : null}
       </div>
       <div style={{ flex: "0 0 auto" }}>
-        <FuelGauge value={car.fuelLevel} onChange={handleFuelChange} disabled={saving} />
+        <FuelGauge value={fuelLevel} onChange={handleFuelChange} disabled={saving} />
       </div>
       <div style={{ display: "flex", gap: "6px", flex: "0 0 auto", marginLeft: "auto" }}>
         <Button type="button" variant={isEditing ? "primary" : "secondary"} size="xs" onClick={() => onStartEditing(car)} disabled={saving}>
@@ -454,25 +664,103 @@ const scrollTodayIntoView = (todayRowRef) => {
   scroller.scrollTop += delta;
 };
 
-function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
+function LoanCarDetailsModal({ car, bookings = [], onClose, onSave, onDelete }) {
   const [form, setForm] = useState(() => ({
     ...car,
     reg: car?.reg || "",
     name: car?.name || car?.reg || "",
-    sortOrder: car?.sortOrder ?? 0,
     notes: car?.notes || "",
   }));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [fuelHistory, setFuelHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const fuelHistoryEntries = useMemo(() => {
+    if (fuelHistory.length > 0) return fuelHistory;
+    if (car?.fuelLevel === "" || car?.fuelLevel == null) return [];
+    return [
+      {
+        historyId: `current-${car.loanCarId || car.id}`,
+        fuelLevel: car.fuelLevel,
+        mileage: car.mileage,
+        recordedAt: car.lastVehicleUpdateAt,
+        isCurrentSnapshot: true,
+      },
+    ];
+  }, [car, fuelHistory]);
+  const historyEvents = useMemo(() => {
+    return fuelHistoryEntries.flatMap((entry, index) => {
+      const olderEntry = fuelHistoryEntries[index + 1];
+      const isCurrent = entry.isCurrentSnapshot || index === 0;
+      const fuelChanged =
+        entry.isCurrentSnapshot ||
+        !olderEntry ||
+        Number(entry.fuelLevel ?? 0) !== Number(olderEntry.fuelLevel ?? 0);
+      const mileageChanged =
+        !entry.isCurrentSnapshot &&
+        olderEntry &&
+        String(entry.mileage ?? "") !== String(olderEntry.mileage ?? "");
+      const timestamp = entry.recordedAt ? formatFuelHistoryTimestamp(entry.recordedAt) : "Stored on vehicle";
+      const mileageText = entry.mileage !== "" && entry.mileage != null ? `${entry.mileage} mi` : "Mileage not recorded";
+      const fuelText = fuelLevelDisplayLabel(entry.fuelLevel);
+      const events = [];
+
+      if (fuelChanged) {
+        events.push({
+          id: `${entry.historyId}-fuel`,
+          primary: `${isCurrent ? "Current fuel" : "Filled to"} ${fuelText}`,
+          secondary: `${mileageText} · ${timestamp}`,
+        });
+      }
+
+      if (mileageChanged) {
+        events.push({
+          id: `${entry.historyId}-mileage`,
+          primary: mileageText,
+          secondary: `Current fuel ${fuelText} · ${timestamp}`,
+        });
+      }
+
+      return events;
+    });
+  }, [fuelHistoryEntries]);
+  const loanCarStats = useMemo(() => {
+    const loanCarId = car?.loanCarId || car?.id;
+    if (!loanCarId) return [];
+    const todayKey = todayDateKey();
+    const carBookings = bookings.filter((booking) => booking.loanCarId === loanCarId);
+    const bookedDayKeys = new Set();
+
+    carBookings.forEach((booking) => {
+      const totalDays = countInclusiveDays(booking.startDate, booking.endDate);
+      const start = dateKeyToLocalDate(booking.startDate);
+      if (!start || totalDays === 0) return;
+      for (let offset = 0; offset < totalDays; offset += 1) {
+        const day = new Date(start.getTime() + offset * MS_PER_DAY);
+        bookedDayKeys.add(toDateKey(day));
+      }
+    });
+
+    const currentBooking = carBookings.find((booking) => booking.startDate <= todayKey && booking.endDate >= todayKey);
+    const futureBookings = carBookings.filter((booking) => booking.startDate > todayKey).length;
+    const currentStatus = currentBooking
+      ? currentBooking.customerName || currentBooking.customer || currentBooking.vehicleReg || "On loan"
+      : "Available";
+
+    return [
+      { label: "Booked days", value: bookedDayKeys.size },
+      { label: "Bookings", value: carBookings.length },
+      { label: "Future", value: futureBookings },
+      { label: "Status", value: currentStatus },
+      { label: "Current dates", value: currentBooking ? formatBookingDateRange(currentBooking) : "None" },
+    ];
+  }, [bookings, car]);
 
   useEffect(() => {
     setForm({
       ...car,
       reg: car?.reg || "",
       name: car?.name || car?.reg || "",
-      sortOrder: car?.sortOrder ?? 0,
       notes: car?.notes || "",
     });
     setMessage("");
@@ -561,13 +849,10 @@ function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
         radius="var(--radius-sm)"
         padding="var(--section-card-padding)"
         gap="var(--layout-card-gap)"
-        style={{ width: "min(560px, 100%)" }}>
+        style={detailsModalStyle}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
           <div>
-            <h2 style={{ margin: 0, color: "var(--text-1)", fontSize: "20px" }}>{car.reg || "Loan car"}</h2>
-            <p style={{ margin: "4px 0 0", color: "var(--grey-accent)", fontSize: "13px" }}>
-              Edit this loan car or remove it from the fleet list.
-            </p>
+            <h2 style={detailsTitleStyle}>{car.reg || "Loan car"}</h2>
           </div>
           <Button type="button" variant="ghost" size="sm" pill onClick={onClose} aria-label="Close loan car details">
             X
@@ -576,13 +861,31 @@ function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
 
         <div style={fieldGridStyle}>
           <Field label="Loan car reg" value={form.reg} onChange={(value) => update("reg", value.toUpperCase())} />
-          <Field label="Order" type="number" value={form.sortOrder} onChange={(value) => update("sortOrder", value)} />
+          <label style={labelStyle}>
+            Notes
+            <textarea className="app-input app-input--textarea" value={form.notes || ""} onChange={(event) => update("notes", event.target.value)} rows={3} />
+          </label>
         </div>
 
-        <label style={labelStyle}>
-          Notes
-          <textarea className="app-input app-input--textarea" value={form.notes || ""} onChange={(event) => update("notes", event.target.value)} rows={3} />
-        </label>
+        <LayerTheme
+          as="section"
+          sectionKey="loan-car-usage-stats"
+          sectionType="section-shell"
+          radius="var(--radius-sm)"
+          padding="12px"
+          gap="8px">
+          <div style={detailsStatsGridStyle}>
+            {loanCarStats.map((stat) => {
+              const isWideStat = stat.label === "Current dates";
+              return (
+                <div key={stat.label} style={{ display: "grid", gap: "2px", minWidth: 0, ...(isWideStat ? detailsWideStatStyle : null) }}>
+                  <span style={detailsStatLabelStyle}>{stat.label}</span>
+                  <strong style={isWideStat ? detailsWideStatValueStyle : detailsStatValueStyle}>{stat.value}</strong>
+                </div>
+              );
+            })}
+          </div>
+        </LayerTheme>
 
         <LayerTheme
           as="section"
@@ -591,31 +894,26 @@ function LoanCarDetailsModal({ car, onClose, onSave, onDelete }) {
           radius="var(--radius-sm)"
           padding="12px"
           gap="8px">
-          <h3 style={{ margin: 0, color: "var(--text-1)", fontSize: "14px" }}>Fuel history</h3>
+          <h3 style={detailsHistoryTitleStyle}>History</h3>
           {historyLoading ? (
             <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>Loading…</p>
-          ) : fuelHistory.length === 0 ? (
+          ) : historyEvents.length === 0 ? (
             <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>No fuel readings recorded yet.</p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0", maxHeight: "220px", overflowY: "auto" }}>
-              {fuelHistory.map((entry, index) => (
+            <div style={detailsHistoryListStyle}>
+              {historyEvents.map((entry, index) => (
                 <div
-                  key={entry.historyId}
+                  key={entry.id}
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "12px",
-                    alignItems: "baseline",
-                    padding: "6px 0",
+                    ...detailsHistoryRowStyle,
                     // Row separator is the one sanctioned "line within a list" use-case.
-                    borderBottom: index === fuelHistory.length - 1 ? "none" : "var(--separating-line)",
+                    borderBottom: index === historyEvents.length - 1 ? "none" : "var(--separating-line)",
                   }}>
-                  <span style={{ color: "var(--text-1)", fontWeight: 700, fontSize: "13px" }}>
-                    {fuelLevelLabel(entry.fuelLevel)}
+                  <span style={detailsHistoryPrimaryStyle}>
+                    {entry.primary}
                   </span>
-                  <span style={{ color: "var(--grey-accent)", fontSize: "12px", textAlign: "right" }}>
-                    {entry.mileage !== "" && entry.mileage != null ? `${entry.mileage} mi · ` : ""}
-                    {formatFuelHistoryTimestamp(entry.recordedAt)}
+                  <span style={detailsHistorySecondaryStyle}>
+                    {entry.secondary}
                   </span>
                 </div>
               ))}
@@ -653,6 +951,7 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
   const [bookingMatches, setBookingMatches] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingMessage, setBookingMessage] = useState("");
+  const [bookingMessageTone, setBookingMessageTone] = useState("info");
   const [bookingDraft, setBookingDraft] = useState(() => ({
     ...EMPTY_BOOKING,
     loanCarId: cars[0]?.loanCarId || cars[0]?.id || "",
@@ -686,6 +985,11 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
 
   const updateBookingDraft = (field, value) => {
     setBookingDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const showBookingMessage = (message, tone = "info") => {
+    setBookingMessage(message);
+    setBookingMessageTone(tone);
   };
 
   const startEditing = (car) => {
@@ -774,16 +1078,16 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
   const runBookingSearch = async () => {
     const term = bookingSearchTerm.trim();
     if (term.length < 2) {
-      setBookingMessage("Enter at least 2 characters to search.");
+      showBookingMessage("Enter at least 2 characters to search.", "warning");
       return;
     }
     setBookingLoading(true);
-    setBookingMessage("");
+    showBookingMessage("");
     const rows = await searchLoanCarBookingTargets(term);
     setBookingMatches(rows);
     setBookingLoading(false);
     if (rows.length === 0) {
-      setBookingMessage("No jobs found for that search.");
+      showBookingMessage("No jobs found for that search.", "info");
     }
   };
 
@@ -801,18 +1105,22 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
 
   const handleBook = async () => {
     if (!bookingDraft.loanCarId || !bookingDraft.startDate || !bookingDraft.endDate) {
-      setBookingMessage("Choose a loan car and booking dates first.");
+      showBookingMessage("Choose a loan car and booking dates first.", "warning");
+      return;
+    }
+    if (hasInvalidBookingDateRange(bookingDraft)) {
+      showBookingMessage(invalidBookingDateMessage, "danger");
       return;
     }
     setBookingLoading(true);
-    setBookingMessage("");
+    showBookingMessage("");
     const result = await onBook(bookingDraft);
     setBookingLoading(false);
     if (!result?.success) {
-      setBookingMessage(result?.error?.message || "Unable to save loan car booking.");
+      showBookingMessage(getLoanCarBookingErrorMessage(result?.error), "danger");
       return;
     }
-    setBookingMessage("Booking added to the table.");
+    showBookingMessage("Booking added to the table.", "success");
     setBookingDraft((prev) => ({
       ...EMPTY_BOOKING,
       loanCarId: prev.loanCarId,
@@ -852,16 +1160,25 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
       radius="var(--radius-sm)"
       padding="var(--section-card-padding)"
       gap="var(--layout-card-gap)">
-      <TabGroup
-        items={[
-          { value: "book", label: "Book" },
-          { value: "add-vehicle", label: "Add vehicle" },
-        ]}
-        value={activeTab}
-        onChange={setActiveTab}
-        ariaLabel="Loan car manager tabs"
-        className="tab-api--wrap"
-      />
+      <div style={managerTabRowStyle}>
+        <TabGroup
+          items={[
+            { value: "book", label: "Book" },
+            { value: "add-vehicle", label: "Loan Car Details" },
+          ]}
+          value={activeTab}
+          onChange={setActiveTab}
+          ariaLabel="Loan car manager tabs"
+          className="tab-api--wrap"
+        />
+        {activeTab === "book" ? (
+          <div style={managerTabActionStyle}>
+            <Button type="button" variant="primary" size="sm" onClick={handleBook} disabled={bookingLoading || !bookingDraft.loanCarId || !bookingDraft.startDate || !bookingDraft.endDate}>
+              Save booking
+            </Button>
+          </div>
+        ) : null}
+      </div>
 
       {activeTab === "add-vehicle" ? (
         <>
@@ -962,12 +1279,7 @@ function FleetManager({ cars, onSave, onDelete, onBook }) {
             </div>
           ) : null}
 
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Button type="button" variant="primary" size="sm" onClick={handleBook} disabled={bookingLoading || !bookingDraft.loanCarId || !bookingDraft.startDate || !bookingDraft.endDate}>
-              Save booking
-            </Button>
-          </div>
-          {bookingMessage ? <p style={{ margin: 0, color: "var(--grey-accent)", fontSize: "13px" }}>{bookingMessage}</p> : null}
+          <LoanCarStatusToast message={bookingMessage} tone={bookingMessageTone} />
         </LayerSurface>
       )}
     </LayerTheme>
@@ -987,6 +1299,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
   const [matches, setMatches] = useState([]);
   const [saving, setSaving] = useState(false);
   const [copiedKey, setCopiedKey] = useState("");
+  const [message, setMessage] = useState("");
   const loanCarOptions = useMemo(
     () =>
       cars.map((car) => ({
@@ -1031,13 +1344,20 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
 
   const handleSave = async (event) => {
     event.preventDefault();
+    if (hasInvalidBookingDateRange(form)) {
+      setMessage(invalidBookingDateMessage);
+      return;
+    }
     setSaving(true);
+    setMessage("");
     const result = await saveLoanCarBooking(form);
     setSaving(false);
     if (result.success) {
       onSaved();
       onClose();
+      return;
     }
+    setMessage(getLoanCarBookingErrorMessage(result?.error));
   };
 
   const handleDelete = async () => {
@@ -1068,6 +1388,7 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
       }}>
       <LayerSurface
         as="form"
+        className="popup-card"
         onSubmit={handleSave}
         sectionKey="loan-car-booking-details-popup"
         sectionType="modal"
@@ -1171,6 +1492,8 @@ function BookingModal({ cars, selected, onClose, onSaved, jobDraft }) {
           <textarea className="app-input app-input--textarea" value={form.notes || ""} onChange={(event) => update("notes", event.target.value)} rows={3} />
         </label>
 
+        <LoanCarStatusToast message={message} tone="danger" />
+
         <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
           {form.bookingId || form.id ? (
             <Button type="button" variant="danger" onClick={handleDelete} disabled={saving}>
@@ -1248,7 +1571,7 @@ export default function LoanCarSchedulePanel({
   const tableMinWidth = isTrackingMode
     ? trackingTableWidth
     : `${Math.max(680, dayColumnWidth + visibleCars.length * 200)}px`;
-  const tableWidth = "100%";
+  const tableWidth = isTrackingMode ? `max(100%, ${trackingTableWidth})` : "100%";
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -1266,6 +1589,15 @@ export default function LoanCarSchedulePanel({
   useEffect(() => {
     loadData();
   }, [loadData, refreshKey]);
+
+  useEffect(() => {
+    if (!selectedLoanCar) return;
+    const selectedId = selectedLoanCar.loanCarId || selectedLoanCar.id;
+    const updatedCar = cars.find((car) => (car.loanCarId || car.id) === selectedId);
+    if (updatedCar && updatedCar !== selectedLoanCar) {
+      setSelectedLoanCar(updatedCar);
+    }
+  }, [cars, selectedLoanCar]);
 
   useEffect(() => {
     if (mode !== "tracking" || loading || hasAutoScrolledTodayRef.current) return;
@@ -1326,6 +1658,37 @@ export default function LoanCarSchedulePanel({
 
       {mode === "tracking" && showFleetManager ? <FleetManager cars={cars} onSave={handleSaveCar} onDelete={handleDeleteCar} onBook={handleSaveBooking} /> : null}
 
+      {isTrackingMode ? (
+        <style jsx global>{`
+          html.staff-scope [data-loan-car-table-scroll="true"].tracking-loan-car-appointments-table-scroll {
+            scrollbar-width: thin !important;
+            scrollbar-color: var(--scrollbar-thumb) transparent !important;
+            -ms-overflow-style: auto !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+          }
+
+          html.staff-scope [data-loan-car-table-scroll="true"].tracking-loan-car-appointments-table-scroll::-webkit-scrollbar {
+            width: 0 !important;
+            height: 10px !important;
+            display: block !important;
+          }
+
+          html.staff-scope [data-loan-car-table-scroll="true"].tracking-loan-car-appointments-table-scroll::-webkit-scrollbar-track {
+            background: transparent !important;
+          }
+
+          html.staff-scope [data-loan-car-table-scroll="true"].tracking-loan-car-appointments-table-scroll::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb) !important;
+            border-radius: var(--radius-pill) !important;
+          }
+
+          html.staff-scope [data-loan-car-table-scroll="true"].tracking-loan-car-appointments-table-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-thumb-hover) !important;
+          }
+        `}</style>
+      ) : null}
+
       <LayerTheme
         as="section"
         sectionKey={`${mode}-loan-car-appointments-table-scroll`}
@@ -1343,10 +1706,13 @@ export default function LoanCarSchedulePanel({
           data-loan-car-table-scroll={isTrackingMode ? "true" : undefined}
           data-app-table-shell={isTrackingMode ? "off" : undefined}
           style={{
+            width: "100%",
+            maxWidth: "100%",
             overflowX: "auto",
-            overflowY: "auto",
+            overflowY: isTrackingMode ? "hidden" : "auto",
+            WebkitOverflowScrolling: "touch",
             backgroundColor: "var(--theme)",
-            maxHeight: isTrackingMode ? "calc(100dvh - 380px)" : "560px",
+            maxHeight: isTrackingMode ? undefined : "560px",
             borderRadius: "var(--radius-md)",
             "--app-table-heading-mask-height": "0px", // thead is already opaque; suppress the shared sticky mask band
           }}>
@@ -1377,7 +1743,6 @@ export default function LoanCarSchedulePanel({
               {visibleCars.map((car) => (
                 <col key={car.loanCarId || car.id} style={{ width: isTrackingMode ? trackingCarColumnWidth : "200px" }} />
               ))}
-              {isTrackingMode ? <col style={{ width: "auto" }} /> : null}
             </colgroup>
             <thead
               data-dev-section="1"
@@ -1537,7 +1902,6 @@ export default function LoanCarSchedulePanel({
                   </td>
                   {visibleCars.map((car) => {
                     const booking = getBookingForCell(visibleBookings, car.loanCarId || car.id, day.key);
-                    const cellBackground = booking ? "var(--warning-strong)" : rowBackground;
                     // In tracking mode a booking is a vertical run of warning
                     // cells from startDate to endDate. Curve the top corners on
                     // the "from" row and the bottom corners on the "to" row, and
@@ -1558,6 +1922,7 @@ export default function LoanCarSchedulePanel({
                         booking ? "loan-car-booked-cell" : "",
                       ].filter(Boolean).join(" ") || undefined}
                       style={{
+                        position: "relative",
                         height: "44px",
                         minHeight: "44px",
                         maxHeight: "44px",
@@ -1566,12 +1931,35 @@ export default function LoanCarSchedulePanel({
                         verticalAlign: "middle",
                         lineHeight: 0,
                         overflow: "hidden",
+                        // Cell stays square so its bottom separating line runs
+                        // straight across the full width — the warning fill below
+                        // carries the rounded corners instead, so the line no
+                        // longer curves in with the radius.
                         borderBottom: cellBottomRule,
-                        borderRadius: bookedRadius,
                         backgroundClip: isTrackingMode ? "content-box" : undefined,
-                        backgroundColor: isTrackingMode ? cellBackground : booking ? "var(--warning-surface)" : day.isToday ? "var(--theme)" : undefined,
+                        backgroundColor: isTrackingMode ? rowBackground : booking ? "var(--warning-surface)" : day.isToday ? "var(--theme)" : undefined,
                         backgroundImage: isTrackingMode ? todayRowOverlay : undefined,
                       }}>
+                        {isTrackingMode && booking ? (
+                          // Absolutely-positioned warning fill: spans the full
+                          // cell height (top/bottom: 0) so a multi-day booking
+                          // reads as one solid section with no gaps between rows,
+                          // inset 1px on the left to keep the column separator,
+                          // and rounded only at the run's start/end corners.
+                          <div
+                            aria-hidden="true"
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              right: 0,
+                              bottom: 0,
+                              left: "1px",
+                              backgroundColor: "var(--warning-strong)",
+                              borderRadius: bookedRadius,
+                              pointerEvents: "none",
+                            }}
+                          />
+                        ) : null}
                         <BookingCell
                           booking={booking}
                           highlightedJob={highlightedJob}
@@ -1628,6 +2016,7 @@ export default function LoanCarSchedulePanel({
       {selectedLoanCar ? (
         <LoanCarDetailsModal
           car={selectedLoanCar}
+          bookings={bookings}
           onClose={() => setSelectedLoanCar(null)}
           onSave={handleSaveCar}
           onDelete={handleDeleteCar}
