@@ -80,11 +80,11 @@ export default function Layout({
   const { usersByRole } = useRoster();
   const router = useRouter();
   const [showLoginShellLoading, setShowLoginShellLoading] = useState(false);
-  // Route-transition state. Driven by router.events so the content area can show
-  // the existing PageSkeleton the instant a real navigation starts, and the
-  // sidebar can highlight the clicked item optimistically (pendingHref) before
+  // Optimistic sidebar highlight. Driven by router.events so the sidebar can
+  // highlight the clicked item the instant a real navigation starts, before
   // router.asPath catches up (Pages Router only updates asPath on completion).
-  const [isRouteChanging, setIsRouteChanging] = useState(false);
+  // We deliberately do NOT use this to swap the page content for a skeleton —
+  // the destination page renders its own shell instead (see showPageSkeleton).
   const [pendingHref, setPendingHref] = useState(null);
   const isCustomerRoute = (router.pathname || "").startsWith("/customer");
   const hideSidebar =
@@ -486,22 +486,18 @@ export default function Layout({
   const viewRoles = ["manager", "service", "sales"];
 
   const colors = appShellTheme.light;
-  // Only show the global skeleton while the session is still resolving on a
-  // gated route. Once routing is taking place, each page renders its own
-  // in-page loading skeleton — we no longer swap children for a generic
-  // PageSkeleton during route transitions (it masked the sidebar active state
-  // and looked the same on every route).
+  // The global PageSkeleton is shown ONLY while the session is still resolving
+  // on a gated route (pre-auth) — i.e. there is genuinely no page to render yet
+  // because we don't know who the user is. We deliberately do NOT swap children
+  // for a generic skeleton during client-side route transitions: doing so hid
+  // the destination page's own shell behind a generic placeholder and made
+  // navigation feel like "the app is loading a page" rather than the page
+  // opening instantly. Route-transition feedback is handled entirely by the top
+  // RouteProgressBar (mounted in _app.js) plus the sidebar's optimistic active
+  // state (driven by pendingHref). Each destination page renders its own shell
+  // immediately and skeletons only its inner data areas while data loads.
   const isPreAuthLoading = !publicRoute && !presentationShell && !hideSidebar && (userLoading || !user);
-  // Show the shared PageSkeleton while (a) the session is still resolving on a
-  // gated route (pre-auth), OR (b) a real client-side route change is in flight.
-  // Case (b) restores the route-transition skeleton: the destination's own
-  // shell appears instantly instead of the stale previous page lingering until
-  // the new bundle/data is ready. The destination page then renders its own
-  // page-level skeletons as before. Skip the transition skeleton on the login
-  // shell / presentation shell where the chrome handles its own loading.
-  const showRouteTransitionSkeleton =
-    isRouteChanging && !publicRoute && !presentationShell && !hideSidebar;
-  const showPageSkeleton = isPreAuthLoading || showRouteTransitionSkeleton;
+  const showPageSkeleton = isPreAuthLoading;
 
   // TEMP diagnostic: each of these flipping is a candidate for the page
   // "flicking off then coming back" — skeleton flags swap children for the
@@ -530,10 +526,12 @@ export default function Layout({
     window.localStorage.setItem("sidebarOpen", isSidebarOpen ? "true" : "false");
   }, [isSidebarOpen, isTablet]);
 
-  // Route-transition skeleton + optimistic sidebar highlight. On routeChangeStart
-  // for a *real* navigation (not shallow, not hash/query-only) we flip the
-  // content area to the existing PageSkeleton and record the destination href so
-  // the clicked sidebar item lights up immediately. Cleared on complete/error.
+  // Optimistic sidebar highlight. On routeChangeStart for a *real* navigation
+  // (not shallow, not hash/query-only) we record the destination href so the
+  // clicked sidebar item lights up immediately — the only content-area feedback
+  // during a transition is the destination page rendering its own shell. The
+  // top RouteProgressBar handles the "click acknowledged" cue. Cleared on
+  // complete/error.
   useEffect(() => {
     if (!router?.events) return undefined;
 
@@ -542,11 +540,9 @@ export default function Layout({
     const handleStart = (url, { shallow } = {}) => {
       if (shallow) return;
       if (pathOnly(url) === pathOnly(router.asPath)) return; // hash/query-only — ignore
-      setPendingHref(pathOnly(url));
-      setIsRouteChanging(true);
+      setPendingHref(pathOnly(url)); // light up the clicked sidebar item immediately
     };
     const handleDone = () => {
-      setIsRouteChanging(false);
       setPendingHref(null);
     };
 
@@ -589,10 +585,11 @@ export default function Layout({
     };
   }, [router]);
 
-  // The full Layout (sidebar + topbar) always mounts. When the session or
-  // client-side routing is still resolving, the inner content area renders a
-  // <PageSkeleton /> in place of {children} — one skeleton, one transition, no
-  // overlay stacking.
+  // The full Layout (sidebar + topbar) always mounts. The inner content area
+  // renders a <PageSkeleton /> in place of {children} ONLY during the pre-auth
+  // window (session still resolving on a gated route). During ordinary
+  // client-side navigation the destination page's own shell renders straight
+  // away — no generic placeholder swap.
 
   const accountsRoleCandidates = (roleCategories?.Sales || []).filter((roleName) =>
     roleName.toLowerCase().includes("accounts")

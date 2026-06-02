@@ -1,4 +1,5 @@
 import LayerSurface from "@/components/ui/LayerSurface"; // file location: src/components/page-ui/appointments/appointments-ui.js
+import { SkeletonBlock, SkeletonKeyframes } from "@/components/ui/LoadingSkeleton"; // data-area skeletons while jobs load
 
 export default function AppointmentsUi(props) {
   const {
@@ -35,6 +36,7 @@ export default function AppointmentsUi(props) {
     isLoading,
     isSameDate,
     jobNumber,
+    jobsLoading,
     saveNote,
     searchQuery,
     selectedDay,
@@ -391,6 +393,7 @@ export default function AppointmentsUi(props) {
             overflowY: "auto"
 
           }}>
+          {jobsLoading && <SkeletonKeyframes />}
           <div style={{
               display: "flex",
               justifyContent: "space-between",
@@ -461,7 +464,23 @@ export default function AppointmentsUi(props) {
                 </tr>
               </thead>
               <tbody data-dev-section-key="appointments-auto-data-table-3-rows" data-dev-section-type="table-rows" data-dev-section-parent="appointments-auto-data-table-3">
-                {sortedJobs.length > 0 ? sortedJobs.map((job, idx) => {
+                {jobsLoading && sortedJobs.length === 0 ? Array.from({
+                    length: 5
+                  }).map((_, skeletonRow) => <tr key={`appt-skeleton-${skeletonRow}`} style={{
+                    backgroundColor: skeletonRow % 2 === 0 ? "var(--section-card-bg)" : "rgba(var(--accent-base-rgb), 0.035)"
+                  }}>
+                    {Array.from({
+                        length: 9
+                      }).map((__, skeletonCol) => <td key={skeletonCol} style={{
+                        padding: "12px 14px",
+                        borderBottom: "var(--separating-line)",
+                        textAlign: skeletonCol === 8 ? "center" : "left"
+                      }}>
+                        <SkeletonBlock width={skeletonCol === 3 || skeletonCol === 4 ? "85%" : skeletonCol === 8 ? "92px" : "62%"} height="14px" style={skeletonCol === 8 ? {
+                          margin: "0 auto"
+                        } : undefined} />
+                      </td>)}
+                  </tr>) : sortedJobs.length > 0 ? sortedJobs.map((job, idx) => {
                     const isCheckedIn = isJobActuallyCheckedIn(job);
                     const isCurrentlyCheckingIn = checkingInJobId === job.id;
                     const cellBorder = "var(--separating-line)";
